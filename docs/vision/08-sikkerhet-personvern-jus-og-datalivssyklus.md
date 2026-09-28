@@ -47,7 +47,7 @@ Privat chat skal ha sterk beskyttelse.
 
 Ende-til-ende-kryptering er en ønsket retning for kommunikasjon der bare deltakerne skal kunne lese innholdet.
 
-Samtidig finnes kommunikasjonstyper der en administrator eller plattformansvarlig må kunne behandle innholdet, for eksempel formelle saker.
+Samtidig finnes kommunikasjonstyper der en administrator eller plattformforvalter må kunne behandle innholdet, for eksempel formelle saker.
 
 Derfor må systemet senere skille tydelig mellom:
 

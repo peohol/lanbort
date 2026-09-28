@@ -195,8 +195,8 @@ Det opprinnelige forslaget innebærer:
 - alle administratorer får en frist til å sende sin begrunnelse
 - begrunnelsene er private mellom den enkelte administratoren og saksbehandleren
 - administratorene får ikke se hverandres innlegg i denne fasen
-- plattformansvarlig kan stille oppfølgingsspørsmål individuelt eller samlet
-- plattformansvarlig avslutter saken med en beslutning om sletting eller fortsatt eksistens
+- plattformforvalter kan stille oppfølgingsspørsmål individuelt eller samlet
+- plattformforvalter avslutter saken med en beslutning om sletting eller fortsatt eksistens
 - ny tilsvarende eskalering kan sperres en periode etter avsluttet sak
 
 Den konkrete prosessen må senere vurderes både produktmessig og juridisk.

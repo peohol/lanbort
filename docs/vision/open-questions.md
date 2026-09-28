@@ -8,18 +8,6 @@ Målet med listen er å gjøre usikkerhet synlig. Spørsmål flyttes ut herfra n
 
 Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig.
 
-### 3. Hva er plattformrollen som hittil er kalt «utvikler»?
-
-Kildedokumentet gir denne rollen omfattende makt over miljøer og konflikter.
-
-Vi bør avklare:
-
-- om rollen primært er moderator/plattformforvalter
-- hvem som kan få den
-- hvilke handlinger som krever særskilt grunn
-- hvilket innsyn rollen skal ha
-- om tekniske utviklere i det hele tatt skal ha samme rolle
-
 ### 4. Hvilken identitet forventes av en bruker?
 
 Visjonen sier foreløpig ikke:
@@ -108,7 +96,7 @@ Vi må avklare:
 - om eksisterende lån eller saker fortsatt er tilgjengelige
 - om en utestengt bruker kan anke
 - om administratorer kan oppheve utestengingen
-- om plattformansvarlige skal kunne overprøve den
+- om plattformforvaltere skal kunne overprøve den
 
 ### 12. Hvordan bør eierløse miljøer avvikles?
 
@@ -218,7 +206,7 @@ Vi må skille mellom:
 - kontakt med administratorgruppe
 - innmeldingssaker
 - konfliktsaker
-- kommunikasjon med plattformansvarlige
+- kommunikasjon med plattformforvaltere
 
 Noen av disse forutsetter tredjepartsinnsyn som ikke er forenlig med klassisk E2EE bare mellom to brukere.
 

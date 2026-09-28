@@ -63,23 +63,27 @@ Et miljø skal aldri ha mer enn én eier, men kan bli eierløst dersom eieren fr
 
 Forholdet mellom eierrollen og administratorrollen trenger videre avklaring, særlig ved fratreden.
 
-## Plattformrolle
+## Plattformforvalter
 
-Det opprinnelige notatet bruker **utvikler** om en global rolle med innsyn og myndighet på tvers av miljøer.
+**Plattformforvalter** er en global produktrolle i Lånborts UI og rettighetsmodell.
 
-Denne rollen omfatter mer enn teknisk utvikling. Den innebærer også plattformforvaltning og i enkelte tilfeller behandling av eskalerte konflikter.
+Rollen er skilt fra miljøadministratorer ved at myndigheten gjelder på tvers av miljøer. Den kan blant annet brukes til å:
 
-I produktvisjonen omtales dette foreløpig som **plattformansvarlig**. Endelig navn er ikke bestemt.
-
-En plattformansvarlig skal kunne ha særskilt myndighet til blant annet:
-
-- behandle saker som er eskalert utover et miljø
-- få innsyn i saker når dette er nødvendig
+- behandle saker som etter produktets regler hører hjemme på plattformnivå
+- få innsyn i slike saker når dette er nødvendig
 - håndtere alvorlige rapporter om innhold eller brukere
-- gripe inn overfor miljøer ved behov
-- utføre plattformomfattende administrative handlinger
+- gripe inn overfor miljøer når plattformens regler eller sikkerhet krever det
+- utføre særskilte plattformomfattende administrative handlinger
 
-Denne rollen må senere avgrenses strengt. At en teknisk utvikler kan gjøre noe i systemet, betyr ikke automatisk at hen bør ha produktmessig eller organisatorisk rett til å gjøre det.
+I første omgang vil repo-eieren kunne være den eneste plattformforvalteren, men rollen skal kunne gis til andre betrodde personer senere.
+
+### Ikke en systemutviklerrolle
+
+Systemutviklere, kodeagenter og andre som arbeider med å utvikle eller drifte Lånbort skal **ikke ha en egen brukerrolle i appens UI bare fordi de er utviklere**.
+
+Produktrollene i denne visjonen beskriver hva en innlogget bruker kan se og gjøre i Lånbort. De beskriver ikke arbeidsfordelingen blant dem som bygger systemet.
+
+Hvis en person som også er systemutvikler skal ha plattformforvaltermyndighet, må vedkommende tildeles denne produktrollen eksplisitt på samme grunnlag som andre. Teknisk tilgang til kode, hosting eller database skal ikke i seg selv gi en tilsvarende UI-rolle eller organisatorisk myndighet.
 
 ## Vennskap
 

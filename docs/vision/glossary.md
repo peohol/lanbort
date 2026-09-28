@@ -28,11 +28,17 @@ Den ene brukeren som eventuelt har særskilt forvaltningsansvar for et miljø.
 
 Et miljø kan etter den foreløpige visjonen bli eierløst, men skal ikke være uten administrator.
 
-## Plattformansvarlig
+## Plattformforvalter
 
-Foreløpig navn på den globale rollen som i kildedokumentet omtales som «utvikler».
+En global produktrolle med særskilte rettigheter på tvers av miljøer, blant annet for plattformmoderering og enkelte plattformomfattende administrative handlinger.
 
-Rollen kan behandle plattformomfattende administrative og eskalerte saker. Den skal ikke blandes sammen med det å være teknisk programvareutvikler.
+Rollen finnes i Lånborts bruker- og rettighetsmodell. Den er ikke det samme som å være systemutvikler.
+
+## Systemutvikler
+
+En person eller KI-agent som arbeider med kode, arkitektur, drift eller annen teknisk utvikling av Lånbort.
+
+**Systemutvikler er ikke en egen rolle i appens UI eller produktets rettighetsmodell.** En systemutvikler får bare plattformforvalterrettigheter dersom vedkommende eksplisitt tildeles den separate produktrollen.
 
 ## Objekt / utlånsobjekt
 

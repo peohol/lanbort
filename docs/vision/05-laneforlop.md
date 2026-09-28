@@ -40,7 +40,7 @@ Erklæringen skal gjøre det tydelig at:
 - Lånbort fasiliterer kontakt, avtale og registrering av lånet
 - partene selv har ansvar for gjenstanden og låneforholdet
 - partene selv må håndtere uenighet om tilbakelevering, skade, tap, erstatning eller andre privatrettslige forhold
-- en slik tvist ikke kan sendes til plattformansvarlige for mekling eller avgjørelse
+- en slik tvist ikke kan sendes til plattformforvaltere for mekling eller avgjørelse
 
 Aksepten skal være knyttet til det konkrete direkte lånet, slik at begge parter aktivt har tatt stilling til premisset før lånet etableres.
 
@@ -168,13 +168,13 @@ Begge parter skal kunne gi sin forklaring uten først å bli påvirket av den an
 
 En administrator i miljøet der lånet oppstod, skal kunne se begge forklaringene og kommunisere separat med partene.
 
-Plattformansvarlige skal ikke være ordinær klage- eller tvisteløsningsinstans for slike private utlån. Det må fortsatt avklares hvor grensene går for eventuell plattforminvolvering ved alvorlig misbruk eller forhold som gjelder plattformens sikkerhet.
+Plattformforvaltere skal ikke være ordinær klage- eller tvisteløsningsinstans for slike private utlån. Det må fortsatt avklares hvor grensene går for eventuell plattforminvolvering ved alvorlig misbruk eller forhold som gjelder plattformens sikkerhet.
 
 Administrator skal kunne avslutte saken når det ikke er mer som med rimelighet kan gjøres, selv om appen ikke kan fastslå den faktiske sannheten.
 
 ### Direkte lån mellom venner
 
-Ved et direkte vennelån skal det **ikke** finnes noen tilsvarende tvistesak til administrator eller plattformansvarlig. Partene har på forhånd godtatt at de selv må håndtere uenigheten.
+Ved et direkte vennelån skal det **ikke** finnes noen tilsvarende tvistesak til administrator eller plattformforvalter. Partene har på forhånd godtatt at de selv må håndtere uenigheten.
 
 Lånbort kan fortsatt vise og bevare ordinær historikk om lånet i den utstrekning produktet og datalivssyklusen ellers tilsier, men plattformen skal ikke ta stilling til hvem som har rett i den private tvisten.
 

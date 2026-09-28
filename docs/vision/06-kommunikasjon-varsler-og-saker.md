@@ -115,7 +115,7 @@ Dette gjør det mulig å samle forklaringer uavhengig og redusere press eller gj
 
 ## Saksbehandler
 
-En sak kan kunne «tas» av en administrator eller plattformansvarlig.
+En sak kan kunne «tas» av en administrator eller plattformforvalter.
 
 Når én saksbehandler tar ansvar:
 

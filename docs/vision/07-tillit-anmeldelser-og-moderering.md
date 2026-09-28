@@ -155,7 +155,7 @@ De kan blant annet:
 
 Alvorlige eller gjentatte problemer kan kreve plattformomfattende vurdering.
 
-Visjonen åpner for at plattformansvarlige kan varsles ved sterke mønstre av negative hendelser eller få rapporter til behandling.
+Visjonen åpner for at plattformforvaltere kan varsles ved sterke mønstre av negative hendelser eller få rapporter til behandling.
 
 Dette må utformes slik at automatiske signaler brukes som grunnlag for vurdering, ikke som automatisk dom.
 
