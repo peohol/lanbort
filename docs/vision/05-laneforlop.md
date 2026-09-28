@@ -143,20 +143,24 @@ Formålet er å beskytte mot feiltrykk og bekreftelse av feil objekt.
 
 Dette er en konkret brukeropplevelsesidé som kan beholdes dersom den fungerer godt i testing.
 
-## Tilbakekalling etter at bekreftelsen er gjennomført
+## Feil etter gjennomført returbekreftelse
 
-Visjonen åpner også for at en part senere kan trekke tilbake sin bekreftelse.
+30-sekundersbufferen er den eneste perioden der en returbekreftelse kan **angres som om den ikke var sendt**.
 
-Dersom utlåner trekker tilbake en tidligere endelig bekreftelse, skal låntaker varsles og bli bedt om å angi om hen fortsatt har objektet eller mener det er levert tilbake.
+Når bufferen er utløpt, skal bekreftelsen ikke kunne slettes eller trekkes tilbake fra historikken. Den er da en faktisk hendelse som har funnet sted i låneforløpet.
 
-Hvis partene da er uenige, kan det opprettes en sak.
+Hvis en part senere oppdager at bekreftelsen var feil, skal dette håndteres som en **ny hendelse**, for eksempel gjennom en funksjon som «Rapporter problem med tilbakeleveringen».
 
-Den nøyaktige tilstandsmodellen må presiseres. Særlig må det avklares:
+Historikken skal dermed kunne vise begge deler, for eksempel:
 
-- hvor lenge en gjennomført bekreftelse kan trekkes tilbake
-- hva som skjer dersom objektet allerede er lovet til en ny låntaker
-- hvilken virkning det har at låntaker trekker tilbake sin egen bekreftelse etter at utlåner har bekreftet
-- hvordan historikken vises uten at status blir forvirrende
+- utlåner bekreftet tilbakelevering
+- utlåner meldte senere at tilbakeleveringen var feilregistrert
+
+Hvis den nye meldingen innebærer at returstatusen igjen er reelt uavklart, kan lånet gå fra **avsluttet** til **usikker / uenighet**.
+
+Dette prinsippet skal gjelde uansett om feilen meldes av utlåner eller låntaker. Den opprinnelige bekreftelsen beholdes som historikk, mens den nye hendelsen endrer den aktuelle statusen dersom det er nødvendig.
+
+Hvis objektet allerede er reservert til et nytt lån, skal den nye hendelsen ikke skjules eller avvises av den grunn. Eventuell konflikt mellom gammel returstatus og nye reservasjoner må håndteres eksplisitt som et avvik, ikke ved å omskrive historikken.
 
 ## Manglende bekreftelse etter låneperioden
 

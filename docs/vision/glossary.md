@@ -94,6 +94,8 @@ Om objektet i praksis kan lånes i et bestemt tidsrom, gitt både eierens tilgje
 
 Tilstanden til et konkret lån, for eksempel forespurt, reservert, utlånt, avventer returavklaring eller avsluttet.
 
+En tidligere hendelse i lånet slettes ikke bare fordi status senere endres. Hvis en returbekreftelse viser seg å være feil, beholdes bekreftelsen i historikken og en ny hendelse kan sette lånet tilbake til usikker/uenighet.
+
 ## Venn
 
 En gjensidig relasjon mellom to brukere som begge har akseptert forbindelsen.

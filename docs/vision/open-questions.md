@@ -18,19 +18,6 @@ Dette er en avgrenset styringsdetalj og trenger ikke avgjøres før den øvrige 
 
 ## C – Objekter og låneforløp
 
-### 16. Hvordan fungerer tilbakekalling av en retur-bekreftelse?
-
-30-sekunders angrebuffer er tydelig.
-
-Det som skjer etter at bekreftelsen allerede har trådt i kraft, er mindre tydelig.
-
-Vi må særlig avklare:
-
-- tidsgrense for tilbakekalling
-- virkning hvis et nytt lån allerede er avtalt
-- forskjell på at utlåner og låntaker trekker tilbake hver sin bekreftelse
-- hvordan historikk og nåværende status vises
-
 ### 17. Hvordan håndteres forsinket tilbakelevering?
 
 I dag finnes «utilgjengelig» og «usikker», men ikke en eksplisitt modell for:
