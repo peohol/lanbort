@@ -229,15 +229,37 @@ Lånbort kan fortsatt vise og bevare ordinær historikk om lånet i den utstrekn
 
 ## Endringer i et godkjent lån
 
-Visjonen må senere utvides med eksplisitte regler for blant annet:
+**Hovedregel:** Endringer som påvirker selve avtalen mellom utlåner og låntaker krever samtykke fra begge parter.
 
-- avbestilling før oppstart
-- endring av hentetid
+Dette gjelder blant annet:
+
+- kansellering av et godkjent lån
+- endring av avtalt hentetid når tidspunktet er en del av avtalen
+- endring av returdato
 - forlengelse av lånet
-- tidlig tilbakelevering
-- manglende henting
-- forsinket tilbakelevering
-- skade eller tap
-- hva som skjer dersom en medeier endrer objektet eller tilgjengeligheten mens et lån er avtalt
+- andre endringer i vilkår som påvirker hva en av partene har sagt ja til
 
-Disse spørsmålene er samlet i [Åpne spørsmål](open-questions.md).
+Forslag til slike endringer kan initieres av én part, men får ikke virkning før den andre har godtatt.
+
+Rent praktiske opplysninger kan endres ensidig dersom de ikke endrer selve låneavtalen, for eksempel en presisering om hvor partene skal møtes dersom dette ikke endrer avtalens vesentlige innhold.
+
+### Tidlig retur
+
+Låntaker kan ønske å levere objektet tilbake før avtalt returdato. Dette krever praktisk medvirkning fra utlåner, men bør ikke behandles som en komplisert reforhandling av hele lånet.
+
+Lånet regnes likevel ikke som avsluttet før objektet faktisk er levert tilbake og returprosessen er bekreftet etter de vanlige reglene.
+
+### Senere endringer i objektet
+
+Eier eller medeier kan fortsatt redigere selve objektet, men endringer i:
+
+- objektbeskrivelse
+- bilder
+- utlånsvilkår
+- generell tilgjengelighet
+
+skal ikke retroaktivt endre et allerede godkjent lån.
+
+Lånet må derfor beholde nødvendig historisk kontekst om hva partene faktisk godtok da avtalen ble inngått.
+
+Reglene for manglende henting, forsinket tilbakelevering, skade og tap behandles som avvik i låneforløpet og avklares separat.

@@ -69,7 +69,7 @@ Et objekt kan derfor være satt som tilgjengelig hele oktober, samtidig som for 
 
 Et godkjent lån skal alltid blokkere kolliderende utlån uansett hvilket miljø eller hvilken inngang lånet kom fra.
 
-Det må senere avklares hvor mye eieren kan endre tilgjengeligheten for perioder som allerede inngår i et godkjent lån.
+Eieren kan endre objektets generelle tilgjengelighet fremover, men slike endringer skal **ikke retroaktivt endre eller oppheve et allerede godkjent lån**. En periode som allerede inngår i et godkjent lån, forblir bundet av den konkrete låneavtalen med mindre partene blir enige om noe annet.
 
 ## Publisering i miljøer
 
@@ -120,7 +120,9 @@ Dette er en ønsket brukeropplevelse, men regler for samtidige endringer og gjen
 
 ## Redigering
 
-Eierne skal kunne redigere objektinformasjonen når som helst, med nødvendige begrensninger når det finnes aktive avtaler.
+Eierne skal kunne redigere objektinformasjonen når som helst, med nødvendige begrensninger når det finnes godkjente eller aktive lån.
+
+Endringer i objektbeskrivelse, vilkår, bilder eller tilgjengelighet skal ikke kunne brukes til å endre innholdet i en allerede inngått låneavtale retroaktivt. Opplysninger og vilkår som var relevante da lånet ble godkjent, må kunne forstås som del av den konkrete avtalen selv om objektet senere redigeres.
 
 Brukere som har en relevant interesse i objektet, for eksempel abonnenter eller personer med en låneforespørsel, kan varsles om vesentlige endringer.
 
@@ -175,8 +177,6 @@ Aktuelle kategorier som senere må vurderes særskilt omfatter blant annet våpe
 Se [Åpne spørsmål](open-questions.md), særlig om:
 
 - kategorier og obligatoriske felt
-- samtidige forespørsler
-- endringer etter at et lån er avtalt
 - medeierskap og konflikt mellom medeiere
 - offentlige spørsmål
 - deaktivering, arkivering og sletting

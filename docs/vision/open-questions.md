@@ -18,20 +18,6 @@ Dette er en avgrenset styringsdetalj og trenger ikke avgjøres før den øvrige 
 
 ## C – Objekter og låneforløp
 
-### 15. Hva kan endres etter at et lån er godkjent?
-
-Vi trenger regler for:
-
-- kansellering
-- endret hentetid
-- endret returdato
-- forlengelse
-- tidlig retur
-- endring av objektbeskrivelse eller vilkår
-- endring av tilgjengelighet
-
-Det må være tydelig hva som krever samtykke fra begge parter.
-
 ### 16. Hvordan fungerer tilbakekalling av en retur-bekreftelse?
 
 30-sekunders angrebuffer er tydelig.
