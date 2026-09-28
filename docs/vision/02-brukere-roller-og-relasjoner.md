@@ -10,6 +10,20 @@ Det er derfor mer presist å se rollene som **kontekstuelle rettigheter** enn so
 
 En bruker kan for eksempel være vanlig medlem i ett miljø, administrator i et annet, eier av et tredje og samtidig låntaker eller utlåner i konkrete lån.
 
+## Brukeridentitet og grunnkrav
+
+For den første versjonen og en eventuell begrenset pilot skal en bruker:
+
+- være minst 18 år
+- oppgi sitt virkelige navn
+- ha minst én verifisert kontaktkanal
+
+Den konkrete kontaktkanalen eller kombinasjonen av kontaktkanaler bestemmes senere. Poenget er at kontoen ikke bare skal være knyttet til en uverifisert opplysning.
+
+BankID skal **ikke være et krav fra start**, blant annet fordi hver identitetsverifisering har en kostnad som ikke passer med målet om en gratis app i pilot- og tidligfase.
+
+Ved en eventuell senere bred utrulling kan sterk identitetsverifisering, for eksempel BankID, vurderes på nytt dersom behov, kostnad og finansieringsmodell gjør det rimelig.
+
 ## Vanlig bruker
 
 En vanlig bruker skal kunne:

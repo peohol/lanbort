@@ -19,6 +19,21 @@ Appen vil kunne inneholde:
 
 Feil tilgang til slike opplysninger kan være mer skadelig enn tap av en vanlig offentlig profil. Produktet må derfor utformes med tydelige tillitsgrenser og minst mulig unødvendig datatilgang.
 
+## Identitet og kontoopprettelse
+
+Lånbort er en plattform for utlån av fysiske eiendeler mellom mennesker. En viss grad av ansvarlig identitet er derfor et sikkerhets- og tillitstiltak.
+
+For første versjon og en eventuell lukket pilot gjelder følgende produktretning:
+
+- brukeren må være minst 18 år
+- brukeren skal oppgi sitt virkelige navn
+- minst én kontaktkanal skal verifiseres
+- BankID eller tilsvarende sterk identitetsverifisering kreves ikke
+
+BankID er ønskelig som en mulig senere styrking av identitetsnivået ved bred utrulling, men kostnaden gjør at dette ikke inngår i pilot- eller startmodellen.
+
+Hvis sterk identitetsverifisering senere innføres, må det vurderes særskilt hvordan dette påvirker kostnader, personvern, tilgjengelighet og hvem som kan bruke tjenesten.
+
 ## Tilgang skal følge kontekst
 
 En bruker skal bare få tilgang til informasjon og handlinger som rollen og situasjonen gir grunnlag for.

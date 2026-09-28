@@ -6,6 +6,8 @@
 
 En person med konto i Lånbort.
 
+I første versjon skal brukeren være minst 18 år, oppgi sitt virkelige navn og ha minst én verifisert kontaktkanal. BankID er ikke et krav fra start.
+
 ## Miljø
 
 Et fellesskap der medlemmer kan oppdage hverandre og gjøre objekter tilgjengelige for utlån.

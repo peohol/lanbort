@@ -8,18 +8,6 @@ Målet med listen er å gjøre usikkerhet synlig. Spørsmål flyttes ut herfra n
 
 Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig.
 
-### 4. Hvilken identitet forventes av en bruker?
-
-Visjonen sier foreløpig ikke:
-
-- om ekte navn kreves
-- om e-post eller telefon må verifiseres
-- om identitet skal verifiseres sterkere
-- om mindreårige kan bruke tjenesten
-- om det finnes aldersgrenser for bestemte objekter eller handlinger
-
-Dette påvirker tillit, sikkerhet, personvern og jus.
-
 ### 5. Hva skal Lånbort selv gjøre ved konflikter i miljøbaserte lån?
 
 For direkte lån mellom venner er prinsippet nå avklart: begge parter må godta at de selv håndterer privatrettslige konflikter, og slike tvister kan ikke eskaleres til plattformnivå for avgjørelse.

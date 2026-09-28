@@ -102,6 +102,22 @@ Produktet skal samtidig utformes slik at en senere mobilapp på Android og iOS i
 
 Dette er en produktretning, ikke et valg av teknisk rammeverk.
 
+## Begrenset pilot før bred utrulling
+
+Før Lånbort eventuelt åpnes for bred bruk, skal det være mulig å prøve produktet i et **enkelt, lukket og oversiktlig miljø**, for eksempel ett borettslag.
+
+Formålet med en slik pilot er å undersøke om de grunnleggende mekanismene faktisk fungerer i praksis:
+
+- om brukerne forstår hvordan objekter publiseres og lånes
+- om terskelen for å dele ting er riktig
+- om varsler og kommunikasjon fungerer naturlig
+- om tillits- og konfliktmekanismer er hensiktsmessige
+- hvilke problemer som først blir synlige når virkelige mennesker bruker systemet
+
+Piloten skal ikke kreve BankID-verifisering.
+
+Erfaringene fra et slikt begrenset miljø skal kunne brukes til å forbedre visjonen og produktet før bred utrulling.
+
 ## Kontinuerlig produktutvikling
 
 Lånbort er tenkt som et produkt som forbedres kontinuerlig. Visjonen skal derfor kunne utvikles etter erfaring med reelle brukere.
