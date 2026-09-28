@@ -10,17 +10,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## B – Miljøer og medlemskap
 
-### 8. Er eier alltid også administrator?
-
-Kildedokumentet skiller mellom eier og administrator, men enkelte regler forutsetter ulike kombinasjoner.
-
-Vi må definere:
-
-- om eierrollen forutsetter administratorstatus
-- om en eier kan frasi seg administratorrollen, men beholde eierskapet
-- hvordan eneste eier/administrator kan fratre
-- hvilke rettigheter som faktisk er unike for eier
-
 ### 9. Må miljønavn være globalt unike?
 
 Det kan være upraktisk dersom mange borettslag, nabolag eller klubber naturlig ønsker samme navn.

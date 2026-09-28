@@ -63,19 +63,25 @@ Administratorer skal fortsatt kunne bruke miljøet som vanlige medlemmer. Når e
 
 ## Eier av et miljø
 
-Visjonen forutsetter at et miljø kan ha én **eier**.
+Et miljø kan ha én **eier**.
 
-Oppretteren er i utgangspunktet både eier og administrator.
+Eierrollen er ikke en alternativ rolle til administrator. Den er en **tilleggsstatus som bare kan innehas av en administrator**.
 
-Eierrollen er tenkt som en særskilt forvaltningsrolle knyttet særlig til miljøets fortsatte eksistens. Eieren skal kunne:
+Det innebærer at:
+
+- oppretteren er i utgangspunktet både eier og administrator
+- et miljø kan aldri ha mer enn én eier
+- eieren har alle vanlige administratorrettigheter
+- eierskapet kan bare overføres til en annen administrator
+- en eier kan ikke frasi seg administratorrollen uten først å overføre eller frasi seg eierskapet
+
+Eierrollen er knyttet til særskilt forvaltningsansvar for miljøets fortsatte eksistens. Eieren skal blant annet kunne:
 
 - overføre eierskapet til en annen administrator
 - gi andre administratorer rett til å skjule eller slette miljøet
 - eventuelt gi denne retten til alle administratorer
 
-Et miljø skal aldri ha mer enn én eier, men kan bli eierløst dersom eieren frasier seg eierskapet på en måte som ikke etterlater miljøet uten administrator.
-
-Forholdet mellom eierrollen og administratorrollen trenger videre avklaring, særlig ved fratreden.
+Et miljø kan bli eierløst dersom eieren frasier seg eierskapet, forutsatt at minst én administrator fortsatt finnes.
 
 ## Plattformforvalter
 

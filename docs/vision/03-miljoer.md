@@ -167,7 +167,11 @@ Hvis eneste administrator ønsker å fratre, må systemet støtte en kontrollert
 
 ## Eierløse miljøer
 
+Eieren skal alltid også være administrator.
+
 Eieren skal kunne overføre eierskapet til en annen administrator.
+
+Hvis eieren ønsker å fratre som administrator, må vedkommende først enten overføre eierskapet eller frasi seg det.
 
 Visjonen åpner også for at eieren kan frasi seg eierskapet uten å utpeke en ny eier, slik at miljøet blir **eierløst**, forutsatt at minst én administrator fortsatt finnes.
 
