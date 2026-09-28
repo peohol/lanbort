@@ -18,15 +18,6 @@ Dette er en avgrenset styringsdetalj og trenger ikke avgjøres før den øvrige 
 
 ## C – Objekter og låneforløp
 
-### 14. Hva skjer med flere overlappende låneforespørsler?
-
-Vi må definere blant annet:
-
-- om flere kan stå åpne samtidig
-- om én godkjenning automatisk avviser kolliderende forespørsler
-- om utlåner kan holde av objektet mens en samtale pågår
-- om det finnes venteliste
-
 ### 15. Hva kan endres etter at et lån er godkjent?
 
 Vi trenger regler for:

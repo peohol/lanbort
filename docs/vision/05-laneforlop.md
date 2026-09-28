@@ -94,9 +94,22 @@ Reservasjon er en status i det konkrete låneforløpet. Den skal ikke blandes sa
 
 ## Flere samtidige forespørsler
 
-Det opprinnelige notatet sier ikke hva som skjer dersom flere personer ber om samme eller overlappende periode før utlåner har svart.
+Flere låneforespørsler på samme objekt kan være åpne samtidig, også dersom de overlapper tidsmessig.
 
-Dette må defineres. Systemet må blant annet unngå at to forespørsler godkjennes for perioder som ikke kan sameksistere.
+Når én forespørsel godkjennes:
+
+- reserveres den avtalte perioden for dette lånet
+- alle andre åpne forespørsler som kolliderer med den reserverte perioden blir automatisk avslått eller avsluttet som ikke lenger mulige
+- forespørsler som ikke kolliderer, kan fortsatt stå åpne
+
+Systemet skal dermed forhindre at to kolliderende lån godkjennes, uten at utlåner trenger å rydde manuelt i alle forespørsler.
+
+Lånbort skal foreløpig **ikke** ha:
+
+- venteliste for kolliderende forespørsler
+- en egen «hold av»-funksjon mens utlåner vurderer en forespørsel
+
+Slike mekanismer kan vurderes senere dersom reell bruk viser et behov.
 
 ## Tilbakelevering
 
