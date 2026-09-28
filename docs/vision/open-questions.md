@@ -10,18 +10,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## B – Miljøer og medlemskap
 
-### 9. Må miljønavn være globalt unike?
-
-Det kan være upraktisk dersom mange borettslag, nabolag eller klubber naturlig ønsker samme navn.
-
-Mulige modeller er blant annet:
-
-- globalt unikt navn
-- navn som kan gjentas, men med unik identifikator
-- unikhet bare innenfor et geografisk eller organisatorisk område
-
-Dette er et produktspørsmål; teknisk ID løses senere.
-
 ### 10. Hva kan en ikke-medlem se i et lukket miljø?
 
 Vi bør eksplisitt definere offentlig forhåndsvisning:

@@ -71,7 +71,9 @@ Ved opprettelse skal eller kan følgende oppgis:
 - beskrivelse av hvilke typer objekter miljøet særlig er ment for
 - andre opplysninger eller føringer
 
-Det opprinnelige utkastet krever at miljønavnet er globalt unikt. Dette er foreløpig og bør vurderes på nytt; det kan være unødvendig restriktivt hvis mange lokale miljøer naturlig ønsker samme navn.
+Miljønavn trenger **ikke** være globalt unike.
+
+Flere miljøer kan derfor ha samme navn når det er naturlig. Systemet skal skille miljøene med en intern unik identifikator, mens brukerflaten ved behov kan vise relevant kontekst som geografisk område, organisasjon eller annen beskrivelse for å gjøre dem lette å skille.
 
 ## Geografisk oppdagelse
 
@@ -217,7 +219,6 @@ En administrator som avviser et objekt, skal også kunne rapportere objektet til
 
 Blant annet må vi avklare:
 
-- om navn virkelig må være globalt unike
 - nøyaktig forhold mellom eier og administrator
 - hvordan eneste administrator kan fratre
 - hva utestenging fra et miljø skal innebære
