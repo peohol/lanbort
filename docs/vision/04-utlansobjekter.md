@@ -179,15 +179,26 @@ Hvis et spørsmål avdekker informasjon som er generelt nyttig på tvers av milj
 
 ## Inaktivitet, skjuling og arkivering
 
-Visjonen inneholder tre tidsbaserte ideer:
+Lånbort skal rydde bort inaktive objekter fra aktive flater uten å permanent slette dem bare fordi de ikke har vært brukt på en stund.
 
-- etter omtrent 30 dager uten tilgjengelighet skjules objektet automatisk fra miljøene
-- etter omtrent seks måneder kan det flyttes til brukerens arkiv
-- etter omtrent tolv måneder kan permanent sletting vurderes, med tydelige advarsler på forhånd
+Den foreløpige produktretningen er:
 
-Dette bør forstås som én samlet livssyklus som ennå ikke er endelig utformet.
+- dersom et objekt ikke har nåværende eller fremtidig tilgjengelighet over en periode, kan det etter omtrent 30 dager skjules automatisk fra miljøenes oppdagelsesflater
+- eieren skal varsles i forbindelse med automatisk skjuling
+- objektet skal fortsatt være tilgjengelig blant eierens egne objekter og kunne reaktiveres ved å angi ny tilgjengelighet
+- etter lengre inaktivitet, foreløpig omtrent seks måneder, kan objektet flyttes til en arkivert del av eierens objektliste
+- arkivering skal være reversibel
 
-Et skjult eller arkivert objekt skal kunne reaktiveres så lenge det ikke er permanent slettet.
+**Inaktivitet alene skal ikke føre til automatisk permanent sletting av objektet.**
+
+Permanent sletting skal i utgangspunktet skje:
+
+- eksplisitt på initiativ fra eieren eller eierne
+- eller som del av senere regler for kontosletting og datalivssyklus
+
+Historikk som fortsatt er nødvendig for tidligere lån, saker eller andre legitime formål kan bevares etter de generelle reglene for datalivssyklus selv om selve objektet senere slettes.
+
+Hvis datamengden ved stor skala senere blir et faktisk driftsproblem, kan lagrings- og oppryddingsstrategien revurderes uten at dette trenger å endre den grunnleggende brukeropplevelsen.
 
 ## Objektsikkerhet og lovlighet
 
@@ -209,4 +220,4 @@ Se [Åpne spørsmål](open-questions.md), særlig om:
 
 - kategorier og obligatoriske felt
 - kontrollert overtakelse av et pågående lån dersom ansvarlig utlåner blir utilgjengelig
-- deaktivering, arkivering og sletting
+- kontrollert permanent sletting og datalivssyklus

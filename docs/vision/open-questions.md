@@ -24,16 +24,6 @@ Medeiermodellen er nå avklart slik at den medeiaren som godkjenner et lån blir
 
 Vi må senere definere en kontrollert unntaksprosess dersom den ansvarlige utlåneren blir utilgjengelig under et reservert eller aktivt lån, for eksempel ved langvarig fravær eller deaktivering av konto.
 
-### 20. Hva er riktig livssyklus for inaktive objekter?
-
-Forslagene er omtrent:
-
-- skjul etter 30 dager
-- arkiver etter seks måneder
-- slett etter tolv måneder
-
-Vi må avklare hva tidsperiodene måles fra, hvilke varsler som gis, og om automatisk permanent sletting er ønskelig.
-
 ## D – Kommunikasjon og varsler
 
 ### 21. Hvilken privat kommunikasjon skal være ende-til-ende-kryptert?

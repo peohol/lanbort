@@ -106,6 +106,12 @@ En tidligere hendelse i lånet slettes ikke bare fordi status senere endres. Hvi
 
 En gjensidig relasjon mellom to brukere som begge har akseptert forbindelsen.
 
+## Arkivert objekt
+
+Et objekt som er flyttet ut av eierens aktive objektliste etter lengre inaktivitet. Arkivering er reversibel og innebærer ikke permanent sletting.
+
+Inaktivitet alene skal ikke føre til automatisk permanent sletting.
+
 ## Miljøspesifikt objektspørsmål
 
 Et spørsmål om et objekt som stilles i et bestemt miljø og bare er synlig i dette miljøet. Spørsmålstråden følger miljøkonteksten selv om selve objektet også er publisert andre steder.

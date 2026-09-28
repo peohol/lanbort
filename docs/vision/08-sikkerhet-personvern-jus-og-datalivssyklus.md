@@ -95,15 +95,19 @@ Hvilke hendelser som skal logges, hvem som kan lese loggen og hvor lenge data sk
 
 ## Objektets datalivssyklus
 
-Visjonen skisserer en gradvis livssyklus for objekter som ikke lenger er tilgjengelige:
+Objekter som ikke lenger har nåværende eller fremtidig tilgjengelighet skal kunne gå gjennom en gradvis og reversibel opprydding:
 
-1. etter en kortere periode fjernes de fra aktive miljøflater
-2. etter lengre inaktivitet kan de arkiveres hos brukeren
-3. etter ytterligere tid kan permanent sletting vurderes etter tydelige forhåndsvarsler
+1. etter en kortere periode kan de skjules fra aktive miljøflater
+2. etter lengre inaktivitet kan de flyttes til brukerens arkiv
+3. de kan reaktiveres av eieren
 
-Foreløpige tidsgrenser i kildedokumentet er 30 dager, seks måneder og tolv måneder.
+Foreløpige terskler er omtrent 30 dager før skjuling og omtrent seks måneder før arkivering.
 
-Disse tallene er ikke endelig vurdert.
+**Et objekt skal ikke slettes permanent automatisk bare fordi det har vært inaktivt lenge.**
+
+Permanent sletting skal i utgangspunktet være en eksplisitt brukerhandling eller følge av senere regler for kontosletting og datalivssyklus. Nødvendig historikk om tidligere lån eller saker kan måtte bevares separat selv om selve objektet slettes.
+
+Hvis lagringsmengden ved betydelig større skala senere blir en reell driftsutfordring, kan den tekniske lagringsstrategien og oppryddingsmekanismene revurderes uten at inaktivitet automatisk trenger å bety permanent sletting.
 
 ## Brukerkontoens livssyklus
 
