@@ -167,16 +167,13 @@ Juridiske spørsmål må derfor vurderes særskilt før lansering.
 
 ## Ulovlige og risikofylte objekter
 
-Produktet trenger en tydelig policy for gjenstander som ikke skal kunne formidles gjennom Lånbort.
+Lånbort skal ikke brukes til å formidle objekter som er ulovlige, sterkt regulerte eller innebærer uforholdsmessig risiko for skade ved utlån mellom privatpersoner.
 
-Dette kan omfatte objekter som er:
+Dette er et fast produktprinsipp.
 
-- ulovlige å eie eller overføre
-- regulerte
-- farlige
-- uegnede for utlån uten særskilt kompetanse eller kontroll
+Den konkrete grensedragningen skal håndteres i en egen, vedlikeholdbar plattformpolicy. Enkelte typer objekter kan være tillatt med særskilte vilkår eller begrensninger, mens andre skal forbys helt.
 
-Nøyaktig avgrensning må gjøres senere med relevant juridisk og sikkerhetsmessig vurdering.
+Før bred lansering må denne policyen vurderes juridisk og sikkerhetsmessig. Kategorier som krever særskilt vurdering omfatter blant annet våpen, legemidler, rusmidler, farlige kjemikalier, kjøretøy, medisinsk utstyr og annet sikkerhetskritisk utstyr.
 
 ## Betaling mellom brukere
 

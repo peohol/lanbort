@@ -150,11 +150,17 @@ Et skjult eller arkivert objekt skal kunne reaktiveres så lenge det ikke er per
 
 ## Objektsikkerhet og lovlighet
 
-Lånbort trenger regler for hvilke typer objekter som kan publiseres og lånes bort.
+**Retning:** Lånbort skal ikke brukes til å formidle objekter som er ulovlige, sterkt regulerte eller innebærer uforholdsmessig risiko for skade ved utlån mellom privatpersoner.
 
-Det opprinnelige notatet nevner administratorgjennomgang og rapportering, men definerer ikke produktets grenser for farlige, regulerte eller ulovlige gjenstander.
+Det skal derfor finnes en plattformpolicy som skiller mellom:
 
-Dette er et viktig åpent spørsmål før produktet kan lanseres.
+- vanlige utlånsobjekter
+- objekter som eventuelt krever særskilte vilkår, begrensninger eller dokumentasjon
+- objekter som ikke skal kunne publiseres eller formidles gjennom Lånbort
+
+Den detaljerte listen skal ikke låses i produktvisjonen nå. Den må utarbeides senere med juridisk og sikkerhetsmessig vurdering før bred lansering, og kunne oppdateres etter hvert som produktet og regelverket utvikler seg.
+
+Aktuelle kategorier som senere må vurderes særskilt omfatter blant annet våpen, legemidler, rusmidler, farlige kjemikalier, kjøretøy, medisinsk utstyr og annet sikkerhetskritisk utstyr. At en kategori nevnes her betyr ikke at hele kategorien nødvendigvis skal forbys.
 
 ## Åpne spørsmål
 
@@ -166,4 +172,3 @@ Se [Åpne spørsmål](open-questions.md), særlig om:
 - medeierskap og konflikt mellom medeiere
 - offentlige spørsmål
 - deaktivering, arkivering og sletting
-- hvilke objekter som ikke skal kunne lånes bort gjennom plattformen

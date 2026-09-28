@@ -8,16 +8,6 @@ Målet med listen er å gjøre usikkerhet synlig. Spørsmål flyttes ut herfra n
 
 Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig.
 
-### 6. Hvilke objekter skal aldri kunne formidles?
-
-Vi trenger et prinsipielt skille mellom:
-
-- vanlige utlånsobjekter
-- objekter som krever særskilte vilkår eller aldersgrenser
-- objekter som ikke skal kunne publiseres i det hele tatt
-
-Dette må senere forankres juridisk og sikkerhetsmessig.
-
 ## B – Miljøer og medlemskap
 
 ### 7. Hva innebærer en administratorinvitasjon?
