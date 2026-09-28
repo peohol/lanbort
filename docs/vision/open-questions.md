@@ -26,18 +26,6 @@ Vi må senere definere en kontrollert unntaksprosess dersom den ansvarlige utlå
 
 ## D – Kommunikasjon og varsler
 
-### 22. Hva betyr «slett chat»?
-
-Mulige betydninger:
-
-- skjul samtalen for meg
-- slett min lokale kopi
-- slett meldinger jeg har sendt
-- slett hele samtalen for begge
-- permanent slett alle underliggende data
-
-Visjonen peker foreløpig på den første typen, men dette må kommuniseres tydelig.
-
 ### 23. Skal Lånbort bruke lesebekreftelser?
 
 Kildedokumentet sier uttrykkelig at en første henvendelse til en ikke-venn ikke skal vise om mottakeren har lest den.

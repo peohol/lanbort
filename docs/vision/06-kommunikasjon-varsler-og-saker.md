@@ -26,7 +26,7 @@ Eksempler på hendelser som kan gi varsel:
 - låneforespørsel godkjent eller avslått
 - kommende eller utløpt låneperiode
 - behov for å bekrefte tilbakelevering
-- tilbakekalling av en bekreftelse
+- problem eller avvik meldt etter en returbekreftelse
 - endring av et objekt man har relevant interesse i
 - objekt man abonnerer på blir tilgjengelig
 - invitasjon til miljø eller administratorrolle
@@ -71,20 +71,30 @@ Strukturerte meldinger kan representere hendelser eller handlinger som:
 - godkjenning eller avslag
 - endring av tidspunkt
 - bekreftelse av tilbakelevering
-- spørsmål om en tilbakekalt bekreftelse
+- melding om problem etter en returbekreftelse
 - lenke til et objekt eller et lån
 
 Slike meldinger kan ha knapper og andre kontroller når det gir mening.
 
 Målet er at viktige avtaler ikke bare skal finnes som ustrukturert tekst som systemet ikke forstår.
 
-## Sletting av chat
+## Fjerning av chat fra egen visning
 
-Det opprinnelige forslaget er at en bruker kan slette en chat fra sin egen visning uten at samtalen dermed slettes hos den andre parten.
+Lånbort skal ikke bruke «slett chat» som betegnelse når handlingen bare påvirker den ene brukerens egen visning.
 
-Dette bør foreløpig forstås som **personlig fjerning eller skjuling**, ikke nødvendigvis fysisk sletting av alle underliggende data.
+Brukeren skal i stedet kunne velge en handling som **«Fjern fra mine samtaler»** eller **«Skjul samtale»**.
 
-Sammenhengen mellom brukerens sletting, sikkerhetskopier, misbruksforebygging, juridiske krav og eventuell ende-til-ende-kryptering må avklares senere.
+Denne handlingen:
+
+- fjerner samtalen fra brukerens egen vanlige samtaleliste
+- påvirker ikke den andre deltakerens historikk eller visning
+- gir ikke brukeren rett til å slette den andre partens meldinger
+- sletter ikke automatisk de underliggende felles dataene
+- kan være reversibel i praksis ved at samtalen dukker opp igjen dersom den andre parten sender en ny melding
+
+Lånbort skal foreløpig ikke ha en generell «slett for alle»-funksjon for privat chat. Dette er særlig viktig når samtalen er knyttet til et lån eller annen felles historikk.
+
+Faktisk sletting, anonymisering eller annen behandling av underliggende data skal håndteres separat gjennom reglene for datalivssyklus, kontosletting, personvern og eventuelle juridiske oppbevaringsbehov.
 
 ## Kontakt med administratorene i et miljø
 
@@ -104,7 +114,6 @@ En sak brukes når kommunikasjonen er del av en styrt prosess, for eksempel:
 
 - behandling av en innmeldingsforespørsel
 - konflikt om tilbakelevering
-- eskalering av miljøets sletting
 - moderering eller rapportering
 
 Saker skal kunne styre hvem som kan skrive når.
@@ -197,6 +206,5 @@ Se [Åpne spørsmål](open-questions.md) for blant annet:
 - hvilke varsler som er obligatoriske
 - chat mellom brukere som ikke er venner
 - lesebekreftelser
-- sletting og historikk
 - eierskap og overføring av aktive administratorkontakter
 - hvor lenge saker skal oppbevares

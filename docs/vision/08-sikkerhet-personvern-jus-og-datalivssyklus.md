@@ -133,7 +133,9 @@ Eksempler:
 - saker
 - felles objekter
 
-At én bruker ønsker å fjerne data fra sin egen konto, betyr ikke nødvendigvis at samme historikk kan eller bør forsvinne for alle andre.
+At én bruker ønsker å fjerne data fra sin egen konto eller visning, betyr ikke nødvendigvis at samme historikk kan eller bør forsvinne for alle andre.
+
+For privat chat skal «Fjern fra mine samtaler» eller tilsvarende forstås som personlig skjuling/fjerning fra egen visning, ikke som sletting av den andre partens kopi eller av den underliggende felles historikken. En generell «slett for alle»-funksjon inngår ikke i kjernevisjonen.
 
 Produktet må gjøre forskjellen mellom:
 

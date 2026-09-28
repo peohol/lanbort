@@ -128,6 +128,12 @@ En systemgenerert beskjed om en hendelse som er relevant for brukeren.
 
 Løpende samtale mellom brukere eller i en administrativ kontaktflate.
 
+## Fjern fra mine samtaler
+
+En personlig handling som skjuler eller fjerner en chat fra brukerens egen samtaleliste uten å slette den andre partens historikk eller automatisk fjerne underliggende felles data.
+
+Dette er ikke det samme som permanent sletting og skal ikke omtales som «slett chat» i brukergrensesnittet.
+
 ## Ende-til-ende-kryptert privat chat
 
 Privat fritekst og private vedlegg mellom to brukere som bare skal kunne leses av deltakerne. Dette omfatter også privat samtale rundt et konkret lån.
