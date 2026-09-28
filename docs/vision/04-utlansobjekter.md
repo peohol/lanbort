@@ -49,7 +49,9 @@ Foreløpig er følgende tenkt:
 
 Nøyaktig skille mellom fri beskrivelse og strukturerte felt må bestemmes senere.
 
-## Tilgjengelighetsperioder
+## Tilgjengelighet og faktisk ledighet
+
+**Tilgjengelighet** beskriver når eieren i utgangspunktet er villig til å låne ut objektet. Det er en egenskap ved objektet, ikke en lånestatus.
 
 Et objekt skal kunne være tilgjengelig:
 
@@ -61,7 +63,13 @@ Intervallene skal ikke overlappe.
 
 Sammenhengende intervaller bør presenteres som ett sammenhengende tilgjengelighetsrom fremfor kunstig oppdelte perioder.
 
-Det må senere avklares hvordan tilgjengelighet samspiller med reserverte og aktive lån, og om eieren kan endre tilgjengeligheten for perioder som allerede er avtalt med en låntaker.
+**Faktisk ledighet** bestemmes av tilgjengeligheten sammen med eksisterende reservasjoner, aktive lån og andre forhold som gjør objektet utilgjengelig.
+
+Et objekt kan derfor være satt som tilgjengelig hele oktober, samtidig som for eksempel 10.–12. oktober ikke er ledig fordi perioden allerede er reservert.
+
+Et godkjent lån skal alltid blokkere kolliderende utlån uansett hvilket miljø eller hvilken inngang lånet kom fra.
+
+Det må senere avklares hvor mye eieren kan endre tilgjengeligheten for perioder som allerede inngår i et godkjent lån.
 
 ## Publisering i miljøer
 

@@ -1,6 +1,6 @@
 # Låneforløpet
 
-> **Status:** Førsteutkast. Hovedforløpet er tydelig, men flere tilstander mellom forespørsel, reservasjon, aktivt lån og avslutning må presiseres.
+> **Status:** Førsteutkast. Hovedforløpet og skillet mellom tilgjengelighet og lånestatus er avklart, men flere regler for endringer og avvik må presiseres.
 
 ## Grunnforløp
 
@@ -86,18 +86,11 @@ Reglene for kontakt med brukere som ikke allerede er venner, må fortsatt ivaret
 
 ## Godkjenning og reservasjon
 
-Når utlåner godkjenner en forespørsel, skal den avtalte perioden knyttes til objektet og blokkere kolliderende utlån.
+Når utlåner godkjenner en forespørsel, går lånet over til **reservert**.
 
-Dette gjelder objektet globalt, også dersom objektet er synlig i flere miljøer eller har flere eiere.
+Den avtalte perioden knyttes til objektet og blokkerer kolliderende utlån. Dette gjelder objektet globalt, også dersom objektet er synlig i flere miljøer eller har flere eiere.
 
-Visjonen mangler foreløpig en eksplisitt status for et **fremtidig godkjent lån**. Det bør skilles mellom:
-
-- tilgjengelig nå
-- reservert til et fremtidig lån
-- aktivt utlånt
-- utilgjengelig av andre grunner
-
-Den endelige statusmodellen må avklares.
+Reservasjon er en status i det konkrete låneforløpet. Den skal ikke blandes sammen med objektets generelle tilgjengelighetsperioder.
 
 ## Flere samtidige forespørsler
 
@@ -164,16 +157,25 @@ Det må avklares hvordan systemet skiller mellom:
 - et faktisk forsinket eller manglende objekt
 - en eksplisitt konflikt
 
-## Foreløpige objektstatuser
+## Lånestatus
 
-Den opprinnelige visjonen beskriver:
+Lånestatus beskriver hva som skjer med et **konkret lån**, og skal holdes adskilt fra objektets tilgjengelighet.
 
-- **Tilgjengelig** – objektet kan lånes
-- **Lånt bort** – et aktivt lån pågår
-- **Utilgjengelig** – objektet er ikke tilgjengelig for utlån
-- **Usikker** – låntaker har meldt tilbakelevering, men utlåner har ikke bekreftet
+Det normale hovedforløpet er:
 
-Denne listen er nyttig, men ikke komplett for hele livssyklusen. «Reservert», «avventer bekreftelse» og eventuelt «forsinket» er eksempler på tilstander som må vurderes.
+1. **Forespurt** – låntaker har sendt en låneforespørsel som ennå ikke er godkjent eller avslått.
+2. **Reservert** – forespørselen er godkjent for en fremtidig eller kommende periode.
+3. **Utlånt** – objektet er overlevert og lånet pågår.
+4. **Avventer returavklaring** – avtalt låneperiode er over eller en part har meldt tilbakelevering, men returstatusen er ennå ikke endelig avklart.
+5. **Avsluttet** – tilbakeleveringen er endelig bekreftet og lånet er ferdig.
+
+I tillegg finnes avvikstilstander eller markeringer som kan bryte det normale forløpet:
+
+- **Kansellert** – lånet avsluttes før ordinær gjennomføring.
+- **Forsinket** – avtalt retur er passert uten at lånet er avsluttet eller gyldig forlenget.
+- **Usikker / uenighet** – partene har motstridende eller uavklarte opplysninger om retur, skade, tap eller annen sentral del av lånet.
+
+Disse statusene skal beskrive lånet. Om objektet faktisk kan lånes av en annen bruker på et bestemt tidspunkt, avgjøres separat av objektets tilgjengelighet sammen med reservasjoner og aktive lån.
 
 ## Konflikt om tilbakelevering
 

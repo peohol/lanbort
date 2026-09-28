@@ -78,13 +78,21 @@ Et lån kan oppstå gjennom et miljø eller direkte mellom venner, men bruker de
 
 Hvis lånet oppstod gjennom et miljø, beholdes miljøet som opprinnelseskontekst for blant annet historikk og eventuell miljøbasert mekling. Selve lånet er likevel ikke avhengig av fortsatt medlemskap i miljøet.
 
-Den nøyaktige grensen mellom «reservert lån» og «aktivt lån» må avklares.
+Det normale låneforløpet går gjennom statusene **forespurt**, **reservert**, **utlånt**, **avventer returavklaring** og **avsluttet**, med egne avvik som blant annet kansellert, forsinket og usikker/uenighet.
 
 ## Tilgjengelighet
 
-Perioder der eierne ønsker at objektet skal kunne lånes.
+Perioder der eierne i utgangspunktet ønsker at objektet skal kunne lånes.
 
-Tilgjengelighet er ikke nødvendigvis det samme som faktisk ledighet dersom perioden allerede inneholder et godkjent lån.
+Tilgjengelighet er en egenskap ved objektet og er ikke det samme som lånestatus eller faktisk ledighet.
+
+## Faktisk ledighet
+
+Om objektet i praksis kan lånes i et bestemt tidsrom, gitt både eierens tilgjengelighet og eksisterende reservasjoner, aktive lån eller andre blokkeringer.
+
+## Lånestatus
+
+Tilstanden til et konkret lån, for eksempel forespurt, reservert, utlånt, avventer returavklaring eller avsluttet.
 
 ## Venn
 

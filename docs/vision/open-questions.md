@@ -18,19 +18,6 @@ Dette er en avgrenset styringsdetalj og trenger ikke avgjøres før den øvrige 
 
 ## C – Objekter og låneforløp
 
-### 13. Hvordan skilles tilgjengelig, ledig, reservert og utlånt?
-
-Et objekt kan være innenfor eierens tilgjengelighetsperiode, men samtidig allerede være reservert.
-
-Vi trenger et klart språk for:
-
-- eierens generelle tilgjengelighet
-- faktisk ledighet
-- fremtidig reservasjon
-- aktivt lån
-- avventer returstatus
-- forsinkelse eller konflikt
-
 ### 14. Hva skjer med flere overlappende låneforespørsler?
 
 Vi må definere blant annet:
