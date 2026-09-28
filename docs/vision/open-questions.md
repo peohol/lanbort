@@ -8,18 +8,6 @@ Målet med listen er å gjøre usikkerhet synlig. Spørsmål flyttes ut herfra n
 
 Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig.
 
-### 2. Hvor absolutt er prinsippet om «ingen penger»?
-
-Kjernevisjonen sier at Lånbort ikke er en leie- eller salgsplattform og at penger ikke skal være involvert.
-
-Samtidig finnes en idé om fremtidig forsikring og depositum.
-
-Vi må avklare om:
-
-- penger aldri skal flyte som del av et lån
-- tredjepartsforsikring kan være et valgfritt unntak
-- eller «ingen penger» bare betyr at utlåner aldri kan ta betalt
-
 ### 3. Hva er plattformrollen som hittil er kalt «utvikler»?
 
 Kildedokumentet gir denne rollen omfattende makt over miljøer og konflikter.
@@ -370,4 +358,4 @@ Dette skal bevares, men hører ikke hjemme i produktvisjonen. Det bør senere fl
 
 ## Foreslått rekkefølge for videre dialog
 
-For å unngå at vi finpusser detaljer som senere må skrives om, bør vi begynne med spørsmål 1–6, deretter rolle- og miljømodellen, deretter selve låneforløpet og til slutt tillit, varsler og datalivssyklus.
+For å unngå at vi finpusser detaljer som senere må skrives om, bør vi først avklare de gjenværende fundamentale spørsmålene, deretter rolle- og miljømodellen, deretter selve låneforløpet og til slutt tillit, varsler og datalivssyklus.

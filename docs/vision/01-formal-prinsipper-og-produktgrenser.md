@@ -22,13 +22,20 @@ Produktet skal bidra til en kultur der det er mer naturlig å dele eksisterende 
 
 Tillit skal ikke forstås som blind tillit. Appen skal gjøre ansvarlig deling lettere ved å gi brukerne oversikt, forutsigbarhet, kontroll og mekanismer for å håndtere problemer.
 
-## Ikke en markedsplass for utleie eller salg
+## Ikke en markedsplass for utleie, salg eller betaling
 
-**Retning:** Vanlige utlån i Lånbort skal ikke være kommersielle transaksjoner. Appen skal ikke være en markedsplass der brukerne setter leiepris på objekter eller selger dem.
+**Retning:** Lånbort skal ikke være en kommersiell markedsplass. Appen skal ikke ha funksjoner for at brukere kan:
 
-Det betyr at kjernen i produktet er gratis utlån mellom mennesker.
+- sette leiepris på objekter
+- selge objekter
+- betale hverandre
+- kreve inn eller formidle betaling mellom hverandre
 
-En mulig fremtidig forsikrings- eller depositumløsning er nevnt i det opprinnelige visjonsnotatet. Dette er foreløpig bare en idé og står i spenning med prinsippet om at penger ikke skal være en del av den vanlige låneopplevelsen. Dette må avklares eksplisitt før det eventuelt blir en del av visjonen.
+Kjernen i produktet er gratis utlån og deling.
+
+Lånbort skal samtidig ikke forsøke å kontrollere eller forhindre at to brukere på eget initiativ gjør et privat økonomisk oppgjør utenfor appen. Et slikt oppgjør skjer utenfor Lånbort og er ikke en funksjon eller del av låneprosessen i systemet.
+
+En eventuell senere forsikrings- eller depositumløsning gjennom en tredjepart regnes som noe annet enn betaling mellom utlåner og låntaker. Formålet vil i så fall være trygghet og risikohåndtering, ikke vederlag for utlånet. Dette skal **ikke planlegges som del av den første produktvisjonen eller den første implementeringen**. Ideen kan vurderes på nytt når den øvrige appen er etablert.
 
 ## Miljøer som sosial ramme
 

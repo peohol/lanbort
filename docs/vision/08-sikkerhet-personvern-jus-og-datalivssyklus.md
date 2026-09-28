@@ -159,21 +159,28 @@ Dette kan omfatte objekter som er:
 
 Nøyaktig avgrensning må gjøres senere med relevant juridisk og sikkerhetsmessig vurdering.
 
-## Fremtidig forsikring eller depositum
+## Betaling mellom brukere
 
-En mulig fremtidig idé er samarbeid med en ekstern forsikringsaktør der partene kan stille depositum og få en forsikringslignende beskyttelse.
+Lånbort skal ikke tilby noe system for betaling mellom brukere.
 
-Dette er ikke en del av den etablerte kjernevisjonen.
+Appen skal derfor ikke håndtere:
 
-Det reiser egne spørsmål om:
+- leiebetaling
+- kjøpesummer
+- betaling for «tjenesten» det er å låne bort
+- overføring av penger mellom utlåner og låntaker
 
-- forholdet til prinsippet om gratis utlån
-- betaling og tilbakebetaling
-- finansielle og juridiske krav
-- hvem som avgjør en skade
-- hva Lånbort selv formidler eller er part i
+Dersom to brukere privat velger å gjøre et økonomisk oppgjør utenfor Lånbort, er dette deres eget forhold. Plattformen skal ikke aktivt forsøke å oppdage eller forhindre dette, men heller ikke fasilitere, registrere eller administrere betalingen.
 
-Ideen skal derfor ligge som en mulig senere retning, ikke som et nåværende krav.
+## Mulig fremtidig forsikring eller depositum
+
+En mulig senere idé er samarbeid med en ekstern forsikringsaktør der partene kan stille depositum eller på annen måte få beskyttelse mot skade eller tap.
+
+Dette skal forstås som en mulig **trygghetsmekanisme**, ikke som betaling fra låntaker til utlåner. I normaltilfellet vil et depositum være ment å tilbakeføres når lånet avsluttes uten hendelser.
+
+Forsikring eller depositum er ikke del av den etablerte kjernevisjonen og skal ikke planlegges fra start. Ideen kan vurderes først når den øvrige appen er ferdig nok til at et slikt tillegg faktisk er relevant.
+
+Hvis dette senere vurderes, må spørsmål om betaling, tilbakebetaling, finansielle og juridiske krav, skadebehandling og Lånborts rolle vurderes som et eget produktområde.
 
 ## Åpne spørsmål
 
