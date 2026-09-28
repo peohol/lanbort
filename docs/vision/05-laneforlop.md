@@ -168,9 +168,26 @@ Begge parter skal kunne gi sin forklaring uten først å bli påvirket av den an
 
 En administrator i miljøet der lånet oppstod, skal kunne se begge forklaringene og kommunisere separat med partene.
 
-Plattformforvaltere skal ikke være ordinær klage- eller tvisteløsningsinstans for slike private utlån. Det må fortsatt avklares hvor grensene går for eventuell plattforminvolvering ved alvorlig misbruk eller forhold som gjelder plattformens sikkerhet.
+Administratorens rolle er å **fasilitere dialog og mekle**, ikke å avsi en bindende avgjørelse om hvem som har rett.
 
-Administrator skal kunne avslutte saken når det ikke er mer som med rimelighet kan gjøres, selv om appen ikke kan fastslå den faktiske sannheten.
+Administrator kan:
+
+- innhente partenes forklaringer
+- stille oppfølgingsspørsmål
+- formidle mellom partene
+- bidra til å tydeliggjøre hva som er omstridt
+- avslutte saken når det ikke er mer som med rimelighet kan gjøres
+
+Administrator skal ikke kunne:
+
+- fastsette juridisk skyld
+- pålegge en part å betale erstatning
+- avgjøre eiendomsrett eller andre privatrettslige krav
+- fatte en bindende avgjørelse som erstatter partenes eget ansvar
+
+At en part er misfornøyd med administratorens mekling eller avslutning av saken, gir **ikke** i seg selv rett til å eskalere lånetvisten til en plattformforvalter.
+
+Alvorlige forhold som trusler, trakassering, svindelforsøk, ulovlig bruk eller annet misbruk av Lånbort kan fortsatt rapporteres separat som en modereringssak. Plattformforvaltere behandler i så fall plattformmisbruket, ikke den privatrettslige lånetvisten.
 
 ### Direkte lån mellom venner
 

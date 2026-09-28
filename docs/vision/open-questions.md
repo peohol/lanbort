@@ -8,17 +8,6 @@ Målet med listen er å gjøre usikkerhet synlig. Spørsmål flyttes ut herfra n
 
 Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig.
 
-### 5. Hva skal Lånbort selv gjøre ved konflikter i miljøbaserte lån?
-
-For direkte lån mellom venner er prinsippet nå avklart: begge parter må godta at de selv håndterer privatrettslige konflikter, og slike tvister kan ikke eskaleres til plattformnivå for avgjørelse.
-
-For miljøbaserte lån finnes derimot allerede en tenkt rolle for miljøadministratorer. Vi må fortsatt definere skillet mellom:
-
-- hva systemet bare registrerer
-- hva miljøadministratorer kan mekle i
-- når en administrator skal avslutte saken uten å avgjøre hvem som har rett
-- hvilke alvorlige forhold som eventuelt skal behandles som plattformmoderering snarere enn som en lånetvist
-
 ### 6. Hvilke objekter skal aldri kunne formidles?
 
 Vi trenger et prinsipielt skille mellom:

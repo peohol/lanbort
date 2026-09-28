@@ -153,7 +153,11 @@ Målet er at Lånbort skal fasilitere kontakt og utlån, mens brukerne selv tar 
 
 Ved **direkte lån mellom venner** skal dette prinsippet også gjøres eksplisitt i selve låneflyten: begge parter må godta en ansvarserklæring før lånet etableres. Erklæringen skal gjøre det klart at partene selv må håndtere privatrettslige konflikter om blant annet tilbakelevering, skade, tap og erstatning, og at Lånbort ikke tilbyr plattformbasert mekling eller avgjørelse av slike tvister.
 
-Dette skal ikke hindre rapportering av forhold som gjelder tryggheten eller integriteten til selve plattformen, for eksempel trusler, trakassering, svindelforsøk eller ulovlig bruk.
+Ved miljøbaserte lån kan miljøadministratorer tilby en strukturert meklingsprosess dersom partene blir uenige. Dette endrer ikke det grunnleggende ansvarsprinsippet: administratoren kan hjelpe partene med dialog og dokumentasjon, men skal ikke fastsette juridisk skyld, erstatningsansvar eller andre bindende privatrettslige konsekvenser.
+
+En vanlig lånetvist skal heller ikke kunne eskaleres til plattformforvalter bare fordi en part er misfornøyd med utfallet av meklingen.
+
+Dette skal ikke hindre rapportering av forhold som gjelder tryggheten eller integriteten til selve plattformen, for eksempel trusler, trakassering, svindelforsøk eller ulovlig bruk. Slike forhold behandles som moderering av plattformbruk, ikke som avgjørelse av den underliggende lånetvisten.
 
 Det må i tillegg utarbeides tydelige generelle vilkår og informasjon om ansvar.
 

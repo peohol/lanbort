@@ -133,6 +133,8 @@ Formålet er ikke hemmelighold for sin egen skyld, men å få frem selvstendige 
 
 Saksbehandleren kan senere kommunisere separat med partene og eventuelt åpne nye svarrunder.
 
+Ved en miljøbasert lånetvist er administratoren **mekler, ikke dommer**. Saksprosessen skal støtte kommunikasjon og dokumentasjon, men ikke gi administratoren myndighet til å fastsette skyld, erstatningsansvar eller andre bindende privatrettslige konsekvenser.
+
 ## Ende-til-ende-kryptering
 
 Den opprinnelige visjonen ønsker robust ende-til-ende-kryptering for chat.
