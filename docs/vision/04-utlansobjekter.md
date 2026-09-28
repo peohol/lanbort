@@ -164,11 +164,18 @@ Det må avklares hvilke hendelser som inngår som standard, og hvilke brukeren s
 
 ## Offentlige spørsmål
 
-En foreløpig idé er at medlemmer av et miljø kan stille spørsmål om et objekt som er synlige for andre medlemmer i samme miljø.
+Medlemmer av et miljø skal kunne stille spørsmål om et objekt som er publisert der, og spørsmålene og svarene skal være **miljøspesifikke**.
 
-Dette kan redusere dupliserte spørsmål når svaret er nyttig for flere.
+Det innebærer at:
 
-Det må avklares om spørsmål og svar følger objektet globalt eller er knyttet til det enkelte miljøet.
+- et spørsmål stilt i ett miljø bare er synlig i dette miljøet
+- svar og diskusjon følger den samme miljøkonteksten
+- spørsmål, brukernavn og annen sosial kontekst fra ett miljø skal ikke automatisk vises i andre miljøer der objektet også er publisert
+- dette gjelder særlig for å unngå lekkasje av informasjon fra lukkede eller skjulte miljøer
+
+Selve objektinformasjonen er fortsatt global for objektet.
+
+Hvis et spørsmål avdekker informasjon som er generelt nyttig på tvers av miljøer, kan eier eller medeier oppdatere objektets beskrivelse eller andre relevante felt. Da blir informasjonen en del av objektet, uten at selve spørsmålstråden flyttes mellom miljøene.
 
 ## Inaktivitet, skjuling og arkivering
 
@@ -202,5 +209,4 @@ Se [Åpne spørsmål](open-questions.md), særlig om:
 
 - kategorier og obligatoriske felt
 - kontrollert overtakelse av et pågående lån dersom ansvarlig utlåner blir utilgjengelig
-- offentlige spørsmål
 - deaktivering, arkivering og sletting

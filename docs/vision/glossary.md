@@ -106,6 +106,10 @@ En tidligere hendelse i lånet slettes ikke bare fordi status senere endres. Hvi
 
 En gjensidig relasjon mellom to brukere som begge har akseptert forbindelsen.
 
+## Miljøspesifikt objektspørsmål
+
+Et spørsmål om et objekt som stilles i et bestemt miljø og bare er synlig i dette miljøet. Spørsmålstråden følger miljøkonteksten selv om selve objektet også er publisert andre steder.
+
 ## Abonnement på objekt
 
 En brukerrelasjon der brukeren ønsker varsler om relevante endringer i et objekt.

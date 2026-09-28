@@ -24,14 +24,6 @@ Medeiermodellen er nå avklart slik at den medeiaren som godkjenner et lån blir
 
 Vi må senere definere en kontrollert unntaksprosess dersom den ansvarlige utlåneren blir utilgjengelig under et reservert eller aktivt lån, for eksempel ved langvarig fravær eller deaktivering av konto.
 
-### 19. Hvor skal offentlige spørsmål om et objekt høre hjemme?
-
-Hvis et objekt vises i flere miljøer, må vi velge om spørsmål og svar er:
-
-- globale for objektet
-- separate per miljø
-- eller en kombinasjon
-
 ### 20. Hva er riktig livssyklus for inaktive objekter?
 
 Forslagene er omtrent:
