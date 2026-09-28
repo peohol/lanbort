@@ -8,17 +8,19 @@ Målet med listen er å gjøre usikkerhet synlig. Spørsmål flyttes ut herfra n
 
 Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig.
 
-### 1. Må alle lån være forankret i et miljø?
+### 1. Hvordan håndteres konflikter ved direkte lån mellom venner?
 
-Kildedokumentet beskriver låneforespørsler fra miljøer, men også vennskap, direkte brukerprofiler og objekter man kan se direkte hos en bruker.
+Det er nå avklart at to brukere som er venner, kan låne direkte av hverandre uten at lånet er knyttet til et miljø. Brukere som ikke er venner, kan foreløpig ikke gjøre dette.
 
-Vi må velge om:
+Ved et miljøbasert lån kan en administrator i miljøet være naturlig første instans ved konflikt. Et direkte vennelån har ingen tilsvarende administrator.
 
-- alle faktiske lån må skje gjennom et miljø
-- venner også kan låne direkte av hverandre uten miljø
-- eller begge deler er mulig, men med ulike støtte- og konfliktmekanismer
+Vi må derfor avklare om slike konflikter:
 
-Dette påvirker blant annet moderering, saker, synlighet og hvem som kan hjelpe ved konflikt.
+- håndteres direkte mellom partene med dokumentasjon i Lånbort
+- kan eskaleres direkte til plattformnivå
+- eller bør ha en annen særskilt prosess
+
+Dette bør avklares sammen med spørsmålet om hvilket ansvar Lånbort skal ta ved konflikter.
 
 ### 2. Hvor absolutt er prinsippet om «ingen penger»?
 

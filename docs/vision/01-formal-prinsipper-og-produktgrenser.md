@@ -36,7 +36,9 @@ Lånbort skal i hovedsak organisere deling gjennom **miljøer**: fellesskap av m
 
 Miljøene skal kunne ha ulik grad av åpenhet og ulikt geografisk eller sosialt omfang.
 
-Et sentralt spørsmål som fortsatt er åpent, er hvor mye utlån som også skal kunne skje direkte mellom venner eller andre brukere uten at et miljø er involvert.
+Lån skal også kunne skje **direkte mellom to brukere som er venner**, uten at et miljø er involvert.
+
+Direkte lån utenfor miljøer er foreløpig begrenset til venner. Brukere som ikke er venner, kan ikke låne direkte av hverandre; mellom slike brukere må et eventuelt lån skje gjennom et miljø der objektet er publisert og begge har nødvendig adgang.
 
 ## Hele låneforløpet skal støttes
 

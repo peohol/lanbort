@@ -91,6 +91,7 @@ Vennskap skal gjøre det enklere å:
 
 - finne hverandre igjen
 - kontakte hverandre direkte
+- låne objekter direkte av hverandre uten at lånet må være knyttet til et miljø
 - invitere hverandre til miljøer der dette er tillatt
 - eventuelt få tilgang til mer profilinformasjon hvis brukeren har valgt det
 
@@ -110,10 +111,12 @@ Den nøyaktige listen over profilfelt er ikke bestemt.
 
 Visjonen søker å unngå at fremmede kan sende ubegrensede direktemeldinger.
 
-En bruker som ikke er venn med mottakeren, skal derfor i utgangspunktet bare kunne initiere kontakt i en legitim produktkontekst, for eksempel:
+En bruker som ikke er venn med mottakeren, skal derfor i utgangspunktet bare kunne initiere kontakt i en legitim produktkontekst.
 
-- en låneforespørsel
-- et spørsmål om et konkret objekt
+Direkte lån utenfor miljøer er ikke tilgjengelig mellom brukere som ikke er venner. Dersom to ikke-venner skal kunne gjennomføre et lån, må objektet være tilgjengelig gjennom et miljø der lånet kan initieres etter miljøets regler. Kontakt kan da for eksempel gjelde:
+
+- en låneforespørsel på et objekt som er publisert i miljøet
+- et spørsmål om et konkret objekt som er synlig i miljøet
 
 Før mottakeren har akseptert videre samtale, skal avsenderen ikke kunne fortsette med fri meldingsutveksling. Mottakeren skal heller ikke på dette stadiet påføres sosialt press gjennom for eksempel lesebekreftelse.
 

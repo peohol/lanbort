@@ -22,9 +22,14 @@ Uenighet under eller etter lånet skal kunne håndteres gjennom en separat saksp
 
 ## Hvem kan be om å få låne?
 
-I den opprinnelige visjonen kan medlemmer av et miljø der objektet er publisert, sende låneforespørsel.
+Lån kan oppstå på to måter:
 
-Det er samtidig skissert vennskap og tilgang til objekter direkte via andre brukere. Det må derfor avklares om alle lån må være forankret i et miljø, eller om venner også skal kunne gjennomføre et lån direkte uten miljø.
+1. **Gjennom et miljø:** En bruker kan sende låneforespørsel på et objekt som er publisert i et miljø der brukeren har nødvendig adgang.
+2. **Direkte mellom venner:** To brukere som er venner i Lånbort, kan låne direkte av hverandre uten at lånet er knyttet til et miljø.
+
+Brukere som ikke er venner, kan foreløpig ikke gjennomføre direkte lån utenfor et miljø.
+
+Denne forskjellen har særlig betydning for konfliktbehandling: ved et miljøbasert lån finnes et naturlig administrativt nivå i miljøet, mens et direkte vennelån ikke gjør det. Hvordan slike konflikter skal håndteres, er fortsatt åpent.
 
 ## Låneforespørsel
 
