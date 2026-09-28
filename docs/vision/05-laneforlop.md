@@ -18,7 +18,7 @@ Et lån skal i grove trekk bevege seg gjennom følgende hendelser:
 10. tilbakeleveringen bekreftes
 11. partene kan anmelde opplevelsen
 
-Uenighet under eller etter lånet skal kunne håndteres gjennom en separat saksprosess.
+Ved miljøbaserte lån kan enkelte uenigheter håndteres gjennom miljøets saksprosess. Ved direkte lån mellom venner er partene selv ansvarlige for å håndtere tvister om selve lånet; slike tvister skal ikke kunne eskaleres til plattformnivå for avgjørelse.
 
 ## Hvem kan be om å få låne?
 
@@ -29,7 +29,22 @@ Lån kan oppstå på to måter:
 
 Brukere som ikke er venner, kan foreløpig ikke gjennomføre direkte lån utenfor et miljø.
 
-Denne forskjellen har særlig betydning for konfliktbehandling: ved et miljøbasert lån finnes et naturlig administrativt nivå i miljøet, mens et direkte vennelån ikke gjør det. Hvordan slike konflikter skal håndteres, er fortsatt åpent.
+Denne forskjellen har særlig betydning for konfliktbehandling: ved et miljøbasert lån finnes et administrativt nivå i miljøet, mens et direkte vennelån er en privat avtale mellom partene.
+
+### Ansvarserklæring ved direkte vennelån
+
+Før et direkte vennelån kan godkjennes som et lån i Lånbort, skal både utlåner og låntaker uttrykkelig godta en ansvarserklæring.
+
+Erklæringen skal gjøre det tydelig at:
+
+- Lånbort fasiliterer kontakt, avtale og registrering av lånet
+- partene selv har ansvar for gjenstanden og låneforholdet
+- partene selv må håndtere uenighet om tilbakelevering, skade, tap, erstatning eller andre privatrettslige forhold
+- en slik tvist ikke kan sendes til plattformansvarlige for mekling eller avgjørelse
+
+Aksepten skal være knyttet til det konkrete direkte lånet, slik at begge parter aktivt har tatt stilling til premisset før lånet etableres.
+
+Dette begrenser ikke brukerens adgang til å rapportere **plattformmisbruk** som trusler, trakassering, svindelforsøk, ulovlig innhold eller annen adferd som kan kreve tiltak for å beskytte Lånbort og brukerne. En slik rapport er en modereringssak, ikke en tvisteløsning for det private lånet.
 
 ## Låneforespørsel
 
@@ -145,15 +160,23 @@ Denne listen er nyttig, men ikke komplett for hele livssyklusen. «Reservert», 
 
 ## Konflikt om tilbakelevering
 
-Hvis partene er uenige om objektet er levert tilbake, skal det kunne opprettes en sak knyttet til lånet.
+### Miljøbasert lån
+
+Hvis partene er uenige om objektet er levert tilbake etter et miljøbasert lån, skal det kunne opprettes en sak knyttet til lånet.
 
 Begge parter skal kunne gi sin forklaring uten først å bli påvirket av den andres fremstilling.
 
 En administrator i miljøet der lånet oppstod, skal kunne se begge forklaringene og kommunisere separat med partene.
 
-Plattformansvarlige kan ha innsyn ved behov, men skal i utgangspunktet ikke varsles eller involveres i vanlige miljøkonflikter.
+Plattformansvarlige skal ikke være ordinær klage- eller tvisteløsningsinstans for slike private utlån. Det må fortsatt avklares hvor grensene går for eventuell plattforminvolvering ved alvorlig misbruk eller forhold som gjelder plattformens sikkerhet.
 
 Administrator skal kunne avslutte saken når det ikke er mer som med rimelighet kan gjøres, selv om appen ikke kan fastslå den faktiske sannheten.
+
+### Direkte lån mellom venner
+
+Ved et direkte vennelån skal det **ikke** finnes noen tilsvarende tvistesak til administrator eller plattformansvarlig. Partene har på forhånd godtatt at de selv må håndtere uenigheten.
+
+Lånbort kan fortsatt vise og bevare ordinær historikk om lånet i den utstrekning produktet og datalivssyklusen ellers tilsier, men plattformen skal ikke ta stilling til hvem som har rett i den private tvisten.
 
 ## Endringer i et godkjent lån
 

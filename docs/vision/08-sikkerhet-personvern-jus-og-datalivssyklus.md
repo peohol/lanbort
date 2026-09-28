@@ -136,9 +136,13 @@ forståelig for brukeren.
 
 Målet er at Lånbort skal fasilitere kontakt og utlån, mens brukerne selv tar ansvar for de konkrete gjenstandene de velger å låne ut eller låne.
 
-Det må utarbeides tydelige vilkår og informasjon om ansvar.
+Ved **direkte lån mellom venner** skal dette prinsippet også gjøres eksplisitt i selve låneflyten: begge parter må godta en ansvarserklæring før lånet etableres. Erklæringen skal gjøre det klart at partene selv må håndtere privatrettslige konflikter om blant annet tilbakelevering, skade, tap og erstatning, og at Lånbort ikke tilbyr plattformbasert mekling eller avgjørelse av slike tvister.
 
-Det er likevel viktig å ikke behandle vilkår som en teknisk måte å «fjerne» alt juridisk ansvar på. Hvilket ansvar plattformen faktisk kan ha følger av gjeldende rett og produktets reelle funksjon, ikke bare av ordlyden i bruksvilkårene.
+Dette skal ikke hindre rapportering av forhold som gjelder tryggheten eller integriteten til selve plattformen, for eksempel trusler, trakassering, svindelforsøk eller ulovlig bruk.
+
+Det må i tillegg utarbeides tydelige generelle vilkår og informasjon om ansvar.
+
+Det er likevel viktig å ikke behandle en ansvarserklæring eller bruksvilkår som en teknisk måte å «fjerne» alt juridisk ansvar på. Hvilket ansvar plattformen faktisk kan ha følger av gjeldende rett og produktets reelle funksjon, ikke bare av hva brukeren klikker seg enig i.
 
 Juridiske spørsmål må derfor vurderes særskilt før lansering.
 

@@ -40,6 +40,8 @@ Lån skal også kunne skje **direkte mellom to brukere som er venner**, uten at 
 
 Direkte lån utenfor miljøer er foreløpig begrenset til venner. Brukere som ikke er venner, kan ikke låne direkte av hverandre; mellom slike brukere må et eventuelt lån skje gjennom et miljø der objektet er publisert og begge har nødvendig adgang.
 
+Ved et direkte lån mellom venner inngår partene en privat låneavtale som de selv har ansvar for. Før lånet kan etableres i Lånbort, skal **begge parter uttrykkelig godta en kort og tydelig ansvarserklæring** om at Lånbort bare fasiliterer lånet og ikke behandler eller avgjør konflikter mellom dem om for eksempel tilbakelevering, skade, tap eller erstatning.
+
 ## Hele låneforløpet skal støttes
 
 Lånbort skal støtte mer enn bare oppdagelse av objekter. Produktet skal dekke hele forløpet:

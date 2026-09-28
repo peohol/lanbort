@@ -8,20 +8,6 @@ Målet med listen er å gjøre usikkerhet synlig. Spørsmål flyttes ut herfra n
 
 Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig.
 
-### 1. Hvordan håndteres konflikter ved direkte lån mellom venner?
-
-Det er nå avklart at to brukere som er venner, kan låne direkte av hverandre uten at lånet er knyttet til et miljø. Brukere som ikke er venner, kan foreløpig ikke gjøre dette.
-
-Ved et miljøbasert lån kan en administrator i miljøet være naturlig første instans ved konflikt. Et direkte vennelån har ingen tilsvarende administrator.
-
-Vi må derfor avklare om slike konflikter:
-
-- håndteres direkte mellom partene med dokumentasjon i Lånbort
-- kan eskaleres direkte til plattformnivå
-- eller bør ha en annen særskilt prosess
-
-Dette bør avklares sammen med spørsmålet om hvilket ansvar Lånbort skal ta ved konflikter.
-
 ### 2. Hvor absolutt er prinsippet om «ingen penger»?
 
 Kjernevisjonen sier at Lånbort ikke er en leie- eller salgsplattform og at penger ikke skal være involvert.
@@ -58,16 +44,16 @@ Visjonen sier foreløpig ikke:
 
 Dette påvirker tillit, sikkerhet, personvern og jus.
 
-### 5. Hva skal Lånbort selv love å gjøre ved konflikt?
+### 5. Hva skal Lånbort selv gjøre ved konflikter i miljøbaserte lån?
 
-Appen kan støtte kommunikasjon og dokumentasjon, men kan ikke nødvendigvis fastslå hvem som har rett eller fysisk sørge for at et objekt blir levert tilbake.
+For direkte lån mellom venner er prinsippet nå avklart: begge parter må godta at de selv håndterer privatrettslige konflikter, og slike tvister kan ikke eskaleres til plattformnivå for avgjørelse.
 
-Vi må definere skillet mellom:
+For miljøbaserte lån finnes derimot allerede en tenkt rolle for miljøadministratorer. Vi må fortsatt definere skillet mellom:
 
-- hva systemet registrerer
+- hva systemet bare registrerer
 - hva miljøadministratorer kan mekle i
-- hva plattformansvarlige kan beslutte
-- hva partene selv må håndtere utenfor Lånbort
+- når en administrator skal avslutte saken uten å avgjøre hvem som har rett
+- hvilke alvorlige forhold som eventuelt skal behandles som plattformmoderering snarere enn som en lånetvist
 
 ### 6. Hvilke objekter skal aldri kunne formidles?
 
