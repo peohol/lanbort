@@ -10,19 +10,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## B – Miljøer og medlemskap
 
-### 10. Hva kan en ikke-medlem se i et lukket miljø?
-
-Vi bør eksplisitt definere offentlig forhåndsvisning:
-
-- navn
-- beskrivelse
-- geografisk område
-- medlemstall
-- administratorer
-- objekter
-- regler
-- annet
-
 ### 11. Hva innebærer permanent utestenging fra et miljø?
 
 Vi må avklare:

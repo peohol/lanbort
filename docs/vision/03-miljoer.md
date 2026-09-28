@@ -36,8 +36,26 @@ Et lukket miljø:
 
 - kan oppdages av ikke-medlemmer
 - kan finnes gjennom søk og delbar lenke
-- viser bare det innholdet som er ment å være offentlig før innmelding
+- viser en begrenset offentlig forhåndsvisning
 - krever godkjenning fra en administrator før vanlig medlemskap innvilges
+
+Før medlemskap kan en bruker se:
+
+- miljøets navn
+- beskrivelse
+- geografiske tilknytning
+- eventuell målgruppe
+- eventuelle regler eller krav for medlemskap
+- omtrentlig medlemstall
+
+Før medlemskap skal brukeren **ikke** kunne se:
+
+- medlemsliste
+- administratorenes identitet
+- konkrete utlånsobjekter
+- intern aktivitet
+- samtaler
+- annen informasjon som er ment for medlemmer
 
 ### Skjult miljø
 
@@ -222,7 +240,6 @@ Blant annet må vi avklare:
 - nøyaktig forhold mellom eier og administrator
 - hvordan eneste administrator kan fratre
 - hva utestenging fra et miljø skal innebære
-- hvilke deler av et lukket miljø en ikke-medlem kan se
 - hvilke slettemekanismer som er proporsjonale og forståelige
 
 Se [Åpne spørsmål](open-questions.md).
