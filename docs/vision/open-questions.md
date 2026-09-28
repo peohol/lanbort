@@ -10,11 +10,11 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## B – Miljøer og medlemskap
 
-### 12. Hvordan bør eierløse miljøer avvikles?
+### 12. Hvordan velges ny eier når flere administratorer vil overta?
 
-Forslagene om to administratorer for skjuling, en syvdagers avstemning for sletting og eventuell eskalering er detaljerte, men ikke prøvd mot alle situasjoner.
+Eierløshet er nå definert som en midlertidig unntakstilstand. Hvis flere gjenværende administratorer samtidig ønsker å overta eierskapet, trenger vi senere en enkel og forutsigbar regel for hvem som får rollen.
 
-Vi bør særlig vurdere små miljøer, inaktive administratorer og misbruk av avviklingsprosessen.
+Dette er en avgrenset styringsdetalj og trenger ikke avgjøres før den øvrige miljømodellen er ferdig.
 
 ## C – Objekter og låneforløp
 

@@ -70,18 +70,17 @@ Eierrollen er ikke en alternativ rolle til administrator. Den er en **tilleggsst
 Det innebærer at:
 
 - oppretteren er i utgangspunktet både eier og administrator
-- et miljø kan aldri ha mer enn én eier
+- et aktivt miljø skal normalt ha nøyaktig én eier
 - eieren har alle vanlige administratorrettigheter
 - eierskapet kan bare overføres til en annen administrator
-- en eier kan ikke frasi seg administratorrollen uten først å overføre eller frasi seg eierskapet
+- en eier kan ikke frasi seg administratorrollen uten først å overføre eierskapet eller starte avvikling av miljøet
 
 Eierrollen er knyttet til særskilt forvaltningsansvar for miljøets fortsatte eksistens. Eieren skal blant annet kunne:
 
 - overføre eierskapet til en annen administrator
-- gi andre administratorer rett til å skjule eller slette miljøet
-- eventuelt gi denne retten til alle administratorer
+- starte en kontrollert avvikling av miljøet
 
-Et miljø kan bli eierløst dersom eieren frasier seg eierskapet, forutsatt at minst én administrator fortsatt finnes.
+Eierløshet skal ikke være en ordinær, varig driftsform. Den kan oppstå midlertidig dersom eieren forsvinner uten kontrollert overføring, for eksempel fordi kontoen deaktiveres eller slettes. Da skal systemet forsøke å etablere en ny eier blant gjenværende administratorer før miljøet eventuelt går til avvikling.
 
 ## Plattformforvalter
 

@@ -181,83 +181,55 @@ En administrator kan invitere et annet medlem til å bli administrator. Rollen b
 
 Alle administratorer skal i utgangspunktet ha samme løpende administrative myndighet. Særskilte rettigheter til å skjule eller slette miljøet kan være forbeholdt eieren eller delegeres av eieren.
 
-## Fratreden og kontinuitet
+## Fratreden, eierskap og kontinuitet
 
-Et miljø skal alltid ha minst én administrator.
+Et aktivt miljø skal normalt ha:
 
-En administrator skal kunne frasi seg rollen dersom minst én annen administrator gjenstår.
+- minst én administrator
+- nøyaktig én eier
+- en eier som også er administrator
 
-Hvis eneste administrator ønsker å fratre, må systemet støtte en kontrollert overføring. Det opprinnelige utkastet foreslår en periode der andre medlemmer kan melde seg som ny administrator, eventuelt med automatisk avvikling hvis ingen overtar. Mekanismen er foreløpig og må avklares.
+En administrator som ikke er eier, kan frasi seg administratorrollen så lenge minst én administrator fortsatt gjenstår.
 
-## Permanent utestenging fra et miljø
+En eier som ønsker å trekke seg, skal ikke kunne etterlate miljøet permanent eierløst. Eieren må enten:
 
-En permanent utestengt bruker skal oppleve miljøet som om det **ikke eksisterer**.
+1. overføre eierskapet til en annen administrator, eller
+2. starte en kontrollert avvikling av miljøet.
 
-Det innebærer at miljøet:
+Hvis eieren samtidig er eneste administrator og ønsker å fortsette miljøet, må en ny administrator først overta eierskapet.
 
-- ikke vises i søk eller kart
-- ikke kan åpnes via direkte lenke
-- ikke kan nås gjennom tips eller invitasjoner
-- ikke viser navn, beskrivelse eller annen offentlig forhåndsvisning
-- ikke gir tilgang til objekter, medlemmer eller aktivitet gjennom miljøet
+## Midlertidig eierløst miljø
 
-Dette gjelder også dersom miljøet ellers er åpent eller lukket.
+Eierløshet skal behandles som en **midlertidig unntakstilstand**, ikke som en normal organisasjonsform.
 
-Administratorer skal senere kunne oppheve utestengingen. Selve utestengingen skal være sporbar som en administrativ handling.
+Den kan for eksempel oppstå dersom eierens konto forsvinner eller blir utilgjengelig uten at eierskapet først ble overført.
 
-### Pågående lån påvirkes ikke av miljøets synlighet
+Hvis andre administratorer finnes, skal de varsles og få mulighet til å overta eierskapet.
 
-Et lån som allerede er opprettet gjennom miljøet, er en egen relasjon mellom utlåner og låntaker.
+Hvis flere administratorer ønsker å overta samtidig, må en enkel og forutsigbar utvelgelsesregel defineres senere.
 
-Hvis en av partene blir utestengt fra miljøet, skal derfor:
+Hvis ingen administrator overtar innen en rimelig frist, går miljøet over i avvikling.
 
-- miljøet forsvinne fullstendig for den utestengte
-- pågående lån, reservasjoner og nødvendig lånehistorikk fortsatt være tilgjengelige i den vanlige låneflaten
-- lånet kunne fullføres uten at brukeren får generell tilgang tilbake til miljøet
+## Avvikling av miljø
 
-Miljøtilknytningen kan fortsatt bevares som intern kontekst for historikk, moderering og eventuell miljøbasert mekling, men den skal ikke brukes som en bakdør til miljøet for en utestengt bruker.
+Eieren skal kunne starte en kontrollert avvikling av miljøet.
 
-## Eierløse miljøer
+Avvikling skal være en egen tilstand, ikke det samme som umiddelbar permanent sletting.
 
-Eieren skal alltid også være administrator.
+Når avviklingen starter:
 
-Eieren skal kunne overføre eierskapet til en annen administrator.
+- miljøet skal ikke lenger ta inn nye medlemmer
+- nye lån skal ikke kunne opprettes gjennom miljøet
+- miljøet kan skjules fra vanlig oppdagelse
+- eksisterende lån fortsetter i det felles lånesystemet og skal kunne fullføres normalt
+- objektene forblir brukernes egne objekter, men publiseringen i miljøet opphører som del av avviklingen
+- nødvendig historikk og aktive saker skal bevares så lenge de fortsatt trengs
 
-Hvis eieren ønsker å fratre som administrator, må vedkommende først enten overføre eierskapet eller frasi seg det.
+En frivillig avvikling skal ha en tydelig angremulighet eller angrefrist før den blir endelig.
 
-Visjonen åpner også for at eieren kan frasi seg eierskapet uten å utpeke en ny eier, slik at miljøet blir **eierløst**, forutsatt at minst én administrator fortsatt finnes.
+Når aktive forhold er avsluttet, kan miljøet arkiveres og senere slettes etter de generelle reglene for datalivssyklus.
 
-Et eierløst miljø skal fortsatt kunne administreres.
-
-### Midlertidig skjuling
-
-Det opprinnelige forslaget er at én administrator kan foreslå skjuling, og at forslaget trer i kraft når én annen administrator godkjenner.
-
-### Sletting
-
-Det opprinnelige forslaget er:
-
-- én administrator kan foreslå sletting
-- alle administratorer får syv dager til å svare
-- sletting gjennomføres dersom alle som faktisk svarer innen fristen, godkjenner
-- ett eksplisitt avslag stanser slettingen
-
-Dette er en detaljert, men fortsatt foreløpig styringsmekanisme.
-
-## Bestridelse av sletting
-
-Hvis en sletteforespørsel i et eierløst miljø blir avvist, skal en administrator kunne eskalere spørsmålet til plattformnivå.
-
-Det opprinnelige forslaget innebærer:
-
-- alle administratorer får en frist til å sende sin begrunnelse
-- begrunnelsene er private mellom den enkelte administratoren og saksbehandleren
-- administratorene får ikke se hverandres innlegg i denne fasen
-- plattformforvalter kan stille oppfølgingsspørsmål individuelt eller samlet
-- plattformforvalter avslutter saken med en beslutning om sletting eller fortsatt eksistens
-- ny tilsvarende eskalering kan sperres en periode etter avsluttet sak
-
-Den konkrete prosessen må senere vurderes både produktmessig og juridisk.
+Det skal ikke kreves avstemning blant administratorene, et bestemt antall administratorgodkjenninger eller eskalering til plattformforvalter bare for å avgjøre om et eierløst miljø skal bestå. Dersom ingen overtar eierskapet, er normalutfallet avvikling.
 
 ## Moderering av objekter i et miljø
 
@@ -269,7 +241,7 @@ En administrator som avviser et objekt, skal også kunne rapportere objektet til
 
 Blant annet må vi avklare:
 
-- hvordan eneste administrator kan fratre
-- hvilke slettemekanismer som er proporsjonale og forståelige
+- hvordan ny eier velges dersom flere administratorer samtidig vil overta et midlertidig eierløst miljø
+- den konkrete angrefristen og datalivssyklusen ved avvikling
 
 Se [Åpne spørsmål](open-questions.md).

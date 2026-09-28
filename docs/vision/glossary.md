@@ -26,9 +26,11 @@ I faktisk brukergrensesnitt er ønsket term **administrator**, ikke «admin». �
 
 ## Eier av miljø
 
-Den ene brukeren som eventuelt har særskilt forvaltningsansvar for et miljø.
+Den administratoren som har særskilt forvaltningsansvar for miljøets fortsatte eksistens.
 
-Et miljø kan etter den foreløpige visjonen bli eierløst, men skal ikke være uten administrator.
+Et aktivt miljø skal normalt ha nøyaktig én eier. Eieren kan overføre eierskapet til en annen administrator eller starte avvikling.
+
+Et miljø kan bare være eierløst midlertidig som en unntakstilstand dersom eieren forsvinner uten kontrollert overføring.
 
 ## Plattformforvalter
 
