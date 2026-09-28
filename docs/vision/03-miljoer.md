@@ -104,9 +104,11 @@ Mottakeren kan også melde seg inn på egen hånd.
 
 Et vanlig medlem kan **tipse** andre om miljøet. Den som mottar tipset, må gjennom den vanlige innmeldingsprosessen og godkjennes av en administrator.
 
-En administrator kan sende en særskilt invitasjon som innebærer at selve adgangsvurderingen allerede er gjort.
+En administrator kan sende en særskilt invitasjon. En slik invitasjon betyr at administratoren allerede har vurdert hvem personen er og besluttet at vedkommende skal få adgang til miljøet.
 
-Det må avklares om eventuelle obligatoriske medlemsopplysninger fortsatt skal fylles ut og godkjennes etter en slik invitasjon.
+Hvis miljøet krever obligatoriske medlemsopplysninger, må den inviterte fortsatt fylle dem ut før medlemskapet aktiveres. Opplysningene trenger derimot **ikke en ny administratorgodkjenning**. Administratorinvitasjonen regnes som forhåndsgodkjenning av medlemskapet.
+
+Den inviterte må også eventuelt godta generelle regler eller vilkår som gjelder alle medlemmer.
 
 ### Skjulte miljøer
 
@@ -147,7 +149,7 @@ Dialog om innmeldingen skal skje i et separat saks-/forespørselssystem, ikke so
 
 Brukeren må først være invitert av en administrator.
 
-Miljøet kan i tillegg kreve opplysninger før medlemskapet blir endelig aktivert. Administrator kan be om mer informasjon før hen godkjenner eller avslår.
+Invitasjonen innebærer at medlemskapet allerede er forhåndsgodkjent av administratoren. Hvis miljøet krever obligatoriske medlemsopplysninger, må den inviterte fortsatt fylle dem ut før medlemskapet aktiveres, men opplysningene skal ikke gjennom en ny manuell godkjenningsrunde.
 
 ## Administrasjon
 
@@ -214,7 +216,6 @@ Blant annet må vi avklare:
 - om navn virkelig må være globalt unike
 - nøyaktig forhold mellom eier og administrator
 - hvordan eneste administrator kan fratre
-- hvordan admininvitasjon samspiller med krav om medlemsopplysninger
 - hva utestenging fra et miljø skal innebære
 - hvilke deler av et lukket miljø en ikke-medlem kan se
 - hvilke slettemekanismer som er proporsjonale og forståelige

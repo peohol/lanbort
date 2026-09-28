@@ -10,15 +10,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## B – Miljøer og medlemskap
 
-### 7. Hva innebærer en administratorinvitasjon?
-
-To deler av kildedokumentet peker i litt ulik retning:
-
-- en administratorinvitasjon kan forstås som umiddelbart godkjent medlemskap
-- et miljø kan samtidig kreve at alle nye medlemmer oppgir informasjon og eventuelt blir vurdert før medlemskapet aktiveres
-
-Vi må definere hva administratoren faktisk forhåndsgodkjenner.
-
 ### 8. Er eier alltid også administrator?
 
 Kildedokumentet skiller mellom eier og administrator, men enkelte regler forutsetter ulike kombinasjoner.
