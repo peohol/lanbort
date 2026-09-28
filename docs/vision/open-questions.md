@@ -18,16 +18,6 @@ Dette er en avgrenset styringsdetalj og trenger ikke avgjøres før den øvrige 
 
 ## C – Objekter og låneforløp
 
-### 17. Hvordan håndteres forsinket tilbakelevering?
-
-I dag finnes «utilgjengelig» og «usikker», men ikke en eksplisitt modell for:
-
-- forsinket
-- låntaker svarer ikke
-- utlåner svarer ikke
-- partene er enige om forlengelse
-- objektet er tapt eller skadet
-
 ### 18. Hvilke rettigheter har medeiere overfor hverandre?
 
 Alle medeiere kan foreløpig redigere, publisere og bekrefte retur.

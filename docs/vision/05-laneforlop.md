@@ -162,17 +162,33 @@ Dette prinsippet skal gjelde uansett om feilen meldes av utlåner eller låntake
 
 Hvis objektet allerede er reservert til et nytt lån, skal den nye hendelsen ikke skjules eller avvises av den grunn. Eventuell konflikt mellom gammel returstatus og nye reservasjoner må håndteres eksplisitt som et avvik, ikke ved å omskrive historikken.
 
-## Manglende bekreftelse etter låneperioden
+## Når returtidspunktet passeres
 
-Når avtalt låneperiode er utløpt, skal begge parter varsles og bes om å oppdatere status.
+Når avtalt returtidspunkt passeres uten at tilbakeleveringen er endelig bekreftet, skal lånet først gå til den nøytrale statusen **avventer returavklaring**.
 
-Hvis ingen bekrefter tilbakelevering, skal objektet fortsatt behandles som utilgjengelig.
+Begge parter skal varsles og få anledning til å oppgi hva som faktisk har skjedd.
 
-Det må avklares hvordan systemet skiller mellom:
+Systemet skal deretter skille mellom ulike situasjoner:
 
-- et lån som bare mangler administrativ bekreftelse
-- et faktisk forsinket eller manglende objekt
-- en eksplisitt konflikt
+- Hvis låntaker oppgir at hen fortsatt har objektet og det ikke finnes en gyldig avtalt forlengelse, markeres lånet som **forsinket**.
+- Hvis partene blir enige om en forlengelse, oppdateres returdatoen etter de vanlige reglene for avtaleendring, og lånet går tilbake til **utlånt**.
+- Hvis låntaker oppgir at objektet er levert tilbake, men utlåner ennå ikke har bekreftet dette, forblir lånet **avventer returavklaring**.
+- Hvis utlåner oppgir at objektet ikke er mottatt samtidig som låntaker oppgir at det er levert, går lånet til **usikker / uenighet**.
+- Hvis én eller begge parter ikke svarer, kan systemet sende påminnelser, men taushet skal ikke tolkes som bevis for at objektet er forsinket, returnert eller ikke returnert.
+
+Så lenge returstatusen ikke er endelig avklart, skal objektet fortsatt behandles som utilgjengelig for kolliderende utlån.
+
+### Forsinket tilbakelevering
+
+**Forsinket** skal bare brukes når det faktisk er kjent at objektet fortsatt er hos låntaker etter avtalt returtid uten gyldig forlengelse.
+
+At returtidspunktet er passert er derfor ikke alene nok til å klassifisere lånet som forsinket.
+
+### Skade og tap
+
+Skade og tap skal registreres som hendelser eller avvik knyttet til lånet, ikke som egne normale lånestatuser.
+
+Hvis partene er uenige om hva som har skjedd, ansvar eller omfang, kan lånet samtidig få status **usikker / uenighet**.
 
 ## Lånestatus
 
@@ -189,7 +205,7 @@ Det normale hovedforløpet er:
 I tillegg finnes avvikstilstander eller markeringer som kan bryte det normale forløpet:
 
 - **Kansellert** – lånet avsluttes før ordinær gjennomføring.
-- **Forsinket** – avtalt retur er passert uten at lånet er avsluttet eller gyldig forlenget.
+- **Forsinket** – det er kjent at objektet fortsatt er hos låntaker etter avtalt returtid uten gyldig forlengelse.
 - **Usikker / uenighet** – partene har motstridende eller uavklarte opplysninger om retur, skade, tap eller annen sentral del av lånet.
 
 Disse statusene skal beskrive lånet. Om objektet faktisk kan lånes av en annen bruker på et bestemt tidspunkt, avgjøres separat av objektets tilgjengelighet sammen med reservasjoner og aktive lån.
@@ -266,4 +282,4 @@ skal ikke retroaktivt endre et allerede godkjent lån.
 
 Lånet må derfor beholde nødvendig historisk kontekst om hva partene faktisk godtok da avtalen ble inngått.
 
-Reglene for manglende henting, forsinket tilbakelevering, skade og tap behandles som avvik i låneforløpet og avklares separat.
+Manglende henting må fortsatt avklares separat. Forsinket tilbakelevering, skade og tap behandles etter prinsippene over som avvik i låneforløpet.

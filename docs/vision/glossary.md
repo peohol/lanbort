@@ -94,6 +94,10 @@ Om objektet i praksis kan lånes i et bestemt tidsrom, gitt både eierens tilgje
 
 Tilstanden til et konkret lån, for eksempel forespurt, reservert, utlånt, avventer returavklaring eller avsluttet.
 
+**Avventer returavklaring** er en nøytral status når returtidspunktet er passert eller retur er meldt uten endelig bekreftelse.
+
+**Forsinket** brukes bare når det faktisk er kjent at objektet fortsatt er hos låntaker etter avtalt returtid uten gyldig forlengelse. Taushet alene skal ikke gi denne statusen.
+
 En tidligere hendelse i lånet slettes ikke bare fordi status senere endres. Hvis en returbekreftelse viser seg å være feil, beholdes bekreftelsen i historikken og en ny hendelse kan sette lånet tilbake til usikker/uenighet.
 
 ## Venn
