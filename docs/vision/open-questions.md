@@ -10,16 +10,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## B – Miljøer og medlemskap
 
-### 11. Hva innebærer permanent utestenging fra et miljø?
-
-Vi må avklare:
-
-- om miljøet blir helt usynlig
-- om eksisterende lån eller saker fortsatt er tilgjengelige
-- om en utestengt bruker kan anke
-- om administratorer kan oppheve utestengingen
-- om plattformforvaltere skal kunne overprøve den
-
 ### 12. Hvordan bør eierløse miljøer avvikles?
 
 Forslagene om to administratorer for skjuling, en syvdagers avstemning for sletting og eventuell eskalering er detaljerte, men ikke prøvd mot alle situasjoner.

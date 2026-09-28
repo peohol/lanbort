@@ -18,6 +18,10 @@ Eksempler kan være:
 
 Objekter eies ikke av miljøet. Et objekt tilhører brukeren eller brukerne som eier det, og kan publiseres i ett eller flere miljøer.
 
+Et miljø er først og fremst en **oppdagelses- og adgangsramme**. Det gjør det mulig å finne objekter og etablere lån mellom brukere som ikke allerede er venner.
+
+Når en låneforespørsel først er sendt, blir låneforholdet behandlet som en egen relasjon mellom utlåner og låntaker. Selve låneflaten skal i hovedsak være den samme uansett om lånet oppstod gjennom et miljø eller direkte mellom venner.
+
 ## Tre typer miljøer
 
 ### Åpent miljø
@@ -185,6 +189,34 @@ En administrator skal kunne frasi seg rollen dersom minst én annen administrato
 
 Hvis eneste administrator ønsker å fratre, må systemet støtte en kontrollert overføring. Det opprinnelige utkastet foreslår en periode der andre medlemmer kan melde seg som ny administrator, eventuelt med automatisk avvikling hvis ingen overtar. Mekanismen er foreløpig og må avklares.
 
+## Permanent utestenging fra et miljø
+
+En permanent utestengt bruker skal oppleve miljøet som om det **ikke eksisterer**.
+
+Det innebærer at miljøet:
+
+- ikke vises i søk eller kart
+- ikke kan åpnes via direkte lenke
+- ikke kan nås gjennom tips eller invitasjoner
+- ikke viser navn, beskrivelse eller annen offentlig forhåndsvisning
+- ikke gir tilgang til objekter, medlemmer eller aktivitet gjennom miljøet
+
+Dette gjelder også dersom miljøet ellers er åpent eller lukket.
+
+Administratorer skal senere kunne oppheve utestengingen. Selve utestengingen skal være sporbar som en administrativ handling.
+
+### Pågående lån påvirkes ikke av miljøets synlighet
+
+Et lån som allerede er opprettet gjennom miljøet, er en egen relasjon mellom utlåner og låntaker.
+
+Hvis en av partene blir utestengt fra miljøet, skal derfor:
+
+- miljøet forsvinne fullstendig for den utestengte
+- pågående lån, reservasjoner og nødvendig lånehistorikk fortsatt være tilgjengelige i den vanlige låneflaten
+- lånet kunne fullføres uten at brukeren får generell tilgang tilbake til miljøet
+
+Miljøtilknytningen kan fortsatt bevares som intern kontekst for historikk, moderering og eventuell miljøbasert mekling, men den skal ikke brukes som en bakdør til miljøet for en utestengt bruker.
+
 ## Eierløse miljøer
 
 Eieren skal alltid også være administrator.
@@ -237,9 +269,7 @@ En administrator som avviser et objekt, skal også kunne rapportere objektet til
 
 Blant annet må vi avklare:
 
-- nøyaktig forhold mellom eier og administrator
 - hvordan eneste administrator kan fratre
-- hva utestenging fra et miljø skal innebære
 - hvilke slettemekanismer som er proporsjonale og forståelige
 
 Se [Åpne spørsmål](open-questions.md).

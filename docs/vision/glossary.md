@@ -70,7 +70,11 @@ En strukturert forespørsel om å få låne et bestemt objekt på et bestemt tid
 
 ## Lån
 
-En godkjent avtale om midlertidig bruk av et objekt.
+En avtale mellom utlåner og låntaker om midlertidig bruk av et objekt.
+
+Et lån kan oppstå gjennom et miljø eller direkte mellom venner, men bruker deretter det samme grunnleggende lånesystemet og den samme brukerflaten.
+
+Hvis lånet oppstod gjennom et miljø, beholdes miljøet som opprinnelseskontekst for blant annet historikk og eventuell miljøbasert mekling. Selve lånet er likevel ikke avhengig av fortsatt medlemskap i miljøet.
 
 Den nøyaktige grensen mellom «reservert lån» og «aktivt lån» må avklares.
 

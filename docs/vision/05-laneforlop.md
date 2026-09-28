@@ -29,7 +29,11 @@ Lån kan oppstå på to måter:
 
 Brukere som ikke er venner, kan foreløpig ikke gjennomføre direkte lån utenfor et miljø.
 
-Denne forskjellen har særlig betydning for konfliktbehandling: ved et miljøbasert lån finnes et administrativt nivå i miljøet, mens et direkte vennelån er en privat avtale mellom partene.
+Forskjellen mellom de to inngangene gjelder først og fremst **hvordan lånet kan oppstå**, ikke hvordan det vanlige låneforløpet ser ut etterpå.
+
+Når en låneforespørsel er sendt, skal lånet ha samme grunnleggende brukerflate, tilstander, kommunikasjon og returforløp uansett om det ble initiert gjennom et miljø eller direkte mellom venner.
+
+Et lån som oppstod gjennom et miljø skal likevel beholde miljøet som opprinnelseskontekst. Det kan være relevant for historikk, moderering og muligheten for miljøbasert mekling ved konflikt. Denne konteksten skal ikke gjøre det ordinære låne-UI-et til et eget «miljølån»-system.
 
 ### Ansvarserklæring ved direkte vennelån
 
@@ -45,6 +49,19 @@ Erklæringen skal gjøre det tydelig at:
 Aksepten skal være knyttet til det konkrete direkte lånet, slik at begge parter aktivt har tatt stilling til premisset før lånet etableres.
 
 Dette begrenser ikke brukerens adgang til å rapportere **plattformmisbruk** som trusler, trakassering, svindelforsøk, ulovlig innhold eller annen adferd som kan kreve tiltak for å beskytte Lånbort og brukerne. En slik rapport er en modereringssak, ikke en tvisteløsning for det private lånet.
+
+## Ett felles lånesystem
+
+Lånbort skal ha **ett felles lånesystem**.
+
+Et lån skal derfor vises og håndteres på samme måte i brukerflatene uansett om:
+
+- partene fant hverandre gjennom et miljø
+- partene allerede var venner og opprettet lånet direkte
+
+Miljøet fungerer som inngangsport og tillitsramme når brukere som ikke er venner skal kunne etablere et lån. Etter at låneforespørselen er sendt, er utlåner og låntaker de sentrale partene i selve låneforløpet.
+
+Forskjeller som følger av opprinnelsen, for eksempel tilgang til miljøbasert mekling, kan finnes som kontekstuelle handlinger uten å skape to separate låneopplevelser.
 
 ## Låneforespørsel
 
