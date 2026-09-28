@@ -56,11 +56,13 @@ Bruker som har forvaltningsrett til et objekt i Lånbort.
 
 Medeierskap til objekt er forskjellig fra eierskap til miljø.
 
-## Utlåner
+Når flere eier et objekt, kan hver medeier disponere det når det er ledig. Den medeiaren som godkjenner et konkret lån blir ansvarlig utlåner for akkurat dette lånet; andre medeiere kan ikke normalt endre eller avslutte lånet.
 
-Bruker som låner bort et objekt i et konkret lån.
+## Utlåner / ansvarlig utlåner
 
-Ved medeierskap kan én medeier være den praktiske utlåneren selv om flere eier objektet.
+Brukeren som inngår og håndterer et konkret lån på utlånersiden.
+
+Ved medeierskap blir den medeiaren som godkjenner låneforespørselen ansvarlig utlåner for akkurat dette lånet. Rollen omfatter blant annet avtaleendringer og endelig returbekreftelse.
 
 ## Låntaker
 

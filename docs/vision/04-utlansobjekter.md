@@ -97,14 +97,36 @@ Miljøet der et bestemt lån oppstod, er likevel relevant for blant annet admini
 
 En eier skal kunne invitere andre brukere til å bli medeiere.
 
-Invitasjonen må godtas.
+Invitasjonen må godtas. Ved å bli medeier aksepterer brukeren samtidig at de andre medeierne kan inngå lån på objektets vegne når objektet er ledig.
 
 Når en bruker blir medeier:
 
 - objektet skal vises blant vedkommendes medeide objekter
 - alle medeiere kan redigere objektet
 - alle medeiere kan publisere objektet i miljøer de selv har tilgang til
-- alle medeiere kan bekrefte at objektet er kommet tilbake etter et lån
+- alle medeiere kan godkjenne en låneforespørsel når objektet er ledig
+- den medeiaren som godkjenner et konkret lån blir den **ansvarlige utlåneren** for akkurat dette lånet
+
+Andre medeiere beholder sine generelle rettigheter til objektet, men får ikke dermed rett til å endre det konkrete lånet.
+
+Det innebærer at andre medeiere ikke ensidig kan:
+
+- kansellere lånet
+- endre avtalt hentetid eller returdato
+- godkjenne en forlengelse
+- erklære lånet avsluttet eller bekrefte retur på utlånerens vegne
+
+Perioden som omfattes av lånet er blokkert globalt for alle medeiere.
+
+### Uttreden og fjerning av medeiere
+
+En medeier kan trekke **seg selv** som medeier så lenge minst én eier blir igjen.
+
+Ingen medeier kan ensidig fjerne en annen medeier.
+
+Permanent sletting av et medeid objekt skal kreve samtykke fra alle registrerte medeiere.
+
+Lånbort skal ikke avgjøre hvem som juridisk eier en fysisk gjenstand dersom medeierne er uenige. Produktet forholder seg til de registrerte rettighetene og historikken i appen.
 
 ## Endringshistorikk for medeide objekter
 
@@ -116,7 +138,9 @@ Når én medeier endrer objektet, skal de andre kunne se:
 
 Det opprinnelige utkastet foreslår en tydelig diff-visning og mulighet til å gjenopprette forrige versjon.
 
-Dette er en ønsket brukeropplevelse, men regler for samtidige endringer og gjenoppretting må defineres senere slik at én medeier ikke utilsiktet overskriver andres arbeid.
+Dette er en ønsket brukeropplevelse. Gjenoppretting av en tidligere versjon skal registreres som **en ny endring**; senere historikk skal ikke slettes eller omskrives.
+
+Regler for samtidige redigeringer må senere utformes slik at én medeier ikke utilsiktet overskriver andres arbeid.
 
 ## Redigering
 
@@ -177,6 +201,6 @@ Aktuelle kategorier som senere må vurderes særskilt omfatter blant annet våpe
 Se [Åpne spørsmål](open-questions.md), særlig om:
 
 - kategorier og obligatoriske felt
-- medeierskap og konflikt mellom medeiere
+- kontrollert overtakelse av et pågående lån dersom ansvarlig utlåner blir utilgjengelig
 - offentlige spørsmål
 - deaktivering, arkivering og sletting

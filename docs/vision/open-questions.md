@@ -18,17 +18,11 @@ Dette er en avgrenset styringsdetalj og trenger ikke avgjøres før den øvrige 
 
 ## C – Objekter og låneforløp
 
-### 18. Hvilke rettigheter har medeiere overfor hverandre?
+### 18. Hvordan overtas et pågående lån hvis ansvarlig utlåner blir utilgjengelig?
 
-Alle medeiere kan foreløpig redigere, publisere og bekrefte retur.
+Medeiermodellen er nå avklart slik at den medeiaren som godkjenner et lån blir ansvarlig utlåner for akkurat dette lånet. Andre medeiere kan ikke normalt endre eller avslutte lånet.
 
-Vi må avklare:
-
-- om én medeier kan fjerne en annen
-- hvem som kan slette objektet
-- hva som skjer ved uenighet
-- hvordan gjenoppretting av tidligere versjoner fungerer
-- om alle medeiere kan godkjenne ethvert lån
+Vi må senere definere en kontrollert unntaksprosess dersom den ansvarlige utlåneren blir utilgjengelig under et reservert eller aktivt lån, for eksempel ved langvarig fravær eller deaktivering av konto.
 
 ### 19. Hvor skal offentlige spørsmål om et objekt høre hjemme?
 

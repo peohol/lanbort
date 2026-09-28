@@ -88,7 +88,9 @@ Reglene for kontakt med brukere som ikke allerede er venner, må fortsatt ivaret
 
 Når utlåner godkjenner en forespørsel, går lånet over til **reservert**.
 
-Den avtalte perioden knyttes til objektet og blokkerer kolliderende utlån. Dette gjelder objektet globalt, også dersom objektet er synlig i flere miljøer eller har flere eiere.
+Dersom objektet har flere medeiere, blir den medeiaren som godkjenner forespørselen registrert som **ansvarlig utlåner** for dette konkrete lånet.
+
+Den avtalte perioden knyttes til objektet og blokkerer kolliderende utlån. Dette gjelder objektet globalt, også dersom objektet er synlig i flere miljøer eller har flere eiere. Andre medeiere kan dermed ikke inngå et kolliderende lån i den reserverte perioden.
 
 Reservasjon er en status i det konkrete låneforløpet. Den skal ikke blandes sammen med objektets generelle tilgjengelighetsperioder.
 
@@ -117,11 +119,14 @@ Slike mekanismer kan vurderes senere dersom reell bruk viser et behov.
 
 Når objektet leveres tilbake, kan både låntaker og utlåner bekrefte dette.
 
-I den beskrevne modellen er det utlåners bekreftelse som gjør tilbakeleveringen endelig:
+I den beskrevne modellen er det den **ansvarlige utlånerens** bekreftelse som gjør tilbakeleveringen endelig:
 
-- utlåner kan bekrefte uten at låntaker har gjort det
-- når utlåner har bekreftet, regnes objektet som tilbakelevert
+- ansvarlig utlåner kan bekrefte uten at låntaker har gjort det
+- når ansvarlig utlåner har bekreftet, regnes objektet som tilbakelevert
 - låntakers bekreftelse alene gjør ikke tilbakeleveringen endelig
+- andre medeiere kan ikke bekrefte retur på ansvarlig utlåners vegne bare fordi de medeier objektet
+
+Hvis ansvarlig utlåner blir utilgjengelig, skal det senere defineres en kontrollert overtakelsesmekanisme for et pågående lån. Dette skal være et eksplisitt unntak, ikke en generell rett for alle medeiere til å gripe inn.
 
 ### Låntakers bekreftelse alene
 
