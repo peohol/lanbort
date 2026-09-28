@@ -140,6 +140,12 @@ Privat fritekst og private vedlegg mellom to brukere som bare skal kunne leses a
 
 Strukturerte lånehendelser er systemdata og faller ikke inn under dette begrepet.
 
+## Lesebekreftelse
+
+Et signal om at mottakeren har åpnet eller lest en privat melding.
+
+Lånbort skal ikke bruke lesebekreftelser i vanlig privat chat. Nødvendig fremdrift i låneforløpet skal uttrykkes gjennom eksplisitte systemstatuser og handlinger i stedet.
+
 ## Administrativ samtale / sakskommunikasjon
 
 Kommunikasjon som uttrykkelig sendes til en administrativ funksjon og derfor må kunne leses av autoriserte administratorer eller plattformforvaltere. Dette er adskilt fra privat part-til-part-chat.

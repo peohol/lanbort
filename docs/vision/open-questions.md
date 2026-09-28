@@ -26,12 +26,6 @@ Vi må senere definere en kontrollert unntaksprosess dersom den ansvarlige utlå
 
 ## D – Kommunikasjon og varsler
 
-### 23. Skal Lånbort bruke lesebekreftelser?
-
-Kildedokumentet sier uttrykkelig at en første henvendelse til en ikke-venn ikke skal vise om mottakeren har lest den.
-
-Vi må avgjøre om lesebekreftelser ellers skal finnes, være valgfrie eller utelates helt.
-
 ### 24. Hvilke varsler kan brukeren slå av?
 
 Varsler om for eksempel et aktivt lån, sikkerhet eller tidskritisk retur kan være annerledes enn informasjonsvarsler om et objekt man følger.

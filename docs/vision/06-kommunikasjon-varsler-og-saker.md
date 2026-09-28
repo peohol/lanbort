@@ -59,7 +59,9 @@ Den første kontakten kan være en strukturert henvendelse.
 
 Mottakeren skal kunne velge om det åpnes for videre fri samtale.
 
-Før dette skal avsenderen ikke kunne sende en strøm av nye fritekstmeldinger, og mottakeren skal ikke måtte forholde seg til lesebekreftelser.
+Før dette skal avsenderen ikke kunne sende en strøm av nye fritekstmeldinger.
+
+Lånbort skal ikke bruke lesebekreftelser i vanlig privat chat. Dette gjelder både mellom venner og i privat samtale rundt lån.
 
 ## Strukturert innhold i chat
 
@@ -77,6 +79,26 @@ Strukturerte meldinger kan representere hendelser eller handlinger som:
 Slike meldinger kan ha knapper og andre kontroller når det gir mening.
 
 Målet er at viktige avtaler ikke bare skal finnes som ustrukturert tekst som systemet ikke forstår.
+
+## Ingen lesebekreftelser i privat chat
+
+Vanlig privat chat skal **ikke** vise om eller når mottakeren har lest en melding.
+
+Dette gjelder:
+
+- chat mellom venner
+- privat fritekst rundt et konkret lån
+- første kontakt som senere åpnes for fri samtale
+
+Formålet er å redusere sosialt press og unngå å gjøre lesing til et signal om samtykke, forståelse eller ansvar.
+
+Strukturerte handlinger skal i stedet ha egne eksplisitte systemstatuser når det er nødvendig. Eksempler:
+
+- en låneforespørsel kan være «venter på svar», «godkjent» eller «avslått»
+- et forslag om forlengelse kan være «venter på godkjenning», «godkjent» eller «avslått»
+- en returbekreftelse kan være registrert som en konkret hendelse
+
+At en privat melding er åpnet skal aldri i seg selv tolkes som at brukeren har akseptert eller tatt stilling til innholdet.
 
 ## Fjerning av chat fra egen visning
 
@@ -205,6 +227,5 @@ Se [Åpne spørsmål](open-questions.md) for blant annet:
 
 - hvilke varsler som er obligatoriske
 - chat mellom brukere som ikke er venner
-- lesebekreftelser
 - eierskap og overføring av aktive administratorkontakter
 - hvor lenge saker skal oppbevares
