@@ -58,21 +58,15 @@ Visjonen bør formulere resultatet – ikke kreve en bestemt teknisk URL-løsnin
 
 ## Privat kommunikasjon
 
-Privat chat skal ha sterk beskyttelse.
+Vanlig privat chat mellom to brukere skal som produktmål være ende-til-ende-kryptert.
 
-Ende-til-ende-kryptering er en ønsket retning for kommunikasjon der bare deltakerne skal kunne lese innholdet.
+Det samme gjelder privat fritekst og vedlegg i samtalen rundt et konkret lån mellom utlåner og låntaker.
 
-Samtidig finnes kommunikasjonstyper der en administrator eller plattformforvalter må kunne behandle innholdet, for eksempel formelle saker.
+Strukturerte lånehendelser, som forespørsler, godkjenninger, avtalte perioder, statusendringer og returbekreftelser, er derimot systemdata som Lånbort må kunne behandle for at lånefunksjonen skal virke.
 
-Derfor må systemet senere skille tydelig mellom:
+Kommunikasjon som uttrykkelig sendes til en administrativ funksjon, som innmeldingssaker, administratorkontakt, meklingssaker, rapporter og kommunikasjon med plattformforvalter, må kunne leses av de autoriserte personene som behandler saken. Slike flater skal ha streng tilgangskontroll og sterk konfidensialitet, men er ikke klassisk ende-til-ende-kryptert bare mellom to private brukere.
 
-- privat part-til-part-kommunikasjon
-- administrative samtaler
-- systemmeldinger
-- formelle saker
-- offentlig eller miljøsynlig kommunikasjon
-
-Én krypteringsmodell passer ikke nødvendigvis alle.
+En miljøadministrator skal **ikke** få automatisk tilgang til privat lånechat dersom det oppstår en konflikt. Partene må selv sende inn den informasjonen eller dokumentasjonen de ønsker at administratoren skal vurdere.
 
 ## Logging og sporbarhet
 
@@ -85,7 +79,7 @@ Aktuelle hendelser som kan trenge sporbarhet inkluderer:
 - endring av eierskap
 - publisering og moderering av objekter
 - inngåelse og endring av lån
-- bekreftelse og tilbakekalling av tilbakelevering
+- bekreftelse av tilbakelevering og senere feil-/avviksmeldinger
 - rapporter og saksbehandling
 - sikkerhetskritiske handlinger
 

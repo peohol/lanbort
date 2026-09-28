@@ -137,19 +137,58 @@ Ved en miljøbasert lånetvist er administratoren **mekler, ikke dommer**. Saksp
 
 ## Ende-til-ende-kryptering
 
-Den opprinnelige visjonen ønsker robust ende-til-ende-kryptering for chat.
+Lånbort skal skille tydelig mellom **privat part-til-part-kommunikasjon** og kommunikasjon som er del av en administrativ eller formell prosess.
 
-Dette er en viktig sikkerhetsambisjon, men omfanget må defineres før det kan gjøres til et absolutt krav.
+### Privat chat
 
-Vanlig privat brukerschatt, administratorsamtaler, interaktive systemmeldinger og formelle saker har forskjellige behov. Noen prosesser forutsetter for eksempel at autoriserte administratorer kan lese innholdet.
+Vanlig privat chat mellom to brukere skal som produktmål være **ende-til-ende-kryptert**.
 
-Visjonen fastsetter derfor foreløpig:
+Det samme gjelder fritekst og private vedlegg i samtalen rundt et konkret lån mellom utlåner og låntaker.
 
-- privat kommunikasjon skal ha sterkest mulig rimelig konfidensialitet
-- systemet skal ikke ha bredere innsyn enn funksjonen krever
-- det må skilles eksplisitt mellom kommunikasjon som kan være ende-til-ende-kryptert og kommunikasjon som må kunne behandles av en autorisert tredjepart i appen
+At et lån oppstod gjennom et miljø skal ikke gi miljøadministratorer tilgang til den private samtalen mellom partene.
 
-Den konkrete kryptografiske modellen hører til sikkerhets- og arkitekturarbeidet senere.
+### Strukturerte lånehendelser
+
+Strukturerte hendelser i låneforløpet er systemdata, ikke private chatmeldinger.
+
+Dette omfatter blant annet:
+
+- låneforespørsel
+- godkjenning eller avslag
+- avtalt låneperiode
+- endringer som begge parter har godkjent
+- returbekreftelser
+- lånestatus og andre strukturerte hendelser
+
+Lånbort må kunne behandle slike data for å gjennomføre selve lånefunksjonen, selv om privat fritekst rundt hendelsene er ende-til-ende-kryptert.
+
+### Administrative samtaler og saker
+
+Kommunikasjon som uttrykkelig sendes til en administrativ funksjon skal kunne leses av de autoriserte personene som skal behandle saken.
+
+Dette gjelder blant annet:
+
+- innmeldingsforespørsler og tilhørende dialog
+- kontakt med administratorgruppen i et miljø
+- meklingssaker knyttet til miljøbaserte lån
+- rapporter og modereringssaker
+- kommunikasjon med plattformforvaltere
+
+Slik kommunikasjon skal fortsatt ha sterk konfidensialitet og streng tilgangskontroll, men den kan ikke behandles som klassisk ende-til-ende-kryptering bare mellom to private brukere når selve formålet er at en autorisert tredjepart skal lese innholdet.
+
+### Ingen automatisk åpning av privat chat ved konflikt
+
+Hvis det oppstår en konflikt om et miljøbasert lån, skal en administrator **ikke automatisk få tilgang til den private lånechatten**.
+
+Partene skal i stedet selv sende inn:
+
+- sin forklaring
+- relevante opplysninger
+- eventuelle meldinger, skjermbilder eller annet materiale de ønsker å bruke i saken
+
+På denne måten kan administrativ mekling gjennomføres uten at medlemskap i et miljø innebærer at administratorene senere kan åpne medlemmenes private samtaler.
+
+Den konkrete kryptografiske implementasjonen hører til senere sikkerhets- og arkitekturarbeid, men disse tilgangsgrensene er en del av produktvisjonen.
 
 ## Åpne spørsmål
 
@@ -159,6 +198,5 @@ Se [Åpne spørsmål](open-questions.md) for blant annet:
 - chat mellom brukere som ikke er venner
 - lesebekreftelser
 - sletting og historikk
-- grenser for ende-til-ende-kryptering
 - eierskap og overføring av aktive administratorkontakter
 - hvor lenge saker skal oppbevares

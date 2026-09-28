@@ -26,19 +26,6 @@ Vi må senere definere en kontrollert unntaksprosess dersom den ansvarlige utlå
 
 ## D – Kommunikasjon og varsler
 
-### 21. Hvilken privat kommunikasjon skal være ende-til-ende-kryptert?
-
-Vi må skille mellom:
-
-- privat chat mellom brukere
-- strukturert lånechat
-- kontakt med administratorgruppe
-- innmeldingssaker
-- konfliktsaker
-- kommunikasjon med plattformforvaltere
-
-Noen av disse forutsetter tredjepartsinnsyn som ikke er forenlig med klassisk E2EE bare mellom to brukere.
-
 ### 22. Hva betyr «slett chat»?
 
 Mulige betydninger:

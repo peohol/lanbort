@@ -128,6 +128,16 @@ En systemgenerert beskjed om en hendelse som er relevant for brukeren.
 
 Løpende samtale mellom brukere eller i en administrativ kontaktflate.
 
+## Ende-til-ende-kryptert privat chat
+
+Privat fritekst og private vedlegg mellom to brukere som bare skal kunne leses av deltakerne. Dette omfatter også privat samtale rundt et konkret lån.
+
+Strukturerte lånehendelser er systemdata og faller ikke inn under dette begrepet.
+
+## Administrativ samtale / sakskommunikasjon
+
+Kommunikasjon som uttrykkelig sendes til en administrativ funksjon og derfor må kunne leses av autoriserte administratorer eller plattformforvaltere. Dette er adskilt fra privat part-til-part-chat.
+
 ## Strukturert melding
 
 En melding som systemet forstår som en bestemt hendelse eller handling, og som kan inneholde knapper eller annen interaksjon.
