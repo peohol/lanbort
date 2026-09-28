@@ -124,6 +124,16 @@ En brukerrelasjon der brukeren ønsker varsler om relevante endringer i et objek
 
 En systemgenerert beskjed om en hendelse som er relevant for brukeren.
 
+## Varslingsnivå
+
+En kategori som beskriver hvor mye kontroll brukeren har over hvordan en hendelse varsles:
+
+- **påkrevd varsel** – kan ikke skjules helt fra brukeren
+- **vanlig handlingsvarsel** – vises i appen, men push/e-post kan slås av
+- **informasjonsvarsel** – kan slås helt av
+
+Varslingsnivået påvirker ikke selve systemhendelsen eller dens konsekvenser.
+
 ## Chat
 
 Løpende samtale mellom brukere eller i en administrativ kontaktflate.

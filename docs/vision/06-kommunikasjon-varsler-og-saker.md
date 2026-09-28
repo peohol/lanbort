@@ -36,18 +36,50 @@ Eksempler på hendelser som kan gi varsel:
 
 ## Varslingspreferanser
 
-Brukeren skal kunne styre:
+Lånbort skal skille mellom at en hendelse **finnes i appen** og at brukeren blir aktivt avbrutt med for eksempel pushvarsel eller e-post.
 
-- hvilke typer hendelser hen ønsker varsler om
-- hvilke kanaler som skal brukes
+Varsler deles foreløpig i tre nivåer:
 
-Aktuelle kanaler er:
+### Påkrevde varsler
 
-- i appen
-- mobilvarsler
-- e-post
+Dette gjelder sikkerhets- og kontohendelser samt viktige hendelser i et allerede godkjent eller aktivt lån, for eksempel:
 
-Det må senere bestemmes hvilke varsler som er valgfrie og hvilke som er så viktige for et aktivt lån eller en sikkerhetsprosess at de ikke bør kunne deaktiveres helt.
+- kansellering eller forslag til endring av et godkjent lån
+- kommende returtid
+- passert returtid
+- behov for returavklaring
+- konflikthendelser eller andre vesentlige avvik
+- kritiske sikkerhets- eller kontohendelser
+
+Disse hendelsene skal ikke kunne skjules helt fra brukeren. Brukeren kan i stor grad få kontroll over kanalvalg, men Lånbort må kunne gjøre hendelsen tydelig tilgjengelig og ved behov varsle gjennom en egnet kanal.
+
+### Vanlige handlingsvarsler
+
+Dette omfatter for eksempel:
+
+- ny låneforespørsel
+- venneforespørsel
+- invitasjon
+- ny privat melding
+- andre hendelser som normalt krever eller inviterer til en handling
+
+Hendelsen skal være synlig i appen, mens push- og e-postvarsler skal kunne slås av.
+
+### Informasjonsvarsler
+
+Dette omfatter for eksempel:
+
+- objekt man følger blir tilgjengelig
+- endringer i objekter man abonnerer på
+- generell aktivitet uten tidskritisk handlingsbehov
+
+Disse skal kunne slås helt av og konfigureres relativt fritt.
+
+### Systemhendelser påvirkes ikke av varslingsvalg
+
+Varslingspreferanser skal bare styre hvordan brukeren gjøres oppmerksom på en hendelse.
+
+De skal ikke endre selve systemtilstanden eller konsekvensen av hendelsen. Et lån kan for eksempel fortsatt bli markert som avventer returavklaring eller forsinket selv om brukeren har slått av pushvarsler.
 
 ## Direktemeldinger mellom brukere
 
@@ -225,7 +257,6 @@ Den konkrete kryptografiske implementasjonen hører til senere sikkerhets- og ar
 
 Se [Åpne spørsmål](open-questions.md) for blant annet:
 
-- hvilke varsler som er obligatoriske
 - chat mellom brukere som ikke er venner
 - eierskap og overføring av aktive administratorkontakter
 - hvor lenge saker skal oppbevares

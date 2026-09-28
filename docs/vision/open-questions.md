@@ -26,12 +26,6 @@ Vi må senere definere en kontrollert unntaksprosess dersom den ansvarlige utlå
 
 ## D – Kommunikasjon og varsler
 
-### 24. Hvilke varsler kan brukeren slå av?
-
-Varsler om for eksempel et aktivt lån, sikkerhet eller tidskritisk retur kan være annerledes enn informasjonsvarsler om et objekt man følger.
-
-Vi bør definere kategorier før vi definerer kanalinnstillinger.
-
 ## E – Anmeldelser og tillit
 
 ### 25. Skal 4/5 virkelig kreve en negativ begrunnelse?
