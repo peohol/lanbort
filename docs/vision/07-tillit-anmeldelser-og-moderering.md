@@ -1,6 +1,6 @@
 # Tillit, anmeldelser og moderering
 
-> **Status:** Førsteutkast. Ambisjonen om å bygge tillit er sentral. De konkrete skårings- og vektingsmekanismene er hypoteser og skal ikke behandles som ferdig design.
+> **Status:** Konsolidert visjonsutkast. Anmeldelsesmodellen, synlighet, tilsvar, rollebaserte tillitsprofiler og grensene mot sosial rangering er avklart. Statistisk mønsteranalyse er fortsatt en mulig fremtidig mekanisme, ikke en del av startmodellen.
 
 ## Formål
 
@@ -238,6 +238,6 @@ Et sentralt designprinsipp for videre arbeid bør være at tillitssystemet skal 
 
 Skårer og badges bør derfor bare eksistere når de har en tydelig funksjon i tryggere eller bedre deling.
 
-## Åpne spørsmål
+## Detaljer som fastsettes senere
 
-Se [Åpne spørsmål](open-questions.md) for eventuelle gjenværende tverrgående produktspørsmål.
+Den konkrete anmeldelsesfristen, endelig ordlyd i vurderingsdimensjonene og eventuell fremtidig statistisk modellering fastsettes senere. Kjerneprinsippene for anmeldelser og tillitsinformasjon er avklart.
