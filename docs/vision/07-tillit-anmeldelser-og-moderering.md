@@ -56,13 +56,32 @@ Dette skal redusere presset mot at alt annet enn 5/5 oppfattes som en klage, sam
 
 ## Synlighet og tidspunkt
 
-Visjonen må avklare:
+### Når anmeldelser blir synlige
 
-- om vurderinger publiseres umiddelbart eller først når begge har vurdert / en frist har gått
+Anmeldelser skal bruke en dobbelblind publiseringsmodell med frist.
+
+Etter at et lån er avsluttet:
+
+- får begge parter en begrenset periode til å levere anmeldelse
+- en innsendt anmeldelse holdes skjult for motparten så lenge den andre fortsatt kan levere sin vurdering
+- hvis begge leverer, publiseres vurderingene samtidig
+- hvis bare én leverer, publiseres denne først når anmeldelsesfristen utløper
+- skjulte vurderinger skal heller ikke påvirke synlige skårer før de publiseres
+- manglende anmeldelse skal ikke telle verken positivt eller negativt
+
+Formålet er å redusere gjengjeldelsesvurderinger uten å gi den ene parten veto over den andres anmeldelse ved å la være å svare.
+
+Den konkrete lengden på anmeldelsesfristen bestemmes senere.
+
+Rapportering av alvorlige hendelser, for eksempel trusler, svindelforsøk eller andre forhold som krever moderering, skal ikke vente på anmeldelsesfristen. Slike forhold følger rapporterings- og modereringssystemet uavhengig av anmeldelsene.
+
+### Fortsatt uavklart
+
+Visjonen må fortsatt avklare:
+
 - om fritekst er offentlig, privat eller delt bare med motparten
 - om vurderinger kan redigeres
 - om brukeren kan svare på en omtale
-- hvordan hevn-anmeldelser skal motvirkes
 
 ## Uvanlig negative anmeldelsesmønstre
 
