@@ -8,17 +8,6 @@ Den første sekvensielle gjennomgangen av spørsmål 1–34 er fullført. En ett
 
 ## H – Gjenværende produktspørsmål etter konsistensgjennomgang
 
-### 35. Hvordan virker blokkering når partene fortsatt har en nødvendig felles kontekst?
-
-Hovedregelen er at den blokkerte ikke skal kunne finne, kontakte eller se vanlig aktivitet fra den som blokkerte.
-
-Vi må avklare hvordan dette virker når partene samtidig:
-
-- er medlemmer av samme miljø
-- har et reservert eller aktivt lån
-- har en pågående sak
-- trenger tilgang til historikk eller strukturerte handlinger som ikke kan forsvinne midt i et pågående forhold
-
 ### 36. Hva skjer når et godkjent lån ikke blir hentet?
 
 Låneforløpet beskriver reservasjon, overlevering, retur og avvik etter retur, men manglende henting er fortsatt uttrykkelig uavklart.
