@@ -394,6 +394,20 @@ Forsikring eller depositum er ikke del av den etablerte kjernevisjonen og skal i
 
 Hvis dette senere vurderes, må spørsmål om betaling, tilbakebetaling, finansielle og juridiske krav, skadebehandling og Lånborts rolle vurderes som et eget produktområde.
 
+## Kontinuitet uten personvernlekkasje
+
+Når eksisterende relasjoner må fortsette etter at medlemskap, vennskap eller kontoaktivitet endres, skal Lånbort bevare den minste tilgangen som er nødvendig for å håndtere den konkrete forpliktelsen. Dette skal ikke brukes til å gjenåpne generell profil-, miljø- eller sosial tilgang som ellers er bortfalt.
+
+Hvis samme objekt forekommer i både skjulte og ikke-skjulte kontekster, skal systemet kunne håndheve globale forhold som faktisk ledighet uten å forklare dem på en måte som røper det skjulte miljøet, dets medlemmer eller aktivitet.
+
+Ved avvikling eller sletting av et skjult miljø kan nødvendig historisk informasjon om konkrete lån og saker beholdes for direkte parter og andre med et legitimt historisk behov. Miljøet skal likevel ikke bli søkbart eller på annen måte eksponert for brukere som ikke hadde eller ikke lenger har en legitim historisk forbindelse til den aktuelle informasjonen.
+
+## Deaktivering av medeier
+
+Deaktivering av en medeiers konto skal stoppe ny aktivitet fra denne kontoen, men skal ikke automatisk slette medeierrettigheten eller eksisterende felles historikk.
+
+Hvis brukeren er ansvarlig utlåner i et eksisterende lån, må dette ansvaret avsluttes eller overføres etter de etablerte reglene før permanent kontosletting eller full uttreden kan gjennomføres. Andre medeiere kan fortsatt forvalte objektet innenfor sine egne rettigheter.
+
 ## Detaljer som fastsettes senere
 
 Følgende skal fastsettes i senere sikkerhets-, personvern-, juridisk- og produktarbeid:
