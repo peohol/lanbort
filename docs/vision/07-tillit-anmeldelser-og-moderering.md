@@ -97,6 +97,16 @@ Den som skrev anmeldelsen skal identifiseres. Anonyme anmeldelser inngår ikke i
 
 Aggregerte skårer kan senere få noe videre synlighet enn fritekst dersom dette er nyttig og forenlig med profil- og personvernreglene. Tall og personlig omtale trenger ikke ha identiske synlighetsgrenser.
 
+### Anmeldelser fra skjulte miljøer
+
+Fritekstanmeldelser som springer ut av et lån i et skjult miljø skal behandles strengere enn vanlig profilbasert tillitsinformasjon.
+
+Den anmeldte brukeren skal fortsatt kunne se anmeldelsen om seg selv. Andre brukere skal bare kunne se friteksten dersom de selv har adgang til det skjulte miljøet og ellers har legitim tilgang til den anmeldtes profil.
+
+Friteksten, anmelderens identitet og annen sosial kontekst fra det skjulte miljøet skal ikke gjøres synlig for utenforstående gjennom den anmeldtes generelle profil, selv om disse ellers har legitim profiltilgang gjennom vennskap, et annet miljø eller en annen produktkontekst.
+
+Aggregerte skårer fra slike lån kan inngå i en bredere tillitsprofil dersom dette kan gjøres uten å røpe miljøets eksistens, hvem anmeldelsen kommer fra eller annen miljøspesifikk kontekst.
+
 ### Redigering og tilsvar
 
 Så lenge en anmeldelse fortsatt er skjult i den dobbelblinde perioden, kan forfatteren redigere den.
