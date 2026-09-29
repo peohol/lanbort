@@ -18,15 +18,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## F – Data, personvern og jus
 
-### 33. Hvor presis geografisk informasjon skal lagres og vises?
-
-Miljøer kan ha geografisk tilknytning, men vi må skille mellom:
-
-- grov geografisk oppdagelse
-- kartområde for et miljø
-- eventuell privat adresse
-- informasjon som bare gis i forbindelse med et konkret lån
-
 ### 34. Hvilket ansvar kan og bør Lånbort ta?
 
 Målet er at brukerne har ansvar for egne utlån, men bruksvilkår alene avgjør ikke plattformens juridiske ansvar.
