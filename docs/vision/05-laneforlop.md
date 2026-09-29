@@ -31,6 +31,10 @@ Lån kan oppstå på to måter:
 
 Brukere som ikke er venner, kan ikke gjennomføre direkte lån utenfor et miljø.
 
+For en direkte låneforespørsel mellom venner må vennskapet fortsatt bestå når forespørselen godkjennes. Hvis vennskapet opphører før godkjenning, skal forespørselen avsluttes og kan ikke senere bli til et lån.
+
+Når et direkte lån først er godkjent og reservert, fortsetter lånet etter de vanlige reglene selv om vennskapet senere opphører. Selve lånet blir da den nødvendige relasjonen mellom partene. Dersom én part i tillegg blokkerer den andre, gjelder de strengere blokkeringsreglene, men allerede eksisterende forpliktelser skal fortsatt kunne fullføres.
+
 Forskjellen mellom de to inngangene gjelder først og fremst **hvordan lånet kan oppstå**, ikke hvordan det vanlige låneforløpet ser ut etterpå.
 
 Når en låneforespørsel er sendt, skal lånet ha samme grunnleggende brukerflate, tilstander, kommunikasjon og returforløp uansett om det ble initiert gjennom et miljø eller direkte mellom venner.
