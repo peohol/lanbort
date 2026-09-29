@@ -1,6 +1,6 @@
 # Låneforløpet
 
-> **Status:** Førsteutkast. Hovedforløpet og skillet mellom tilgjengelighet og lånestatus er avklart, men flere regler for endringer og avvik må presiseres.
+> **Status:** Konsolidert visjonsutkast. Hovedforløpet, avvikstilstandene, ansvarlig utlåner og skillet mellom tilgjengelighet og lånestatus er avklart.
 
 ## Grunnforløp
 
@@ -29,7 +29,7 @@ Lån kan oppstå på to måter:
 1. **Gjennom et miljø:** En bruker kan sende låneforespørsel på et objekt som er publisert i et miljø der brukeren har nødvendig adgang.
 2. **Direkte mellom venner:** To brukere som er venner i Lånbort, kan låne direkte av hverandre uten at lånet er knyttet til et miljø.
 
-Brukere som ikke er venner, kan foreløpig ikke gjennomføre direkte lån utenfor et miljø.
+Brukere som ikke er venner, kan ikke gjennomføre direkte lån utenfor et miljø.
 
 Forskjellen mellom de to inngangene gjelder først og fremst **hvordan lånet kan oppstå**, ikke hvordan det vanlige låneforløpet ser ut etterpå.
 
@@ -125,7 +125,7 @@ Når én forespørsel godkjennes:
 
 Systemet skal dermed forhindre at to kolliderende lån godkjennes, uten at utlåner trenger å rydde manuelt i alle forespørsler.
 
-Lånbort skal foreløpig **ikke** ha:
+Kjernevisjonen inkluderer **ikke**:
 
 - venteliste for kolliderende forespørsler
 - en egen «hold av»-funksjon mens utlåner vurderer en forespørsel
