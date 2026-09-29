@@ -1,6 +1,6 @@
 # Brukere, roller og relasjoner
 
-> **Status:** Førsteutkast. Rollemodellen er renskrevet fra `VISION.md`, men enkelte grenser må avklares.
+> **Status:** Konsolidert visjonsutkast. Rollemodellen og de sentrale grensene mellom bruker, administrator, eier og plattformforvalter er avklart.
 
 ## Grunnidé
 
@@ -190,6 +190,6 @@ Brukere kan ha felles eierskap til et utlånsobjekt. Dette er en objektrelasjon,
 
 Detaljene beskrives i [Utlånsobjekter](04-utlansobjekter.md).
 
-## Åpne spørsmål
+## Detaljer som fastsettes senere
 
-De viktigste uavklarte spørsmålene for rolle- og relasjonsmodellen er samlet i [Åpne spørsmål](open-questions.md).
+Den konkrete kontaktkanalen ved kontoopprettelse og den nøyaktige listen over profilfelt fastsettes i senere produktspesifikasjon. Dette endrer ikke de avklarte prinsippene for identitet, roller, relasjoner, synlighet og blokkering.
