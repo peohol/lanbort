@@ -353,6 +353,18 @@ Dette gjelder blant annet:
 
 Forslag til slike endringer kan initieres av én part, men får ikke virkning før den andre har godtatt.
 
+### Endringer kan ikke fortrenge andre godkjente lån
+
+En endring eller forlengelse av et eksisterende lån kan ikke gis virkning dersom den kolliderer med et annet lån som allerede er godkjent og reservert på samme objekt.
+
+Utlåner og den nåværende låntakeren kan derfor ikke alene forlenge et lån inn i en periode som allerede er lovet til en annen låntaker.
+
+Hvis den senere låntakeren frivillig godtar å endre sitt eget lån, kan partene først endre dette lånet etter de vanlige reglene for gjensidig samtykke. Når den kolliderende perioden dermed faktisk er frigjort, kan en forlengelse av det første lånet vurderes på vanlig måte.
+
+Lånbort skal ikke tilby en funksjon som lar en bruker ensidig tilsidesette eller bryte et allerede godkjent lån for å gjøre plass til et annet. Partene kan kommunisere privat om mulige endringer, men hver eksisterende avtale må endres gjennom den ordinære samtykkebaserte prosessen før systemet behandler perioden som ledig.
+
+Hvis en låntaker i praksis beholder objektet utover avtalt tid uten at kolliderende reservasjoner først er flyttet eller kansellert på gyldig måte, er dette ikke en gyldig forlengelse i systemet. Det skal håndteres som forsinkelse eller annet relevant avvik.
+
 ### Ensidig kansellering før overlevering
 
 Før objektet faktisk er overlevert, kan begge parter ensidig kansellere et allerede godkjent og reservert lån.
