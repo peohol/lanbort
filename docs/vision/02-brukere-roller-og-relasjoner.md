@@ -147,14 +147,35 @@ Før mottakeren har akseptert videre samtale, skal avsenderen ikke kunne fortset
 
 En bruker skal kunne blokkere en annen bruker, uavhengig av om de tidligere har vært venner.
 
-**Retning:** Den blokkerte skal ikke kunne bruke vanlige produktflater til å finne, kontakte eller se aktivitet og objekter fra den som har blokkert.
+Blokkering skal forstås som en **kontakt- og synlighetsregel**, ikke som en mekanisme for å omskrive felles historikk eller oppheve eksisterende forpliktelser.
 
-Det må senere defineres hvordan blokkering virker når partene samtidig:
+Hovedregelen er at den blokkerte ikke skal kunne bruke vanlige produktflater til å:
 
-- er medlemmer av samme miljø
-- har et aktivt lån
-- har en pågående sak
-- trenger tilgang til historikk som ikke kan forsvinne midt i en konflikt
+- finne eller kontakte den som har blokkert
+- sende nye venneforespørsler, direktemeldinger eller låneforespørsler
+- se profil, objekter eller vanlig aktivitet fra den som har blokkert
+
+Et eksisterende vennskap opphører ved blokkering.
+
+At partene fortsatt er medlemmer av samme miljø opphever ikke blokkeringen. De kan fortsatt være medlemmer av miljøet, men produktet skal så langt det er praktisk mulig unngå å eksponere dem for hverandre gjennom ordinære oppdagelses- og kontaktflater.
+
+### Eksisterende lån, saker og historikk
+
+Blokkering skal ikke gjøre det umulig å fullføre forhold som allerede eksisterer.
+
+Ved et reservert eller aktivt lån skal begge parter fortsatt kunne se den nødvendige låneflaten, strukturerte hendelser, frister og handlinger som kreves for å gjennomføre eller avslutte lånet. Vanlig fri chat mellom partene kan derimot stenges av blokkeringen. Produktet skal da støtte fullføring med minst mulig nødvendig direkte kontakt.
+
+Ved en åpen sak beholder begge den tilgangen som følger av saksrollen. Blokkering skal ikke kunne brukes til å skjule saken, trekke tilbake nødvendig historikk eller hindre autorisert saksbehandling. Saksprosessen skal heller ikke åpne en ny generell direktekontakt mellom partene.
+
+Tidligere strukturerte lån, anmeldelser, rollehendelser og annen nødvendig felles historikk slettes ikke av blokkering.
+
+Når det ikke lenger finnes aktive lån, saker eller andre nødvendige felles forpliktelser, gjelder blokkeringen fullt ut.
+
+### Brukerkontroll
+
+Blokkering skal kunne gjøres uten rapport eller begrunnelse.
+
+Den blokkerte skal ikke få et eksplisitt systemvarsel om hvem som har blokkert vedkommende. Produktet trenger samtidig ikke love at blokkeringen er umulig å utlede indirekte, for eksempel dersom et vennskap eller kontaktmuligheter forsvinner.
 
 ## Medeierskap til objekter
 
