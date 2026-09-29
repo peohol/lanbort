@@ -18,22 +18,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## F – Data, personvern og jus
 
-### 31. Hvilke hendelser må logges, og hvor lenge?
-
-Dette må avgjøres etter formål, ikke med én universell lagringstid.
-
-Vi bør senere lage en datalivssyklus for blant annet:
-
-- sikkerhetslogger
-- rolleendringer
-- lån
-- returhendelser
-- chat
-- saker
-- rapporter
-- anmeldelser
-- objektversjoner
-
 ### 32. Når kan en inaktiv konto faktisk slettes?
 
 Et år uten innlogging er et mulig signal, men sletting kan være blokkert av:
