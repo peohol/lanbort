@@ -188,13 +188,13 @@ Blokkeringen skal fortsatt stanse fri chat, nye vennskapsforespørsler, nye lån
 
 ### Blokkering og medeierskap
 
-Hvis to registrerte medeiere av samme objekt blokkerer hverandre, skal objektet fryses for nye utlån. Det skal skjules fra andre brukeres ordinære oppdagelsesflater og skal ikke kunne inngå i nye lån så lenge blokkeringen består og begge fortsatt står som medeiere.
+Hvis to registrerte medeiere av samme objekt blokkerer hverandre, skal objektet fryses for nye utlån. Det skal skjules fra andre brukeres ordinære oppdagelsesflater og skal ikke kunne inngå i nye lån.
 
 Alle ikke-godkjente låneforespørsler på objektet avsluttes nøytralt når denne frysingen oppstår. Tredjeparten skal ikke få opplyst at årsaken er konflikt eller blokkering mellom medeierne.
 
 Allerede reserverte eller aktive lån fortsetter etter de vanlige reglene. Nødvendige strukturerte handlinger rundt slike eksisterende lån skal fortsatt være tilgjengelige selv om fri kontakt mellom medeierne er blokkert.
 
-For at objektet igjen skal kunne lånes ut, må medeierskapet avklares slik at bare én av de blokkerende partene står igjen som eier.
+For at objektet igjen skal kunne lånes ut, må medeierskapet avklares slik at objektet har én registrert eier. Det er ikke tilstrekkelig bare å oppheve blokkeringen.
 
 Hvis en potensiell låntaker og én av flere medeiere har en aktiv blokkering i noen retning, skal det medeide objektet ikke kunne inngå i et nytt lån med denne brukeren. Objektet bør ikke vises for brukeren i ordinære oppdagelsesflater, og blokkeringens eksistens eller hvilken medeier den gjelder skal ikke avsløres.
 
