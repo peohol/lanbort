@@ -16,15 +16,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## E – Anmeldelser og tillit
 
-### 27. Hvem kan se fritekstanmeldelser?
-
-Mulige nivåer:
-
-- bare mottakeren
-- medlemmer i felles miljø
-- alle som kan se brukerens profil
-- bare aggregert skår offentlig, med tekst privat
-
 ### 28. Bør «strenge anmeldere» automatisk få mindre vekt?
 
 Ideen kan være nyttig, men kan også feiltolke reelt dårlige erfaringer som personlig negativitet.
