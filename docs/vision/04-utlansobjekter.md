@@ -114,6 +114,8 @@ Når en bruker blir medeier:
 - en medeier som har slik adgang kan godkjenne en låneforespørsel når objektet er ledig
 - den medeiaren som godkjenner et konkret lån blir den **ansvarlige utlåneren** for akkurat dette lånet
 
+Medeierskap som opprettes etter at et lån allerede er godkjent, gjelder som hovedregel bare for fremtidige lån. En ny medeier skal ikke automatisk få innsyn i identitet, privat kommunikasjon eller andre detaljer om allerede eksisterende lån bare fordi vedkommende blir medeier av objektet.
+
 Andre medeiere kan få vite at objektet har en pågående forespørsel eller reservasjon i den grad dette er nødvendig for å forvalte det felles objektet, men uten at systemet røper miljøet, låntakeren eller annen kontekst de ikke har rett til å se.
 
 Andre medeiere beholder sine generelle rettigheter til objektet, men får ikke dermed rett til å endre det konkrete lånet.
@@ -133,7 +135,9 @@ Et konkret lån skal alltid ha én ansvarlig utlåner om gangen.
 
 Den ansvarlige utlåneren kan frivillig overføre ansvaret til en annen registrert medeier, for eksempel før et planlagt fravær.
 
-Hvis ansvarlig utlåner blir reelt utilgjengelig under et reservert eller aktivt lån, skal en annen medeier kunne overta gjennom en særskilt, kontrollert unntaksprosess. Manglende svar alene skal ikke umiddelbart gi andre medeiere rett til å overta; det må foreligge tilstrekkelig grunnlag for å behandle utlåneren som utilgjengelig. Den konkrete terskelen og prosessen bestemmes senere.
+Hvis ansvarlig utlåner blir reelt utilgjengelig under et reservert eller aktivt lån, skal en annen medeier som allerede var medeier da lånet ble godkjent kunne overta gjennom en særskilt, kontrollert unntaksprosess.
+
+En person som først ble medeier etter at lånet ble godkjent skal ikke automatisk kunne overta ansvaret for det eksisterende lånet. Hvis en slik overføring faktisk blir nødvendig, krever den låntakerens uttrykkelige samtykke fordi en ny person da trekkes inn i det eksisterende låneforholdet. Manglende svar alene skal ikke umiddelbart gi andre medeiere rett til å overta; det må foreligge tilstrekkelig grunnlag for å behandle utlåneren som utilgjengelig. Den konkrete terskelen og prosessen bestemmes senere.
 
 Overtakelsen:
 
