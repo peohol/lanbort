@@ -164,17 +164,41 @@ Den ønskede livssyklusen er:
 
 Den konkrete tidslinjen bestemmes senere.
 
+### Begrenset tilgang under deaktivering
+
+Deaktivering skal som hovedregel stanse **ny aktivitet**, men skal ikke gjøre det umulig for brukeren å oppfylle allerede eksisterende forpliktelser.
+
+En deaktivert eller sterkt begrenset konto skal derfor normalt fortsatt kunne utføre de minimumshandlingene som trengs for å avslutte eksisterende forhold, for eksempel:
+
+- se reserverte, aktive og uavklarte lån
+- se nødvendige avtalte tider og opplysninger
+- registrere overlevering eller retur og svare på strukturerte avklaringer
+- delta i allerede åpne saker der brukeren er part
+- utføre nødvendige steg for å avvikle medeierskap eller andre bindinger
+
+Samtidig skal brukeren normalt ikke kunne:
+
+- opprette nye lån eller låneforespørsler
+- publisere objekter for nye utlån
+- starte nye chatter, vennskap eller andre sosiale relasjoner
+- melde seg inn i nye miljøer
+- utføre annen ordinær ny aktivitet
+
+Hvis det finnes en særskilt sikkerhetsgrunn som gjør at selv denne begrensede kontotilgangen ikke kan forsvares, kan full stenging brukes som et strengere unntak.
+
 ### Bindinger som blokkerer sletting
 
 Permanent kontosletting skal ikke gjennomføres så lenge brukeren fortsatt har aktive ansvar eller bindinger som må håndteres, blant annet:
 
-- reserverte, aktive eller uavklarte lån
+- reserverte, aktive eller uavklarte lån som fortsatt krever faktisk oppfølging
 - rollen som ansvarlig utlåner
 - åpne saker eller modereringsprosesser
 - miljøeierskap
 - administrative roller som ikke kan fjernes uten å etterlate miljøet i en ugyldig tilstand
 - medeierskap som først må avvikles på en kontrollert måte
 - andre legitime eller juridiske oppbevaringsbehov
+
+Et lån som etter en tilstrekkelig avklaringsprosess er **administrativt avsluttet som uavklart** skal ikke fortsette å blokkere kontosletting eller andre systemprosesser bare fordi returen historisk aldri ble endelig bekreftet. Den uavklarte historikken skal likevel bevares så lenge det ellers er legitimt og nødvendig.
 
 Når slike bindinger er borte, kan langvarig inaktivitet føre til automatisk kontosletting etter de senere fastsatte reglene.
 
