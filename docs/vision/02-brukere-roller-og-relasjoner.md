@@ -127,6 +127,8 @@ Vennskap skal gjøre det enklere å:
 
 En bruker skal når som helst kunne fjerne en venn.
 
+Vennskap er et adgangsgrunnlag for å etablere et direkte lån, ikke en løpende forutsetning for et lån som allerede er godkjent. Hvis vennskapet opphører før en direkte låneforespørsel er godkjent, kan forespørselen ikke lenger godkjennes og skal avsluttes. Hvis lånet allerede er godkjent, fortsetter det etter de vanlige reglene selv om vennskapet senere fjernes. Nødvendige strukturerte handlinger og lånekommunikasjon består, uten at det tidligere vennskapet gir andre fortsatt gjeldende rettigheter.
+
 ## Profil og synlighet
 
 Brukeren skal kunne kontrollere hvilken profilinformasjon som er synlig:
