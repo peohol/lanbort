@@ -16,19 +16,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## E – Anmeldelser og tillit
 
-### 28. Bør «strenge anmeldere» automatisk få mindre vekt?
-
-Ideen kan være nyttig, men kan også feiltolke reelt dårlige erfaringer som personlig negativitet.
-
-Før vi beholder mekanismen må vi definere:
-
-- minimum datamengde
-- relevant sammenligningsgruppe
-- statistisk usikkerhet
-- transparens
-- klagemulighet
-- beskyttelse mot strategisk manipulasjon
-
 ### 29. Hvilke brukerskårer bør faktisk finnes?
 
 Foreløpige ideer er:
