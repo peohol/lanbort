@@ -93,7 +93,13 @@ Andre innloggede brukere skal kunne se fritekstanmeldelser når de allerede har 
 
 En anmeldelse skal ikke i seg selv gjøre brukeren mer oppdagbar enn vedkommende ellers ville vært. Fritekstanmeldelser skal derfor ikke kunne søkes frem eller leses av uvedkommende bare fordi de finnes.
 
-Den som skrev anmeldelsen skal identifiseres. Anonyme anmeldelser inngår ikke i kjernevisjonen.
+Den som skriver en anmeldelse skal identifiseres når anmeldelsen leveres og publiseres. Anmeldelser kan ikke leveres anonymt.
+
+Hvis anmelderen senere får kontoen permanent slettet, kan en allerede publisert anmeldelse likevel bestå som del av den anmeldte brukerens historiske tillitsgrunnlag når det fortsatt finnes et legitimt behov for dette. I så fall skal den tidligere brukerens navn, profilbilde og profillenke fjernes fra den synlige anmeldelsen, og forfatteren kan vises nøytralt som for eksempel **«Tidligere bruker»**.
+
+Et eventuelt tilsvar fra den anmeldte forblir knyttet til anmeldelsen. Nødvendig intern kobling til den historiske brukeren kan bevares så lenge det finnes et legitimt behov, uten at identiteten dermed skal være offentlig tilgjengelig.
+
+At anonyme anmeldelser ikke inngår i kjernevisjonen betyr dermed at en anmeldelse ikke kan **leveres** anonymt; det utelukker ikke senere anonymisering som følge av kontosletting.
 
 Aggregerte skårer kan senere få noe videre synlighet enn fritekst dersom dette er nyttig og forenlig med profil- og personvernreglene. Tall og personlig omtale trenger ikke ha identiske synlighetsgrenser.
 
