@@ -140,7 +140,13 @@ Den inviterte må også eventuelt godta generelle regler eller vilkår som gjeld
 
 Bare administratorer skal kunne invitere.
 
-En invitasjon kan for eksempel sendes til e-post eller til en eksisterende bruker. Ikke-medlemmer skal ellers ikke kunne oppdage miljøet.
+Invitasjon til et skjult miljø skal bare kunne sendes til en **eksisterende Lånbort-bruker** og skal være en intern, konto-bundet invitasjon i Lånbort.
+
+Det skal ikke finnes e-postinvitasjoner, delbare invitasjonslenker eller andre overførbare lenker som kan brukes til å få adgang til et skjult miljø. En person uten Lånbort-konto må derfor først opprette en vanlig konto og kan deretter inviteres av en administrator.
+
+Invitasjonen skal ikke kunne overføres til en annen bruker. En administrator som ønsker å invitere en annen person må sende en egen invitasjon til den aktuelle brukerens konto.
+
+Et skjult miljø kan ha en intern teknisk adresse i nettapplikasjonen, men denne skal ikke fungere som en delbar oppdagelses- eller adgangsmekanisme. En uvedkommende som får tak i en slik adresse skal fortsatt ikke få meningsfull informasjon om miljøets eksistens.
 
 ## Krav ved innmelding
 
