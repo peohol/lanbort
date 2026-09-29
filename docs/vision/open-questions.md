@@ -8,13 +8,4 @@ Den første sekvensielle gjennomgangen av spørsmål 1–34 er fullført. En ett
 
 ## H – Gjenværende produktspørsmål etter konsistensgjennomgang
 
-### 37. Kan anmeldelser redigeres, og kan mottakeren svare?
-
-Publiseringstidspunkt, synlighet og begrunnelseskrav er avklart.
-
-Det gjenstår å bestemme:
-
-- om en publisert anmeldelse kan endres
-- om en eventuell endring skal være synlig som endring
-- om den anmeldte kan gi et offentlig eller kontekstuelt synlig svar
-- hvordan dette påvirker den dobbelblinde anmeldelsesmodellen
+Ingen åpne produktspørsmål er registrert etter den siste gjennomgangen.
