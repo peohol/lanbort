@@ -206,9 +206,11 @@ Den kan for eksempel oppstå dersom eierens konto forsvinner eller blir utilgjen
 
 Hvis andre administratorer finnes, skal de varsles og få mulighet til å overta eierskapet.
 
-Hvis flere administratorer ønsker å overta samtidig, må en enkel og forutsigbar utvelgelsesregel defineres senere.
+Hvis flere administratorer ønsker å overta, skal bare administratorer som aktivt melder at de vil bli ny eier inngå i utvelgelsen. Dersom flere melder seg innen fristen, får den av kandidatene som har vært administrator i miljøet sammenhengende lengst eierskapet.
 
-Hvis ingen administrator overtar innen en rimelig frist, går miljøet over i avvikling.
+Regelen er bevisst enkel og skal sikre forutsigbar kontinuitet uten å innføre avstemning eller et kappløp om å reagere først på et varsel. Den konkrete fristen for å melde interesse bestemmes senere.
+
+Hvis ingen administrator overtar innen fristen, går miljøet over i avvikling.
 
 ## Avvikling av miljø
 
@@ -241,7 +243,7 @@ En administrator som avviser et objekt, skal også kunne rapportere objektet til
 
 Blant annet må vi avklare:
 
-- hvordan ny eier velges dersom flere administratorer samtidig vil overta et midlertidig eierløst miljø
+- den konkrete fristen administratorer får til å melde interesse for å overta et midlertidig eierløst miljø
 - den konkrete angrefristen og datalivssyklusen ved avvikling
 
 Se [Åpne spørsmål](open-questions.md).
