@@ -16,12 +16,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## E – Anmeldelser og tillit
 
-### 25. Skal 4/5 virkelig kreve en negativ begrunnelse?
-
-Dette kan gjøre en ellers positiv vurdering unødvendig negativ.
-
-Vi bør vurdere andre modeller, for eksempel å kreve forklaring bare ved lave skårer eller gjøre begrunnelse valgfri, men oppmuntret.
-
 ### 26. Når blir anmeldelser synlige?
 
 For å redusere gjengjeldelse kan vi vurdere at:
