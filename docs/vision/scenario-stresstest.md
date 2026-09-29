@@ -1,6 +1,6 @@
 # Scenario-basert stresstest av produktvisjonen
 
-> **Status:** Levende arbeidsdokument. Scenario 2–25 er gjennomført og avklart per 29. september 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
+> **Status:** Levende arbeidsdokument. Scenario 2–26 er gjennomført og avklart per 29. september 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
 
 ## Formål og metode
 
@@ -42,6 +42,7 @@ Stresstesten skal holde seg på visjonsnivå. Tekniske mekanismer, konkrete fris
 - **23. Invitasjon til skjult miljø:** bare eksisterende Lånbort-brukere kan inviteres via intern, konto-bundet invitasjon; ingen delbar invitasjonslenke eller e-postinvitasjon gir adgang.
 - **24. Administratoren som inviterte forsvinner:** ventende invitasjon tilhører miljøet, ikke personen som sendte den, og kan trekkes tilbake av autorisert administrasjon.
 - **25. Anmelder sletter kontoen:** publisert anmeldelse kan bestå, men synlig forfatter anonymiseres; anmeldelser kan ikke leveres anonymt.
+- **26. Forlengelse kolliderer med et allerede godkjent neste lån:** det første lånet kan ikke forlenges inn i den reserverte perioden. Den senere avtalen må først endres frivillig etter de vanlige samtykkereglene; Lånbort skal ikke fasilitere at en eksisterende avtale tilsidesettes.
 
 ## Gjenstående scenario-kø
 
@@ -49,7 +50,6 @@ Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avde
 
 ### A. Låneforløp og kollisjoner
 
-- Forlengelse av et aktivt lån kolliderer med et allerede godkjent fremtidig lån på samme objekt.
 - Tidlig retur gjør objektet fysisk tilgjengelig før neste reservasjon; hva kan og bør åpnes for nye lån?
 - Retur blir først bekreftet, et nytt lån godkjennes, og den første returbekreftelsen blir senere meldt som feil.
 - Et administrativt avsluttet uavklart lån: hvilke anmeldelsesrettigheter skal partene ha?
