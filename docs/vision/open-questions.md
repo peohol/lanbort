@@ -10,17 +10,6 @@ Konkrete terskler og tidsfrister som allerede har et avklart prinsipp – for ek
 
 ## I – Gjenværende styrings- og relasjonsspørsmål
 
-### 38. Hvilken myndighet skal være eksklusiv for eieren av et miljø?
-
-Eierens ansvar for kontinuitet, eierskapsoverføring og avvikling er avklart, og ordinære administratorer skal ellers ha samme løpende administrative myndighet.
-
-Det er fortsatt uklart:
-
-- om eieren skal kunne fjerne administratorrollen fra en annen administrator
-- om andre administratorer noen gang skal kunne gjøre dette
-- om eieren skal ha andre særrettigheter enn kontinuitets- og avviklingsansvaret
-- hvordan en administrativ rolle håndteres dersom en administrator misbruker rollen
-
 ### 39. Hva betyr obligatoriske medlemsopplysninger i et åpent miljø?
 
 Et åpent miljø kan kreve at brukeren fyller ut opplysninger før medlemskapet aktiveres, men medlemskapet krever ikke manuell godkjenning.
