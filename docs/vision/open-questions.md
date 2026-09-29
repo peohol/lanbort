@@ -12,12 +12,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## C – Objekter og låneforløp
 
-### 18. Hvordan overtas et pågående lån hvis ansvarlig utlåner blir utilgjengelig?
-
-Medeiermodellen er nå avklart slik at den medeiaren som godkjenner et lån blir ansvarlig utlåner for akkurat dette lånet. Andre medeiere kan ikke normalt endre eller avslutte lånet.
-
-Vi må senere definere en kontrollert unntaksprosess dersom den ansvarlige utlåneren blir utilgjengelig under et reservert eller aktivt lån, for eksempel ved langvarig fravær eller deaktivering av konto.
-
 ## D – Kommunikasjon og varsler
 
 ## E – Anmeldelser og tillit
