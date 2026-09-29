@@ -1,6 +1,6 @@
 # Miljøer
 
-> **Status:** Førsteutkast. Miljøer er en sentral del av produktmodellen. Flere av de konkrete styringsmekanismene er foreløpige.
+> **Status:** Konsolidert visjonsutkast. Miljøtypene, medlemsmodellen, administratorrollen, eierrollen og avviklingsprinsippene er avklart.
 
 ## Hva er et miljø?
 
@@ -263,11 +263,12 @@ Et miljø skal kunne ha en innstilling som krever administratorgodkjenning før 
 
 En administrator som avviser et objekt, skal også kunne rapportere objektet til plattformnivå dersom det fremstår ulovlig, farlig eller på annen måte problematisk.
 
-## Viktige åpne spørsmål
+## Detaljer som fastsettes senere
 
-Blant annet må vi avklare:
+Følgende er bevisst utsatt til senere produktspesifikasjon og datalivssyklusarbeid:
 
 - den konkrete fristen administratorer får til å melde interesse for å overta et midlertidig eierløst miljø
-- den konkrete angrefristen og datalivssyklusen ved avvikling
+- den konkrete angrefristen ved frivillig avvikling
+- konkrete lagrings- og slettetider etter avvikling
 
-Se [Åpne spørsmål](open-questions.md).
+Prinsippene for kontinuitet og avvikling er allerede avklart.
