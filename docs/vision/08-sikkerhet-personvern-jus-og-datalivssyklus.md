@@ -150,21 +150,66 @@ Hvis lagringsmengden ved betydelig større skala senere blir en reell driftsutfo
 
 ## Brukerkontoens livssyklus
 
-Det opprinnelige notatet foreslår automatisk inaktivering og til slutt sletting av kontoer som ikke har vært brukt på ett år.
+Lånbort skal skille tydelig mellom **inaktivitet**, **deaktivering** og **permanent kontosletting**.
 
-Dette kan ikke fastsettes isolert.
+Langvarig inaktivitet skal ikke føre direkte til permanent sletting.
 
-Før en konto kan slettes må det blant annet tas hensyn til:
+Den ønskede livssyklusen er:
 
-- aktive eller uavklarte lån
-- åpne saker
-- medeierskap
-- miljøer der brukeren er eneste administrator eller eier
-- data som andre brukere har legitimt behov for å beholde
-- juridiske oppbevaringskrav
-- brukerens rettigheter til sletting
+1. Etter langvarig inaktivitet varsles brukeren gjennom en verifisert kontaktkanal og får rimelig tid til å komme tilbake.
+2. Kontoen kan deretter settes i en inaktiv eller dvalelignende tilstand.
+3. I denne tilstanden skal nye lån og annen ny aktivitet stanses, og brukerens objekter kan skjules fra oppdagelsesflater.
+4. Kontoen og nødvendig historikk beholdes slik at brukeren fortsatt kan reaktivere kontoen dersom sletting ennå ikke har skjedd.
+5. Først etter ytterligere tid kan kontoen bli kandidat for permanent sletting.
 
-Visjonen beholder målet om å ikke oppbevare døde kontoer unødvendig, men den konkrete mekanismen er åpen.
+Den konkrete tidslinjen bestemmes senere.
+
+### Bindinger som blokkerer sletting
+
+Permanent kontosletting skal ikke gjennomføres så lenge brukeren fortsatt har aktive ansvar eller bindinger som må håndteres, blant annet:
+
+- reserverte, aktive eller uavklarte lån
+- rollen som ansvarlig utlåner
+- åpne saker eller modereringsprosesser
+- miljøeierskap
+- administrative roller som ikke kan fjernes uten å etterlate miljøet i en ugyldig tilstand
+- medeierskap som først må avvikles på en kontrollert måte
+- andre legitime eller juridiske oppbevaringsbehov
+
+Når slike bindinger er borte, kan langvarig inaktivitet føre til automatisk kontosletting etter de senere fastsatte reglene.
+
+### Hva kontosletting betyr
+
+Sletting av en konto skal redusere persondata mest mulig uten å omskrive nødvendig felles historikk.
+
+Det betyr blant annet at:
+
+- personlige profil- og kontodata kan slettes
+- vennskap, medlemskap og andre aktive relasjoner opphører
+- brukerens egne objekter uten nødvendige historiske bindinger kan slettes
+- nødvendig historikk om tidligere lån, anmeldelser og saker kan bevares når andre brukere eller Lånbort fortsatt har et legitimt behov for den
+- identiteten i slik historikk skal anonymiseres eller pseudonymiseres når fullt navn eller andre identifiserende opplysninger ikke lenger er nødvendige
+
+En bruker skal derfor ikke kunne få nødvendig felles lånehistorikk til å forsvinne fra andre parters historikk bare fordi kontoen slettes.
+
+### Kontrollert avslutning i særtilfeller
+
+Plattformforvalter skal i særtilfeller kunne initiere deaktivering og kontrollert avslutning av en konto når vanlig selvbetjent sletting ikke er mulig eller hensiktsmessig.
+
+Aktuelle eksempler kan være:
+
+- dokumentert dødsfall
+- dokumentert duplikatkonto
+- konto opprettet på falsk identitet
+- andre alvorlige forhold der kontoen ikke bør forbli aktiv
+
+Dette skal ikke være en generell «slett bruker»-funksjon.
+
+Plattformforvalteren skal først kunne deaktivere kontoen slik at ny aktivitet stanses. Deretter må aktive bindinger håndteres etter de vanlige reglene før eventuell permanent sletting eller anonymisering.
+
+Alle slike inngrep skal være begrunnede og sporbare.
+
+Ved henvendelser fra tredjepart, for eksempel en påstått pårørende ved dødsfall, skal ikke en ubekreftet henvendelse alene være tilstrekkelig grunnlag for permanent sletting. Krav til dokumentasjon og prosess bestemmes senere.
 
 ## Personlig sletting versus felles historikk
 
