@@ -10,13 +10,4 @@ Konkrete terskler og tidsfrister som allerede har et avklart prinsipp – for ek
 
 ## I – Gjenværende styrings- og relasjonsspørsmål
 
-### 40. Hva skjer med en administratorkontakt når ansvarlig administrator forsvinner?
-
-Et medlem kan kontakte administratorene som funksjon, og én administrator kan ta primæransvar for samtalen.
-
-Vi må avklare hva som skjer dersom denne administratoren:
-
-- frasier seg administratorrollen
-- forlater miljøet
-- får kontoen deaktivert eller slettet
-- ellers blir utilgjengelig mens samtalen eller saken fortsatt krever oppfølging
+Ingen åpne visjonsspørsmål er registrert etter den siste gjennomgangen.
