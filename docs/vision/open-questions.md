@@ -1,8 +1,8 @@
 # Åpne spørsmål
 
-> **Status:** Ingen registrerte åpne visjonsspørsmål per 29. september 2026. Scenario-stresstesten er innarbeidet gjennom scenario 17.
+> **Status:** Ingen registrerte åpne visjonsspørsmål per 29. september 2026. Scenario-stresstesten er innarbeidet gjennom scenario 18.
 
-Den sekvensielle visjonsgjennomgangen av spørsmål 1–40 er fullført. I tillegg er avklaringene fra scenario-basert stresstest gjennom scenario 17 innarbeidet i de tematiske dokumentene. Endringene kan følges gjennom Git-historikken.
+Den sekvensielle visjonsgjennomgangen av spørsmål 1–40 er fullført. I tillegg er avklaringene fra scenario-basert stresstest gjennom scenario 18 innarbeidet i de tematiske dokumentene. Endringene kan følges gjennom Git-historikken.
 
 Dette betyr ikke at alle produktdetaljer er bestemt. Følgende typer valg er bevisst utsatt og skal normalt ikke behandles som nye visjonsspørsmål:
 
