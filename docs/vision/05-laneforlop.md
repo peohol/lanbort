@@ -390,6 +390,8 @@ Låntaker kan ønske å levere objektet tilbake før avtalt returdato. Dette kre
 
 Lånet regnes likevel ikke som avsluttet før objektet faktisk er levert tilbake og returprosessen er bekreftet etter de vanlige reglene.
 
+Når ansvarlig utlåner har bekreftet den tidlige returen, avsluttes lånet på det faktiske returtidspunktet. Den gjenværende delen av den opprinnelig reserverte perioden frigjøres og kan brukes til nye lån dersom objektets generelle tilgjengelighet fortsatt dekker perioden og ingen andre godkjente reservasjoner kolliderer. Den opprinnelig avtalte returdatoen beholdes i historikken ved siden av det faktiske returtidspunktet.
+
 ### Senere endringer i objektet
 
 Eier eller medeier kan fortsatt redigere selve objektet, men endringer i:
@@ -414,3 +416,24 @@ Hvis et slikt forhold oppdages **før overlevering**, skal et reservert lån kun
 Hvis objektet **allerede er overlevert**, skal historikken og det faktiske låneforløpet bevares. Plattformen kan samtidig hindre forlengelse og nye lån, varsle partene og begrense videre fasilitering når sikkerhet eller lovlighet krever det.
 
 Et slikt inngrep gjelder hva Lånbort kan fasilitere. Det skal ikke brukes til å avgjøre private krav mellom partene.
+## Blokkering, rapportering og moderering før overlevering
+
+Blokkering mellom partene etter at et lån er godkjent, men før fysisk overlevering, skal ikke i seg selv kansellere lånet. Det eksisterende lånet fortsetter med nødvendige strukturerte handlinger, men vanlig fri kontakt kan begrenses etter blokkeringsreglene.
+
+Begge parter beholder samtidig retten til å kansellere ensidig før overlevering. Hvis én av dem ikke lenger ønsker å gjennomføre lånet etter blokkeringen, skal denne ordinære kanselleringsmekanismen brukes.
+
+En rapport eller modereringssak mellom partene er en separat prosess og skal heller ikke automatisk endre lånestatusen med mindre et konkret sikkerhets- eller modereringstiltak faktisk krever dette.
+
+Hvis plattformen administrativt stanser et reservert lån av sikkerhets- eller modereringsgrunner og dette tiltaket senere oppheves, skal den gamle reservasjonen ikke gjenoppstå automatisk. Partene må inngå en ny avtale dersom de fortsatt ønsker å gjennomføre lånet. Dette beskytter mot at en tidligere avsluttet avtale plutselig blir bindende igjen.
+
+## Opprinnelseskontekst skal være stabil
+
+Om et lån er miljøbasert eller et direkte vennelån avgjøres av hvordan den konkrete låneforespørselen ble opprettet.
+
+En forespørsel som oppstår gjennom et objekts publisering i et miljø beholder dette miljøet som opprinnelseskontekst selv om partene allerede er venner eller blir venner senere. Vennskap som oppstår etter at forespørselen er sendt skal ikke gjøre lånet om til et direkte vennelån og skal ikke kunne brukes til å omgå eller endre de rettighetene og personverngrensene som følger av opprinnelseskonteksten.
+
+Et nytt direkte vennelån må initieres som et eget lån gjennom vennskapsrelasjonen, ikke ved å omskrive opprinnelsen til en eksisterende miljøbasert forespørsel.
+
+## Medlemskap og utestengelse etter godkjenning
+
+Hvis en part mister eller blir utestengt fra miljøet etter at et miljøbasert lån allerede er godkjent, fortsetter lånet og de nødvendige lånerettighetene etter de etablerte kontinuitetsreglene. Utestengelsen kan begrense all annen miljøtilgang, men kan ikke brukes til å slette lånehistorikk, opptjente anmeldelsesrettigheter eller nødvendig tilgang til selve låneforløpet.
