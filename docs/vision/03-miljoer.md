@@ -146,6 +146,12 @@ Det skal ikke finnes e-postinvitasjoner, delbare invitasjonslenker eller andre o
 
 Invitasjonen skal ikke kunne overføres til en annen bruker. En administrator som ønsker å invitere en annen person må sende en egen invitasjon til den aktuelle brukerens konto.
 
+En ventende administratorinvitasjon skal tilhøre **miljøet**, ikke den enkelte administratoren som sendte den. Hvis avsenderen senere mister administratorrollen eller forlater miljøet, skal invitasjonen derfor som hovedregel fortsatt være gyldig.
+
+Andre administratorer med nødvendig myndighet skal kunne trekke tilbake en ventende invitasjon. Invitasjonen skal også kunne falle bort dersom miljøet går til avvikling, ikke lenger tar inn medlemmer, eller plattformmoderering gjør den ugyldig som følge av misbruk eller andre alvorlige forhold.
+
+Historikken skal kunne vise hvem som opprinnelig sendte invitasjonen og om eller hvorfor den senere ble trukket tilbake.
+
 Et skjult miljø kan ha en intern teknisk adresse i nettapplikasjonen, men denne skal ikke fungere som en delbar oppdagelses- eller adgangsmekanisme. En uvedkommende som får tak i en slik adresse skal fortsatt ikke få meningsfull informasjon om miljøets eksistens.
 
 ## Krav ved innmelding
