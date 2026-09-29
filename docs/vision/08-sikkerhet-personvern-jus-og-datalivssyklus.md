@@ -54,7 +54,9 @@ Et skjult miljø skal ikke lekke meningsfull informasjon om sin eksistens til uv
 
 Det betyr blant annet at en ugyldig eller uautorisert forespørsel ikke skal gi mer informasjon enn nødvendig.
 
-Visjonen bør formulere resultatet – ikke kreve en bestemt teknisk URL-løsning.
+Skjulte miljøer skal heller ikke bruke delbare invitasjonslenker som adgangsmekanisme. Bare eksisterende Lånbort-brukere kan inviteres, og invitasjonen skal være intern og knyttet til den konkrete brukerkontoen. Det skal ikke sendes e-postinvitasjoner som gir adgang til skjulte miljøer.
+
+Miljøet kan ha en intern teknisk adresse i nettapplikasjonen, men denne skal ikke fungere som en delbar oppdagelses- eller adgangsmekanisme. En uvedkommende som kjenner adressen skal fortsatt ikke få meningsfull informasjon om miljøets eksistens.
 
 ## Privat kommunikasjon
 
