@@ -223,6 +223,7 @@ Det betyr blant annet at:
 - brukerens egne objekter uten nødvendige historiske bindinger kan slettes
 - nødvendig historikk om tidligere lån, anmeldelser og saker kan bevares når andre brukere eller Lånbort fortsatt har et legitimt behov for den
 - identiteten i slik historikk skal anonymiseres eller pseudonymiseres når fullt navn eller andre identifiserende opplysninger ikke lenger er nødvendige
+- en publisert anmeldelse kan derfor bestå etter at forfatterens konto er slettet, men skal ikke fortsette å vise navn, profilbilde eller profillenke når disse opplysningene ikke lenger er nødvendige; den synlige forfatteren kan da vises nøytralt som «Tidligere bruker»
 
 En bruker skal derfor ikke kunne få nødvendig felles lånehistorikk til å forsvinne fra andre parters historikk bare fordi kontoen slettes.
 
