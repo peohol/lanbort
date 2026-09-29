@@ -130,8 +130,6 @@ Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avde
 
 - Blokkering stenger fri chat midt i et lån: er de strukturerte handlingene alene tilstrekkelige i alle nødvendige praktiske situasjoner?
 
-### I. Opprinnelseskontekst og personvern
-
 
 ## Når køen er ferdig
 
