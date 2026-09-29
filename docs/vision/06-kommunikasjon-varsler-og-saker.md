@@ -271,6 +271,30 @@ På denne måten kan administrativ mekling gjennomføres uten at medlemskap i et
 
 Den konkrete kryptografiske implementasjonen hører til senere sikkerhets- og arkitekturarbeid, men disse tilgangsgrensene er en del av produktvisjonen.
 
+## Blokkering under åpne saker
+
+Blokkering mellom brukere skal ikke avslutte eller skjule en meklings-, modererings- eller annen formell sak som allerede eksisterer.
+
+Partene beholder den tilgangen som følger av saksrollen, mens vanlig privat chat og annen generell kontakt fortsatt kan være blokkert. Saksflaten skal ikke brukes som omvei til fri direktekontakt.
+
+Hvis en bruker både rapporterer og blokkerer en motpart mens et reservert lån ennå ikke er overlevert, behandles rapporten og lånet separat. Blokkeringen og rapporten opphever ikke automatisk reservasjonen; begge parter kan fortsatt bruke den ordinære retten til ensidig kansellering før overlevering.
+
+## Privat kommunikasjon som dokumentasjon
+
+En ende-til-ende-kryptert privat melding skal ikke automatisk gjøres tilgjengelig for administratorer eller plattformforvaltere fordi det opprettes en sak.
+
+En part kan derimot uttrykkelig velge å sende inn en kopi, et skjermbilde, et vedlegg eller annen representasjon av den private kommunikasjonen som dokumentasjon i saken. Fra det tidspunktet materialet er uttrykkelig sendt inn, er den innsendte kopien **saksdata** og kan leses av de autoriserte personene som behandler saken. Dette åpner ikke resten av den private chatten.
+
+Hvis brukeren som sendte inn dokumentasjonen senere får kontoen slettet eller deaktivert, forsvinner ikke allerede innsendt saksdokumentasjon automatisk. Den følger sakens egne regler for nødvendig oppbevaring, mens identifiserende opplysninger skal reduseres eller anonymiseres når de ikke lenger er nødvendige.
+
+## Korrigering uten omskriving
+
+Hvis en avsluttet eller pågående sak inneholder en faktisk feil som bør korrigeres, skal den opprinnelige registreringen som hovedregel ikke omskrives stille. En korrigering eller presisering skal legges til som en ny sporbar hendelse slik at det fremgår både hva som først ble registrert og hva som senere ble korrigert.
+
+## Habilitet i saker og rapporter
+
+En administrator som selv er rapportert av et medlem, eller på annen måte er direkte part i det forholdet som skal vurderes, skal ikke behandle den aktuelle rapporten eller en tett sammenvevd sak som saksbehandler. En annen habil administrator må overta dersom miljøbehandling skal skje. Hvis ingen habil administrator finnes, gjelder de allerede fastsatte reglene om manglende miljømekling.
+
 ## Detaljer som fastsettes senere
 
 Konkrete kanalvalg, oppbevaringstider, varslingsstandarder og den kryptografiske implementasjonen fastsettes senere. De produktmessige grensene for kontakt, tilgang, saksansvar og privat kommunikasjon er avklart.
