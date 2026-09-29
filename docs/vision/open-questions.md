@@ -16,15 +16,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## E – Anmeldelser og tillit
 
-### 26. Når blir anmeldelser synlige?
-
-For å redusere gjengjeldelse kan vi vurdere at:
-
-- begge vurderinger skjules til begge har levert
-- eller publisering skjer når begge har levert eller en frist utløper
-
-Dette er foreløpig ikke bestemt.
-
 ### 27. Hvem kan se fritekstanmeldelser?
 
 Mulige nivåer:
