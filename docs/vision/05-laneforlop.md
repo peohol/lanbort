@@ -94,6 +94,23 @@ Den avtalte perioden knyttes til objektet og blokkerer kolliderende utlån. Dett
 
 Reservasjon er en status i det konkrete låneforløpet. Den skal ikke blandes sammen med objektets generelle tilgjengelighetsperioder.
 
+## Overføring av ansvarlig utlåner
+
+Et reservert eller aktivt lån skal alltid ha én ansvarlig utlåner om gangen.
+
+Ansvar kan overføres på to måter:
+
+1. **Frivillig overføring:** Den ansvarlige utlåneren overfører eksplisitt rollen til en annen registrert medeier.
+2. **Kontrollert overtakelse ved utilgjengelighet:** Dersom den ansvarlige utlåneren reelt blir utilgjengelig, kan en annen registrert medeier overta gjennom en særskilt unntaksprosess.
+
+Manglende svar alene skal ikke umiddelbart være tilstrekkelig for overtakelse. Produktet må senere definere en rimelig terskel for når en utlåner kan behandles som utilgjengelig.
+
+Låntakeren skal varsles tydelig om at ansvarlig utlåner er endret, men skal ikke måtte godkjenne selve overføringen. Den nye ansvarlige utlåneren trer inn i den eksisterende utlånerrollen; låneavtalen, tidligere hendelser og avtalte vilkår står ellers uendret.
+
+Overføringen gir derfor ikke adgang til å endre returdato, kansellere lånet eller gjøre andre avtalemessige endringer uten det samtykket som ellers kreves.
+
+Hvis den tidligere ansvarlige utlåneren senere blir tilgjengelig igjen, får vedkommende ikke automatisk rollen tilbake. En ny overføring må i så fall skje eksplisitt.
+
 ## Flere samtidige forespørsler
 
 Flere låneforespørsler på samme objekt kan være åpne samtidig, også dersom de overlapper tidsmessig.
@@ -126,7 +143,7 @@ I den beskrevne modellen er det den **ansvarlige utlånerens** bekreftelse som g
 - låntakers bekreftelse alene gjør ikke tilbakeleveringen endelig
 - andre medeiere kan ikke bekrefte retur på ansvarlig utlåners vegne bare fordi de medeier objektet
 
-Hvis ansvarlig utlåner blir utilgjengelig, skal det senere defineres en kontrollert overtakelsesmekanisme for et pågående lån. Dette skal være et eksplisitt unntak, ikke en generell rett for alle medeiere til å gripe inn.
+Hvis ansvarlig utlåner blir reelt utilgjengelig, kan en annen registrert medeier overta rollen gjennom den særskilte overtakelsesprosessen beskrevet for medeide objekter. Overtakelsen skal være eksplisitt og sporbar, og låntakeren skal varsles tydelig. Den endrer ikke låneavtalen og gir ikke den nye ansvarlige utlåneren større myndighet enn den forrige hadde.
 
 ### Låntakers bekreftelse alene
 
