@@ -157,21 +157,32 @@ Dersom det er nyttig, kan Lånbort vise nøytrale aktivitetsdata, for eksempel a
 
 På samme måte skal «bidrag gjennom lån» ikke være en offentlig skår. Det å låne fremfor å kjøpe kan støtte Lånborts samfunnsmål, men skal ikke brukes til å rangere brukere. Slike data kan eventuelt brukes til personlig statistikk eller til å beskrive samlet effekt av deling.
 
-## Skårer som tilgangsfilter
+## Tillitsprofil skal ikke være adgangskontroll
 
-En foreløpig idé er at brukere kan angi:
+Tillitsprofilen skal være beslutningsstøtte for brukeren, ikke en automatisk portvakt for synlighet eller adgang.
 
-- en nedre pålitelighetsgrense for hvem som får se dem og objektene deres
-- en annen grense for hvilke brukere og objekter de selv ønsker å se
+Synlighet og adgang skal bestemmes av forhold som:
 
-Dette gir stor brukerkontroll, men kan også skape kompliserte eller selvforsterkende eksklusjonsmekanismer.
+- vennskap og andre brukerrelasjoner
+- medlemskap og rolle i miljøer
+- hvor et objekt er publisert
+- blokkering
+- brukerens personvern- og synlighetsvalg
 
-Før dette blir del av den endelige visjonen, må vi avklare:
+En bruker skal derfor ikke kunne sette en hard anmeldelses- eller tillitsgrense som automatisk skjuler personen eller objektene for alle under en bestemt skår.
 
-- hvordan nye brukere uten historikk behandles
-- om en numerisk skår bør kontrollere synlighet så direkte
-- hvordan en bruker forstår hvorfor noe ikke vises
-- hvordan blokkering, miljømedlemskap og aktive lån påvirkes
+Dette er særlig viktig fordi:
+
+- nye brukere uten historikk ellers lett vil bli stengt ute
+- små eller tilfeldige forskjeller i skår kan få uforholdsmessig stor betydning
+- dårlige erfaringer kan bli selvforsterkende dersom de reduserer muligheten til å få nye, gode erfaringer
+- brukeren som filtreres bort kan ha liten mulighet til å forstå hvorfor
+
+Når en utlåner vurderer en konkret låneforespørsel, kan relevant tillitsinformasjon vises tydelig slik at utlåner selv tar beslutningen.
+
+Aktive vennskap, medlemskap, lån og andre etablerte relasjoner skal ikke automatisk opphøre eller skjules fordi en tillitsprofil endres.
+
+Lånbort kan senere vurdere sortering eller filtrering av egne oversikter etter relevante egenskaper, men slike funksjoner skal ikke gjøre en numerisk tillitsprofil til en skjult sosial adgangsmekanisme.
 
 ## Rapportering
 
