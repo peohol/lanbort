@@ -56,6 +56,8 @@ Det betyr blant annet at en ugyldig eller uautorisert forespørsel ikke skal gi 
 
 Skjulte miljøer skal heller ikke bruke delbare invitasjonslenker som adgangsmekanisme. Bare eksisterende Lånbort-brukere kan inviteres, og invitasjonen skal være intern og knyttet til den konkrete brukerkontoen. Det skal ikke sendes e-postinvitasjoner som gir adgang til skjulte miljøer.
 
+En gyldig ventende administratorinvitasjon skal behandles som en beslutning tatt på vegne av miljøet, ikke som en personlig fullmakt som automatisk opphører dersom administratoren som sendte den senere mister rollen. Invitasjonen skal likevel kunne trekkes tilbake av miljøets autoriserte administrasjon eller ugyldiggjøres ved avvikling eller nødvendig plattformmoderering.
+
 Miljøet kan ha en intern teknisk adresse i nettapplikasjonen, men denne skal ikke fungere som en delbar oppdagelses- eller adgangsmekanisme. En uvedkommende som kjenner adressen skal fortsatt ikke få meningsfull informasjon om miljøets eksistens.
 
 ## Privat kommunikasjon
