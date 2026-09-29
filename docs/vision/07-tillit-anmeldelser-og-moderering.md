@@ -95,12 +95,27 @@ Den som skrev anmeldelsen skal identifiseres. Anonyme anmeldelser inngår ikke i
 
 Aggregerte skårer kan senere få noe videre synlighet enn fritekst dersom dette er nyttig og forenlig med profil- og personvernreglene. Tall og personlig omtale trenger ikke ha identiske synlighetsgrenser.
 
-### Fortsatt uavklart
+### Redigering og tilsvar
 
-Visjonen må fortsatt avklare:
+Så lenge en anmeldelse fortsatt er skjult i den dobbelblinde perioden, kan forfatteren redigere den.
 
-- om vurderinger kan redigeres
-- om brukeren kan svare på en omtale
+Når anmeldelsen er publisert, skal skårer og fritekst låses. Forfatteren skal ikke kunne endre eller slette anmeldelsen direkte etter å ha sett motpartens vurdering, fordi dette ville svekke beskyttelsen mot gjengjeldelsesvurderinger.
+
+Hvis en publisert anmeldelse inneholder opplysninger som faktisk må korrigeres eller fjernes, skal dette håndteres gjennom en særskilt korrigerings- eller modereringsprosess. Historikken skal ikke omskrives stille.
+
+Den anmeldte brukeren skal kunne gi **ett tilsvar** til en publisert fritekstanmeldelse.
+
+Tilsvaret:
+
+- kan først skrives etter at anmeldelsen er publisert
+- vises sammen med anmeldelsen og følger samme synlighetskontekst
+- påvirker ikke skåren
+- skal være tydelig merket som svar fra den anmeldte
+- åpner ikke en videre diskusjonstråd eller et nytt svar fra anmelderen
+
+Både anmeldelsen og tilsvaret skal kunne rapporteres dersom innholdet bryter plattformreglene.
+
+Formålet er å gi den anmeldte mulighet til å tilføre relevant kontekst uten å gjøre anmeldelsesflaten til en offentlig konflikt- eller diskusjonsarena.
 
 ## Uvanlig negative anmeldelsesmønstre
 
@@ -225,4 +240,4 @@ Skårer og badges bør derfor bare eksistere når de har en tydelig funksjon i t
 
 ## Åpne spørsmål
 
-Se [Åpne spørsmål](open-questions.md), særlig om anmeldelsestidspunkt, synlighet, vekting, nye brukere, misbruk, skårer og modereringsgrenser.
+Se [Åpne spørsmål](open-questions.md) for eventuelle gjenværende tverrgående produktspørsmål.
