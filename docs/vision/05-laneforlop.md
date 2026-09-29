@@ -342,13 +342,29 @@ Lånbort kan fortsatt vise og bevare ordinær historikk om lånet i den utstrekn
 
 Dette gjelder blant annet:
 
-- kansellering av et godkjent lån
 - endring av avtalt hentetid når tidspunktet er en del av avtalen
 - endring av returdato
 - forlengelse av lånet
 - andre endringer i vilkår som påvirker hva en av partene har sagt ja til
 
 Forslag til slike endringer kan initieres av én part, men får ikke virkning før den andre har godtatt.
+
+### Ensidig kansellering før overlevering
+
+Før objektet faktisk er overlevert, kan begge parter ensidig kansellere et allerede godkjent og reservert lån.
+
+Kanselleringen:
+
+- får virkning uten motpartens samtykke
+- frigjør reservasjonen umiddelbart
+- registreres tydelig i historikken med hvem som kansellerte og når
+- varsles til motparten
+- trenger ikke en begrunnelse for å være gyldig
+- kan gi grunnlag for en begrenset etterfølgende vurdering av selve forløpet
+
+Retten til ensidig kansellering betyr ikke at én part ensidig kan endre tidspunkt, varighet eller andre vilkår og samtidig holde lånet i kraft. Slike endringer krever fortsatt samtykke fra begge.
+
+Etter fysisk overlevering brukes ikke kansellering som mekanisme for å avslutte lånet. Da må objektet tilbakeleveres eller lånet håndteres gjennom de ordinære retur- og avviksprosessene.
 
 Rent praktiske opplysninger kan endres ensidig dersom de ikke endrer selve låneavtalen, for eksempel en presisering om hvor partene skal møtes dersom dette ikke endrer avtalens vesentlige innhold.
 
