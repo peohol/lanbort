@@ -118,6 +118,28 @@ Det innebærer at andre medeiere ikke ensidig kan:
 
 Perioden som omfattes av lånet er blokkert globalt for alle medeiere.
 
+### Overføring av ansvar for et konkret lån
+
+Et konkret lån skal alltid ha én ansvarlig utlåner om gangen.
+
+Den ansvarlige utlåneren kan frivillig overføre ansvaret til en annen registrert medeier, for eksempel før et planlagt fravær.
+
+Hvis ansvarlig utlåner blir reelt utilgjengelig under et reservert eller aktivt lån, skal en annen medeier kunne overta gjennom en særskilt, kontrollert unntaksprosess. Manglende svar alene skal ikke umiddelbart gi andre medeiere rett til å overta; det må foreligge tilstrekkelig grunnlag for å behandle utlåneren som utilgjengelig. Den konkrete terskelen og prosessen bestemmes senere.
+
+Overtakelsen:
+
+- skal være eksplisitt og sporbar
+- skal varsles tydelig til låntakeren
+- krever ikke låntakerens samtykke til selve byttet av ansvarlig utlåner
+- endrer ikke vilkårene i det eksisterende lånet
+- gir den nye ansvarlige utlåneren de samme rettighetene og begrensningene som den forrige hadde
+- gir ikke rett til å gjøre avtaleendringer som ellers krever samtykke fra låntakeren
+- skal ikke slette eller omskrive tidligere historikk
+
+Når ansvaret er overtatt, går det ikke automatisk tilbake til den tidligere ansvarlige utlåneren dersom vedkommende senere blir tilgjengelig igjen. En eventuell ny overføring må skje eksplisitt.
+
+Medeierskap alene gir fortsatt ingen generell rett til å gripe inn i et lån. Overtakelse av ansvar er et særskilt unntak.
+
 ### Uttreden og fjerning av medeiere
 
 En medeier kan trekke **seg selv** som medeier så lenge minst én eier blir igjen.
@@ -219,5 +241,4 @@ Aktuelle kategorier som senere må vurderes særskilt omfatter blant annet våpe
 Se [Åpne spørsmål](open-questions.md), særlig om:
 
 - kategorier og obligatoriske felt
-- kontrollert overtakelse av et pågående lån dersom ansvarlig utlåner blir utilgjengelig
 - kontrollert permanent sletting og datalivssyklus
