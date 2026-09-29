@@ -277,9 +277,36 @@ Opplysninger som en bruker oppgir for å dokumentere tilknytning til et miljø, 
 
 Formålet med opplysningen skal styre hvordan den brukes og hvem som får se den.
 
-## Juridisk ansvar
+## Juridisk ansvar og produktgrense
 
-Målet er at Lånbort skal fasilitere kontakt og utlån, mens brukerne selv tar ansvar for de konkrete gjenstandene de velger å låne ut eller låne.
+Lånbort skal ta ansvar for plattformen og de forholdene plattformen selv kontrollerer, men skal ikke opptre som garantist for den fysiske gjenstanden eller som dommer i det privatrettslige forholdet mellom utlåner og låntaker.
+
+### Det Lånbort skal ta ansvar for
+
+Lånbort skal blant annet ta ansvar for:
+
+- sikkerhet og personvern i tjenesten
+- at tilgangsregler, blokkering og andre produktgrenser faktisk håndheves
+- at strukturerte låneavtaler og hendelser gjengis korrekt
+- at brukerne får forståelig informasjon om hvordan systemet fungerer
+- håndtering av rapporter om trusler, trakassering, svindelforsøk, ulovlig innhold og annet misbruk av plattformen
+- rimelig moderering av objekter og brukere når plattformreglene brytes
+- at anmeldelses- og tillitssystemet ikke bevisst fremstiller informasjon misvisende
+- de administrative prosessene Lånbort selv tilbyr
+
+Lånbort skal ikke gi inntrykk av å tilby sterkere identitetskontroll, sikkerhet eller garanti enn produktet faktisk gjør. Dersom identitetsnivået for eksempel bare bygger på verifisert kontaktinformasjon, skal dette ikke presenteres som full identitetsverifisering.
+
+### Det Lånbort ikke skal garantere eller avgjøre
+
+Lånbort skal ikke love eller garantere:
+
+- at en bruker faktisk er den vedkommende hevder å være utover det uttrykkelig angitte verifiseringsnivået
+- at en bruker vil opptre redelig
+- at en fysisk gjenstand er sikker, feilfri eller juridisk eid av den registrerte eieren
+- at et objekt blir tilbakelevert
+- at partene blir enige om skade, tap eller erstatning
+- kompensasjon dersom noe går galt
+- en bindende avgjørelse av private tvister
 
 Ved **direkte lån mellom venner** skal dette prinsippet også gjøres eksplisitt i selve låneflyten: begge parter må godta en ansvarserklæring før lånet etableres. Erklæringen skal gjøre det klart at partene selv må håndtere privatrettslige konflikter om blant annet tilbakelevering, skade, tap og erstatning, og at Lånbort ikke tilbyr plattformbasert mekling eller avgjørelse av slike tvister.
 
@@ -289,11 +316,15 @@ En vanlig lånetvist skal heller ikke kunne eskaleres til plattformforvalter bar
 
 Dette skal ikke hindre rapportering av forhold som gjelder tryggheten eller integriteten til selve plattformen, for eksempel trusler, trakassering, svindelforsøk eller ulovlig bruk. Slike forhold behandles som moderering av plattformbruk, ikke som avgjørelse av den underliggende lånetvisten.
 
-Det må i tillegg utarbeides tydelige generelle vilkår og informasjon om ansvar.
+### Produktgrensen avgjør ikke alene det juridiske ansvaret
 
-Det er likevel viktig å ikke behandle en ansvarserklæring eller bruksvilkår som en teknisk måte å «fjerne» alt juridisk ansvar på. Hvilket ansvar plattformen faktisk kan ha følger av gjeldende rett og produktets reelle funksjon, ikke bare av hva brukeren klikker seg enig i.
+Det må utarbeides tydelige generelle vilkår og informasjon om ansvar.
 
-Juridiske spørsmål må derfor vurderes særskilt før lansering.
+Ansvarserklæringer og bruksvilkår skal ikke behandles som en teknisk måte å «fjerne» juridisk ansvar på. Hvilket ansvar plattformen faktisk kan ha følger av gjeldende rett og produktets reelle funksjon, ikke bare av hva brukeren klikker seg enig i.
+
+Før bred lansering må de relevante norske og EØS-rettslige områdene vurderes særskilt og kvalifisert.
+
+Produktrollen kan oppsummeres som at Lånbort skal være en ansvarlig tilrettelegger, ikke et forsikringsselskap, en garantist eller en domstol.
 
 ## Ulovlige og risikofylte objekter
 
