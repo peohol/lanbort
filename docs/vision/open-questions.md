@@ -16,17 +16,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## E – Anmeldelser og tillit
 
-### 30. Bør pålitelighet styre hvem som får se hvem?
-
-Dette er en kraftig mekanisme.
-
-Vi må særlig avklare:
-
-- hvordan nye brukere behandles
-- om skår bør brukes som hard grense eller bare informasjon
-- om filtrering kan skape selvforsterkende eksklusjon
-- hvordan aktive relasjoner og lån påvirkes
-
 ## F – Data, personvern og jus
 
 ### 31. Hvilke hendelser må logges, og hvor lenge?
