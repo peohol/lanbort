@@ -237,6 +237,46 @@ Produktet må gjøre forskjellen mellom:
 
 forståelig for brukeren.
 
+## Geografisk informasjon og presisjon
+
+Lånbort skal bruke den minst presise geografiske informasjonen som faktisk er nødvendig for formålet.
+
+### Miljøer
+
+Miljøer kan ha geografisk tilknytning som brukes til oppdagelse, for eksempel:
+
+- kommune
+- bydel
+- nabolag
+- et omtrentlig område på kart
+- et presist offentlig sted når dette er naturlig for miljøet
+
+Et miljø skal ikke måtte vise en privat eller unødvendig presis adresse bare for å kunne finnes.
+
+Skjulte miljøer skal ikke lekke geografisk informasjon til ikke-medlemmer.
+
+### Brukere
+
+Brukere skal ikke som hovedregel måtte oppgi eller vise en presis bostedsposisjon i profilen.
+
+Lånbort skal heller ikke ha løpende posisjonssporing som en del av den normale produktmodellen.
+
+Hvis brukerens posisjon brukes til funksjoner som «finn miljøer nær meg», skal posisjonen behandles som et søkehjelpemiddel og ikke automatisk gjøres til en sosial profilopplysning.
+
+### Objekter
+
+Et objekt kan ha et omtrentlig henteområde som gjør det mulig å vurdere praktisk nærhet, for eksempel bydel eller nabolag.
+
+En privat hjemmeadresse eller annen eksakt henteadresse skal ikke automatisk vises sammen med objektet.
+
+Eksakt møtested eller adresse kan deles privat når det finnes et konkret lån eller en annen legitim situasjon der partene trenger informasjonen.
+
+### Medlemsverifisering er noe annet enn geografisk oppdagelse
+
+Opplysninger som en bruker oppgir for å dokumentere tilknytning til et miljø, for eksempel adresse eller leilighetsnummer i et borettslag, skal ikke automatisk brukes som synlig profilinformasjon, kartposisjon eller geografisk oppdagelsesdata.
+
+Formålet med opplysningen skal styre hvordan den brukes og hvem som får se den.
+
 ## Juridisk ansvar
 
 Målet er at Lånbort skal fasilitere kontakt og utlån, mens brukerne selv tar ansvar for de konkrete gjenstandene de velger å låne ut eller låne.
