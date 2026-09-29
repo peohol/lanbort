@@ -205,6 +205,14 @@ Eierstatus skal ikke gi ekstra myndighet i konkrete lån, konflikter eller saker
 
 Ved alvorlig misbruk av eier- eller administratorrollen kan plattformforvalter gripe inn etter plattformens modereringsregler, blant annet ved å suspendere administrative rettigheter eller gjennomføre en kontrollert eierskapsoverføring. Dette er et sikkerhets- og modereringstiltak, ikke en normal intern styringsmekanisme.
 
+### Habilitet i meklings- og konfliktsaker
+
+En administrator som selv er part i en lånetvist, eller som har en tilsvarende direkte interessekonflikt, skal ikke få administratorinnsyn i saken og skal ikke kunne behandle den som saksbehandler. Vedkommende beholder bare den tilgangen som følger av egen rolle som part i lånet.
+
+Hvis det ikke finnes noen habil administrator i miljøet, skal miljømekling regnes som utilgjengelig. Saken skal ikke automatisk eskaleres til plattformforvalter av den grunn.
+
+For et miljøbasert lån som allerede er godkjent, følger retten til å bruke den aktuelle meklingsprosessen med lånet selv om en av partene senere ikke lenger er medlem av miljøet. Dette gir ikke tilbake generell medlemsadgang. Administrator kan avslutte meklingen når det ikke lenger fremstår rimelig eller nyttig å fortsette.
+
 ## Fratreden, eierskap og kontinuitet
 
 Et aktivt miljø skal normalt ha:
