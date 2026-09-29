@@ -259,6 +259,24 @@ Et sentralt designprinsipp for videre arbeid bør være at tillitssystemet skal 
 
 Skårer og badges bør derfor bare eksistere når de har en tydelig funksjon i tryggere eller bedre deling.
 
+## Moderering og senere endringer i anmeldelsessynlighet
+
+Hvis en publisert anmeldelse modereres bort fordi friteksten eller anmeldelsen som helhet ikke lenger skal være synlig, skal synlige aggregerte skårer oppdateres slik at de ikke fortsetter å bygge på en vurdering som ikke lenger skal telle. Modereringshistorikken kan bevares internt så lenge det finnes et legitimt behov; den synlige tillitsprofilen skal ikke late som den fjernede vurderingen fortsatt inngår.
+
+Hvis bare fritekstdelen må fjernes eller redigeres, for eksempel fordi den inneholder personopplysninger om en tredjepart eller informasjon fra en annen privat kontekst, kan den numeriske vurderingen bestå dersom selve vurderingen fortsatt er gyldig. Endringen skal skje gjennom den særskilte modererings- eller korrigeringsprosessen og være sporbar, ikke som stille omskriving av historikken.
+
+Hvis forfatteren av et publisert tilsvar senere får kontoen slettet, kan tilsvaret bestå når det fortsatt er relevant for den historiske anmeldelsen, men synlig navn, profilbilde og profillenke skal fjernes på samme måte som for en anmeldelse skrevet av en senere slettet bruker.
+
+### Synlighet følger nåværende adgang
+
+At en bruker tidligere hadde tilgang til en annen brukers fritekstanmeldelser gir ikke en varig personlig rett til å fortsette å lese dem.
+
+Hvis profiltilgangen eller den relevante konteksten senere forsvinner, skal fritekstanmeldelser som bare var synlige gjennom denne konteksten ikke lenger være tilgjengelige. Nødvendig historikk i et konkret lån kan fortsatt beholdes der partene har et legitimt historisk behov.
+
+Nye vennskap, nye miljømedlemskap eller andre senere relasjoner skal heller ikke retroaktivt åpne fritekstanmeldelser fra en eldre kontekst dersom dette ville røpe informasjon som etter den opprinnelige eller nåværende personvernmodellen skal forbli kontekstbegrenset.
+
+Hvis et miljø senere blir skjult, skal fritekstanmeldelser fra lån i dette miljøet fra dette tidspunktet følge de strengere synlighetsreglene for skjulte miljøer. Dette endrer ikke anmeldelsens historiske opprinnelse eller skår, men begrenser hvem som kan lese friteksten og se anmelderidentiteten.
+
 ## Detaljer som fastsettes senere
 
 Den konkrete anmeldelsesfristen, endelig ordlyd i vurderingsdimensjonene og eventuell fremtidig statistisk modellering fastsettes senere. Kjerneprinsippene for anmeldelser og tillitsinformasjon er avklart.
