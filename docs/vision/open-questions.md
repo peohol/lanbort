@@ -18,17 +18,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## F – Data, personvern og jus
 
-### 32. Når kan en inaktiv konto faktisk slettes?
-
-Et år uten innlogging er et mulig signal, men sletting kan være blokkert av:
-
-- aktive lån
-- åpne saker
-- medeierskap
-- miljøansvar
-- historikk andre brukere trenger
-- juridiske krav
-
 ### 33. Hvor presis geografisk informasjon skal lagres og vises?
 
 Miljøer kan ha geografisk tilknytning, men vi må skille mellom:
