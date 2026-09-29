@@ -1,6 +1,6 @@
 # Sikkerhet, personvern, jus og datalivssyklus
 
-> **Status:** Førsteutkast. Dette dokumentet beskriver produktkrav og risikoområder. Det er ikke en sikkerhetsarkitektur eller juridisk vurdering.
+> **Status:** Konsolidert visjonsutkast. Produktgrensene for identitet, tilgang, personvern, logging, datalivssyklus, geografi og ansvar er avklart; tekniske og juridiske detaljer må fortsatt utredes før lansering.
 
 ## Grunnprinsipp
 
@@ -359,6 +359,15 @@ Forsikring eller depositum er ikke del av den etablerte kjernevisjonen og skal i
 
 Hvis dette senere vurderes, må spørsmål om betaling, tilbakebetaling, finansielle og juridiske krav, skadebehandling og Lånborts rolle vurderes som et eget produktområde.
 
-## Åpne spørsmål
+## Detaljer som fastsettes senere
 
-Se [Åpne spørsmål](open-questions.md) for spørsmål om blant annet identitet, alder, datalagring, kryptering, logging, sletting, lovlige objekter og ansvar.
+Følgende skal fastsettes i senere sikkerhets-, personvern-, juridisk- og produktarbeid:
+
+- konkrete oppbevaringstider per datatype
+- konkrete tidslinjer for konto- og objektlivssyklus
+- dokumentasjonskrav ved særskilt kontoavslutning, for eksempel ved dødsfall
+- den tekniske krypterings- og autorisasjonsarkitekturen
+- den detaljerte policyen for ulovlige, regulerte og risikofylte objekter
+- kvalifisert vurdering av relevante norske og EØS-rettslige krav
+
+Dette er ikke åpne spørsmål om produktets grunnleggende retning.
