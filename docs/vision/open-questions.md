@@ -10,12 +10,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## B – Miljøer og medlemskap
 
-### 12. Hvordan velges ny eier når flere administratorer vil overta?
-
-Eierløshet er nå definert som en midlertidig unntakstilstand. Hvis flere gjenværende administratorer samtidig ønsker å overta eierskapet, trenger vi senere en enkel og forutsigbar regel for hvem som får rollen.
-
-Dette er en avgrenset styringsdetalj og trenger ikke avgjøres før den øvrige miljømodellen er ferdig.
-
 ## C – Objekter og låneforløp
 
 ### 18. Hvordan overtas et pågående lån hvis ansvarlig utlåner blir utilgjengelig?
