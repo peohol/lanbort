@@ -10,12 +10,6 @@ Konkrete terskler og tidsfrister som allerede har et avklart prinsipp – for ek
 
 ## I – Gjenværende styrings- og relasjonsspørsmål
 
-### 39. Hva betyr obligatoriske medlemsopplysninger i et åpent miljø?
-
-Et åpent miljø kan kreve at brukeren fyller ut opplysninger før medlemskapet aktiveres, men medlemskapet krever ikke manuell godkjenning.
-
-Vi må avklare om slike felt bare er informasjonsinnhenting, om de kan brukes som faktisk adgangskontroll, og når et miljø i stedet bør være lukket.
-
 ### 40. Hva skjer med en administratorkontakt når ansvarlig administrator forsvinner?
 
 Et medlem kan kontakte administratorene som funksjon, og én administrator kan ta primæransvar for samtalen.
