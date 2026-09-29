@@ -263,6 +263,34 @@ Den detaljerte listen skal ikke låses i produktvisjonen nå. Den må utarbeides
 
 Aktuelle kategorier som senere må vurderes særskilt omfatter blant annet våpen, legemidler, rusmidler, farlige kjemikalier, kjøretøy, medisinsk utstyr og annet sikkerhetskritisk utstyr. At en kategori nevnes her betyr ikke at hele kategorien nødvendigvis skal forbys.
 
+## Medeierskap ved deaktivering, publisering og uttreden
+
+Hvis en medeier blir deaktivert mens et medeid objekt har eksisterende lån, skal de andre medeiernes rettigheter til objektet bestå. Deaktivering skal ikke i seg selv omskrive eierskapet eller avslutte eksisterende lån.
+
+Hvis den deaktiverte medeieren er ansvarlig utlåner, gjelder prinsippet om begrenset tilgang til å avslutte eksisterende forpliktelser. Permanent kontosletting eller full uttreden fra medeierskapet skal ikke gjennomføres før vedkommendes nødvendige låneansvar er avsluttet eller gyldig overført.
+
+En medeier kan publisere et objekt i et miljø de andre medeierne ikke har adgang til. De andre medeierne skal kunne se nok til å forstå objektets samlede forvaltningssituasjon, for eksempel at objektet er publisert i en kontekst de ikke har tilgang til og at dette kan skape forespørsler eller reservasjoner. Systemet skal derimot ikke avsløre identiteten til et lukket eller skjult miljø, medlemmer eller annen kontekst de ikke har rett til å se.
+
+Hvis en medeier trekker seg mens det finnes åpne, men ikke-godkjente forespørsler, kan forespørslene fortsette dersom minst én gjenværende medeier både har nødvendig adgang til opprinnelseskonteksten og fortsatt kan behandle dem. Hvis den som trer ut var siste medeier med slik adgang, gjelder regelen om automatisk avpublisering og avslutning av de berørte forespørslene.
+
+## Miljølokal moderering av samme objekt
+
+At ett miljø avviser, avpubliserer eller fjerner et objekt etter sine egne regler, skal som hovedregel bare påvirke publiseringen i dette miljøet. Det skal ikke automatisk fjerne objektet fra andre miljøer.
+
+Hvis årsaken derimot er mulig ulovlighet, alvorlig fare eller annet forhold som kan gjelde objektet globalt, skal saken kunne rapporteres til plattformnivå. Et bekreftet plattformomfattende sikkerhets- eller lovlighetsproblem skal kunne få virkning på alle publiseringer og nye lån etter de generelle modereringsreglene.
+
+## Abonnement og tap av adgang
+
+Et abonnement på et objekt skal ikke gi en selvstendig rett til fortsatt innsyn dersom brukeren senere mister den konteksten som ga adgang til objektet.
+
+Når nødvendig adgang forsvinner, skal abonnementet opphøre eller settes inaktivt slik at brukeren ikke mottar varsler som røper objektdata eller aktivitet vedkommende ikke lenger har rett til å se.
+
+## Streng kontekstisolasjon
+
+Når samme objekt er publisert i både skjulte og ikke-skjulte miljøer, er bare selve globale objektinformasjonen felles. Miljøspesifikke spørsmål, brukernavn, anmeldelser som er kontekstbegrenset, varsler og annen sosial metadata skal ikke flyte fra et skjult miljø til åpne, lukkede eller direkte kontekster.
+
+At en hendelse i et skjult miljø påvirker objektets globale faktiske ledighet, skal ikke i seg selv gi andre brukere informasjon om hvilket miljø eller hvilken sosial sammenheng som forårsaket blokkeringen.
+
 ## Detaljer som fastsettes senere
 
 Følgende hører til senere produktspesifikasjon, sikkerhetsarbeid eller juridisk vurdering:
