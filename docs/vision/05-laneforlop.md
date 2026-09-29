@@ -132,6 +132,31 @@ Lånbort skal foreløpig **ikke** ha:
 
 Slike mekanismer kan vurderes senere dersom reell bruk viser et behov.
 
+## Når et godkjent lån ikke blir hentet
+
+Hvis avtalt overleveringstid passerer uten at objektet er registrert som overlevert, skal lånet gå til den nøytrale statusen **avventer overleveringsavklaring**.
+
+Partene skal kunne angi hva som faktisk skjedde.
+
+Mulige hovedutfall er:
+
+- Hvis objektet faktisk ble overlevert, går lånet til **utlånt**.
+- Hvis partene blir enige om et nytt overleveringstidspunkt, oppdateres avtalen etter de vanlige reglene for avtaleendring, og reservasjonen fortsetter.
+- Hvis overleveringen ikke skjedde, avsluttes lånet som **ikke gjennomført**.
+
+Hvis partene gir motstridende opplysninger om hvorvidt objektet faktisk ble overlevert, går lånet til **usikker / uenighet**. Så lenge det er reell usikkerhet om hvem som har objektet, skal objektet fortsatt behandles som utilgjengelig for kolliderende utlån.
+
+Hvis én part oppgir at overleveringen ikke skjedde og den andre ikke svarer, skal reservasjonen ikke kunne blokkere objektet på ubestemt tid. Etter en rimelig svarfrist kan lånet avsluttes som **ikke gjennomført**. Taushet skal ikke i seg selv tolkes som bevis for hvem som hadde ansvar for at overleveringen uteble.
+
+**Ikke gjennomført** skal skilles fra **kansellert**:
+
+- **Kansellert** betyr at et godkjent lån avsluttes før planlagt gjennomføring.
+- **Ikke gjennomført** betyr at tidspunktet for overlevering kom, men objektet ble aldri overlevert.
+
+Et ikke gjennomført lån kan fortsatt gi grunnlag for en begrenset vurdering av selve overleveringsforløpet, for eksempel oppmøte, tilgjengelighet og kommunikasjon. Vurderingsspørsmål som forutsetter at utlånet faktisk fant sted, for eksempel objektets tilstand ved retur, skal ikke brukes.
+
+Den konkrete svarfristen ved manglende overleveringsavklaring bestemmes senere.
+
 ## Tilbakelevering
 
 ### Utlåners bekreftelse er avgjørende
@@ -222,13 +247,15 @@ Det normale hovedforløpet er:
 
 1. **Forespurt** – låntaker har sendt en låneforespørsel som ennå ikke er godkjent eller avslått.
 2. **Reservert** – forespørselen er godkjent for en fremtidig eller kommende periode.
-3. **Utlånt** – objektet er overlevert og lånet pågår.
-4. **Avventer returavklaring** – avtalt låneperiode er over eller en part har meldt tilbakelevering, men returstatusen er ennå ikke endelig avklart.
-5. **Avsluttet** – tilbakeleveringen er endelig bekreftet og lånet er ferdig.
+3. **Avventer overleveringsavklaring** – avtalt overleveringstid er passert uten at det er avklart om objektet faktisk ble overlevert.
+4. **Utlånt** – objektet er overlevert og lånet pågår.
+5. **Avventer returavklaring** – avtalt låneperiode er over eller en part har meldt tilbakelevering, men returstatusen er ennå ikke endelig avklart.
+6. **Avsluttet** – tilbakeleveringen er endelig bekreftet og lånet er ferdig.
 
 I tillegg finnes avvikstilstander eller markeringer som kan bryte det normale forløpet:
 
 - **Kansellert** – lånet avsluttes før ordinær gjennomføring.
+- **Ikke gjennomført** – avtalt overleveringstid kom, men objektet ble aldri overlevert.
 - **Forsinket** – det er kjent at objektet fortsatt er hos låntaker etter avtalt returtid uten gyldig forlengelse.
 - **Usikker / uenighet** – partene har motstridende eller uavklarte opplysninger om retur, skade, tap eller annen sentral del av lånet.
 
@@ -306,4 +333,4 @@ skal ikke retroaktivt endre et allerede godkjent lån.
 
 Lånet må derfor beholde nødvendig historisk kontekst om hva partene faktisk godtok da avtalen ble inngått.
 
-Manglende henting må fortsatt avklares separat. Forsinket tilbakelevering, skade og tap behandles etter prinsippene over som avvik i låneforløpet.
+Forsinket tilbakelevering, skade og tap behandles etter prinsippene over som avvik i låneforløpet.
