@@ -179,7 +179,19 @@ Invitasjonen innebærer at medlemskapet allerede er forhåndsgodkjent av adminis
 
 En administrator kan invitere et annet medlem til å bli administrator. Rollen blir aktiv først når mottakeren godtar.
 
-Alle administratorer skal i utgangspunktet ha samme løpende administrative myndighet. Særskilte rettigheter til å skjule eller slette miljøet kan være forbeholdt eieren eller delegeres av eieren.
+Alle administratorer skal ha samme løpende administrative myndighet i den ordinære driften av miljøet.
+
+Eieren har i tillegg et avgrenset organisatorisk ansvar for kontinuitet og administratorgruppen. Bare eieren kan:
+
+- overføre eierskapet
+- starte eller avbryte en frivillig avvikling
+- fjerne administratorrollen fra en annen administrator
+
+Andre administratorer skal ikke kunne degradere eller fjerne hverandre.
+
+Eierstatus skal ikke gi ekstra myndighet i konkrete lån, konflikter eller saker, og skal ikke gi særskilt tilgang til privat kommunikasjon.
+
+Ved alvorlig misbruk av eier- eller administratorrollen kan plattformforvalter gripe inn etter plattformens modereringsregler, blant annet ved å suspendere administrative rettigheter eller gjennomføre en kontrollert eierskapsoverføring. Dette er et sikkerhets- og modereringstiltak, ikke en normal intern styringsmekanisme.
 
 ## Fratreden, eierskap og kontinuitet
 
