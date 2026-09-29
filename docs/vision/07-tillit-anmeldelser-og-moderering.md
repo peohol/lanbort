@@ -75,11 +75,28 @@ Den konkrete lengden på anmeldelsesfristen bestemmes senere.
 
 Rapportering av alvorlige hendelser, for eksempel trusler, svindelforsøk eller andre forhold som krever moderering, skal ikke vente på anmeldelsesfristen. Slike forhold følger rapporterings- og modereringssystemet uavhengig av anmeldelsene.
 
+### Hvem kan se fritekstanmeldelser?
+
+Fritekstanmeldelser skal være kontekstuelt synlige tillitsdata, ikke offentlig innhold på internett.
+
+Den anmeldte brukeren skal alltid kunne se publiserte anmeldelser om seg selv.
+
+Andre innloggede brukere skal kunne se fritekstanmeldelser når de allerede har legitim tilgang til den anmeldtes profil, for eksempel gjennom:
+
+- vennskap
+- medlemskap i et felles miljø
+- et konkret låneforhold eller annen produktkontekst som gir relevant profiltilgang
+
+En anmeldelse skal ikke i seg selv gjøre brukeren mer oppdagbar enn vedkommende ellers ville vært. Fritekstanmeldelser skal derfor ikke kunne søkes frem eller leses av uvedkommende bare fordi de finnes.
+
+Den som skrev anmeldelsen skal identifiseres. Anonyme anmeldelser inngår ikke i kjernevisjonen.
+
+Aggregerte skårer kan senere få noe videre synlighet enn fritekst dersom dette er nyttig og forenlig med profil- og personvernreglene. Tall og personlig omtale trenger ikke ha identiske synlighetsgrenser.
+
 ### Fortsatt uavklart
 
 Visjonen må fortsatt avklare:
 
-- om fritekst er offentlig, privat eller delt bare med motparten
 - om vurderinger kan redigeres
 - om brukeren kan svare på en omtale
 
