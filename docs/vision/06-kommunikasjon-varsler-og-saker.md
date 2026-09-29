@@ -1,6 +1,6 @@
 # Kommunikasjon, varsler og saker
 
-> **Status:** Førsteutkast. Visjonen skiller bevisst mellom løpende chat, strukturerte varsler og formelle saker.
+> **Status:** Konsolidert visjonsutkast. Skillet mellom varsler, privat chat, administratorkontakt og formelle saker er avklart.
 
 ## Tre forskjellige kommunikasjonsformer
 
@@ -271,10 +271,6 @@ På denne måten kan administrativ mekling gjennomføres uten at medlemskap i et
 
 Den konkrete kryptografiske implementasjonen hører til senere sikkerhets- og arkitekturarbeid, men disse tilgangsgrensene er en del av produktvisjonen.
 
-## Åpne spørsmål
+## Detaljer som fastsettes senere
 
-Se [Åpne spørsmål](open-questions.md) for blant annet:
-
-- chat mellom brukere som ikke er venner
-- eierskap og overføring av aktive administratorkontakter
-- hvor lenge saker skal oppbevares
+Konkrete kanalvalg, oppbevaringstider, varslingsstandarder og den kryptografiske implementasjonen fastsettes senere. De produktmessige grensene for kontakt, tilgang, saksansvar og privat kommunikasjon er avklart.
