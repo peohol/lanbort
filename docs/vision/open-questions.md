@@ -18,12 +18,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## F – Data, personvern og jus
 
-### 34. Hvilket ansvar kan og bør Lånbort ta?
-
-Målet er at brukerne har ansvar for egne utlån, men bruksvilkår alene avgjør ikke plattformens juridiske ansvar.
-
-Før lansering må vi identifisere de viktigste rettslige områdene og få kvalifisert vurdering der det er nødvendig.
-
 ## G – Prosjektpremisser som ikke er produktvisjon
 
 Kildedokumentet inneholder også viktige føringer for hvordan repo-eier og KI-agenter skal samarbeide, og hvordan agentinstruksjonsfiler bør vedlikeholdes.
