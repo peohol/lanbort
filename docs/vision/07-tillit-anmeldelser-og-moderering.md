@@ -123,32 +123,39 @@ En slik analyse må blant annet ta hensyn til:
 
 Automatisk nedvekting av anmeldelser inngår ikke i kjernevisjonen. Hvis en vektingsmodell senere vurderes, må den behandles som et eget produktspørsmål med høye krav til dokumentasjon, forståelighet og transparens.
 
-## Flerdimensjonal brukerskår
+## Tillitsprofiler og aktivitetsdata
 
-Visjonen skisserer flere mulige dimensjoner.
+Lånbort skal ikke gi brukeren én generell skår som forsøker å oppsummere personen på tvers av alle roller.
 
-### Gavmildhet
+Tillitsinformasjon skal i stedet knyttes til den konkrete rollen brukeren har hatt i tidligere lån.
 
-Skal reflektere positiv deltakelse som utlåner, for eksempel:
+### Som låntaker
 
-- hvor mange vellykkede utlån brukeren har gjennomført
-- eventuelt hvor mange forskjellige objekter brukeren faktisk deler
+Erfaringer kan oppsummeres ut fra relevante dimensjoner som:
 
-Det må unngås at personer med mange eiendeler automatisk fremstår «bedre» enn andre.
+- henting til avtalt tid
+- tilbakelevering til avtalt tid
+- objektets tilstand ved retur
+- kommunikasjon
 
-### Pålitelighet
+### Som utlåner
 
-Skal oppsummere relevante erfaringer fra andre brukere.
+Erfaringer kan oppsummeres ut fra relevante dimensjoner som:
 
-Denne bør ikke være et naivt gjennomsnitt dersom datagrunnlaget er lite eller inneholder ekstreme vurderinger.
+- om objektet ble gjort tilgjengelig som avtalt
+- om utlåner var tilgjengelig for avtalt tilbakelevering
+- om objektets faktiske tilstand samsvarte med beskrivelsen
+- kommunikasjon
 
-### Bidrag gjennom lån
+Tillitsprofilen skal gjøre datagrunnlaget forståelig, for eksempel ved å vise hvor mange gjennomførte lån vurderingen bygger på. Den skal ikke presentere et lite antall vurderinger som like robust som et stort erfaringsgrunnlag.
 
-Det opprinnelige notatet vurderer en egen dimensjon for det å låne i stedet for å kjøpe.
+### Delingsaktivitet er ikke en tillitsskår
 
-Tanken er at også låntakeren bidrar til delingsøkonomien ved å bruke eksisterende ressurser fremfor å kjøpe nytt.
+«Gavmildhet» skal ikke være en egen brukerskår. Mengden ting en person eier eller har anledning til å låne ut, er ikke et godt mål på personens verdi eller pålitelighet.
 
-Navn, betydning og om denne skåren faktisk bør finnes, er åpent.
+Dersom det er nyttig, kan Lånbort vise nøytrale aktivitetsdata, for eksempel antall gjennomførte utlån eller hvor mange objekter brukeren har delt.
+
+På samme måte skal «bidrag gjennom lån» ikke være en offentlig skår. Det å låne fremfor å kjøpe kan støtte Lånborts samfunnsmål, men skal ikke brukes til å rangere brukere. Slike data kan eventuelt brukes til personlig statistikk eller til å beskrive samlet effekt av deling.
 
 ## Skårer som tilgangsfilter
 
