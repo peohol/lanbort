@@ -283,6 +283,30 @@ Et miljø skal kunne ha en innstilling som krever administratorgodkjenning før 
 
 En administrator som avviser et objekt, skal også kunne rapportere objektet til plattformnivå dersom det fremstår ulovlig, farlig eller på annen måte problematisk.
 
+## Kontinuitet ved avvikling, utestengelse og manglende administrasjon
+
+Når et miljø går til avvikling, skal ikke-godkjente låneforespørsler som bygger på miljøet avsluttes nøytralt. Allerede godkjente lån fortsetter etter de vanlige reglene.
+
+Anmeldelsesrettigheter som allerede er opptjent gjennom lån i miljøet skal ikke falle bort fordi miljøet går til avvikling. En allerede åpnet meklingssak kan fortsette så lenge det finnes en habil og autorisert administrator som med rimelighet kan behandle den. Hvis slik behandling ikke lenger er mulig, avsluttes meklingen kontrollert uten automatisk eskalering til plattformforvalter.
+
+Hvis et medlem utestenges eller på annen måte mister medlemskapet etter at et lån er godkjent, fortsetter lånet, nødvendige lånehandlinger, opptjente anmeldelsesrettigheter og eventuell allerede tilgjengelig miljømekling etter de samme prinsippene som ved ordinært opphør av medlemskap. Utestengelsen gir ikke brukeren ny eller generell adgang til miljøet.
+
+Hvis et miljø midlertidig står uten administratorer, skal ventende innmeldingsforespørsler, administratorkontakter og andre prosesser som krever administratorbehandling ikke kunne avgjøres av uvedkommende. De kan stå på vent så lenge det finnes en realistisk kontinuitetsvei. Brukerne skal få tydelig beskjed om at behandling for øyeblikket ikke er tilgjengelig. Hvis administrasjon ikke gjenopprettes og miljøet går til avvikling, avsluttes de åpne prosessene kontrollert etter sin art.
+
+Hvis eieren samtidig var eneste administrator og forsvinner uten overføring, kan miljøet ikke fortsette ordinær drift. Nye medlemskap, nye miljøbaserte lån og andre handlinger som krever administrasjon stanses, og miljøet går mot kontrollert avvikling dersom ingen gyldig ny administrator/eier kan etableres.
+
+### Habilitet ved rapporter om administrator
+
+En administrator som selv er gjenstand for en rapport eller annen administrativ vurdering fra et medlem, skal ikke behandle den samme rapporten eller en tett sammenvevd sak som saksbehandler. En annen habil administrator må overta dersom slik behandling skal skje på miljønivå. Hvis ingen habil administrator finnes, gjelder de vanlige reglene om at miljøbehandling ikke er tilgjengelig og at dette ikke i seg selv skaper en rett til plattformbasert tvisteløsning.
+
+## Endring til skjult miljø
+
+Hvis et eksisterende miljø endres til skjult, skal eksisterende medlemmer beholde medlemskapet med mindre miljøet beslutter noe annet etter sine vanlige regler. Eksisterende godkjente lån fortsetter uendret.
+
+Fra det tidspunktet miljøet blir skjult, skal synlighetsreglene for skjulte miljøer gjelde for ikke-medlemmer. Historiske anmeldelser, spørsmål og annen miljøspesifikk sosial kontekst skal ikke fortsette å være synlig utenfor miljøet bare fordi den tidligere var knyttet til et åpent eller lukket miljø.
+
+Ved senere avvikling av et skjult miljø kan nødvendig historisk kontekst fortsatt vises til direkte parter og andre som har et legitimt historisk behov, men miljøets eksistens og sosiale kontekst skal ikke gjøres oppdagbar for utenforstående.
+
 ## Detaljer som fastsettes senere
 
 Følgende er bevisst utsatt til senere produktspesifikasjon og datalivssyklusarbeid:
