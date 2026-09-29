@@ -35,6 +35,10 @@ Forskjellen mellom de to inngangene gjelder først og fremst **hvordan lånet ka
 
 Når en låneforespørsel er sendt, skal lånet ha samme grunnleggende brukerflate, tilstander, kommunikasjon og returforløp uansett om det ble initiert gjennom et miljø eller direkte mellom venner.
 
+For en miljøbasert forespørsel må låntakeren fortsatt ha nødvendig adgang til opprinnelsesmiljøet når forespørselen godkjennes. Hvis medlemskapet eller annen nødvendig adgang opphører før godkjenning, skal forespørselen avsluttes og kan ikke senere bli til et lån.
+
+Når lånet først er godkjent og reservert, er det derimot selvstendig nok til å fortsette selv om medlemskapet senere opphører.
+
 Et lån som oppstod gjennom et miljø skal likevel beholde miljøet som opprinnelseskontekst. Det kan være relevant for historikk, moderering og muligheten for miljøbasert mekling ved konflikt. Denne konteksten skal ikke gjøre det ordinære låne-UI-et til et eget «miljølån»-system.
 
 ### Ansvarserklæring ved direkte vennelån
@@ -51,6 +55,8 @@ Erklæringen skal gjøre det tydelig at:
 Aksepten skal være knyttet til det konkrete direkte lånet, slik at begge parter aktivt har tatt stilling til premisset før lånet etableres.
 
 Dette begrenser ikke brukerens adgang til å rapportere **plattformmisbruk** som trusler, trakassering, svindelforsøk, ulovlig innhold eller annen adferd som kan kreve tiltak for å beskytte Lånbort og brukerne. En slik rapport er en modereringssak, ikke en tvisteløsning for det private lånet.
+
+En opplysning om at et objekt ikke er tilbakelevert skal i seg selv behandles som et strukturert låneavvik, ikke automatisk som en modereringsrapport. Ved direkte vennelån kan dette sette eller holde lånet i status **usikker / uenighet** og inngå i lånehistorikken og senere anmeldelse. En separat plattformrapport krever at det også foreligger et mulig plattformproblem utover den konkrete private tvisten.
 
 ## Ett felles lånesystem
 
@@ -77,6 +83,16 @@ En forespørsel skal minst uttrykke:
 «Så snart som mulig» skal kunne brukes som ønsket start.
 
 Hvis brukeren angir et fullstendig fra–til-intervall, er varigheten allerede definert. Den endelige brukerflyten bør derfor unngå å be om samme informasjon to ganger.
+
+### Endring av vilkår mens forespørselen venter
+
+Utlåner kan endre objektets vilkår mens en låneforespørsel fortsatt venter.
+
+Hvis endringen er vesentlig for det aktuelle lånet, skal forespørselen settes på vent. Låntakeren skal varsles om at vilkårene er endret og må uttrykkelig bekrefte at hen fortsatt ønsker lånet på de nye vilkårene. Først etter denne bekreftelsen kan utlåner godkjenne forespørselen.
+
+Uvesentlige eller rent redaksjonelle endringer trenger ikke stoppe forespørselen.
+
+Prinsippet er at et lån ikke skal kunne godkjennes på vesentlige vilkår som låntakeren ikke har fått anledning til å ta stilling til.
 
 ## Kommunikasjon rundt forespørselen
 
@@ -227,6 +243,22 @@ Systemet skal deretter skille mellom ulike situasjoner:
 
 Så lenge returstatusen ikke er endelig avklart, skal objektet fortsatt behandles som utilgjengelig for kolliderende utlån.
 
+### Administrativ avslutning som uavklart
+
+Et lån skal ikke kunne bli permanent uavsluttbart bare fordi den parten som normalt må avklare returen ikke lenger svarer eller er varig utilgjengelig.
+
+Etter en tilstrekkelig avklaringsprosess skal et slikt lån kunne **avsluttes administrativt som uavklart**. Dette betyr ikke at Lånbort fastslår om objektet faktisk ble returnert eller hvem som hadde rett.
+
+En slik avslutning skal:
+
+- bevare historikken om partenes opplysninger og at returen aldri ble endelig bekreftet
+- tydelig vise at lånet ble avsluttet som uavklart
+- frigjøre objektet fra en permanent systemblokkering
+- oppheve lånets funksjon som binding som ellers ville blokkert kontolivssyklus eller andre systemprosesser
+- ikke brukes som grunnlag for å fastsette juridisk skyld, eiendomsrett eller erstatningsansvar
+
+Den konkrete prosessen og terskelen for slik administrativ avslutning fastsettes senere.
+
 ### Forsinket tilbakelevering
 
 **Forsinket** skal bare brukes når det faktisk er kjent at objektet fortsatt er hos låntaker etter avtalt returtid uten gyldig forlengelse.
@@ -290,6 +322,10 @@ Administrator skal ikke kunne:
 
 At en part er misfornøyd med administratorens mekling eller avslutning av saken, gir **ikke** i seg selv rett til å eskalere lånetvisten til en plattformforvalter.
 
+En administrator som selv er part i lånet eller har en tilsvarende direkte interessekonflikt, skal ikke behandle saken som administrator og skal ikke få administratorinnsyn i den andre partens beskyttede saksinformasjon. Hvis det ikke finnes noen habil administrator, er miljømekling ikke tilgjengelig; saken eskaleres ikke automatisk til plattformforvalter av den grunn.
+
+Retten til å bruke miljøets meklingsprosess følger et allerede godkjent miljøbasert lån selv om en part senere ikke lenger er medlem av miljøet. Dette gir ikke tilbake generell medlemsadgang. Administratoren kan avslutte meklingen når det ikke lenger er rimelig eller nyttig å fortsette.
+
 Alvorlige forhold som trusler, trakassering, svindelforsøk, ulovlig bruk eller annet misbruk av Lånbort kan fortsatt rapporteres separat som en modereringssak. Plattformforvaltere behandler i så fall plattformmisbruket, ikke den privatrettslige lånetvisten.
 
 ### Direkte lån mellom venner
@@ -334,3 +370,13 @@ skal ikke retroaktivt endre et allerede godkjent lån.
 Lånet må derfor beholde nødvendig historisk kontekst om hva partene faktisk godtok da avtalen ble inngått.
 
 Forsinket tilbakelevering, skade og tap behandles etter prinsippene over som avvik i låneforløpet.
+
+## Sikkerhets- og lovlighetsinngrep i godkjente lån
+
+Avtalestabilitet skal ikke hindre Lånbort i å gripe inn når et objekt viser seg å være ulovlig, forbudt etter plattformpolicy eller forbundet med en alvorlig sikkerhetsrisiko.
+
+Hvis et slikt forhold oppdages **før overlevering**, skal et reservert lån kunne stanses administrativt. Dette skal registreres som en særskilt administrativ avslutning, ikke som vanlig kansellering fra en av partene.
+
+Hvis objektet **allerede er overlevert**, skal historikken og det faktiske låneforløpet bevares. Plattformen kan samtidig hindre forlengelse og nye lån, varsle partene og begrense videre fasilitering når sikkerhet eller lovlighet krever det.
+
+Et slikt inngrep gjelder hva Lånbort kan fasilitere. Det skal ikke brukes til å avgjøre private krav mellom partene.
