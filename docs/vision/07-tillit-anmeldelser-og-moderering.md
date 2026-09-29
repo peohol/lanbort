@@ -20,6 +20,8 @@ Når et lån er avsluttet, skal begge parter kunne vurdere opplevelsen.
 
 Hvis et godkjent lån ender som **ikke gjennomført** fordi objektet aldri ble overlevert, kan partene likevel få en begrenset vurdering av selve overleveringsforløpet. Denne skal bare omfatte forhold som faktisk kan vurderes, for eksempel oppmøte, tilgjengelighet og kommunikasjon. Dimensjoner som forutsetter at utlånet fant sted, skal utelates.
 
+Det samme prinsippet kan brukes når et godkjent lån kanselleres ensidig før overlevering. En eventuell vurdering skal da bare omfatte det faktiske forløpet frem til kanselleringen og skal ikke bruke dimensjoner som forutsetter at utlånet faktisk fant sted.
+
 ### Utlåners perspektiv
 
 Foreløpige dimensjoner:
