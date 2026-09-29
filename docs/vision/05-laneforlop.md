@@ -20,6 +20,8 @@ Et lån skal i grove trekk bevege seg gjennom følgende hendelser:
 
 Ved miljøbaserte lån kan enkelte uenigheter håndteres gjennom miljøets saksprosess. Ved direkte lån mellom venner er partene selv ansvarlige for å håndtere tvister om selve lånet; slike tvister skal ikke kunne eskaleres til plattformnivå for avgjørelse.
 
+Blokkering mellom partene opphever ikke et allerede reservert eller aktivt lån. Nødvendige strukturerte handlinger og statusinformasjon skal fortsatt være tilgjengelige til lånet er avsluttet, selv om vanlig sosial kontakt mellom partene begrenses.
+
 ## Hvem kan be om å få låne?
 
 Lån kan oppstå på to måter:
