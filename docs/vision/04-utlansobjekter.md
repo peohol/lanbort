@@ -159,7 +159,7 @@ Ingen medeier kan ensidig fjerne en annen medeier.
 
 Permanent sletting av et medeid objekt skal kreve samtykke fra alle registrerte medeiere.
 
-Hvis to medeiere blokkerer hverandre, skal objektet fryses for nye utlån og skjules fra andre brukeres ordinære oppdagelsesflater. Alle ikke-godkjente låneforespørsler avsluttes nøytralt. Allerede reserverte eller aktive lån fortsetter etter de vanlige reglene. For at nye lån igjen skal være mulig, må medeierskapet først avklares slik at bare én av de blokkerende partene står igjen som eier.
+Hvis to medeiere blokkerer hverandre, skal objektet fryses for nye utlån og skjules fra andre brukeres ordinære oppdagelsesflater. Alle ikke-godkjente låneforespørsler avsluttes nøytralt. Allerede reserverte eller aktive lån fortsetter etter de vanlige reglene. For at nye lån igjen skal være mulig, må medeierskapet først avklares slik at objektet har én registrert eier. Det er ikke tilstrekkelig bare å oppheve blokkeringen.
 
 Hvis en potensiell låntaker og én av objektets medeiere har en aktiv blokkering i noen retning, skal objektet ikke kunne inngå i et nytt lån med denne brukeren. Dette gjelder selv om en annen medeier ellers ville vært villig til å godkjenne lånet.
 
