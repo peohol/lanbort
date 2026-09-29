@@ -8,12 +8,6 @@ Den første sekvensielle gjennomgangen av spørsmål 1–34 er fullført. En ett
 
 ## H – Gjenværende produktspørsmål etter konsistensgjennomgang
 
-### 36. Hva skjer når et godkjent lån ikke blir hentet?
-
-Låneforløpet beskriver reservasjon, overlevering, retur og avvik etter retur, men manglende henting er fortsatt uttrykkelig uavklart.
-
-Vi må definere hvordan partene kan registrere at overlevering ikke skjedde, når reservasjonen opphører, og hvordan dette skilles fra kansellering eller forsinket retur.
-
 ### 37. Kan anmeldelser redigeres, og kan mottakeren svare?
 
 Publiseringstidspunkt, synlighet og begrunnelseskrav er avklart.
