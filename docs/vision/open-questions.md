@@ -1,13 +1,17 @@
 # Åpne spørsmål
 
-> **Status:** Arbeidsliste for videre visjonsdialog. Dette er ikke en backlog eller implementeringsplan.
+> **Status:** Ingen registrerte åpne visjonsspørsmål per 29. september 2026.
 
-Målet med listen er å gjøre usikkerhet synlig. Spørsmål flyttes ut herfra når de er tilstrekkelig avklart i de tematiske visjonsdokumentene.
+Den sekvensielle visjonsgjennomgangen av spørsmål 1–40 er fullført. Avklaringene er innarbeidet i de tematiske dokumentene og kan følges gjennom Git-historikken.
 
-Den første sekvensielle gjennomgangen av spørsmål 1–34 og den første konsistensrunden med spørsmål 35–37 er fullført.
+Dette betyr ikke at alle produktdetaljer er bestemt. Følgende typer valg er bevisst utsatt og skal normalt ikke behandles som nye visjonsspørsmål:
 
-Konkrete terskler og tidsfrister som allerede har et avklart prinsipp – for eksempel eksakt anmeldelsesfrist, svarfrist, dvaletid eller oppbevaringstid – regnes ikke som åpne visjonsspørsmål. De hører hjemme i senere produktspesifikasjon, testing, sikkerhetsarbeid eller juridisk vurdering.
+- eksakte frister, terskler og oppbevaringstider
+- endelig liste over profil- og objektfelt
+- konkret ordlyd og detaljert brukerflyt
+- varslingsstandarder og preferanser
+- teknisk håndtering av samtidighet, kryptering og autorisasjon
+- detaljert policy for regulerte eller risikofylte objekter
+- juridiske vurderinger som krever kvalifisert vurdering av gjeldende rett
 
-## I – Gjenværende styrings- og relasjonsspørsmål
-
-Ingen åpne visjonsspørsmål er registrert etter den siste gjennomgangen.
+Hvis senere gjennomgang avdekker en ny reell motsetning eller et nytt produktvalg som påvirker Lånborts grunnleggende modell, skal det legges inn her som et nytt nummerert visjonsspørsmål.
