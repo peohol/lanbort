@@ -1,6 +1,6 @@
 # Lånbort – strukturert produktvisjon
 
-> **Status:** Første strukturerte utkast, 28. september 2026. Dokumentene i denne mappen er en renskriving og organisering av `/VISION.md`. De er **ikke** en implementeringsplan og skal foreløpig ikke behandles som en ferdig eller låst spesifikasjon.
+> **Status:** Konsolidert visjonsgrunnlag, 29. september 2026. Den sekvensielle gjennomgangen av åpne produktspørsmål er fullført gjennom spørsmål 40. Dokumentene er fortsatt **ikke** en implementeringsplan eller en låst spesifikasjon; konkrete terskler, feltvalg, tekniske mekanismer og juridiske detaljer fastsettes senere.
 
 ## Formålet med denne mappen
 
@@ -58,4 +58,4 @@ Behovene bak enkelte av disse punktene er beholdt. For eksempel står kartbasert
 
 ## Videre arbeid
 
-Neste fase er ikke implementering. Vi skal først gjennomgå [åpne spørsmål](open-questions.md), korrigere uklarheter og selvmotsigelser, utfordre mekanismer som kan gi uønskede konsekvenser og gradvis gjøre hvert visjonsdokument stabilt nok til at det senere kan oversettes til en konkret produktspesifikasjon.
+Visjonsgrunnlaget er nå konsolidert uten registrerte åpne visjonsspørsmål. Det kan fortsatt revideres dersom nye produktmessige motsetninger eller behov oppdages, men detaljer som konkrete tidsfrister, feltskjemaer, tekniske mekanismer og juridiske terskler skal ikke trekkes inn i visjonsfasen bare for å gjøre dokumentene mer detaljerte.
