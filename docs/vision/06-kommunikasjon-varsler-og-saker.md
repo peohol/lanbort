@@ -156,11 +156,25 @@ Faktisk sletting, anonymisering eller annen behandling av underliggende data ska
 
 Et medlem skal kunne kontakte **administratorene som funksjon**, ikke bare sende privat melding til en bestemt person som tilfeldigvis er administrator.
 
-Denne samtalen skal derfor være knyttet til miljøets administrasjon.
+Denne samtalen skal derfor være knyttet til miljøets administrasjon og **tilhøre miljøfunksjonen, ikke den enkelte administratoren som behandler den**.
 
-Alle administratorer kan i utgangspunktet ha innsyn, men én administrator kan «ta» samtalen slik at vedkommende blir primær mottaker av nye varsler.
+Alle administratorer med riktig rolle kan i utgangspunktet finne samtalen. Én administrator kan «ta» den og bli ansvarlig saksbehandler og primær mottaker av nye varsler.
 
-De andre administratorene skal fortsatt kunne finne samtalen ved behov.
+Tildelingen til en bestemt administrator er midlertidig:
+
+- administratoren kan frivillig frasi seg eller overføre ansvaret
+- hvis administratoren mister administratorrollen, forlater miljøet, får kontoen deaktivert eller slettet, eller på annen måte ikke lenger kan behandle henvendelsen, skal tildelingen opphøre
+- samtalen går da tilbake til en felles administrativ kø uten ansvarlig administrator
+- øvrige administratorer varsles og en annen administrator kan ta over
+- medlemmet skal ikke måtte starte en ny samtale
+
+Hele eksisterende samtale- og hendelseshistorikken følger administratorkontakten. Internt skal det være mulig å se at ansvaret ble overført og hvorfor.
+
+En tidligere administrator skal miste tilgangen når administratorrollen opphører; historikken forblir hos miljøets administrasjon.
+
+Hvis miljøet midlertidig står uten administratorer, kan kontakten bli liggende utilordnet. Brukeren skal få tydelig beskjed om at ingen administrator for øyeblikket kan behandle henvendelsen. Dersom en ny administrator eller eier etableres, kan kontakten tas opp igjen.
+
+Hvis miljøet går til avvikling, skal uavsluttede administratorkontakter kunne avsluttes på en kontrollert måte. De skal ikke automatisk eskaleres til plattformforvalter bare fordi miljøet mangler administrator.
 
 Dette skal holdes adskilt fra vanlig privat chat mellom to brukere.
 
@@ -187,6 +201,8 @@ Når én saksbehandler tar ansvar:
 - vedkommende blir primært ansvarlig for oppfølging
 - andre med riktig rolle kan fortsatt ha nødvendig innsyn
 - saken og handlingene skal kunne spores i ettertid
+
+Saken tilhører funksjonen og den relevante organisatoriske konteksten, ikke den enkelte saksbehandleren. Hvis saksbehandleren mister rollen eller blir utilgjengelig, skal tildelingen kunne opphøre og saken overtas av en annen autorisert person uten at historikken eller saksforløpet brytes.
 
 Den konkrete tilgangsmodellen avhenger av sakstype.
 
