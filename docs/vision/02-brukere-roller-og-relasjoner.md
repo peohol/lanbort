@@ -75,10 +75,17 @@ Det innebærer at:
 - eierskapet kan bare overføres til en annen administrator
 - en eier kan ikke frasi seg administratorrollen uten først å overføre eierskapet eller starte avvikling av miljøet
 
-Eierrollen er knyttet til særskilt forvaltningsansvar for miljøets fortsatte eksistens. Eieren skal blant annet kunne:
+Eierrollen er knyttet til særskilt forvaltningsansvar for miljøets fortsatte eksistens og administratorgruppe. Eieren skal blant annet kunne:
 
 - overføre eierskapet til en annen administrator
-- starte en kontrollert avvikling av miljøet
+- starte eller avbryte en kontrollert frivillig avvikling av miljøet
+- fjerne administratorrollen fra en annen administrator
+
+Andre administratorer skal ikke kunne frata hverandre administratorrollen.
+
+Eierrollen skal ikke gi særskilt myndighet i konkrete lån, konflikter eller saker utover de rettighetene personen ellers har som administrator, utlåner eller låntaker. Eieren skal heller ikke få ekstra tilgang til private samtaler eller rett til å omskrive historikk.
+
+Dersom en eier eller administrator alvorlig misbruker rollen eller bryter plattformreglene, kan plattformforvalter gripe inn som et sikkerhets- eller modereringstiltak, for eksempel ved å suspendere administrative rettigheter eller gjennomføre en kontrollert eierskapsoverføring. Dette skal være et særtilfelle, ikke en ordinær styringsmekanisme.
 
 Eierløshet skal ikke være en ordinær, varig driftsform. Den kan oppstå midlertidig dersom eieren forsvinner uten kontrollert overføring, for eksempel fordi kontoen deaktiveres eller slettes. Da skal systemet forsøke å etablere en ny eier blant gjenværende administratorer før miljøet eventuelt går til avvikling.
 
