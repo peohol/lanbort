@@ -239,6 +239,12 @@ Permanent sletting skal i utgangspunktet skje:
 - eksplisitt på initiativ fra eieren eller eierne
 - eller som del av senere regler for kontosletting og datalivssyklus
 
+Hvis objektet bare har ikke-godkjente låneforespørsler, kan eieren fortsatt slette objektet; disse forespørslene avsluttes da nøytralt.
+
+Hvis objektet inngår i et reservert, aktivt eller fortsatt uavklart lån, skal det derimot ikke kunne slettes permanent. Eieren kan avpublisere objektet og hindre nye forespørsler, men objektet og nødvendig informasjon må bestå til lånet ikke lenger krever oppfølging.
+
+Når slike bindinger er avsluttet, kan objektet slettes etter de vanlige reglene. Tidligere avsluttede lån skal fortsatt beholde den nødvendige historiske representasjonen av hva som faktisk ble lånt og hvilke vilkår som gjaldt, selv om det aktive objektet senere slettes.
+
 Historikk som fortsatt er nødvendig for tidligere lån, saker eller andre legitime formål kan bevares etter de generelle reglene for datalivssyklus selv om selve objektet senere slettes.
 
 Hvis datamengden ved stor skala senere blir et faktisk driftsproblem, kan lagrings- og oppryddingsstrategien revurderes uten at dette trenger å endre den grunnleggende brukeropplevelsen.
