@@ -1,6 +1,6 @@
 # Scenario-basert stresstest av produktvisjonen
 
-> **Status:** Levende arbeidsdokument. Scenario 2–26 er gjennomført og avklart per 29. september 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
+> **Status:** Levende arbeidsdokument. Scenario 2–57 er gjennomført og avklart per 29. september 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
 
 ## Formål og metode
 
@@ -44,66 +44,77 @@ Stresstesten skal holde seg på visjonsnivå. Tekniske mekanismer, konkrete fris
 - **25. Anmelder sletter kontoen:** publisert anmeldelse kan bestå, men synlig forfatter anonymiseres; anmeldelser kan ikke leveres anonymt.
 - **26. Forlengelse kolliderer med et allerede godkjent neste lån:** det første lånet kan ikke forlenges inn i den reserverte perioden. Den senere avtalen må først endres frivillig etter de vanlige samtykkereglene; Lånbort skal ikke fasilitere at en eksisterende avtale tilsidesettes.
 
+- **27. Tidlig retur frigjør resten av perioden:** når ansvarlig utlåner bekrefter tidlig retur, avsluttes lånet på faktisk returtidspunkt og resten av den gamle reservasjonen frigjøres hvis ingen andre reservasjoner kolliderer.
+- **28. Blokkering etter godkjenning, før overlevering:** blokkering kansellerer ikke lånet automatisk; nødvendige strukturerte handlinger består, og begge kan fortsatt kansellere ensidig før overlevering.
+- **29. Medeier deaktiveres mens felles objekt har aktive lån:** de andre medeiernes rettigheter består; ansvarlig utlåner må fullføre eller overføre eksisterende ansvar før sletting eller uttreden.
+- **30. Medeier publiserer i et miljø andre medeiere ikke har adgang til:** de andre får bare nødvendig forvaltningsinformasjon, uten at miljøets identitet eller beskyttede kontekst røpes.
+- **31. Medeier forlater objektet med åpne forespørsler:** forespørsler kan fortsette hvis en gjenværende medeier har nødvendig kontekstadgang; ellers avsluttes de etter reglene om siste adgangsberettigede eier.
+- **32. Miljø går til avvikling med ventende låneforespørsler:** ikke-godkjente forespørsler avsluttes nøytralt; godkjente lån fortsetter.
+- **33. Miljø går til avvikling under anmeldelsesfrist eller mekling:** opptjente anmeldelsesrettigheter består; mekling kan fortsette så lenge habil administrasjon finnes, ellers avsluttes den kontrollert uten automatisk eskalering.
+- **34. Bruker utestenges etter at et lån er godkjent:** eksisterende lån, nødvendige lånehandlinger, anmeldelsesrettigheter og eventuell lånetilknyttet mekling består uten at medlemskapet gjenopprettes.
+- **35. Miljø mister alle administratorer mens prosesser venter:** prosesser som krever administrator avgjøres ikke av uvedkommende; de settes på vent og kan gjenopptas ved gyldig ny administrasjon eller avsluttes kontrollert ved avvikling.
+- **36. Eier og eneste administrator forsvinner:** ny aktivitet som krever miljøadministrasjon stanses; uten gyldig kontinuitetsvei går miljøet mot kontrollert avvikling.
+- **37. Ett miljø avviser eller fjerner et objekt som også er publisert andre steder:** avgjørelsen er miljølokal med mindre problemet gjelder et mulig globalt sikkerhets- eller lovlighetsforhold.
+- **38. Ett miljø rapporterer et objekt som farlig eller ulovlig:** miljøet kan beskytte sin egen flate straks; plattformnivå vurderer om forholdet skal få global virkning på alle publiseringer og nye lån.
+- **39. Abonnent mister adgang til objektets kontekst:** abonnementet skal ikke bevare innsyn; varsling stopper eller abonnementet deaktiveres.
+- **40. Anmeldelse modereres bort etter å ha påvirket skår:** synlige aggregater oppdateres slik at vurderingen ikke fortsetter å telle; nødvendig modereringshistorikk kan beholdes internt.
+- **41. Forfatter av tilsvar sletter kontoen:** tilsvaret kan bestå som historisk kontekst, men synlig identitet anonymiseres på samme måte som for en slettet anmelder.
+- **42. Anmeldelse inneholder tredjepartsopplysninger eller privat kontekst:** problematisk fritekst kan fjernes eller redigeres gjennom sporbar moderering; skåren kan bestå dersom selve vurderingen fortsatt er gyldig.
+- **43. Profiltilgang forsvinner etter at en anmeldelse tidligere var synlig:** fritekstanmeldelsen følger nåværende adgang og blir ikke værende synlig bare fordi brukeren kunne lese den tidligere.
+- **44. Nye relasjoner oppstår senere:** nye vennskap eller medlemskap skal ikke retroaktivt åpne historiske anmeldelser som fortsatt er kontekstbegrenset.
+- **45. Administrator blir rapportert av medlemmet i en sammenvevd sak:** administratoren er inhabil og må tre ut av behandlingen; annen habil administrator må eventuelt overta.
+- **46. Blokkering oppstår under aktiv mekling eller moderering:** saken fortsetter etter saksrollene, mens vanlig direktekontakt fortsatt er blokkert.
+- **47. Bruker rapporterer og blokkerer motpart før overlevering:** rapport, blokkering og lån behandles separat; reservasjonen består til en part kansellerer eller et konkret modereringstiltak griper inn.
+- **48. Moderering som stanset et reservert lån oppheves senere:** den gamle reservasjonen gjenoppstår ikke automatisk; nytt lån krever ny avtale.
+- **49. Ende-til-ende-kryptert melding brukes som dokumentasjon:** parten må uttrykkelig sende inn en kopi eller representasjon; den innsendte kopien blir saksdata uten at resten av chatten åpnes.
+- **50. Innsender av saksdokumentasjon sletter kontoen:** allerede innsendt materiale følger sakens legitime oppbevaringsbehov og forsvinner ikke automatisk; identitet reduseres når mulig.
+- **51. Faktisk feil i en sak må korrigeres:** korrigeringen legges til som en ny sporbar hendelse; tidligere registrering omskrives ikke stille.
+- **52. Venner initierer lån gjennom et miljø:** opprinnelsen bestemmes av hvordan forespørselen faktisk ble opprettet; miljøbasert forespørsel forblir miljøbasert selv om partene også er venner.
+- **53. Partene blir venner etter at miljøforespørselen er sendt:** dette endrer ikke opprinnelseskonteksten eller gjør lånet om til et direkte vennelån.
+- **54. Miljø blir skjult etter at lån og anmeldelser finnes:** eksisterende lån fortsetter, mens miljøspesifikk synlighet fra endringstidspunktet følger de strengere reglene for skjulte miljøer.
+- **55. Skjult miljø avvikles:** nødvendig historisk kontekst kan bestå for direkte parter og andre med legitim historisk forbindelse, men miljøet skal ikke bli synlig for utenforstående.
+- **56. Samme objekt finnes i skjult og åpen kontekst:** bare global objektinformasjon deles; spørsmål, anmeldelser, varsler og sosial metadata holdes strengt kontekstadskilt.
+- **57. Administrativ samtale står uten saksbehandler fordi miljøet mangler administratorer:** samtalen blir liggende utilordnet med tydelig beskjed til brukeren og kan gjenopptas hvis gyldig administrasjon etableres; den eskaleres ikke automatisk til plattformforvalter.
+
+
 ## Gjenstående scenario-kø
 
 Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avdekke en grunnleggende produktmotsetning. Nummereringen tildeles først når scenarioet faktisk tas opp til behandling.
 
 ### A. Låneforløp og kollisjoner
 
-- Tidlig retur gjør objektet fysisk tilgjengelig før neste reservasjon; hva kan og bør åpnes for nye lån?
 - Retur blir først bekreftet, et nytt lån godkjennes, og den første returbekreftelsen blir senere meldt som feil.
 - Et administrativt avsluttet uavklart lån: hvilke anmeldelsesrettigheter skal partene ha?
 - Et avsluttet lån gjenåpnes til usikker/uenighet etter at én eller begge anmeldelser allerede er sendt eller publisert.
 - Utlåner og låntaker gir motstridende opplysninger om hvorvidt overlevering skjedde, samtidig som et nytt fremtidig lån nærmer seg.
-- En part blokkerer den andre etter godkjenning, men før fysisk overlevering.
 - Ansvarlig utlåner dør eller får kontoen fullstendig utilgjengelig under et lån der det ikke finnes noen medeier.
 
 ### B. Medeierskap
 
-- En eksisterende medeier blir deaktivert eller får kontoen slettet mens et felles objekt har aktive lån.
 - Medeiere er uenige om redigering, avpublisering eller framtidig tilgjengelighet uten at de har blokkert hverandre.
-- En medeier publiserer objektet i et miljø som de andre medeierne ikke kjenner til; hvilke opplysninger om publiseringen må de andre kunne se?
-- En medeier forlater objektet mens en annen medeier har åpne, men ikke godkjente forespørsler.
 - Den eneste gjenværende medeieren kan ikke eller vil ikke overta et aktivt utlåneransvar.
 
 ### C. Miljømedlemskap og miljølivssyklus
 
-- Miljøet går til avvikling mens det finnes ventende låneforespørsler.
-- Miljøet går til avvikling mens anmeldelsesfristen eller en meklingssak fortsatt løper.
 - Et miljø skifter mellom åpent, lukket og skjult: hva skjer med eksisterende medlemmer, publiserte objekter, invitasjoner og historisk synlighet?
 - Medlemskrav endres etter at brukere allerede er medlemmer.
-- En bruker utestenges fra miljøet mens vedkommende har reservert eller aktivt lån, åpen meklingssak eller ventende anmeldelse.
-- Siste administrator forsvinner mens innmeldingsforespørsler, administratorkontakter eller saker venter.
-- Eier av miljøet dør eller deaktiveres samtidig som det ikke finnes andre administratorer.
 - En ventende innmeldingsforespørsel eksisterer når miljøets type eller medlemskrav endres.
 
 ### D. Objektpublisering og miljømoderering
 
-- Samme objekt er publisert i flere miljøer, og ett miljø avviser eller fjerner det: skal dette bare gjelde lokalt?
-- Ett miljø rapporterer et objekt som farlig eller ulovlig mens andre miljøer fortsatt viser det.
 - Et miljø krever forhåndsgodkjenning etter at et objekt allerede er publisert der.
 - Et miljø slår av forhåndsgodkjenning mens objekter fortsatt venter på vurdering.
 - Miljøspesifikke spørsmål finnes når objektet avpubliseres, eieren forlater miljøet eller miljøet avvikles.
-- En bruker abonnerer på et objekt og mister senere adgang til konteksten der objektet kunne sees.
 
 ### E. Tillit og anmeldelser
 
-- En anmeldelse modereres bort etter at den allerede har påvirket aggregerte skårer.
 - Den anmeldte sletter kontoen mens anmeldelser om vedkommende fortsatt finnes i andre brukeres historikk.
-- Forfatteren av et tilsvar sletter kontoen.
-- En anmeldelse inneholder personopplysninger om en tredjepart eller informasjon fra en annen privat kontekst.
 - En låntaker eller utlåner får flere begrensede vurderinger etter gjentatte kanselleringer/no-shows: hvordan unngår vi at dette blir en omvei til en generell straffeskår?
-- Profiltilgang forsvinner etter at en bruker tidligere kunne se en anmeldelse: skal den fortsatt være tilgjengelig?
-- To brukere blir medlemmer av ulike miljøer senere; historiske anmeldelser må ikke få ny synlighet på en måte som lekker gammel kontekst.
 
 ### F. Blokkering, rapportering og moderering
 
 - Plattformforvalter er selv part i et lån eller gjenstand for rapport: hvem kan behandle saken?
-- En miljøadministrator blir rapportert av et medlem samtidig som administratoren håndterer en sak for samme medlem.
-- En blokkering oppstår under en aktiv meklings- eller modereringssak.
-- En bruker rapporterer en annen og blokkerer vedkommende mens et lån fortsatt er reservert, men ikke overlevert.
 - Plattformen suspenderer en bruker som har kommende reservasjoner både som låntaker og utlåner.
-- Moderering oppheves etter at et reservert lån allerede ble administrativt stanset.
 
 ### G. Konto- og datalivssyklus
 
@@ -117,19 +128,10 @@ Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avde
 
 ### H. Privat kommunikasjon og saker
 
-- En part vil bruke en ende-til-ende-kryptert melding som dokumentasjon i en sak: hvordan skal dette forstås produktmessig uten at privat chat åpnes automatisk?
-- Avsender sletter eller mister konto etter å ha sendt dokumentasjon inn i en administrativ sak.
-- En administrativ samtale står uten saksbehandler når miljøet mister alle administratorer.
-- En sak avsluttes, men én part mener den inneholder faktiske feil som bør korrigeres uten at historikken omskrives.
 - Blokkering stenger fri chat midt i et lån: er de strukturerte handlingene alene tilstrekkelige i alle nødvendige praktiske situasjoner?
 
 ### I. Opprinnelseskontekst og personvern
 
-- To venner finner hverandre gjennom et miljø: når er et nytt lån et miljølån, og når er det et direkte vennelån?
-- Partene blir venner etter at en miljøbasert forespørsel er sendt: opprinnelseskonteksten må ikke endres opportunistisk.
-- Et miljø skifter til skjult etter at lån og anmeldelser allerede er opprettet der.
-- Et skjult miljø slettes eller avvikles: hvor mye av miljøkonteksten skal kunne vises i historiske lån for tidligere medlemmer?
-- Et objekt som er publisert både i et skjult og et åpent miljø må ikke lekke skjult sosial kontekst gjennom spørsmål, historikk, anmeldelser eller varsler.
 
 ## Når køen er ferdig
 
