@@ -144,7 +144,13 @@ Foreløpige terskler er omtrent 30 dager før skjuling og omtrent seks måneder 
 
 **Et objekt skal ikke slettes permanent automatisk bare fordi det har vært inaktivt lenge.**
 
-Permanent sletting skal i utgangspunktet være en eksplisitt brukerhandling eller følge av senere regler for kontosletting og datalivssyklus. Nødvendig historikk om tidligere lån eller saker kan måtte bevares separat selv om selve objektet slettes.
+Permanent sletting skal i utgangspunktet være en eksplisitt brukerhandling eller følge av senere regler for kontosletting og datalivssyklus.
+
+Et objekt skal ikke kunne slettes permanent mens det inngår i et reservert, aktivt eller fortsatt uavklart lån som krever oppfølging. Eieren kan avpublisere objektet og hindre nye forespørsler, men nødvendig objekt- og låneinformasjon må bestå til bindingen er avsluttet.
+
+Hvis det bare finnes ikke-godkjente forespørsler, kan objektet slettes; forespørslene avsluttes da nøytralt.
+
+Nødvendig historikk om tidligere lån eller saker kan måtte bevares separat selv om selve objektet senere slettes. Sletting skal ikke brukes til å fjerne eller omskrive et eksisterende felles låneforhold eller den historiske representasjonen av hva partene faktisk avtalte.
 
 Hvis lagringsmengden ved betydelig større skala senere blir en reell driftsutfordring, kan den tekniske lagringsstrategien og oppryddingsmekanismene revurderes uten at inaktivitet automatisk trenger å bety permanent sletting.
 
