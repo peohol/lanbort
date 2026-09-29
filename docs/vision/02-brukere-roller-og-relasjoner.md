@@ -178,6 +178,26 @@ Tidligere strukturerte lån, anmeldelser, rollehendelser og annen nødvendig fel
 
 Når det ikke lenger finnes aktive lån, saker eller andre nødvendige felles forpliktelser, gjelder blokkeringen fullt ut.
 
+### Blokkering og opptjente anmeldelsesrettigheter
+
+Blokkering skal ikke fjerne anmeldelsesrettigheter som allerede er opptjent gjennom et gjennomført eller ellers vurderingsberettiget lån.
+
+Begge parter kan fortsatt levere anmeldelse innen den ordinære fristen, og den anmeldte kan fortsatt gi det ene tilsvaret som anmeldelsesmodellen tillater. Dette regnes som del av den felles lånehistorikken, ikke som gjenåpnet direktekontakt.
+
+Blokkeringen skal fortsatt stanse fri chat, nye vennskapsforespørsler, nye lån og annen ordinær kontakt. Anmeldelser og tilsvar skal kunne rapporteres og modereres etter de vanlige reglene.
+
+### Blokkering og medeierskap
+
+Hvis to registrerte medeiere av samme objekt blokkerer hverandre, skal objektet fryses for nye utlån. Det skal skjules fra andre brukeres ordinære oppdagelsesflater og skal ikke kunne inngå i nye lån så lenge blokkeringen består og begge fortsatt står som medeiere.
+
+Alle ikke-godkjente låneforespørsler på objektet avsluttes nøytralt når denne frysingen oppstår. Tredjeparten skal ikke få opplyst at årsaken er konflikt eller blokkering mellom medeierne.
+
+Allerede reserverte eller aktive lån fortsetter etter de vanlige reglene. Nødvendige strukturerte handlinger rundt slike eksisterende lån skal fortsatt være tilgjengelige selv om fri kontakt mellom medeierne er blokkert.
+
+For at objektet igjen skal kunne lånes ut, må medeierskapet avklares slik at bare én av de blokkerende partene står igjen som eier.
+
+Hvis en potensiell låntaker og én av flere medeiere har en aktiv blokkering i noen retning, skal det medeide objektet ikke kunne inngå i et nytt lån med denne brukeren. Objektet bør ikke vises for brukeren i ordinære oppdagelsesflater, og blokkeringens eksistens eller hvilken medeier den gjelder skal ikke avsløres.
+
 ### Brukerkontroll
 
 Blokkering skal kunne gjøres uten rapport eller begrunnelse.
