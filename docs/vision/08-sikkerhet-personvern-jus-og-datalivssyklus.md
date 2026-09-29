@@ -70,20 +70,65 @@ En miljøadministrator skal **ikke** få automatisk tilgang til privat lånechat
 
 ## Logging og sporbarhet
 
-Lånbort vil kunne produsere mange hendelser. Ikke alt bør lagres for alltid, men enkelte handlinger må kunne rekonstrueres.
+Lånbort skal lagre historikk når den er nødvendig for en felles avtale, ansvarlighet, sikkerhet eller en legitim pågående eller etterfølgende prosess. Målet er ikke å bygge en mest mulig komplett kronikk over brukerens liv i appen.
 
-Aktuelle hendelser som kan trenge sporbarhet inkluderer:
+Logging og oppbevaring skal derfor være formålsstyrt og vurderes per datatype.
 
-- endring av administrative roller
+### Avtale- og lånehistorikk
+
+Hendelser som kan være nødvendige for å forstå et konkret lån skal kunne bevares så lenge det med rimelighet trengs for partene og eventuelle etterfølgende saker.
+
+Dette omfatter blant annet:
+
+- opprettelse og godkjenning av lån
+- avtalte perioder og vilkår
+- avtalte endringer
+- overføring av ansvarlig utlåner
+- returbekreftelser
+- avvik og senere korrigerende hendelser
+
+### Forvaltningshistorikk
+
+Vesentlige handlinger som forklarer hvordan en nåværende forvaltnings- eller eierskapstilstand oppstod skal kunne spores.
+
+Dette omfatter blant annet:
+
+- endring av administratorroller
+- eierskap og eierskapsoverføring i miljøer
 - viktige medlemskapsbeslutninger
-- endring av eierskap
-- publisering og moderering av objekter
-- inngåelse og endring av lån
-- bekreftelse av tilbakelevering og senere feil-/avviksmeldinger
-- rapporter og saksbehandling
-- sikkerhetskritiske handlinger
+- moderering
+- vesentlige endringer av medeide objekter
 
-Hvilke hendelser som skal logges, hvem som kan lese loggen og hvor lenge data skal oppbevares, må avgjøres per datatype og formål.
+### Saks- og modereringshistorikk
+
+Rapporter, meklingssaker og plattformmoderering kan ha et særskilt behov for dokumentasjon. Samtidig kan slike data være særlig personvernfølsomme.
+
+Oppbevaringen skal derfor knyttes til sakens formål, alvorlighet og eventuelle behov for senere oppfølging, ikke til en generell regel om permanent lagring.
+
+### Tekniske sikkerhetslogger
+
+Innlogging, mislykkede tilgangsforsøk og andre sikkerhetskritiske hendelser kan logges når dette er nødvendig for å forebygge, oppdage eller undersøke misbruk.
+
+Slike logger skal ha en klart begrenset levetid og skal ikke behandles som permanent brukerhistorikk.
+
+### Ikke all aktivitet skal bli historikk
+
+Lånbort skal ikke lagre enhver mulig brukerhandling permanent bare fordi det er teknisk mulig.
+
+Det er normalt ikke behov for evig historikk over for eksempel:
+
+- alle profilendringer
+- alle søk
+- alle sidevisninger
+- enhver ordinær navigasjons- eller brukerhandling
+
+### Brukersynlig historikk og intern logging er forskjellige ting
+
+At en hendelse må logges av sikkerhets-, revisjons- eller ansvarlighetshensyn betyr ikke at andre brukere eller miljøadministratorer skal kunne lese loggen.
+
+Tilgang til loggdata skal følge formålet med loggen og den konkrete rollen.
+
+Konkrete oppbevaringstider skal bestemmes senere per datatype når personvernbehov, produktbehov og juridiske krav vurderes samlet.
 
 «Logg alt for alltid» er ikke et akseptabelt standardprinsipp.
 
