@@ -77,6 +77,8 @@ Eieren velger hvilke miljøer objektet skal vises i.
 
 Et objekt kan legges til eller fjernes fra et miljø uten at selve objektet slettes.
 
+Publisering i et miljø forutsetter at minst én nåværende eier eller medeier fortsatt har nødvendig adgang til miljøet. Hvis den siste adgangsberettigede eieren mister medlemskapet eller annen nødvendig adgang, skal objektet automatisk avpubliseres fra miljøet. Ikke-godkjente låneforespørsler som bygger på denne publiseringen avsluttes nøytralt. Allerede reserverte eller aktive lån fortsetter etter de vanlige reglene, og ansvarlig utlåner beholder rollen selv om vedkommende senere ikke lenger er medlem av miljøet.
+
 Hvis en eier eksplisitt fjerner objektet fra et miljø, skal ikke-godkjente låneforespørsler som utelukkende bygger på denne publiseringen avsluttes og ikke lenger kunne godkjennes. Allerede reserverte eller aktive lån fortsetter.
 
 Automatisk skjuling fra oppdagelsesflater, for eksempel på grunn av inaktivitet, skal derimot ikke i seg selv avslutte en låneforespørsel som allerede er sendt.
