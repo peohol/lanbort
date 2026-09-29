@@ -115,6 +115,8 @@ Tilsvaret:
 
 Både anmeldelsen og tilsvaret skal kunne rapporteres dersom innholdet bryter plattformreglene.
 
+Blokkering mellom partene etter lånet skal ikke fjerne anmeldelsesrettigheter som allerede er opptjent. Begge kan fortsatt levere anmeldelse innen den ordinære fristen, og den anmeldte kan fortsatt gi sitt ene tilsvar. Dette er del av den felles lånehistorikken og skal ikke regnes som gjenåpnet direktekontakt.
+
 Formålet er å gi den anmeldte mulighet til å tilføre relevant kontekst uten å gjøre anmeldelsesflaten til en offentlig konflikt- eller diskusjonsarena.
 
 ## Uvanlig negative anmeldelsesmønstre
@@ -208,9 +210,10 @@ Brukere skal kunne rapportere:
 - andre brukere
 - objekter
 - problematisk adferd
-- manglende tilbakelevering
 - innhold som bryter med miljøets regler
 - mulig ulovlig eller farlig innhold
+
+Manglende tilbakelevering skal først og fremst registreres som et strukturert låneavvik. Det skal ikke automatisk opprette en modereringssak. En separat plattformrapport er relevant dersom det også finnes et mulig plattformproblem, for eksempel trusler, trakassering, svindelforsøk, falsk identitet eller et mønster som kan kreve tiltak for å beskytte andre brukere.
 
 Rapportering skal ikke i seg selv innebære skyld. Det skal starte en passende vurderingsprosess.
 
