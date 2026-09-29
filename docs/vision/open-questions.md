@@ -4,26 +4,34 @@
 
 Målet med listen er å gjøre usikkerhet synlig. Spørsmål flyttes ut herfra når de er tilstrekkelig avklart i de tematiske visjonsdokumentene.
 
-## A – Fundamentale spørsmål
+Den første sekvensielle gjennomgangen av spørsmål 1–34 er fullført. En etterfølgende konsistensgjennomgang av temadokumentene har avdekket noen gjenværende produktspørsmål som ikke tidligere sto i arbeidslisten.
 
-Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig.
+## H – Gjenværende produktspørsmål etter konsistensgjennomgang
 
-## B – Miljøer og medlemskap
+### 35. Hvordan virker blokkering når partene fortsatt har en nødvendig felles kontekst?
 
-## C – Objekter og låneforløp
+Hovedregelen er at den blokkerte ikke skal kunne finne, kontakte eller se vanlig aktivitet fra den som blokkerte.
 
-## D – Kommunikasjon og varsler
+Vi må avklare hvordan dette virker når partene samtidig:
 
-## E – Anmeldelser og tillit
+- er medlemmer av samme miljø
+- har et reservert eller aktivt lån
+- har en pågående sak
+- trenger tilgang til historikk eller strukturerte handlinger som ikke kan forsvinne midt i et pågående forhold
 
-## F – Data, personvern og jus
+### 36. Hva skjer når et godkjent lån ikke blir hentet?
 
-## G – Prosjektpremisser som ikke er produktvisjon
+Låneforløpet beskriver reservasjon, overlevering, retur og avvik etter retur, men manglende henting er fortsatt uttrykkelig uavklart.
 
-Kildedokumentet inneholder også viktige føringer for hvordan repo-eier og KI-agenter skal samarbeide, og hvordan agentinstruksjonsfiler bør vedlikeholdes.
+Vi må definere hvordan partene kan registrere at overlevering ikke skjedde, når reservasjonen opphører, og hvordan dette skilles fra kansellering eller forsinket retur.
 
-Dette skal bevares, men hører ikke hjemme i produktvisjonen. Det bør senere flyttes til egne prosjekt-/agentdokumenter før implementeringsarbeidet begynner.
+### 37. Kan anmeldelser redigeres, og kan mottakeren svare?
 
-## Foreslått rekkefølge for videre dialog
+Publiseringstidspunkt, synlighet og begrunnelseskrav er avklart.
 
-For å unngå at vi finpusser detaljer som senere må skrives om, bør vi først avklare de gjenværende fundamentale spørsmålene, deretter rolle- og miljømodellen, deretter selve låneforløpet og til slutt tillit, varsler og datalivssyklus.
+Det gjenstår å bestemme:
+
+- om en publisert anmeldelse kan endres
+- om en eventuell endring skal være synlig som endring
+- om den anmeldte kan gi et offentlig eller kontekstuelt synlig svar
+- hvordan dette påvirker den dobbelblinde anmeldelsesmodellen
