@@ -118,8 +118,10 @@ Et reservert eller aktivt lån skal alltid ha én ansvarlig utlåner om gangen.
 
 Ansvar kan overføres på to måter:
 
-1. **Frivillig overføring:** Den ansvarlige utlåneren overfører eksplisitt rollen til en annen registrert medeier.
-2. **Kontrollert overtakelse ved utilgjengelighet:** Dersom den ansvarlige utlåneren reelt blir utilgjengelig, kan en annen registrert medeier overta gjennom en særskilt unntaksprosess.
+1. **Frivillig overføring:** Den ansvarlige utlåneren overfører eksplisitt rollen til en annen registrert medeier som allerede var medeier da lånet ble godkjent.
+2. **Kontrollert overtakelse ved utilgjengelighet:** Dersom den ansvarlige utlåneren reelt blir utilgjengelig, kan en annen registrert medeier som allerede var medeier da lånet ble godkjent overta gjennom en særskilt unntaksprosess.
+
+En medeier som først kom til etter at lånet ble godkjent, inngår ikke automatisk i kretsen som kan overta ansvar. Dersom det faktisk er nødvendig å overføre ansvaret til en slik senere medeier, krever dette låntakerens uttrykkelige samtykke.
 
 Manglende svar alene skal ikke umiddelbart være tilstrekkelig for overtakelse. Produktet må senere definere en rimelig terskel for når en utlåner kan behandles som utilgjengelig.
 
