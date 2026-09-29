@@ -40,18 +40,19 @@ Begge kan i tillegg få mulighet til å skrive en fritekstkommentar.
 
 ## Skala
 
-Det opprinnelige forslaget er 1–5 på relevante dimensjoner.
+Vurderinger skal bruke en skala fra 1 til 5 på relevante dimensjoner.
 
-Forslaget sier også at:
+Regelen for begrunnelse skal være:
 
-- 5/5 kan være tilstrekkelig uten ytterligere forklaring
-- 4/5 eller lavere krever at brukeren beskriver hva som kunne vært bedre
+- **4–5:** ingen begrunnelse kreves; fritekst er frivillig
+- **3:** fritekst er frivillig, men brukeren kan oppfordres til å forklare en blandet opplevelse
+- **1–2:** en kort begrunnelse kreves fordi en så negativ vurdering kan få reelle konsekvenser for den andre brukerens tillitsgrunnlag
 
-Dette er **ikke ferdig besluttet**.
+Hvis vurderingen består av flere dimensjoner, skal det være tilstrekkelig med én samlet begrunnelse dersom minst én dimensjon får 1 eller 2. Brukeren skal ikke måtte skrive en egen begrunnelse for hver delskår.
 
-Et krav om begrunnelse ved alle skårer under 5 kan ha utilsiktede effekter: 4/5 kan oppleves som en god vurdering, og tvungen negativ begrunnelse kan gjøre vurderingssystemet mer konfliktfylt enn ønsket.
+Oppfordringen skal formuleres nøytralt, for eksempel som «Beskriv kort hva som skjedde», fremfor å kreve at brukeren formulerer hva den andre parten gjorde galt.
 
-Dette bør undersøkes i neste visjonsrunde.
+Dette skal redusere presset mot at alt annet enn 5/5 oppfattes som en klage, samtidig som svært negative vurderinger ledsages av nok kontekst til å kunne forstås.
 
 ## Synlighet og tidspunkt
 
