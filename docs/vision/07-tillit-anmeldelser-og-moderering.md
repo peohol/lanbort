@@ -102,25 +102,26 @@ Visjonen må fortsatt avklare:
 
 ## Uvanlig negative anmeldelsesmønstre
 
-Det opprinnelige notatet foreslår at appen over tid analyserer hvordan en person vurderer andre.
+Lånbort skal ikke fra start automatisk gi enkelte brukeres anmeldelser mindre vekt bare fordi de vurderer strengere enn andre.
 
-Tanken er:
+Det kan likevel senere være nyttig å analysere anmeldelsesmønstre statistisk. Et relevant signal kan være at en bruker gjentatte ganger gir svært lave vurderinger til mange uavhengige personer som hver har et stort og konsistent grunnlag av klart mer positive vurderinger fra andre.
 
-- en bruker som systematisk gir vesentlig dårligere skårer enn andre, kan få privat tilbakemelding om mønsteret
-- dersom mønsteret er ekstremt og datagrunnlaget er tilstrekkelig, kan brukerens vurderinger få mindre vekt i andres samlede skår
+Et slikt mønster beviser ikke at anmeldelsene er urimelige. Tidligere skårer er ikke en objektiv fasit, og både utvalg, miljøforskjeller og reelle dårlige erfaringer kan påvirke resultatet. Men når datagrunnlaget er stort nok og avviket er systematisk, kan sannsynligheten for at mønsteret bare skyldes tilfeldige erfaringer bli lav nok til at det er rimelig å gjøre brukeren oppmerksom på det.
 
-Dette er foreløpig en **hypotese**, ikke en fast regel.
+En mulig fremtidig funksjon er derfor privat, nøytral tilbakemelding som for eksempel forteller at brukerens vurderinger over tid ligger vesentlig lavere enn vurderingene andre gir i sammenlignbare situasjoner. Formålet skal være refleksjon og kalibrering, ikke straff.
 
-En slik mekanisme må være robust mot blant annet:
+En slik analyse må blant annet ta hensyn til:
 
-- få observasjoner
-- reelle forskjeller mellom miljøer og situasjoner
-- at en bruker faktisk har hatt flere dårlige erfaringer
-- strategisk manipulering
-- skjevheter i hvem som vurderer hvem
-- manglende forståelighet dersom en skår justeres «i det skjulte»
+- hvor mange vurderinger brukeren har gitt
+- hvor godt etablert sammenligningsgrunnlaget for de vurderte personene er
+- om mønsteret går igjen på tvers av flere uavhengige personer og lån
+- hvilke vurderingsdimensjoner som sammenlignes
+- statistisk usikkerhet
+- forskjeller mellom miljøer og situasjoner
+- muligheten for at brukeren faktisk har hatt flere dårlige erfaringer
+- strategisk manipulering og andre skjevheter
 
-Eventuell vekting må være transparent nok til at systemet kan forsvares og forklares.
+Automatisk nedvekting av anmeldelser inngår ikke i kjernevisjonen. Hvis en vektingsmodell senere vurderes, må den behandles som et eget produktspørsmål med høye krav til dokumentasjon, forståelighet og transparens.
 
 ## Flerdimensjonal brukerskår
 
