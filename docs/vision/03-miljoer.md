@@ -30,9 +30,11 @@ Et åpent miljø:
 
 - kan oppdages av ikke-medlemmer
 - kan finnes gjennom søk og delbar lenke
-- lar brukere melde seg inn uten individuell forhåndsgodkjenning
+- har selvbetjent innmelding uten individuell vurdering fra en administrator
 
-Miljøet kan likevel kreve at nye medlemmer fyller ut bestemte opplysninger før medlemskapet blir aktivt.
+Miljøet kan likevel kreve at nye medlemmer fyller ut nødvendige opplysninger, godtar regler eller bekrefter en egenerklæring før medlemskapet blir aktivt. Eventuelle adgangskrav må være selvdeklarerte eller automatisk og entydig avgjørbare dersom miljøet fortsatt skal regnes som åpent.
+
+Hvis medlemskap avhenger av at en administrator vurderer dokumentasjon, tilhørighet eller om oppgitte opplysninger er tilstrekkelige, skal miljøet bruke modellen for lukket miljø.
 
 ### Lukket miljø
 
@@ -142,19 +144,29 @@ En invitasjon kan for eksempel sendes til e-post eller til en eksisterende bruke
 
 ## Krav ved innmelding
 
-Administratorer skal kunne definere informasjon som nye medlemmer må oppgi, for eksempel:
+Et miljø skal bare kunne kreve medlemsopplysninger som har et konkret og relevant formål. Opplysninger skal ikke samles inn «for sikkerhets skyld».
 
-- adresse eller leilighetsnummer
+Aktuelle opplysninger kan for eksempel være:
+
+- bekreftelse på at brukeren tilhører målgruppen
+- adresse eller leilighetsnummer når dette faktisk er relevant for medlemskapet
 - medlemsnummer
-- annen informasjon som viser tilknytning til miljøet
+- annen informasjon som dokumenterer eller beskriver tilknytning til miljøet
 
-Kravene formuleres foreløpig som fritekst.
+Kravene kan i første omgang formuleres som fritekst.
 
 ### Åpent miljø
 
-Brukeren fyller ut den krevde informasjonen før medlemskapet aktiveres.
+Brukeren kan måtte:
 
-Det er foreløpig ikke tenkt manuell godkjenning bare fordi informasjon kreves.
+- fylle ut enkelte nødvendige opplysninger
+- godta miljøets regler
+- bekrefte en egenerklæring
+- oppfylle et automatisk og entydig kontrollerbart krav
+
+Medlemskapet skal deretter kunne aktiveres uten individuell administratorvurdering.
+
+Opplysninger som krever menneskelig vurdering av om brukeren faktisk oppfyller medlemsvilkårene, for eksempel kontroll av bosted, organisasjonsmedlemskap eller dokumentasjon, hører hjemme i et lukket miljø.
 
 ### Lukket miljø
 
