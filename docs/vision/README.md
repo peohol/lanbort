@@ -1,6 +1,6 @@
 # Lånbort – strukturert produktvisjon
 
-> **Status:** Konsolidert visjonsgrunnlag, 29. september 2026. Den sekvensielle gjennomgangen av åpne produktspørsmål er fullført gjennom spørsmål 40, og den scenario-baserte stresstesten er gjennomført og innarbeidet gjennom scenario 24. Dokumentene er fortsatt **ikke** en implementeringsplan eller en låst spesifikasjon; konkrete terskler, feltvalg, tekniske mekanismer og juridiske detaljer fastsettes senere.
+> **Status:** Konsolidert visjonsgrunnlag, 29. september 2026. Den sekvensielle gjennomgangen av åpne produktspørsmål er fullført gjennom spørsmål 40, og den scenario-baserte stresstesten er gjennomført og innarbeidet gjennom scenario 25. Dokumentene er fortsatt **ikke** en implementeringsplan eller en låst spesifikasjon; konkrete terskler, feltvalg, tekniske mekanismer og juridiske detaljer fastsettes senere.
 
 ## Formålet med denne mappen
 
@@ -40,8 +40,9 @@ Lånbort skal ikke bare være en katalog over ting. Produktet skal støtte hele 
 6. [Kommunikasjon, varsler og saker](06-kommunikasjon-varsler-og-saker.md)
 7. [Tillit, anmeldelser og moderering](07-tillit-anmeldelser-og-moderering.md)
 8. [Sikkerhet, personvern, jus og datalivssyklus](08-sikkerhet-personvern-jus-og-datalivssyklus.md)
-9. [Åpne spørsmål](open-questions.md)
-10. [Begreper](glossary.md)
+9. [Scenario-basert stresstest](scenario-stresstest.md)
+10. [Åpne spørsmål](open-questions.md)
+11. [Begreper](glossary.md)
 
 ## Avgrensning mot senere planlegging
 
@@ -58,4 +59,4 @@ Behovene bak enkelte av disse punktene er beholdt. For eksempel står kartbasert
 
 ## Videre arbeid
 
-Visjonsgrunnlaget er nå konsolidert uten registrerte åpne visjonsspørsmål. Scenario-stresstesten pågår videre sekvensielt; avklaringer gjennom scenario 24 er innarbeidet i de tematiske dokumentene. Det kan fortsatt revideres dersom nye produktmessige motsetninger eller behov oppdages, men detaljer som konkrete tidsfrister, feltskjemaer, tekniske mekanismer og juridiske terskler skal ikke trekkes inn i visjonsfasen bare for å gjøre dokumentene mer detaljerte.
+Visjonsgrunnlaget er nå konsolidert uten registrerte åpne visjonsspørsmål. Scenario-stresstesten pågår videre sekvensielt; avklaringer gjennom scenario 25 er innarbeidet i de tematiske dokumentene. Den levende køen over gjennomførte og gjenstående scenariofamilier ligger i [scenario-stresstest.md](scenario-stresstest.md). Det kan fortsatt revideres dersom nye produktmessige motsetninger eller behov oppdages, men detaljer som konkrete tidsfrister, feltskjemaer, tekniske mekanismer og juridiske terskler skal ikke trekkes inn i visjonsfasen bare for å gjøre dokumentene mer detaljerte.
