@@ -1,6 +1,6 @@
 # Lånbort – strukturert produktvisjon
 
-> **Status:** Konsolidert visjonsgrunnlag, 29. september 2026. Den sekvensielle gjennomgangen av åpne produktspørsmål er fullført gjennom spørsmål 40, og den scenario-baserte stresstesten er gjennomført og innarbeidet gjennom scenario 19. Dokumentene er fortsatt **ikke** en implementeringsplan eller en låst spesifikasjon; konkrete terskler, feltvalg, tekniske mekanismer og juridiske detaljer fastsettes senere.
+> **Status:** Konsolidert visjonsgrunnlag, 29. september 2026. Den sekvensielle gjennomgangen av åpne produktspørsmål er fullført gjennom spørsmål 40, og den scenario-baserte stresstesten er gjennomført og innarbeidet gjennom scenario 20. Dokumentene er fortsatt **ikke** en implementeringsplan eller en låst spesifikasjon; konkrete terskler, feltvalg, tekniske mekanismer og juridiske detaljer fastsettes senere.
 
 ## Formålet med denne mappen
 
@@ -58,4 +58,4 @@ Behovene bak enkelte av disse punktene er beholdt. For eksempel står kartbasert
 
 ## Videre arbeid
 
-Visjonsgrunnlaget er nå konsolidert uten registrerte åpne visjonsspørsmål. Scenario-stresstesten pågår videre sekvensielt; avklaringer gjennom scenario 19 er innarbeidet i de tematiske dokumentene. Det kan fortsatt revideres dersom nye produktmessige motsetninger eller behov oppdages, men detaljer som konkrete tidsfrister, feltskjemaer, tekniske mekanismer og juridiske terskler skal ikke trekkes inn i visjonsfasen bare for å gjøre dokumentene mer detaljerte.
+Visjonsgrunnlaget er nå konsolidert uten registrerte åpne visjonsspørsmål. Scenario-stresstesten pågår videre sekvensielt; avklaringer gjennom scenario 20 er innarbeidet i de tematiske dokumentene. Det kan fortsatt revideres dersom nye produktmessige motsetninger eller behov oppdages, men detaljer som konkrete tidsfrister, feltskjemaer, tekniske mekanismer og juridiske terskler skal ikke trekkes inn i visjonsfasen bare for å gjøre dokumentene mer detaljerte.
