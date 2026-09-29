@@ -16,16 +16,6 @@ Disse påvirker store deler av resten av produktmodellen og bør avklares tidlig
 
 ## E – Anmeldelser og tillit
 
-### 29. Hvilke brukerskårer bør faktisk finnes?
-
-Foreløpige ideer er:
-
-- gavmildhet
-- pålitelighet
-- bidrag gjennom å låne fremfor å kjøpe
-
-Vi bør først definere hvilket brukerproblem hver skår løser.
-
 ### 30. Bør pålitelighet styre hvem som får se hvem?
 
 Dette er en kraftig mekanisme.
