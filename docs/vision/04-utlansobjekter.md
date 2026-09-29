@@ -1,6 +1,6 @@
 # Utlånsobjekter
 
-> **Status:** Førsteutkast. Objektmodellen er relativt tydelig, men enkelte livssyklusregler og samarbeidsmekanismer må avklares.
+> **Status:** Konsolidert visjonsutkast. Objektmodell, tilgjengelighet, publisering, medeierskap og sentrale livssyklusprinsipper er avklart.
 
 ## Grunnprinsipp
 
@@ -182,7 +182,7 @@ En bruker skal kunne abonnere på et objekt hen har adgang til å se.
 
 Abonnementet skal kunne gi varsler om relevante endringer, særlig når objektet igjen blir tilgjengelig.
 
-Det må avklares hvilke hendelser som inngår som standard, og hvilke brukeren selv kan velge.
+Hvilke abonnementshendelser som inngår som standard, og hvilke brukeren selv kan velge, fastsettes senere i produktspesifikasjonen.
 
 ## Offentlige spørsmål
 
@@ -236,9 +236,15 @@ Den detaljerte listen skal ikke låses i produktvisjonen nå. Den må utarbeides
 
 Aktuelle kategorier som senere må vurderes særskilt omfatter blant annet våpen, legemidler, rusmidler, farlige kjemikalier, kjøretøy, medisinsk utstyr og annet sikkerhetskritisk utstyr. At en kategori nevnes her betyr ikke at hele kategorien nødvendigvis skal forbys.
 
-## Åpne spørsmål
+## Detaljer som fastsettes senere
 
-Se [Åpne spørsmål](open-questions.md), særlig om:
+Følgende hører til senere produktspesifikasjon, sikkerhetsarbeid eller juridisk vurdering:
 
-- kategorier og obligatoriske felt
-- kontrollert permanent sletting og datalivssyklus
+- nøyaktig skille mellom fritekst og strukturerte objektfelt
+- standardvalg og preferanser for objektabonnement
+- detaljert håndtering av samtidige redigeringer
+- konkrete terskler for overtakelse når ansvarlig utlåner er utilgjengelig
+- den detaljerte policyen for regulerte eller risikofylte objektkategorier
+- konkrete tidsgrenser for skjuling og arkivering
+
+De grunnleggende produktprinsippene for disse områdene er allerede definert.
