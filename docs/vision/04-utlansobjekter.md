@@ -77,6 +77,10 @@ Eieren velger hvilke miljøer objektet skal vises i.
 
 Et objekt kan legges til eller fjernes fra et miljø uten at selve objektet slettes.
 
+Hvis en eier eksplisitt fjerner objektet fra et miljø, skal ikke-godkjente låneforespørsler som utelukkende bygger på denne publiseringen avsluttes og ikke lenger kunne godkjennes. Allerede reserverte eller aktive lån fortsetter.
+
+Automatisk skjuling fra oppdagelsesflater, for eksempel på grunn av inaktivitet, skal derimot ikke i seg selv avslutte en låneforespørsel som allerede er sendt.
+
 Dersom et miljø krever administratorgodkjenning av objekter, må publisering der først gjennom den prosessen.
 
 ## Samme objekt i flere miljøer
@@ -104,8 +108,11 @@ Når en bruker blir medeier:
 - objektet skal vises blant vedkommendes medeide objekter
 - alle medeiere kan redigere objektet
 - alle medeiere kan publisere objektet i miljøer de selv har tilgang til
-- alle medeiere kan godkjenne en låneforespørsel når objektet er ledig
+- en medeier kan bare se og behandle en miljøbasert låneforespørsel dersom vedkommende selv har nødvendig adgang til forespørselens opprinnelseskontekst
+- en medeier som har slik adgang kan godkjenne en låneforespørsel når objektet er ledig
 - den medeiaren som godkjenner et konkret lån blir den **ansvarlige utlåneren** for akkurat dette lånet
+
+Andre medeiere kan få vite at objektet har en pågående forespørsel eller reservasjon i den grad dette er nødvendig for å forvalte det felles objektet, men uten at systemet røper miljøet, låntakeren eller annen kontekst de ikke har rett til å se.
 
 Andre medeiere beholder sine generelle rettigheter til objektet, men får ikke dermed rett til å endre det konkrete lånet.
 
@@ -144,9 +151,17 @@ Medeierskap alene gir fortsatt ingen generell rett til å gripe inn i et lån. O
 
 En medeier kan trekke **seg selv** som medeier så lenge minst én eier blir igjen.
 
+En medeier kan likevel ikke tre ut mens vedkommende er ansvarlig utlåner for et reservert, aktivt eller uavklart lån. Før uttreden må lånet enten avsluttes, eller ansvaret overføres eksplisitt til en annen registrert medeier etter de vanlige reglene.
+
+Andre medeiere som ikke er ansvarlig utlåner kan fortsatt trekke seg selv selv om objektet har et pågående lån, så lenge minst én eier blir igjen.
+
 Ingen medeier kan ensidig fjerne en annen medeier.
 
 Permanent sletting av et medeid objekt skal kreve samtykke fra alle registrerte medeiere.
+
+Hvis to medeiere blokkerer hverandre, skal objektet fryses for nye utlån og skjules fra andre brukeres ordinære oppdagelsesflater. Alle ikke-godkjente låneforespørsler avsluttes nøytralt. Allerede reserverte eller aktive lån fortsetter etter de vanlige reglene. For at nye lån igjen skal være mulig, må medeierskapet først avklares slik at bare én av de blokkerende partene står igjen som eier.
+
+Hvis en potensiell låntaker og én av objektets medeiere har en aktiv blokkering i noen retning, skal objektet ikke kunne inngå i et nytt lån med denne brukeren. Dette gjelder selv om en annen medeier ellers ville vært villig til å godkjenne lånet.
 
 Lånbort skal ikke avgjøre hvem som juridisk eier en fysisk gjenstand dersom medeierne er uenige. Produktet forholder seg til de registrerte rettighetene og historikken i appen.
 
