@@ -180,6 +180,12 @@ Når ansvaret er overtatt, går det ikke automatisk tilbake til den tidligere an
 
 Medeierskap alene gir fortsatt ingen generell rett til å gripe inn i et lån. Overtakelse av ansvar er et særskilt unntak.
 
+Ingen medeier skal være forpliktet til å overta en annen medeiers konkrete låneansvar. Hvis den ansvarlige utlåneren fortsatt er tilgjengelig, forblir vedkommende ansvarlig til lånet avsluttes eller ansvaret frivillig overføres etter de vanlige reglene.
+
+Hvis den ansvarlige utlåneren er reelt utilgjengelig, kan en annen medeier frivillig overta ansvaret gjennom den særskilte overtakelsesprosessen. En medeier som ikke ønsker å overta hele rollen, skal likevel kunne utføre en snevrere handling: bekrefte at objektet faktisk er fysisk mottatt ved retur. En slik mottaksbekreftelse gjør ikke medeieren til ansvarlig utlåner og gir ikke videre tilgang til eller kontroll over det konkrete lånet utover det som er nødvendig for returen.
+
+Hvis ingen medeier kan eller vil overta ansvaret eller bekrefte fysisk mottak, følger lånet ordinær avklaringsprosess og kan til slutt avsluttes administrativt som uavklart. Objektet skal være sperret for nye lån mens besittelsesstatusen er uavklart. Etter en slik administrativ avslutning skal objektet ikke automatisk bli tilgjengelig igjen; en gjenværende registrert medeier må først bekrefte at objektet faktisk er i vedkommendes kontroll før det kan publiseres eller gjøres tilgjengelig for nye lån.
+
 ### Uttreden og fjerning av medeiere
 
 En medeier kan trekke **seg selv** som medeier så lenge minst én eier blir igjen.
