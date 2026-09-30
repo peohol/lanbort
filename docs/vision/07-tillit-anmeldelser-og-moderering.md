@@ -22,6 +22,8 @@ Hvis et godkjent lån ender som **ikke gjennomført** fordi objektet aldri ble o
 
 Det samme prinsippet kan brukes når et godkjent lån kanselleres ensidig før overlevering. En eventuell vurdering skal da bare omfatte det faktiske forløpet frem til kanselleringen og skal ikke bruke dimensjoner som forutsetter at utlånet faktisk fant sted.
 
+Hvis et lån etter tilstrekkelig avklaringsprosess avsluttes administrativt som **uavklart**, beholder begge parter en begrenset anmeldelsesrett. Vurderingen skal bare omfatte forhold som kan vurderes uten å ta stilling til det som fortsatt er omstridt. En tvist om hvorvidt objektet faktisk ble returnert skal for eksempel ikke kunne omgjøres til en ordinær skår på «tilbakelevering til avtalt tid» som om faktum var fastslått. Fritekst kan beskrive partens egen opplevelse, men anmeldelsen skal tydelig vise at lånet ble avsluttet uavklart.
+
 ### Utlåners perspektiv
 
 Foreløpige dimensjoner:
@@ -159,6 +161,25 @@ En slik analyse må blant annet ta hensyn til:
 - strategisk manipulering og andre skjevheter
 
 Automatisk nedvekting av anmeldelser inngår ikke i kjernevisjonen. Hvis en vektingsmodell senere vurderes, må den behandles som et eget produktspørsmål med høye krav til dokumentasjon, forståelighet og transparens.
+
+## Gjentatte uavklarte låneforløp som tillitssignal
+
+Lånbort bør bevare strukturerte data om lån som ender administrativt som **uavklart**, slik at gjentatte mønstre senere kan analyseres. En enkelt uavklart tilbakelevering sier lite om hvem som hadde rett og skal ikke i seg selv gi en automatisk negativ skår til noen av partene.
+
+Et tilbakevendende mønster rundt samme bruker kan derimot være relevant for pålitelighet, særlig dersom det oppstår over mange lån, med flere uavhengige motparter og i ulike kontekster. Analysen må være rollebasert og se på andelen uavklarte forløp i forhold til brukerens samlede antall relevante lån, ikke bare et rått antall hendelser.
+
+Et slikt signal må minst ta hensyn til:
+
+- om brukeren opptrer som låntaker eller utlåner
+- hvor mange relevante lån observasjonen bygger på
+- hvor stor andel av lånene som ender uavklart
+- om hendelsene gjelder flere uavhengige motparter fremfor den samme konflikten gjentatt
+- om hendelsene er konsentrert i ett miljø eller én sosial krets
+- statistisk usikkerhet og lavt datagrunnlag
+- om motpartene selv har uvanlige konfliktmønstre
+- risikoen for strategiske eller falske innsigelser
+
+Systemet skal ikke anta at slike hendelser er uavhengige eller at et høyt antall alene beviser upålitelighet. Før datagrunnlaget er robust nok, bør hendelsene først og fremst være historikk og grunnlag for senere modellering. Dersom mønsteret på sikt inngår i synlig tillitsinformasjon eller modereringssignaler, skal det presenteres som et statistisk mønster og ikke som en konstatering av skyld i de enkelte tvistene.
 
 ## Tillitsprofiler og aktivitetsdata
 
