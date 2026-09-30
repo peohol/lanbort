@@ -196,6 +196,8 @@ I den beskrevne modellen er det den **ansvarlige utlånerens** bekreftelse som g
 
 Hvis ansvarlig utlåner blir reelt utilgjengelig, kan en annen registrert medeier overta rollen gjennom den særskilte overtakelsesprosessen beskrevet for medeide objekter. Overtakelsen skal være eksplisitt og sporbar, og låntakeren skal varsles tydelig. Den endrer ikke låneavtalen og gir ikke den nye ansvarlige utlåneren større myndighet enn den forrige hadde.
 
+Hvis den ansvarlige utlåneren er eneste eier og dør eller blir varig utilgjengelig, skal ingen annen bruker automatisk overta utlånerrollen eller kontoen. Etter tilstrekkelig verifisering kan en legitim representant få en begrenset, formålsbundet rolle for akkurat det konkrete lånet, blant annet for å avtale praktisk retur og bekrefte mottak. Representanten skal ikke få generell tilgang til den tidligere brukerens konto eller private historikk. Hvis ingen legitim representant kan etableres, skal lånet kunne avsluttes administrativt som uavklart etter de vanlige reglene når videre avklaring ikke er mulig.
+
 ### Låntakers bekreftelse alene
 
 Hvis låntaker bekrefter tilbakelevering før utlåner, skal objektet få en **usikker** status inntil utlåner svarer.
