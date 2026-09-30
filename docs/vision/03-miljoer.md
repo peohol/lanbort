@@ -299,13 +299,71 @@ Hvis eieren samtidig var eneste administrator og forsvinner uten overføring, ka
 
 En administrator som selv er gjenstand for en rapport eller annen administrativ vurdering fra et medlem, skal ikke behandle den samme rapporten eller en tett sammenvevd sak som saksbehandler. En annen habil administrator må overta dersom slik behandling skal skje på miljønivå. Hvis ingen habil administrator finnes, gjelder de vanlige reglene om at miljøbehandling ikke er tilgjengelig og at dette ikke i seg selv skaper en rett til plattformbasert tvisteløsning.
 
-## Endring til skjult miljø
+## Endring av miljøtype
 
-Hvis et eksisterende miljø endres til skjult, skal eksisterende medlemmer beholde medlemskapet med mindre miljøet beslutter noe annet etter sine vanlige regler. Eksisterende godkjente lån fortsetter uendret.
+Miljøtype er ikke bare en administrativ innstilling. For det enkelte medlemmet representerer den også en forventning om hvem som kan oppdage miljøet, se medlemskapet, finne objekter og få innsyn i miljøspesifikk aktivitet.
 
-Fra det tidspunktet miljøet blir skjult, skal synlighetsreglene for skjulte miljøer gjelde for ikke-medlemmer. Historiske anmeldelser, spørsmål og annen miljøspesifikk sosial kontekst skal ikke fortsette å være synlig utenfor miljøet bare fordi den tidligere var knyttet til et åpent eller lukket miljø.
+Endringer mot **strengere personvern** kan derfor gjennomføres uten individuell medlemsgodkjenning:
 
-Ved senere avvikling av et skjult miljø kan nødvendig historisk kontekst fortsatt vises til direkte parter og andre som har et legitimt historisk behov, men miljøets eksistens og sosiale kontekst skal ikke gjøres oppdagbar for utenforstående.
+- åpent → lukket
+- lukket → skjult
+- åpent → skjult
+
+Eksisterende aktive medlemmer beholder medlemskapet. Eksisterende godkjente lån fortsetter uendret. Fra endringstidspunktet skal miljøets strengere oppdagelses-, medlemskaps- og synlighetsregler gjelde. Historisk miljøspesifikk informasjon skal ikke fortsette å være synlig for personer som ikke lenger har adgang bare fordi den tidligere var knyttet til en mindre restriktiv miljøtype.
+
+Endringer mot **svakere personvern** krever derimot medlemsmedvirkning. Et miljøs flertall eller administrasjon skal ikke kunne samtykke til økt personlig eksponering på vegne av et enkelt medlem.
+
+### Lukket → åpent
+
+Hvis et lukket miljø foreslås gjort åpent, skal alle aktive medlemmer varsles tydelig om hva endringen innebærer og få en svarfrist på én uke.
+
+Hvert medlem kan:
+
+- uttrykkelig akseptere å fortsette som aktivt medlem i det åpne miljøet
+- melde seg ut
+- la være å svare
+
+Når fristen utløper, kan miljøet endres til åpent. Medlemmer som uttrykkelig har akseptert, fortsetter som aktive medlemmer. Medlemmer som ikke har svart, går over i en **skjult/passiv medlemsstatus**. De kan senere uttrykkelig akseptere den nye miljøtypen og bli aktive igjen, eller melde seg ut.
+
+Et passivt medlem:
+
+- vises ikke i den ordinære medlemslisten
+- skal ikke være synlig som medlem for nye medlemmer eller utenforstående
+- får sine objekter avpublisert fra miljøets aktive oppdagelsesflater
+- kan ikke motta nye låneforespørsler gjennom miljøet
+- beholder nødvendig tilgang til eksisterende lån og historiske forhold etter de vanlige kontinuitetsreglene
+- får ikke sin tidligere miljøspesifikke aktivitet eksponert bredere bare fordi miljøtypen er endret
+
+### Skjult → lukket
+
+Å gjøre et skjult miljø oppdagbart er en vesentlig personvernendring og krever avstemning blant medlemmene.
+
+Forslaget vedtas bare dersom minst **2/3 av alle aktive medlemmer** stemmer for innen den fastsatte avstemningsfristen. Manglende stemme teller dermed ikke som støtte.
+
+Hvis endringen vedtas:
+
+- medlemmer som stemte for fortsetter som aktive medlemmer
+- medlemmer som stemte mot eller ikke stemte, går over i skjult/passiv medlemsstatus
+- passive medlemmer kan senere uttrykkelig akseptere det lukkede miljøets synlighetsnivå og bli aktive igjen, eller melde seg ut
+- deres tidligere medlemskap, objekter og historiske aktivitet skal ikke gjøres synlig for nye medlemmer eller utenforstående uten deres uttrykkelige aksept
+
+Et flertall kan dermed endre **miljøets** framtidige form, men ikke oppheve den enkelte brukerens tidligere personvernvalg.
+
+### Skjult → åpent
+
+Et skjult miljø skal ikke kunne endres direkte til åpent.
+
+Hvis miljøet ønsker denne utviklingen, må det først gjennomføre en gyldig overgang fra skjult til lukket. En eventuell senere overgang fra lukket til åpent følger deretter den separate samtykkeprosessen for denne endringen.
+
+Dette totrinnsprinsippet skal hindre at et miljø går direkte fra høyeste til laveste personvernnivå gjennom én beslutning.
+
+### Historisk personvern ved typeendringer
+
+Når et miljø går fra et strengere til et mindre strengt personvernnivå, skal historisk innhold ikke automatisk få bredere synlighet.
+
+Spørsmål, anmeldelser, medlemsrelasjoner, objektaktivitet og annen miljøspesifikk sosial kontekst som ble skapt under et strengere personvernregime skal beholde den nødvendige tidligere kontekstbegrensningen. Ny aktivitet etter at et medlem uttrykkelig har akseptert den nye miljøtypen kan følge de nye synlighetsreglene.
+
+Eksisterende godkjente lån påvirkes ikke av selve typeendringen. Nødvendige lånerettigheter og historiske forbindelser består etter de vanlige kontinuitetsreglene.
 
 ## Detaljer som fastsettes senere
 
