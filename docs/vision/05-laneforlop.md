@@ -168,6 +168,8 @@ Mulige hovedutfall er:
 
 Hvis partene gir motstridende opplysninger om hvorvidt objektet faktisk ble overlevert, går lånet til **usikker / uenighet**. Så lenge det er reell usikkerhet om hvem som har objektet, skal objektet fortsatt behandles som utilgjengelig for kolliderende utlån.
 
+Dette hindrer godkjenning av nye kolliderende lån. Et senere lån som allerede var gyldig godkjent og reservert før usikkerheten oppstod, skal derimot ikke oppheves administrativt bare fordi den tidligere overleveringen blir bestridt. Partene i det senere lånet skal varsles om at gjennomføringen kan være truet. Hvis objektet faktisk ikke kan gjøres tilgjengelig til avtalt tid, håndteres det senere lånet etter de vanlige reglene for kansellering eller **ikke gjennomført**.
+
 Hvis én part oppgir at overleveringen ikke skjedde og den andre ikke svarer, skal reservasjonen ikke kunne blokkere objektet på ubestemt tid. Etter en rimelig svarfrist kan lånet avsluttes som **ikke gjennomført**. Taushet skal ikke i seg selv tolkes som bevis for hvem som hadde ansvar for at overleveringen uteble.
 
 **Ikke gjennomført** skal skilles fra **kansellert**:
