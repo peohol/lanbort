@@ -237,6 +237,23 @@ En ny obligatorisk opplysning skal bare kunne kreves dersom den har et konkret, 
 
 Brukeren skal kunne velge å ikke gi den nye opplysningen. Konsekvensen kan være at aktivt medlemskap ikke kan fortsette etter overgangsfristen, men brukeren skal ikke tvinges til å utlevere opplysningen og eksisterende historikk skal ikke slettes som følge av valget.
 
+## Ventende innmelding når regler eller miljøtype endres
+
+Et medlemskap skal etableres etter de reglene som gjelder når medlemskapet faktisk **aktiveres**, ikke etter et permanent «frosset» regelsett fra tidspunktet søknaden eller innmeldingen ble startet. Samtidig skal en søker ikke automatisk bindes til vesentlig endrede vilkår uten å få se og eventuelt akseptere dem.
+
+Hvis nye eller strengere medlemskrav innføres mens en søknad venter, skal forespørselen settes på vent til søkeren har fått se endringene og har levert nødvendige opplysninger, dokumentasjon eller uttrykkelig aksept. Administrator skal ikke kunne godkjenne medlemskapet før gjeldende krav er oppfylt.
+
+Hvis medlemskrav fjernes eller lempes, kan forespørselen behandles etter de nye, mindre strenge kravene. Søkeren skal ikke måtte oppfylle krav som ikke lenger gjelder.
+
+Ved endring av miljøtype gjelder følgende:
+
+- **lukket → åpent:** en tidligere ventende søknad blir ikke automatisk til medlemskap. Søkeren får beskjed om at miljøets personvern- og medlemsmodell er endret og må uttrykkelig bekrefte at vedkommende fortsatt ønsker medlemskap. Dersom gjeldende krav ellers er oppfylt, kan medlemskapet deretter aktiveres uten administratorgodkjenning.
+- **lukket → skjult:** ventende innmeldingsforespørsler avsluttes nøytralt. Hvis administratorene fortsatt ønsker søkeren som medlem, må de sende en ny konto-bundet invitasjon etter reglene for skjulte miljøer.
+- **åpent → lukket:** en innmelding som ennå ikke var fullført da endringen skjedde må fortsette etter lukket-modellen og kan ikke fullføres etter de tidligere åpne reglene.
+- **åpent eller lukket → skjult:** ingen ikke-aktivert innmelding eller gammel søknad skal gi adgang etter typeendringen. Skjult-modellen gjelder umiddelbart.
+
+Når en gammel søknad avsluttes fordi miljøet blir skjult, kan søkeren beholde nødvendig historikk om sin egen tidligere henvendelse, men denne historikken skal ikke gi løpende innsyn i miljøet, bekrefte senere aktivitet eller fungere som en kanal for å omgå skjult-statusen.
+
 ## Administrasjon
 
 En administrator kan invitere et annet medlem til å bli administrator. Rollen blir aktiv først når mottakeren godtar.
