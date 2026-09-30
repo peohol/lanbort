@@ -121,6 +121,10 @@ Så lenge en anmeldelse fortsatt er skjult i den dobbelblinde perioden, kan forf
 
 Når anmeldelsen er publisert, skal skårer og fritekst låses. Forfatteren skal ikke kunne endre eller slette anmeldelsen direkte etter å ha sett motpartens vurdering, fordi dette ville svekke beskyttelsen mot gjengjeldelsesvurderinger.
 
+Hvis et avsluttet lån senere gjenåpnes til **usikker / uenighet**, skal en anmeldelse som fortsatt er skjult i den dobbelblinde perioden ikke publiseres mens lånets sentrale faktum igjen er uavklart. Publiseringen settes på pause, og når låneforløpet får en ny avslutning kan hver part justere sin egen fortsatt skjulte anmeldelse til det forløpet som faktisk kan vurderes.
+
+Hvis anmeldelsen allerede er publisert før lånet gjenåpnes, skal den ikke slettes, omskrives eller åpnes for vanlig redigering. Den skal i stedet kunne merkes med at lånet senere ble gjenåpnet. Skårdimensjoner som bygger på et faktum som nå er reelt omstridt, skal ikke fortsette å påvirke aggregerte tillitsdata som om faktum fortsatt var sikkert. Senere utvikling skal registreres som en separat, sporbar oppdatering knyttet til lånet.
+
 Hvis en publisert anmeldelse inneholder opplysninger som faktisk må korrigeres eller fjernes, skal dette håndteres gjennom en særskilt korrigerings- eller modereringsprosess. Historikken skal ikke omskrives stille.
 
 Den anmeldte brukeren skal kunne gi **ett tilsvar** til en publisert fritekstanmeldelse.
