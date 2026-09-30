@@ -69,6 +69,8 @@ Et objekt kan derfor være satt som tilgjengelig hele oktober, samtidig som for 
 
 Et godkjent lån skal alltid blokkere kolliderende utlån uansett hvilket miljø eller hvilken inngang lånet kom fra.
 
+Hvis et tidligere avsluttet lån gjenåpnes til **usikker / uenighet** fordi en returbekreftelse senere viser seg å være feil eller bestrides, skal objektet regnes som utilgjengelig for nye kolliderende lån så lenge besittelsesstatusen er usikker. Allerede godkjente senere lån består; usikkerheten skal ikke brukes til å omskrive eller administrativt oppheve en avtale som ble gyldig inngått mens objektet sto som returnert.
+
 Eieren kan endre objektets generelle tilgjengelighet fremover, men slike endringer skal **ikke retroaktivt endre eller oppheve et allerede godkjent lån**. En periode som allerede inngår i et godkjent lån, forblir bundet av den konkrete låneavtalen med mindre partene blir enige om noe annet.
 
 ## Publisering i miljøer
