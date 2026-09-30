@@ -199,6 +199,44 @@ Brukeren må først være invitert av en administrator.
 
 Invitasjonen innebærer at medlemskapet allerede er forhåndsgodkjent av administratoren. Hvis miljøet krever obligatoriske medlemsopplysninger, må den inviterte fortsatt fylle dem ut før medlemskapet aktiveres, men opplysningene skal ikke gjennom en ny manuell godkjenningsrunde.
 
+## Endring av medlemskrav
+
+Miljøets krav til aktivt medlemskap kan endres over tid. Slike endringer skal skille mellom **nye søkere** og **allerede aktive medlemmer**.
+
+Nye eller endrede krav gjelder umiddelbart for nye medlemskap fra det tidspunktet endringen trer i kraft.
+
+Eksisterende aktive medlemmer skal derimot varsles tydelig og få en rimelig overgangsfrist til å:
+
+- oppfylle et nytt saklig medlemsvilkår
+- levere nødvendig dokumentasjon
+- oppgi en ny obligatorisk medlemsopplysning
+- godta nye regler eller andre vilkår som krever uttrykkelig aksept
+- eller velge å melde seg ut
+
+Medlemmet beholder sitt aktive medlemskap i overgangsperioden.
+
+Hvis medlemmet ikke har oppfylt eller akseptert det nye kravet når fristen utløper, skal medlemskapet ikke slettes eller behandles som en utestengelse. Brukeren går i stedet over i **skjult/passiv medlemsstatus**.
+
+Et medlem som blir passivt på grunn av endrede medlemskrav:
+
+- vises ikke som aktivt medlem
+- får sine objekter avpublisert fra miljøets aktive flater
+- kan ikke opprette nye miljøbaserte låneforespørsler eller annen ny miljøaktivitet
+- kan ikke behandles som om vedkommende fortsatt oppfyller miljøets aktive medlemskrav
+- beholder nødvendig tilgang til eksisterende godkjente lån, saker og historiske forhold etter de vanlige kontinuitetsreglene
+- kan senere oppfylle de gjeldende kravene og reaktivere medlemskapet gjennom den medlemsprosessen som da gjelder
+- kan når som helst velge å melde seg helt ut
+
+Endrede medlemskrav skal ikke omskrive eller ugyldiggjøre allerede godkjente lån.
+
+### Nye personopplysninger som medlemskrav
+
+At et miljø endrer medlemskrav gir ikke en generell rett til å samle inn flere personopplysninger.
+
+En ny obligatorisk opplysning skal bare kunne kreves dersom den har et konkret, relevant og forståelig formål knyttet til medlemskapet, for eksempel dokumentasjon av faktisk tilhørighet når dette er en del av miljøets formål.
+
+Brukeren skal kunne velge å ikke gi den nye opplysningen. Konsekvensen kan være at aktivt medlemskap ikke kan fortsette etter overgangsfristen, men brukeren skal ikke tvinges til å utlevere opplysningen og eksisterende historikk skal ikke slettes som følge av valget.
+
 ## Administrasjon
 
 En administrator kan invitere et annet medlem til å bli administrator. Rollen blir aktiv først når mottakeren godtar.
