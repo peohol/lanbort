@@ -1,6 +1,6 @@
 # Scenario-basert stresstest av produktvisjonen
 
-> **Status:** Levende arbeidsdokument. Scenario 2–64 er gjennomført og avklart per 30. september 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
+> **Status:** Levende arbeidsdokument. Scenario 2–65 er gjennomført og avklart per 30. september 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
 
 ## Formål og metode
 
@@ -82,6 +82,7 @@ Stresstesten skal holde seg på visjonsnivå. Tekniske mekanismer, konkrete fris
 - **62. Eneutlåner dør eller blir varig utilgjengelig under aktivt lån:** andre brukere kan melde et mulig dødsfall eller varig frafall, men meldingen oppretter bare en konfidensiell verifikasjonssak og endrer ikke kontoen automatisk. Etter tilstrekkelig verifisering kan ny aktivitet stanses og en legitim representant få en snever, sporbar rolle for å håndtere konkrete eksisterende forpliktelser, for eksempel motta et utlånt objekt og bekrefte retur. Representanten overtar ikke kontoen og får ikke generell tilgang til private chatter, miljøer eller øvrig historikk. Finnes ingen legitim representant, kan lånet etter avklaringsprosess avsluttes administrativt som uavklart uten at Lånbort avgjør eierskap eller andre privatrettslige spørsmål.
 - **63. Medeiere er uenige om redigering, publisering eller framtidig tilgjengelighet:** ordinært innholdsvedlikehold kan fortsatt gjøres av hver medeier, med sporbar endringshistorikk. For endringer som skaper nye utlånsforpliktelser gjelder derimot et restriktivt veto: enhver medeier kan gjøre objektet mindre tilgjengelig, avpublisere det, begrense framtidige perioder eller skjerpe vesentlige utlånsvilkår. En annen medeier kan ikke ensidig oppheve en uttrykkelig slik restriksjon mens uenigheten består. Allerede godkjente lån påvirkes ikke. Lånbort avgjør ikke hvem av medeierne som har rett; nye forpliktelser gjenåpnes først når den uttrykkelige uenigheten er løst.
 - **64. Ingen medeier vil eller kan overta et aktivt utlåneransvar:** medeierskap innebærer ikke plikt til å overta en annen medeiers konkrete låneansvar. Hvis ansvarlig utlåner fortsatt er tilgjengelig, forblir vedkommende ansvarlig til lånet avsluttes eller noen frivillig overtar etter de vanlige reglene. Hvis ansvarlig utlåner er reelt utilgjengelig, kan en medeier frivillig overta, men kan også bare bekrefte fysisk mottak ved retur uten å overta hele rollen. Hvis ingen kan eller vil avklare returen, brukes ordinær avklaringsprosess og eventuell administrativ avslutning som uavklart. Objektet kan ikke brukes til nye lån mens prosessen pågår, og etter en uavklart avslutning må en gjenværende medeier bekrefte at objektet faktisk er i vedkommendes kontroll før det igjen kan publiseres eller gjøres tilgjengelig.
+- **65. Miljø skifter mellom åpent, lukket og skjult:** endringer mot strengere personvern (åpent → lukket, lukket → skjult og åpent → skjult) kan gjennomføres uten medlemsavstemning og påvirker ikke eksisterende godkjente lån. Endringer mot svakere personvern krever medlemsmedvirkning. Lukket → åpent varsles til alle aktive medlemmer med en svarfrist på én uke; bare medlemmer som uttrykkelig aksepterer forblir aktive når endringen trer i kraft, mens ikke-svarende settes i en skjult/passiv medlemsstatus og kan senere akseptere eller melde seg ut. Skjult → lukket krever støtte fra minst 2/3 av alle aktive medlemmer; de som stemmer mot eller ikke stemmer blir skjulte/passive dersom endringen vedtas. Skjult → åpent kan ikke gjøres direkte, men må eventuelt skje i to trinn via lukket. Passive medlemmer vises ikke i medlemslisten, deres objekter avpubliseres fra den aktive miljøflaten, og historisk aktivitet som oppstod under strengere personvern eksponeres ikke bredere. Et flertall kan dermed endre miljøets framtidige form, men ikke samtykke til økt personlig eksponering på vegne av enkeltmedlemmer.
 
 
 ## Gjenstående scenario-kø
@@ -96,7 +97,6 @@ Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avde
 
 ### C. Miljømedlemskap og miljølivssyklus
 
-- Et miljø skifter mellom åpent, lukket og skjult: hva skjer med eksisterende medlemmer, publiserte objekter, invitasjoner og historisk synlighet?
 - Medlemskrav endres etter at brukere allerede er medlemmer.
 - En ventende innmeldingsforespørsel eksisterer når miljøets type eller medlemskrav endres.
 
