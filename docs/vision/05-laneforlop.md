@@ -265,6 +265,8 @@ En slik avslutning skal:
 - oppheve lånets funksjon som binding som ellers ville blokkert kontolivssyklus eller andre systemprosesser
 - ikke brukes som grunnlag for å fastsette juridisk skyld, eiendomsrett eller erstatningsansvar
 
+En administrativt uavklart avslutning kan fortsatt gi begge parter en begrenset anmeldelsesrett for deler av forløpet som faktisk kan vurderes uten å avgjøre den uavklarte tvisten. Anmeldelsen skal ikke brukes til å presentere omstridte fakta som om Lånbort hadde fastslått dem.
+
 Den konkrete prosessen og terskelen for slik administrativ avslutning fastsettes senere.
 
 ### Forsinket tilbakelevering
