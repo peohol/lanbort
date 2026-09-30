@@ -1,6 +1,6 @@
 # Scenario-basert stresstest av produktvisjonen
 
-> **Status:** Levende arbeidsdokument. Scenario 2–63 er gjennomført og avklart per 30. september 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
+> **Status:** Levende arbeidsdokument. Scenario 2–64 er gjennomført og avklart per 30. september 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
 
 ## Formål og metode
 
@@ -81,6 +81,7 @@ Stresstesten skal holde seg på visjonsnivå. Tekniske mekanismer, konkrete fris
 - **61. Bestridt overlevering mens et senere lån nærmer seg:** når partene er uenige om hvorvidt overlevering skjedde, behandles objektets besittelsesstatus som usikker og nye kolliderende lån kan ikke godkjennes. Et senere lån som allerede er gyldig reservert består derimot etter kontinuitetsprinsippet; partene varsles om risikoen, og dersom lånet ikke kan gjennomføres håndteres det etter de ordinære reglene for kansellering eller ikke gjennomført.
 - **62. Eneutlåner dør eller blir varig utilgjengelig under aktivt lån:** andre brukere kan melde et mulig dødsfall eller varig frafall, men meldingen oppretter bare en konfidensiell verifikasjonssak og endrer ikke kontoen automatisk. Etter tilstrekkelig verifisering kan ny aktivitet stanses og en legitim representant få en snever, sporbar rolle for å håndtere konkrete eksisterende forpliktelser, for eksempel motta et utlånt objekt og bekrefte retur. Representanten overtar ikke kontoen og får ikke generell tilgang til private chatter, miljøer eller øvrig historikk. Finnes ingen legitim representant, kan lånet etter avklaringsprosess avsluttes administrativt som uavklart uten at Lånbort avgjør eierskap eller andre privatrettslige spørsmål.
 - **63. Medeiere er uenige om redigering, publisering eller framtidig tilgjengelighet:** ordinært innholdsvedlikehold kan fortsatt gjøres av hver medeier, med sporbar endringshistorikk. For endringer som skaper nye utlånsforpliktelser gjelder derimot et restriktivt veto: enhver medeier kan gjøre objektet mindre tilgjengelig, avpublisere det, begrense framtidige perioder eller skjerpe vesentlige utlånsvilkår. En annen medeier kan ikke ensidig oppheve en uttrykkelig slik restriksjon mens uenigheten består. Allerede godkjente lån påvirkes ikke. Lånbort avgjør ikke hvem av medeierne som har rett; nye forpliktelser gjenåpnes først når den uttrykkelige uenigheten er løst.
+- **64. Ingen medeier vil eller kan overta et aktivt utlåneransvar:** medeierskap innebærer ikke plikt til å overta en annen medeiers konkrete låneansvar. Hvis ansvarlig utlåner fortsatt er tilgjengelig, forblir vedkommende ansvarlig til lånet avsluttes eller noen frivillig overtar etter de vanlige reglene. Hvis ansvarlig utlåner er reelt utilgjengelig, kan en medeier frivillig overta, men kan også bare bekrefte fysisk mottak ved retur uten å overta hele rollen. Hvis ingen kan eller vil avklare returen, brukes ordinær avklaringsprosess og eventuell administrativ avslutning som uavklart. Objektet kan ikke brukes til nye lån mens prosessen pågår, og etter en uavklart avslutning må en gjenværende medeier bekrefte at objektet faktisk er i vedkommendes kontroll før det igjen kan publiseres eller gjøres tilgjengelig.
 
 
 ## Gjenstående scenario-kø
@@ -92,7 +93,6 @@ Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avde
 
 ### B. Medeierskap
 
-- Den eneste gjenværende medeieren kan ikke eller vil ikke overta et aktivt utlåneransvar.
 
 ### C. Miljømedlemskap og miljølivssyklus
 
