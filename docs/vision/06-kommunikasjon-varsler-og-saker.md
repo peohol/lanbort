@@ -178,6 +178,20 @@ Hvis miljøet går til avvikling, skal uavsluttede administratorkontakter kunne 
 
 Dette skal holdes adskilt fra vanlig privat chat mellom to brukere.
 
+## Melding om mulig dødsfall eller varig utilgjengelighet
+
+Fra en relevant brukerprofil eller et konkret felles forhold skal det finnes en strukturert handling for å melde at en bruker kan være død eller varig utilgjengelig.
+
+Dette skal ikke være en fri melding som direkte endrer kontostatus. Handlingen oppretter en konfidensiell sak hos plattformforvalter med tydelig informasjon om at:
+
+- meldingen bare starter en verifikasjonsprosess
+- kontoen ikke automatisk blir deaktivert eller slettet
+- melderen ikke får tilgang til brukerens konto eller private informasjon
+- nødvendig dokumentasjon kan bli etterspurt
+- bevisst falske meldinger kan behandles som misbruk
+
+Saken skal holdes adskilt fra ordinære lånetvister og fra vanlig rapportering av regelbrudd. Bare autoriserte plattformforvaltere skal kunne behandle den.
+
 ## Saker og prosessmeldinger
 
 En sak brukes når kommunikasjonen er del av en styrt prosess, for eksempel:
