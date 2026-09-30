@@ -1,6 +1,6 @@
 # Scenario-basert stresstest av produktvisjonen
 
-> **Status:** Levende arbeidsdokument. Scenario 2–61 er gjennomført og avklart per 30. september 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
+> **Status:** Levende arbeidsdokument. Scenario 2–62 er gjennomført og avklart per 30. september 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
 
 ## Formål og metode
 
@@ -79,6 +79,7 @@ Stresstesten skal holde seg på visjonsnivå. Tekniske mekanismer, konkrete fris
 - **59. Administrativt avsluttet uavklart lån og anmeldelser:** begge parter beholder en begrenset anmeldelsesrett, men bare for forhold som faktisk kan vurderes uten å avgjøre den uavklarte tvisten. Fritekst kan beskrive partens egen opplevelse, tydelig knyttet til at lånet ble avsluttet uavklart. Selve hendelsen kan inngå i fremtidig statistisk mønsteranalyse, men en enkelt uavklart sak skal ikke behandles som skyld eller automatisk negativ skår. Gjentatte uavklarte forløp på tvers av mange lån og uavhengige motparter kan senere brukes som et forsiktig, rollebasert tillitssignal når datagrunnlaget er tilstrekkelig.
 - **60. Lån gjenåpnes etter at anmeldelser er sendt eller publisert:** hvis anmeldelsene fortsatt er skjult, settes publiseringen på pause og partene kan justere sin egen anmeldelse når låneforløpet igjen er avklart. Hvis anmeldelsene allerede er publisert, omskrives de ikke og åpnes ikke for vanlig redigering; de merkes med at lånet senere ble gjenåpnet, og omstridte dimensjoner skal ikke fortsette å påvirke aggregert tillitsinformasjon ukritisk. Senere utvikling registreres som en ny, sporbar hendelse.
 - **61. Bestridt overlevering mens et senere lån nærmer seg:** når partene er uenige om hvorvidt overlevering skjedde, behandles objektets besittelsesstatus som usikker og nye kolliderende lån kan ikke godkjennes. Et senere lån som allerede er gyldig reservert består derimot etter kontinuitetsprinsippet; partene varsles om risikoen, og dersom lånet ikke kan gjennomføres håndteres det etter de ordinære reglene for kansellering eller ikke gjennomført.
+- **62. Eneutlåner dør eller blir varig utilgjengelig under aktivt lån:** andre brukere kan melde et mulig dødsfall eller varig frafall, men meldingen oppretter bare en konfidensiell verifikasjonssak og endrer ikke kontoen automatisk. Etter tilstrekkelig verifisering kan ny aktivitet stanses og en legitim representant få en snever, sporbar rolle for å håndtere konkrete eksisterende forpliktelser, for eksempel motta et utlånt objekt og bekrefte retur. Representanten overtar ikke kontoen og får ikke generell tilgang til private chatter, miljøer eller øvrig historikk. Finnes ingen legitim representant, kan lånet etter avklaringsprosess avsluttes administrativt som uavklart uten at Lånbort avgjør eierskap eller andre privatrettslige spørsmål.
 
 
 ## Gjenstående scenario-kø
@@ -87,7 +88,6 @@ Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avde
 
 ### A. Låneforløp og kollisjoner
 
-- Ansvarlig utlåner dør eller får kontoen fullstendig utilgjengelig under et lån der det ikke finnes noen medeier.
 
 ### B. Medeierskap
 
@@ -119,7 +119,6 @@ Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avde
 ### G. Konto- og datalivssyklus
 
 - Låntaker dør under et aktivt lån.
-- Utlåner dør under et aktivt lån.
 - Bruker ber om permanent sletting mens vedkommende har ventende anmeldelser eller invitasjoner, men ingen aktive lån.
 - Bruker har private chatter og delt historikk med andre når kontoen slettes; hvilken synlig identitet skal stå igjen hos motparten?
 - Konto deaktiveres eller slettes mens brukeren eier et skjult miljø eller er eneste administrator.
