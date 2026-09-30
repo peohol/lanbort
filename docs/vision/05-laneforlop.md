@@ -233,6 +233,8 @@ Dette prinsippet skal gjelde uansett om feilen meldes av utlåner eller låntake
 
 Hvis objektet allerede er reservert til et nytt lån, skal den nye hendelsen ikke skjules eller avvises av den grunn. Eventuell konflikt mellom gammel returstatus og nye reservasjoner må håndteres eksplisitt som et avvik, ikke ved å omskrive historikken.
 
+Et nytt lån som allerede ble gyldig godkjent mens systemet viste objektet som returnert, skal ikke oppheves eller omskrives administrativt fordi den tidligere returbekreftelsen senere blir bestridt. Den nye låneavtalen består. Partene i det nye lånet skal varsles om at objektets faktiske besittelsesstatus er blitt usikker. Så lenge usikkerheten består, skal ingen ytterligere kolliderende lån kunne inngås. Hvis det nye lånet senere ikke lar seg gjennomføre, håndteres det etter de vanlige reglene for kansellering eller **ikke gjennomført**, fremfor at Lånbort ensidig bryter avtalen.
+
 ## Når returtidspunktet passeres
 
 Når avtalt returtidspunkt passeres uten at tilbakeleveringen er endelig bekreftet, skal lånet først gå til den nøytrale statusen **avventer returavklaring**.
