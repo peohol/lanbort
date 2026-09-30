@@ -111,7 +111,7 @@ Når en bruker blir medeier:
 
 - objektet skal vises blant vedkommendes medeide objekter
 - alle medeiere kan redigere objektet
-- alle medeiere kan publisere objektet i miljøer de selv har tilgang til
+- alle medeiere kan publisere objektet i miljøer de selv har tilgang til, så lenge ingen annen medeier har en aktiv uttrykkelig restriksjon som hindrer den aktuelle nye publiseringen
 - en medeier kan bare se og behandle en miljøbasert låneforespørsel dersom vedkommende selv har nødvendig adgang til forespørselens opprinnelseskontekst
 - en medeier som har slik adgang kan godkjenne en låneforespørsel når objektet er ledig
 - den medeiaren som godkjenner et konkret lån blir den **ansvarlige utlåneren** for akkurat dette lånet
@@ -130,6 +130,31 @@ Det innebærer at andre medeiere ikke ensidig kan:
 - erklære lånet avsluttet eller bekrefte retur på utlånerens vegne
 
 Perioden som omfattes av lånet er blokkert globalt for alle medeiere.
+
+### Uenighet mellom medeiere om framtidig utlån
+
+Medeierskap skal ikke fungere som en «siste endring vinner»-modell der to eiere kan overstyre hverandre frem og tilbake i spørsmål om nye utlån.
+
+Det skal skilles mellom **ordinært innholdsvedlikehold** og endringer som skaper eller utvider **nye utlånsforpliktelser**.
+
+Ordinært innholdsvedlikehold, som beskrivelse, bilder og mindre praktiske opplysninger, kan som hovedregel fortsatt gjøres av hver medeier alene. Endringene skal være sporbare gjennom objektets endringshistorikk. Uenighet om slikt innhold skal ikke i seg selv gjøre hele objektet utilgjengelig.
+
+For forhold som bestemmer om, når, hvor eller på hvilke vesentlige vilkår objektet kan lånes ut, gjelder et mer restriktivt prinsipp:
+
+> Enhver medeier kan begrense nye utlånsforpliktelser, men ingen medeier kan alene oppheve en annen medeiers uttrykkelige begrensning mens uenigheten består.
+
+Dette innebærer blant annet at en medeier kan:
+
+- avpublisere objektet fra et miljø
+- begrense eller fjerne framtidig tilgjengelighet
+- motsette seg publisering i en ny kontekst
+- innføre eller skjerpe vesentlige vilkår for framtidige utlån
+
+Når en slik uttrykkelig restriksjon er registrert, kan en annen medeier ikke alene publisere objektet på nytt, åpne den samme perioden eller lempe på den aktuelle begrensningen. Objektet kan fortsatt forvaltes på andre områder som ikke strider mot restriksjonen.
+
+Dette er et veto mot **nye forpliktelser**, ikke en rett til å omskrive eksisterende avtaler. Allerede godkjente lån fortsetter etter de vanlige reglene og påvirkes ikke av en senere uenighet mellom medeierne.
+
+Lånbort skal ikke avgjøre hvem av medeierne som juridisk eller faktisk «har rett» i uenigheten. Når medeierne igjen er enige, eller den medeieren som la inn restriksjonen uttrykkelig trekker den tilbake, kan objektet gjøres mer tilgjengelig igjen.
 
 ### Overføring av ansvar for et konkret lån
 
