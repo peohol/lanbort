@@ -1,6 +1,6 @@
 # Scenario-basert stresstest av produktvisjonen
 
-> **Status:** Levende arbeidsdokument. Scenario 2–65 er gjennomført og avklart per 30. september 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
+> **Status:** Levende arbeidsdokument. Scenario 2–66 er gjennomført og avklart per 30. september 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
 
 ## Formål og metode
 
@@ -83,6 +83,7 @@ Stresstesten skal holde seg på visjonsnivå. Tekniske mekanismer, konkrete fris
 - **63. Medeiere er uenige om redigering, publisering eller framtidig tilgjengelighet:** ordinært innholdsvedlikehold kan fortsatt gjøres av hver medeier, med sporbar endringshistorikk. For endringer som skaper nye utlånsforpliktelser gjelder derimot et restriktivt veto: enhver medeier kan gjøre objektet mindre tilgjengelig, avpublisere det, begrense framtidige perioder eller skjerpe vesentlige utlånsvilkår. En annen medeier kan ikke ensidig oppheve en uttrykkelig slik restriksjon mens uenigheten består. Allerede godkjente lån påvirkes ikke. Lånbort avgjør ikke hvem av medeierne som har rett; nye forpliktelser gjenåpnes først når den uttrykkelige uenigheten er løst.
 - **64. Ingen medeier vil eller kan overta et aktivt utlåneransvar:** medeierskap innebærer ikke plikt til å overta en annen medeiers konkrete låneansvar. Hvis ansvarlig utlåner fortsatt er tilgjengelig, forblir vedkommende ansvarlig til lånet avsluttes eller noen frivillig overtar etter de vanlige reglene. Hvis ansvarlig utlåner er reelt utilgjengelig, kan en medeier frivillig overta, men kan også bare bekrefte fysisk mottak ved retur uten å overta hele rollen. Hvis ingen kan eller vil avklare returen, brukes ordinær avklaringsprosess og eventuell administrativ avslutning som uavklart. Objektet kan ikke brukes til nye lån mens prosessen pågår, og etter en uavklart avslutning må en gjenværende medeier bekrefte at objektet faktisk er i vedkommendes kontroll før det igjen kan publiseres eller gjøres tilgjengelig.
 - **65. Miljø skifter mellom åpent, lukket og skjult:** endringer mot strengere personvern (åpent → lukket, lukket → skjult og åpent → skjult) kan gjennomføres uten medlemsavstemning og påvirker ikke eksisterende godkjente lån. Endringer mot svakere personvern krever medlemsmedvirkning. Lukket → åpent varsles til alle aktive medlemmer med en svarfrist på én uke; bare medlemmer som uttrykkelig aksepterer forblir aktive når endringen trer i kraft, mens ikke-svarende settes i en skjult/passiv medlemsstatus og kan senere akseptere eller melde seg ut. Skjult → lukket krever støtte fra minst 2/3 av alle aktive medlemmer; de som stemmer mot eller ikke stemmer blir skjulte/passive dersom endringen vedtas. Skjult → åpent kan ikke gjøres direkte, men må eventuelt skje i to trinn via lukket. Passive medlemmer vises ikke i medlemslisten, deres objekter avpubliseres fra den aktive miljøflaten, og historisk aktivitet som oppstod under strengere personvern eksponeres ikke bredere. Et flertall kan dermed endre miljøets framtidige form, men ikke samtykke til økt personlig eksponering på vegne av enkeltmedlemmer.
+- **66. Medlemskrav endres etter at brukere allerede er medlemmer:** nye krav gjelder umiddelbart for nye søkere. Eksisterende aktive medlemmer varsles og får en rimelig overgangsfrist til å oppfylle eller akseptere kravene. De beholder aktivt medlemskap i overgangsperioden. Hvis kravene ikke er oppfylt ved fristens utløp, går medlemmet over i skjult/passiv medlemsstatus fremfor å bli slettet eller utestengt. Passive medlemmer kan ikke starte ny miljøaktivitet eller ha objekter publisert i miljøets aktive flater, men eksisterende godkjente lån og nødvendig historisk tilgang består. Medlemmet kan senere oppfylle kravene og reaktivere medlemskapet eller melde seg ut. Nye personopplysninger kan bare kreves når de har et konkret og relevant formål; regelendringer skal ikke brukes som påskudd for vilkårlig datainnsamling.
 
 
 ## Gjenstående scenario-kø
@@ -97,7 +98,6 @@ Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avde
 
 ### C. Miljømedlemskap og miljølivssyklus
 
-- Medlemskrav endres etter at brukere allerede er medlemmer.
 - En ventende innmeldingsforespørsel eksisterer når miljøets type eller medlemskrav endres.
 
 ### D. Objektpublisering og miljømoderering
