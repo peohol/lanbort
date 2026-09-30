@@ -235,6 +235,41 @@ Det betyr blant annet at:
 
 En bruker skal derfor ikke kunne få nødvendig felles lånehistorikk til å forsvinne fra andre parters historikk bare fordi kontoen slettes.
 
+### Melding om mulig dødsfall eller varig utilgjengelighet
+
+En bruker med legitim tilgang til en annen brukers profil eller et konkret felles forhold skal kunne melde at brukeren kan være død eller varig ute av stand til å håndtere kontoen. Dette skal være en særskilt konto- og kontinuitetssak, ikke en vanlig modereringsrapport.
+
+En slik melding skal **ikke** i seg selv:
+
+- deaktivere kontoen
+- markere brukeren offentlig som død
+- avslutte lån eller andre avtaler
+- gi melderen eller en pårørende tilgang til kontoen
+- overføre eierskap, administratorroller eller private data
+
+Meldingen skal opprette en konfidensiell verifikasjonssak på plattformnivå. Lånbort skal så langt det er rimelig forsøke å avklare forholdet gjennom tilgjengelige verifiserte kontaktkanaler og eventuell dokumentasjon. Nøyaktige dokumentasjonskrav fastsettes senere.
+
+Dersom meldingen avkreftes eller brukeren selv bekrefter at kontoen fortsatt er aktiv, avsluttes saken uten kontoendring. Melderen trenger ikke få innsyn i dokumentasjonen eller andre personopplysninger; det er tilstrekkelig med en nøytral bekreftelse på at meldingen er mottatt eller ferdigbehandlet.
+
+Feilaktige meldinger skal ikke automatisk behandles som misbruk. Bevisst falske eller gjentatte strategiske meldinger kan derimot behandles som plattformmisbruk etter de vanlige modereringsreglene.
+
+Hvis dødsfall eller varig utilgjengelighet blir tilstrekkelig verifisert, kan kontoen settes i en kontrollert tilstand der ny aktivitet stanses mens eksisterende forpliktelser håndteres. Bare den informasjonen som er nødvendig for dette formålet skal gjøres tilgjengelig.
+
+### Begrenset representant ved dødsfall eller varig utilgjengelighet
+
+Når det finnes en legitim og tilstrekkelig verifisert representant, for eksempel en representant for et dødsbo eller annen person med dokumentert rett til å opptre på brukerens vegne, kan Lånbort gi en **snever og formålsbundet representantrolle**.
+
+Representanten skal ikke overta brukerens konto eller innloggingsidentitet. Rollen skal bare gi tilgang til konkrete handlinger og opplysninger som er nødvendige for å avslutte bestemte eksisterende forhold, for eksempel å:
+
+- motta et objekt som er utlånt fra den utilgjengelige brukeren
+- avtale praktisk tilbakelevering i et konkret lån
+- bekrefte at et konkret objekt er mottatt
+- medvirke til kontrollert avvikling av andre bindinger når dette er nødvendig og legitimt
+
+Rollen skal ikke gi generell tilgang til private chatter, vennskap, miljøer, profilhistorikk eller andre objekter som ikke er nødvendige for den aktuelle oppgaven. All bruk av rollen skal være sporbar.
+
+Hvis en bruker senere viser seg å være i live eller får tilbake kontroll over kontoen etter en feilaktig eller midlertidig vurdering, skal representantens tilgang trekkes tilbake og ordinær konto kunne gjenopprettes etter nødvendig identitetskontroll. Historikken om de administrative handlingene skal beholdes.
+
 ### Kontrollert avslutning i særtilfeller
 
 Plattformforvalter skal i særtilfeller kunne initiere deaktivering og kontrollert avslutning av en konto når vanlig selvbetjent sletting ikke er mulig eller hensiktsmessig.
