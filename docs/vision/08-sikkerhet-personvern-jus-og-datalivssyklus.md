@@ -115,6 +115,14 @@ Innlogging, mislykkede tilgangsforsøk og andre sikkerhetskritiske hendelser kan
 
 Slike logger skal ha en klart begrenset levetid og skal ikke behandles som permanent brukerhistorikk.
 
+### Mønsterdata for sikkerhet og misbruk
+
+Lånbort kan beholde og analysere strukturerte signaler som er nødvendige for å oppdage gjentatt eller koordinert misbruk, for eksempel bekreftede modereringsbrudd, falsk identitet, dokumenterte duplikatkontoer eller forsøk på å omgå suspensjon.
+
+Rått antall rapporter, blokkeringer eller konflikter skal ikke behandles som bevis på misbruk. Slike hendelser kan være feilaktige, strategiske eller sterkt korrelerte. Automatiske mønstersignaler skal derfor brukes som grunnlag for nærmere vurdering, ikke som automatisk dom eller direkte offentlig tillitsskår.
+
+Oppbevaring og tilgang til slike data skal være formålsstyrt og følge de samme prinsippene om dataminimering, tilgangskontroll og begrenset lagring som øvrige sikkerhetsdata.
+
 ### Ikke all aktivitet skal bli historikk
 
 Lånbort skal ikke lagre enhver mulig brukerhandling permanent bare fordi det er teknisk mulig.
