@@ -1,6 +1,6 @@
 # Scenario-basert stresstest av produktvisjonen
 
-> **Status:** Levende arbeidsdokument. Scenario 2–58 er gjennomført og avklart per 30. september 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
+> **Status:** Levende arbeidsdokument. Scenario 2–59 er gjennomført og avklart per 30. september 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
 
 ## Formål og metode
 
@@ -76,6 +76,7 @@ Stresstesten skal holde seg på visjonsnivå. Tekniske mekanismer, konkrete fris
 - **56. Samme objekt finnes i skjult og åpen kontekst:** bare global objektinformasjon deles; spørsmål, anmeldelser, varsler og sosial metadata holdes strengt kontekstadskilt.
 - **57. Administrativ samtale står uten saksbehandler fordi miljøet mangler administratorer:** samtalen blir liggende utilordnet med tydelig beskjed til brukeren og kan gjenopptas hvis gyldig administrasjon etableres; den eskaleres ikke automatisk til plattformforvalter.
 - **58. Feil returbekreftelse etter at et nytt lån er godkjent:** den opprinnelige returbekreftelsen beholdes i historikken og det første lånet kan gjenåpnes som usikker / uenighet. Et nytt lån som allerede ble gyldig inngått mens objektet sto som returnert, består og omskrives ikke administrativt. Objektet sperres for ytterligere lån så lenge besittelsesstatusen er usikker; dersom det nye lånet ikke kan gjennomføres, må det senere kanselleres eller avsluttes som ikke gjennomført etter de vanlige reglene.
+- **59. Administrativt avsluttet uavklart lån og anmeldelser:** begge parter beholder en begrenset anmeldelsesrett, men bare for forhold som faktisk kan vurderes uten å avgjøre den uavklarte tvisten. Fritekst kan beskrive partens egen opplevelse, tydelig knyttet til at lånet ble avsluttet uavklart. Selve hendelsen kan inngå i fremtidig statistisk mønsteranalyse, men en enkelt uavklart sak skal ikke behandles som skyld eller automatisk negativ skår. Gjentatte uavklarte forløp på tvers av mange lån og uavhengige motparter kan senere brukes som et forsiktig, rollebasert tillitssignal når datagrunnlaget er tilstrekkelig.
 
 
 ## Gjenstående scenario-kø
@@ -84,7 +85,6 @@ Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avde
 
 ### A. Låneforløp og kollisjoner
 
-- Et administrativt avsluttet uavklart lån: hvilke anmeldelsesrettigheter skal partene ha?
 - Et avsluttet lån gjenåpnes til usikker/uenighet etter at én eller begge anmeldelser allerede er sendt eller publisert.
 - Utlåner og låntaker gir motstridende opplysninger om hvorvidt overlevering skjedde, samtidig som et nytt fremtidig lån nærmer seg.
 - Ansvarlig utlåner dør eller får kontoen fullstendig utilgjengelig under et lån der det ikke finnes noen medeier.
