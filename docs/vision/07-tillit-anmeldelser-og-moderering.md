@@ -162,24 +162,51 @@ En slik analyse må blant annet ta hensyn til:
 
 Automatisk nedvekting av anmeldelser inngår ikke i kjernevisjonen. Hvis en vektingsmodell senere vurderes, må den behandles som et eget produktspørsmål med høye krav til dokumentasjon, forståelighet og transparens.
 
-## Gjentatte uavklarte låneforløp som tillitssignal
+## Mønstersignaler fra lånehistorikken
 
-Lånbort bør bevare strukturerte data om lån som ender administrativt som **uavklart**, slik at gjentatte mønstre senere kan analyseres. En enkelt uavklart tilbakelevering sier lite om hvem som hadde rett og skal ikke i seg selv gi en automatisk negativ skår til noen av partene.
+Lånbort bør fra start bevare strukturerte data om sentrale lånehendelser som senere kan inngå i statistisk mønsteranalyse. Formålet er ikke å tildele skyld i enkelthendelser, men å kunne oppdage tilbakevendende mønstre som kan være relevante for pålitelighet eller sikkerhet når datagrunnlaget blir tilstrekkelig.
 
-Et tilbakevendende mønster rundt samme bruker kan derimot være relevant for pålitelighet, særlig dersom det oppstår over mange lån, med flere uavhengige motparter og i ulike kontekster. Analysen må være rollebasert og se på andelen uavklarte forløp i forhold til brukerens samlede antall relevante lån, ikke bare et rått antall hendelser.
+Mønstersignaler skal som hovedregel være **rollebaserte**. En brukers historikk som låntaker skal ikke uten videre blandes sammen med historikken som utlåner i én generell skår.
 
-Et slikt signal må minst ta hensyn til:
+Aktuelle mønstre omfatter særlig:
 
-- om brukeren opptrer som låntaker eller utlåner
-- hvor mange relevante lån observasjonen bygger på
-- hvor stor andel av lånene som ender uavklart
-- om hendelsene gjelder flere uavhengige motparter fremfor den samme konflikten gjentatt
-- om hendelsene er konsentrert i ett miljø eller én sosial krets
-- statistisk usikkerhet og lavt datagrunnlag
-- om motpartene selv har uvanlige konfliktmønstre
-- risikoen for strategiske eller falske innsigelser
+### Pålitelighetssignaler
 
-Systemet skal ikke anta at slike hendelser er uavhengige eller at et høyt antall alene beviser upålitelighet. Før datagrunnlaget er robust nok, bør hendelsene først og fremst være historikk og grunnlag for senere modellering. Dersom mønsteret på sikt inngår i synlig tillitsinformasjon eller modereringssignaler, skal det presenteres som et statistisk mønster og ikke som en konstatering av skyld i de enkelte tvistene.
+- gjentatte lån som ikke blir gjennomført, med skille mellom at låntaker ikke møter og at utlåner ikke gjør objektet tilgjengelig
+- gjentatte ensidige kanselleringer etter godkjenning, særlig tett opp mot avtalt overlevering
+- gjentatte bekreftede forsinkede tilbakeleveringer uten avtalt forlengelse
+- gjentatt manglende respons som gjør at låneforløp må avsluttes eller avklares administrativt
+- gjentatte tilfeller der en utlåner ikke gjør objektet tilgjengelig som avtalt eller der objektet vesentlig avviker fra beskrivelsen
+
+### Konflikt- og usikkerhetssignaler
+
+- gjentatte administrativt uavklarte tilbakeleveringer
+- gjentatte tvister om hvorvidt overlevering eller retur faktisk skjedde
+- gjentatte skade- eller tapshendelser
+- gjentatte tilfeller der viktige bekreftelser senere meldes som feil, for eksempel returbekreftelser som må korrigeres
+
+En enkelt konflikt eller uavklart hendelse sier lite om hvem som hadde rett og skal ikke i seg selv gi en automatisk negativ skår til noen av partene. Et tilbakevendende mønster rundt samme bruker kan derimot bli relevant når det oppstår på tvers av mange lån, flere uavhengige motparter og ulike kontekster.
+
+### Sikkerhets- og misbrukssignaler
+
+Falsk identitet, duplikatkontoer, omgåelse av suspensjon og gjentatte bekreftede modereringsbrudd kan også danne mønstre. Disse hører primært hjemme i plattformens sikkerhets- og modereringssystem, ikke i en vanlig offentlig tillitsprofil.
+
+Rått antall blokkeringer, rapporter eller konflikter skal ikke brukes som direkte negativt tillitssignal. Slike handlinger kan være feilaktige, strategiske eller gjenspeile at én langvarig konflikt genererer mange hendelser. Dersom rapporter senere fører til dokumenterte modereringsutfall, kan selve utfallet være relevant internt etter de vanlige sikkerhetsreglene.
+
+### Felles prinsipper for mønsteranalyse
+
+En fremtidig modell skal ikke bare telle hendelser. Den må minst ta hensyn til:
+
+- **rate fremfor rått antall:** andelen relevante lån med avvik må ses i forhold til brukerens totale erfaringsgrunnlag
+- **rolle:** låntaker- og utlånerhistorikk skal analyseres separat når signalet er rolleavhengig
+- **uavhengige motparter:** hendelser med mange forskjellige personer er mer informative enn mange hendelser i én vedvarende konflikt
+- **kontekst:** mønstre som bare finnes i ett miljø eller én sosial krets kan ha en annen forklaring enn mønstre på tvers av kontekster
+- **datamengde og statistisk usikkerhet:** små tall skal ikke fremstilles som robuste
+- **avhengighet mellom hendelser:** systemet skal ikke anta at alle observasjoner er statistisk uavhengige
+- **motpartenes mønstre:** uvanlige konflikt- eller rapporteringsmønstre hos motparter kan være relevant for tolkningen
+- **mulig strategisk adferd:** falske innsigelser, koordinert rapportering og andre former for manipulering må vurderes
+
+Før datagrunnlaget er robust nok, bør slike hendelser først og fremst være strukturert historikk og grunnlag for senere modellering. Dersom et mønster på sikt inngår i synlig tillitsinformasjon, skal det presenteres som et statistisk mønster med forståelig kontekst, ikke som en konstatering av skyld i de enkelte hendelsene.
 
 ## Tillitsprofiler og aktivitetsdata
 
