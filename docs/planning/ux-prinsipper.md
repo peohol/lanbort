@@ -62,3 +62,11 @@ Enkle preferanser kan gjerne forhåndsutfylles eller huskes. Men Lånbort bør i
 
 Målet er lav friksjon uten at brukeren mister kontroll over meningsfulle valg.
 
+### 8. Oppmerksomhet skal behandles som en knapp ressurs
+
+Lånbort skal bare avbryte brukeren når noe faktisk fortjener oppmerksomhet. Varsler, merker, påminnelser og advarsler bør prioriteres etter betydning fremfor å brukes for å maksimere aktivitet i appen.
+
+Et aktivt lån som krever handling, en forestående retur eller en sikkerhetsrelevant hendelse kan fortjene tydelig oppmerksomhet. Lavprioritetsinformasjon bør heller være tilgjengelig i appen eller samles, fremfor å generere stadig nye varsler.
+
+Brukeren bør dessuten kunne forstå *hvorfor* noe krever oppmerksomhet og hva som forventes videre. Lånbort skal hjelpe brukeren med reelle forpliktelser, ikke forsøke å trekke brukeren tilbake til appen for sin egen del.
+
