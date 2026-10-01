@@ -24,3 +24,7 @@ Uavklarte valg som tilhører produktspesifikasjon, UX eller arkitektur registrer
 ## Validering
 
 [Tverrgående validering før implementering](validation.md) dokumenterer konsistenssjekken mellom produktspesifikasjon, UX og arkitektur, inkludert hvilke åpne detaljvalg som trygt kan utsettes.
+
+## Implementering
+
+[Implementeringsplanen](implementation/README.md) beskriver fase- og milepælrekkefølgen etter den validerte planleggingsfasen. [Kodeagent-arbeidspakkene](implementation/work-packages.md) er den konkrete arbeidskøen; [kvalitetsportene](implementation/quality-gates.md) angir hva som må være bevist før neste modenhetsnivå.

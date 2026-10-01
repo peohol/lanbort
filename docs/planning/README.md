@@ -1,6 +1,6 @@
 # Planleggingsløp: fra produktvisjon til byggbar spesifikasjon
 
-> **Status:** Arbeids-TODO for planleggingsfasen. Dette dokumentet beskriver **hvordan planarbeidet skal gjennomføres**, ikke selve produktspesifikasjonen, UX-løsningen eller systemarkitekturen.
+> **Status:** Planleggingsløpet er fullført 1. oktober 2026. Alle planlagte fundament-, spesifikasjons-, UX-, arkitektur- og valideringssteg er gjennomført; arbeidet er brutt ned i implementeringsfaser og kodeagent-pakker.
 
 ## Arbeidsregel
 
@@ -62,8 +62,8 @@
 - [x] Kjør et nytt utvalg av krevende scenarioer gjennom alle tre lag samtidig.
 - [x] Registrer eventuelle reelle visjonskonflikter i visjonslaget og løs dem der. *(Ingen nye visjonskonflikter ble funnet.)*
 - [x] Marker hvilke detaljspørsmål som kan utsettes til implementering uten å true helheten.
-- [ ] Først deretter: bryt arbeidet ned i implementeringsfaser, milepæler og kodeagent-arbeidspakker.
+- [x] Først deretter: bryt arbeidet ned i implementeringsfaser, milepæler og kodeagent-arbeidspakker.
 
 ## Neste punkt
 
-Neste arbeidslag er **samlet validering og overgang til implementering**: produktspesifikasjon, UX-modell og arkitektur skal nå prøves mot hverandre før implementeringsarbeid pakkes.
+Planleggingsfasen er fullført. Neste separate fase er **implementering**, med [Fase 0](../implementation/README.md) som start: konkret stackvalg (OD-0009), prosjektskjelett og kvalitetsgrunnlag før domenefunksjonalitet bygges.
