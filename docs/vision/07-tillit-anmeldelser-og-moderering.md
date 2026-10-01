@@ -222,6 +222,26 @@ En fremtidig modell skal ikke bare telle hendelser. Den må minst ta hensyn til:
 
 Før datagrunnlaget er robust nok, bør slike hendelser først og fremst være strukturert historikk og grunnlag for senere modellering. Dersom et mønster på sikt inngår i synlig tillitsinformasjon, skal det presenteres som et statistisk mønster med forståelig kontekst, ikke som en konstatering av skyld i de enkelte hendelsene.
 
+## Presentasjon av gjentatte begrensede vurderinger
+
+Gjentatte begrensede anmeldelser etter kanselleringer, manglende oppmøte eller andre avvik før et lån faktisk gjennomføres skal ikke bli en omvei til én generell negativ brukerskår.
+
+De enkelte anmeldelsene skal fortsatt beskrive det konkrete forløpet de gjelder. Hvis Lånbort senere velger å vise et samlet mønster, skal dette være **rolle- og hendelsesspesifikt** og presenteres som dokumentert historikk fremfor som en karakteristikk av personen.
+
+For eksempel er en forståelig rate som «3 sene kanselleringer blant 20 godkjente lån» prinsipielt bedre enn en abstrakt «pålitelighetsskår».
+
+Ved slik presentasjon gjelder minst følgende:
+
+- teller skal alltid ses sammen med en relevant nevner
+- låntaker- og utlånerhendelser skal ikke blandes sammen når mønsteret er rolleavhengig
+- bare hendelser som systemet kan klassifisere med rimelig sikkerhet skal telle som den aktuelle hendelsestypen
+- en uavklart tvist skal ikke telles som dokumentert no-show, sen kansellering eller annet fastslått avvik
+- mønstre på tvers av flere uavhengige motparter er mer informative enn gjentatte hendelser i én relasjon
+- datamengde, kontekst og statistisk usikkerhet skal fremgå eller tas hensyn til
+- eldre hendelser kan senere gis lavere relevans enn nyere adferd, men eventuell tidsvekting fastsettes separat
+
+Slik mønsterinformasjon skal være **deskriptiv**, ikke dømmende. Lånbort skal ikke konkludere med at brukeren generelt er «upålitelig» på grunnlag av disse dataene, og mønsteret skal ikke i seg selv utløse automatisk sanksjon eller fungere som en skjult adgangsgrense.
+
 ## Tillitsprofiler og aktivitetsdata
 
 Lånbort skal ikke gi brukeren én generell skår som forsøker å oppsummere personen på tvers av alle roller.
