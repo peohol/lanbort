@@ -158,3 +158,11 @@ Grunnleggende bruk skal være forståelig gjennom selve grensesnittet. Forklarin
 
 Et kort førstegangsoppsett kan brukes når det trengs for nødvendige valg, men opplæring skal i hovedsak skje gradvis gjennom bruk. Dette reduserer både oppstartsfriksjon og behovet for å huske informasjon før den får praktisk betydning.
 
+### 20. Oppdagelse skal være målrettet, ikke feed-drevet
+
+Lånbort skal først og fremst hjelpe brukeren å finne det de faktisk trenger: et bestemt objekt, noe i nærheten, noe i et relevant miljø eller noe tilgjengelig innenfor en gitt periode.
+
+Søk, filtre, kategorier og kontekstuelle forslag bør derfor være viktigere enn en endeløs strøm av innhold. Appen bør ikke optimaliseres for scrolling eller oppmerksomhet i seg selv.
+
+Forslag kan gjerne brukes når de er relevante, men de bør være forklarlige og knyttet til brukerens aktuelle behov eller kontekst.
+
