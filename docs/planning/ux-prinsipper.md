@@ -20,3 +20,13 @@ Et lån skal for eksempel forstås og håndteres på samme måte enten det oppst
 
 Målet er at brukeren lærer **Lånbort én gang**, fremfor å måtte lære forskjellige regler for forskjellige deler av appen.
 
+### 3. Friksjon skal stå i forhold til konsekvensen
+
+Vanlige, ufarlige handlinger skal kunne gjøres raskt og uten unødvendige bekreftelser.
+
+Handlinger som skaper en forpliktelse, påvirker andre mennesker, endrer hvem som får tilgang til informasjon, eller er vanskelige å reversere, skal derimot kreve tydeligere samtykke.
+
+Det skal være lett å bla, søke, lagre eller endre egne uforpliktende innstillinger. Å godkjenne et lån, endre avtalte vilkår, gjøre privat informasjon mer synlig eller utføre en destruktiv handling bør kreve at brukeren forstår hva som faktisk skjer.
+
+Lånbort skal samtidig unngå bekreftelsesutmattelse: hvis alt får en advarsel, mister advarslene verdi.
+
