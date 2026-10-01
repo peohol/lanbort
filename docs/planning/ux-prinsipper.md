@@ -94,3 +94,11 @@ Det bør for eksempel fremgå tydelig om et objekt er synlig for venner, bestemt
 
 Tekniske begreper som tilgangskontroll, autorisasjon eller krypteringsmodell bør normalt ikke være nødvendige for å bruke appen trygt. Systemet skal gjøre de faktiske grensene forståelige.
 
+### 12. Mobil først, men ikke mobil begrenset
+
+Lånbort bør primært utformes for mobilbruk, fordi mange sentrale handlinger naturlig skjer i bevegelse eller tett på den fysiske utlånssituasjonen: finne et objekt, sende en forespørsel, avtale overlevering, bekrefte retur eller svare på en melding.
+
+Samtidig skal den samme mentale modellen og de samme kjernefunksjonene fungere på større skjermer. Desktop kan utnytte mer plass til oversikt, flere samtidige paneler og mer effektiv administrasjon, men skal ikke utvikle egne regler eller parallelle arbeidsmåter.
+
+Responsivitet skal derfor handle om å tilpasse presentasjon og informasjonsmengde til skjermen, ikke om å lage to forskjellige produkter.
+
