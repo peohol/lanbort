@@ -166,3 +166,11 @@ Søk, filtre, kategorier og kontekstuelle forslag bør derfor være viktigere en
 
 Forslag kan gjerne brukes når de er relevante, men de bør være forklarlige og knyttet til brukerens aktuelle behov eller kontekst.
 
+### 21. Systemet skal gi umiddelbar og entydig respons på handlinger
+
+Når brukeren gjør noe, skal det være tydelig om handlingen er registrert, fortsatt pågår, venter på en annen part eller har mislyktes.
+
+Grensesnittet bør så langt mulig unngå situasjoner der brukeren blir usikker på om et trykk faktisk virket, om en forespørsel ble sendt, eller om en endring ble lagret.
+
+Tilbakemeldingen bør være proporsjonal med handlingen: diskret ved trivielle handlinger, tydeligere når konsekvensen er viktig.
+
