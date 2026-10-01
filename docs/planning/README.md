@@ -16,7 +16,7 @@
 ### A. Fundament for videre planlegging
 
 - [x] Opprett et eget arbeidsområde for planleggingsfasen.
-- [ ] **Avklar og vedta sentrale UX-prinsipper sammen før detaljert planskriving begynner.**
+- [x] **Avklar og vedta sentrale UX-prinsipper sammen før detaljert planskriving begynner.**
 - [ ] Fastsett dokumentstrukturen for produktspesifikasjon, UX-modell og systemarkitektur.
 - [ ] Fastsett en enkel sporbarhetsmåte fra visjonsprinsipp → krav/UX-regel → arkitekturbeslutning, uten å gjøre dokumentasjonen tung.
 - [ ] Opprett et sted for åpne detaljbeslutninger som tilhører spesifikasjon, UX eller arkitektur og derfor ikke er nye visjonsspørsmål.
