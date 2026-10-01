@@ -110,3 +110,11 @@ Brukeren skal kunne overføre læring fra én del av Lånbort til en annen. Hvis
 
 Konsistens bør veie tyngre enn lokal kreativitet, med mindre en reell forskjell i brukerbehov tilsier et annet mønster.
 
+### 14. Språket skal være menneskelig, presist og handlingsrettet
+
+Lånbort bør bruke ord som beskriver brukerens situasjon og handling, ikke systemets interne modell. «Venter på at Kari bekrefter retur» er bedre enn en intern statusetikett som «pending_return_confirmation».
+
+Språket bør være kort der situasjonen er enkel, men mer forklarende når konsekvensene er viktige eller potensielt uklare. Juridisk, teknisk og administrativ sjargong skal normalt oversettes til vanlig språk.
+
+Samtidig må enkelhet ikke gå på bekostning av presisjon. Hvis to tilstander faktisk har ulike konsekvenser, bør de også beskrives forskjellig i UI-et.
+
