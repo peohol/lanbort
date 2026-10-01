@@ -232,8 +232,11 @@ Det betyr blant annet at:
 - nødvendig historikk om tidligere lån, anmeldelser og saker kan bevares når andre brukere eller Lånbort fortsatt har et legitimt behov for den
 - identiteten i slik historikk skal anonymiseres eller pseudonymiseres når fullt navn eller andre identifiserende opplysninger ikke lenger er nødvendige
 - en publisert anmeldelse kan derfor bestå etter at forfatterens konto er slettet, men skal ikke fortsette å vise navn, profilbilde eller profillenke når disse opplysningene ikke lenger er nødvendige; den synlige forfatteren kan da vises nøytralt som «Tidligere bruker»
+- dersom den slettede brukeren selv var den anmeldte, skal den aktive profilen og den aktive tillitsprofilen forsvinne; nødvendige historiske anmeldelser kan bestå i felles historikk, men skal ikke fortsette som en aktiv eller søkbar aggregert skår for en profil som ikke lenger finnes
 
 En bruker skal derfor ikke kunne få nødvendig felles lånehistorikk til å forsvinne fra andre parters historikk bare fordi kontoen slettes.
+
+Hvis personen senere oppretter en ny konto, skal historiske anmeldelser, skårer eller annen tillitshistorikk fra den slettede kontoen ikke automatisk knyttes til den nye profilen bare fordi systemet mistenker at det er samme person. Eventuell sammenkobling kan være relevant for sikkerhet, duplikatkontroll, omgåelse av tiltak eller annen kontrollert kontinuitet, men skal behandles i den særskilte sikkerhetsprosessen og ikke som automatisk gjenoppretting av den gamle sosiale profilen.
 
 ### Melding om mulig dødsfall eller varig utilgjengelighet
 
