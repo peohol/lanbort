@@ -1,6 +1,8 @@
 import { z } from "zod";
 
-export const healthResponseSchema = z.object({
+// Strict: an unexpected field (for example environment or database details)
+// must fail validation instead of being silently stripped.
+export const healthResponseSchema = z.strictObject({
   status: z.literal("ok"),
   service: z.literal("lanbort-web"),
 });
