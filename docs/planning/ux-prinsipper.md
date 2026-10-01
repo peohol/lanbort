@@ -38,3 +38,11 @@ Et lån skal for eksempel ikke bare vises som «aktivt», men presenteres slik a
 
 Interne statemaskiner og tekniske begreper skal ikke eksponeres som sådan. UI-et skal oversette dem til forståelige situasjoner og handlinger.
 
+### 5. Handlinger skal finnes der konteksten finnes
+
+Lånbort bør i størst mulig grad unngå store menyhierarkier der brukeren må vite *hvor* en funksjon befinner seg. Handlinger knyttet til et objekt, et lån, et miljø, en samtale eller en person bør være tilgjengelige i den aktuelle konteksten.
+
+Den globale navigasjonen bør derfor hovedsakelig brukes til noen få stabile hovedområder. Mer spesialiserte funksjoner – særlig sjeldne administrative funksjoner, historikk og avvikshåndtering – bør dukke opp der de faktisk er relevante.
+
+Dette innebærer også at vi ikke bør bevare alle tenkelige funksjoner som permanente menyvalg bare fordi systemet støtter dem. Kompleks funksjonalitet kan eksistere uten å dominere navigasjonen.
+
