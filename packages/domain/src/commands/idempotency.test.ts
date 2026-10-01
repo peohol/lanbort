@@ -15,6 +15,17 @@ describe("idempotency request hash", () => {
     );
   });
 
+  it("distinguishes dates by their value", () => {
+    const at = (iso: string) => ({ from: new Date(iso) });
+
+    expect(requestHash(at("2026-10-01T00:00:00Z"))).not.toBe(
+      requestHash(at("2026-10-02T00:00:00Z")),
+    );
+    expect(requestHash(at("2026-10-01T00:00:00Z"))).toBe(
+      requestHash({ from: "2026-10-01T00:00:00.000Z" }),
+    );
+  });
+
   it("ignores undefined fields like JSON does", () => {
     expect(requestHash({ a: 1, b: undefined })).toBe(requestHash({ a: 1 }));
   });
