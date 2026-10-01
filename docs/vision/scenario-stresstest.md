@@ -1,6 +1,6 @@
 # Scenario-basert stresstest av produktvisjonen
 
-> **Status:** Levende arbeidsdokument. Scenario 2–72 er gjennomført og avklart per 1. oktober 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
+> **Status:** Levende arbeidsdokument. Scenario 2–73 er gjennomført og avklart per 1. oktober 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
 
 ## Formål og metode
 
@@ -91,6 +91,7 @@ Stresstesten skal holde seg på visjonsnivå. Tekniske mekanismer, konkrete fris
 - **71. Den anmeldte brukeren sletter kontoen:** den aktive profilen og den aktive tillitsprofilen forsvinner sammen med kontoen. Anmeldelser og andre nødvendige deler av felles lånehistorikk kan bestå når andre brukere eller Lånbort fortsatt har et legitimt behov, men den slettede brukerens synlige identitet reduseres der det er mulig, for eksempel til «Tidligere bruker». Historiske vurderinger skal ikke fortsette som en søkbar eller aktiv aggregert skår for en profil som ikke lenger finnes. En senere ny konto skal ikke automatisk få den slettede kontoens anmeldelser eller tillitshistorikk knyttet til seg bare fordi systemet mistenker at det er samme person; eventuell kobling hører hjemme i en særskilt sikkerhets- eller kontinuitetsprosess.
 - **72. Gjentatte kanselleringer eller no-shows gir mange begrensede anmeldelser:** slike anmeldelser forblir vurderinger av konkrete forløp og skal ikke summeres til én generell straffeskår. Dersom mønsterinformasjon senere vises, skal den være rolle- og hendelsesspesifikk, vise både teller og nevner, bygge på hendelser systemet kan klassifisere med rimelig sikkerhet og ta hensyn til antall uavhengige motparter, kontekst og statistisk usikkerhet. En uavklart tvist skal ikke telles som dokumentert no-show. Historikk kan beskrives med forståelige frekvenser eller rater, men systemet skal ikke erklære brukeren generelt «upålitelig» eller ilegge automatisk sanksjon på dette grunnlaget.
 
+- **73. Plattformforvalter er part i et lån eller gjenstand for rapport:** plattformrollen gir ingen ekstra rettigheter i et konkret låneforhold. En forvalter som er part, rapportert eller på annen måte inhabil skal ikke behandle saken, få saksinnsyn utover egen partsrolle eller styre utfallet. En annen habil plattformforvalter skal behandle saken dersom en finnes, og tilgang og saksbehandling skal være sporbar. Hvis ingen habil forvalter finnes, skal den berørte forvalteren ikke kunne «frikjenne seg selv»; Lånbort må være tydelig på at uavhengig intern behandling ikke er tilgjengelig. For alvorlige saker som gjelder selve plattformforvaltningen bør det før vesentlig skala finnes en organisatorisk uavhengig behandlingsmulighet.
 
 ## Gjenstående scenario-kø
 
@@ -113,7 +114,6 @@ Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avde
 
 ### F. Blokkering, rapportering og moderering
 
-- Plattformforvalter er selv part i et lån eller gjenstand for rapport: hvem kan behandle saken?
 - Plattformen suspenderer en bruker som har kommende reservasjoner både som låntaker og utlåner.
 
 ### G. Konto- og datalivssyklus
