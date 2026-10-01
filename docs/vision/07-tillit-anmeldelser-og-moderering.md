@@ -105,6 +105,16 @@ At anonyme anmeldelser ikke inngår i kjernevisjonen betyr dermed at en anmeldel
 
 Aggregerte skårer kan senere få noe videre synlighet enn fritekst dersom dette er nyttig og forenlig med profil- og personvernreglene. Tall og personlig omtale trenger ikke ha identiske synlighetsgrenser.
 
+### Når den anmeldte brukeren sletter kontoen
+
+Permanent kontosletting avslutter brukerens **aktive tillitsprofil**. Det skal ikke finnes en offentlig eller søkbar profil for en slettet bruker, og historiske vurderinger skal ikke fortsette å presenteres som en aktiv aggregert skår for en profil som ikke lenger eksisterer.
+
+Anmeldelser og andre nødvendige deler av historiske lån kan likevel bestå når de fortsatt inngår i legitim felles historikk for andre brukere eller Lånbort. Der den slettede brukerens identitet ikke lenger er nødvendig, skal synlig navn, profilbilde og profillenke fjernes eller erstattes med en nøytral betegnelse som **«Tidligere bruker»**.
+
+Nødvendig intern kobling mellom historiske hendelser og den tidligere kontoen kan bevares så lenge et konkret sikkerhets-, modererings-, juridisk eller annet legitimt oppbevaringsbehov tilsier det. Dette skal ikke i seg selv gjøre den gamle profilen synlig igjen.
+
+Hvis personen senere oppretter en ny konto, skal gamle anmeldelser og historiske tillitsdata **ikke automatisk** legges på den nye profilen bare fordi Lånbort teknisk mistenker eller kan indikere at det er samme person. Eventuell sammenkobling mellom en slettet konto og en ny konto skal behandles som en særskilt sikkerhets- eller kontinuitetsprosess, ikke som skjult sosial profilering eller automatisk gjenoppretting av en tidligere tillitsprofil.
+
 ### Anmeldelser fra skjulte miljøer
 
 Fritekstanmeldelser som springer ut av et lån i et skjult miljø skal behandles strengere enn vanlig profilbasert tillitsinformasjon.
