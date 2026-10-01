@@ -174,3 +174,11 @@ Grensesnittet bør så langt mulig unngå situasjoner der brukeren blir usikker 
 
 Tilbakemeldingen bør være proporsjonal med handlingen: diskret ved trivielle handlinger, tydeligere når konsekvensen er viktig.
 
+### 22. Nettverksproblemer skal ikke skape tvetydighet eller tap av arbeid
+
+Lånbort bør tåle treg eller ustabil forbindelse på en måte som er forståelig for brukeren. Midlertidige nettverksproblemer skal så langt mulig ikke føre til at utfylte data forsvinner eller at samme handling utilsiktet utføres flere ganger.
+
+Hvis systemet ikke vet om en viktig handling faktisk ble gjennomført, skal det ikke late som om utfallet er sikkert. UI-et bør vise at status må avklares og forsøke å gjenopprette en entydig tilstand.
+
+For enkelte ufarlige handlinger kan lokal mellomlagring eller senere synkronisering være hensiktsmessig. Handlinger som etablerer eller endrer forpliktelser mellom mennesker skal derimot først presenteres som fullført når systemet faktisk har bekreftet dem.
+
