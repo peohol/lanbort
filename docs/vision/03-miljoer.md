@@ -348,6 +348,10 @@ Dette skal behandles som en administrativ pause, ikke som en frivillig avpublise
 - hvis objektet avvises, avsluttes den ventende forespørselen nøytralt
 - eieren skal varsles om hvorfor objektet midlertidig er skjult
 
+Hvis miljøet senere slår av forhåndsgodkjenning, skal objekter som fortsatt bare har status **venter på godkjenning** fordi den generelle kontrollen var aktiv, publiseres automatisk. Eventuelle låneforespørsler som bare var satt på vent av samme grunn gjenopptas etter de vanlige reglene, og eierne varsles om at publiseringen nå er aktiv.
+
+Fjerning av den generelle forhåndsgodkjenningen skal derimot ikke automatisk oppheve et tidligere eksplisitt avslag eller en separat sikkerhets-, lovlighets- eller modereringssperre. Slike konkrete avgjørelser består til de faktisk blir endret eller saken avsluttes.
+
 En administrator som avviser et objekt, skal også kunne rapportere objektet til plattformnivå dersom det fremstår ulovlig, farlig eller på annen måte problematisk.
 
 Avslag på miljønivå skal fortsatt bare påvirke publiseringen i det aktuelle miljøet, med mindre en separat plattformvurdering fastslår et globalt sikkerhets- eller lovlighetsproblem.
