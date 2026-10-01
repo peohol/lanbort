@@ -95,7 +95,19 @@ Før dette skal avsenderen ikke kunne sende en strøm av nye fritekstmeldinger.
 
 Lånbort skal ikke bruke lesebekreftelser i vanlig privat chat. Dette gjelder både mellom venner og i privat samtale rundt lån.
 
-Hvis én part blokkerer den andre mens et reservert eller aktivt lån fortsatt finnes, kan vanlig fri chat stenges. Nødvendig kommunikasjon om selve lånet skal da så langt som mulig skje gjennom strukturerte lånehandlinger og eventuelle relevante saksprosesser, uten at blokkeringen opphever eksisterende forpliktelser.
+Hvis én part blokkerer den andre mens et reservert eller aktivt lån fortsatt finnes, skal vanlig fri chat stenges. Blokkeringen opphever likevel ikke eksisterende forpliktelser.
+
+Nødvendig oppfølging skal primært skje gjennom strukturerte lånehandlinger. Fordi praktiske situasjoner ikke alltid kan modelleres som egne knapper, kan partene i tillegg få tilgang til en **snever lånelogistikk-kanal** så lenge det konkrete lånet krever praktisk oppfølging.
+
+Denne kanalen:
+
+- er tydelig adskilt fra ordinær privat chat
+- kan brukes til korte praktiske meldinger om overlevering, retur, tidspunkt, sted og selve objektet
+- skal ikke fungere som en omvei rundt blokkering eller som gjenåpnet sosial kontakt
+- trenger ikke støtte alle funksjoner fra vanlig chat, for eksempel vedlegg, bilder eller andre rike meldingsformer
+- stenges når lånet er avsluttet eller ikke lenger krever praktisk oppfølging
+
+Hvis en part bruker logistikk-kanalen til trakassering, eller det finnes en annen særskilt sikkerhetsgrunn, kan også denne fritekstkanalen stenges. Da må videre oppfølging skje gjennom strukturerte lånehandlinger og eventuelle relevante saks- eller administrative prosesser.
 
 ## Strukturert innhold i chat
 
