@@ -1,0 +1,18 @@
+{
+  "name": "@lanbort/contracts",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc6 --noEmit",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc6 --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "zod": "4.6.5"
+  }
+}
