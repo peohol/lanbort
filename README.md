@@ -4,7 +4,8 @@ En gratis app der man kan låne bort ting til andre.
 
 ## Produktvisjon
 
-- [Opprinnelig visjonsnotat](VISION.md)
-- [Strukturert førsteutkast til produktvisjon](docs/vision/README.md)
+- [Produktvisjon v1.0](docs/vision/README.md)
+- [Styrende produktprinsipper](docs/vision/00-styrende-produktprinsipper.md)
+- [Opprinnelig visjonsnotat – historisk](VISION.md)
 
-Det strukturerte utkastet er under aktiv gjennomgang og er foreløpig ikke en implementeringsplan eller ferdig produktspesifikasjon.
+Produktvisjon v1.0 er det kanoniske visjonsgrunnlaget. Den beskriver produktretningen, men er ikke en implementeringsplan eller en låst detaljspesifikasjon.
