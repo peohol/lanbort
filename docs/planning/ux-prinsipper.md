@@ -54,3 +54,11 @@ Dette gjelder både innhold og funksjoner. En objektside bør for eksempel ikke 
 
 Prinsippet skal likevel ikke brukes til å gjemme kritiske vilkår eller konsekvenser bak ekstra klikk.
 
+### 7. Gode standardvalg, men ikke skjulte antakelser
+
+Lånbort bør gjøre vanlige handlinger raske ved å foreslå fornuftige standardvalg og huske relevante brukerpreferanser. Samtidig skal systemet være forsiktig med å anta intensjon når valget påvirker andre mennesker, personvern eller forpliktelser.
+
+Enkle preferanser kan gjerne forhåndsutfylles eller huskes. Men Lånbort bør ikke automatisk velge hvem som får tilgang til noe, godkjenne et lån, endre en avtale eller gjøre privat informasjon mer synlig bare fordi systemet antar hva brukeren sannsynligvis ønsker.
+
+Målet er lav friksjon uten at brukeren mister kontroll over meningsfulle valg.
+
