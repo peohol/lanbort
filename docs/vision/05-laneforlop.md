@@ -442,7 +442,9 @@ Hvis objektet **allerede er overlevert**, skal historikken og det faktiske låne
 Et slikt inngrep gjelder hva Lånbort kan fasilitere. Det skal ikke brukes til å avgjøre private krav mellom partene.
 ## Blokkering, rapportering og moderering før overlevering
 
-Blokkering mellom partene etter at et lån er godkjent, men før fysisk overlevering, skal ikke i seg selv kansellere lånet. Det eksisterende lånet fortsetter med nødvendige strukturerte handlinger, men vanlig fri kontakt kan begrenses etter blokkeringsreglene.
+Blokkering mellom partene etter at et lån er godkjent, men før fysisk overlevering, skal ikke i seg selv kansellere lånet. Det eksisterende lånet fortsetter med nødvendige strukturerte handlinger, mens vanlig fri chat stenges etter blokkeringsreglene.
+
+Hvis lånet fortsatt krever praktisk koordinering som ikke rimelig kan dekkes av strukturerte handlinger alene, kan partene få en snever lånelogistikk-kanal for korte meldinger om overlevering, retur, tidspunkt, sted og objektet. Kanalen er ikke ordinær sosial chat og stenges når lånet er avsluttet. Ved trakassering eller særskilt sikkerhetsrisiko kan også denne kanalen stenges, slik at bare strukturerte handlinger og eventuelle administrative prosesser består.
 
 Begge parter beholder samtidig retten til å kansellere ensidig før overlevering. Hvis én av dem ikke lenger ønsker å gjennomføre lånet etter blokkeringen, skal denne ordinære kanselleringsmekanismen brukes.
 
