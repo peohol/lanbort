@@ -16,12 +16,13 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: "24"
+          package-manager-cache: false
 
       - name: Install pnpm
         run: npm install --global pnpm@12.8.1
@@ -33,7 +34,7 @@ jobs:
         run: pnpm check
 
       - name: Upload generated lockfile during bootstrap
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: pnpm-lock
           path: pnpm-lock.yaml
