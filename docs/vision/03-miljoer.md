@@ -336,7 +336,21 @@ Det skal ikke kreves avstemning blant administratorene, et bestemt antall admini
 
 Et miljø skal kunne ha en innstilling som krever administratorgodkjenning før et objekt blir synlig der.
 
+Hvis denne innstillingen aktiveres etter at objekter allerede er publisert i miljøet, skal kravet også gjelde de eksisterende publiseringene. Disse objektene går til **venter på godkjenning** og skjules midlertidig fra nye oppdagelser i miljøet til vurderingen er gjennomført.
+
+Dette skal behandles som en administrativ pause, ikke som en frivillig avpublisering fra eieren:
+
+- objektet kan ikke motta nye låneforespørsler gjennom miljøet mens det venter
+- allerede godkjente, reserverte eller aktive lån fortsetter uendret
+- ikke-godkjente låneforespørsler som allerede var sendt settes på vent fremfor å avsluttes
+- en slik forespørsel kan ikke godkjennes før objektet selv er godkjent
+- hvis objektet godkjennes, kan den ventende forespørselen fortsette etter de vanlige reglene
+- hvis objektet avvises, avsluttes den ventende forespørselen nøytralt
+- eieren skal varsles om hvorfor objektet midlertidig er skjult
+
 En administrator som avviser et objekt, skal også kunne rapportere objektet til plattformnivå dersom det fremstår ulovlig, farlig eller på annen måte problematisk.
+
+Avslag på miljønivå skal fortsatt bare påvirke publiseringen i det aktuelle miljøet, med mindre en separat plattformvurdering fastslår et globalt sikkerhets- eller lovlighetsproblem.
 
 ## Kontinuitet ved avvikling, utestengelse og manglende administrasjon
 
