@@ -1,6 +1,6 @@
 # Brukere, roller og relasjoner
 
-> **Status:** Konsolidert visjonsutkast. Rollemodellen og de sentrale grensene mellom bruker, administrator, eier og plattformforvalter er avklart.
+> **Status:** Produktvisjon v1.0. Rollemodellen og de sentrale grensene mellom bruker, administrator, eier og plattformforvalter er avklart.
 
 ## Grunnidé
 
