@@ -189,4 +189,3 @@ Lånbort skal ikke anta at alle hendelser følger den forventede flyten. Et obje
 Når dette skjer, skal brukeren kunne finne en tydelig vei videre fra den aktuelle situasjonen – for eksempel rapportere et problem, be om avklaring eller gå inn i et relevant avviksforløp – fremfor å bli sittende fast fordi den «riktige» knappen ikke lenger passer.
 
 Dette betyr ikke at brukeren skal kunne omgå sikkerhetsregler eller eksisterende forpliktelser. Poenget er at produktet skal kunne representere at virkeligheten er uavklart eller avvikende, i stedet for å tvinge den inn i en uriktig normaltilstand.
-

@@ -1,0 +1,16 @@
+# UX-modell
+
+> **Status:** Dokumentstruktur fastsatt. De styrende UX-prinsippene er vedtatt; øvrig innhold fylles i senere planleggingssteg.
+
+UX-modellen beskriver **hvordan produktmodellen skal fremstå og håndteres for brukeren**. Den skal gå på tvers av produktområdene der brukerens mentale modell gjør det.
+
+## Dokumenter
+
+1. [Styrende UX-prinsipper](00-styrende-ux-prinsipper.md)
+2. [Informasjonsarkitektur og navigasjon](01-informasjonsarkitektur-og-navigasjon.md)
+3. [Sentrale brukerreiser](02-sentrale-brukerreiser.md)
+4. [Avvik, konflikter og unntaksforløp](03-avvik-konflikter-og-unntaksforlop.md)
+5. [Interaksjonsmønstre](04-interaksjonsmonster.md)
+6. [Kontekst, roller og personvern](05-kontekst-roller-og-personvern.md)
+7. [Mobil og tilgjengelighet](06-mobil-og-tilgjengelighet.md)
+8. [Scenariovalidering](07-scenariovalidering.md)
