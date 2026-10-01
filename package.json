@@ -1,0 +1,37 @@
+{
+  "name": "lanbort",
+  "private": true,
+  "packageManager": "pnpm@12.8.1",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @lanbort/web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter @lanbort/web test:e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm format:check && pnpm build",
+    "db:start": "supabase start -x gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor",
+    "db:stop": "supabase stop --no-backup",
+    "db:reset": "supabase db reset --local --no-seed",
+    "db:test": "supabase test db --local",
+    "db:types": "pnpm --filter @lanbort/database types:generate",
+    "db:types:check": "pnpm --filter @lanbort/database types:check",
+    "db:migration:new": "supabase migration new"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.28.0",
+    "eslint-config-next": "16.3.6",
+    "prettier": "3.9.9",
+    "supabase": "2.117.0",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "vitest": "5.0.2"
+  }
+}

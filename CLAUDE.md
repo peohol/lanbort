@@ -123,6 +123,7 @@ If current documentation cannot be verified, say so rather than presenting uncer
 
 Before changing code:
 
+- read the relevant canonical docs under `docs/`: requirements (`PS-*`), UX rules (`UX-*`), ADRs and `docs/open-decisions.md`
 - inspect the relevant existing code and repository conventions
 - check the current git state
 - understand the existing behaviour before replacing it
@@ -140,6 +141,15 @@ While implementing:
 
 Do not create complexity merely to make the implementation appear sophisticated.
 
+Lånbort-specific rules:
+
+- Never fill in an open `OD-*` with a guess, and never make product or architecture decisions implicitly in code. Stop or isolate the affected part instead.
+- Authorization is decided at the backend/data boundary. Client checks are never the security boundary, and the browser gets no direct CRUD access to domain data.
+- Domain logic lives in server/domain modules, not React components.
+- Keep vendor-specific APIs behind small adapters.
+- Add tests at the right level, including negative security/authorization tests.
+- Never log secrets, private messages or unnecessary personal data.
+
 ## Verification
 
 Claude is responsible for verifying its own work as far as the available environment permits.
@@ -151,6 +161,8 @@ After changes, run the smallest sufficient set of relevant checks, such as:
 - linting
 - build
 - existing repository-specific validation
+
+`pnpm check` is the full local quality check. Database, browser-test and migration commands are in `docs/implementation/local-development.md`.
 
 Fix failures caused by the change before finishing.
 

@@ -1,0 +1,16 @@
+packages:
+  - apps/*
+  - packages/*
+
+engineStrict: true
+minimumReleaseAge: 1440
+minimumReleaseAgeStrict: true
+
+allowBuilds:
+  supabase@2.117.0: true
+  unrs-resolver@1.12.2: true
+
+# Node type definitions must match the Node 24 runtime, also when pulled in
+# transitively (for example by @types/pg). Follows the root devDependency.
+overrides:
+  "@types/node": "$@types/node"

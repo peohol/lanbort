@@ -1,6 +1,6 @@
 # Implementeringsplan
 
-> **Status:** Første implementeringsplan basert på validert produktspesifikasjon v0.1, UX-modell v0.1 og systemarkitektur v0.1. Ingen produktkode er skrevet i denne planleggingsgrenen.
+> **Status:** Første implementeringsplan basert på validert produktspesifikasjon v0.1, UX-modell v0.1 og systemarkitektur v0.1. Fase 0 (implementeringsgrunnlag) er levert; ingen produktfunksjonalitet er bygget ennå.
 
 ## Prinsipp
 
@@ -27,6 +27,17 @@ Leveranser:
 - migreringssystem
 - CI med test, lint/typecheck, dependency- og secretskanning
 - testdatabase og grunnleggende observability uten sensitive data
+
+**Status (1. oktober 2026):** Levert. Se [lokal utvikling, database og CI](local-development.md) for hvordan grunnlaget brukes.
+
+| Pakke | Leveranse | Status |
+| --- | --- | --- |
+| WP-00 | OD-0009 avklart gjennom ADR-0006–ADR-0008 | Ferdig |
+| WP-01 | pnpm-workspace, Next.js-app, delt kontraktspakke, `/api/health`, miljøvariabler, standardkommandoer og CI | Ferdig |
+| WP-02 | Supabase-migrasjoner, privat `app`-skjema, pgTAP-tester, isolert CI-database, reset-rutine og genererte databasetyper kontrollert mot skjema | Ferdig |
+| WP-03 | Lint/typecheck/test, Playwright-røyktest, dependency-audit, Gitleaks med selvtest, CSP/sikkerhetshoder og logging med felt-tillatelsesliste | Ferdig |
+
+Kjente begrensninger som bevisst er utsatt: CSP med `'unsafe-inline'` for skript (vurderes før Port C), og hostet staging/produksjon (etableres når det trengs, senest før pilot).
 
 ### Fase 1 — Identitet, autorisasjon og hendelsesgrunnmur
 Mål: systemet kan vite hvem brukeren er, hva vedkommende får gjøre, og registrere kritiske endringer korrekt.
