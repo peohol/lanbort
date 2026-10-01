@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import type { CookieStore, CookieToSet } from "./index";
 
 /**
@@ -68,4 +69,42 @@ export async function readEmailCode(
   }
 
   throw new Error(`No one-time code arrived for ${email}`);
+}
+
+function decodeBase32(value: string): Buffer {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = "";
+
+  for (const char of value.replace(/=+$/, "").toUpperCase()) {
+    const index = alphabet.indexOf(char);
+
+    if (index < 0) {
+      throw new Error("Invalid base32 secret");
+    }
+
+    bits += index.toString(2).padStart(5, "0");
+  }
+
+  const bytes: number[] = [];
+  for (let i = 0; i + 8 <= bits.length; i += 8) {
+    bytes.push(Number.parseInt(bits.slice(i, i + 8), 2));
+  }
+
+  return Buffer.from(bytes);
+}
+
+/**
+ * The current code of an authenticator app for `secret` (RFC 6238: SHA-1,
+ * 30-second steps, 6 digits), as a phone would show it.
+ */
+export function totpCode(secret: string, at = Date.now()): string {
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(at / 30_000)));
+  const hash = createHmac("sha1", decodeBase32(secret))
+    .update(counter)
+    .digest();
+  const offset = hash.at(-1)! & 0x0f;
+  const value = (hash.readUInt32BE(offset) & 0x7fffffff) % 1_000_000;
+
+  return value.toString().padStart(6, "0");
 }

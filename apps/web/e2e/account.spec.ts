@@ -1,53 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { readEmailCode } from "@lanbort/auth/testing";
+import { expect, test } from "@playwright/test";
 import {
-  type APIRequestContext,
-  expect,
-  type Page,
-  test,
-} from "@playwright/test";
+  collectBrowserProblems,
+  newEmail,
+  registerThroughApi,
+  signInThroughApi,
+  signInThroughUi,
+} from "./helpers";
 
 /** WP-10 end to end: UX-JRN-001 in a real browser against local Supabase. */
-const newEmail = () => `e2e-${randomUUID()}@example.test`;
-
-function collectBrowserProblems(page: Page) {
-  const problems: string[] = [];
-  page.on("console", (message) => {
-    if (
-      message.type() === "error" &&
-      new URL(message.location().url || "http://x/").pathname !== "/favicon.ico"
-    ) {
-      problems.push(message.text());
-    }
-  });
-  page.on("pageerror", (error) => problems.push(error.message));
-  return problems;
-}
-
-async function signInThroughUi(page: Page, email: string) {
-  await page.goto("/logg-inn");
-  await page.getByLabel("E-postadresse").fill(email);
-  const since = new Date();
-  await page.getByRole("button", { name: "Send kode" }).click();
-  await expect(page.getByRole("status")).toContainText(email);
-  await page
-    .getByLabel("Kode fra e-posten")
-    .fill(await readEmailCode(email, { since }));
-  await page.getByRole("button", { name: "Bekreft" }).click();
-}
-
-/** Signs in through the API, leaving the session cookies in `request`. */
-async function signInThroughApi(request: APIRequestContext, email: string) {
-  const since = new Date();
-  expect(
-    (await request.post("/api/auth/email-code", { data: { email } })).status(),
-  ).toBe(202);
-  const verify = await request.post("/api/auth/email-code/verify", {
-    data: { email, code: await readEmailCode(email, { since }) },
-  });
-  expect(verify.status()).toBe(200);
-  return verify.json();
-}
 
 test("a new user registers with e-mail code, name and 18+ and can sign out", async ({
   page,
@@ -102,11 +63,7 @@ test("a returning user goes straight home, and a wrong code is explained", async
   request,
 }) => {
   const email = newEmail();
-  await signInThroughApi(request, email);
-  await request.post("/api/account/registration", {
-    data: { realName: "Ola Nordmann", adultConfirmed: true },
-    headers: { "Idempotency-Key": randomUUID() },
-  });
+  await registerThroughApi(request, email, "Ola Nordmann");
 
   await page.goto("/logg-inn");
   await page.getByLabel("E-postadresse").fill(email);

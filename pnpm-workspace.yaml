@@ -9,6 +9,9 @@ minimumReleaseAgeStrict: true
 allowBuilds:
   supabase@2.117.0: true
   unrs-resolver@1.12.2: true
+  # tsx (ops scripts) runs esbuild from its platform package; the install
+  # script only re-checks that binary and is not needed.
+  esbuild@0.28.2: false
 
 # Node type definitions must match the Node 24 runtime, also when pulled in
 # transitively (for example by @types/pg). Follows the root devDependency.

@@ -18,3 +18,12 @@ export const registrationCompleted = defineEvent({
   resourceType: "user",
   payload: z.strictObject({}),
 });
+
+/** An authenticator app was confirmed as a second factor. */
+export const mfaEnabled = defineEvent({
+  type: "account.mfa_enabled",
+  version: 1,
+  kind: "audit",
+  resourceType: "user",
+  payload: z.strictObject({ method: z.literal("totp") }),
+});

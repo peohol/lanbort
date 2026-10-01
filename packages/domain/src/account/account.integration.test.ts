@@ -4,28 +4,16 @@ import { executeCommand, type DomainContext } from "../commands/command";
 import { executeQuery } from "../commands/query";
 import { ConsumerRegistry } from "../outbox/consumer";
 import { connectTestDatabase } from "../testing/database";
+import { testIdentity } from "../testing/identities";
 import { completeRegistration } from "./commands";
-import { type AuthenticatedIdentity, resolveUserActor } from "./identity";
+import { resolveUserActor } from "./identity";
 import { getOwnAccount } from "./queries";
 
 const db = connectTestDatabase();
 afterAll(() => db.destroy());
 const domain: DomainContext = { db, consumers: new ConsumerRegistry() };
 
-function identity(overrides: Partial<AuthenticatedIdentity> = {}) {
-  return {
-    provider: "supabase",
-    subject: randomUUID(),
-    email: `${randomUUID()}@example.test`,
-    emailVerified: true,
-    authentication: {
-      sessionId: randomUUID(),
-      assurance: "aal1",
-      methods: [{ method: "otp", at: new Date() }],
-    },
-    ...overrides,
-  } satisfies AuthenticatedIdentity;
-}
+const identity = testIdentity;
 
 async function eventsFor(userId: string) {
   return db

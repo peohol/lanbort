@@ -9,6 +9,9 @@ const messages: Partial<Record<ApiErrorCode | "network", string>> = {
   unavailable: "Lånbort er utilgjengelig akkurat nå. Prøv igjen om litt.",
   conflict:
     "E-postadressen er allerede knyttet til en annen konto. Ta kontakt med oss for å få hjelp.",
+  reauthentication_required:
+    "Av sikkerhetshensyn må du bekrefte at det er deg før du fortsetter.",
+  mfa_required: "Bekreft med autentiseringsappen din før du fortsetter.",
   network:
     "Fikk ikke kontakt med Lånbort. Det du har fylt ut er beholdt. Prøv igjen.",
 };

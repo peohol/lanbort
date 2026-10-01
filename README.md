@@ -28,6 +28,6 @@ Planleggingsløpet fra visjon til byggbar spesifikasjon ble fullført 1. oktober
 - [Kodeagent-arbeidspakker](docs/implementation/work-packages.md)
 - [Kvalitetsporter](docs/implementation/quality-gates.md)
 
-Fase 0 er levert: stacken er besluttet (OD-0009) og prosjekt-, database- og kvalitetsgrunnlaget er på plass. Neste steg er Fase 1 (identitet, autorisasjon og hendelsesgrunnmur).
+Fase 0 og Fase 1 er levert: stacken er besluttet (OD-0009), og konto, innlogging, tilgangsregler, plattformrolle, hendelseslogg og trygg gjentakelse av kommandoer er på plass. Neste steg er Fase 2 (sosial modell, miljøer og objekter).
 
 - [Lokal utvikling, database og CI](docs/implementation/local-development.md)

@@ -1,3 +1,5 @@
+import { platformRoleSchema } from "@lanbort/contracts";
+
 /**
  * The internal actor model. Every authorization decision, event and
  * idempotency record is attributed to one of these, never to an auth
@@ -21,12 +23,23 @@ export interface AuthenticationContext {
   readonly methods: readonly AuthenticationMethod[];
 }
 
+/**
+ * Global product roles (PS-USR-008). Granted explicitly in the database,
+ * never derived from auth metadata or technical access. Contextual roles such
+ * as environment administrator are not global and do not belong here.
+ */
+export const platformRoles = platformRoleSchema.options;
+
+export type PlatformRole = (typeof platformRoles)[number];
+
 export interface UserActor {
   readonly kind: "user";
   /** Internal user id (`app.users.id`), not the auth provider's subject. */
   readonly userId: string;
   readonly accountStatus: AccountStatus;
   readonly authentication: AuthenticationContext;
+  /** Active platform role grants, read from the database on every request. */
+  readonly platformRoles: readonly PlatformRole[];
 }
 
 /** Scheduled jobs, workers and operational scripts. */

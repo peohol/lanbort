@@ -23,7 +23,8 @@
     "db:types": "pnpm --filter @lanbort/database types:generate",
     "db:types:check": "pnpm --filter @lanbort/database types:check",
     "db:migration:new": "supabase migration new",
-    "env:local": "scripts/dev/write-local-env.sh"
+    "env:local": "scripts/dev/write-local-env.sh",
+    "ops:platform-role": "pnpm --filter @lanbort/ops --silent platform-role"
   },
   "devDependencies": {
     "@types/node": "24.19.0",

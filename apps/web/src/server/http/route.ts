@@ -1,5 +1,5 @@
 import { randomUUID, timingSafeEqual } from "node:crypto";
-import type { AuthGateway, CookieStore } from "@lanbort/auth";
+import type { AuthGateway, CookieStore, VerifiedIdentity } from "@lanbort/auth";
 import {
   type Actor,
   anonymousActor,
@@ -46,6 +46,8 @@ export interface PublicContext extends BaseContext {
 export interface UserContext extends BaseContext {
   readonly auth: AuthGateway;
   readonly actor: UserActor;
+  /** The provider identity behind the actor, verified for this request. */
+  readonly identity: VerifiedIdentity;
 }
 
 export interface SchedulerContext extends BaseContext {
@@ -185,16 +187,18 @@ export function createRouteFactory(runtime: Runtime) {
         secureCookies: request.nextUrl.protocol === "https:",
       }),
     );
-    const actor = once(async (): Promise<Actor> => {
+    const user = once(async () => {
       const identity = await auth().currentIdentity();
-      const resolved = identity
+      const actor = identity
         ? await resolveUserActor(domain(), identity, requestId)
         : null;
 
-      return resolved ?? anonymousActor;
+      return identity && actor ? { identity, actor } : null;
     });
+    const actor = async (): Promise<Actor> =>
+      (await user())?.actor ?? anonymousActor;
 
-    return { domain, auth, actor };
+    return { domain, auth, user, actor };
   }
 
   return {
@@ -224,16 +228,16 @@ export function createRouteFactory(runtime: Runtime) {
       return brand("user", (request) =>
         run("user", request, async (requestId) => {
           const session = await sessionFor(request, requestId);
-          const actor = await session.actor();
+          const user = await session.user();
 
-          if (actor.kind !== "user") {
+          if (!user) {
             return errorResponse("unauthenticated");
           }
 
           return handler({
             request,
             requestId,
-            actor,
+            ...user,
             domain: session.domain(),
             auth: session.auth(),
           });

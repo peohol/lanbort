@@ -16,6 +16,7 @@ export function testUserActor(overrides: Partial<UserActor> = {}): UserActor {
       assurance: "aal1",
       methods: [{ method: "otp", at: now }],
     },
+    platformRoles: [],
     ...overrides,
   };
 }

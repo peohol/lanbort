@@ -1,0 +1,21 @@
+{
+  "name": "@lanbort/ops",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "scripts": {
+    "build": "tsc6 --noEmit",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc6 --noEmit",
+    "test": "vitest run --exclude \"**/*.integration.test.ts\"",
+    "test:integration": "vitest run .integration.test.ts",
+    "platform-role": "tsx src/platform-role.ts"
+  },
+  "dependencies": {
+    "@lanbort/database": "workspace:*",
+    "@lanbort/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "4.23.15"
+  }
+}

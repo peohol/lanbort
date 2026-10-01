@@ -1,10 +1,12 @@
-import type { UserActor } from "../actor";
+import type { AssuranceLevel, PlatformRole, UserActor } from "../actor";
 import {
   type ActorInput,
   type ActorRule,
   allow,
   type Decision,
   deny,
+  type PolicyInput,
+  type ResourceRule,
 } from "./policy";
 
 /**
@@ -36,4 +38,72 @@ export function requireSystemProcess(process: string): ActorRule {
     actor.kind === "system" && actor.process === process
       ? allow
       : deny("forbidden");
+}
+
+/**
+ * The actor holds the global product role (PS-USR-008). Roles come from
+ * explicit grants in the database, never from auth metadata.
+ */
+export function requirePlatformRole(role: PlatformRole): ActorRule {
+  return userRule((actor) =>
+    actor.platformRoles.includes(role) ? allow : deny("forbidden"),
+  );
+}
+
+const assuranceRank: Record<AssuranceLevel, number> = { aal1: 1, aal2: 2 };
+
+/** The session reached the given assurance level (`aal2`: MFA verified). */
+export function requireAssurance(level: AssuranceLevel): ActorRule {
+  return userRule((actor) =>
+    assuranceRank[actor.authentication.assurance] >= assuranceRank[level]
+      ? allow
+      : deny("mfa_required"),
+  );
+}
+
+/** How recently a user must have proven their identity for sensitive actions. */
+export const recentAuthenticationMaxAgeMs = 10 * 60 * 1000;
+
+/**
+ * The user proved their identity (e-mail code or authenticator app) within
+ * `maxAgeMs`. Used for sensitive actions so that a stolen or forgotten
+ * session alone is not enough (docs/architecture/04, 08).
+ */
+export function requireRecentAuthentication(
+  maxAgeMs = recentAuthenticationMaxAgeMs,
+): ActorRule {
+  return userRule((actor, { now }) => {
+    const latest = Math.max(
+      ...actor.authentication.methods.map((method) => method.at.getTime()),
+    );
+
+    return now.getTime() - latest <= maxAgeMs
+      ? allow
+      : deny("reauthentication_required");
+  });
+}
+
+/**
+ * Conflict of interest (PS-USR-009): a user who is a party to, reported in or
+ * otherwise directly involved in the resource cannot act on it through an
+ * administrative or platform role, whatever role they hold. Place it in the
+ * administrative policy for the resource; the user's rights as an ordinary
+ * party are decided by the party's own policy.
+ */
+export function requireNotInvolved<R, C>(
+  involvedUserIds: (input: PolicyInput<R, C>) => Iterable<string>,
+): ResourceRule<R, C> {
+  return (input) => {
+    if (input.actor.kind !== "user") {
+      return allow;
+    }
+
+    for (const userId of involvedUserIds(input)) {
+      if (userId === input.actor.userId) {
+        return deny("conflict_of_interest");
+      }
+    }
+
+    return allow;
+  };
 }
