@@ -106,13 +106,9 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Hvilken organisatorisk ordning skal brukes dersom alle interne plattformforvaltere er inhabile?
 - **Avhenger av:** Organisasjonsform og skala før bred lansering.
 
-### OD-0009 — Konkret implementeringsstack og driftsleverandører
-- **Lag:** Arkitektur
-- **Status:** Åpen
-- **Berører:** ADR-0001–ADR-0005, PS-NFR-001–PS-NFR-015
-- **Spørsmål:** Hvilket web-rammeverk, database-/hostingoppsett, auth-, e-post-, kart-, push- og lagringsoppsett skal brukes i første implementasjon?
-- **Avhenger av:** Oppdatert vurdering av modenhet, sikkerhet, kostnad og leverandørlåsing ved implementeringsstart. PostgreSQL er allerede valgt som referanse for den transaksjonelle kjernen.
-
 ## Avklart
 
-Ingen registrerte avklarte detaljbeslutninger ennå.
+### OD-0009 — Konkret implementeringsstack og driftsleverandører
+- **Lag:** Arkitektur
+- **Status:** Avklart
+- **Beslutning:** Se [ADR-0006](architecture/decisions/ADR-0006-applikasjonsstack-og-runtime.md), [ADR-0007](architecture/decisions/ADR-0007-supabase-data-auth-og-storage.md) og [ADR-0008](architecture/decisions/ADR-0008-integrasjoner-og-drift.md).
