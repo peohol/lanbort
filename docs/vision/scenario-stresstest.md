@@ -1,6 +1,6 @@
 # Scenario-basert stresstest av produktvisjonen
 
-> **Status:** Levende arbeidsdokument. Scenario 2–70 er gjennomført og avklart per 1. oktober 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
+> **Status:** Levende arbeidsdokument. Scenario 2–71 er gjennomført og avklart per 1. oktober 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
 
 ## Formål og metode
 
@@ -88,6 +88,7 @@ Stresstesten skal holde seg på visjonsnivå. Tekniske mekanismer, konkrete fris
 - **68. Miljø innfører forhåndsgodkjenning etter at objekter allerede er publisert:** kravet gjelder også eksisterende publiseringer. Berørte objekter går til «venter på godkjenning», skjules fra nye oppdagelser og kan ikke motta nye låneforespørsler før vurdering. Allerede godkjente/reserverte og aktive lån fortsetter. Ikke-godkjente låneforespørsler som allerede finnes settes på vent og kan først godkjennes dersom objektet godkjennes; ved avslag avsluttes de nøytralt. Dette behandles som en administrativ pause, ikke som om eieren selv avpubliserte objektet. Avslag er miljølokalt med mindre separat sikkerhets- eller lovlighetsvurdering gir grunnlag for global virkning.
 - **69. Miljø slår av forhåndsgodkjenning mens objekter venter:** objekter som bare var blokkert fordi den generelle forhåndsgodkjenningen var aktiv, publiseres automatisk når kravet fjernes, siden eieren allerede hadde valgt å publisere dem. Ventende låneforespørsler som bare var satt på pause av samme grunn gjenopptas. Eierne varsles. Tidligere eksplisitte avslag eller separate sikkerhets-, lovlighets- eller modereringssperrer oppheves ikke automatisk; de består til den konkrete avgjørelsen eller saken endres.
 - **70. Miljøspesifikke spørsmål når publiseringen opphører:** spørsmål og svar følger den konkrete miljøpubliseringen og forsvinner fra aktive objektflater og søk når objektet avpubliseres, eieren mister nødvendig miljøadgang eller miljøet avvikles. Trådene trenger ikke slettes automatisk; nødvendig historikk kan bevares for direkte deltakere og andre med et konkret legitimt behov. Gamle spørsmål skal ikke automatisk bli aktive igjen ved senere republisering. Dette er først og fremst et data-, personvern- og kontekstprinsipp, ikke et krav om egne historikkmenyer eller et omfattende arkiv i brukerflaten. Historisk innhold skal bare eksponeres dersom det kan gjøres subtilt, forståelig og med et reelt brukerbehov.
+- **71. Den anmeldte brukeren sletter kontoen:** den aktive profilen og den aktive tillitsprofilen forsvinner sammen med kontoen. Anmeldelser og andre nødvendige deler av felles lånehistorikk kan bestå når andre brukere eller Lånbort fortsatt har et legitimt behov, men den slettede brukerens synlige identitet reduseres der det er mulig, for eksempel til «Tidligere bruker». Historiske vurderinger skal ikke fortsette som en søkbar eller aktiv aggregert skår for en profil som ikke lenger finnes. En senere ny konto skal ikke automatisk få den slettede kontoens anmeldelser eller tillitshistorikk knyttet til seg bare fordi systemet mistenker at det er samme person; eventuell kobling hører hjemme i en særskilt sikkerhets- eller kontinuitetsprosess.
 
 
 ## Gjenstående scenario-kø
@@ -108,7 +109,6 @@ Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avde
 
 ### E. Tillit og anmeldelser
 
-- Den anmeldte sletter kontoen mens anmeldelser om vedkommende fortsatt finnes i andre brukeres historikk.
 - En låntaker eller utlåner får flere begrensede vurderinger etter gjentatte kanselleringer/no-shows: hvordan unngår vi at dette blir en omvei til en generell straffeskår?
 
 ### F. Blokkering, rapportering og moderering
