@@ -214,6 +214,14 @@ Samtidig skal brukeren normalt ikke kunne:
 
 Hvis det finnes en særskilt sikkerhetsgrunn som gjør at selv denne begrensede kontotilgangen ikke kan forsvares, kan full stenging brukes som et strengere unntak.
 
+### Suspensjon som modereringstiltak
+
+Suspensjon skiller seg fra frivillig eller inaktivitetsbasert deaktivering ved at plattformen uttrykkelig har besluttet å begrense brukerens deltakelse. Derfor skal suspensjon stoppe nye låneforløp og nye fysiske overleveringer mens tiltaket gjelder.
+
+Ikke-godkjente forespørsler kan avsluttes nøytralt, og reserverte lån som ennå ikke er overlevert kan avsluttes administrativt. Motparten skal få tilstrekkelig informasjon til å forstå at lånet ikke kan gjennomføres, men skal ikke få mer informasjon om suspensjonsgrunnen enn det som er nødvendig.
+
+Hvis et objekt allerede er overlevert, skal brukeren normalt beholde den minimumstilgangen som trengs for å avslutte det konkrete forholdet på en trygg måte. Ved alvorlig sikkerhetsrisiko kan selv denne tilgangen erstattes av en strengere, kontrollert prosess.
+
 ### Bindinger som blokkerer sletting
 
 Permanent kontosletting skal ikke gjennomføres så lenge brukeren fortsatt har aktive ansvar eller bindinger som må håndteres, blant annet:
