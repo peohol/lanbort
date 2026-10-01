@@ -256,6 +256,20 @@ En bruker skal derfor ikke kunne få nødvendig felles lånehistorikk til å for
 
 Hvis personen senere oppretter en ny konto, skal historiske anmeldelser, skårer eller annen tillitshistorikk fra den slettede kontoen ikke automatisk knyttes til den nye profilen bare fordi systemet mistenker at det er samme person. Eventuell sammenkobling kan være relevant for sikkerhet, duplikatkontroll, omgåelse av tiltak eller annen kontrollert kontinuitet, men skal behandles i den særskilte sikkerhetsprosessen og ikke som automatisk gjenoppretting av den gamle sosiale profilen.
 
+### Ventende invitasjoner og anmeldelser ved kontosletting
+
+Ventende invitasjoner, uaksepterte rolleforespørsler og åpne anmeldelsesfrister skal ikke i seg selv regnes som aktive bindinger som blokkerer permanent sletting.
+
+Konto-bundne invitasjoner som er sendt **til** brukeren faller bort når kontoen slettes. Personlige invitasjoner som er sendt **fra** brukeren og som forutsetter avsenderens fortsatte konto faller normalt også bort. En invitasjon som etter produktreglene tilhører et miljø fremfor den enkelte administratoren, kan derimot fortsette dersom miljøet fortsatt er gyldig og har annen autorisert administrasjon.
+
+Ubenyttede personlige anmeldelsesrettigheter faller bort ved sletting. Allerede innsendte anmeldelser kan bevares som del av felles historikk etter de vanlige anonymiserings- og publiseringsreglene, og en motparts allerede opptjente anmeldelsesrett kan fullføres uten at dette gjenoppretter den slettede brukerens aktive profil.
+
+### Synlig identitet i felles historikk etter sletting
+
+Når en konto slettes, skal motpartens legitime kopi av felles historikk ikke automatisk omskrives eller slettes. Dette gjelder blant annet private meldinger, strukturerte lånehendelser og annen historikk som fortsatt har et legitimt oppbevaringsformål.
+
+Den aktive profilen skal likevel forsvinne. Der konkret identitet ikke lenger er nødvendig, skal navn, profilbilde og profillenke fjernes eller erstattes med en nøytral betegnelse som **«Tidligere bruker»**. Mer identifiserende informasjon skal bare beholdes eller vises når den fortsatt er nødvendig for et konkret historisk, sikkerhetsmessig eller juridisk formål.
+
 ### Melding om mulig dødsfall eller varig utilgjengelighet
 
 En bruker med legitim tilgang til en annen brukers profil eller et konkret felles forhold skal kunne melde at brukeren kan være død eller varig ute av stand til å håndtere kontoen. Dette skal være en særskilt konto- og kontinuitetssak, ikke en vanlig modereringsrapport.
@@ -290,6 +304,12 @@ Representanten skal ikke overta brukerens konto eller innloggingsidentitet. Roll
 Rollen skal ikke gi generell tilgang til private chatter, vennskap, miljøer, profilhistorikk eller andre objekter som ikke er nødvendige for den aktuelle oppgaven. All bruk av rollen skal være sporbar.
 
 Hvis en bruker senere viser seg å være i live eller får tilbake kontroll over kontoen etter en feilaktig eller midlertidig vurdering, skal representantens tilgang trekkes tilbake og ordinær konto kunne gjenopprettes etter nødvendig identitetskontroll. Historikken om de administrative handlingene skal beholdes.
+
+### Når den varig utilgjengelige brukeren er låntaker
+
+Hvis en verifisert død eller varig utilgjengelig bruker har et annet menneskes objekt i et aktivt lån, kan en legitim representant få akkurat den tilgangen som er nødvendig for å tilbakeføre objektet. Rollen gir ikke tilgang til resten av kontoen.
+
+Hvis tilbakeføring ikke kan avklares, kan lånet avsluttes administrativt som uavklart etter de vanlige reglene. Dødsfall eller dokumentert varig utilgjengelighet skal ikke behandles som negativ låntakeratferd. Den administrative avslutningen skal heller ikke gjøre objektet tilgjengelig for nye lån før eieren har bekreftet fysisk kontroll over objektet.
 
 ### Kontrollert avslutning i særtilfeller
 
