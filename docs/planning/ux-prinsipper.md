@@ -102,3 +102,11 @@ Samtidig skal den samme mentale modellen og de samme kjernefunksjonene fungere p
 
 Responsivitet skal derfor handle om å tilpasse presentasjon og informasjonsmengde til skjermen, ikke om å lage to forskjellige produkter.
 
+### 13. Gjenkjennelige mønstre skal brukes konsekvent
+
+Samme type informasjon og handling bør presenteres med samme struktur, språk og interaksjonsmønster på tvers av appen. Kort, statuser, knapper, menyer, bekreftelser og detaljvisninger bør derfor bygges fra et begrenset sett med tydelige mønstre.
+
+Brukeren skal kunne overføre læring fra én del av Lånbort til en annen. Hvis en bestemt visuell struktur betyr «venter på deg» ett sted, bør den ikke bety noe annet et annet sted.
+
+Konsistens bør veie tyngre enn lokal kreativitet, med mindre en reell forskjell i brukerbehov tilsier et annet mønster.
+
