@@ -46,3 +46,11 @@ Den globale navigasjonen bør derfor hovedsakelig brukes til noen få stabile ho
 
 Dette innebærer også at vi ikke bør bevare alle tenkelige funksjoner som permanente menyvalg bare fordi systemet støtter dem. Kompleks funksjonalitet kan eksistere uten å dominere navigasjonen.
 
+### 6. Vis lite først, mer ved behov
+
+Lånbort bør bruke progressiv avdekking konsekvent. Oversikter, kort og hovedflater skal vise det brukeren vanligvis trenger for å forstå situasjonen og handle. Mer detaljert informasjon, historikk, sjeldne valg og forklaringer bør kunne åpnes ved behov uten å konkurrere om oppmerksomheten fra start.
+
+Dette gjelder både innhold og funksjoner. En objektside bør for eksempel ikke presentere alle metadata, rettigheter, historiske hendelser og spesialhandlinger samtidig hvis de fleste brukere bare trenger å forstå hva objektet er, om det er tilgjengelig og hvordan de kan låne det.
+
+Prinsippet skal likevel ikke brukes til å gjemme kritiske vilkår eller konsekvenser bak ekstra klikk.
+
