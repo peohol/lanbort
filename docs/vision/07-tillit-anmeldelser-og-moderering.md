@@ -81,6 +81,16 @@ Den konkrete lengden på anmeldelsesfristen bestemmes senere.
 
 Rapportering av alvorlige hendelser, for eksempel trusler, svindelforsøk eller andre forhold som krever moderering, skal ikke vente på anmeldelsesfristen. Slike forhold følger rapporterings- og modereringssystemet uavhengig av anmeldelsene.
 
+### Kontosletting mens anmeldelsesfristen fortsatt løper
+
+En åpen anmeldelsesfrist eller en ventende anmeldelsesrett skal ikke alene blokkere permanent kontosletting.
+
+Hvis den slettende brukeren ennå ikke har levert sin anmeldelse, faller den ubenyttede retten bort sammen med kontoen. Hvis anmeldelsen allerede er sendt inn, men fortsatt er skjult av den dobbelblinde modellen, kan den fullføre den ordinære publiseringsprosessen som del av felles historikk. Når forfatterkontoen er slettet, skal synlig identitet anonymiseres etter de vanlige reglene.
+
+Motpartens allerede opptjente anmeldelsesrett skal ikke falle bort bare fordi den andre brukeren sletter kontoen. En eventuell senere anmeldelse knyttes da til det historiske lånet. Hvis den slettede brukeren var den anmeldte, skal vurderingen ikke gjenopprette en aktiv profil eller aktiv aggregert tillitsskår.
+
+Verifisert dødsfall eller varig utilgjengelighet som forklarer at et lån ikke kunne gjennomføres eller avsluttes normalt skal ikke brukes som no-show, forsinkelse eller annet negativt tillitssignal. Slike forhold kan bevares som nødvendig historisk kontekst uten å bli en sosial straffeskår.
+
 ### Hvem kan se fritekstanmeldelser?
 
 Fritekstanmeldelser skal være kontekstuelt synlige tillitsdata, ikke offentlig innhold på internett.
