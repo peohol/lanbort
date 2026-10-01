@@ -67,8 +67,8 @@ jobs:
       - name: Verify generated database types match migrations
         run: pnpm db:types:check
 
-      - name: Smoke-test server database adapter
-        run: pnpm --filter @lanbort/database test:integration
+      - name: Run server integration tests against the database
+        run: pnpm test:integration
 
       - name: Stop local database
         if: always()

@@ -238,6 +238,21 @@ importers:
         specifier: 0.20.0
         version: 0.20.0(@typescript/typescript6@6.0.2)(kysely@0.29.6)(pg@8.23.0)
 
+  packages/domain:
+    dependencies:
+      '@lanbort/database':
+        specifier: workspace:*
+        version: link:../database
+      '@lanbort/observability':
+        specifier: workspace:*
+        version: link:../observability
+      kysely:
+        specifier: 0.29.6
+        version: 0.29.6
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+
   packages/observability: {}
 
 packages:
