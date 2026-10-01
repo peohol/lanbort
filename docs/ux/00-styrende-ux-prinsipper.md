@@ -4,7 +4,7 @@
 
 ## Vedtatte prinsipper
 
-### 1. Kompleksitet under panseret, enkelhet i normalforløpet
+### UX-P01 — Kompleksitet under panseret, enkelhet i normalforløpet
 
 Brukeren skal til enhver tid først og fremst møte det som er relevant for situasjonen akkurat nå.
 
@@ -12,7 +12,7 @@ Sjeldne rettigheter, historikk, konflikthåndtering, administrative mekanismer o
 
 Dette skal likevel ikke brukes til å skjule informasjon som er nødvendig for å forstå konsekvensene av en handling.
 
-### 2. Én konsekvent mental modell på tvers av appen
+### UX-P02 — Én konsekvent mental modell på tvers av appen
 
 Samme type objekt, handling og tilstand skal oppføre seg likt uansett hvor brukeren møter den.
 
@@ -20,7 +20,7 @@ Et lån skal for eksempel forstås og håndteres på samme måte enten det oppst
 
 Målet er at brukeren lærer **Lånbort én gang**, fremfor å måtte lære forskjellige regler for forskjellige deler av appen.
 
-### 3. Friksjon skal stå i forhold til konsekvensen
+### UX-P03 — Friksjon skal stå i forhold til konsekvensen
 
 Vanlige, ufarlige handlinger skal kunne gjøres raskt og uten unødvendige bekreftelser.
 
@@ -30,7 +30,7 @@ Det skal være lett å bla, søke, lagre eller endre egne uforpliktende innstill
 
 Lånbort skal samtidig unngå bekreftelsesutmattelse: hvis alt får en advarsel, mister advarslene verdi.
 
-### 4. Systemtilstand skal være tydelig og handlingsnær
+### UX-P04 — Systemtilstand skal være tydelig og handlingsnær
 
 Brukeren skal enkelt kunne forstå hva som er status akkurat nå, hva som eventuelt venter på noen andre, og hva brukeren selv kan eller bør gjøre videre.
 
@@ -38,7 +38,7 @@ Et lån skal for eksempel ikke bare vises som «aktivt», men presenteres slik a
 
 Interne statemaskiner og tekniske begreper skal ikke eksponeres som sådan. UI-et skal oversette dem til forståelige situasjoner og handlinger.
 
-### 5. Handlinger skal finnes der konteksten finnes
+### UX-P05 — Handlinger skal finnes der konteksten finnes
 
 Lånbort bør i størst mulig grad unngå store menyhierarkier der brukeren må vite *hvor* en funksjon befinner seg. Handlinger knyttet til et objekt, et lån, et miljø, en samtale eller en person bør være tilgjengelige i den aktuelle konteksten.
 
@@ -46,7 +46,7 @@ Den globale navigasjonen bør derfor hovedsakelig brukes til noen få stabile ho
 
 Dette innebærer også at vi ikke bør bevare alle tenkelige funksjoner som permanente menyvalg bare fordi systemet støtter dem. Kompleks funksjonalitet kan eksistere uten å dominere navigasjonen.
 
-### 6. Vis lite først, mer ved behov
+### UX-P06 — Vis lite først, mer ved behov
 
 Lånbort bør bruke progressiv avdekking konsekvent. Oversikter, kort og hovedflater skal vise det brukeren vanligvis trenger for å forstå situasjonen og handle. Mer detaljert informasjon, historikk, sjeldne valg og forklaringer bør kunne åpnes ved behov uten å konkurrere om oppmerksomheten fra start.
 
@@ -54,7 +54,7 @@ Dette gjelder både innhold og funksjoner. En objektside bør for eksempel ikke 
 
 Prinsippet skal likevel ikke brukes til å gjemme kritiske vilkår eller konsekvenser bak ekstra klikk.
 
-### 7. Gode standardvalg, men ikke skjulte antakelser
+### UX-P07 — Gode standardvalg, men ikke skjulte antakelser
 
 Lånbort bør gjøre vanlige handlinger raske ved å foreslå fornuftige standardvalg og huske relevante brukerpreferanser. Samtidig skal systemet være forsiktig med å anta intensjon når valget påvirker andre mennesker, personvern eller forpliktelser.
 
@@ -62,7 +62,7 @@ Enkle preferanser kan gjerne forhåndsutfylles eller huskes. Men Lånbort bør i
 
 Målet er lav friksjon uten at brukeren mister kontroll over meningsfulle valg.
 
-### 8. Oppmerksomhet skal behandles som en knapp ressurs
+### UX-P08 — Oppmerksomhet skal behandles som en knapp ressurs
 
 Lånbort skal bare avbryte brukeren når noe faktisk fortjener oppmerksomhet. Varsler, merker, påminnelser og advarsler bør prioriteres etter betydning fremfor å brukes for å maksimere aktivitet i appen.
 
@@ -70,7 +70,7 @@ Et aktivt lån som krever handling, en forestående retur eller en sikkerhetsrel
 
 Brukeren bør dessuten kunne forstå *hvorfor* noe krever oppmerksomhet og hva som forventes videre. Lånbort skal hjelpe brukeren med reelle forpliktelser, ikke forsøke å trekke brukeren tilbake til appen for sin egen del.
 
-### 9. Feil skal være lette å forstå og så langt som mulig lette å rette
+### UX-P09 — Feil skal være lette å forstå og så langt som mulig lette å rette
 
 Lånbort bør prioritere reverserbare handlinger fremfor advarsler der det er mulig. Hvis en handling trygt kan angres, er «utfør + angre» ofte bedre enn å stoppe brukeren med en bekreftelsesdialog.
 
@@ -78,7 +78,7 @@ Når noe ikke kan reverseres enkelt, eller påvirker andre mennesker eller eksis
 
 Feilmeldinger skal forklare hva som skjedde, hva brukeren fortsatt kan gjøre, og om systemet faktisk har gjennomført deler av handlingen. Brukeren skal ikke måtte gjette om en forespørsel ble sendt, om et lån ble endret eller om noe må prøves på nytt.
 
-### 10. Tilgjengelighet skal være innebygd fra start
+### UX-P10 — Tilgjengelighet skal være innebygd fra start
 
 Lånbort bør utformes slik at sentrale funksjoner kan brukes av flest mulig uten særskilte «tilgjengelighetsmoduser». Det innebærer blant annet tydelig hierarki, god lesbarhet, tilstrekkelig kontrast, forutsigbar navigasjon, store nok berøringsflater og støtte for hjelpemidler.
 
@@ -86,7 +86,7 @@ Informasjon skal ikke formidles gjennom farge alene, og handlinger skal ikke væ
 
 Målet er ikke bare formell etterlevelse av tilgjengelighetskrav, men at universell utforming påvirker de grunnleggende UX-valgene før detaljdesign begynner.
 
-### 11. Personvern og sikkerhet skal være synlige gjennom forståelige konsekvenser, ikke teknisk språk
+### UX-P11 — Personvern og sikkerhet skal være synlige gjennom forståelige konsekvenser, ikke teknisk språk
 
 Brukeren skal kunne forstå hvem som kan se noe, hvem som kan gjøre noe, og hva som skjer når en relasjon eller tilgang endres. Grensesnittet bør derfor uttrykke personvern og rettigheter konkret i den aktuelle situasjonen.
 
@@ -94,7 +94,7 @@ Det bør for eksempel fremgå tydelig om et objekt er synlig for venner, bestemt
 
 Tekniske begreper som tilgangskontroll, autorisasjon eller krypteringsmodell bør normalt ikke være nødvendige for å bruke appen trygt. Systemet skal gjøre de faktiske grensene forståelige.
 
-### 12. Mobil først, men ikke mobil begrenset
+### UX-P12 — Mobil først, men ikke mobil begrenset
 
 Lånbort bør primært utformes for mobilbruk, fordi mange sentrale handlinger naturlig skjer i bevegelse eller tett på den fysiske utlånssituasjonen: finne et objekt, sende en forespørsel, avtale overlevering, bekrefte retur eller svare på en melding.
 
@@ -102,7 +102,7 @@ Samtidig skal den samme mentale modellen og de samme kjernefunksjonene fungere p
 
 Responsivitet skal derfor handle om å tilpasse presentasjon og informasjonsmengde til skjermen, ikke om å lage to forskjellige produkter.
 
-### 13. Gjenkjennelige mønstre skal brukes konsekvent
+### UX-P13 — Gjenkjennelige mønstre skal brukes konsekvent
 
 Samme type informasjon og handling bør presenteres med samme struktur, språk og interaksjonsmønster på tvers av appen. Kort, statuser, knapper, menyer, bekreftelser og detaljvisninger bør derfor bygges fra et begrenset sett med tydelige mønstre.
 
@@ -110,7 +110,7 @@ Brukeren skal kunne overføre læring fra én del av Lånbort til en annen. Hvis
 
 Konsistens bør veie tyngre enn lokal kreativitet, med mindre en reell forskjell i brukerbehov tilsier et annet mønster.
 
-### 14. Språket skal være menneskelig, presist og handlingsrettet
+### UX-P14 — Språket skal være menneskelig, presist og handlingsrettet
 
 Lånbort bør bruke ord som beskriver brukerens situasjon og handling, ikke systemets interne modell. «Venter på at Kari bekrefter retur» er bedre enn en intern statusetikett som «pending_return_confirmation».
 
@@ -118,7 +118,7 @@ Språket bør være kort der situasjonen er enkel, men mer forklarende når kons
 
 Samtidig må enkelhet ikke gå på bekostning av presisjon. Hvis to tilstander faktisk har ulike konsekvenser, bør de også beskrives forskjellig i UI-et.
 
-### 15. Tillit skal vises kontekstuelt, ikke som sosial rangering
+### UX-P15 — Tillit skal vises kontekstuelt, ikke som sosial rangering
 
 Når Lånbort viser anmeldelser, historikk eller annen tillitsinformasjon, skal presentasjonen hjelpe brukeren å vurdere en konkret situasjon – ikke gi inntrykk av at mennesker kan reduseres til én generell verdi.
 
@@ -126,7 +126,7 @@ Informasjonen bør derfor knyttes til relevante roller og hendelser, vise datagr
 
 Globale poengsummer, rangeringer, «topplister» og annen design som inviterer til sosial konkurranse bør unngås.
 
-### 16. Nåtilstanden først, historikken ved behov
+### UX-P16 — Nåtilstanden først, historikken ved behov
 
 Lånbort skal først og fremst vise hva som gjelder **nå**. Historikk skal være tilgjengelig når den er relevant for forståelse, dokumentasjon eller konfliktavklaring, men skal normalt ikke dominere hovedflatene.
 
@@ -134,7 +134,7 @@ Et aktivt lån bør for eksempel først vise gjeldende avtale, status og neste h
 
 Systemet kan dermed bevare rik og sporbar historikk uten at brukeren må forholde seg til den i normal bruk.
 
-### 17. Sosialt press skal reduseres, ikke bygges inn i produktet
+### UX-P17 — Sosialt press skal reduseres, ikke bygges inn i produktet
 
 Lånbort skal gjøre det legitimt og enkelt å avslå, trekke tilbake tilgjengelighet eller si «ikke nå» uten at brukeren presses til å begrunne seg mer enn nødvendig.
 
@@ -142,7 +142,7 @@ Forespørsler, påminnelser og statusvisning bør derfor utformes slik at de st�
 
 Produktet skal hjelpe mennesker å dele frivillig. Det bør ikke bruke designgrep som gjør det sosialt vanskelig å sette grenser.
 
-### 18. Automatisering skal foreslå og forenkle, men ikke overta meningsfulle valg
+### UX-P18 — Automatisering skal foreslå og forenkle, men ikke overta meningsfulle valg
 
 Lånbort kan gjerne automatisere trivielle ting: sortering, forslag, utfylling, påminnelser, beregning av relevante standardverdier og andre handlinger der risikoen ved feil er liten.
 
@@ -150,7 +150,7 @@ Når en handling derimot påvirker andre mennesker, personvern, forpliktelser el
 
 Automatisering skal redusere arbeid, ikke redusere kontroll.
 
-### 19. Læring skal skje i kontekst, ikke gjennom tung onboarding
+### UX-P19 — Læring skal skje i kontekst, ikke gjennom tung onboarding
 
 Lånbort bør ikke forutsette at nye brukere først må gjennom lange introduksjoner, veivisere eller opplæring før de kan bruke produktet.
 
@@ -158,7 +158,7 @@ Grunnleggende bruk skal være forståelig gjennom selve grensesnittet. Forklarin
 
 Et kort førstegangsoppsett kan brukes når det trengs for nødvendige valg, men opplæring skal i hovedsak skje gradvis gjennom bruk. Dette reduserer både oppstartsfriksjon og behovet for å huske informasjon før den får praktisk betydning.
 
-### 20. Oppdagelse skal være målrettet, ikke feed-drevet
+### UX-P20 — Oppdagelse skal være målrettet, ikke feed-drevet
 
 Lånbort skal først og fremst hjelpe brukeren å finne det de faktisk trenger: et bestemt objekt, noe i nærheten, noe i et relevant miljø eller noe tilgjengelig innenfor en gitt periode.
 
@@ -166,7 +166,7 @@ Søk, filtre, kategorier og kontekstuelle forslag bør derfor være viktigere en
 
 Forslag kan gjerne brukes når de er relevante, men de bør være forklarlige og knyttet til brukerens aktuelle behov eller kontekst.
 
-### 21. Systemet skal gi umiddelbar og entydig respons på handlinger
+### UX-P21 — Systemet skal gi umiddelbar og entydig respons på handlinger
 
 Når brukeren gjør noe, skal det være tydelig om handlingen er registrert, fortsatt pågår, venter på en annen part eller har mislyktes.
 
@@ -174,7 +174,7 @@ Grensesnittet bør så langt mulig unngå situasjoner der brukeren blir usikker 
 
 Tilbakemeldingen bør være proporsjonal med handlingen: diskret ved trivielle handlinger, tydeligere når konsekvensen er viktig.
 
-### 22. Nettverksproblemer skal ikke skape tvetydighet eller tap av arbeid
+### UX-P22 — Nettverksproblemer skal ikke skape tvetydighet eller tap av arbeid
 
 Lånbort bør tåle treg eller ustabil forbindelse på en måte som er forståelig for brukeren. Midlertidige nettverksproblemer skal så langt mulig ikke føre til at utfylte data forsvinner eller at samme handling utilsiktet utføres flere ganger.
 
@@ -182,7 +182,7 @@ Hvis systemet ikke vet om en viktig handling faktisk ble gjennomført, skal det 
 
 For enkelte ufarlige handlinger kan lokal mellomlagring eller senere synkronisering være hensiktsmessig. Handlinger som etablerer eller endrer forpliktelser mellom mennesker skal derimot først presenteres som fullført når systemet faktisk har bekreftet dem.
 
-### 23. Det skal finnes en forståelig vei videre når virkeligheten avviker fra normalforløpet
+### UX-P23 — Det skal finnes en forståelig vei videre når virkeligheten avviker fra normalforløpet
 
 Lånbort skal ikke anta at alle hendelser følger den forventede flyten. Et objekt kan være skadet, noen kan være utilgjengelige, partene kan være uenige om hva som har skjedd, eller den faktiske situasjonen kan avvike fra det systemet forventer.
 

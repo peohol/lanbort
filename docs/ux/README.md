@@ -4,6 +4,8 @@
 
 UX-modellen beskriver **hvordan produktmodellen skal fremstå og håndteres for brukeren**. Den skal gå på tvers av produktområdene der brukerens mentale modell gjør det.
 
+Normative UX-regler får stabile `UX-*`-ID-er og peker oppover til relevante produktkrav, UX-prinsipper og eventuelt visjonskilder etter [sporbarhetskonvensjonen](../traceability.md). De styrende prinsippene bruker `UX-P01`–`UX-P23`.
+
 ## Dokumenter
 
 1. [Styrende UX-prinsipper](00-styrende-ux-prinsipper.md)

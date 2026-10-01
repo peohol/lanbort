@@ -4,6 +4,8 @@
 
 Produktspesifikasjonen beskriver **hva Lånbort skal kunne og hvilke produktregler som gjelder**, uten å låse unødvendige tekniske løsninger eller konkret UI.
 
+Normative produktkrav får stabile `PS-*`-ID-er og peker oppover til relevante visjonskilder etter [sporbarhetskonvensjonen](../traceability.md). Beskrivende tekst og eksempler trenger ikke egne ID-er.
+
 ## Dokumenter
 
 1. [Domenemodell](00-domenemodell.md)

@@ -4,6 +4,8 @@
 
 Systemarkitekturen beskriver **hvordan Lånbort teknisk skal oppfylle produktkravene og UX-modellen**. Arkitekturen organiseres etter tekniske ansvarsområder, ikke etter skjermer.
 
+Arkitekturen peker oppover til krav og UX-regler som den oppfyller. Viktige tekniske veivalg dokumenteres som `ADR-####` etter [sporbarhetskonvensjonen](../traceability.md); vanlig forklarende arkitekturtekst trenger ikke egne ID-er.
+
 ## Dokumenter
 
 1. [Arkitekturprinsipper og kvalitetskrav](00-arkitekturprinsipper-og-kvalitetskrav.md)

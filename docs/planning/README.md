@@ -18,7 +18,7 @@
 - [x] Opprett et eget arbeidsområde for planleggingsfasen.
 - [x] **Avklar og vedta sentrale UX-prinsipper sammen før detaljert planskriving begynner.**
 - [x] Fastsett dokumentstrukturen for produktspesifikasjon, UX-modell og systemarkitektur.
-- [ ] Fastsett en enkel sporbarhetsmåte fra visjonsprinsipp → krav/UX-regel → arkitekturbeslutning, uten å gjøre dokumentasjonen tung.
+- [x] Fastsett en enkel sporbarhetsmåte fra visjonsprinsipp → krav/UX-regel → arkitekturbeslutning, uten å gjøre dokumentasjonen tung.
 - [ ] Opprett et sted for åpne detaljbeslutninger som tilhører spesifikasjon, UX eller arkitektur og derfor ikke er nye visjonsspørsmål.
 
 ### B. Produktspesifikasjon
@@ -66,4 +66,4 @@
 
 ## Neste punkt
 
-Neste arbeidsøkt skal fastsette en **enkel sporbarhetsmåte fra visjonsprinsipp → krav/UX-regel → arkitekturbeslutning**, uten å gjøre dokumentasjonen tung.
+Neste arbeidsøkt skal **opprette et sted for åpne detaljbeslutninger som tilhører spesifikasjon, UX eller arkitektur og derfor ikke er nye visjonsspørsmål**.
