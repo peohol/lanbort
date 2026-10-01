@@ -89,6 +89,8 @@ Dersom et miljø krever administratorgodkjenning av objekter, må publisering de
 
 Hvis et miljø senere aktiverer forhåndsgodkjenning, gjelder kravet også objekter som allerede var publisert der. Disse publiseringene settes midlertidig til **venter på godkjenning** og skjules fra nye oppdagelser og nye låneforespørsler i miljøet. Allerede godkjente eller aktive lån påvirkes ikke. Eksisterende ikke-godkjente låneforespørsler beholdes, men settes på vent til objektet er vurdert; ved godkjenning kan de fortsette, mens et avslag avslutter dem nøytralt. Dette er en administrativ pause og skal ikke behandles som eierens egen avpublisering.
 
+Hvis miljøet slår av forhåndsgodkjenningen mens objekter fortsatt venter, publiseres objekter som bare var blokkert av dette generelle kravet automatisk. Eieren hadde allerede uttrykkelig valgt publisering, så det kreves ikke en ny publiseringshandling. Låneforespørsler som bare var satt på vent av samme grunn kan gjenopptas. Et konkret tidligere avslag eller en separat sikkerhets-, lovlighets- eller modereringssperre består derimot til den konkrete avgjørelsen faktisk oppheves.
+
 ## Samme objekt i flere miljøer
 
 Objektet har én felles sannhet på tvers av miljøene.
