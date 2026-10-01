@@ -438,6 +438,10 @@ En rapport eller modereringssak mellom partene er en separat prosess og skal hel
 
 Hvis plattformen administrativt stanser et reservert lån av sikkerhets- eller modereringsgrunner og dette tiltaket senere oppheves, skal den gamle reservasjonen ikke gjenoppstå automatisk. Partene må inngå en ny avtale dersom de fortsatt ønsker å gjennomføre lånet. Dette beskytter mot at en tidligere avsluttet avtale plutselig blir bindende igjen.
 
+Ved plattformsuspensjon av en av partene skal ikke-godkjente forespørsler avsluttes nøytralt og reserverte lån som ennå ikke er fysisk overlevert avsluttes administrativt. Dette skal ikke registreres som ordinær kansellering eller no-show fra den suspenderte brukerens side.
+
+Hvis objektet allerede er overlevert, fortsetter lånet bare med de rettighetene og handlingene som er nødvendige for trygg og kontrollert avslutning. Den suspenderte kan derfor få begrenset tilgang til strukturerte retur- eller mottakshandlinger selv om annen ordinær aktivitet er stanset. Fri kontakt kan begrenses ytterligere når sikkerhetshensyn tilsier det.
+
 ## Opprinnelseskontekst skal være stabil
 
 Om et lån er miljøbasert eller et direkte vennelån avgjøres av hvordan den konkrete låneforespørselen ble opprettet.
