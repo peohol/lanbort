@@ -1,7 +1,7 @@
 import { Kysely, PostgresDialect } from "kysely";
 import { Pool } from "pg";
 
-export interface Database {}
+export type Database = Record<never, never>;
 
 export interface DatabaseOptions {
   connectionString: string;
