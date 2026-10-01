@@ -257,6 +257,14 @@ Selve objektinformasjonen er fortsatt global for objektet.
 
 Hvis et spørsmål avdekker informasjon som er generelt nyttig på tvers av miljøer, kan eier eller medeier oppdatere objektets beskrivelse eller andre relevante felt. Da blir informasjonen en del av objektet, uten at selve spørsmålstråden flyttes mellom miljøene.
 
+Når den konkrete miljøpubliseringen opphører, skal spørsmålstrådene samtidig forsvinne fra miljøets aktive objektflater og søk. Dette gjelder enten eieren avpubliserer objektet, nødvendig miljøadgang forsvinner eller miljøet avvikles.
+
+Spørsmål og svar trenger ikke slettes automatisk. Nødvendig historikk kan bevares for brukere som selv deltok i tråden, objektets eier og eventuelt andre med et konkret legitimt historisk behov. Vanlige medlemmer skal derimot ikke få en permanent rett til å finne avpubliserte objekter og gamle spørsmål bare fordi innholdet tidligere var synlig. Administratorinnsyn skal heller ikke bestå uten en konkret administrativ eller modereringsmessig grunn.
+
+Hvis objektet senere publiseres på nytt i samme miljø, skal gamle spørsmål ikke automatisk åpnes igjen som aktive spørsmål. Relevant informasjon kan fortsatt løftes inn i den globale objektbeskrivelsen dersom eieren ønsker det.
+
+At historikken kan bevares betyr **ikke** at Lånbort må bygge egne arkivmenyer eller gjøre alle historiske tråder lett tilgjengelige i brukerflaten. Dette er primært et prinsipp for data, personvern og kontekst. Historisk innhold bør bare eksponeres der det finnes et tydelig brukerbehov og dette kan gjøres uten unødig kompleksitet.
+
 ## Inaktivitet, skjuling og arkivering
 
 Lånbort skal rydde bort inaktive objekter fra aktive flater uten å permanent slette dem bare fordi de ikke har vært brukt på en stund.
