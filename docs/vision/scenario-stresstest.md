@@ -1,6 +1,6 @@
 # Scenario-basert stresstest av produktvisjonen
 
-> **Status:** Levende arbeidsdokument. Scenario 2–73 er gjennomført og avklart per 1. oktober 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
+> **Status:** Levende arbeidsdokument. Scenario 2–74 er gjennomført og avklart per 1. oktober 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
 
 ## Formål og metode
 
@@ -92,6 +92,7 @@ Stresstesten skal holde seg på visjonsnivå. Tekniske mekanismer, konkrete fris
 - **72. Gjentatte kanselleringer eller no-shows gir mange begrensede anmeldelser:** slike anmeldelser forblir vurderinger av konkrete forløp og skal ikke summeres til én generell straffeskår. Dersom mønsterinformasjon senere vises, skal den være rolle- og hendelsesspesifikk, vise både teller og nevner, bygge på hendelser systemet kan klassifisere med rimelig sikkerhet og ta hensyn til antall uavhengige motparter, kontekst og statistisk usikkerhet. En uavklart tvist skal ikke telles som dokumentert no-show. Historikk kan beskrives med forståelige frekvenser eller rater, men systemet skal ikke erklære brukeren generelt «upålitelig» eller ilegge automatisk sanksjon på dette grunnlaget.
 
 - **73. Plattformforvalter er part i et lån eller gjenstand for rapport:** plattformrollen gir ingen ekstra rettigheter i et konkret låneforhold. En forvalter som er part, rapportert eller på annen måte inhabil skal ikke behandle saken, få saksinnsyn utover egen partsrolle eller styre utfallet. En annen habil plattformforvalter skal behandle saken dersom en finnes, og tilgang og saksbehandling skal være sporbar. Hvis ingen habil forvalter finnes, skal den berørte forvalteren ikke kunne «frikjenne seg selv»; Lånbort må være tydelig på at uavhengig intern behandling ikke er tilgjengelig. For alvorlige saker som gjelder selve plattformforvaltningen bør det før vesentlig skala finnes en organisatorisk uavhengig behandlingsmulighet.
+- **74. Plattformen suspenderer en bruker med kommende reservasjoner:** suspensjon stopper nye fysiske låneforløp, men skal ikke gjøre kontrollert avslutning av allerede overleverte objekter umulig. Ikke-godkjente forespørsler avsluttes nøytralt. Godkjente/reserverte lån som ennå ikke er overlevert avsluttes administrativt, enten den suspenderte er låntaker eller utlåner; dette skal ikke registreres som vanlig kansellering, no-show eller annet dokumentert mislighold i synlig tillitshistorikk. Motparten får vite at lånet ikke kan gjennomføres på grunn av en plattformbegrensning, men ikke nødvendigvis hvorfor brukeren er suspendert. Aktive lån fortsetter bare i den utstrekning som er nødvendig for trygg retur eller mottak; den suspenderte beholder minimumstilgang til relevante strukturerte handlinger. Ved særskilt risiko kan direkte kommunikasjon begrenses og en kontrollert returprosess brukes. Oppheves suspensjonen senere, gjenoppstår ikke administrativt avsluttede reservasjoner automatisk.
 
 ## Gjenstående scenario-kø
 
@@ -114,7 +115,6 @@ Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avde
 
 ### F. Blokkering, rapportering og moderering
 
-- Plattformen suspenderer en bruker som har kommende reservasjoner både som låntaker og utlåner.
 
 ### G. Konto- og datalivssyklus
 
