@@ -134,3 +134,11 @@ Et aktivt lån bør for eksempel først vise gjeldende avtale, status og neste h
 
 Systemet kan dermed bevare rik og sporbar historikk uten at brukeren må forholde seg til den i normal bruk.
 
+### 17. Sosialt press skal reduseres, ikke bygges inn i produktet
+
+Lånbort skal gjøre det legitimt og enkelt å avslå, trekke tilbake tilgjengelighet eller si «ikke nå» uten at brukeren presses til å begrunne seg mer enn nødvendig.
+
+Forespørsler, påminnelser og statusvisning bør derfor utformes slik at de støtter tydelig kommunikasjon uten å skape skyld, mas eller konkurranse om å være «snillest» eller mest tilgjengelig.
+
+Produktet skal hjelpe mennesker å dele frivillig. Det bør ikke bruke designgrep som gjør det sosialt vanskelig å sette grenser.
+
