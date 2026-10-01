@@ -9,3 +9,7 @@ En gratis app der man kan låne bort ting til andre.
 - [Opprinnelig visjonsnotat – historisk](VISION.md)
 
 Produktvisjon v1.0 er det kanoniske visjonsgrunnlaget. Den beskriver produktretningen, men er ikke en implementeringsplan eller en låst detaljspesifikasjon.
+
+## Videre planlegging
+
+- [Planleggingsløp: produktspesifikasjon, UX og systemarkitektur](docs/planning/README.md)
