@@ -1,6 +1,6 @@
 # Tillit, anmeldelser og moderering
 
-> **Status:** Konsolidert visjonsutkast. Anmeldelsesmodellen, synlighet, tilsvar, rollebaserte tillitsprofiler og grensene mot sosial rangering er avklart. Statistisk mønsteranalyse er fortsatt en mulig fremtidig mekanisme, ikke en del av startmodellen.
+> **Status:** Produktvisjon v1.0. Anmeldelsesmodellen, synlighet, tilsvar, rollebaserte tillitsprofiler og grensene mot sosial rangering er avklart. Statistisk mønsteranalyse er fortsatt en mulig fremtidig mekanisme, ikke en del av startmodellen.
 
 ## Formål
 

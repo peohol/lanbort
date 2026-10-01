@@ -1,6 +1,6 @@
 # Sikkerhet, personvern, jus og datalivssyklus
 
-> **Status:** Konsolidert visjonsutkast. Produktgrensene for identitet, tilgang, personvern, logging, datalivssyklus, geografi og ansvar er avklart; tekniske og juridiske detaljer må fortsatt utredes før lansering.
+> **Status:** Produktvisjon v1.0. Produktgrensene for identitet, tilgang, personvern, logging, datalivssyklus, geografi og ansvar er avklart; tekniske og juridiske detaljer må fortsatt utredes før lansering.
 
 ## Grunnprinsipp
 

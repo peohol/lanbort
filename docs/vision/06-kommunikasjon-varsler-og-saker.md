@@ -1,6 +1,6 @@
 # Kommunikasjon, varsler og saker
 
-> **Status:** Konsolidert visjonsutkast. Skillet mellom varsler, privat chat, administratorkontakt og formelle saker er avklart.
+> **Status:** Produktvisjon v1.0. Skillet mellom varsler, privat chat, administratorkontakt og formelle saker er avklart.
 
 ## Tre forskjellige kommunikasjonsformer
 

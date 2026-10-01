@@ -1,6 +1,6 @@
 # Miljøer
 
-> **Status:** Konsolidert visjonsutkast. Miljøtypene, medlemsmodellen, administratorrollen, eierrollen og avviklingsprinsippene er avklart.
+> **Status:** Produktvisjon v1.0. Miljøtypene, medlemsmodellen, administratorrollen, eierrollen og avviklingsprinsippene er avklart.
 
 ## Hva er et miljø?
 

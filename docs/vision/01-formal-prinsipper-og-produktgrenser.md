@@ -1,6 +1,6 @@
 # Formål, prinsipper og produktgrenser
 
-> **Status:** Førsteutkast. Dette dokumentet beskriver ønsket produktretning, ikke teknisk løsning.
+> **Status:** Produktvisjon v1.0. Formål, produktgrenser og overordnede produktprinsipper er avklart; teknisk løsning fastsettes senere.
 
 ## Formål
 
@@ -64,6 +64,14 @@ Lånbort skal støtte mer enn bare oppdagelse av objekter. Produktet skal dekke 
 9. håndtere manglende tilbakelevering eller uenighet
 10. gi tilbakemeldinger etterpå
 11. bygge opp et historisk tillitsgrunnlag
+
+## Enkelhet i normalforløpet
+
+Lånbort skal være robust i kompliserte grensesituasjoner uten at normalforløpet oppleves komplisert.
+
+Det vanlige lånet skal kunne forstås som en enkel kjede: finne eller publisere et objekt, sende forespørsel, avklare og godkjenne, overlevere, returnere og eventuelt anmelde. Unntaksregler for for eksempel blokkering, uavklart retur, medeierskap, kontobortfall og moderering skal i størst mulig grad være kontekstuelle og først bli synlige når situasjonen faktisk oppstår.
+
+Når et robust unntak kan løses uten å legge flere permanente valg, menyer eller beslutninger inn i normalforløpet, skal den løsningen foretrekkes.
 
 ## Brukerkontroll
 
