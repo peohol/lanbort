@@ -352,6 +352,16 @@ Hvis ingen habil plattformforvalter finnes, skal den berørte forvalteren ikke k
 
 Vanlige privatrettslige lånetvister skal fortsatt ikke løftes til plattformnivå bare fordi en plattformforvalter er involvert. For alvorlige rapporter om selve plattformforvaltningen bør produktet før vesentlig skala ha en organisatorisk uavhengig behandlingsmulighet utenfor den rapporterte personens kontroll.
 
+### Suspensjon og eksisterende lån
+
+En plattformsuspensjon skal som hovedregel stanse all ny ordinær aktivitet og alle nye fysiske overleveringer. Ikke-godkjente låneforespørsler avsluttes nøytralt, og reserverte lån som ennå ikke er overlevert avsluttes administrativt.
+
+En slik avslutning skal ikke behandles som vanlig kansellering, manglende oppmøte eller annet dokumentert låneavvik i den synlige tillitshistorikken. Dersom suspensjonen bygger på et modereringsfunn, kan dette håndteres separat i plattformens sikkerhets- og modereringssystem.
+
+Når et objekt allerede er overlevert, skal suspensjonen ikke slette låneforholdet eller gjøre trygg tilbakelevering umulig. Den suspenderte brukeren skal beholde bare den minimumstilgangen som er nødvendig for retur, mottak og andre strukturerte avslutningshandlinger. Ved særskilt sikkerhetsrisiko kan fri direktekontakt begrenses ytterligere og erstattes av en kontrollert returprosess.
+
+Hvis suspensjonen senere oppheves, skal tidligere administrativt avsluttede reservasjoner ikke gjenoppstå automatisk.
+
 ## Tillit versus sosial rangering
 
 Et sentralt designprinsipp for videre arbeid bør være at tillitssystemet skal hjelpe mennesker med konkrete utlånsbeslutninger, ikke skape en generell popularitetskonkurranse.
