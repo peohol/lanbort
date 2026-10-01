@@ -67,7 +67,17 @@ Statistisk kalibrering eller vekting av anmeldere inngår ikke i første versjon
 
 Miljøadministratorer kan moderere innen eget miljø. Plattformforvalter behandler plattformregler, alvorlig misbruk og globale sikkerhets-/lovlighetsproblemer. Miljømekling avgjør ikke privatrettslig skyld.
 
-### PS-TRUST-014 — Modereringstiltak skal ha eksplisitt grunnlag og virkning
+### PS-TRUST-014 — Moderert anmeldelse skal ikke fortsette å påvirke synlige aggregater
+**Forankring:** VP-14, VP-15; [Scenario 40](../vision/scenario-stresstest.md)
+
+Hvis en anmeldelse eller en skårdimensjon modereres bort som ugyldig, skal synlige aggregater beregnes på nytt uten den. Nødvendig intern modereringshistorikk kan fortsatt bevares.
+
+### PS-TRUST-015 — Fritekst og tilsvar kan modereres uten å omskrive øvrig gyldig vurdering
+**Forankring:** VP-15; [Scenario 42](../vision/scenario-stresstest.md)
+
+Tredjepartsopplysninger, private kontekstlekkasjer eller regelstridig tekst kan fjernes gjennom sporbar moderering. En gyldig skår kan bestå dersom grunnlaget for selve vurderingen ikke er rammet.
+
+### PS-TRUST-016 — Modereringstiltak skal ha eksplisitt grunnlag og virkning
 **Forankring:** VP-15, VP-16, VP-17
 
 Et tiltak skal registrere hvem/hva det gjelder, omfang, begrunnelse, beslutningstaker og tidspunkt. Et lokalt tiltak skal ikke få global effekt uten separat grunnlag.

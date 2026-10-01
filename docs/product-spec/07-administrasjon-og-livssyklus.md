@@ -80,7 +80,12 @@ Låne-/avtalehistorikk, forvaltningshistorikk, saksdata og sikkerhetslogger skal
 
 Produktet skal skille tydelig mellom skjuling fra egen visning, arkivering, anonymisering/pseudonymisering og permanent sletting.
 
-### PS-ADM-013 — Plattforminngrep skal være begrunnede og sporbare
+### PS-ADM-013 — Alvorlige saker om plattformforvaltningen krever uavhengig behandlingsvei før vesentlig skala
+**Forankring:** VP-16; [Scenario 73](../vision/scenario-stresstest.md)
+
+En plattformforvalter kan ikke behandle sak der vedkommende selv er part eller gjenstand for rapport. Før tjenesten får vesentlig skala skal det finnes en organisatorisk vei for uavhengig behandling når ingen habil intern plattformforvalter finnes.
+
+### PS-ADM-014 — Plattforminngrep skal være begrunnede og sporbare
 **Forankring:** VP-15, VP-16
 
 Kontrollert kontoavslutning, eierskapsoverføring, suspensjon og andre særinngrep skal registreres med grunnlag og aktør.

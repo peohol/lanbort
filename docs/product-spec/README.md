@@ -1,6 +1,6 @@
 # Produktspesifikasjon
 
-> **Status:** Dokumentstruktur fastsatt. Innhold fylles i senere planleggingssteg.
+> **Status:** Produktspesifikasjon v0.1. Krav, domenemodell og hovedtilstander er utledet fra produktvisjon v1.0 og konsistenskontrollert mot scenario-stresstesten.
 
 Produktspesifikasjonen beskriver **hva Lånbort skal kunne og hvilke produktregler som gjelder**, uten å låse unødvendige tekniske løsninger eller konkret UI.
 
@@ -19,3 +19,5 @@ Normative produktkrav får stabile `PS-*`-ID-er og peker oppover til relevante v
 9. [Ikke-funksjonelle krav](08-ikke-funksjonelle-krav.md)
 
 Åpne detaljvalg som ennå ikke kan fastsettes, registreres i [det felles beslutningsregisteret](../open-decisions.md) fremfor å bli stående som løse TODO-er i spesifikasjonen.
+
+10. [Konsistenssjekk mot produktvisjonen](validation.md)

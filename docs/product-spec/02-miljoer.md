@@ -41,7 +41,7 @@ Et medlemskap aktiveres etter reglene som gjelder på aktiveringstidspunktet. Ve
 ### PS-ENV-006 — Eksisterende medlemmer får overgang ved nye krav
 **Forankring:** [Endring av medlemskrav](../vision/03-miljoer.md)
 
-Aktive medlemmer skal varsles og få en overgangsfrist når nye krav krever handling. Manglende oppfyllelse ved frist utløser passivt medlemskap, ikke sletting eller utestengelse.
+Aktive medlemmer skal varsles og få en overgangsfrist når nye krav krever handling. Pilotstandard er **14 dager** med mindre kravet av sikkerhets- eller lovlighetsgrunner må tre i kraft raskere. Manglende oppfyllelse ved frist utløser passivt medlemskap, ikke sletting eller utestengelse.
 
 ### PS-ENV-007 — Strengere miljøtype kan innføres uten individuell godkjenning
 **Forankring:** VP-08, VP-09; [Endring av miljøtype](../vision/03-miljoer.md)

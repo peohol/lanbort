@@ -23,13 +23,13 @@
 
 ### B. Produktspesifikasjon
 
-- [ ] Etabler den formelle begreps- og domenemodellen som spesifikasjonen skal bruke.
-- [ ] Oversett visjonen til eksplisitte produktkrav per produktområde.
-- [ ] Beskriv sentrale tilstander, overganger og invariants for blant annet lån, objekter, relasjoner, miljøer, kontoer og saker.
-- [ ] Skill tydelig mellom normalforløp, unntaksforløp og administrative forløp.
-- [ ] Konkretiser utsatte detaljvalg som må bestemmes for at produktet skal kunne bygges, uten å låse unødvendige implementasjonsdetaljer.
-- [ ] Definer ikke-funksjonelle produktkrav som følger av visjonen, inkludert sikkerhet, personvern, tilgjengelighet, robusthet og sporbarhet.
-- [ ] Gjennomfør konsistenssjekk mot hele `docs/vision/`.
+- [x] Etabler den formelle begreps- og domenemodellen som spesifikasjonen skal bruke.
+- [x] Oversett visjonen til eksplisitte produktkrav per produktområde.
+- [x] Beskriv sentrale tilstander, overganger og invariants for blant annet lån, objekter, relasjoner, miljøer, kontoer og saker.
+- [x] Skill tydelig mellom normalforløp, unntaksforløp og administrative forløp.
+- [x] Konkretiser utsatte detaljvalg som må bestemmes for at produktet skal kunne bygges, uten å låse unødvendige implementasjonsdetaljer.
+- [x] Definer ikke-funksjonelle produktkrav som følger av visjonen, inkludert sikkerhet, personvern, tilgjengelighet, robusthet og sporbarhet.
+- [x] Gjennomfør konsistenssjekk mot hele `docs/vision/`.
 
 ### C. UX-modell
 
@@ -66,4 +66,4 @@
 
 ## Neste punkt
 
-Neste arbeidsøkt skal **etablere den formelle begreps- og domenemodellen som produktspesifikasjonen skal bruke**.
+Neste arbeidslag er **UX-modellen**, med informasjonsarkitektur og overordnet navigasjon som første konkrete punkt.

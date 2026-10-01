@@ -56,10 +56,10 @@ Frivillig overføring kan skje til medeier som var medeier ved godkjenning. Kont
 
 Forlengelse, endring av avtalt overlevering eller andre vesentlige avtaleendringer kan ikke gjennomføres ensidig når de endrer den andre partens forpliktelse eller påvirker en allerede godkjent avtale.
 
-### PS-LOAN-011 — Før overlevering kan et godkjent lån avsluttes uten å late som det ble gjennomført
-**Forankring:** [Låneforløpet](../vision/05-laneforlop.md)
+### PS-LOAN-011 — Begge parter kan ensidig kansellere før fysisk overlevering
+**Forankring:** [Låneforløpet](../vision/05-laneforlop.md), [Scenario 19](../vision/scenario-stresstest.md)
 
-Kansellering før planlagt overlevering og «ikke gjennomført» etter passert overlevering er separate sluttårsaker. Plattformadministrativ stans skal også være egen årsak og ikke feilaktig telle som brukerens ordinære kansellering/no-show.
+Så lenge objektet ikke er fysisk overlevert kan både utlåner og låntaker avslutte et godkjent lån ensidig. Etter overlevering brukes retur-/avviksforløpet. Kansellering før planlagt overlevering og «ikke gjennomført» etter passert overlevering er separate sluttårsaker. Plattformadministrativ stans skal også være egen årsak og ikke feilaktig telle som brukerens ordinære kansellering/no-show.
 
 ### PS-LOAN-012 — Passert overlevering starter nøytral avklaring
 **Forankring:** [Når et godkjent lån ikke blir hentet](../vision/05-laneforlop.md)
@@ -101,7 +101,12 @@ Et forløp kan avsluttes administrativt som **uavklart** når videre faktaklargj
 
 Hvis fysisk besittelse fortsatt er usikker, må registrert eier/medeier først bekrefte faktisk kontroll over objektet før nye lån kan inngås.
 
-### PS-LOAN-020 — Blokkering og suspensjon bevarer minimumstilgang til fysisk avslutning
+### PS-LOAN-020 — Tidlig bekreftet retur frigjør restperioden
+**Forankring:** VP-07; [Scenario 27](../vision/scenario-stresstest.md)
+
+Når ansvarlig utlåner bekrefter fysisk retur før avtalt slutt, avsluttes lånet på faktisk returtidspunkt og den resterende reservasjonen frigjøres. Dette gjør ikke perioden ledig dersom en annen gyldig sperre eller reservasjon fortsatt gjelder.
+
+### PS-LOAN-021 — Blokkering og suspensjon bevarer minimumstilgang til fysisk avslutning
 **Forankring:** VP-10, VP-11
 
 Når et objekt allerede er overlevert, skal nødvendig strukturert retur-/mottakstilgang bestå selv om ordinær sosial tilgang eller kontoaktivitet stanses, med strengere kontrollert prosess ved særskilt sikkerhetsrisiko.

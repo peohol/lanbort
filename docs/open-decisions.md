@@ -99,6 +99,13 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Hvilke konkrete norske/EØS-krav må innarbeides i vilkår, personvern, moderering, datalivssyklus og tilgjengelighet før bred lansering?
 - **Avhenger av:** Kvalifisert juridisk vurdering av gjeldende rett.
 
+### OD-0008 — Uavhengig behandling av alvorlige saker om plattformforvaltningen
+- **Lag:** Tverrgående
+- **Status:** Åpen
+- **Berører:** PS-ADM-013
+- **Spørsmål:** Hvilken organisatorisk ordning skal brukes dersom alle interne plattformforvaltere er inhabile?
+- **Avhenger av:** Organisasjonsform og skala før bred lansering.
+
 ## Avklart
 
 Ingen registrerte avklarte detaljbeslutninger ennå.
