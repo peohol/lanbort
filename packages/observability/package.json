@@ -1,0 +1,15 @@
+{
+  "name": "@lanbort/observability",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc6 --noEmit",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc6 --noEmit",
+    "test": "vitest run"
+  }
+}
