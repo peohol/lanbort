@@ -1,3 +1,5 @@
+> **Historisk dokument:** Dette er det opprinnelige visjonsnotatet og er ikke lenger den autoritative produktvisjonen. Den kanoniske **Produktvisjon v1.0** finnes i [`docs/vision/README.md`](docs/vision/README.md). Ved motstrid gjelder den strukturerte visjonen.
+
 # Introduksjon
 
 Jeg skal lage en ny app kalt Lånbort. Poenget med appen er å stimulere Norges befolkning til å låne bort/dele ting man har med andre.
