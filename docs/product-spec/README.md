@@ -1,0 +1,23 @@
+# Produktspesifikasjon
+
+> **Status:** Produktspesifikasjon v0.1. Krav, domenemodell og hovedtilstander er utledet fra produktvisjon v1.0 og konsistenskontrollert mot scenario-stresstesten.
+
+Produktspesifikasjonen beskriver **hva Lånbort skal kunne og hvilke produktregler som gjelder**, uten å låse unødvendige tekniske løsninger eller konkret UI.
+
+Normative produktkrav får stabile `PS-*`-ID-er og peker oppover til relevante visjonskilder etter [sporbarhetskonvensjonen](../traceability.md). Beskrivende tekst og eksempler trenger ikke egne ID-er.
+
+## Dokumenter
+
+1. [Domenemodell](00-domenemodell.md)
+2. [Brukere, kontoer og relasjoner](01-brukere-kontoer-og-relasjoner.md)
+3. [Miljøer](02-miljoer.md)
+4. [Utlånsobjekter](03-utlansobjekter.md)
+5. [Låneforløp](04-laneforlop.md)
+6. [Kommunikasjon, varsler og saker](05-kommunikasjon-varsler-og-saker.md)
+7. [Tillit, anmeldelser og moderering](06-tillit-anmeldelser-og-moderering.md)
+8. [Administrasjon og livssyklus](07-administrasjon-og-livssyklus.md)
+9. [Ikke-funksjonelle krav](08-ikke-funksjonelle-krav.md)
+
+Åpne detaljvalg som ennå ikke kan fastsettes, registreres i [det felles beslutningsregisteret](../open-decisions.md) fremfor å bli stående som løse TODO-er i spesifikasjonen.
+
+10. [Konsistenssjekk mot produktvisjonen](validation.md)
