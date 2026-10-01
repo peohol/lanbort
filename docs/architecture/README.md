@@ -1,6 +1,6 @@
 # Systemarkitektur
 
-> **Status:** Dokumentstruktur fastsatt. Innhold fylles i senere planleggingssteg.
+> **Status:** Systemarkitektur v0.1. Systemgrenser, komponentansvar, sannhetskilder, autorisasjon, konsistens, historikk, kommunikasjon, sikkerhet, datalivssyklus og integrasjonsgrenser er definert.
 
 Systemarkitekturen beskriver **hvordan Lånbort teknisk skal oppfylle produktkravene og UX-modellen**. Arkitekturen organiseres etter tekniske ansvarsområder, ikke etter skjermer.
 
@@ -22,3 +22,9 @@ Arkitekturen peker oppover til krav og UX-regler som den oppfyller. Viktige tekn
 12. [Arkitekturbeslutninger](decisions/README.md)
 
 Åpne tekniske valg som ennå ikke har tilstrekkelig beslutningsgrunnlag, registreres i [det felles beslutningsregisteret](../open-decisions.md). Når et viktig teknisk veivalg faktisk tas, dokumenteres det som ADR der det er relevant.
+
+## Modenhet
+
+Arkitekturen er konkret nok til å brytes ned i implementeringsarbeid uten å låse leverandørvalg som ikke påvirker domenemodellen. PostgreSQL er valgt som referanse og planlagt transaksjonell kjerne. Fem strukturelle beslutninger er dokumentert som ADR-er.
+
+Åpne spørsmål som må løses før den relevante funksjonen eller bred lansering finnes i [`../open-decisions.md`](../open-decisions.md), særlig E2EE-nøkkelstyring, retention, regulerte objekter og juridisk lanseringsgjennomgang.

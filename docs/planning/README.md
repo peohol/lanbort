@@ -44,17 +44,17 @@
 
 ### D. Systemarkitektur
 
-- [ ] Utled arkitekturkrav fra produktspesifikasjonen og UX-modellen før valg av konkrete teknologier.
-- [ ] Definer systemgrenser, hovedkomponenter og ansvar mellom dem.
-- [ ] Definer datamodell og eierskap til sannhet for sentrale domeneobjekter.
-- [ ] Definer autorisasjons- og tilgangsmodellen, inkludert kontekstbundne roller og minste nødvendige tilgang.
-- [ ] Definer transaksjons-, samtidighets- og konsistensregler for handlinger som kan konkurrere eller komme i feil rekkefølge.
-- [ ] Definer hendelses-, historikk- og revisjonsmodell.
-- [ ] Definer arkitektur for chat, varsler og saker med nødvendige personvern- og sikkerhetsgrenser.
-- [ ] Definer sikkerhetsarkitektur og threat model, inkludert identitet, sesjoner, hemmeligheter, kryptering, misbruksvern og administrative inngrep.
-- [ ] Definer datalivssyklus, sletting, oppbevaring, backup og gjenoppretting.
-- [ ] Definer nødvendige eksterne integrasjoner og hvilke deler av systemet som skal være leverandøruavhengige.
-- [ ] Dokumenter viktige teknologivalg som egne arkitekturbeslutninger når beslutningsgrunnlaget er modent.
+- [x] Utled arkitekturkrav fra produktspesifikasjonen og UX-modellen før valg av konkrete teknologier.
+- [x] Definer systemgrenser, hovedkomponenter og ansvar mellom dem.
+- [x] Definer datamodell og eierskap til sannhet for sentrale domeneobjekter.
+- [x] Definer autorisasjons- og tilgangsmodellen, inkludert kontekstbundne roller og minste nødvendige tilgang.
+- [x] Definer transaksjons-, samtidighets- og konsistensregler for handlinger som kan konkurrere eller komme i feil rekkefølge.
+- [x] Definer hendelses-, historikk- og revisjonsmodell.
+- [x] Definer arkitektur for chat, varsler og saker med nødvendige personvern- og sikkerhetsgrenser.
+- [x] Definer sikkerhetsarkitektur og threat model, inkludert identitet, sesjoner, hemmeligheter, kryptering, misbruksvern og administrative inngrep.
+- [x] Definer datalivssyklus, sletting, oppbevaring, backup og gjenoppretting.
+- [x] Definer nødvendige eksterne integrasjoner og hvilke deler av systemet som skal være leverandøruavhengige.
+- [x] Dokumenter viktige teknologivalg som egne arkitekturbeslutninger når beslutningsgrunnlaget er modent.
 
 ### E. Samlet validering og overgang til implementering
 
@@ -66,4 +66,4 @@
 
 ## Neste punkt
 
-Neste arbeidslag er **systemarkitekturen**: først utledes arkitekturkrav og systemgrenser fra den ferdige produktspesifikasjonen og UX-modellen.
+Neste arbeidslag er **samlet validering og overgang til implementering**: produktspesifikasjon, UX-modell og arkitektur skal nå prøves mot hverandre før implementeringsarbeid pakkes.
