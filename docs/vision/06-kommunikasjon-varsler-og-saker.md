@@ -152,6 +152,12 @@ Lånbort skal foreløpig ikke ha en generell «slett for alle»-funksjon for pri
 
 Faktisk sletting, anonymisering eller annen behandling av underliggende data skal håndteres separat gjennom reglene for datalivssyklus, kontosletting, personvern og eventuelle juridiske oppbevaringsbehov.
 
+### Når den andre deltakeren sletter kontoen
+
+Permanent sletting av den ene kontoen skal ikke automatisk fjerne den andre deltakerens legitime kopi av felles samtalehistorikk. Samtalen kan bestå så lenge de generelle oppbevaringsreglene gir grunnlag for det.
+
+Den slettede brukerens aktive profil skal ikke bestå gjennom chatten. Navn, profilbilde og profillenke skal derfor som hovedregel erstattes med en nøytral historisk identitet som **«Tidligere bruker»** når konkret identitet ikke lenger er nødvendig. Dette innebærer ikke at gamle meldinger omskrives; det gjelder hvordan den tidligere kontoen representeres i brukerflaten.
+
 ## Kontakt med administratorene i et miljø
 
 Et medlem skal kunne kontakte **administratorene som funksjon**, ikke bare sende privat melding til en bestemt person som tilfeldigvis er administrator.
