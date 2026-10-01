@@ -87,6 +87,8 @@ Automatisk skjuling fra oppdagelsesflater, for eksempel på grunn av inaktivitet
 
 Dersom et miljø krever administratorgodkjenning av objekter, må publisering der først gjennom den prosessen.
 
+Hvis et miljø senere aktiverer forhåndsgodkjenning, gjelder kravet også objekter som allerede var publisert der. Disse publiseringene settes midlertidig til **venter på godkjenning** og skjules fra nye oppdagelser og nye låneforespørsler i miljøet. Allerede godkjente eller aktive lån påvirkes ikke. Eksisterende ikke-godkjente låneforespørsler beholdes, men settes på vent til objektet er vurdert; ved godkjenning kan de fortsette, mens et avslag avslutter dem nøytralt. Dette er en administrativ pause og skal ikke behandles som eierens egen avpublisering.
+
 ## Samme objekt i flere miljøer
 
 Objektet har én felles sannhet på tvers av miljøene.
