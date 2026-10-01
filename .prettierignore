@@ -3,3 +3,4 @@ VISION.md
 .next/
 node_modules/
 coverage/
+pnpm-lock.yaml
