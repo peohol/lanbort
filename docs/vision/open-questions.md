@@ -1,8 +1,6 @@
 # Åpne spørsmål
 
-> **Status:** Ingen registrerte åpne visjonsspørsmål per 29. september 2026. Scenario-stresstesten er innarbeidet gjennom scenario 57.
-
-Den sekvensielle visjonsgjennomgangen av spørsmål 1–40 er fullført. I tillegg er avklaringene fra scenario-basert stresstest gjennom scenario 57 innarbeidet i de tematiske dokumentene. Endringene kan følges gjennom Git-historikken.
+> **Status:** Ingen registrerte åpne visjonsspørsmål per 1. oktober 2026. Den sekvensielle gjennomgangen av spørsmål 1–40 og scenario-stresstesten 2–81 er fullført og innarbeidet i produktvisjon v1.0.
 
 Dette betyr ikke at alle produktdetaljer er bestemt. Følgende typer valg er bevisst utsatt og skal normalt ikke behandles som nye visjonsspørsmål:
 
@@ -14,6 +12,6 @@ Dette betyr ikke at alle produktdetaljer er bestemt. Følgende typer valg er bev
 - detaljert policy for regulerte eller risikofylte objekter
 - juridiske vurderinger som krever kvalifisert vurdering av gjeldende rett
 
-Den løpende scenario-køen vedlikeholdes i [scenario-stresstest.md](scenario-stresstest.md).
+Den planlagte scenario-køen er fullført. [`scenario-stresstest.md`](scenario-stresstest.md) beholdes som dokumentasjon på hvilke grensesituasjoner som er prøvd, og kan utvides dersom senere arbeid avdekker en ny prinsipiell scenariofamilie.
 
-Hvis senere gjennomgang avdekker en ny reell motsetning eller et nytt produktvalg som påvirker Lånborts grunnleggende modell, skal det legges inn her som et nytt nummerert visjonsspørsmål.
+Hvis senere gjennomgang avdekker en reell motsetning eller et nytt produktvalg som påvirker Lånborts grunnleggende modell, skal det legges inn her som et nytt nummerert visjonsspørsmål. Spørsmål som bare gjelder spesifikasjon, UX, teknisk løsning eller juridisk detaljering skal håndteres i sitt respektive senere arbeidslag.
