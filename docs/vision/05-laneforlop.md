@@ -1,6 +1,6 @@
 # Låneforløpet
 
-> **Status:** Konsolidert visjonsutkast. Hovedforløpet, avvikstilstandene, ansvarlig utlåner og skillet mellom tilgjengelighet og lånestatus er avklart.
+> **Status:** Produktvisjon v1.0. Hovedforløpet, avvikstilstandene, ansvarlig utlåner og skillet mellom tilgjengelighet og lånestatus er avklart.
 
 ## Grunnforløp
 
