@@ -28,9 +28,9 @@ describe("structured logging baseline", () => {
   });
 
   it("rejects event names that could contain free-form user content", () => {
-    expect(() => serializeLog("error", "login failed for user@example.com")).toThrow(
-      "static machine identifiers",
-    );
+    expect(() =>
+      serializeLog("error", "login failed for user@example.com"),
+    ).toThrow("static machine identifiers");
   });
 
   it("writes one JSON line", () => {
@@ -39,7 +39,9 @@ describe("structured logging baseline", () => {
     try {
       writeLog("warn", "worker.retry", { job: "outbox", attempt: 2 });
       expect(write).toHaveBeenCalledTimes(1);
-      expect(String(write.mock.calls[0]?.[0])).toMatch(/"event":"worker\.retry"/);
+      expect(String(write.mock.calls[0]?.[0])).toMatch(
+        /"event":"worker\.retry"/,
+      );
     } finally {
       write.mockRestore();
     }

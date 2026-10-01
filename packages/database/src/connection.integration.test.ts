@@ -18,8 +18,9 @@ describe("database connection", () => {
     });
 
     try {
-      const result =
-        await sql<{ value: number }>`select 1::int as value`.execute(database);
+      const result = await sql<{
+        value: number;
+      }>`select 1::int as value`.execute(database);
 
       expect(result.rows[0]?.value).toBe(1);
     } finally {

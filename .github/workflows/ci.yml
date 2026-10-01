@@ -97,18 +97,7 @@ jobs:
         run: pnpm audit --prod --audit-level=high
 
       - name: Prove secret scanner detects a known test secret
-        shell: bash
-        run: |
-          mkdir -p /tmp/gitleaks-selftest
-          printf '%s%s\n' 'token = "ghp_' 'aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789"' > /tmp/gitleaks-selftest/repro.txt
-
-          set +e
-          docker run --rm -v /tmp/gitleaks-selftest:/scan ghcr.io/gitleaks/gitleaks:v8.30.0@sha256:691af3c7c5a48b16f187ce3446d5f194838f91238f27270ed36eef6359a574d9 detect --no-git --source /scan/repro.txt --exit-code 42 --no-banner
-          status=$?
-          set -e
-
-          test "$status" -eq 42
+        run: scripts/security/secret-scan.sh selftest
 
       - name: Scan repository for committed secrets
-        run: |
-          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.0@sha256:691af3c7c5a48b16f187ce3446d5f194838f91238f27270ed36eef6359a574d9 detect --source /repo --redact --exit-code 1 --no-banner
+        run: scripts/security/secret-scan.sh repo
