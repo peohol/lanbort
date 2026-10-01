@@ -1,6 +1,6 @@
 # Scenario-basert stresstest av produktvisjonen
 
-> **Status:** Levende arbeidsdokument. Scenario 2–78 er gjennomført og avklart per 1. oktober 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
+> **Status:** Levende arbeidsdokument. Scenario 2–79 er gjennomført og avklart per 1. oktober 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
 
 ## Formål og metode
 
@@ -97,6 +97,7 @@ Stresstesten skal holde seg på visjonsnivå. Tekniske mekanismer, konkrete fris
 - **76. Permanent sletting med ventende anmeldelser eller invitasjoner, men uten aktive lån:** slike lette, fremtidige rettigheter skal ikke i seg selv blokkere kontosletting. Innkommende konto-bundne invitasjoner og uaksepterte rolleinvitasjoner faller bort når mottakerkontoen slettes. Personlige utgående invitasjoner som forutsetter avsenderkontoen faller normalt bort, mens en allerede sendt miljøinvitasjon som tilhører miljøet kan bestå etter de vanlige miljøreglene. En ubenyttet anmeldelsesrett for den slettende brukeren faller bort, men allerede innsendte anmeldelser kan fullføre normal dobbelblind publisering som historisk materiale og anonymiseres ved behov. Motpartens allerede opptjente anmeldelsesrett faller ikke bort bare fordi brukeren sletter kontoen; anmeldelsen knyttes da til historisk lånekontekst og ikke til en aktiv profil.
 - **77. Privat chat og delt historikk når en konto slettes:** kontosletting fjerner den aktive profilen, men omskriver ikke automatisk den andre partens legitime kopi av felles samtale- og lånehistorikk. Der identiteten ikke lenger er nødvendig, skal navn, profilbilde og profillenke erstattes med en nøytral betegnelse som «Tidligere bruker». Underliggende meldinger og strukturerte lånehendelser kan bestå etter de generelle oppbevaringsreglene. Mer identifiserende informasjon skal bare bevares eller vises når den fortsatt er nødvendig for et konkret legitimt formål.
 - **78. Konto deaktiveres eller slettes mens brukeren eier et skjult miljø eller er eneste administrator:** permanent sletting skal ikke gjennomføres før miljørollen er avviklet. Hvis andre administratorer finnes, må eierskapet overføres eller miljøet bringes inn i den etablerte kontinuitetsprosessen. Hvis ingen gyldig etterfølger finnes, går miljøet mot kontrollert avvikling. Ved deaktivering eller uventet bortfall stoppes ny aktivitet som krever administrasjon mens eksisterende lån og nødvendig historikk fortsetter. Et skjult miljø forblir skjult gjennom hele prosessen; kontinuitet eller avvikling skal aldri gjøre miljøet mer oppdagbart.
+- **79. Falsk identitet oppdages etter mange gjennomførte lån og anmeldelser:** kontoen kan suspenderes eller avvikles, men tidligere lån og anmeldelser omskrives ikke automatisk fordi de fortsatt beskriver faktiske hendelser mellom den aktuelle kontoen og andre brukere. Historiske anmeldelser kan bestå i lånekonteksten, mens en avviklet konto ikke skal beholde en aktiv offentlig tillitsprofil. Dersom konkrete lån, anmeldelser eller motparter senere viser seg å være fabrikkert eller manipulerte, kan akkurat disse hendelsene korrigeres eller tas ut av aggregater gjennom sporbar moderering. Funn av falsk identitet er primært et internt sikkerhets- og modereringssignal. Plattformen kan beholde nødvendig intern kobling for å hindre omgåelse eller ny misbrukskonto. Hvis personen senere oppretter konto under korrekt identitet, skal gammel sosial tillitshistorikk ikke automatisk overføres til den nye profilen.
 
 ## Gjenstående scenario-kø
 
@@ -122,7 +123,6 @@ Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avde
 
 ### G. Konto- og datalivssyklus
 
-- Falsk identitet oppdages etter mange gjennomførte lån og anmeldelser: hva skjer med historisk tillitsinformasjon?
 - Duplikatkonto avvikles når begge kontoene har sosial og lånerelatert historikk.
 
 ### H. Privat kommunikasjon og saker
