@@ -12,7 +12,7 @@ Disse prinsippene er en kortfattet inngang til den fullstendige visjonen. Ved be
 
 4. **Det finnes ett felles lånesystem.** Miljøer og vennskap er ulike måter et lån kan oppstå på; etter at forespørselen er sendt skal det ordinære låneforløpet i hovedsak være det samme.
 
-5. **Eksisterende forpliktelser har kontinuitet.** Senere endringer i vennskap, medlemskap, publisering, roller eller tilgang skal ikke stille omskrive eller oppheve et allerede gyldig lån.
+5. **Eksisterende forpliktelser har kontinuitet.** Senere endringer i vennskap, medlemskap, publisering, roller eller tilgang skal ikke i det stille omskrive eller oppheve et allerede gyldig lån.
 
 6. **Nye forpliktelser krever gyldig adgang og samtykke.** Systemet skal ikke etablere nye lån eller vesentlig endre avtalte vilkår på vegne av en bruker uten nødvendig adgang og relevant samtykke.
 
@@ -38,4 +38,4 @@ Disse prinsippene er en kortfattet inngang til den fullstendige visjonen. Ved be
 
 17. **Sikkerhet og lovlighet kan stanse fasilitering.** Lånbort skal kunne beskytte brukere og plattformen mot ulovlige eller uforholdsmessig risikofylte objekter og alvorlig misbruk, også når dette griper inn i planlagt aktivitet.
 
-18. **Detaljer skal ikke forveksles med prinsipper.** Eksakte frister, terskler, felter, ordlyd, tekniske mekanismer og juridiske vurderinger fastsettes i senere arbeidslag så lenge de bevarer produktprinsippene over.
+18. **Detaljer skal ikke forveksles med prinsipper.** Eksakte frister, terskler, felter, ordlyd, tekniske mekanismer og juridiske vurderinger fastsettes i senere arbeidslag så lenge de bevarer produktprinsippene ovenfor.
