@@ -7,7 +7,9 @@ export const metadata: Metadata = {
   description: "Lån ting av mennesker du stoler på.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="nb">
       <body>{children}</body>
