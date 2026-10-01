@@ -1,6 +1,6 @@
 # Scenario-basert stresstest av produktvisjonen
 
-> **Status:** Levende arbeidsdokument. Scenario 2–79 er gjennomført og avklart per 1. oktober 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
+> **Status:** Levende arbeidsdokument. Scenario 2–80 er gjennomført og avklart per 1. oktober 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
 
 ## Formål og metode
 
@@ -98,6 +98,7 @@ Stresstesten skal holde seg på visjonsnivå. Tekniske mekanismer, konkrete fris
 - **77. Privat chat og delt historikk når en konto slettes:** kontosletting fjerner den aktive profilen, men omskriver ikke automatisk den andre partens legitime kopi av felles samtale- og lånehistorikk. Der identiteten ikke lenger er nødvendig, skal navn, profilbilde og profillenke erstattes med en nøytral betegnelse som «Tidligere bruker». Underliggende meldinger og strukturerte lånehendelser kan bestå etter de generelle oppbevaringsreglene. Mer identifiserende informasjon skal bare bevares eller vises når den fortsatt er nødvendig for et konkret legitimt formål.
 - **78. Konto deaktiveres eller slettes mens brukeren eier et skjult miljø eller er eneste administrator:** permanent sletting skal ikke gjennomføres før miljørollen er avviklet. Hvis andre administratorer finnes, må eierskapet overføres eller miljøet bringes inn i den etablerte kontinuitetsprosessen. Hvis ingen gyldig etterfølger finnes, går miljøet mot kontrollert avvikling. Ved deaktivering eller uventet bortfall stoppes ny aktivitet som krever administrasjon mens eksisterende lån og nødvendig historikk fortsetter. Et skjult miljø forblir skjult gjennom hele prosessen; kontinuitet eller avvikling skal aldri gjøre miljøet mer oppdagbart.
 - **79. Falsk identitet oppdages etter mange gjennomførte lån og anmeldelser:** kontoen kan suspenderes eller avvikles, men tidligere lån og anmeldelser omskrives ikke automatisk fordi de fortsatt beskriver faktiske hendelser mellom den aktuelle kontoen og andre brukere. Historiske anmeldelser kan bestå i lånekonteksten, mens en avviklet konto ikke skal beholde en aktiv offentlig tillitsprofil. Dersom konkrete lån, anmeldelser eller motparter senere viser seg å være fabrikkert eller manipulerte, kan akkurat disse hendelsene korrigeres eller tas ut av aggregater gjennom sporbar moderering. Funn av falsk identitet er primært et internt sikkerhets- og modereringssignal. Plattformen kan beholde nødvendig intern kobling for å hindre omgåelse eller ny misbrukskonto. Hvis personen senere oppretter konto under korrekt identitet, skal gammel sosial tillitshistorikk ikke automatisk overføres til den nye profilen.
+- **80. Duplikatkonto avvikles når begge kontoene har sosial og lånerelatert historikk:** først må det være tilstrekkelig verifisert at kontoene faktisk tilhører samme person og at situasjonen ikke skyldes omgåelse av suspensjon eller annet misbruk. Én konto kan videreføres som aktiv konto, mens den andre avvikles kontrollert. Historiske lån, anmeldelser, chatter, vennskap og miljørelasjoner flyttes ikke som om de alltid hadde tilhørt hovedkontoen; de beholder den konto- og konteksten de faktisk oppstod under. Den avviklede kontoen kan kobles internt til hovedkontoen for sikkerhets- og kontinuitetsformål. Pågående forpliktelser og brukerens egne objekter kan ved behov overføres kontrollert og sporbar, mens vennskap, miljømedlemskap, administratorroller og sosial tillit ikke overføres automatisk. Tillitsskårer fra kontoene skal ikke automatisk slås sammen.
 
 ## Gjenstående scenario-kø
 
@@ -123,7 +124,6 @@ Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avde
 
 ### G. Konto- og datalivssyklus
 
-- Duplikatkonto avvikles når begge kontoene har sosial og lånerelatert historikk.
 
 ### H. Privat kommunikasjon og saker
 
