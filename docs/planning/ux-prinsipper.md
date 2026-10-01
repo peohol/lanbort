@@ -30,3 +30,11 @@ Det skal være lett å bla, søke, lagre eller endre egne uforpliktende innstill
 
 Lånbort skal samtidig unngå bekreftelsesutmattelse: hvis alt får en advarsel, mister advarslene verdi.
 
+### 4. Systemtilstand skal være tydelig og handlingsnær
+
+Brukeren skal enkelt kunne forstå hva som er status akkurat nå, hva som eventuelt venter på noen andre, og hva brukeren selv kan eller bør gjøre videre.
+
+Et lån skal for eksempel ikke bare vises som «aktivt», men presenteres slik at det er tydelig om objektet venter på overlevering, er utlånt, nærmer seg retur, venter på returbekreftelse eller befinner seg i et avvik. Den relevante neste handlingen bør være lett tilgjengelig i samme kontekst.
+
+Interne statemaskiner og tekniske begreper skal ikke eksponeres som sådan. UI-et skal oversette dem til forståelige situasjoner og handlinger.
+
