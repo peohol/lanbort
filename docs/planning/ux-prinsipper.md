@@ -78,3 +78,11 @@ Når noe ikke kan reverseres enkelt, eller påvirker andre mennesker eller eksis
 
 Feilmeldinger skal forklare hva som skjedde, hva brukeren fortsatt kan gjøre, og om systemet faktisk har gjennomført deler av handlingen. Brukeren skal ikke måtte gjette om en forespørsel ble sendt, om et lån ble endret eller om noe må prøves på nytt.
 
+### 10. Tilgjengelighet skal være innebygd fra start
+
+Lånbort bør utformes slik at sentrale funksjoner kan brukes av flest mulig uten særskilte «tilgjengelighetsmoduser». Det innebærer blant annet tydelig hierarki, god lesbarhet, tilstrekkelig kontrast, forutsigbar navigasjon, store nok berøringsflater og støtte for hjelpemidler.
+
+Informasjon skal ikke formidles gjennom farge alene, og handlinger skal ikke være avhengige av presis motorikk, bestemte bevegelser eller kortvarige visuelle signaler.
+
+Målet er ikke bare formell etterlevelse av tilgjengelighetskrav, men at universell utforming påvirker de grunnleggende UX-valgene før detaljdesign begynner.
+
