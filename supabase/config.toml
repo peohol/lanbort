@@ -6,7 +6,7 @@ extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
 [db]
-major_version = 15
+major_version = 17
 
 [db.migrations]
 enabled = true

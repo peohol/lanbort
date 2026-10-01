@@ -4,7 +4,7 @@
 
 ## Forutsetninger
 
-- Node.js 24.x (låst i `.node-version` og `package.json`)
+- Node.js 24.x (låst i `.node-version` og `package.json`; `@types/node` følger samme hovedversjon)
 - pnpm 12.8.1 (låst i `packageManager`)
 - Docker, som Supabase CLI bruker for den lokale databasen
 
@@ -32,7 +32,7 @@ pnpm dev
 
 ## Database og migrasjoner
 
-SQL-filene i `supabase/migrations/` er den autoritative skjemahistorikken. Domenedata legges i det private `app`-skjemaet, som ikke er eksponert gjennom Supabase Data API, og som `anon`, `authenticated` og `service_role` ikke har tilgang til.
+SQL-filene i `supabase/migrations/` er den autoritative skjemahistorikken. Den lokale databasen kjører PostgreSQL 17 (`[db] major_version` i `supabase/config.toml`), som skal være samme hovedversjon som de hostede Supabase-miljøene. Domenedata legges i det private `app`-skjemaet, som ikke er eksponert gjennom Supabase Data API, og som `anon`, `authenticated` og `service_role` ikke har tilgang til.
 
 ### Endre skjemaet
 
