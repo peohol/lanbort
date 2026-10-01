@@ -1,6 +1,6 @@
 # UX-modell
 
-> **Status:** Dokumentstruktur fastsatt. De styrende UX-prinsippene er vedtatt; øvrig innhold fylles i senere planleggingssteg.
+> **Status:** UX-modell v0.1. Informasjonsarkitektur, normalreiser, unntaksforløp, interaksjonsmønstre, personvern og tilgjengelighetsmodell er definert og scenariovalidert.
 
 UX-modellen beskriver **hvordan produktmodellen skal fremstå og håndteres for brukeren**. Den skal gå på tvers av produktområdene der brukerens mentale modell gjør det.
 

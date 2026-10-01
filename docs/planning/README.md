@@ -33,14 +33,14 @@
 
 ### C. UX-modell
 
-- [ ] Definer informasjonsarkitektur og overordnet navigasjonsmodell.
-- [ ] Definer hvilke konsepter og tilstander brukeren skal se, og hvilke som normalt skal ligge skjult i bakgrunnen.
-- [ ] Modellér de viktigste ende-til-ende-reisene for ordinære brukere.
-- [ ] Modellér relevante avvik, konflikter og avslutningsforløp uten å gjøre normal-UI tungt.
-- [ ] Definer mønstre for samtykke, bekreftelser, reverserbare handlinger, feilhåndtering og konsekvenskommunikasjon.
-- [ ] Definer hvordan kontekst, roller, personvern og historisk tilgang uttrykkes i UI.
-- [ ] Definer mobil- og tilgjengelighetskrav på modellnivå før konkret visuell design.
-- [ ] Test UX-modellen mot representative scenarioer fra visjonens stresstest.
+- [x] Definer informasjonsarkitektur og overordnet navigasjonsmodell.
+- [x] Definer hvilke konsepter og tilstander brukeren skal se, og hvilke som normalt skal ligge skjult i bakgrunnen.
+- [x] Modellér de viktigste ende-til-ende-reisene for ordinære brukere.
+- [x] Modellér relevante avvik, konflikter og avslutningsforløp uten å gjøre normal-UI tungt.
+- [x] Definer mønstre for samtykke, bekreftelser, reverserbare handlinger, feilhåndtering og konsekvenskommunikasjon.
+- [x] Definer hvordan kontekst, roller, personvern og historisk tilgang uttrykkes i UI.
+- [x] Definer mobil- og tilgjengelighetskrav på modellnivå før konkret visuell design.
+- [x] Test UX-modellen mot representative scenarioer fra visjonens stresstest.
 
 ### D. Systemarkitektur
 
@@ -66,4 +66,4 @@
 
 ## Neste punkt
 
-Neste arbeidslag er **UX-modellen**, med informasjonsarkitektur og overordnet navigasjon som første konkrete punkt.
+Neste arbeidslag er **systemarkitekturen**: først utledes arkitekturkrav og systemgrenser fra den ferdige produktspesifikasjonen og UX-modellen.
