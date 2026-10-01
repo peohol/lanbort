@@ -50,7 +50,54 @@ Når spørsmålet er avgjort:
 
 ## Åpne
 
-Ingen registrerte åpne detaljbeslutninger per 1. oktober 2026.
+### OD-0001 — Plattformpolicy for regulerte og risikofylte objekter
+- **Lag:** Tverrgående
+- **Status:** Åpen
+- **Berører:** VP-17, PS-OBJ-017
+- **Spørsmål:** Hvilke objektkategorier skal forbys, begrenses eller kreve særvilkår?
+- **Avhenger av:** Juridisk og sikkerhetsmessig vurdering før bred lansering.
+
+### OD-0002 — Oppbevaringstider per datatype
+- **Lag:** Tverrgående
+- **Status:** Åpen
+- **Berører:** PS-ADM-011, PS-NFR-009, PS-NFR-013
+- **Spørsmål:** Hvor lenge skal låne-, saks-, modererings-, sikkerhets- og øvrige historikkdata bevares?
+- **Avhenger av:** Produktbehov, personvern og juridisk vurdering.
+
+### OD-0003 — Dokumentasjonskrav ved dødsfall eller varig utilgjengelighet
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-ADM-007, PS-ADM-008
+- **Spørsmål:** Hvilket bevisnivå kreves for å verifisere forholdet og en legitim representant?
+- **Avhenger av:** Misbruksrisiko og juridisk vurdering.
+
+### OD-0004 — Endelige eksterne varslingskanaler og standardvalg
+- **Lag:** UX
+- **Status:** Åpen
+- **Berører:** PS-COM-003
+- **Spørsmål:** Hvilke kombinasjoner av web push, e-post og eventuell senere mobilpush skal være standard for hvert varslingsnivå?
+- **Avhenger av:** Pilotdata og teknisk støtte.
+
+### OD-0005 — Kryptografisk modell for ende-til-ende-kryptert chat
+- **Lag:** Arkitektur
+- **Status:** Åpen
+- **Berører:** PS-COM-005, PS-NFR-007
+- **Spørsmål:** Hvordan skal nøkkelstyring, flere enheter, nøkkelbytte, backup og tap av enhet håndteres uten servertilgang til klartekst?
+- **Avhenger av:** Sikkerhetsarkitektur og konkret klientmodell.
+
+### OD-0006 — Endelig kategoritaksonomi for objekter
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-OBJ-002
+- **Spørsmål:** Hvilke kategorier og underkategorier skal pilotversjonen tilby?
+- **Avhenger av:** Faktisk innhold i pilotmiljøet og OD-0001.
+
+### OD-0007 — Juridisk lanseringsgjennomgang
+- **Lag:** Tverrgående
+- **Status:** Åpen
+- **Berører:** produktvilkår, personvern, moderering, risikofylte objekter
+- **Spørsmål:** Hvilke konkrete norske/EØS-krav må innarbeides i vilkår, personvern, moderering, datalivssyklus og tilgjengelighet før bred lansering?
+- **Avhenger av:** Kvalifisert juridisk vurdering av gjeldende rett.
 
 ## Avklart
 
