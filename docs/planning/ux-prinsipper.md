@@ -86,3 +86,11 @@ Informasjon skal ikke formidles gjennom farge alene, og handlinger skal ikke væ
 
 Målet er ikke bare formell etterlevelse av tilgjengelighetskrav, men at universell utforming påvirker de grunnleggende UX-valgene før detaljdesign begynner.
 
+### 11. Personvern og sikkerhet skal være synlige gjennom forståelige konsekvenser, ikke teknisk språk
+
+Brukeren skal kunne forstå hvem som kan se noe, hvem som kan gjøre noe, og hva som skjer når en relasjon eller tilgang endres. Grensesnittet bør derfor uttrykke personvern og rettigheter konkret i den aktuelle situasjonen.
+
+Det bør for eksempel fremgå tydelig om et objekt er synlig for venner, bestemte miljøer eller andre grupper; om en handling gjør informasjon mer tilgjengelig; og om en endring påvirker eksisterende eller bare fremtidige forhold.
+
+Tekniske begreper som tilgangskontroll, autorisasjon eller krypteringsmodell bør normalt ikke være nødvendige for å bruke appen trygt. Systemet skal gjøre de faktiske grensene forståelige.
+
