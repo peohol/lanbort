@@ -202,6 +202,18 @@ Hvis ingen medeier kan eller vil overta eller bekrefte mottak, følger lånet va
 
 Hvis den ansvarlige utlåneren er eneste eier og dør eller blir varig utilgjengelig, skal ingen annen bruker automatisk overta utlånerrollen eller kontoen. Etter tilstrekkelig verifisering kan en legitim representant få en begrenset, formålsbundet rolle for akkurat det konkrete lånet, blant annet for å avtale praktisk retur og bekrefte mottak. Representanten skal ikke få generell tilgang til den tidligere brukerens konto eller private historikk. Hvis ingen legitim representant kan etableres, skal lånet kunne avsluttes administrativt som uavklart etter de vanlige reglene når videre avklaring ikke er mulig.
 
+### Låntaker dør eller blir varig utilgjengelig mens objektet er hos vedkommende
+
+Hvis låntakeren dør eller blir varig utilgjengelig mens objektet fortsatt kan være i vedkommendes besittelse, skal ingen annen person automatisk overta låntakerrollen eller kontoen.
+
+En melding om forholdet oppretter først en konfidensiell verifikasjonssak. Etter tilstrekkelig verifisering kan en legitim representant, for eksempel for et dødsbo, få en snever og formålsbundet rolle for det konkrete lånet. Rollen kan bare gi den informasjonen og de handlingene som er nødvendige for å identifisere og tilbakeføre objektet og avtale praktisk retur med utlåneren.
+
+Representanten skal ikke få generell tilgang til låntakerens private chatter, miljøer, anmeldelser eller øvrige lånehistorikk.
+
+Når utlåneren faktisk mottar objektet, kan returen bekreftes etter de vanlige reglene. Hvis ingen legitim representant kan etableres eller objektet ikke kan lokaliseres, kan lånet etter tilstrekkelig avklaringsprosess avsluttes administrativt som uavklart. Dette avgjør ikke eiendomsrett, krav mot dødsbo eller erstatningsansvar.
+
+Dødsfall eller dokumentert varig utilgjengelighet skal ikke klassifiseres som no-show, forsinkelse eller annen negativ låntakeratferd. Hvis lånet avsluttes uavklart på dette grunnlaget, skal objektet heller ikke automatisk regnes som fysisk tilgjengelig igjen. Eieren må først bekrefte at objektet faktisk er tilbake i vedkommendes kontroll før nye lån kan gjennomføres.
+
 ### Låntakers bekreftelse alene
 
 Hvis låntaker bekrefter tilbakelevering før utlåner, skal objektet få en **usikker** status inntil utlåner svarer.
