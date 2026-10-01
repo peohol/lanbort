@@ -25,13 +25,10 @@ jobs:
           package-manager-cache: false
 
       - name: Install pnpm
-        run: npm install --global pnpm@12.8.1
+        run: npm install --global --allow-scripts=pnpm pnpm@12.8.1
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
-
-      - name: Run quality checks
-        run: pnpm check
 
       - name: Upload generated lockfile during bootstrap
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -40,3 +37,6 @@ jobs:
           path: pnpm-lock.yaml
           if-no-files-found: error
           retention-days: 1
+
+      - name: Run quality checks
+        run: pnpm check
