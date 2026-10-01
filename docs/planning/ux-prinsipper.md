@@ -150,3 +150,11 @@ Når en handling derimot påvirker andre mennesker, personvern, forpliktelser el
 
 Automatisering skal redusere arbeid, ikke redusere kontroll.
 
+### 19. Læring skal skje i kontekst, ikke gjennom tung onboarding
+
+Lånbort bør ikke forutsette at nye brukere først må gjennom lange introduksjoner, veivisere eller opplæring før de kan bruke produktet.
+
+Grunnleggende bruk skal være forståelig gjennom selve grensesnittet. Forklaringer og hjelp bør dukke opp der et nytt eller uvanlig konsept faktisk blir relevant.
+
+Et kort førstegangsoppsett kan brukes når det trengs for nødvendige valg, men opplæring skal i hovedsak skje gradvis gjennom bruk. Dette reduserer både oppstartsfriksjon og behovet for å huske informasjon før den får praktisk betydning.
+
