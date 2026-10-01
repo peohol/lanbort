@@ -83,7 +83,7 @@ Når spørsmålet er avgjort:
 - **Status:** Åpen
 - **Berører:** PS-COM-005, PS-NFR-007
 - **Spørsmål:** Hvordan skal nøkkelstyring, flere enheter, nøkkelbytte, backup og tap av enhet håndteres uten servertilgang til klartekst?
-- **Avhenger av:** Sikkerhetsarkitektur og konkret klientmodell.
+- **Avhenger av:** Sikkerhetsarkitektur og konkret klientmodell, inkludert multi-device, nøkkelbackup/recovery og hvilket sikkerhetsnivå nettleserklienten realistisk kan love.
 
 ### OD-0006 — Endelig kategoritaksonomi for objekter
 - **Lag:** Produktspesifikasjon
@@ -105,6 +105,13 @@ Når spørsmålet er avgjort:
 - **Berører:** PS-ADM-013
 - **Spørsmål:** Hvilken organisatorisk ordning skal brukes dersom alle interne plattformforvaltere er inhabile?
 - **Avhenger av:** Organisasjonsform og skala før bred lansering.
+
+### OD-0009 — Konkret implementeringsstack og driftsleverandører
+- **Lag:** Arkitektur
+- **Status:** Åpen
+- **Berører:** ADR-0001–ADR-0005, PS-NFR-001–PS-NFR-015
+- **Spørsmål:** Hvilket web-rammeverk, database-/hostingoppsett, auth-, e-post-, kart-, push- og lagringsoppsett skal brukes i første implementasjon?
+- **Avhenger av:** Oppdatert vurdering av modenhet, sikkerhet, kostnad og leverandørlåsing ved implementeringsstart. PostgreSQL er allerede valgt som referanse for den transaksjonelle kjernen.
 
 ## Avklart
 

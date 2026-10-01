@@ -20,3 +20,7 @@ Ved reell konflikt med produktets grunnmodell skal spørsmålet løftes tilbake 
 ## Åpne detaljbeslutninger
 
 Uavklarte valg som tilhører produktspesifikasjon, UX eller arkitektur registreres i [`open-decisions.md`](open-decisions.md). Reelle spørsmål om produktets grunnmodell hører i stedet hjemme i [`vision/open-questions.md`](vision/open-questions.md).
+
+## Validering
+
+[Tverrgående validering før implementering](validation.md) dokumenterer konsistenssjekken mellom produktspesifikasjon, UX og arkitektur, inkludert hvilke åpne detaljvalg som trygt kan utsettes.

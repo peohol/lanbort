@@ -58,10 +58,10 @@
 
 ### E. Samlet validering og overgang til implementering
 
-- [ ] Kryssjekk produktspesifikasjon, UX-modell og systemarkitektur for motsetninger og skjulte antakelser.
-- [ ] Kjør et nytt utvalg av krevende scenarioer gjennom alle tre lag samtidig.
-- [ ] Registrer eventuelle reelle visjonskonflikter i visjonslaget og løs dem der.
-- [ ] Marker hvilke detaljspørsmål som kan utsettes til implementering uten å true helheten.
+- [x] Kryssjekk produktspesifikasjon, UX-modell og systemarkitektur for motsetninger og skjulte antakelser.
+- [x] Kjør et nytt utvalg av krevende scenarioer gjennom alle tre lag samtidig.
+- [x] Registrer eventuelle reelle visjonskonflikter i visjonslaget og løs dem der. *(Ingen nye visjonskonflikter ble funnet.)*
+- [x] Marker hvilke detaljspørsmål som kan utsettes til implementering uten å true helheten.
 - [ ] Først deretter: bryt arbeidet ned i implementeringsfaser, milepæler og kodeagent-arbeidspakker.
 
 ## Neste punkt

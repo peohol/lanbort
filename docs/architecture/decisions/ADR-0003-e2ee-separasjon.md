@@ -10,3 +10,7 @@ Privat fritekst/vedlegg krypteres ende-til-ende og lagres som ciphertext. Avtale
 ## Begrunnelse
 
 Lånbort må kunne håndheve avtaler og status uten å ha tilgang til privat samtale, og administratorer skal kunne behandle uttrykkelig innsendt saksdata uten en bakdør til hele privat chat.
+
+## Sikkerhetsgrense
+
+Beslutningen gir konfidensialitet mot ordinær serverlagring og administrativ tilgang til meldingsinnhold, men kan ikke alene beskytte mot kompromittert kode som kjører i brukerens klient. Webklientens integritet, supply chain og nøkkelhåndtering inngår derfor i trusselmodellen og OD-0005.
