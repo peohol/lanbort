@@ -28,4 +28,6 @@ Planleggingsløpet fra visjon til byggbar spesifikasjon ble fullført 1. oktober
 - [Kodeagent-arbeidspakker](docs/implementation/work-packages.md)
 - [Kvalitetsporter](docs/implementation/quality-gates.md)
 
-Implementeringen starter med Fase 0: avgjør konkret implementeringsstack og leverandører (OD-0009), dokumenter beslutningene og opprett prosjekt-/kvalitetsgrunnlaget før domenefunksjonalitet bygges.
+Fase 0 er levert: stacken er besluttet (OD-0009) og prosjekt-, database- og kvalitetsgrunnlaget er på plass. Neste steg er Fase 1 (identitet, autorisasjon og hendelsesgrunnmur).
+
+- [Lokal utvikling, database og CI](docs/implementation/local-development.md)

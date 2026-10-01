@@ -4,3 +4,4 @@ VISION.md
 node_modules/
 coverage/
 pnpm-lock.yaml
+packages/*/src/generated/

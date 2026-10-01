@@ -8,7 +8,9 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/(.*)",
-        headers: getSecurityHeaders(),
+        headers: getSecurityHeaders({
+          development: process.env.NODE_ENV === "development",
+        }),
       },
     ];
   },

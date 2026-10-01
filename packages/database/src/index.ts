@@ -1,7 +1,12 @@
 import { Kysely, PostgresDialect } from "kysely";
 import { Pool } from "pg";
+import type { DB } from "./generated/database";
 
-export type Database = Record<never, never>;
+/**
+ * Types for the private `app` schema, generated from the migrated database
+ * (`pnpm db:types`). CI fails if they drift from the migrations.
+ */
+export type Database = DB;
 
 export interface DatabaseOptions {
   connectionString: string;

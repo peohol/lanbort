@@ -15,5 +15,17 @@ describe("security headers", () => {
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("object-src 'none'");
+    expect(csp).not.toContain("unsafe-eval");
+  });
+
+  it("only relaxes eval for the local development server", () => {
+    const csp = new Map(
+      getSecurityHeaders({ development: true }).map(({ key, value }) => [
+        key,
+        value,
+      ]),
+    ).get("Content-Security-Policy");
+
+    expect(csp).toContain("'unsafe-eval'");
   });
 });
