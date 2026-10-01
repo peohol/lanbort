@@ -70,3 +70,11 @@ Et aktivt lån som krever handling, en forestående retur eller en sikkerhetsrel
 
 Brukeren bør dessuten kunne forstå *hvorfor* noe krever oppmerksomhet og hva som forventes videre. Lånbort skal hjelpe brukeren med reelle forpliktelser, ikke forsøke å trekke brukeren tilbake til appen for sin egen del.
 
+### 9. Feil skal være lette å forstå og så langt som mulig lette å rette
+
+Lånbort bør prioritere reverserbare handlinger fremfor advarsler der det er mulig. Hvis en handling trygt kan angres, er «utfør + angre» ofte bedre enn å stoppe brukeren med en bekreftelsesdialog.
+
+Når noe ikke kan reverseres enkelt, eller påvirker andre mennesker eller eksisterende forpliktelser, skal konsekvensen fremgå tydelig før handlingen utføres.
+
+Feilmeldinger skal forklare hva som skjedde, hva brukeren fortsatt kan gjøre, og om systemet faktisk har gjennomført deler av handlingen. Brukeren skal ikke måtte gjette om en forespørsel ble sendt, om et lån ble endret eller om noe må prøves på nytt.
+
