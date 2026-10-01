@@ -126,3 +126,11 @@ Informasjonen bør derfor knyttes til relevante roller og hendelser, vise datagr
 
 Globale poengsummer, rangeringer, «topplister» og annen design som inviterer til sosial konkurranse bør unngås.
 
+### 16. Nåtilstanden først, historikken ved behov
+
+Lånbort skal først og fremst vise hva som gjelder **nå**. Historikk skal være tilgjengelig når den er relevant for forståelse, dokumentasjon eller konfliktavklaring, men skal normalt ikke dominere hovedflatene.
+
+Et aktivt lån bør for eksempel først vise gjeldende avtale, status og neste handling. Tidligere datoendringer, rolleendringer, moderering eller andre historiske hendelser kan ligge i en diskret tidslinje eller detaljvisning.
+
+Systemet kan dermed bevare rik og sporbar historikk uten at brukeren må forholde seg til den i normal bruk.
+
