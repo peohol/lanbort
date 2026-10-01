@@ -20,3 +20,5 @@ Arkitekturen peker oppover til krav og UX-regler som den oppfyller. Viktige tekn
 10. [Datalivssyklus, backup og gjenoppretting](09-datalivssyklus-backup-og-gjenoppretting.md)
 11. [Eksterne integrasjoner](10-eksterne-integrasjoner.md)
 12. [Arkitekturbeslutninger](decisions/README.md)
+
+Åpne tekniske valg som ennå ikke har tilstrekkelig beslutningsgrunnlag, registreres i [det felles beslutningsregisteret](../open-decisions.md). Når et viktig teknisk veivalg faktisk tas, dokumenteres det som ADR der det er relevant.
