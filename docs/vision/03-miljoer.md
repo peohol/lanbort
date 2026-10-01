@@ -297,6 +297,14 @@ En eier som ønsker å trekke seg, skal ikke kunne etterlate miljøet permanent 
 
 Hvis eieren samtidig er eneste administrator og ønsker å fortsette miljøet, må en ny administrator først overta eierskapet.
 
+### Deaktivering eller kontosletting hos eier / eneste administrator
+
+Permanent kontosletting skal ikke kunne etterlate et aktivt miljø i en ugyldig tilstand. En bruker som eier et miljø må derfor først overføre eierskapet til en annen gyldig administrator eller starte kontrollert avvikling. Hvis brukeren er eneste administrator og ingen gyldig etterfølger finnes, er normalutfallet avvikling.
+
+Hvis kontoen deaktiveres eller forsvinner uventet før dette er løst, brukes den midlertidige kontinuitetsmodellen under. Ny aktivitet som krever administrasjon stanses mens eksisterende lån og nødvendig historikk fortsetter.
+
+For et **skjult miljø** skal hele denne prosessen skje uten å svekke personvernet. Miljøet forblir skjult og skal ikke bli søkbart, få offentlig forhåndsvisning eller på annen måte bli mer oppdagbart som følge av eierskaps- eller administratorproblemet.
+
 ## Midlertidig eierløst miljø
 
 Eierløshet skal behandles som en **midlertidig unntakstilstand**, ikke som en normal organisasjonsform.
