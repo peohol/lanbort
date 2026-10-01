@@ -9,8 +9,16 @@ export const idempotencyKeyPattern = /^[A-Za-z0-9_-]{16,128}$/;
 type Canonical =
   null | boolean | number | string | Canonical[] | { [key: string]: Canonical };
 
-/** Same logical input, same JSON: object keys are sorted recursively. */
+/**
+ * Same logical input, same JSON: object keys are sorted recursively. Values
+ * with their own JSON form, such as dates, are represented by it, exactly as
+ * `JSON.stringify` would.
+ */
 function canonicalize(value: unknown): Canonical {
+  if (hasToJSON(value)) {
+    return canonicalize(value.toJSON());
+  }
+
   if (Array.isArray(value)) {
     return value.map(canonicalize);
   }
@@ -25,6 +33,14 @@ function canonicalize(value: unknown): Canonical {
   }
 
   return value as Canonical;
+}
+
+function hasToJSON(value: unknown): value is { toJSON(): unknown } {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    typeof (value as { toJSON?: unknown }).toJSON === "function"
+  );
 }
 
 export function requestHash(input: unknown): string {

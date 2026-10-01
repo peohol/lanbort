@@ -44,7 +44,16 @@ export function defineConsumer(consumer: OutboxConsumer): OutboxConsumer {
     throw new Error(`Outbox consumer ${consumer.name} handles no events.`);
   }
 
-  return Object.freeze({ ...consumer });
+  // One outbox message per (event, consumer): a repeated type would make
+  // every command that records the event fail on the unique key.
+  if (new Set(consumer.eventTypes).size !== consumer.eventTypes.length) {
+    throw new Error(`Outbox consumer ${consumer.name} repeats an event type.`);
+  }
+
+  return Object.freeze({
+    ...consumer,
+    eventTypes: Object.freeze([...consumer.eventTypes]),
+  });
 }
 
 /**
@@ -79,7 +88,8 @@ export class ConsumerRegistry {
 
       this.byName.set(consumer.name, consumer);
 
-      for (const type of consumer.eventTypes) {
+      // A set, so a consumer is registered once per type however it was built.
+      for (const type of new Set(consumer.eventTypes)) {
         this.byEventType.set(type, [
           ...(this.byEventType.get(type) ?? []),
           consumer,
