@@ -48,6 +48,16 @@ Eksempler:
 
 De konkrete autorisasjonsreglene skal beskrives senere i en egen modell.
 
+### Habilitet og privilegert tilgang
+
+En plattformomfattende rolle skal aldri gi en bruker ekstra rettigheter i en konkret sak der vedkommende selv er part, rapportert eller på annen måte direkte interessert.
+
+En inhabil plattformforvalter skal bare ha den tilgangen som følger av egen ordinære bruker- eller partsrolle. Beskyttet saksinformasjon, modereringsverktøy og administrative avgjørelser i den aktuelle saken skal være utilgjengelige for vedkommende gjennom plattformrollen.
+
+Tilgang til slike saker skal være sporbar. Det skal kunne dokumenteres hvilke forvaltere som har åpnet saken og utført administrative handlinger.
+
+Hvis ingen habil intern forvalter finnes, skal systemet ikke løse dette ved å gi den berørte forvalteren tilgang til å behandle sin egen sak. En organisatorisk uavhengig behandlingsvei for alvorlige saker som gjelder selve plattformforvaltningen skal etableres før produktet når en skala der dette er nødvendig.
+
 ## Skjulte miljøer
 
 Et skjult miljø skal ikke lekke meningsfull informasjon om sin eksistens til uvedkommende.
