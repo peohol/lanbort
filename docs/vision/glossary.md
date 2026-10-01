@@ -1,6 +1,6 @@
 # Begreper
 
-> **Status:** Arbeidsordliste for visjonen. Begrepene kan endres når produktmodellen avklares.
+> **Status:** Begrepsliste for produktvisjon v1.0. Begrepene kan fortsatt presiseres i senere spesifikasjonsarbeid uten å endre produktmodellen.
 
 ## Bruker
 
