@@ -335,6 +335,23 @@ Visjonen åpner for at plattformforvaltere kan varsles ved sterke mønstre av ne
 
 Dette må utformes slik at automatiske signaler brukes som grunnlag for vurdering, ikke som automatisk dom.
 
+### Habilitet på plattformnivå
+
+En plattformforvalter som selv er part i et lån, er gjenstand for en rapport eller har en annen direkte interessekonflikt skal ikke kunne bruke plattformrollen til å behandle saken.
+
+Vedkommende:
+
+- beholder bare den tilgangen og de handlingene som følger av egen rolle som ordinær part
+- skal ikke få ekstra saksinnsyn gjennom plattformrollen
+- skal ikke kunne avgjøre, lukke eller moderere den aktuelle saken
+- skal ikke kunne styre hvem som får tilgang til saken på en måte som omgår habilitetsregelen
+
+En annen habil plattformforvalter skal overta dersom en finnes. Saks- og tilgangshistorikken skal gjøre det mulig å se hvem som har åpnet saken og hvem som faktisk har behandlet den.
+
+Hvis ingen habil plattformforvalter finnes, skal den berørte forvalteren ikke kunne behandle eller «frikjenne» seg selv. Lånbort skal i stedet være eksplisitt om at uavhengig intern behandling ikke er tilgjengelig.
+
+Vanlige privatrettslige lånetvister skal fortsatt ikke løftes til plattformnivå bare fordi en plattformforvalter er involvert. For alvorlige rapporter om selve plattformforvaltningen bør produktet før vesentlig skala ha en organisatorisk uavhengig behandlingsmulighet utenfor den rapporterte personens kontroll.
+
 ## Tillit versus sosial rangering
 
 Et sentralt designprinsipp for videre arbeid bør være at tillitssystemet skal hjelpe mennesker med konkrete utlånsbeslutninger, ikke skape en generell popularitetskonkurranse.
