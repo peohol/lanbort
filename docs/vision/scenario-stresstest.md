@@ -1,6 +1,6 @@
 # Scenario-basert stresstest av produktvisjonen
 
-> **Status:** Levende arbeidsdokument. Scenario 2–80 er gjennomført og avklart per 1. oktober 2026. Listen over gjenstående scenarioer er en prioritert arbeidskø, ikke en påstand om at alle mulige fremtidige problemer allerede er kjent.
+> **Status:** Scenario 2–81 er gjennomført og avklart per 1. oktober 2026. Den planlagte scenario-køen er fullført; dokumentet kan fortsatt utvides dersom senere arbeid avdekker nye prinsipielle grensesituasjoner.
 
 ## Formål og metode
 
@@ -99,40 +99,11 @@ Stresstesten skal holde seg på visjonsnivå. Tekniske mekanismer, konkrete fris
 - **78. Konto deaktiveres eller slettes mens brukeren eier et skjult miljø eller er eneste administrator:** permanent sletting skal ikke gjennomføres før miljørollen er avviklet. Hvis andre administratorer finnes, må eierskapet overføres eller miljøet bringes inn i den etablerte kontinuitetsprosessen. Hvis ingen gyldig etterfølger finnes, går miljøet mot kontrollert avvikling. Ved deaktivering eller uventet bortfall stoppes ny aktivitet som krever administrasjon mens eksisterende lån og nødvendig historikk fortsetter. Et skjult miljø forblir skjult gjennom hele prosessen; kontinuitet eller avvikling skal aldri gjøre miljøet mer oppdagbart.
 - **79. Falsk identitet oppdages etter mange gjennomførte lån og anmeldelser:** kontoen kan suspenderes eller avvikles, men tidligere lån og anmeldelser omskrives ikke automatisk fordi de fortsatt beskriver faktiske hendelser mellom den aktuelle kontoen og andre brukere. Historiske anmeldelser kan bestå i lånekonteksten, mens en avviklet konto ikke skal beholde en aktiv offentlig tillitsprofil. Dersom konkrete lån, anmeldelser eller motparter senere viser seg å være fabrikkert eller manipulerte, kan akkurat disse hendelsene korrigeres eller tas ut av aggregater gjennom sporbar moderering. Funn av falsk identitet er primært et internt sikkerhets- og modereringssignal. Plattformen kan beholde nødvendig intern kobling for å hindre omgåelse eller ny misbrukskonto. Hvis personen senere oppretter konto under korrekt identitet, skal gammel sosial tillitshistorikk ikke automatisk overføres til den nye profilen.
 - **80. Duplikatkonto avvikles når begge kontoene har sosial og lånerelatert historikk:** først må det være tilstrekkelig verifisert at kontoene faktisk tilhører samme person og at situasjonen ikke skyldes omgåelse av suspensjon eller annet misbruk. Én konto kan videreføres som aktiv konto, mens den andre avvikles kontrollert. Historiske lån, anmeldelser, chatter, vennskap og miljørelasjoner flyttes ikke som om de alltid hadde tilhørt hovedkontoen; de beholder den konto- og konteksten de faktisk oppstod under. Den avviklede kontoen kan kobles internt til hovedkontoen for sikkerhets- og kontinuitetsformål. Pågående forpliktelser og brukerens egne objekter kan ved behov overføres kontrollert og sporbar, mens vennskap, miljømedlemskap, administratorroller og sosial tillit ikke overføres automatisk. Tillitsskårer fra kontoene skal ikke automatisk slås sammen.
+- **81. Blokkering stenger fri chat midt i et reservert eller aktivt lån:** blokkering stopper vanlig sosial kontakt, men skal ikke gjøre det praktisk umulig å avslutte en eksisterende fysisk forpliktelse. Strukturerte lånehandlinger består. I tillegg kan det finnes en snever lånelogistikk-kanal for korte praktiske meldinger om overlevering, retur, tidspunkt, sted og objektet så lenge lånet faktisk krever oppfølging. Kanalen er tydelig adskilt fra ordinær chat, stenges når lånet er avsluttet og gir ikke tilgang til vennskap, profilkontakt eller nye lån. Ved trakassering eller særskilt sikkerhetsrisiko kan også denne fritekstkanalen stenges, slik at videre oppfølging skjer gjennom strukturerte handlinger og eventuelle administrative prosesser.
 
-## Gjenstående scenario-kø
+## Scenario-kø fullført
 
-Køen nedenfor er prioritert etter hvor sannsynlig det er at scenarioet kan avdekke en grunnleggende produktmotsetning. Nummereringen tildeles først når scenarioet faktisk tas opp til behandling.
-
-### A. Låneforløp og kollisjoner
-
-
-### B. Medeierskap
-
-
-### C. Miljømedlemskap og miljølivssyklus
-
-
-### D. Objektpublisering og miljømoderering
-
-
-### E. Tillit og anmeldelser
-
-
-### F. Blokkering, rapportering og moderering
-
-
-### G. Konto- og datalivssyklus
-
-
-### H. Privat kommunikasjon og saker
-
-- Blokkering stenger fri chat midt i et lån: er de strukturerte handlingene alene tilstrekkelige i alle nødvendige praktiske situasjoner?
-
-
-## Når køen er ferdig
-
-Stresstesten kan anses som tilstrekkelig gjennomført når:
+Den planlagte stresstesten er nå gjennomført. Følgende modenhetskriterier er oppfylt eller brukt som styrende avslutningskriterier:
 
 - alle scenariofamiliene over er prøvd eller eksplisitt vurdert som rene spesifikasjonsdetaljer
 - nye scenarioer over flere gjennomganger ikke lenger avdekker vesentlige motsetninger i produktmodellen
