@@ -1,6 +1,6 @@
 # Utlånsobjekter
 
-> **Status:** Konsolidert visjonsutkast. Objektmodell, tilgjengelighet, publisering, medeierskap og sentrale livssyklusprinsipper er avklart.
+> **Status:** Produktvisjon v1.0. Objektmodell, tilgjengelighet, publisering, medeierskap og sentrale livssyklusprinsipper er avklart.
 
 ## Grunnprinsipp
 
