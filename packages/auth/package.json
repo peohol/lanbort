@@ -1,0 +1,22 @@
+{
+  "name": "@lanbort/auth",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts"
+  },
+  "scripts": {
+    "build": "tsc6 --noEmit",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc6 --noEmit",
+    "test": "vitest run --exclude \"**/*.integration.test.ts\"",
+    "test:integration": "vitest run .integration.test.ts"
+  },
+  "dependencies": {
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.117.2",
+    "zod": "4.6.5"
+  }
+}

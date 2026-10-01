@@ -22,6 +22,14 @@ export function userRule(
 
 export const requireUser: ActorRule = userRule(() => allow);
 
+/**
+ * The default for every product action: a signed-in user whose registration
+ * is complete (PS-USR-001). Pending accounts may only finish registering.
+ */
+export const requireActiveAccount: ActorRule = userRule((actor) =>
+  actor.accountStatus === "active" ? allow : deny("registration_required"),
+);
+
 /** Only the named scheduled job or worker may act. */
 export function requireSystemProcess(process: string): ActorRule {
   return ({ actor }) =>

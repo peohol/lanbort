@@ -12,13 +12,15 @@
 
 ```sh
 pnpm install --frozen-lockfile
-cp .env.example .env
 pnpm db:start
+pnpm env:local
 pnpm db:reset
 pnpm dev
 ```
 
-`.env` er ignorert av git. `.env.example` inneholder bare lokale standardverdier og aldri ekte hemmeligheter.
+`pnpm db:start` starter lokal database, Supabase Auth og Mailpit (lokal e-postboks). `pnpm env:local` skriver `.env` fra `.env.example` med verdiene den kjørende lokale stacken har generert, slik at ingen nøkler ligger i repoet. `.env` er ignorert av git, og både Next.js-appen og verktøyene leser den.
+
+Innlogging bruker engangskode på e-post. Lokalt havner e-postene i Mailpit på <http://127.0.0.1:54324>. Malen ligger i `supabase/templates/`, og lokale Auth-innstillinger står under `[auth]` i `supabase/config.toml`. Hostede Supabase-prosjekter må få samme e-postmal og innstillinger når de etableres.
 
 ## Repo-struktur
 
@@ -27,7 +29,8 @@ pnpm dev
 | `apps/web` | Next.js-app med UI og Route Handlers som HTTP/API-grense |
 | `packages/contracts` | Delte API-kontrakter (Zod). Inneholder aldri serverens autorisasjonslogikk |
 | `packages/database` | Kysely/Postgres-adapter og genererte databasetyper. Kun for serverkode |
-| `packages/domain` | Serverens domenekjerne: aktørmodell, policy-/autorisasjons-API, hendelser, transactional outbox og idempotente kommandoer. Kun for serverkode |
+| `packages/domain` | Serverens domenekjerne: aktørmodell, policy-/autorisasjons-API, hendelser, transactional outbox, idempotente kommandoer og konto. Kun for serverkode |
+| `packages/auth` | Eneste adapter mot Supabase Auth. Gir leverandørnøytral, verifisert identitet. Kun for serverkode |
 | `packages/observability` | Strukturert logging med tillatelsesliste for felt |
 | `supabase/` | Lokal Supabase-konfigurasjon, SQL-migrasjoner og pgTAP-tester |
 
@@ -60,7 +63,7 @@ CI starter en isolert lokal Supabase-database, bygger den fra alle migrasjoner, 
 | --- | --- |
 | `quality` | Lint, typecheck, enhetstester, Prettier og produksjonsbygg (`pnpm check`) |
 | `database` | Migrasjoner fra tom database, pgTAP, typekontroll mot skjema og integrasjonstester mot databasen (`pnpm test:integration`) |
-| `e2e` | Playwright-røyktest mot produksjonsbygget: siden laster uten CSP-brudd, sikkerhetshoder og helseendepunkt |
+| `e2e` | Playwright mot produksjonsbygget og lokal Supabase: røyktest (CSP, sikkerhetshoder, helse), registrering og innlogging med e-postkode, utlogging og negative API-tester |
 | `security` | `pnpm audit` for produksjonsavhengigheter, selvtest av Gitleaks og skanning av hele git-historikken |
 
 CI har bare lesetilgang til repoet (`permissions: contents: read`), og avhengigheter installeres med `--frozen-lockfile`.
@@ -68,6 +71,8 @@ CI har bare lesetilgang til repoet (`permissions: contents: read`), og avhengigh
 ### Hemmelighetsskanning
 
 `scripts/security/secret-scan.sh` kjører en pinnet Gitleaks-versjon. Selvtesten lager en kunstig GitHub-lignende testverdi ved kjøretid fra et fast frø, og krever at Gitleaks både rapporterer funn og klassifiserer det som `github-pat` før repoet skannes. Ingen tokenlignende verdi ligger i repoet. Gitleaks er bevisst låst til 8.30.0 inntil en kjent regresjon i 8.30.1 er verifisert løst.
+
+Se [servergrense og autorisasjon](server-boundary.md) for hvordan nye API-er, policyer og kommandoer skal bygges.
 
 ## Kjente begrensninger i grunnlaget
 

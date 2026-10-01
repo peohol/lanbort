@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { testUserActor } from "../testing/actors";
 import { anonymousActor, systemActor, type UserActor } from "../actor";
 import { AuthorizationError } from "../errors";
 import {
@@ -12,8 +13,8 @@ import {
 import { matrixGaps, outcomeOf, policyMatrix } from "./policy-matrix";
 import { requireSystemProcess, requireUser, userRule } from "./rules";
 
-const alice: UserActor = { kind: "user", userId: "alice" };
-const bob: UserActor = { kind: "user", userId: "bob" };
+const alice: UserActor = testUserActor({ userId: "alice" });
+const bob: UserActor = testUserActor({ userId: "bob" });
 const now = new Date("2026-10-01T12:00:00Z");
 
 interface Note {

@@ -10,3 +10,6 @@ export * from "./commands/command";
 export * from "./commands/query";
 export { idempotencyKeyPattern } from "./commands/idempotency";
 export * from "./authorization/policy-matrix";
+export * from "./account";
+export * from "./outbox/policy";
+export * from "./policies";

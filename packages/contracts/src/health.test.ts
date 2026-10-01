@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { healthResponseSchema } from "./index";
+import { healthResponseSchema } from "./health";
 
 describe("health response contract", () => {
   it("accepts the non-sensitive readiness body", () => {
