@@ -1,0 +1,5 @@
+docs/
+VISION.md
+.next/
+node_modules/
+coverage/
