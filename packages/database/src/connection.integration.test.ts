@@ -7,7 +7,9 @@ describe("database connection", () => {
     const connectionString = process.env.DATABASE_URL;
 
     if (!connectionString) {
-      throw new Error("DATABASE_URL is required for the database integration test.");
+      throw new Error(
+        "DATABASE_URL is required for the database integration test.",
+      );
     }
 
     const database = createDatabase({
