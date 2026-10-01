@@ -252,6 +252,23 @@ Ved slik presentasjon gjelder minst følgende:
 
 Slik mønsterinformasjon skal være **deskriptiv**, ikke dømmende. Lånbort skal ikke konkludere med at brukeren generelt er «upålitelig» på grunnlag av disse dataene, og mønsteret skal ikke i seg selv utløse automatisk sanksjon eller fungere som en skjult adgangsgrense.
 
+## Falsk identitet og historisk tillit
+
+Hvis Lånbort senere fastslår at en konto har vært brukt under falsk identitet, skal dette først og fremst behandles som et sikkerhets- og modereringsforhold.
+
+At identiteten var falsk betyr ikke automatisk at alle tidligere lån eller anmeldelser var oppdiktede. Historiske hendelser skal derfor ikke omskrives bare fordi identitetsbruddet oppdages i ettertid.
+
+Dersom kontoen avvikles:
+
+- tidligere lån kan bestå som historisk fellesdata
+- anmeldelser **om** kontoen kan bestå i de konkrete lånenes historikk, men skal ikke fortsette som en aktiv offentlig tillitsprofil
+- anmeldelser **skrevet av** kontoen kan også bestå når de gjelder faktiske lån; ved kontosletting eller avvikling anonymiseres synlig forfatter etter de vanlige reglene
+- selve funnet om falsk identitet skal ikke automatisk gjøre tidligere positive eller negative anmeldelser ugyldige
+
+Hvis det derimot avdekkes at konkrete lån, anmeldelser, motparter eller hendelser var fabrikkert, koordinert eller manipulert, kan akkurat disse dataene korrigeres, modereres bort eller tas ut av aggregert tillitsinformasjon gjennom den sporbare modereringsprosessen.
+
+Hvis samme person senere oppretter en ny konto under korrekt identitet, skal den gamle kontoens sosiale tillit **ikke automatisk overføres** til den nye profilen. Intern sammenkobling kan fortsatt brukes i sikkerhetsarbeid, men skal ikke fungere som automatisk videreføring av den gamle sosiale profilen.
+
 ## Tillitsprofiler og aktivitetsdata
 
 Lånbort skal ikke gi brukeren én generell skår som forsøker å oppsummere personen på tvers av alle roller.
