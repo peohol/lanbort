@@ -118,3 +118,11 @@ Språket bør være kort der situasjonen er enkel, men mer forklarende når kons
 
 Samtidig må enkelhet ikke gå på bekostning av presisjon. Hvis to tilstander faktisk har ulike konsekvenser, bør de også beskrives forskjellig i UI-et.
 
+### 15. Tillit skal vises kontekstuelt, ikke som sosial rangering
+
+Når Lånbort viser anmeldelser, historikk eller annen tillitsinformasjon, skal presentasjonen hjelpe brukeren å vurdere en konkret situasjon – ikke gi inntrykk av at mennesker kan reduseres til én generell verdi.
+
+Informasjonen bør derfor knyttes til relevante roller og hendelser, vise datagrunnlaget tydelig og gjøre usikkerhet synlig. Et lite antall anmeldelser skal for eksempel ikke visuelt fremstå like sikkert som et stort erfaringsgrunnlag.
+
+Globale poengsummer, rangeringer, «topplister» og annen design som inviterer til sosial konkurranse bør unngås.
+
