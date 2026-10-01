@@ -311,6 +311,16 @@ Hvis en verifisert død eller varig utilgjengelig bruker har et annet menneskes 
 
 Hvis tilbakeføring ikke kan avklares, kan lånet avsluttes administrativt som uavklart etter de vanlige reglene. Dødsfall eller dokumentert varig utilgjengelighet skal ikke behandles som negativ låntakeratferd. Den administrative avslutningen skal heller ikke gjøre objektet tilgjengelig for nye lån før eieren har bekreftet fysisk kontroll over objektet.
 
+### Falsk identitet og kontokontinuitet
+
+Når en konto viser seg å være opprettet eller brukt under falsk identitet, kan plattformen stanse ny aktivitet og gjennomføre kontrollert avslutning etter de vanlige modererings- og livssyklusreglene.
+
+Historiske hendelser skal ikke automatisk slettes eller omskrives. Et identitetsbrudd sier ikke i seg selv at tidligere lån eller anmeldelser aldri fant sted.
+
+Plattformen kan beholde en intern kobling mellom den falske kontoen og senere kontoer eller identitetsopplysninger så lenge dette er nødvendig og forholdsmessig for å oppdage duplikatkontoer, omgåelse av suspensjon, gjentatt identitetsmisbruk eller andre sikkerhetsformål. Denne koblingen skal ikke brukes til å gjenopprette en gammel sosial profil eller automatisk overføre anmeldelser og tillit til en ny konto.
+
+Motparter trenger normalt ikke få detaljer om hvorfor kontoen er avviklet. Der informasjon må vises, bør den begrenses til det som er nødvendig, for eksempel at kontoen er stengt av plattformen.
+
 ### Kontrollert avslutning i særtilfeller
 
 Plattformforvalter skal i særtilfeller kunne initiere deaktivering og kontrollert avslutning av en konto når vanlig selvbetjent sletting ikke er mulig eller hensiktsmessig.
