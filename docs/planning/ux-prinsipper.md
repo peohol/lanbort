@@ -142,3 +142,11 @@ Forespørsler, påminnelser og statusvisning bør derfor utformes slik at de st�
 
 Produktet skal hjelpe mennesker å dele frivillig. Det bør ikke bruke designgrep som gjør det sosialt vanskelig å sette grenser.
 
+### 18. Automatisering skal foreslå og forenkle, men ikke overta meningsfulle valg
+
+Lånbort kan gjerne automatisere trivielle ting: sortering, forslag, utfylling, påminnelser, beregning av relevante standardverdier og andre handlinger der risikoen ved feil er liten.
+
+Når en handling derimot påvirker andre mennesker, personvern, forpliktelser eller rettigheter, bør systemet normalt presentere et forslag eller et tydelig neste steg fremfor å handle på brukerens vegne.
+
+Automatisering skal redusere arbeid, ikke redusere kontroll.
+
