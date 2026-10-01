@@ -49,11 +49,11 @@ export interface AuthConfig {
 }
 
 function providerError(error: unknown, invalidCodeOnClientError = false) {
-  if (isAuthApiError(error)) {
-    if (error.status === 429) {
-      return new AuthProviderError("rate_limited");
-    }
+  if (isAuthError(error) && error.status === 429) {
+    return new AuthProviderError("rate_limited");
+  }
 
+  if (isAuthApiError(error)) {
     if (invalidCodeOnClientError && error.status >= 400 && error.status < 500) {
       return new AuthProviderError("invalid_code");
     }
@@ -62,13 +62,17 @@ function providerError(error: unknown, invalidCodeOnClientError = false) {
   return new AuthProviderError("unavailable");
 }
 
-/** The provider rejected the session (missing, expired or revoked). */
+/**
+ * The provider rejected the session (missing, expired or revoked). Throttling
+ * (429) is not a verdict on the session and is reported as `rate_limited`.
+ */
 function isClientError(error: unknown) {
   return (
     isAuthError(error) &&
     error.status !== undefined &&
     error.status >= 400 &&
-    error.status < 500
+    error.status < 500 &&
+    error.status !== 429
   );
 }
 

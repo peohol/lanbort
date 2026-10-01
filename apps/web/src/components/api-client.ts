@@ -4,6 +4,11 @@ import {
   idempotencyKeyHeader,
 } from "@lanbort/contracts";
 
+function nonJsonErrorCode(status: number): ApiErrorCode {
+  if (status === 429) return "rate_limited";
+  return status >= 500 ? "unavailable" : "internal_error";
+}
+
 export type ApiResult<T> =
   { ok: true; data: T } | { ok: false; code: ApiErrorCode | "network" };
 
@@ -33,8 +38,15 @@ export async function postJson<T = unknown>(
     return { ok: false, code: "network" };
   }
 
-  const text = await response.text();
-  const json: unknown = text ? JSON.parse(text) : null;
+  let json: unknown;
+
+  try {
+    const text = await response.text();
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    // Not our API's JSON, e.g. an error page from a proxy or the platform.
+    return { ok: false, code: nonJsonErrorCode(response.status) };
+  }
 
   if (response.ok) {
     return { ok: true, data: json as T };
