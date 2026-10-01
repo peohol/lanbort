@@ -321,6 +321,20 @@ Plattformen kan beholde en intern kobling mellom den falske kontoen og senere ko
 
 Motparter trenger normalt ikke få detaljer om hvorfor kontoen er avviklet. Der informasjon må vises, bør den begrenses til det som er nødvendig, for eksempel at kontoen er stengt av plattformen.
 
+### Duplikatkonto med historikk på begge kontoer
+
+Ved dokumentert duplikatkonto skal Lånbort kunne videreføre én konto som aktiv og avvikle den andre kontrollert. Før dette gjøres må det være tilstrekkelig verifisert at kontoene faktisk tilhører samme person, og at duplikatet ikke er del av omgåelse av suspensjon eller annet misbruk.
+
+Avviklingen skal være konservativ:
+
+- historiske lån, meldinger, anmeldelser og andre relasjonsdata omskrives ikke som om de opprinnelig oppstod på hovedkontoen
+- vennskap, miljømedlemskap, administratorroller og andre privilegier overføres ikke automatisk
+- brukerens egne objekter uten problematiske bindinger kan overføres kontrollert når eierskap og kontekst er tilstrekkelig avklart
+- aktive forpliktelser kan overføres når dette er nødvendig og forenlig med de vanlige reglene for motpartshensyn og sporbarhet
+- den avviklede kontoen kan internt kobles til den videreførte kontoen for sikkerhet og kontinuitet
+
+Full «magisk» kontosammenslåing inngår ikke i kjernevisjonen. En senere snevrere migreringsmekanisme for rene tekniske feil kan vurderes separat.
+
 ### Kontrollert avslutning i særtilfeller
 
 Plattformforvalter skal i særtilfeller kunne initiere deaktivering og kontrollert avslutning av en konto når vanlig selvbetjent sletting ikke er mulig eller hensiktsmessig.
