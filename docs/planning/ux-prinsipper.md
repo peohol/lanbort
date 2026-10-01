@@ -1,6 +1,6 @@
 # UX-prinsipper
 
-> **Status:** Arbeidsdokument. Prinsippene vedtas sekvensielt før detaljert produktspesifikasjon og UX-modell utarbeides.
+> **Status:** Vedtatte UX-prinsipper for videre produktspesifikasjon, UX-modell og systemarkitektur. Prinsippfasen ble fullført 1. oktober 2026.
 
 ## Vedtatte prinsipper
 
@@ -181,4 +181,12 @@ Lånbort bør tåle treg eller ustabil forbindelse på en måte som er forståel
 Hvis systemet ikke vet om en viktig handling faktisk ble gjennomført, skal det ikke late som om utfallet er sikkert. UI-et bør vise at status må avklares og forsøke å gjenopprette en entydig tilstand.
 
 For enkelte ufarlige handlinger kan lokal mellomlagring eller senere synkronisering være hensiktsmessig. Handlinger som etablerer eller endrer forpliktelser mellom mennesker skal derimot først presenteres som fullført når systemet faktisk har bekreftet dem.
+
+### 23. Det skal finnes en forståelig vei videre når virkeligheten avviker fra normalforløpet
+
+Lånbort skal ikke anta at alle hendelser følger den forventede flyten. Et objekt kan være skadet, noen kan være utilgjengelige, partene kan være uenige om hva som har skjedd, eller den faktiske situasjonen kan avvike fra det systemet forventer.
+
+Når dette skjer, skal brukeren kunne finne en tydelig vei videre fra den aktuelle situasjonen – for eksempel rapportere et problem, be om avklaring eller gå inn i et relevant avviksforløp – fremfor å bli sittende fast fordi den «riktige» knappen ikke lenger passer.
+
+Dette betyr ikke at brukeren skal kunne omgå sikkerhetsregler eller eksisterende forpliktelser. Poenget er at produktet skal kunne representere at virkeligheten er uavklart eller avvikende, i stedet for å tvinge den inn i en uriktig normaltilstand.
 
