@@ -269,6 +269,20 @@ Hvis det derimot avdekkes at konkrete lån, anmeldelser, motparter eller hendels
 
 Hvis samme person senere oppretter en ny konto under korrekt identitet, skal den gamle kontoens sosiale tillit **ikke automatisk overføres** til den nye profilen. Intern sammenkobling kan fortsatt brukes i sikkerhetsarbeid, men skal ikke fungere som automatisk videreføring av den gamle sosiale profilen.
 
+## Duplikatkontoer og historisk tillit
+
+Når to kontoer viser seg å tilhøre samme person, skal dette ikke automatisk behandles som om all sosial og lånerelatert historikk alltid har tilhørt én samlet profil.
+
+Hvis én konto videreføres og den andre avvikles:
+
+- historiske anmeldelser og skårer forblir knyttet til kontoen og lånekonteksten de faktisk oppstod i
+- skårer skal ikke automatisk slås sammen til én samlet aktiv tillitsprofil
+- tidligere vennskap, miljørelasjoner og andre sosiale forbindelser skal ikke tolkes som om de automatisk gjelder hovedkontoen
+- den avviklede kontoens historikk kan fortsatt bevares der den inngår i legitim felles historikk
+- intern kobling mellom kontoene kan brukes for sikkerhet, kontinuitet og duplikatkontroll uten å gjøre dette til sosial profilering
+
+Dette skal redusere muligheten for strategisk akkumulering eller sammenslåing av sosial kapital på tvers av flere kontoer.
+
 ## Tillitsprofiler og aktivitetsdata
 
 Lånbort skal ikke gi brukeren én generell skår som forsøker å oppsummere personen på tvers av alle roller.
