@@ -1,0 +1,2 @@
+-- Intentionally empty in Phase 0.
+-- Deterministic test fixtures will be added alongside the domain slices that need them.

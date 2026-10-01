@@ -1,0 +1,22 @@
+{
+  "name": "@lanbort/database",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc6 --noEmit",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc6 --noEmit",
+    "test:integration": "vitest run src/connection.integration.test.ts"
+  },
+  "dependencies": {
+    "kysely": "0.29.6",
+    "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1"
+  }
+}

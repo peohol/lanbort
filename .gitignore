@@ -8,4 +8,6 @@ test-results/
 !.env.example
 .DS_Store
 *.log
+.supabase/
 supabase/.temp/
+supabase/.branches/

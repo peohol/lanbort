@@ -7,4 +7,5 @@ minimumReleaseAge: 1440
 minimumReleaseAgeStrict: true
 
 allowBuilds:
+  supabase@2.117.0: true
   unrs-resolver@1.12.2: true

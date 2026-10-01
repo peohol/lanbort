@@ -40,3 +40,41 @@ jobs:
 
       - name: Run quality checks
         run: pnpm check
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install pnpm
+        run: npm install --global --allow-scripts=pnpm pnpm@12.8.1
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Start isolated local database
+        run: pnpm db:start
+
+      - name: Rebuild database from migrations
+        run: pnpm db:reset
+
+      - name: Run database tests
+        run: pnpm db:test
+
+      - name: Smoke-test server database adapter
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: pnpm --filter @lanbort/database test:integration
+
+      - name: Stop local database
+        if: always()
+        run: pnpm db:stop
