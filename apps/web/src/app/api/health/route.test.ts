@@ -1,10 +1,18 @@
-import { describe, expect, it } from "vitest";
 import { healthResponseSchema } from "@lanbort/contracts";
-import { GET } from "./route";
+import { NextRequest } from "next/server";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("next/headers", () => ({
+  cookies: async () => ({ getAll: () => [], set: () => {} }),
+}));
+
+const { GET } = await import("./route");
 
 describe("GET /api/health", () => {
   it("returns a non-sensitive readiness response", async () => {
-    const response = GET();
+    const response = await GET(new NextRequest("http://localhost/api/health"), {
+      params: Promise.resolve({}),
+    });
     const body = await response.json();
 
     expect(response.status).toBe(200);

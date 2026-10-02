@@ -3,10 +3,30 @@
  * idempotency record is attributed to one of these, never to an auth
  * provider's identity directly (ADR-0007: identity is normalized first).
  */
+export type AccountStatus = "pending_registration" | "active";
+
+/** Authentication assurance level (AAL2 = a second factor was verified). */
+export type AssuranceLevel = "aal1" | "aal2";
+
+export interface AuthenticationMethod {
+  /** For example `otp` (e-mail code) or `totp`. */
+  readonly method: string;
+  readonly at: Date;
+}
+
+/** How the current session was authenticated, as verified by the server. */
+export interface AuthenticationContext {
+  readonly sessionId: string;
+  readonly assurance: AssuranceLevel;
+  readonly methods: readonly AuthenticationMethod[];
+}
+
 export interface UserActor {
   readonly kind: "user";
   /** Internal user id (`app.users.id`), not the auth provider's subject. */
   readonly userId: string;
+  readonly accountStatus: AccountStatus;
+  readonly authentication: AuthenticationContext;
 }
 
 /** Scheduled jobs, workers and operational scripts. */

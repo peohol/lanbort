@@ -12,10 +12,15 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@lanbort/auth": "workspace:*",
     "@lanbort/contracts": "workspace:*",
+    "@lanbort/database": "workspace:*",
+    "@lanbort/domain": "workspace:*",
+    "@lanbort/observability": "workspace:*",
     "next": "16.3.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0"

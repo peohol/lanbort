@@ -36,8 +36,6 @@ jobs:
   database:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
     steps:
       - name: Check out repository
@@ -55,8 +53,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Start isolated local database
+      - name: Start isolated local database and Auth
         run: pnpm db:start
+
+      - name: Expose local stack settings to later steps
+        run: |
+          pnpm env:local
+          grep -E '^[A-Z_]+=' .env >> "$GITHUB_ENV"
 
       - name: Rebuild database from migrations
         run: pnpm db:reset
@@ -76,7 +79,7 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Check out repository
@@ -97,11 +100,23 @@ jobs:
       - name: Install Playwright browser
         run: pnpm --filter @lanbort/web exec playwright install --with-deps chromium
 
+      - name: Start isolated local database and Auth
+        run: pnpm db:start
+
+      - name: Expose local stack settings to later steps
+        run: |
+          pnpm env:local
+          grep -E '^[A-Z_]+=' .env >> "$GITHUB_ENV"
+
       - name: Build web app
         run: pnpm --filter @lanbort/web build
 
-      - name: Run browser smoke tests
+      - name: Run browser tests
         run: pnpm --filter @lanbort/web test:e2e
+
+      - name: Stop local database
+        if: always()
+        run: pnpm db:stop
 
   security:
     runs-on: ubuntu-latest

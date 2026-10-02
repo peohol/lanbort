@@ -7,6 +7,7 @@ import { requireUser } from "../authorization/rules";
 import { DomainError } from "../errors";
 import { defineEvent } from "../events/catalog";
 import { ConsumerRegistry, defineConsumer } from "../outbox/consumer";
+import { createTestUser } from "../testing/actors";
 import { connectTestDatabase } from "../testing/database";
 import { defineCommand, type DomainContext, executeCommand } from "./command";
 
@@ -86,7 +87,7 @@ const recordMarker = defineCommand({
   },
 });
 
-const user = (): UserActor => ({ kind: "user", userId: randomUUID() });
+const user = (): Promise<UserActor> => createTestUser(db);
 
 async function persisted(markerId: string) {
   const events = await db
@@ -118,7 +119,7 @@ async function storedKeys(key: string) {
 
 describe("command execution", () => {
   it("commits the change, its event and its outbox message together", async () => {
-    const actor = user();
+    const actor = await user();
     const markerId = randomUUID();
 
     const result = await executeCommand(domain, recordMarker, {
@@ -151,7 +152,7 @@ describe("command execution", () => {
 
     await expect(
       executeCommand(domain, recordMarker, {
-        actor: user(),
+        actor: await user(),
         input: { markerId, label: "fails" },
         idempotencyKey: key,
       }),
@@ -162,7 +163,7 @@ describe("command execution", () => {
   });
 
   it("writes nothing when the policy denies, and a later retry may succeed", async () => {
-    const actor = user();
+    const actor = await user();
     const markerId = randomUUID();
     const key = randomUUID();
     const request = {
@@ -192,7 +193,7 @@ describe("command execution", () => {
   it("answers a missing resource exactly like a concealed one", async () => {
     await expect(
       executeCommand(domain, recordMarker, {
-        actor: user(),
+        actor: await user(),
         input: { markerId: randomUUID(), label: "missing" },
         idempotencyKey: randomUUID(),
       }),
@@ -201,7 +202,7 @@ describe("command execution", () => {
 
   it("rejects invalid input by field name without echoing values", async () => {
     const error = await executeCommand(domain, recordMarker, {
-      actor: user(),
+      actor: await user(),
       input: {
         markerId: "not-a-uuid",
         label: "x",
@@ -231,14 +232,14 @@ describe("idempotent commands (WP-14)", () => {
   it("requires an idempotency key", async () => {
     await expect(
       executeCommand(domain, recordMarker, {
-        actor: user(),
+        actor: await user(),
         input: { markerId: randomUUID(), label: "no key" },
       }),
     ).rejects.toMatchObject({ code: "idempotency_key_required" });
   });
 
   it("does not execute a retried command twice and replays the first result", async () => {
-    const actor = user();
+    const actor = await user();
     const markerId = randomUUID();
     const request = {
       actor,
@@ -257,7 +258,7 @@ describe("idempotent commands (WP-14)", () => {
   });
 
   it("rejects the same key with different input instead of replaying", async () => {
-    const actor = user();
+    const actor = await user();
     const key = randomUUID();
     const markerId = randomUUID();
 
@@ -279,7 +280,7 @@ describe("idempotent commands (WP-14)", () => {
 
   it("executes concurrent duplicates exactly once", async () => {
     executionDelayMs = 150;
-    const actor = user();
+    const actor = await user();
     const markerId = randomUUID();
     const request = {
       actor,
@@ -303,8 +304,8 @@ describe("idempotent commands (WP-14)", () => {
 
   it("never returns one actor's stored result to another actor", async () => {
     const key = randomUUID();
-    const alice = user();
-    const mallory = user();
+    const alice = await user();
+    const mallory = await user();
     const aliceMarker = randomUUID();
     const malloryMarker = randomUUID();
 
@@ -342,7 +343,7 @@ describe("idempotent commands (WP-14)", () => {
 
     await expect(
       executeCommand(domain, plain, {
-        actor: user(),
+        actor: await user(),
         input: { markerId: randomUUID(), label: "plain" },
         idempotencyKey: randomUUID(),
       }),

@@ -15,9 +15,38 @@ enabled = true
 enabled = true
 sql_paths = ["./seed.sql"]
 
+# Local Auth for development and tests (WP-10). Hosted projects are configured
+# separately; see docs/implementation/local-development.md.
 [auth]
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["http://127.0.0.1:3000/**", "http://localhost:3000/**"]
+enable_signup = true
+enable_anonymous_sign_ins = false
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+
+# Tests sign in many users; hosted rate limits stay at their stricter defaults.
+[auth.rate_limit]
+email_sent = 1000
+sign_in_sign_ups = 1000
+token_verifications = 1000
+
+# Sign-in is a one-time code sent by e-mail (UX-JRN-001: e-mail, then verify).
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+double_confirm_changes = true
+max_frequency = "1s"
+otp_length = 6
+otp_expiry = 600
+
+[auth.email.template.confirmation]
+subject = "Din kode til Lånbort"
+content_path = "./supabase/templates/email-code.html"
+
+[auth.email.template.magic_link]
+subject = "Din kode til Lånbort"
+content_path = "./supabase/templates/email-code.html"
 
 [auth.mfa.totp]
 enroll_enabled = true

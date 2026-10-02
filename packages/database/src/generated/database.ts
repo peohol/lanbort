@@ -42,6 +42,13 @@ export interface AppAuditEvents {
   resource_type: string;
 }
 
+export interface AppAuthIdentities {
+  created_at: Generated<Timestamp>;
+  provider: string;
+  subject: string;
+  user_id: string;
+}
+
 export interface AppIdempotencyRecords {
   command: string;
   created_at: Generated<Timestamp>;
@@ -64,8 +71,34 @@ export interface AppOutboxMessages {
   status: Generated<string>;
 }
 
+export interface AppProfiles {
+  created_at: Generated<Timestamp>;
+  real_name: string;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+  version: Generated<number>;
+}
+
+export interface AppUsers {
+  adult_confirmed_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  status: Generated<string>;
+}
+
+export interface AppVerifiedContacts {
+  address: string;
+  kind: string;
+  user_id: string;
+  verified_at: Timestamp;
+}
+
 export interface DB {
   "app.audit_events": AppAuditEvents;
+  "app.auth_identities": AppAuthIdentities;
   "app.idempotency_records": AppIdempotencyRecords;
   "app.outbox_messages": AppOutboxMessages;
+  "app.profiles": AppProfiles;
+  "app.users": AppUsers;
+  "app.verified_contacts": AppVerifiedContacts;
 }

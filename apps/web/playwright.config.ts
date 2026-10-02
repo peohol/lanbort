@@ -12,7 +12,19 @@ export default defineConfig({
   reporter: "list",
   use: {
     baseURL,
+    // Browsers send Origin on POST; API-level tests do the same, so the
+    // route boundary's same-origin check sees what a real browser sends.
+    extraHTTPHeaders: { origin: baseURL },
     trace: "retain-on-failure",
+    // Lets a machine with a preinstalled Chromium run the tests; CI installs
+    // the browser matching the Playwright version instead.
+    ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+      ? {
+          launchOptions: {
+            executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
+          },
+        }
+      : {}),
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {

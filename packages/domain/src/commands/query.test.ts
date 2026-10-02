@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { testUserActor } from "../testing/actors";
 import { z } from "zod";
 import { anonymousActor, type UserActor } from "../actor";
 import { allow, definePolicy, deny } from "../authorization/policy";
 import { requireUser } from "../authorization/rules";
 import { defineQuery, executeQuery } from "./query";
 
-const alice: UserActor = { kind: "user", userId: "alice" };
-const bob: UserActor = { kind: "user", userId: "bob" };
+const alice: UserActor = testUserActor({ userId: "alice" });
+const bob: UserActor = testUserActor({ userId: "bob" });
 const notes = new Map([["n1", { ownerId: "alice", text: "private" }]]);
 let loads = 0;
 
