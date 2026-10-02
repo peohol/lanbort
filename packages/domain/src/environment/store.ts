@@ -40,6 +40,7 @@ const environmentColumns = [
   "location",
   "version",
   "requirements_revision",
+  "requires_object_approval",
 ] as const;
 
 export async function findEnvironment(
@@ -70,6 +71,7 @@ export async function findEnvironment(
         location: row.location,
         version: row.version,
         requirementsRevision: row.requirements_revision,
+        requiresObjectApproval: row.requires_object_approval,
       }
     : null;
 }

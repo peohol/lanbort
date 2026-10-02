@@ -232,7 +232,7 @@ export async function loadAvailability(
   return availability;
 }
 
-async function loadImages(
+export async function loadImages(
   db: Kysely<Database>,
   objectIds: readonly string[],
 ): Promise<Map<string, ObjectImageRow[]>> {
