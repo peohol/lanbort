@@ -45,9 +45,12 @@ export interface MembershipRecord {
   readonly state: MembershipState;
   readonly origin: MembershipOrigin;
   readonly reviewStage: MembershipReviewStage | null;
+  /** Start of the current or last active period. */
+  readonly activatedAt: Date | null;
   readonly activationRevision: number | null;
   readonly transitionDeadline: Date | null;
   readonly passiveReason: MembershipPassiveReason | null;
+  readonly passiveSince: Date | null;
 }
 
 export interface GivenAnswer {

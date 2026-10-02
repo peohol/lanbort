@@ -158,6 +158,39 @@ export interface AppEnvironments {
   version: Generated<number>;
 }
 
+export interface AppEnvironmentTypePeriods {
+  environment_id: string;
+  id: Generated<string>;
+  proposal_id: string | null;
+  started_at: Generated<Timestamp>;
+  type: string;
+}
+
+export interface AppEnvironmentTypeProposals {
+  closed_at: Timestamp | null;
+  closed_by_user_id: string | null;
+  deadline: Timestamp;
+  eligible_count: number | null;
+  environment_id: string;
+  from_type: string;
+  id: Generated<string>;
+  outcome: string | null;
+  proposed_at: Generated<Timestamp>;
+  proposed_by_user_id: string;
+  support_count: number | null;
+  to_type: string;
+}
+
+export interface AppEnvironmentTypeResponses {
+  environment_id: string;
+  id: Generated<string>;
+  membership_id: string;
+  proposal_id: string;
+  responded_at: Generated<Timestamp>;
+  superseded_at: Timestamp | null;
+  support: boolean;
+}
+
 export interface AppEnvironmentWindDowns {
   environment_id: string;
   final_at: Timestamp;
@@ -358,6 +391,9 @@ export interface DB {
   "app.environment_requirements": AppEnvironmentRequirements;
   "app.environment_role_grants": AppEnvironmentRoleGrants;
   "app.environment_role_invitations": AppEnvironmentRoleInvitations;
+  "app.environment_type_periods": AppEnvironmentTypePeriods;
+  "app.environment_type_proposals": AppEnvironmentTypeProposals;
+  "app.environment_type_responses": AppEnvironmentTypeResponses;
   "app.environment_wind_downs": AppEnvironmentWindDowns;
   "app.environments": AppEnvironments;
   "app.friendships": AppFriendships;

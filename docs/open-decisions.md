@@ -121,6 +121,13 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Skal Vipps på sikt brukes som foretrukket eller alternativ innlogging og som sterkere identitetsgrunnlag for norske brukere, og i så fall hvordan skal dette samspille med dagens konto- og autentiseringsmodell?
 - **Avhenger av:** Teknisk og kontraktsmessig utredning av Vipps Login, hvilke verifiserte identitetsopplysninger og sikkerhetsgarantier tjenesten faktisk gir, personvern, recovery og alternativ tilgang for brukere som ikke kan eller ønsker å bruke Vipps. Kostnad og mulig sponsor-/samarbeidsmodell med Vipps kan inngå i vurderingen, men skal ikke være en teknisk forutsetning. Det skal også vurderes særskilt om fersk Vipps-autentisering kan ha en rolle ved privilegert re-autentisering.
 
+### OD-0012 — Avstemningsfrist ved skjult → lukket
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-ENV-008, VP-08
+- **Spørsmål:** Hvor lang frist skal medlemmene ha til å stemme når et skjult miljø foreslås gjort lukket? Visjonen viser til «den fastsatte avstemningsfristen», men angir ingen lengde. Implementasjonen bruker inntil videre samme 7 dager som lukket → åpent, samlet ett sted (`typeChangeDays`).
+- **Avhenger av:** Produktvurdering.
+
 ## Avklart
 
 ### OD-0009 — Konkret implementeringsstack og driftsleverandører

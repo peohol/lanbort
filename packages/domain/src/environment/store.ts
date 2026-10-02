@@ -81,9 +81,11 @@ const membershipColumns = [
   "state",
   "origin",
   "review_stage",
+  "activated_at",
   "activation_revision",
   "transition_deadline",
   "passive_reason",
+  "passive_since",
 ] as const;
 
 function toMembership(row: {
@@ -93,9 +95,11 @@ function toMembership(row: {
   state: string;
   origin: string;
   review_stage: string | null;
+  activated_at: Date | null;
   activation_revision: number | null;
   transition_deadline: Date | null;
   passive_reason: string | null;
+  passive_since: Date | null;
 }): MembershipRecord {
   return {
     id: row.id,
@@ -104,9 +108,11 @@ function toMembership(row: {
     state: row.state as MembershipState,
     origin: row.origin as MembershipOrigin,
     reviewStage: row.review_stage as MembershipReviewStage | null,
+    activatedAt: row.activated_at,
     activationRevision: row.activation_revision,
     transitionDeadline: row.transition_deadline,
     passiveReason: row.passive_reason as MembershipPassiveReason | null,
+    passiveSince: row.passive_since,
   };
 }
 
@@ -385,14 +391,20 @@ export async function settleMembership(
     state: "passive",
     transitionDeadline: null,
     passiveReason: "requirements_not_met",
+    passiveSince: now,
   };
 }
 
+/**
+ * Makes active members passive: they keep their membership and the history
+ * they need, but take part in nothing new (PS-ENV-004).
+ */
 export async function passivate(
   db: Db,
   memberships: readonly MembershipRecord[],
   now: Date,
   events: EventRecorder,
+  reason: MembershipPassiveReason = "requirements_not_met",
 ): Promise<void> {
   if (memberships.length === 0) {
     return;
@@ -403,7 +415,7 @@ export async function passivate(
     .set({
       state: "passive",
       transition_deadline: null,
-      passive_reason: "requirements_not_met",
+      passive_reason: reason,
       passive_since: now,
       updated_at: now,
     })
@@ -420,7 +432,7 @@ export async function passivate(
       payload: {
         environmentId: membership.environmentId,
         userId: membership.userId,
-        reason: "requirements_not_met",
+        reason,
       },
     });
   }

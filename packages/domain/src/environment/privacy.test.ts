@@ -1,0 +1,89 @@
+import { describe, expect, it } from "vitest";
+import { DomainError } from "../errors";
+import {
+  classifyTypeChange,
+  mayExposeHistory,
+  type TypePeriod,
+  votePasses,
+  widenedAfterCreation,
+  widenedAfterPassivation,
+} from "./privacy";
+
+const at = (day: number) => new Date(Date.UTC(2026, 9, day));
+
+describe("type changes (PS-ENV-007–008)", () => {
+  it.each([
+    ["open", "closed"],
+    ["closed", "hidden"],
+    ["open", "hidden"],
+  ] as const)("%s → %s is stricter and needs no consent", (from, to) => {
+    expect(classifyTypeChange(from, to)).toEqual({ kind: "stricter" });
+  });
+
+  it("closed → open asks every member, hidden → closed is a vote", () => {
+    expect(classifyTypeChange("closed", "open")).toEqual({
+      kind: "weaker",
+      process: "consent",
+    });
+    expect(classifyTypeChange("hidden", "closed")).toEqual({
+      kind: "weaker",
+      process: "vote",
+    });
+  });
+
+  it("never goes from hidden to open in one step, or to the same type", () => {
+    for (const [from, to] of [
+      ["hidden", "open"],
+      ["open", "open"],
+    ] as const) {
+      expect(() => classifyTypeChange(from, to)).toThrow(DomainError);
+    }
+  });
+
+  it("passes a vote with at least 2/3 of all active members", () => {
+    expect(votePasses(2, 3)).toBe(true);
+    expect(votePasses(6, 9)).toBe(true);
+    expect(votePasses(5, 8)).toBe(false);
+    expect(votePasses(1, 2)).toBe(false);
+    expect(votePasses(0, 0)).toBe(false);
+  });
+});
+
+describe("historical privacy (PS-ENV-009)", () => {
+  // Hidden from day 1, closed from day 10, hidden again from day 20, closed
+  // from day 30 and open from day 40.
+  const periods: TypePeriod[] = [
+    { type: "hidden", startedAt: at(1) },
+    { type: "closed", startedAt: at(10) },
+    { type: "hidden", startedAt: at(20) },
+    { type: "closed", startedAt: at(30) },
+    { type: "open", startedAt: at(40) },
+  ];
+
+  it("finds when activity became less private than it was created under", () => {
+    expect(widenedAfterCreation(periods, at(5))).toEqual(at(10));
+    expect(widenedAfterCreation(periods, at(15))).toEqual(at(40));
+    expect(widenedAfterCreation(periods, at(25))).toEqual(at(30));
+    expect(widenedAfterCreation(periods, at(41))).toBeNull();
+  });
+
+  it("counts a period that starts at the very moment as in force", () => {
+    expect(widenedAfterCreation(periods, at(10))).toEqual(at(40));
+  });
+
+  it("keeps a member passive since a weakening in the stricter context", () => {
+    // Made passive by hidden → closed on day 10.
+    expect(widenedAfterPassivation(periods, at(10))).toEqual(at(10));
+    // Passive for unmet requirements while closed, before closed → open.
+    expect(widenedAfterPassivation(periods, at(35))).toEqual(at(40));
+    expect(widenedAfterPassivation(periods, at(41))).toBeNull();
+  });
+
+  it("only shows widened history to members active since before the change", () => {
+    expect(mayExposeHistory(null, null)).toBe(true);
+    expect(mayExposeHistory(at(10), at(5))).toBe(true);
+    expect(mayExposeHistory(at(10), at(10))).toBe(false);
+    expect(mayExposeHistory(at(10), at(11))).toBe(false);
+    expect(mayExposeHistory(at(10), null)).toBe(false);
+  });
+});

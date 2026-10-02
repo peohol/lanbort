@@ -192,7 +192,7 @@ export const cancelEnvironmentWindDown = defineCommand({
  * Locks the environment if no one else holds it. A scheduled run skips busy
  * environments; the next run picks them up.
  */
-async function tryLockEnvironment(tx: Tx, environmentId: string) {
+export async function tryLockEnvironment(tx: Tx, environmentId: string) {
   return tx
     .selectFrom("app.environments")
     .select(["id", "state"])

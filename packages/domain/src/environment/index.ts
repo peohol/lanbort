@@ -6,3 +6,5 @@ export * from "./membership-commands";
 export * from "./queries";
 export * from "./role-commands";
 export * from "./continuity-commands";
+export * from "./privacy";
+export * from "./type-change-commands";

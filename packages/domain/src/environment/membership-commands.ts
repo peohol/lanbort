@@ -146,8 +146,21 @@ function eventPayload(membership: MembershipRecord) {
 const isReactivationRequest = (membership: MembershipRecord) =>
   membership.state === "passive" && membership.reviewStage !== null;
 
+/** An application awaiting the administrators' review. */
 const isOpenApplication = (membership: MembershipRecord) =>
-  membership.state === "pending" && membership.origin === "application";
+  membership.state === "pending" &&
+  membership.origin === "application" &&
+  membership.reviewStage !== "confirmation_required";
+
+/** An application the applicant must confirm after closed → open. */
+const awaitsConfirmation = (membership: MembershipRecord) =>
+  membership.state === "pending" &&
+  membership.reviewStage === "confirmation_required";
+
+/** A member who did not accept a weaker type (PS-ENV-008). */
+const declinedType = (membership: MembershipRecord) =>
+  membership.state === "passive" &&
+  membership.passiveReason === "type_change_not_accepted";
 
 /**
  * Joining (PS-ENV-001): an open environment activates at once when the
@@ -155,7 +168,9 @@ const isOpenApplication = (membership: MembershipRecord) =>
  * administrator. A hidden environment cannot be joined this way, and to
  * outsiders it does not exist. A passive member uses the same step to become
  * active again through the process that applies now: directly in an open
- * environment, after an administrator's approval otherwise.
+ * environment, after an administrator's approval otherwise. A member made
+ * passive by a weaker type, and an applicant asked to confirm after
+ * closed → open, join directly (PS-ENV-008).
  */
 export const joinEnvironment = defineCommand({
   name: "environment_membership.join",
@@ -231,17 +246,29 @@ export const joinEnvironment = defineCommand({
       };
     }
 
-    if (existing.state !== "passive" || existing.reviewStage !== null) {
+    const confirming = awaitsConfirmation(existing) && isOpen;
+
+    if (
+      !confirming &&
+      (existing.state !== "passive" || existing.reviewStage !== null)
+    ) {
       conflict("Already a member or awaiting a decision");
     }
 
     await saveAnswers(tx, existing, answers, now);
 
-    if (isOpen) {
+    // Joining is the member's explicit acceptance of the type that applies
+    // now: an applicant confirming after closed → open, or a member who
+    // earlier did not accept a weaker type (PS-ENV-008). Neither needs a new
+    // review; the requirements that apply now are met with the answers.
+    if (isOpen || confirming || declinedType(existing)) {
       await activate(tx, existing, environment, now);
       events.record(membershipActivated, {
         resourceId: existing.id,
-        payload: { ...eventPayload(existing), via: "reactivation" },
+        payload: {
+          ...eventPayload(existing),
+          via: confirming ? "self_service" : "reactivation",
+        },
       });
 
       return { membershipId: existing.id, state: "active" as const };
@@ -751,6 +778,7 @@ export const expireTransitions = defineCommand({
         "state",
         "origin",
         "review_stage",
+        "activated_at",
         "activation_revision",
         "transition_deadline",
         "passive_reason",
@@ -772,9 +800,11 @@ export const expireTransitions = defineCommand({
         state: "active",
         origin: row.origin as MembershipRecord["origin"],
         reviewStage: null,
+        activatedAt: row.activated_at,
         activationRevision: row.activation_revision,
         transitionDeadline: row.transition_deadline,
         passiveReason: null,
+        passiveSince: null,
       })),
       now,
       events,
