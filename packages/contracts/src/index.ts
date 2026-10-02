@@ -4,4 +4,5 @@ export * from "./auth";
 export * from "./environment";
 export * from "./account";
 export * from "./security";
+export * from "./objects";
 export * from "./social";

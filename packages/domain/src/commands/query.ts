@@ -24,7 +24,7 @@ export interface QueryDefinition<I, R, C, O> {
     input: I;
     now: Date;
   }): Promise<Loaded<R, C> | null>;
-  /** Shapes the response from the authorized resource. */
+  /** Shapes the response from the authorized resource, as of `now`. */
   present(args: {
     actor: Actor;
     input: I;

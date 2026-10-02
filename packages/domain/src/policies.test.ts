@@ -6,6 +6,7 @@ import {
   outcomeOf,
   type PolicyMatrix,
 } from "./authorization/policy-matrix";
+import { objectMatrices } from "./objects/policies.matrix";
 import { outboxMatrices } from "./outbox/policy.matrix";
 import { platformMatrices } from "./platform/policies.matrix";
 import { allPolicies } from "./policies";
@@ -20,6 +21,7 @@ const matrices: readonly PolicyMatrix<never, never>[] = [
   ...environmentMatrices,
   ...outboxMatrices,
   ...platformMatrices,
+  ...objectMatrices,
   ...socialMatrices,
 ] as never;
 

@@ -5,6 +5,7 @@ import nextTs from "eslint-config-next/typescript";
 const dataAndAuthModules = [
   "@lanbort/database",
   "@lanbort/auth",
+  "@lanbort/storage",
   "@supabase/*",
   "kysely",
   "pg",

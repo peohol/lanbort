@@ -149,6 +149,52 @@ export interface AppIdempotencyRecords {
   scope: string;
 }
 
+export interface AppObjectAvailabilityIntervals {
+  id: Generated<string>;
+  object_id: string;
+  period: string;
+}
+
+export interface AppObjectCategories {
+  id: string;
+  label: string;
+  parent_id: string | null;
+  position: Generated<number>;
+  retired_at: Timestamp | null;
+}
+
+export interface AppObjectImages {
+  byte_size: number;
+  content_type: string;
+  created_at: Generated<Timestamp>;
+  height: number;
+  id: string;
+  object_id: string;
+  position: number;
+  uploaded_by_user_id: string;
+  width: number;
+}
+
+export interface AppObjectOwners {
+  added_at: Generated<Timestamp>;
+  object_id: string;
+  user_id: string;
+}
+
+export interface AppObjects {
+  archived_at: Timestamp | null;
+  category_id: string;
+  created_at: Generated<Timestamp>;
+  created_by_user_id: string;
+  description: string;
+  id: Generated<string>;
+  loan_terms: string | null;
+  status: Generated<string>;
+  title: string;
+  updated_at: Generated<Timestamp>;
+  version: Generated<number>;
+}
+
 export interface AppOutboxMessages {
   attempts: Generated<number>;
   available_at: Generated<Timestamp>;
@@ -217,6 +263,11 @@ export interface DB {
   "app.environments": AppEnvironments;
   "app.friendships": AppFriendships;
   "app.idempotency_records": AppIdempotencyRecords;
+  "app.object_availability_intervals": AppObjectAvailabilityIntervals;
+  "app.object_categories": AppObjectCategories;
+  "app.object_images": AppObjectImages;
+  "app.object_owners": AppObjectOwners;
+  "app.objects": AppObjects;
   "app.outbox_messages": AppOutboxMessages;
   "app.platform_role_grants": AppPlatformRoleGrants;
   "app.profiles": AppProfiles;

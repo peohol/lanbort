@@ -4,8 +4,13 @@ import {
   createAuthGateway,
 } from "@lanbort/auth";
 import { createDatabase } from "@lanbort/database";
-import { ConsumerRegistry, type DomainContext } from "@lanbort/domain";
+import {
+  ConsumerRegistry,
+  type DomainContext,
+  objectImageFileCleanup,
+} from "@lanbort/domain";
 import { serverEnv } from "./env";
+import { objectImageServices } from "./object-images";
 
 /**
  * The composition root: the only place that wires the database, the auth
@@ -19,10 +24,15 @@ export interface Runtime {
 }
 
 /**
- * Side effects run from the outbox. Empty until Phase 4 adds notifications
- * and e-mail delivery (ADR-0004, ADR-0008).
+ * Side effects run from the outbox (ADR-0004, ADR-0008). Notifications and
+ * e-mail delivery arrive in Phase 4.
  */
-export const outboxConsumers = new ConsumerRegistry([]);
+export const outboxConsumers = new ConsumerRegistry([
+  objectImageFileCleanup({
+    store: () => objectImageServices()?.store,
+    db: () => runtime.domain().db,
+  }),
+]);
 
 let domain: DomainContext | undefined;
 

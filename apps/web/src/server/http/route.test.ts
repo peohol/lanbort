@@ -121,6 +121,20 @@ describe("route boundary: actors and errors", () => {
     expect(text).not.toContain("kari@example.no");
   });
 
+  it("passes the dynamic route segments to the handler", async () => {
+    const handler = vi.fn(async ({ params }: { params: unknown }) =>
+      Response.json(params),
+    );
+    const response = await factory().public(handler)(
+      new NextRequest("https://lanbort.test/api/objects/abc", {
+        headers: { host: "lanbort.test" },
+      }),
+      { params: Promise.resolve({ objectId: "abc" }) },
+    );
+
+    expect(await response.json()).toEqual({ objectId: "abc" });
+  });
+
   it("never lets responses be cached and tags them with a request id", async () => {
     const response = await call(factory().public(ok));
 

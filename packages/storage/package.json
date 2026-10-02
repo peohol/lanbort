@@ -1,0 +1,21 @@
+{
+  "name": "@lanbort/storage",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts"
+  },
+  "scripts": {
+    "build": "tsc6 --noEmit",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc6 --noEmit",
+    "test": "vitest run --exclude \"**/*.integration.test.ts\"",
+    "test:integration": "vitest run .integration.test.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.117.2",
+    "sharp": "0.35.5"
+  }
+}
