@@ -1,6 +1,10 @@
 import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
 import type { AvailabilityBlock } from "./availability";
+import {
+  coOwnerFreezeBlocks,
+  coOwnerRestrictionBlocks,
+} from "./co-owner-blocks";
 
 /**
  * Where blocks on actual availability come from. Each later domain that can
@@ -16,8 +20,11 @@ export interface AvailabilityBlockSource {
   ): Promise<readonly (AvailabilityBlock & { readonly objectId: string })[]>;
 }
 
-/** None yet: loans arrive in Phase 3 and co-ownership in WP-26. */
-export const availabilityBlockSources: readonly AvailabilityBlockSource[] = [];
+/** Loans and unresolved possession are added in Phase 3. */
+export const availabilityBlockSources: readonly AvailabilityBlockSource[] = [
+  coOwnerRestrictionBlocks,
+  coOwnerFreezeBlocks,
+];
 
 /** All blocks per object, from every source. */
 export async function loadAvailabilityBlocks(

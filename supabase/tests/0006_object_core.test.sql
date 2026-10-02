@@ -45,6 +45,16 @@ values (
 );
 insert into app.object_owners (object_id, user_id)
 values ('00000000-0000-4000-8000-0000000000e1', '00000000-0000-4000-8000-0000000000d1');
+-- Every version has its revision (WP-26).
+insert into app.object_revisions (
+  object_id, version, change, actor_user_id, title, category_id, description,
+  status, availability, image_ids
+)
+values (
+  '00000000-0000-4000-8000-0000000000e1', 1, 'created',
+  '00000000-0000-4000-8000-0000000000d1', 'Stige', 'annet', 'Lang stige',
+  'active', '[]', '{}'
+);
 -- From here on, deferred checks run at the end of each statement.
 set constraints all immediate;
 

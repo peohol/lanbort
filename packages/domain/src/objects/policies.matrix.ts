@@ -2,7 +2,11 @@ import { anonymousActor, systemActor } from "../actor";
 import { policyMatrix } from "../authorization/policy-matrix";
 import { testUserActor } from "../testing/actors";
 import {
+  type CoOwnerInvitationResource,
   createObjectPolicy,
+  invitedUserPolicies,
+  liftObjectRestrictionPolicy,
+  listCoOwnerInvitationsPolicy,
   listObjectCategoriesPolicy,
   listOwnObjectsPolicy,
   type ObjectResource,
@@ -18,12 +22,19 @@ const object: ObjectResource = {
   ownerIds: [owner.userId, coOwner.userId],
 };
 
+const invitee = testUserActor();
+const invitation: CoOwnerInvitationResource = {
+  invitationId: "00000000-0000-4000-8000-000000000002",
+  invitedUserId: invitee.userId,
+};
+
 /** Policies without a resource: any registered user, nobody else. */
 const registeredUserMatrix = (
   policy:
     | typeof createObjectPolicy
     | typeof listOwnObjectsPolicy
-    | typeof listObjectCategoriesPolicy,
+    | typeof listObjectCategoriesPolicy
+    | typeof listCoOwnerInvitationsPolicy,
 ) =>
   policyMatrix(policy, [
     {
@@ -60,6 +71,76 @@ export const objectMatrices = [
   registeredUserMatrix(createObjectPolicy),
   registeredUserMatrix(listOwnObjectsPolicy),
   registeredUserMatrix(listObjectCategoriesPolicy),
+  registeredUserMatrix(listCoOwnerInvitationsPolicy),
+  policyMatrix(liftObjectRestrictionPolicy, [
+    {
+      name: "the co-owner who set the restriction",
+      actor: coOwner,
+      resource: { ...object, restrictionSetByUserId: coOwner.userId },
+      context: undefined,
+      expected: "allow",
+    },
+    {
+      name: "another co-owner cannot lift it",
+      actor: owner,
+      resource: { ...object, restrictionSetByUserId: coOwner.userId },
+      context: undefined,
+      expected: "forbidden",
+    },
+    {
+      name: "a former owner who set it is no longer an owner",
+      actor: stranger,
+      resource: { ...object, restrictionSetByUserId: stranger.userId },
+      context: undefined,
+      expected: "not_found",
+    },
+    {
+      name: "anonymous caller",
+      actor: anonymousActor,
+      resource: { ...object, restrictionSetByUserId: owner.userId },
+      context: undefined,
+      expected: "unauthenticated",
+    },
+  ]),
+  ...invitedUserPolicies.map((policy) =>
+    policyMatrix(policy, [
+      {
+        name: "the invited user",
+        actor: invitee,
+        resource: invitation,
+        context: undefined,
+        expected: "allow",
+      },
+      {
+        name: "the inviting owner cannot answer for them",
+        actor: owner,
+        resource: invitation,
+        context: undefined,
+        expected: "not_found",
+      },
+      {
+        name: "anyone else cannot see the invitation",
+        actor: stranger,
+        resource: invitation,
+        context: undefined,
+        expected: "not_found",
+      },
+      {
+        name: "an invited user whose registration is not completed",
+        actor: { ...pending, userId: invitee.userId },
+        resource: invitation,
+        context: undefined,
+        expected: "registration_required",
+      },
+      {
+        name: "system process",
+        actor: systemActor("outbox.worker"),
+        resource: invitation,
+        context: undefined,
+        expected: "unauthenticated",
+      },
+    ]),
+  ),
   ...ownerPolicies.map((policy) =>
     policyMatrix(policy, [
       {

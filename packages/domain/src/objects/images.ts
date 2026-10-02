@@ -204,7 +204,10 @@ export const attachObjectImage = defineCommand({
       })
       .execute();
 
-    const version = await bumpVersion(tx, resource, now);
+    const version = await bumpVersion(tx, resource, now, {
+      actorUserId: actingUserId(actor),
+      change: "image_added",
+    });
     events.record(objectImageAdded, {
       resourceId: resource.objectId,
       payload: { version, imageId: input.imageId },
@@ -320,7 +323,7 @@ export const removeObjectImage = defineCommand({
         }
       : null;
   },
-  execute: async ({ tx, input, resource, events, now }) => {
+  execute: async ({ tx, actor, input, resource, events, now }) => {
     await tx
       .deleteFrom("app.object_images")
       .where("id", "=", input.imageId)
@@ -333,7 +336,10 @@ export const removeObjectImage = defineCommand({
       .where("position", ">", resource.imagePosition)
       .execute();
 
-    const version = await bumpVersion(tx, resource, now);
+    const version = await bumpVersion(tx, resource, now, {
+      actorUserId: actingUserId(actor),
+      change: "image_removed",
+    });
     events.record(objectImageRemoved, {
       resourceId: resource.objectId,
       payload: { version, imageId: input.imageId },

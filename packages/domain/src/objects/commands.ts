@@ -24,6 +24,7 @@ import {
   restoreObjectPolicy,
   updateObjectPolicy,
 } from "./policies";
+import { recordRevision } from "./revisions";
 import {
   actingUserId,
   bumpVersion,
@@ -50,7 +51,20 @@ async function storeAvailability(
   }
 }
 
-function sameIntervals(
+/** Replaces the object's general availability with `availability`. */
+export async function replaceAvailability(
+  db: Kysely<Database>,
+  objectId: string,
+  availability: readonly DateInterval[],
+): Promise<void> {
+  await db
+    .deleteFrom("app.object_availability_intervals")
+    .where("object_id", "=", objectId)
+    .execute();
+  await storeAvailability(db, objectId, availability);
+}
+
+export function sameIntervals(
   a: readonly DateInterval[],
   b: readonly DateInterval[],
 ): boolean {
@@ -99,6 +113,12 @@ export const createObject = defineCommand({
       .values({ object_id: object.id, user_id: userId, added_at: now })
       .execute();
     await storeAvailability(tx, object.id, availability);
+    await recordRevision(
+      tx,
+      object.id,
+      { actorUserId: userId, change: "created" },
+      now,
+    );
 
     events.record(objectCreated, {
       resourceId: object.id,
@@ -128,7 +148,7 @@ export const updateObject = defineCommand({
 
     return state ? { resource: state, context: undefined } : null;
   },
-  execute: async ({ tx, input, resource, events, now }) => {
+  execute: async ({ tx, actor, input, resource, events, now }) => {
     if (input.expectedVersion !== resource.version) {
       throw new DomainError("conflict", "The object has changed", [
         "expectedVersion",
@@ -173,21 +193,23 @@ export const updateObject = defineCommand({
       return { objectId: resource.objectId, version: resource.version };
     }
 
-    const version = await bumpVersion(tx, resource, now, {
-      title: input.title ?? resource.title,
-      category_id: input.categoryId ?? resource.categoryId,
-      description: input.description ?? resource.description,
-      loan_terms:
-        input.loanTerms === undefined ? resource.loanTerms : input.loanTerms,
-    });
-
     if (availabilityChanged) {
-      await tx
-        .deleteFrom("app.object_availability_intervals")
-        .where("object_id", "=", resource.objectId)
-        .execute();
-      await storeAvailability(tx, resource.objectId, availability);
+      await replaceAvailability(tx, resource.objectId, availability);
     }
+
+    const version = await bumpVersion(
+      tx,
+      resource,
+      now,
+      { actorUserId: actingUserId(actor), change: "updated" },
+      {
+        title: input.title ?? resource.title,
+        category_id: input.categoryId ?? resource.categoryId,
+        description: input.description ?? resource.description,
+        loan_terms:
+          input.loanTerms === undefined ? resource.loanTerms : input.loanTerms,
+      },
+    );
 
     events.record(objectUpdated, {
       resourceId: resource.objectId,
@@ -215,15 +237,18 @@ export const archiveObject = defineCommand({
 
     return state ? { resource: state, context: undefined } : null;
   },
-  execute: async ({ tx, resource, events, now }) => {
+  execute: async ({ tx, actor, resource, events, now }) => {
     if (resource.status !== "active") {
       throw new DomainError("conflict", "The object is already archived");
     }
 
-    const version = await bumpVersion(tx, resource, now, {
-      status: "archived",
-      archived_at: now,
-    });
+    const version = await bumpVersion(
+      tx,
+      resource,
+      now,
+      { actorUserId: actingUserId(actor), change: "archived" },
+      { status: "archived", archived_at: now },
+    );
     events.record(objectArchived, {
       resourceId: resource.objectId,
       payload: { version },
@@ -245,15 +270,18 @@ export const restoreObject = defineCommand({
 
     return state ? { resource: state, context: undefined } : null;
   },
-  execute: async ({ tx, resource, events, now }) => {
+  execute: async ({ tx, actor, resource, events, now }) => {
     if (resource.status !== "archived") {
       throw new DomainError("conflict", "The object is not archived");
     }
 
-    const version = await bumpVersion(tx, resource, now, {
-      status: "active",
-      archived_at: null,
-    });
+    const version = await bumpVersion(
+      tx,
+      resource,
+      now,
+      { actorUserId: actingUserId(actor), change: "restored" },
+      { status: "active", archived_at: null },
+    );
     events.record(objectRestored, {
       resourceId: resource.objectId,
       payload: { version },
