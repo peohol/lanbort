@@ -9,6 +9,7 @@ import {
 import { outboxMatrices } from "./outbox/policy.matrix";
 import { platformMatrices } from "./platform/policies.matrix";
 import { allPolicies } from "./policies";
+import { socialMatrices } from "./social/policies.matrix";
 
 /**
  * Port A: authorization has both positive and negative automated tests.
@@ -19,6 +20,7 @@ const matrices: readonly PolicyMatrix<never, never>[] = [
   ...environmentMatrices,
   ...outboxMatrices,
   ...platformMatrices,
+  ...socialMatrices,
 ] as never;
 
 describe("policy coverage", () => {
