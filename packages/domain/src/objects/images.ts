@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import type { Database } from "@lanbort/database";
 import {
   type ObjectImageAdded,
   objectImageAddedSchema,
@@ -7,6 +8,7 @@ import {
   objectImageMaxCount,
   objectVersionSchema,
 } from "@lanbort/contracts";
+import type { Kysely } from "kysely";
 import { z } from "zod";
 import { type Actor, actorScope } from "../actor";
 import {
@@ -20,7 +22,11 @@ import { idempotencyKeyPattern } from "../commands/idempotency";
 import { defineQuery, executeQuery } from "../commands/query";
 import { DomainError } from "../errors";
 import { defineConsumer, OutboxDeliveryError } from "../outbox/consumer";
-import { objectImageAdded, objectImageRemoved } from "./events";
+import {
+  objectImageAdded,
+  objectImageRemoved,
+  objectImageUploadStarted,
+} from "./events";
 import {
   addObjectImagePolicy,
   readObjectPolicy,
@@ -123,15 +129,44 @@ function requireFreeSlot(imageCount: number): void {
 }
 
 /**
- * Checked before an upload is processed or stored, so callers without access
- * cannot make the server store anything. The command checks again.
+ * Runs before an upload is processed or stored: authorizes, checks for a free
+ * slot (the attach command checks again under lock) and durably records the
+ * intent, so {@link objectImageFileCleanup} deletes the file should it never
+ * be registered. An upload whose attach already completed is a retry: it
+ * skips the slot check, since its stored result is replayed.
  */
-const objectImageSlot = defineQuery({
-  name: "object.add_image",
-  input: objectReference,
+const prepareObjectImage = defineCommand({
+  name: "object.prepare_image",
+  input: z.strictObject({
+    objectId: objectIdSchema,
+    imageId: objectImageIdSchema,
+    uploadKey: z.string().regex(idempotencyKeyPattern),
+  }),
+  output: z.strictObject({ completed: z.boolean() }),
   policy: addObjectImagePolicy,
-  load: ({ db, input }) => loadImageSlot(db, input.objectId),
-  present: ({ resource }) => ({ imageCount: resource.imageCount }),
+  idempotency: "none",
+  load: ({ tx, input }) => loadImageSlot(tx, input.objectId),
+  execute: async ({ tx, actor, input, resource, events }) => {
+    const completed = await tx
+      .selectFrom("app.idempotency_records")
+      .select("idempotency_key")
+      .where("scope", "=", actorScope(actor) as string)
+      .where("command", "=", attachObjectImage.name)
+      .where("idempotency_key", "=", input.uploadKey)
+      .executeTakeFirst();
+
+    if (completed) {
+      return { completed: true };
+    }
+
+    requireFreeSlot(resource.imageCount);
+    events.record(objectImageUploadStarted, {
+      resourceId: resource.objectId,
+      payload: { imageId: input.imageId },
+    });
+
+    return { completed: false };
+  },
 });
 
 /**
@@ -188,26 +223,17 @@ export interface UploadObjectImageRequest {
 }
 
 /**
- * Adds an image to an object (PS-OBJ-002): authorize, re-encode without
- * metadata, store the file, then register it in one command. A stored file
- * that ends up unregistered (the command failed, or a retry replayed an image
- * that has since been removed) is removed again. Retry-safe with the same
- * idempotency key.
+ * Adds an image to an object (PS-OBJ-002): authorize and record the intent,
+ * re-encode without metadata, store the file, then register it in one
+ * command. A stored file that never gets registered is deleted from the
+ * outbox. Retry-safe with the same idempotency key: a retry of a completed
+ * upload stores nothing and replays the first result.
  */
 export async function uploadObjectImage(
   domain: DomainContext,
   services: ObjectImageServices,
   request: UploadObjectImageRequest,
 ): Promise<CommandResult<ObjectImageAdded>> {
-  const { imageCount } = await executeQuery(domain, objectImageSlot, {
-    actor: request.actor,
-    input: { objectId: request.objectId },
-  });
-  requireFreeSlot(imageCount);
-  const { objectId } = parseInput(objectReference, {
-    objectId: request.objectId,
-  });
-
   if (request.idempotencyKey === undefined) {
     throw new DomainError(
       "idempotency_key_required",
@@ -221,57 +247,46 @@ export async function uploadObjectImage(
     ]);
   }
 
+  const { objectId } = parseInput(objectReference, {
+    objectId: request.objectId,
+  });
+  // Unauthenticated actors have no scope; the policy below refuses them.
+  const imageId = uploadImageId(
+    actorScope(request.actor) ?? "",
+    request.idempotencyKey,
+    request.bytes,
+  );
+  const prepared = await executeCommand(domain, prepareObjectImage, {
+    actor: request.actor,
+    input: { objectId, imageId, uploadKey: request.idempotencyKey },
+    correlationId: request.correlationId,
+  });
   const image = await services.process(request.bytes);
 
   if (!image) {
     throw new DomainError("invalid_input", "Not an accepted image", ["image"]);
   }
 
-  const imageId = uploadImageId(
-    actorScope(request.actor) as string,
-    request.idempotencyKey,
-    request.bytes,
-  );
-  const key = objectImageKey(objectId, imageId);
-  // Keeps the stored file only if the image is registered, now or by an
-  // earlier attempt that was not removed again since.
-  const keepFileIfRegistered = async () => {
-    const registered = await domain.db
-      .selectFrom("app.object_images")
-      .select("id")
-      .where("id", "=", imageId)
-      .executeTakeFirst();
-
-    if (!registered) {
-      await services.store.remove(key).catch(() => undefined);
-    }
-  };
-
-  await services.store.put(key, image.bytes, image.contentType);
-
-  try {
-    const result = await executeCommand(domain, attachObjectImage, {
-      actor: request.actor,
-      input: {
-        objectId,
-        imageId,
-        byteSize: image.bytes.byteLength,
-        width: image.width,
-        height: image.height,
-      },
-      idempotencyKey: request.idempotencyKey,
-      correlationId: request.correlationId,
-    });
-
-    if (result.replayed) {
-      await keepFileIfRegistered();
-    }
-
-    return result;
-  } catch (error) {
-    await keepFileIfRegistered();
-    throw error;
+  if (!prepared.output.completed) {
+    await services.store.put(
+      objectImageKey(objectId, imageId),
+      image.bytes,
+      image.contentType,
+    );
   }
+
+  return executeCommand(domain, attachObjectImage, {
+    actor: request.actor,
+    input: {
+      objectId,
+      imageId,
+      byteSize: image.bytes.byteLength,
+      width: image.width,
+      height: image.height,
+    },
+    idempotencyKey: request.idempotencyKey,
+    correlationId: request.correlationId,
+  });
 }
 
 /**
@@ -380,21 +395,62 @@ export async function readObjectImage(
   return { bytes, contentType: file.contentType };
 }
 
+export interface ObjectImageFileCleanupOptions {
+  readonly store: () => ObjectImageStore | undefined;
+  readonly db: () => Kysely<Database>;
+  /**
+   * How long an upload may take from its intent to its registration. Until
+   * then an unregistered file may still be on its way in and is kept.
+   */
+  readonly uploadGraceMs?: number;
+}
+
+/** Far above any request's time limit. */
+const defaultUploadGraceMs = 15 * 60 * 1000;
+
 /**
- * Deletes the file of a removed image (outbox, at-least-once). Deleting is
- * idempotent, so redelivery is harmless.
+ * Deletes image files nobody refers to (outbox, at-least-once): the file of a
+ * removed image, and the file of an upload that was never registered once
+ * the upload can no longer be running. Deleting is idempotent, so redelivery
+ * is harmless.
  */
-export function objectImageFileCleanup(
-  store: () => ObjectImageStore | undefined,
-) {
+export function objectImageFileCleanup({
+  store,
+  db,
+  uploadGraceMs = defaultUploadGraceMs,
+}: ObjectImageFileCleanupOptions) {
   return defineConsumer({
     name: "object_images.delete_file",
-    eventTypes: [objectImageRemoved.type],
+    eventTypes: [objectImageRemoved.type, objectImageUploadStarted.type],
     handle: async ({ event }) => {
       const files = store();
 
       if (!files) {
         throw new OutboxDeliveryError("storage_unavailable");
+      }
+
+      if (event.type === objectImageUploadStarted.type) {
+        const { imageId } = objectImageUploadStarted.payload.parse(
+          event.payload,
+        );
+        const registered = await db()
+          .selectFrom("app.object_images")
+          .select("id")
+          .where("id", "=", imageId)
+          .executeTakeFirst();
+
+        if (registered) {
+          // Its file is deleted when the image is removed.
+          return;
+        }
+
+        if (Date.now() - event.occurredAt.getTime() < uploadGraceMs) {
+          // Retried with backoff until the upload can no longer be running.
+          throw new OutboxDeliveryError("upload_in_progress");
+        }
+
+        await files.remove(objectImageKey(event.resourceId, imageId));
+        return;
       }
 
       const { imageId } = objectImageRemoved.payload.parse(event.payload);

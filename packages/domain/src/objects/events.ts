@@ -1,6 +1,6 @@
 import { objectChangeFields } from "@lanbort/contracts";
 import { z } from "zod";
-import { defineEvent } from "../events/catalog";
+import { defineEvent, type EventKind } from "../events/catalog";
 
 /**
  * Object events carry ids, versions and field names only: never titles,
@@ -9,11 +9,12 @@ import { defineEvent } from "../events/catalog";
 const objectEvent = <Shape extends z.ZodRawShape>(
   type: string,
   payload: z.ZodObject<Shape>,
+  kind: EventKind = "domain",
 ) =>
   defineEvent({
     type,
     version: 1,
-    kind: "domain",
+    kind,
     resourceType: "object",
     payload,
   });
@@ -53,4 +54,15 @@ export const objectImageAdded = objectEvent(
 export const objectImageRemoved = objectEvent(
   "object.image_removed",
   z.strictObject({ version, imageId: z.uuid() }),
+);
+
+/**
+ * Recorded before an image file is stored, so a file whose upload never got
+ * registered (a crash between storing and registering) is still deleted
+ * (outbox). Technical, so not part of the object's visible history.
+ */
+export const objectImageUploadStarted = objectEvent(
+  "object.image_upload_started",
+  z.strictObject({ imageId: z.uuid() }),
+  "audit",
 );

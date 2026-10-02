@@ -215,17 +215,39 @@ async function loadDetails(
   }));
 }
 
-export async function loadObjectDetails(
+/**
+ * Runs several reads against one snapshot, so an object and its child rows
+ * always come from the same committed state, even while it is being edited.
+ */
+function inSnapshot<T>(
+  db: Kysely<Database>,
+  read: (db: Kysely<Database>) => Promise<T>,
+): Promise<T> {
+  return db.isTransaction
+    ? read(db)
+    : db.transaction().setIsolationLevel("repeatable read").execute(read);
+}
+
+export function loadObjectDetails(
   db: Kysely<Database>,
   objectId: string,
 ): Promise<ObjectDetails | null> {
-  const state = await loadObjectState(db, objectId);
+  return inSnapshot(db, async (tx) => {
+    const state = await loadObjectState(tx, objectId);
 
-  return state ? ((await loadDetails(db, [state]))[0] ?? null) : null;
+    return state ? ((await loadDetails(tx, [state]))[0] ?? null) : null;
+  });
 }
 
 /** Every object the user owns, newest first. */
-export async function loadOwnedObjectDetails(
+export function loadOwnedObjectDetails(
+  db: Kysely<Database>,
+  userId: string,
+): Promise<ObjectDetails[]> {
+  return inSnapshot(db, (tx) => loadOwnedDetails(tx, userId));
+}
+
+async function loadOwnedDetails(
   db: Kysely<Database>,
   userId: string,
 ): Promise<ObjectDetails[]> {

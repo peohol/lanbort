@@ -27,7 +27,7 @@ Route Handler (route.user / route.public / route.scheduler)
 - Endringer krever `expectedVersion`. Er objektet endret siden, avvises endringen med `conflict` i stedet for å overskrive nyere data.
 - Generell tilgjengelighet lagres som datointervaller som aldri overlapper; intervaller som berører hverandre slås sammen. Faktisk ledighet lagres aldri: den beregnes av `deriveAvailability` som tilgjengelighet minus sperrer. Nye domener som kan sperre nye lån (godkjente lån, uavklart besittelse, medeierbegrensninger), legger til en kilde i `availabilityBlockSources` i stedet for å lage egen ledig-status.
 - Kategoristrukturen er åpen (OD-0006). Bare «Annet» finnes til den er besluttet; nye kategorier legges inn som data i en migrasjon.
-- Bilder går bare gjennom `@lanbort/storage`. Serveren dekoder og koder hvert bilde på nytt til WebP uten metadata (også posisjon) før det lagres i den private bøtta `object-images`, og leverer det ut bare etter objektets lesepolicy. Nettleseren når aldri lagringen direkte. Sletting av filen skjer etter commit via outbox.
+- Bilder går bare gjennom `@lanbort/storage`. Serveren dekoder og koder hvert bilde på nytt til WebP uten metadata (også posisjon) før det lagres i den private bøtta `object-images`, og leverer det ut bare etter objektets lesepolicy. Nettleseren når aldri lagringen direkte. Før en fil lagres, registreres opplastingen i outbox, så en fil som aldri ble knyttet til objektet (for eksempel etter et krasj), slettes etter 15 minutter. Filen til et fjernet bilde slettes etter commit, også via outbox.
 
 ## Innlogging og sesjon
 

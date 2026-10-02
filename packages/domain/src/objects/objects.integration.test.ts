@@ -46,7 +46,13 @@ class MemoryStore implements ObjectImageStore {
 }
 
 const store = new MemoryStore();
-const consumers = new ConsumerRegistry([objectImageFileCleanup(() => store)]);
+// No grace period: tests run the outbox only after their uploads finished.
+const cleanup = objectImageFileCleanup({
+  store: () => store,
+  db: () => db,
+  uploadGraceMs: 0,
+});
+const consumers = new ConsumerRegistry([cleanup]);
 const domain: DomainContext = { db, consumers };
 
 /** Accepts anything starting with "img", like a decoder would. */
@@ -96,16 +102,23 @@ const upload = (
     idempotencyKey,
   });
 
+/** The object's visible history. */
 const eventsFor = (objectId: string) =>
   db
     .selectFrom("app.audit_events")
     .select(["event_type", "kind", "actor_user_id", "payload"])
     .where("resource_type", "=", "object")
     .where("resource_id", "=", objectId)
+    .where("kind", "=", "domain")
     .orderBy("position")
     .execute();
 
 const user = async () => (await registerTestUser(domain)).actor;
+
+const filesOf = (objectId: string) =>
+  [...store.files.keys()].filter((file) =>
+    file.startsWith(`objects/${objectId}/`),
+  );
 
 describe("creating and reading objects (PS-OBJ-001, PS-OBJ-002)", () => {
   it("creates a global object owned by its creator", async () => {
@@ -656,9 +669,6 @@ describe("images (PS-OBJ-002)", () => {
       upload(owner, objectId, "img-a"),
       upload(owner, objectId, "img-b"),
     ]);
-    const stored = [...store.files.keys()].filter((file) =>
-      file.startsWith(`objects/${objectId}/`),
-    );
 
     expect(results.map((r) => r.status).sort()).toEqual([
       "fulfilled",
@@ -667,8 +677,100 @@ describe("images (PS-OBJ-002)", () => {
     expect((await read(owner, objectId)).images).toHaveLength(
       objectImageMaxCount,
     );
-    // The losing upload's file was removed again.
-    expect(stored).toHaveLength(objectImageMaxCount);
+    // The losing upload's file is removed again from the outbox.
+    await processOutboxBatch(db, consumers, { batchSize: 100 });
+    expect(filesOf(objectId)).toHaveLength(objectImageMaxCount);
+  });
+
+  it("replays an upload that took the last slot when it is retried", async () => {
+    const owner = await user();
+    const { objectId } = await create(owner);
+
+    for (let i = 0; i < objectImageMaxCount - 1; i += 1) {
+      await upload(owner, objectId);
+    }
+
+    const idempotencyKey = key();
+    const last = await upload(owner, objectId, "img-last", idempotencyKey);
+    const retried = await upload(owner, objectId, "img-last", idempotencyKey);
+
+    expect(retried).toEqual({ output: last.output, replayed: true });
+    expect((await read(owner, objectId)).images).toHaveLength(
+      objectImageMaxCount,
+    );
+  });
+
+  it("deletes the file of an upload that crashed before it was registered", async () => {
+    const owner = await user();
+    const { objectId } = await create(owner);
+    const kept = (await upload(owner, objectId, "img-kept")).output;
+    const crashing: ObjectImageStore = {
+      get: (fileKey) => store.get(fileKey),
+      remove: (fileKey) => store.remove(fileKey),
+      put: async (fileKey, bytes) => {
+        await store.put(fileKey, bytes);
+        throw new Error("crashed after storing");
+      },
+    };
+
+    await expect(
+      uploadObjectImage(
+        domain,
+        { store: crashing, process },
+        {
+          actor: owner,
+          objectId,
+          bytes: new TextEncoder().encode("img-lost"),
+          idempotencyKey: key(),
+        },
+      ),
+    ).rejects.toThrow("crashed after storing");
+    expect(filesOf(objectId)).toHaveLength(2);
+    expect((await read(owner, objectId)).images).toHaveLength(1);
+
+    await processOutboxBatch(db, consumers, { batchSize: 100 });
+
+    expect(filesOf(objectId)).toEqual([objectImageKey(objectId, kept.imageId)]);
+    // The intent is technical and stays out of the object's visible history.
+    expect((await eventsFor(objectId)).map((e) => e.event_type)).toEqual([
+      "object.created",
+      "object.image_added",
+    ]);
+  });
+
+  it("keeps an unregistered file while its upload may still be running", async () => {
+    const owner = await user();
+    const { objectId } = await create(owner);
+    const imageId = randomUUID();
+    const fileKey = objectImageKey(objectId, imageId);
+    await store.put(fileKey, new TextEncoder().encode("img-slow"));
+    const patient = objectImageFileCleanup({
+      store: () => store,
+      db: () => db,
+    });
+    const delivery = (occurredAt: Date) => ({
+      messageId: randomUUID(),
+      attempt: 1,
+      event: {
+        id: randomUUID(),
+        type: "object.image_upload_started",
+        version: 1,
+        resourceType: "object",
+        resourceId: objectId,
+        correlationId: null,
+        occurredAt,
+        payload: { imageId },
+      },
+    });
+
+    await expect(patient.handle(delivery(new Date()))).rejects.toMatchObject({
+      code: "upload_in_progress",
+      permanent: false,
+    });
+    expect(store.files.has(fileKey)).toBe(true);
+
+    await patient.handle(delivery(new Date(Date.now() - 60 * 60 * 1000)));
+    expect(store.files.has(fileKey)).toBe(false);
   });
 
   it("adds an image once when the upload is retried", async () => {
@@ -696,11 +798,8 @@ describe("images (PS-OBJ-002)", () => {
         input: { objectId, imageId: again.output.imageId },
       }),
     ).toMatchObject({ bytes: new TextEncoder().encode("img-retry") });
-    expect(
-      [...store.files.keys()].filter((file) =>
-        file.startsWith(`objects/${objectId}/`),
-      ),
-    ).toHaveLength(1);
+    await processOutboxBatch(db, consumers, { batchSize: 100 });
+    expect(filesOf(objectId)).toHaveLength(1);
   });
 
   it("does not bring a removed image back when its upload is retried", async () => {

@@ -28,7 +28,10 @@ export interface Runtime {
  * e-mail delivery arrive in Phase 4.
  */
 export const outboxConsumers = new ConsumerRegistry([
-  objectImageFileCleanup(() => objectImageServices()?.store),
+  objectImageFileCleanup({
+    store: () => objectImageServices()?.store,
+    db: () => runtime.domain().db,
+  }),
 ]);
 
 let domain: DomainContext | undefined;
