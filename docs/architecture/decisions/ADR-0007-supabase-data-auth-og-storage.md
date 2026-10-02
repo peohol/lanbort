@@ -23,12 +23,14 @@ Produksjons-/previewtrafikk fra Vercel bruker Supabase sin transaction-pooler. M
 
 ### Autentisering
 
-Supabase Auth brukes for konto, e-postverifisering, sesjoner og MFA.
+Supabase Auth brukes som første autentiseringsplattform for konto, e-postverifisering og sesjoner, og skal kunne støtte sterkere autentisering for privilegerte roller.
 
 - Websesjoner bruker cookie-basert PKCE-flyt via Supabase sin SSR-integrasjon.
-- Auth-integrasjonen kapsles bak et internt adapter fordi SSR-pakken fortsatt kan ha API-endringer.
+- Auth-integrasjonen kapsles bak et internt adapter fordi SSR-pakken fortsatt kan ha API-endringer og fordi domenet ikke skal bindes unødvendig til én identitetsleverandør.
 - Backend normaliserer autentisert identitet til en intern aktørmodell før domenepolicy vurderes.
-- MFA/TOTP skal kunne kreves for privilegerte plattformroller.
+- Plattformforvaltere skal kunne pålegges et sterkere autentiseringsnivå enn vanlige brukere, men denne ADR-en velger ikke TOTP, passkeys/WebAuthn, Vipps eller noen annen konkret mekanisme. Valget av mekanisme avklares i OD-0010. Til en mekanisme er godkjent og implementert, godtar backend ingen sesjon som sterkere, slik at privilegerte plattformforvalterhandlinger avvises (fail closed).
+- Vanlige brukere skal ikke pålegges MFA bare fordi infrastrukturen støtter det.
+- Framtidig federert eller ekstern innlogging, herunder mulig Vipps Login for norske brukere, kan vurderes uten at det endrer dagens pilotbeslutning om verifisert e-post. Se OD-0011.
 - Brukerredigerbar metadata skal aldri brukes som autorisasjonsgrunnlag.
 
 ### Row-level security

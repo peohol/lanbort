@@ -32,7 +32,7 @@ Etabler én konsistent policyvei for ressurs-/kontekstbasert tilgang og en testm
 
 ### WP-12 — Plattformrolle og privilegert autentisering
 **Krav:** PS-USR-008, PS-USR-009  
-Plattformforvalterrolle, habilitetsgrunnlag, re-autentisering og MFA-støtte.
+Plattformforvalterrolle, habilitetsgrunnlag og et mekanismenøytralt grunnlag for re-autentisering og sterkere privilegert autentisering. Den konkrete mekanismen skal ikke låses til TOTP, autentiseringsapp eller noen annen mekanisme før OD-0010 er avklart. Uten godkjent mekanisme skal plattformforvaltertilgang avvises. Pakken kan regnes som ferdig med OD-0010 åpen; OD-0010 må avklares før privilegerte plattformforvalterhandlinger tas i reell bruk.
 
 ### WP-13 — Audit events og transactional outbox
 **Krav:** PS-DOM-006, PS-NFR-009; ADR-0004  
