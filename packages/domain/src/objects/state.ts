@@ -10,7 +10,11 @@ import {
   deriveAvailability,
   toApiInterval,
 } from "./availability";
-import { loadAvailabilityBlocks } from "./blocks";
+import {
+  type AvailabilityBlockSource,
+  availabilityBlockSources,
+  loadAvailabilityBlocks,
+} from "./blocks";
 import type { ObjectResource } from "./policies";
 
 /** The object's own row and current owners, as policies and commands see it. */
@@ -199,12 +203,14 @@ async function loadImages(
 async function loadDetails(
   db: Kysely<Database>,
   states: readonly ObjectState[],
+  sources: readonly AvailabilityBlockSource[],
 ): Promise<ObjectDetails[]> {
   const ids = states.map((state) => state.objectId);
-  const [availability, images, blocks] = await Promise.all([
+  // One connection serves the snapshot, so these run one after another.
+  const blocks = await loadAvailabilityBlocks(db, ids, sources);
+  const [availability, images] = await Promise.all([
     loadAvailability(db, ids),
     loadImages(db, ids),
-    loadAvailabilityBlocks(db, ids),
   ]);
 
   return states.map((state) => ({
@@ -231,11 +237,14 @@ function inSnapshot<T>(
 export function loadObjectDetails(
   db: Kysely<Database>,
   objectId: string,
+  sources = availabilityBlockSources,
 ): Promise<ObjectDetails | null> {
   return inSnapshot(db, async (tx) => {
     const state = await loadObjectState(tx, objectId);
 
-    return state ? ((await loadDetails(tx, [state]))[0] ?? null) : null;
+    return state
+      ? ((await loadDetails(tx, [state], sources))[0] ?? null)
+      : null;
   });
 }
 
@@ -267,6 +276,7 @@ async function loadOwnedDetails(
   return loadDetails(
     db,
     rows.map((row) => toState(row, owners.get(row.id) ?? [])),
+    availabilityBlockSources,
   );
 }
 

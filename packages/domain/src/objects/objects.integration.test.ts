@@ -27,6 +27,7 @@ import {
   uploadObjectImage,
 } from "./images";
 import { getObject, listObjectCategories, listOwnObjects } from "./queries";
+import { loadObjectDetails } from "./state";
 
 const db = connectTestDatabase();
 afterAll(() => db.destroy());
@@ -849,6 +850,35 @@ describe("images (PS-OBJ-002)", () => {
 });
 
 describe("actual availability is derived, never stored (PS-OBJ-003–005)", () => {
+  it("reads an object from one snapshot while it is edited", async () => {
+    const owner = await user();
+    const { objectId } = await create(owner);
+    const later = { start: addDays(today, 30), end: addDays(today, 40) };
+    // Commits an edit after the object row was read, before its children.
+    const editInBetween = {
+      name: "test.concurrent_edit",
+      load: async () => {
+        await update(owner, {
+          objectId,
+          expectedVersion: 1,
+          availability: [later],
+        });
+        return [];
+      },
+    };
+
+    const seen = await loadObjectDetails(db, objectId, [editInBetween]);
+
+    expect(seen).toMatchObject({
+      version: 1,
+      availability: [{ from: today, until: null }],
+    });
+    expect(await read(owner, objectId)).toMatchObject({
+      version: 2,
+      availability: [later],
+    });
+  });
+
   it("lets later domains block periods through a block source", async () => {
     const owner = await user();
     const { objectId } = await create(owner);
