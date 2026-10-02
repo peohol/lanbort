@@ -100,17 +100,28 @@ const fresh = (actor: UserActor): UserActor => ({
   },
 });
 
+/** Runs a command at the clock's current moment, without moving it. */
+function runNow<I, R, C, O>(
+  command: CommandDefinition<I, R, C, O>,
+  actor: Actor,
+  input: object,
+  idempotencyKey: string = randomUUID(),
+): Promise<O> {
+  return executeCommand(domain, command, {
+    actor: actor.kind === "user" ? fresh(actor) : actor,
+    input,
+    ...(command.idempotency === "none" ? {} : { idempotencyKey }),
+  }).then((result) => result.output);
+}
+
 function run<I, R, C, O>(
   command: CommandDefinition<I, R, C, O>,
   actor: Actor,
   input: object,
   idempotencyKey: string = randomUUID(),
 ): Promise<O> {
-  return executeCommand(tick(), command, {
-    actor: actor.kind === "user" ? fresh(actor) : actor,
-    input,
-    ...(command.idempotency === "none" ? {} : { idempotencyKey }),
-  }).then((result) => result.output);
+  tick();
+  return runNow(command, actor, input, idempotencyKey);
 }
 
 const user = async () => (await registerTestUser(domain)).actor;
@@ -1083,4 +1094,66 @@ describe("historical privacy (PS-ENV-009)", () => {
     await join(environmentId, admin, veteran);
     expect(await found(veteran, environmentId)).toEqual([]);
   });
+
+  it.each([
+    ["closed", "open"],
+    ["hidden", "closed"],
+  ] as const)(
+    "orders a publication before a %s → %s change at the very same moment",
+    async (from, to) => {
+      const admin = await user();
+      const environmentId = await environment(admin, { type: from });
+      const anna = await member(environmentId, admin);
+      const veteran = await member(environmentId, admin);
+      const objectId = await create(anna);
+      const proposalId =
+        from === "hidden"
+          ? await startTestVote(db, {
+              environmentId,
+              proposedByUserId: admin.userId,
+              at: clock,
+            })
+          : (
+              await run(changeEnvironmentType, admin, {
+                environmentId,
+                expectedType: from,
+                type: to,
+              })
+            ).proposal!.id;
+      for (const supporter of [admin, anna, veteran]) {
+        await run(respondToTypeChange, supporter, {
+          environmentId,
+          proposalId,
+          support: true,
+        });
+      }
+      passDays(from === "hidden" ? testVoteDays : typeChangeDays.consent);
+
+      // The publication comes first, then the change, with one and the same
+      // clock time: the order alone decides the context.
+      const { publicationId } = await runNow(publishObject, anna, {
+        objectId,
+        environmentId,
+      });
+      await runNow(concludeTypeChanges, systemActor(typeChangeProcess), {});
+      const { created_at: publishedAt } = await db
+        .selectFrom("app.environment_publications")
+        .select("created_at")
+        .where("id", "=", publicationId)
+        .executeTakeFirstOrThrow();
+      const widening = await db
+        .selectFrom("app.environment_type_periods")
+        .select(["type", "started_at"])
+        .where("environment_id", "=", environmentId)
+        .orderBy("position", "desc")
+        .executeTakeFirstOrThrow();
+      expect(widening).toEqual({ type: to, started_at: publishedAt });
+
+      const newcomer = await member(environmentId, admin);
+      expect(await found(veteran, environmentId)).toEqual([objectId]);
+      expect(await found(newcomer, environmentId)).toEqual([]);
+      await makeAdministrator(environmentId, admin, newcomer);
+      expect(await reviewedIds(newcomer, environmentId)).toEqual([]);
+    },
+  );
 });

@@ -6,6 +6,7 @@ import {
   acceptsNewActivity,
   type EnvironmentRecord,
 } from "../environment/model";
+import type { HistoryPosition } from "../environment/privacy";
 
 /**
  * Pure rules of environment publication (WP-25, PS-OBJ-006, PS-ENV-011,
@@ -20,6 +21,8 @@ export interface PublicationRecord {
   readonly status: PublicationStatus;
   readonly endReason: PublicationEndReason | null;
   readonly createdAt: Date;
+  /** Where it was published in the environment's history (PS-ENV-009). */
+  readonly position: HistoryPosition;
   readonly statusChangedAt: Date;
 }
 

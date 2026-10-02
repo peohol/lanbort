@@ -11,8 +11,8 @@ import type { Transaction } from "kysely";
 import type { Actor } from "../actor";
 import { defineCommand } from "../commands/command";
 import { loadLockedAccess } from "../environment/environment-commands";
-import { acceptsNewActivity, activeSince } from "../environment/model";
-import { isConcealed } from "../environment/privacy";
+import { acceptsNewActivity, activeFrom } from "../environment/model";
+import { isConcealed, toPosition } from "../environment/privacy";
 import { loadEnvironmentAccess } from "../environment/store";
 import { concealedHistory } from "../environment/type-change-store";
 import { DomainError } from "../errors";
@@ -254,9 +254,9 @@ async function loadReviewed({
   const concealed = await concealedHistory(
     tx,
     access.environment.id,
-    activeSince(access.ownMembership),
+    activeFrom(access.ownMembership),
   );
-  if (isConcealed(concealed, publication.createdAt)) {
+  if (isConcealed(concealed, publication.position)) {
     return null;
   }
 
@@ -479,13 +479,13 @@ export const setObjectApproval = defineCommand({
       .set({ status: to, status_changed_at: now })
       .where("environment_id", "=", environment.id)
       .where("status", "=", from)
-      .returning(["id", "object_id", "created_at"])
+      .returning(["id", "object_id", "position"])
       .execute();
     // The count is a view of the history too (PS-ENV-009).
     const concealed = await concealedHistory(
       tx,
       environment.id,
-      activeSince(ownMembership),
+      activeFrom(ownMembership),
     );
 
     events.record(environmentObjectApprovalChanged, {
@@ -501,8 +501,9 @@ export const setObjectApproval = defineCommand({
 
     return {
       required: input.required,
-      changed: changed.filter((row) => !isConcealed(concealed, row.created_at))
-        .length,
+      changed: changed.filter(
+        (row) => !isConcealed(concealed, toPosition(row.position)),
+      ).length,
     };
   },
 });

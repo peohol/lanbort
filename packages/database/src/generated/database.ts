@@ -69,6 +69,7 @@ export interface AppEnvironmentMembershipAnswers {
 
 export interface AppEnvironmentMemberships {
   activated_at: Timestamp | null;
+  activated_position: Int8 | null;
   activation_revision: number | null;
   created_at: Generated<Timestamp>;
   end_reason: string | null;
@@ -77,6 +78,7 @@ export interface AppEnvironmentMemberships {
   id: Generated<string>;
   invited_by_user_id: string | null;
   origin: string;
+  passive_position: Int8 | null;
   passive_reason: string | null;
   passive_since: Timestamp | null;
   review_stage: string | null;
@@ -113,6 +115,7 @@ export interface AppEnvironmentPublications {
   environment_id: string;
   id: Generated<string>;
   object_id: string;
+  position: Generated<Int8>;
   published_by_user_id: string;
   status: string;
   status_changed_at: Generated<Timestamp>;
@@ -175,6 +178,7 @@ export interface AppEnvironments {
 export interface AppEnvironmentTypePeriods {
   environment_id: string;
   id: Generated<string>;
+  position: Generated<Int8>;
   proposal_id: string | null;
   started_at: Generated<Timestamp>;
   type: string;

@@ -13,9 +13,11 @@ import {
   type typeChangeOutcomeSchema,
 } from "./events";
 import {
-  type CreationSpan,
   concealedSpans,
+  type HistoryPosition,
+  type PositionSpan,
   processOf,
+  toPosition,
   type TypePeriod,
 } from "./privacy";
 
@@ -102,16 +104,16 @@ export async function typeHistories(
 
   const rows = await db
     .selectFrom("app.environment_type_periods")
-    .select(["environment_id", "type", "started_at"])
+    .select(["environment_id", "type", "position"])
     .where("environment_id", "in", [...environmentIds])
-    .orderBy("started_at")
+    .orderBy("position")
     .execute();
 
   for (const row of rows) {
     const periods = histories.get(row.environment_id) ?? [];
     periods.push({
       type: row.type as EnvironmentType,
-      startedAt: row.started_at,
+      position: toPosition(row.position),
     });
     histories.set(row.environment_id, periods);
   }
@@ -121,24 +123,24 @@ export async function typeHistories(
 
 /**
  * What a viewer may not see of the environment's history (PS-ENV-009), for
- * lists that filter with `createdOutside`. `viewerActiveSince` is the start
- * of the viewer's current active period, null if they have none.
+ * lists that filter with `createdOutside`. `viewerActiveFrom` is where the
+ * viewer's current active period began, null if they have none.
  */
 export async function concealedHistory(
   db: Db,
   environmentId: string,
-  viewerActiveSince: Date | null,
-): Promise<CreationSpan[]> {
-  return concealedSpans(
-    await typePeriods(db, environmentId),
-    viewerActiveSince,
-  );
+  viewerActiveFrom: HistoryPosition | null,
+): Promise<PositionSpan[]> {
+  return concealedSpans(await typePeriods(db, environmentId), viewerActiveFrom);
 }
 
-/** SQL: `createdAt` lies outside every concealed span. */
+const positionValue = (position: HistoryPosition) =>
+  sql`${position.toString()}::bigint`;
+
+/** SQL: the position `created` lies outside every concealed span. */
 export function createdOutside(
-  createdAt: Expression<Date>,
-  spans: readonly CreationSpan[],
+  created: Expression<string>,
+  spans: readonly PositionSpan[],
 ): RawBuilder<boolean> {
   if (spans.length === 0) {
     return sql<boolean>`true`;
@@ -146,8 +148,8 @@ export function createdOutside(
 
   const within = spans.map((span) =>
     span.until === null
-      ? sql`${createdAt} >= ${span.from}`
-      : sql`(${createdAt} >= ${span.from} and ${createdAt} < ${span.until})`,
+      ? sql`${created} >= ${positionValue(span.from)}`
+      : sql`(${created} >= ${positionValue(span.from)} and ${created} < ${positionValue(span.until)})`,
   );
 
   return sql<boolean>`not (${sql.join(within, sql` or `)})`;

@@ -56,6 +56,7 @@ import {
   saveAnswers,
   settleMembership,
 } from "./store";
+import { toOptionalPosition } from "./privacy";
 
 const membershipOutput = z.strictObject({
   membershipId: z.uuid(),
@@ -778,7 +779,7 @@ export const expireTransitions = defineCommand({
         "state",
         "origin",
         "review_stage",
-        "activated_at",
+        "activated_position",
         "activation_revision",
         "transition_deadline",
         "passive_reason",
@@ -800,11 +801,11 @@ export const expireTransitions = defineCommand({
         state: "active",
         origin: row.origin as MembershipRecord["origin"],
         reviewStage: null,
-        activatedAt: row.activated_at,
+        activatedPosition: toOptionalPosition(row.activated_position),
         activationRevision: row.activation_revision,
         transitionDeadline: row.transition_deadline,
         passiveReason: null,
-        passiveSince: null,
+        passivePosition: null,
       })),
       now,
       events,

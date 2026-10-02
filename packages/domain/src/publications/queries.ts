@@ -18,12 +18,14 @@ import type { DomainContext } from "../commands/command";
 import { defineQuery, executeQuery } from "../commands/query";
 import {
   acceptsNewActivity,
-  activeSince,
+  activeFrom,
   type EnvironmentAccess,
 } from "../environment/model";
 import {
-  type CreationSpan,
   mayExposeHistory,
+  type PositionSpan,
+  toOptionalPosition,
+  toPosition,
   widenedAfterCreation,
 } from "../environment/privacy";
 import { loadEnvironmentAccess } from "../environment/store";
@@ -74,7 +76,7 @@ function discoverablePublications(
   db: Db,
   environmentId: string,
   viewerId: string,
-  concealed: readonly CreationSpan[],
+  concealed: readonly PositionSpan[],
   now: Date,
 ) {
   return db
@@ -82,7 +84,7 @@ function discoverablePublications(
     .innerJoin("app.objects as object", "object.id", "publication.object_id")
     .where("publication.environment_id", "=", environmentId)
     .where("publication.status", "=", "active")
-    .where(createdOutside(sql.ref("publication.created_at"), concealed))
+    .where(createdOutside(sql.ref("publication.position"), concealed))
     .where("object.status", "=", "active")
     .where(
       ownerHasAccess(
@@ -205,7 +207,8 @@ export const listObjectPublications = defineQuery({
           "environment.name",
           "membership.id as membership_id",
           "membership.state as membership_state",
-          "membership.activated_at as membership_activated_at",
+          "membership.activated_position as membership_activated_position",
+          "publication.position",
         ])
         .where("publication.object_id", "=", object.objectId)
         .orderBy("publication.environment_id")
@@ -227,10 +230,10 @@ export const listObjectPublications = defineQuery({
             mayExposeHistory(
               widenedAfterCreation(
                 histories.get(row.environment_id) ?? [],
-                row.created_at,
+                toPosition(row.position),
               ),
               row.membership_state === "active"
-                ? row.membership_activated_at
+                ? toOptionalPosition(row.membership_activated_position)
                 : null,
             )),
       }));
@@ -314,7 +317,7 @@ export const listEnvironmentPublications = defineQuery({
             .where("publication.environment_id", "=", access.environment.id)
             .where(
               createdOutside(
-                sql.ref("publication.created_at"),
+                sql.ref("publication.position"),
                 await concealedFrom(tx, access),
               ),
             )
@@ -358,11 +361,7 @@ export const listEnvironmentPublications = defineQuery({
 
 /** What the caller may not see of the environment's history (PS-ENV-009). */
 const concealedFrom = (db: Db, access: EnvironmentAccess) =>
-  concealedHistory(
-    db,
-    access.environment.id,
-    activeSince(access.ownMembership),
-  );
+  concealedHistory(db, access.environment.id, activeFrom(access.ownMembership));
 
 /** An active member may discover objects only while the environment is active. */
 const discovers = (access: EnvironmentAccess) =>
@@ -507,7 +506,7 @@ const publishedImageFile = defineQuery({
           .where("environment_id", "=", access.environment.id)
           .where("object_id", "=", input.objectId)
           .where("status", "<>", "unpublished")
-          .where(createdOutside(sql.ref("created_at"), concealed))
+          .where(createdOutside(sql.ref("position"), concealed))
           .executeTakeFirst()) !== undefined;
 
       return {

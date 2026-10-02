@@ -80,129 +80,133 @@ export function processOf(
 export const votePasses = (support: number, eligible: number) =>
   eligible > 0 && support * 3 >= eligible * 2;
 
+/**
+ * Where an event lies in the order of events (PS-ENV-009). The database
+ * gives every event historical privacy compares (a type period, a
+ * publication, an activation, a passivation) the next position as it writes
+ * it, so the order is clear even when two events share a clock time.
+ */
+export type HistoryPosition = bigint;
+
+/** A position as the database returns it. */
+export const toPosition = (value: string | number | bigint): HistoryPosition =>
+  BigInt(value);
+
+/** The same for a position that may be missing. */
+export const toOptionalPosition = (
+  value: string | number | bigint | null,
+): HistoryPosition | null => (value === null ? null : toPosition(value));
+
 /** One period of the environment's type history, oldest first. */
 export interface TypePeriod {
   readonly type: EnvironmentType;
-  readonly startedAt: Date;
+  readonly position: HistoryPosition;
 }
 
-/** The type in force at `at`; a period starting exactly then counts. */
-function typeAt(periods: readonly TypePeriod[], at: Date): EnvironmentType {
+/** The type in force at `at`: the latest period that began before it. */
+function typeAt(
+  periods: readonly TypePeriod[],
+  at: HistoryPosition,
+): EnvironmentType {
   let type = periods[0]?.type ?? "hidden";
 
   for (const period of periods) {
-    if (period.startedAt.getTime() > at.getTime()) break;
+    if (period.position > at) break;
     type = period.type;
   }
 
   return type;
 }
 
-/** The first period from `from` on whose type is weaker than `context`. */
+/** The first period after `after` whose type is weaker than `context`. */
 function firstWeakening(
   periods: readonly TypePeriod[],
   context: EnvironmentType,
-  from: (period: TypePeriod) => boolean,
-): Date | null {
+  after: HistoryPosition,
+): HistoryPosition | null {
   return (
     periods.find(
       (period) =>
-        from(period) && privacyRank[period.type] < privacyRank[context],
-    )?.startedAt ?? null
+        period.position > after &&
+        privacyRank[period.type] < privacyRank[context],
+    )?.position ?? null
   );
 }
 
 /**
- * Where historical privacy begins for something created at `createdAt`
+ * Where historical privacy begins for something created at `created`
  * (PS-ENV-009): the first time afterwards the environment became less
  * private than it was then, or null if it never did.
  */
-export function widenedAfterCreation(
+export const widenedAfterCreation = (
   periods: readonly TypePeriod[],
-  createdAt: Date,
-): Date | null {
-  return firstWeakening(
-    periods,
-    typeAt(periods, createdAt),
-    (period) => period.startedAt.getTime() > createdAt.getTime(),
-  );
-}
+  created: HistoryPosition,
+): HistoryPosition | null =>
+  firstWeakening(periods, typeAt(periods, created), created);
 
 /**
- * The same for a membership that became passive at `passiveSince`: it keeps
- * the context the member last accepted, which is the type in force just
- * before. A member made passive by a weaker type is passive from the very
- * moment the type changed.
+ * The same for a membership that became passive at `passive`: it keeps the
+ * context the member last accepted. A member made passive by a weaker type
+ * becomes passive just before the type changes, so that context is the
+ * stricter one.
  */
-export function widenedAfterPassivation(
-  periods: readonly TypePeriod[],
-  passiveSince: Date,
-): Date | null {
-  const before = periods.filter(
-    (period) => period.startedAt.getTime() < passiveSince.getTime(),
-  );
-
-  return firstWeakening(
-    periods,
-    typeAt(before, passiveSince),
-    (period) => period.startedAt.getTime() >= passiveSince.getTime(),
-  );
-}
+export const widenedAfterPassivation = widenedAfterCreation;
 
 /**
  * PS-ENV-009: whether something whose privacy widened at `widenedAt` may be
  * shown to a viewer. Without a later weakening the ordinary rules decide
  * alone. Otherwise only members active since before the weakening, who
  * belonged to the stricter context, may see it: never later members or
- * outsiders, whatever their role. `viewerActiveSince` is the start of the
- * viewer's current active period, null if they have none.
+ * outsiders, whatever their role. `viewerActiveFrom` is where the viewer's
+ * current active period began, null if they have none.
  */
 export function mayExposeHistory(
-  widenedAt: Date | null,
-  viewerActiveSince: Date | null,
+  widenedAt: HistoryPosition | null,
+  viewerActiveFrom: HistoryPosition | null,
 ): boolean {
   return (
     widenedAt === null ||
-    (viewerActiveSince !== null &&
-      viewerActiveSince.getTime() < widenedAt.getTime())
+    (viewerActiveFrom !== null && viewerActiveFrom < widenedAt)
   );
 }
 
-/** Creation times from `from` up to, not including, `until` (open if null). */
-export interface CreationSpan {
-  readonly from: Date;
-  readonly until: Date | null;
+/** Positions from `from` up to, not including, `until` (open if null). */
+export interface PositionSpan {
+  readonly from: HistoryPosition;
+  readonly until: HistoryPosition | null;
 }
 
 /**
- * PS-ENV-009 for whole lists: the creation times whose things a viewer may
- * not see. Everything created in one period of the type history shares its
- * context, so `mayExposeHistory` decides per period, and lists that page in
- * the database filter on creation time instead of row by row.
+ * PS-ENV-009 for whole lists: the positions at which created things a viewer
+ * may not see. Everything created in one period of the type history shares
+ * its context, so `mayExposeHistory` decides per period, and lists that page
+ * in the database filter on position instead of row by row.
  */
 export function concealedSpans(
   periods: readonly TypePeriod[],
-  viewerActiveSince: Date | null,
-): CreationSpan[] {
+  viewerActiveFrom: HistoryPosition | null,
+): PositionSpan[] {
   return periods.flatMap((period, index) =>
     mayExposeHistory(
-      widenedAfterCreation(periods, period.startedAt),
-      viewerActiveSince,
+      widenedAfterCreation(periods, period.position),
+      viewerActiveFrom,
     )
       ? []
       : [
           {
-            from: period.startedAt,
-            until: periods[index + 1]?.startedAt ?? null,
+            from: period.position,
+            until: periods[index + 1]?.position ?? null,
           },
         ],
   );
 }
 
-/** Whether something created at `createdAt` falls in a concealed span. */
-export const isConcealed = (spans: readonly CreationSpan[], createdAt: Date) =>
+/** Whether something created at `created` falls in a concealed span. */
+export const isConcealed = (
+  spans: readonly PositionSpan[],
+  created: HistoryPosition,
+) =>
   spans.some(
     (span) =>
-      span.from.getTime() <= createdAt.getTime() &&
-      (span.until === null || createdAt.getTime() < span.until.getTime()),
+      span.from <= created && (span.until === null || created < span.until),
   );

@@ -1,6 +1,6 @@
 begin;
 
-select plan(21);
+select plan(27);
 
 select ok(
   not has_table_privilege(role_name, table_name, 'SELECT'),
@@ -174,6 +174,78 @@ select lives_ok(
 );
 
 set constraints all immediate;
+
+select ok(
+  (select position from app.environment_type_periods
+   where environment_id = '00000000-0000-4000-8000-0000000000e1' and type = 'hidden'
+   order by position desc limit 1)
+  > (select position from app.environment_type_periods
+     where environment_id = '00000000-0000-4000-8000-0000000000e1' and type = 'closed'),
+  'a later period takes a later position'
+);
+
+-- Two changes may share a clock time; the position decides their order.
+set constraints all deferred;
+
+insert into app.environments (id, type, name, created_by_user_id, created_at)
+values ('00000000-0000-4000-8000-0000000000e2', 'open', 'Nabolaget',
+  '00000000-0000-4000-8000-0000000000b1', '2026-10-05 10:00+00');
+
+insert into app.environment_memberships
+  (id, environment_id, user_id, state, origin, activated_at, activation_revision)
+values ('00000000-0000-4000-8000-0000000000f2', '00000000-0000-4000-8000-0000000000e2',
+  '00000000-0000-4000-8000-0000000000b1', 'active', 'founder', '2026-10-05 10:00+00', 0);
+
+insert into app.environment_role_grants (environment_id, user_id, role, granted_by_user_id)
+select '00000000-0000-4000-8000-0000000000e2', '00000000-0000-4000-8000-0000000000b1', role,
+  '00000000-0000-4000-8000-0000000000b1'
+from unnest(array['owner', 'administrator']) as role;
+
+select lives_ok(
+  $$
+    insert into app.environment_type_periods (environment_id, type, started_at, position)
+    values ('00000000-0000-4000-8000-0000000000e2', 'closed', '2026-10-05 10:00+00', 1);
+    update app.environments set type = 'closed'
+    where id = '00000000-0000-4000-8000-0000000000e2';
+    set constraints all immediate;
+  $$,
+  'two periods may start at the same clock time'
+);
+
+select results_eq(
+  $$ select type from app.environment_type_periods
+     where environment_id = '00000000-0000-4000-8000-0000000000e2'
+     order by position $$,
+  $$ values ('open'::text), ('closed'::text) $$,
+  'the position orders periods that share a clock time'
+);
+
+select ok(
+  not exists (select from app.environment_type_periods where position = 1),
+  'a row never brings its own position'
+);
+
+update app.environment_memberships
+set state = 'passive', passive_reason = 'requirements_not_met',
+  passive_since = '2026-10-05 10:00+00', activated_position = 1
+where id = '00000000-0000-4000-8000-0000000000f2';
+
+select ok(
+  (select passive_position > activated_position and activated_position <> 1
+   from app.environment_memberships where id = '00000000-0000-4000-8000-0000000000f2'),
+  'passivity takes a later position than the activation it follows'
+);
+
+update app.environment_memberships
+set state = 'active', passive_reason = null, passive_since = null
+where id = '00000000-0000-4000-8000-0000000000f2';
+
+select ok(
+  (select activated_position > (select max(position) from app.environment_type_periods)
+     and passive_position is null
+   from app.environment_memberships where id = '00000000-0000-4000-8000-0000000000f2'),
+  'a new active period takes a new position, even at the same clock time'
+);
 
 select throws_ok(
   $$ update app.environment_type_periods set type = 'open'

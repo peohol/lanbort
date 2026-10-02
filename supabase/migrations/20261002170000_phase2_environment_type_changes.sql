@@ -6,6 +6,33 @@
 -- anything was created can always be found again (PS-ENV-009). A weaker type
 -- only follows a consent process that ended adopted (PS-ENV-008), and the
 -- database refuses anything else.
+--
+-- What happened first is decided by position, never by clock time: two
+-- changes can share a timestamp. Every event historical privacy compares
+-- (a type period, a publication, an activation, a passivation) takes the
+-- next position when the database writes it. The writes whose order matters
+-- in one environment are serialized by the locks the commands hold (the
+-- environment row, and the memberships a type change decides), so positions
+-- follow the order in which those changes happen.
+create sequence app.history_positions as bigint cache 1;
+
+revoke all on sequence app.history_positions from public;
+
+-- Positions are the database's to give: a row never brings its own, even
+-- where a column default shows that one is given.
+create function app.assign_history_position()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.position := nextval('app.history_positions');
+
+  return new;
+end;
+$$;
+
+revoke execute on function app.assign_history_position() from public;
 
 -- Higher is more private. Only the order matters.
 create function app.environment_type_rank(environment_type text)
@@ -106,8 +133,9 @@ create table app.environment_type_periods (
   environment_id uuid not null references app.environments (id),
   type text not null check (type in ('open', 'closed', 'hidden')),
   started_at timestamptz not null default clock_timestamp(),
+  position bigint not null default nextval('app.history_positions'),
   proposal_id uuid,
-  constraint environment_type_periods_start_key unique (environment_id, started_at),
+  constraint environment_type_periods_position_key unique (environment_id, position),
   foreign key (proposal_id, environment_id)
     references app.environment_type_proposals (id, environment_id)
 );
@@ -126,7 +154,7 @@ begin
   select type into previous_type
   from app.environment_type_periods
   where environment_id = new.environment_id
-  order by started_at desc
+  order by position desc
   limit 1;
 
   if previous_type is null then
@@ -173,9 +201,14 @@ create trigger environment_type_periods_check
   before insert on app.environment_type_periods
   for each row execute function app.check_environment_type_period();
 
--- Existing environments start their history with the type they have.
+create trigger environment_type_periods_position
+  before insert on app.environment_type_periods
+  for each row execute function app.assign_history_position();
+
+-- Existing environments start their history with the type they have, before
+-- anything that happened in them is given a position below.
 insert into app.environment_type_periods (environment_id, type, started_at)
-select id, type, created_at from app.environments;
+select id, type, created_at from app.environments order by created_at, id;
 
 -- A new environment's first period is written with it.
 create function app.start_environment_type_history()
@@ -218,7 +251,7 @@ begin
   ) is distinct from (
     select type from app.environment_type_periods
     where environment_id = environment
-    order by started_at desc
+    order by position desc
     limit 1
   ) then
     raise exception 'the type of environment % does not match its history', environment
@@ -265,6 +298,71 @@ alter table app.environment_memberships add constraint environment_memberships_r
 alter table app.environment_memberships add constraint environment_memberships_confirmation_shape
   check (review_stage is distinct from 'confirmation_required'
     or (state = 'pending' and origin = 'application'));
+
+-- Publications are created in a privacy context (WP-25): their position.
+-- Existing ones come after every environment's first period, and nothing
+-- has become less private yet, so their order among themselves is moot.
+alter table app.environment_publications
+  add column position bigint not null default nextval('app.history_positions');
+
+create trigger environment_publications_position
+  before insert on app.environment_publications
+  for each row execute function app.assign_history_position();
+
+-- A member's current active period, and passivity, start at a position.
+-- Each new active or passive period takes the next one; otherwise the
+-- position stays as it is.
+alter table app.environment_memberships
+  add column activated_position bigint,
+  add column passive_position bigint;
+
+update app.environment_memberships
+set activated_position = nextval('app.history_positions')
+where activated_at is not null;
+
+update app.environment_memberships
+set passive_position = nextval('app.history_positions')
+where passive_since is not null;
+
+create function app.position_membership_periods()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.activated_at is null then
+    new.activated_position := null;
+  elsif tg_op = 'INSERT'
+    or old.activated_at is distinct from new.activated_at
+    or (old.state is distinct from 'active' and new.state = 'active') then
+    new.activated_position := nextval('app.history_positions');
+  else
+    new.activated_position := old.activated_position;
+  end if;
+
+  if new.passive_since is null then
+    new.passive_position := null;
+  elsif tg_op = 'INSERT'
+    or old.passive_since is distinct from new.passive_since
+    or (old.state is distinct from 'passive' and new.state = 'passive') then
+    new.passive_position := nextval('app.history_positions');
+  else
+    new.passive_position := old.passive_position;
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke execute on function app.position_membership_periods() from public;
+
+create trigger environment_memberships_positions
+  before insert or update on app.environment_memberships
+  for each row execute function app.position_membership_periods();
+
+alter table app.environment_memberships add constraint environment_memberships_positions_shape
+  check ((activated_at is null) = (activated_position is null)
+    and (passive_since is null) = (passive_position is null));
 
 create trigger environment_type_proposals_no_delete
   before delete on app.environment_type_proposals

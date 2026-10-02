@@ -189,7 +189,7 @@ async function history(environmentId: string) {
       .selectFrom("app.environment_type_periods")
       .select("type")
       .where("environment_id", "=", environmentId)
-      .orderBy("started_at")
+      .orderBy("position")
       .execute()
   ).map((row) => row.type);
 }

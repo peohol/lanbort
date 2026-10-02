@@ -19,7 +19,7 @@ import {
   pendingRoleInvitations,
 } from "./continuity-store";
 import {
-  activeSince,
+  activeFrom,
   type ContinuityRecord,
   effectiveState,
   isWindDownCancellable,
@@ -30,6 +30,7 @@ import {
   unmetRequirements,
 } from "./model";
 import {
+  type HistoryPosition,
   mayExposeHistory,
   type TypePeriod,
   widenedAfterPassivation,
@@ -245,14 +246,14 @@ async function ownTypeChange(
  */
 function historicallyVisible(
   periods: readonly TypePeriod[],
-  viewerActiveSince: Date | null,
+  viewerActiveFrom: HistoryPosition | null,
 ) {
   return (membership: MembershipRecord) =>
     membership.state !== "passive" ||
-    membership.passiveSince === null ||
+    membership.passivePosition === null ||
     mayExposeHistory(
-      widenedAfterPassivation(periods, membership.passiveSince),
-      viewerActiveSince,
+      widenedAfterPassivation(periods, membership.passivePosition),
+      viewerActiveFrom,
     );
 }
 
@@ -361,7 +362,7 @@ export const listMemberships = defineQuery({
 
     const visible = historicallyVisible(
       await typePeriods(db, input.environmentId),
-      activeSince(access.ownMembership),
+      activeFrom(access.ownMembership),
     );
     const memberships = (
       await listCurrentMemberships(db, input.environmentId)
@@ -426,7 +427,7 @@ export const listRoles = defineQuery({
 
     const visible = historicallyVisible(
       await typePeriods(db, input.environmentId),
-      activeSince(access.ownMembership),
+      activeFrom(access.ownMembership),
     );
     const hidden = new Set(
       (await listCurrentMemberships(db, input.environmentId, ["passive"]))

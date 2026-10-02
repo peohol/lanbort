@@ -86,11 +86,11 @@ const application: MembershipRecord = {
   state: "pending",
   origin: "application",
   reviewStage: "submitted",
-  activatedAt: null,
+  activatedPosition: null,
   activationRevision: null,
   transitionDeadline: null,
   passiveReason: null,
-  passiveSince: null,
+  passivePosition: null,
 };
 
 const member = (

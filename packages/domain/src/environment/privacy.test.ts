@@ -11,8 +11,6 @@ import {
   widenedAfterPassivation,
 } from "./privacy";
 
-const at = (day: number) => new Date(Date.UTC(2026, 9, day));
-
 describe("type changes (PS-ENV-007–008)", () => {
   it.each([
     ["open", "closed"],
@@ -52,63 +50,63 @@ describe("type changes (PS-ENV-007–008)", () => {
 });
 
 describe("historical privacy (PS-ENV-009)", () => {
-  // Hidden from day 1, closed from day 10, hidden again from day 20, closed
-  // from day 30 and open from day 40.
+  // Positions, not clock times: hidden from 10, closed from 100, hidden
+  // again from 200, closed from 300 and open from 400.
   const periods: TypePeriod[] = [
-    { type: "hidden", startedAt: at(1) },
-    { type: "closed", startedAt: at(10) },
-    { type: "hidden", startedAt: at(20) },
-    { type: "closed", startedAt: at(30) },
-    { type: "open", startedAt: at(40) },
+    { type: "hidden", position: 10n },
+    { type: "closed", position: 100n },
+    { type: "hidden", position: 200n },
+    { type: "closed", position: 300n },
+    { type: "open", position: 400n },
   ];
 
   it("finds when activity became less private than it was created under", () => {
-    expect(widenedAfterCreation(periods, at(5))).toEqual(at(10));
-    expect(widenedAfterCreation(periods, at(15))).toEqual(at(40));
-    expect(widenedAfterCreation(periods, at(25))).toEqual(at(30));
-    expect(widenedAfterCreation(periods, at(41))).toBeNull();
+    expect(widenedAfterCreation(periods, 50n)).toBe(100n);
+    expect(widenedAfterCreation(periods, 150n)).toBe(400n);
+    expect(widenedAfterCreation(periods, 250n)).toBe(300n);
+    expect(widenedAfterCreation(periods, 410n)).toBeNull();
   });
 
-  it("counts a period that starts at the very moment as in force", () => {
-    expect(widenedAfterCreation(periods, at(10))).toEqual(at(40));
+  it("orders by position, so the same clock time cannot reorder events", () => {
+    // Published just before closed → … → open, whatever the clock said.
+    expect(widenedAfterCreation(periods, 99n)).toBe(100n);
+    expect(widenedAfterCreation(periods, 101n)).toBe(400n);
   });
 
   it("keeps a member passive since a weakening in the stricter context", () => {
-    // Made passive by hidden → closed on day 10.
-    expect(widenedAfterPassivation(periods, at(10))).toEqual(at(10));
+    // A type change makes its members passive just before the new period.
+    expect(widenedAfterPassivation(periods, 99n)).toBe(100n);
     // Passive for unmet requirements while closed, before closed → open.
-    expect(widenedAfterPassivation(periods, at(35))).toEqual(at(40));
-    expect(widenedAfterPassivation(periods, at(41))).toBeNull();
+    expect(widenedAfterPassivation(periods, 350n)).toBe(400n);
+    expect(widenedAfterPassivation(periods, 410n)).toBeNull();
   });
 
   it("only shows widened history to members active since before the change", () => {
     expect(mayExposeHistory(null, null)).toBe(true);
-    expect(mayExposeHistory(at(10), at(5))).toBe(true);
-    expect(mayExposeHistory(at(10), at(10))).toBe(false);
-    expect(mayExposeHistory(at(10), at(11))).toBe(false);
-    expect(mayExposeHistory(at(10), null)).toBe(false);
+    expect(mayExposeHistory(100n, 50n)).toBe(true);
+    expect(mayExposeHistory(100n, 101n)).toBe(false);
+    expect(mayExposeHistory(100n, null)).toBe(false);
   });
 
   it("conceals whole periods from viewers who joined after they widened", () => {
-    // Active since day 35: the hidden periods widened on days 10 and 30,
-    // before the viewer joined; the closed ones only on day 40.
-    expect(concealedSpans(periods, at(35))).toEqual([
-      { from: at(1), until: at(10) },
-      { from: at(20), until: at(30) },
+    // Active from 350: the hidden periods widened at 100 and 300, before the
+    // viewer joined; the closed ones only at 400.
+    expect(concealedSpans(periods, 350n)).toEqual([
+      { from: 10n, until: 100n },
+      { from: 200n, until: 300n },
     ]);
-    expect(concealedSpans(periods, at(2))).toEqual([]);
+    expect(concealedSpans(periods, 20n)).toEqual([]);
     expect(concealedSpans(periods, null)).toHaveLength(4);
   });
 
-  it("agrees with the rule for single things at every moment", () => {
-    const viewers = [null, ...[1, 9, 10, 11, 25, 30, 35, 40, 45].map(at)];
+  it("agrees with the rule for single things at every position", () => {
+    const viewers = [null, 11n, 99n, 101n, 250n, 301n, 350n, 401n, 450n];
 
     for (const viewer of viewers) {
       const spans = concealedSpans(periods, viewer);
-      for (let day = 1; day <= 45; day += 0.5) {
-        const createdAt = new Date(at(1).getTime() + (day - 1) * 86_400_000);
-        expect(isConcealed(spans, createdAt)).toBe(
-          !mayExposeHistory(widenedAfterCreation(periods, createdAt), viewer),
+      for (let created = 11n; created <= 450n; created += 1n) {
+        expect(isConcealed(spans, created)).toBe(
+          !mayExposeHistory(widenedAfterCreation(periods, created), viewer),
         );
       }
     }
