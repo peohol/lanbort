@@ -64,6 +64,7 @@ E2EE hindrer ordinær server-/administratorlesing av lagret privat meldingsinnho
 - OD-0002: konkrete retention-regler
 - OD-0007: juridisk lanseringsgjennomgang
 - OD-0008: uavhengig behandlingsvei når plattformforvaltere er inhabile
+- OD-0010: mekanisme for sterkere autentisering, før privilegerte plattformforvalterhandlinger tas i reell bruk (det mekanismenøytrale grunnlaget avviser dem til da)
 
 Disse spørsmålene krever ikke at domenemodellen eller hovedarkitekturen holdes åpen.
 
