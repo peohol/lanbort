@@ -163,6 +163,31 @@ export interface AppObjectCategories {
   retired_at: Timestamp | null;
 }
 
+export interface AppObjectCoOwnerInvitations {
+  created_at: Generated<Timestamp>;
+  ended_at: Timestamp | null;
+  ended_by_user_id: string | null;
+  id: Generated<string>;
+  invited_by_user_id: string;
+  invited_user_id: string;
+  object_id: string;
+  status: Generated<string>;
+}
+
+export interface AppObjectDeletionConsents {
+  consented_at: Generated<Timestamp>;
+  object_id: string;
+  user_id: string;
+}
+
+export interface AppObjectFreezes {
+  ended_at: Timestamp | null;
+  id: Generated<string>;
+  object_id: string;
+  started_at: Generated<Timestamp>;
+  user_block_id: string;
+}
+
 export interface AppObjectImages {
   byte_size: number;
   content_type: string;
@@ -179,6 +204,32 @@ export interface AppObjectOwners {
   added_at: Generated<Timestamp>;
   object_id: string;
   user_id: string;
+}
+
+export interface AppObjectRestrictions {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  lift_reason: string | null;
+  lifted_at: Timestamp | null;
+  object_id: string;
+  period: string | null;
+  set_by_user_id: string;
+}
+
+export interface AppObjectRevisions {
+  actor_user_id: string | null;
+  availability: Json;
+  category_id: string;
+  change: string;
+  description: string;
+  image_ids: string[];
+  loan_terms: string | null;
+  object_id: string;
+  recorded_at: Generated<Timestamp>;
+  reverted_to_version: number | null;
+  status: string;
+  title: string;
+  version: number;
 }
 
 export interface AppObjects {
@@ -265,8 +316,13 @@ export interface DB {
   "app.idempotency_records": AppIdempotencyRecords;
   "app.object_availability_intervals": AppObjectAvailabilityIntervals;
   "app.object_categories": AppObjectCategories;
+  "app.object_co_owner_invitations": AppObjectCoOwnerInvitations;
+  "app.object_deletion_consents": AppObjectDeletionConsents;
+  "app.object_freezes": AppObjectFreezes;
   "app.object_images": AppObjectImages;
   "app.object_owners": AppObjectOwners;
+  "app.object_restrictions": AppObjectRestrictions;
+  "app.object_revisions": AppObjectRevisions;
   "app.objects": AppObjects;
   "app.outbox_messages": AppOutboxMessages;
   "app.platform_role_grants": AppPlatformRoleGrants;

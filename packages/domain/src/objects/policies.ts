@@ -14,9 +14,12 @@ export interface ObjectResource {
 }
 
 /**
- * Only the object's owners can see or manage it until publication (WP-25)
- * and co-ownership (WP-26) add other ways in. Anyone else gets `not_found`,
- * so an object's existence is never revealed.
+ * Only the object's registered owners can see or manage it, and every owner
+ * has the same rights (PS-OBJ-007), until publication (WP-25) adds other ways
+ * in. Anyone else gets `not_found`, so an object's existence is never
+ * revealed. Being an owner gives no access to environment contexts or loan
+ * details the owner could not otherwise see: those policies must check their
+ * own relation as well (docs/architecture/04).
  */
 export const isObjectOwner: ResourceRule<ObjectResource, void> = ({
   actor,
@@ -60,6 +63,22 @@ export const restoreObjectPolicy = ownerPolicy("object.restore");
 export const addObjectImagePolicy = ownerPolicy("object.add_image");
 export const removeObjectImagePolicy = ownerPolicy("object.remove_image");
 
+export const readObjectHistoryPolicy = ownerPolicy("object.read_history");
+export const revertObjectPolicy = ownerPolicy("object.revert");
+export const inviteCoOwnerPolicy = ownerPolicy("object.invite_co_owner");
+export const withdrawCoOwnerInvitationPolicy = ownerPolicy(
+  "object.withdraw_co_owner_invitation",
+);
+/** Only oneself: no owner can remove another (PS-OBJ-010). */
+export const leaveObjectPolicy = ownerPolicy("object.leave");
+export const setObjectRestrictionPolicy = ownerPolicy("object.set_restriction");
+export const consentToObjectDeletionPolicy = ownerPolicy(
+  "object.consent_to_deletion",
+);
+export const withdrawObjectDeletionConsentPolicy = ownerPolicy(
+  "object.withdraw_deletion_consent",
+);
+
 export const ownerPolicies = [
   readObjectPolicy,
   updateObjectPolicy,
@@ -67,11 +86,90 @@ export const ownerPolicies = [
   restoreObjectPolicy,
   addObjectImagePolicy,
   removeObjectImagePolicy,
+  readObjectHistoryPolicy,
+  revertObjectPolicy,
+  inviteCoOwnerPolicy,
+  withdrawCoOwnerInvitationPolicy,
+  leaveObjectPolicy,
+  setObjectRestrictionPolicy,
+  consentToObjectDeletionPolicy,
+  withdrawObjectDeletionConsentPolicy,
 ];
+
+/** A restriction, with the object it restricts. */
+export interface ObjectRestrictionResource extends ObjectResource {
+  readonly restrictionSetByUserId: string;
+}
+
+/**
+ * Only the co-owner who set a restriction can withdraw it (PS-OBJ-008). The
+ * other owners can see it, so they are told no rather than not found.
+ */
+export const isRestrictionSetter: ResourceRule<
+  ObjectRestrictionResource,
+  void
+> = ({ actor, resource }) =>
+  actor.kind === "user" && resource.restrictionSetByUserId === actor.userId
+    ? allow
+    : deny("forbidden");
+
+export const liftObjectRestrictionPolicy = definePolicy<
+  ObjectRestrictionResource,
+  void
+>({
+  action: "object.lift_restriction",
+  actor: [requireActiveAccount],
+  resource: [isObjectOwner, isRestrictionSetter],
+});
+
+/** A co-ownership invitation, as its invited user acts on it. */
+export interface CoOwnerInvitationResource {
+  readonly invitationId: string;
+  readonly invitedUserId: string;
+}
+
+/** Only the invited user sees or answers an invitation; to others it is missing. */
+export const isInvitedUser: ResourceRule<CoOwnerInvitationResource, void> = ({
+  actor,
+  resource,
+}) =>
+  actor.kind === "user" && resource.invitedUserId === actor.userId
+    ? allow
+    : deny("not_found");
+
+function invitedUserPolicy(action: string) {
+  return definePolicy<CoOwnerInvitationResource, void>({
+    action,
+    actor: [requireActiveAccount],
+    resource: [isInvitedUser],
+  });
+}
+
+/** Explicit acceptance is the only way to become a co-owner (PS-OBJ-007). */
+export const acceptCoOwnerInvitationPolicy = invitedUserPolicy(
+  "object_invitation.accept",
+);
+export const declineCoOwnerInvitationPolicy = invitedUserPolicy(
+  "object_invitation.decline",
+);
+
+export const invitedUserPolicies = [
+  acceptCoOwnerInvitationPolicy,
+  declineCoOwnerInvitationPolicy,
+];
+
+/** The invitations the signed-in user has received. */
+export const listCoOwnerInvitationsPolicy = definePolicy<unknown, void>({
+  action: "object_invitation.list",
+  actor: [requireActiveAccount],
+});
 
 export const objectPolicies = [
   createObjectPolicy,
   listOwnObjectsPolicy,
   listObjectCategoriesPolicy,
+  listCoOwnerInvitationsPolicy,
+  liftObjectRestrictionPolicy,
   ...ownerPolicies,
+  ...invitedUserPolicies,
 ];

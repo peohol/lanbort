@@ -23,11 +23,21 @@ Route Handler (route.user / route.public / route.scheduler)
 
 ## Objekter og bilder
 
-- Et objekt (PS-OBJ-001) har én global sannhet i `app.objects` og tilhører eierne i `app.object_owners`, aldri et miljø. Inntil publisering (WP-25) og medeierskap (WP-26) finnes, ser bare eierne objektet; alle andre får `not_found`.
+- Et objekt (PS-OBJ-001) har én global sannhet i `app.objects` og tilhører eierne i `app.object_owners`, aldri et miljø. Inntil publisering (WP-25) finnes, ser bare eierne objektet; alle andre får `not_found`.
 - Endringer krever `expectedVersion`. Er objektet endret siden, avvises endringen med `conflict` i stedet for å overskrive nyere data.
 - Generell tilgjengelighet lagres som datointervaller som aldri overlapper; intervaller som berører hverandre slås sammen. Faktisk ledighet lagres aldri: den beregnes av `deriveAvailability` som tilgjengelighet minus sperrer. Nye domener som kan sperre nye lån (godkjente lån, uavklart besittelse, medeierbegrensninger), legger til en kilde i `availabilityBlockSources` i stedet for å lage egen ledig-status.
 - Kategoristrukturen er åpen (OD-0006). Bare «Annet» finnes til den er besluttet; nye kategorier legges inn som data i en migrasjon.
 - Bilder går bare gjennom `@lanbort/storage`. Serveren dekoder og koder hvert bilde på nytt til WebP uten metadata (også posisjon) før det lagres i den private bøtta `object-images`, og leverer det ut bare etter objektets lesepolicy. Nettleseren når aldri lagringen direkte. Før en fil lagres, registreres opplastingen i outbox, så en fil som aldri ble knyttet til objektet (for eksempel etter et krasj), slettes etter 15 minutter. Filen til et fjernet bilde slettes etter commit, også via outbox.
+
+## Medeierskap
+
+- En medeier er en vanlig rad i `app.object_owners`, og alle registrerte eiere har de samme objektrettighetene (PS-OBJ-007). Medeierskap gir ikke innsyn i miljøkontekster eller lånedetaljer: policyer for publisering (WP-25) og lån (Fase 3) må sjekke sin egen relasjon i tillegg til eierskapet.
+- Man blir medeier bare ved å godta en invitasjon selv. Invitasjon og aksept tar parlåsen fra vennskap og blokkering mot hver eier (og ved aksept også mot de andre inviterte), så en samtidig blokkering enten stopper dem eller ser dem. En blokkering mellom den inviterte og en eier lukker invitasjonen, og ser ut som en konto eller invitasjon som ikke finnes.
+- En blokkering mellom to medeiere fryser objektet for nye lån i samme transaksjon som blokkeringen (databasetrigger på `app.user_blocks`). Frysingen ender bare når objektet har én eier igjen, ikke når blokkeringen oppheves. Finn-flater (WP-25) skal utelate frosne objekter (`loadFreezes`).
+- Medeierbegrensninger (veto) og frysing er kilder i `availabilityBlockSources`, så faktisk ledighet aldri kan åpnes ved å redigere tilgjengeligheten. Bare den som satte en begrensning kan oppheve den; den opphører når vedkommende trer ut.
+- Ingen kan fjerne en annen eier, bare tre ut selv, og den siste eieren kan ikke tre ut. Permanent sletting krever samtykke fra alle nåværende eiere.
+- Forpliktelser som hindrer uttreden og sletting (reserverte, aktive og uavklarte lån), legges til av Fase 3 i `objectCommitmentSources`. Feiler en kilde, feiler kommandoen.
+- Hver objektversjon har en uforanderlig rad i `app.object_revisions` med innhold, aktør og tidspunkt; databasen avviser en versjon uten. Gjenoppretting av tidligere innhold er en ny versjon. Fase 3 kan peke avtalesnapshot til en revisjon i stedet for dagens objekt (PS-OBJ-012).
 
 ## Vennskap og blokkering
 

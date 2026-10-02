@@ -121,6 +121,31 @@ export const objectImageSchema = z.strictObject({
   height: z.int(),
 });
 
+/** A registered owner, as every owner of the object sees it. */
+export const objectOwnerSchema = z.strictObject({
+  userId: z.uuid(),
+  since: z.iso.datetime(),
+});
+
+/**
+ * A co-owner's explicit restriction on new commitments (PS-OBJ-008): no new
+ * loan in `period`, or on any date when it is null.
+ */
+export const objectRestrictionSchema = z.strictObject({
+  id: z.uuid(),
+  setByUserId: z.uuid(),
+  period: availabilityIntervalSchema.nullable(),
+  createdAt: z.iso.datetime(),
+});
+
+/** A pending co-ownership invitation, as the object's owners see it. */
+export const pendingCoOwnerInvitationSchema = z.strictObject({
+  id: z.uuid(),
+  userId: z.uuid(),
+  invitedByUserId: z.uuid(),
+  createdAt: z.iso.datetime(),
+});
+
 /** An object as its owners see it. */
 export const ownObjectSchema = z.strictObject({
   id: objectIdSchema,
@@ -140,6 +165,17 @@ export const ownObjectSchema = z.strictObject({
   /** Derived: whether the object can be offered for new loans now. */
   availableForNewLoans: z.boolean(),
   images: z.array(objectImageSchema),
+  /** Every registered owner has the same rights (PS-OBJ-007). */
+  owners: z.array(objectOwnerSchema),
+  restrictions: z.array(objectRestrictionSchema),
+  /**
+   * A conflict between co-owners stops new loans until the ownership is
+   * clarified to one owner (PS-OBJ-009). Says nothing about who or why.
+   */
+  frozenForNewLoans: z.boolean(),
+  /** Owners who consented to permanent deletion (PS-OBJ-011). */
+  deletionConsents: z.array(z.uuid()),
+  pendingInvitations: z.array(pendingCoOwnerInvitationSchema),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
@@ -169,6 +205,130 @@ export const objectCategoryListSchema = z.strictObject({
   categories: z.array(objectCategorySchema),
 });
 
+/** Invites `userId` to become a co-owner (PS-OBJ-007). */
+export const coOwnerInvitationInputSchema = z.strictObject({
+  objectId: objectIdSchema,
+  userId: z.uuid(),
+});
+
+export const coOwnerInvitationIdSchema = z.uuid();
+
+export const coOwnerInvitationStatusSchema = z.enum([
+  "pending",
+  "accepted",
+  "declined",
+  "withdrawn",
+  "closed",
+]);
+
+export const coOwnerInvitationResultSchema = z.strictObject({
+  invitationId: coOwnerInvitationIdSchema,
+  status: coOwnerInvitationStatusSchema,
+});
+
+/** An invitation as the invited user sees it, with what they would co-own. */
+export const receivedCoOwnerInvitationSchema = z.strictObject({
+  id: coOwnerInvitationIdSchema,
+  objectId: objectIdSchema,
+  invitedByUserId: z.uuid(),
+  createdAt: z.iso.datetime(),
+  object: z.strictObject({
+    title: z.string(),
+    categoryId: objectCategoryIdSchema,
+    description: z.string(),
+  }),
+});
+
+export const receivedCoOwnerInvitationListSchema = z.strictObject({
+  invitations: z.array(receivedCoOwnerInvitationSchema),
+});
+
+/** No new loans in `period`; `null` restricts every date (PS-OBJ-008). */
+export const setObjectRestrictionSchema = z.strictObject({
+  objectId: objectIdSchema,
+  period: availabilityIntervalSchema.nullable(),
+});
+
+export const objectRestrictionResultSchema = z.strictObject({
+  objectId: objectIdSchema,
+  restrictionId: z.uuid(),
+});
+
+export const objectDeletionResultSchema = z.strictObject({
+  objectId: objectIdSchema,
+  /** True once every owner has consented and the object is gone. */
+  deleted: z.boolean(),
+});
+
+/** What caused a version of the object (PS-OBJ-013). */
+export const objectRevisionChangeSchema = z.enum([
+  "baseline",
+  "created",
+  "updated",
+  "archived",
+  "restored",
+  "image_added",
+  "image_removed",
+  "reverted",
+]);
+
+export const objectRevisionContentSchema = z.strictObject({
+  title: z.string(),
+  categoryId: objectCategoryIdSchema,
+  description: z.string(),
+  loanTerms: z.string().nullable(),
+  status: objectStatusSchema,
+  availability: z.array(availabilityIntervalSchema),
+  imageIds: z.array(objectImageIdSchema),
+});
+
+/** Content parts that can differ between two versions. */
+export const objectRevisionFields = [
+  "title",
+  "categoryId",
+  "description",
+  "loanTerms",
+  "status",
+  "availability",
+  "images",
+] as const;
+
+export const objectRevisionSchema = z.strictObject({
+  version: z.int(),
+  change: objectRevisionChangeSchema,
+  /** For a revert: the version whose content it brought back. */
+  revertedToVersion: z.int().nullable(),
+  /** Null only for history from before co-ownership tracking began. */
+  actorUserId: z.uuid().nullable(),
+  recordedAt: z.iso.datetime(),
+  /** What differs from the previous version; everything for the first. */
+  changedFields: z.array(z.enum(objectRevisionFields)),
+  content: objectRevisionContentSchema,
+});
+
+export const objectHistoryQuerySchema = z.strictObject({
+  objectId: objectIdSchema,
+  /** Only versions before this one, for the next page. */
+  beforeVersion: z.coerce.number().int().min(2).optional(),
+});
+
+export const objectHistorySchema = z.strictObject({
+  /** Newest first. */
+  revisions: z.array(objectRevisionSchema),
+  /** Pass as `beforeVersion` for older revisions; null when there are none. */
+  nextBeforeVersion: z.int().nullable(),
+});
+
+/**
+ * Brings back the content of `version` as a new version (PS-OBJ-013). Like
+ * any edit it must be based on the current version.
+ */
+export const revertObjectSchema = z.strictObject({
+  objectId: objectIdSchema,
+  version: z.int().min(1),
+  expectedVersion: z.int().min(1),
+});
+
 export type AvailabilityInterval = z.infer<typeof availabilityIntervalSchema>;
 export type CreateObject = z.infer<typeof createObjectSchema>;
 export type UpdateObject = z.infer<typeof updateObjectSchema>;
@@ -180,3 +340,18 @@ export type ObjectVersion = z.infer<typeof objectVersionSchema>;
 export type ObjectImageAdded = z.infer<typeof objectImageAddedSchema>;
 export type ObjectCategory = z.infer<typeof objectCategorySchema>;
 export type ObjectCategoryList = z.infer<typeof objectCategoryListSchema>;
+export type ObjectOwner = z.infer<typeof objectOwnerSchema>;
+export type ObjectRestriction = z.infer<typeof objectRestrictionSchema>;
+export type CoOwnerInvitationStatus = z.infer<
+  typeof coOwnerInvitationStatusSchema
+>;
+export type CoOwnerInvitationResult = z.infer<
+  typeof coOwnerInvitationResultSchema
+>;
+export type ReceivedCoOwnerInvitationList = z.infer<
+  typeof receivedCoOwnerInvitationListSchema
+>;
+export type ObjectRevisionChange = z.infer<typeof objectRevisionChangeSchema>;
+export type ObjectRevisionField = (typeof objectRevisionFields)[number];
+export type ObjectRevision = z.infer<typeof objectRevisionSchema>;
+export type ObjectHistory = z.infer<typeof objectHistorySchema>;

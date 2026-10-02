@@ -28,6 +28,25 @@ export function userCommandRoute<I, R, C, O>(
 }
 
 /**
+ * A signed-in user's command without a body: the path's dynamic segments are
+ * the whole input.
+ */
+export function userPathCommandRoute<I, R, C, O>(
+  command: CommandDefinition<I, R, C, O>,
+) {
+  return route.user(async ({ request, requestId, params, actor, domain }) =>
+    commandResponse(
+      await executeCommand(domain, command, {
+        actor,
+        input: params,
+        idempotencyKey: idempotencyKeyOf(request),
+        correlationId: requestId,
+      }),
+    ),
+  );
+}
+
+/**
  * A signed-in user's query with the URL's search parameters and the path's
  * dynamic segments as input; the path wins.
  */
