@@ -13,7 +13,9 @@ import {
   type AdministeredMembership,
   approveMembershipPolicy,
   cancelWindDownPolicy,
+  changeEnvironmentTypePolicy,
   claimOwnershipPolicy,
+  concludeTypeChangesPolicy,
   continuityProcess,
   createEnvironmentPolicy,
   declineRoleInvitationPolicy,
@@ -39,10 +41,13 @@ import {
   readEnvironmentPolicy,
   rejectMembershipPolicy,
   requestInformationPolicy,
+  respondToTypeChangePolicy,
   submitAnswersPolicy,
+  typeChangeProcess,
   updateEnvironmentDetailsPolicy,
   updateRequirementsPolicy,
   withdrawInvitationPolicy,
+  withdrawTypeChangePolicy,
 } from "./policies";
 
 const user = testUserActor();
@@ -81,9 +86,11 @@ const application: MembershipRecord = {
   state: "pending",
   origin: "application",
   reviewStage: "submitted",
+  activatedPosition: null,
   activationRevision: null,
   transitionDeadline: null,
   passiveReason: null,
+  passivePosition: null,
 };
 
 const member = (
@@ -413,6 +420,33 @@ const ownMembershipCases = (): Case[] => [
   ...callerCases(access("open", member("active"))),
 ];
 
+/**
+ * Consent and votes on a weaker type (PS-ENV-008): each active member for
+ * themselves. Passive members and outsiders take no part.
+ */
+const typeChangeResponseCases = (): Case[] => [
+  expectCase("an active member", access("closed", member("active")), "allow"),
+  expectCase(
+    "an active member of a hidden environment",
+    access("hidden", member("active")),
+    "allow",
+  ),
+  expectCase(
+    "a passive member",
+    access("closed", member("passive")),
+    "forbidden",
+  ),
+  expectCase("an applicant", access("closed", member("pending")), "forbidden"),
+  expectCase(
+    "a passive administrator",
+    access("hidden", member("passive", ["owner", "administrator"])),
+    "forbidden",
+  ),
+  expectCase("a non-member", access("closed"), "not_found"),
+  hiddenFromOutsiders(),
+  ...callerCases(access("closed", member("active"))),
+];
+
 export const environmentMatrices = [
   actorOnly(createEnvironmentPolicy, undefined),
   actorOnly(listOwnEnvironmentsPolicy, []),
@@ -496,4 +530,8 @@ export const environmentMatrices = [
     expireTransitionsPolicy,
     systemCases(membershipTransitionProcess),
   ),
+  policyMatrix(changeEnvironmentTypePolicy, administrationCases()),
+  policyMatrix(withdrawTypeChangePolicy, administrationCases()),
+  policyMatrix(respondToTypeChangePolicy, typeChangeResponseCases()),
+  policyMatrix(concludeTypeChangesPolicy, systemCases(typeChangeProcess)),
 ];

@@ -28,9 +28,22 @@ export const membershipOriginSchema = z.enum([
 export const membershipReviewStageSchema = z.enum([
   "submitted",
   "information_requested",
+  /** After closed → open the applicant must confirm the wish to join. */
+  "confirmation_required",
 ]);
 
-export const membershipPassiveReasonSchema = z.enum(["requirements_not_met"]);
+/** Why a member is passive: unmet requirements, or a weaker type not accepted. */
+export const membershipPassiveReasonSchema = z.enum([
+  "requirements_not_met",
+  "type_change_not_accepted",
+]);
+
+/**
+ * PS-ENV-008: how a change to weaker privacy is decided. `consent`: every
+ * active member accepts individually (closed → open). `vote`: 2/3 of all
+ * active members vote for it (hidden → closed).
+ */
+export const typeChangeProcessSchema = z.enum(["consent", "vote"]);
 
 /**
  * `information`: the member gives an answer. `acceptance`: rules or a
@@ -114,6 +127,22 @@ export const membershipDecisionSchema = z.strictObject({
 
 export const inviteMemberSchema = z.strictObject({ userId: z.uuid() });
 
+/**
+ * An administrator changes the type (PS-ENV-007–008). A stricter type applies
+ * at once; a weaker one starts the members' consent or vote. `expectedType`
+ * is the type the administrator saw, so nobody decides on an outdated state.
+ */
+export const changeEnvironmentTypeSchema = z.strictObject({
+  type: environmentTypeSchema,
+  expectedType: environmentTypeSchema,
+});
+
+/** A member's consent to, or vote on, a proposed weaker type. */
+export const typeChangeResponseSchema = z.strictObject({
+  proposalId: z.uuid(),
+  support: z.boolean(),
+});
+
 export const requirementSchema = z.strictObject({
   id: z.uuid(),
   kind: requirementKindSchema,
@@ -168,6 +197,19 @@ export const environmentContinuitySchema = z.strictObject({
     .nullable(),
 });
 
+/**
+ * A proposed change to weaker privacy, for the environment's members. Only the
+ * caller's own answer is shown, never anyone else's.
+ */
+export const typeChangeProposalSchema = z.strictObject({
+  id: z.uuid(),
+  toType: environmentTypeSchema,
+  process: typeChangeProcessSchema,
+  deadline: z.iso.datetime(),
+  /** The caller's current answer; null without one. */
+  yourResponse: z.boolean().nullable(),
+});
+
 /** A pending invitation to the caller to take on a role. */
 export const ownRoleInvitationSchema = z.strictObject({
   id: z.uuid(),
@@ -194,6 +236,8 @@ export const environmentSchema = z.strictObject({
   /** Null without a current membership. */
   continuity: environmentContinuitySchema.nullable(),
   roleInvitations: z.array(ownRoleInvitationSchema),
+  /** Null without a current active or passive membership. */
+  typeChange: typeChangeProposalSchema.nullable(),
 });
 
 export const environmentSummarySchema = z.strictObject({
@@ -251,6 +295,8 @@ export type RequirementKind = z.infer<typeof requirementKindSchema>;
 export type EnvironmentRole = z.infer<typeof environmentRoleSchema>;
 export type EnvironmentState = z.infer<typeof environmentStateSchema>;
 export type WindDownReason = z.infer<typeof windDownReasonSchema>;
+export type TypeChangeProcess = z.infer<typeof typeChangeProcessSchema>;
+export type TypeChangeProposal = z.infer<typeof typeChangeProposalSchema>;
 export type EnvironmentContinuity = z.infer<typeof environmentContinuitySchema>;
 export type EnvironmentRoles = z.infer<typeof environmentRolesSchema>;
 export type CreateEnvironment = z.infer<typeof createEnvironmentSchema>;

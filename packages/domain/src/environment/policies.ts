@@ -67,6 +67,10 @@ const holdsAdministratorRole: ResourceRule<EnvironmentAccess, void> = ({
 }) =>
   resource.viewer.roles.includes("administrator") ? allow : deny("forbidden");
 
+/** Taking part in the environment's decisions needs an active membership. */
+const isActiveMember: ResourceRule<EnvironmentAccess, void> = ({ resource }) =>
+  resource.viewer.membership?.state === "active" ? allow : deny("forbidden");
+
 /** PS-ENV-004: a barred user cannot make a new membership attempt. */
 const isNotRestricted: ResourceRule<EnvironmentAccess, void> = ({
   resource,
@@ -296,6 +300,41 @@ export const cancelWindDownPolicy = definePolicy<EnvironmentAccess, void>({
 });
 
 /**
+ * PS-ENV-007–008: any administrator changes the type. A stricter type
+ * applies at once; a weaker one only asks the members, who decide for
+ * themselves. Withdrawing a proposal keeps the stricter type.
+ */
+export const changeEnvironmentTypePolicy = definePolicy<
+  EnvironmentAccess,
+  void
+>({
+  action: "environment.change_type",
+  actor: [requireActiveAccount],
+  resource: [...administration],
+});
+
+export const withdrawTypeChangePolicy = definePolicy<EnvironmentAccess, void>({
+  action: "environment.withdraw_type_change",
+  actor: [requireActiveAccount],
+  resource: [...administration],
+});
+
+/** Each active member answers for themselves only (PS-ENV-008). */
+export const respondToTypeChangePolicy = definePolicy<EnvironmentAccess, void>({
+  action: "environment_membership.respond_to_type_change",
+  actor: [requireActiveAccount],
+  resource: [canSeeEnvironment, hasMembership, isActiveMember],
+});
+
+/** The scheduled job that decides proposals whose deadline has passed. */
+export const typeChangeProcess = "environment.type_changes";
+
+export const concludeTypeChangesPolicy = definePolicy({
+  action: "environment.conclude_type_changes",
+  actor: [requireSystemProcess(typeChangeProcess)],
+});
+
+/**
  * The scheduled job that resolves expired ownership vacancies and settles
  * final wind-downs (PS-ENV-012–013).
  */
@@ -358,4 +397,8 @@ export const environmentPolicies = [
   cancelWindDownPolicy,
   settleContinuityPolicy,
   releaseDepartedUserPolicy,
+  changeEnvironmentTypePolicy,
+  withdrawTypeChangePolicy,
+  respondToTypeChangePolicy,
+  concludeTypeChangesPolicy,
 ];

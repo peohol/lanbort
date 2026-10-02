@@ -12,6 +12,7 @@ import type {
   WindDownReason,
 } from "@lanbort/contracts";
 import { DomainError } from "../errors";
+import type { HistoryPosition } from "./privacy";
 
 /**
  * Pure rules of the environment core (WP-21, PS-ENV-001–006). Everything here
@@ -47,9 +48,13 @@ export interface MembershipRecord {
   readonly state: MembershipState;
   readonly origin: MembershipOrigin;
   readonly reviewStage: MembershipReviewStage | null;
+  /** Where the current or last active period began (PS-ENV-009). */
+  readonly activatedPosition: HistoryPosition | null;
   readonly activationRevision: number | null;
   readonly transitionDeadline: Date | null;
   readonly passiveReason: MembershipPassiveReason | null;
+  /** Where the current passive period began (PS-ENV-009). */
+  readonly passivePosition: HistoryPosition | null;
 }
 
 export interface GivenAnswer {
@@ -238,6 +243,14 @@ export interface EnvironmentAccess {
   readonly ownMembership: MembershipRecord | null;
   readonly viewer: Viewer;
 }
+
+/**
+ * Where the member's current active period began, null unless active.
+ * Historical privacy (PS-ENV-009) is measured from it.
+ */
+export const activeFrom = (
+  membership: Pick<MembershipRecord, "state" | "activatedPosition"> | null,
+) => (membership?.state === "active" ? membership.activatedPosition : null);
 
 /** PS-ENV-013: how long administrators may claim a vacant ownership. */
 export const ownershipClaimDays = 7;

@@ -49,6 +49,11 @@ const nonUserRoutes: Record<
     reason:
       "resolves ownerless and winding-down environments, authenticated with the cron secret",
   },
+  "GET /api/internal/environment-type-changes": {
+    access: "scheduler",
+    reason:
+      "decides proposed type changes at their deadline, authenticated with the cron secret",
+  },
 };
 
 const httpMethods = [

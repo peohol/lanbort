@@ -2,6 +2,7 @@ import {
   environmentRoleSchema,
   environmentTypeSchema,
   membershipPassiveReasonSchema,
+  typeChangeProcessSchema,
   windDownReasonSchema,
 } from "@lanbort/contracts";
 import { z } from "zod";
@@ -170,6 +171,55 @@ export const environmentWindDownFinalized = defineEvent({
   payload: z.strictObject({}),
 });
 
+/**
+ * PS-ENV-007–008: the type changed. A stricter type applies at once; a weaker
+ * one names the proposal the members adopted. Publishing (WP-25) and
+ * discovery apply the new type's rules from this moment.
+ */
+export const environmentTypeChanged = defineEvent({
+  type: "environment.type_changed",
+  version: 1,
+  kind: "domain",
+  resourceType: "environment",
+  payload: z.strictObject({
+    fromType: environmentTypeSchema,
+    toType: environmentTypeSchema,
+    proposalId: z.uuid().nullable(),
+  }),
+});
+
+/** PS-ENV-008: members are asked to consent to, or vote on, a weaker type. */
+export const environmentTypeChangeProposed = defineEvent({
+  type: "environment.type_change_proposed",
+  version: 1,
+  kind: "domain",
+  resourceType: "environment",
+  payload: z.strictObject({
+    proposalId: z.uuid(),
+    toType: environmentTypeSchema,
+    process: typeChangeProcessSchema,
+    deadline: z.iso.datetime(),
+  }),
+});
+
+export const typeChangeOutcomeSchema = z.enum([
+  "adopted",
+  "rejected",
+  "withdrawn",
+  "lapsed",
+]);
+
+export const environmentTypeChangeClosed = defineEvent({
+  type: "environment.type_change_closed",
+  version: 1,
+  kind: "domain",
+  resourceType: "environment",
+  payload: z.strictObject({
+    proposalId: z.uuid(),
+    outcome: typeChangeOutcomeSchema,
+  }),
+});
+
 export const environmentRestrictionImposed = defineEvent({
   type: "environment.restriction_imposed",
   version: 1,
@@ -249,6 +299,7 @@ export const membershipEnded = membershipEvent("ended", "domain", {
     "invitation_declined",
     "invitation_withdrawn",
     "environment_wound_down",
+    "environment_type_changed",
   ]),
 });
 
@@ -257,8 +308,25 @@ export const membershipReviewClosed = membershipEvent(
   "review_closed",
   "domain",
   {
-    reason: z.enum(["environment_wound_down"]),
+    reason: z.enum(["environment_wound_down", "environment_type_changed"]),
   },
+);
+
+/**
+ * After closed → open an application is no longer reviewed; the applicant
+ * must confirm the wish to join the open environment.
+ */
+export const membershipConfirmationRequested = membershipEvent(
+  "confirmation_requested",
+  "domain",
+  {},
+);
+
+/** A member's consent or vote on a proposed weaker type (PS-ENV-008). */
+export const membershipTypeChangeResponded = membershipEvent(
+  "type_change_responded",
+  "audit",
+  { proposalId: z.uuid(), support: z.boolean() },
 );
 
 /** PS-ENV-006: new requirements need action by `deadline`. */

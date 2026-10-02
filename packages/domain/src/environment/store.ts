@@ -22,6 +22,11 @@ import {
   type MembershipRecord,
   type RequirementRecord,
 } from "./model";
+import {
+  type HistoryPosition,
+  toOptionalPosition,
+  toPosition,
+} from "./privacy";
 
 /**
  * Database access for the environment core. Commands pass their transaction
@@ -83,9 +88,11 @@ const membershipColumns = [
   "state",
   "origin",
   "review_stage",
+  "activated_position",
   "activation_revision",
   "transition_deadline",
   "passive_reason",
+  "passive_position",
 ] as const;
 
 function toMembership(row: {
@@ -95,9 +102,11 @@ function toMembership(row: {
   state: string;
   origin: string;
   review_stage: string | null;
+  activated_position: string | null;
   activation_revision: number | null;
   transition_deadline: Date | null;
   passive_reason: string | null;
+  passive_position: string | null;
 }): MembershipRecord {
   return {
     id: row.id,
@@ -106,9 +115,11 @@ function toMembership(row: {
     state: row.state as MembershipState,
     origin: row.origin as MembershipOrigin,
     reviewStage: row.review_stage as MembershipReviewStage | null,
+    activatedPosition: toOptionalPosition(row.activated_position),
     activationRevision: row.activation_revision,
     transitionDeadline: row.transition_deadline,
     passiveReason: row.passive_reason as MembershipPassiveReason | null,
+    passivePosition: toOptionalPosition(row.passive_position),
   };
 }
 
@@ -380,32 +391,38 @@ export async function settleMembership(
     return membership;
   }
 
-  await passivate(db, [membership], now, events);
+  const positions = await passivate(db, [membership], now, events);
 
   return {
     ...membership,
     state: "passive",
     transitionDeadline: null,
     passiveReason: "requirements_not_met",
+    passivePosition: positions.get(membership.id) ?? null,
   };
 }
 
+/**
+ * Makes active members passive: they keep their membership and the history
+ * they need, but take part in nothing new (PS-ENV-004).
+ */
 export async function passivate(
   db: Db,
   memberships: readonly MembershipRecord[],
   now: Date,
   events: EventRecorder,
-): Promise<void> {
+  reason: MembershipPassiveReason = "requirements_not_met",
+): Promise<Map<string, HistoryPosition>> {
   if (memberships.length === 0) {
-    return;
+    return new Map();
   }
 
-  await db
+  const rows = await db
     .updateTable("app.environment_memberships")
     .set({
       state: "passive",
       transition_deadline: null,
-      passive_reason: "requirements_not_met",
+      passive_reason: reason,
       passive_since: now,
       updated_at: now,
     })
@@ -414,6 +431,7 @@ export async function passivate(
       "in",
       memberships.map((membership) => membership.id),
     )
+    .returning(["id", "passive_position"])
     .execute();
 
   for (const membership of memberships) {
@@ -422,8 +440,17 @@ export async function passivate(
       payload: {
         environmentId: membership.environmentId,
         userId: membership.userId,
-        reason: "requirements_not_met",
+        reason,
       },
     });
   }
+
+  // The database gives each passive period its position (PS-ENV-009).
+  return new Map(
+    rows.flatMap((row) =>
+      row.passive_position === null
+        ? []
+        : [[row.id, toPosition(row.passive_position)] as const],
+    ),
+  );
 }

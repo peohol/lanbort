@@ -4,6 +4,7 @@ import type {
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Expression, type Kysely, type RawBuilder, sql } from "kysely";
+import { toPosition } from "../environment/privacy";
 import type { EventRecorder } from "../events/recorder";
 import { publicationEnded } from "./events";
 import { livePublicationStatuses, type PublicationRecord } from "./model";
@@ -24,6 +25,7 @@ const publicationColumns = [
   "end_reason",
   "created_at",
   "status_changed_at",
+  "position",
 ] as const;
 
 type PublicationRow = {
@@ -35,6 +37,7 @@ type PublicationRow = {
   end_reason: string | null;
   created_at: Date;
   status_changed_at: Date;
+  position: string;
 };
 
 export function toPublication(row: PublicationRow): PublicationRecord {
@@ -46,6 +49,7 @@ export function toPublication(row: PublicationRow): PublicationRecord {
     status: row.status as PublicationStatus,
     endReason: row.end_reason as PublicationEndReason | null,
     createdAt: row.created_at,
+    position: toPosition(row.position),
     statusChangedAt: row.status_changed_at,
   };
 }

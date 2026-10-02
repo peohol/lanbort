@@ -241,3 +241,72 @@ test("the continuity job only runs for the scheduler", async ({ request }) => {
   expect(run.status()).toBe(200);
   expect(await run.json()).toMatchObject({ finalized: expect.any(Number) });
 });
+
+test("type changes: stricter at once, weaker only as a proposal (WP-23)", async ({
+  request,
+  playwright,
+  baseURL,
+}) => {
+  await registerThroughApi(request);
+  const { environmentId } = await (
+    await post(request, "", { name: "Nabolaget", type: "closed" })
+  ).json();
+  const outsider = await signedInUser(playwright, baseURL!);
+
+  // Weaker privacy waits for the members; the type stays closed meanwhile.
+  const proposed = await (
+    await post(request, "/type", {
+      environmentId,
+      expectedType: "closed",
+      type: "open",
+    })
+  ).json();
+  expect(proposed).toMatchObject({
+    type: "closed",
+    proposal: { process: "consent" },
+  });
+  expect(
+    await (
+      await post(request, "/type/respond", {
+        environmentId,
+        proposalId: proposed.proposal.id,
+        support: true,
+      })
+    ).json(),
+  ).toEqual({ proposalId: proposed.proposal.id, support: true });
+  expect(
+    (await (await read(outsider.context, environmentId)).json()).type,
+  ).toBe("closed");
+  expect(
+    (
+      await post(outsider.context, "/type/respond", {
+        environmentId,
+        proposalId: proposed.proposal.id,
+        support: true,
+      })
+    ).status(),
+  ).toBe(404);
+
+  // Stricter privacy applies at once; the hidden environment disappears.
+  expect(
+    await (
+      await post(request, "/type", {
+        environmentId,
+        expectedType: "closed",
+        type: "hidden",
+      })
+    ).json(),
+  ).toEqual({ type: "hidden", proposal: null });
+  expect((await read(outsider.context, environmentId)).status()).toBe(404);
+});
+
+test("the type change job only runs for the scheduler", async ({ request }) => {
+  const path = "/api/internal/environment-type-changes";
+
+  expect((await request.get(path)).status()).toBe(401);
+  const run = await request.get(path, {
+    headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
+  });
+  expect(run.status()).toBe(200);
+  expect(await run.json()).toMatchObject({ adopted: expect.any(Number) });
+});

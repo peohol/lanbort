@@ -8,6 +8,7 @@ import type {
   EnvironmentType,
   MembershipState,
   OwnMembership,
+  TypeChangeProposal,
 } from "@lanbort/contracts";
 import { z } from "zod";
 import { defineQuery } from "../commands/query";
@@ -18,6 +19,7 @@ import {
   pendingRoleInvitations,
 } from "./continuity-store";
 import {
+  activeFrom,
   type ContinuityRecord,
   effectiveState,
   isWindDownCancellable,
@@ -27,6 +29,12 @@ import {
   type RequirementRecord,
   unmetRequirements,
 } from "./model";
+import {
+  type HistoryPosition,
+  mayExposeHistory,
+  type TypePeriod,
+  widenedAfterPassivation,
+} from "./privacy";
 import {
   listMembershipsPolicy,
   listRolesPolicy,
@@ -39,6 +47,11 @@ import {
   listCurrentMemberships,
   loadEnvironmentAccess,
 } from "./store";
+import {
+  currentResponses,
+  findOpenProposal,
+  typePeriods,
+} from "./type-change-store";
 
 const environmentInput = z.strictObject({ environmentId: z.uuid() });
 
@@ -144,12 +157,17 @@ export const getEnvironment = defineQuery({
         requirements: await currentRequirements(db, input.environmentId),
         answers: own ? ((await answersOf(db, [own.id])).get(own.id) ?? []) : [],
         continuity,
+        typeChange:
+          own && access.viewer.membership?.state !== "pending"
+            ? await ownTypeChange(db, input.environmentId, own.id)
+            : null,
       },
       context: undefined,
     };
   },
   present: ({ resource, now }): Environment => {
-    const { environment, ownMembership, viewer, continuity } = resource;
+    const { environment, ownMembership, viewer, continuity, typeChange } =
+      resource;
 
     return {
       id: environment.id,
@@ -189,9 +207,55 @@ export const getEnvironment = defineQuery({
         id,
         role,
       })),
+      typeChange,
     };
   },
 });
+
+/**
+ * A proposed weaker type, for a member (PS-ENV-008): what is proposed, by
+ * when, and the member's own answer. Nobody else's answers, and no tally.
+ */
+async function ownTypeChange(
+  db: Parameters<typeof findOpenProposal>[0],
+  environmentId: string,
+  membershipId: string,
+): Promise<TypeChangeProposal | null> {
+  const proposal = await findOpenProposal(db, environmentId);
+
+  if (!proposal) {
+    return null;
+  }
+
+  return {
+    id: proposal.id,
+    toType: proposal.toType,
+    process: proposal.process,
+    deadline: proposal.deadline.toISOString(),
+    yourResponse:
+      (await currentResponses(db, proposal.id)).get(membershipId) ?? null,
+  };
+}
+
+/**
+ * PS-ENV-009 for membership lists: a member who did not take part in a
+ * weaker type is passive and keeps the stricter context. Their membership,
+ * and what they gave to it, is only shown to members who were active before
+ * the type became weaker; later members do not learn of it, whatever their
+ * role. Members who are active have accepted the type that applies now.
+ */
+function historicallyVisible(
+  periods: readonly TypePeriod[],
+  viewerActiveFrom: HistoryPosition | null,
+) {
+  return (membership: MembershipRecord) =>
+    membership.state !== "passive" ||
+    membership.passivePosition === null ||
+    mayExposeHistory(
+      widenedAfterPassivation(periods, membership.passivePosition),
+      viewerActiveFrom,
+    );
+}
 
 async function hasOpenClaim(
   db: Parameters<typeof findContinuity>[0],
@@ -296,7 +360,13 @@ export const listMemberships = defineQuery({
       return null;
     }
 
-    const memberships = await listCurrentMemberships(db, input.environmentId);
+    const visible = historicallyVisible(
+      await typePeriods(db, input.environmentId),
+      activeFrom(access.ownMembership),
+    );
+    const memberships = (
+      await listCurrentMemberships(db, input.environmentId)
+    ).filter(visible);
     const restrictions = await db
       .selectFrom("app.environment_access_restrictions")
       .select("user_id")
@@ -355,8 +425,22 @@ export const listRoles = defineQuery({
       return null;
     }
 
-    const admins = await administrators(db, input.environmentId, now);
-    const invitations = await pendingRoleInvitations(db, input.environmentId);
+    const visible = historicallyVisible(
+      await typePeriods(db, input.environmentId),
+      activeFrom(access.ownMembership),
+    );
+    const hidden = new Set(
+      (await listCurrentMemberships(db, input.environmentId, ["passive"]))
+        .filter((membership) => !visible(membership))
+        .map((membership) => membership.userId),
+    );
+    const admins = (await administrators(db, input.environmentId, now)).filter(
+      (admin) => !hidden.has(admin.userId),
+    );
+    // A role invitation names its invitee just as much as a role does.
+    const invitations = (
+      await pendingRoleInvitations(db, input.environmentId)
+    ).filter((invitation) => !hidden.has(invitation.userId));
     const userIds = [
       ...new Set([
         ...admins.map((admin) => admin.userId),

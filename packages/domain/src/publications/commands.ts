@@ -11,8 +11,10 @@ import type { Transaction } from "kysely";
 import type { Actor } from "../actor";
 import { defineCommand } from "../commands/command";
 import { loadLockedAccess } from "../environment/environment-commands";
-import { acceptsNewActivity } from "../environment/model";
+import { acceptsNewActivity, activeFrom } from "../environment/model";
+import { isConcealed, toPosition } from "../environment/privacy";
 import { loadEnvironmentAccess } from "../environment/store";
+import { concealedHistory } from "../environment/type-change-store";
 import { DomainError } from "../errors";
 import { loadFreezes } from "../objects/co-owner-blocks";
 import { actingUserId, loadObjectState } from "../objects/state";
@@ -247,6 +249,17 @@ async function loadReviewed({
     return null;
   }
 
+  // PS-ENV-009: what was published under a stricter type before the caller
+  // became active does not exist for them.
+  const concealed = await concealedHistory(
+    tx,
+    access.environment.id,
+    activeFrom(access.ownMembership),
+  );
+  if (isConcealed(concealed, publication.position)) {
+    return null;
+  }
+
   const owners = await tx
     .selectFrom("app.object_owners")
     .select("user_id")
@@ -442,7 +455,7 @@ export const setObjectApproval = defineCommand({
   idempotency: "required",
   load: loadLockedAccess,
   execute: async ({ tx, input, resource, events, now }) => {
-    const { environment } = resource;
+    const { environment, ownMembership } = resource;
 
     if (environment.requiresObjectApproval === input.required) {
       return { required: input.required, changed: 0 };
@@ -466,8 +479,14 @@ export const setObjectApproval = defineCommand({
       .set({ status: to, status_changed_at: now })
       .where("environment_id", "=", environment.id)
       .where("status", "=", from)
-      .returning(["id", "object_id"])
+      .returning(["id", "object_id", "position"])
       .execute();
+    // The count is a view of the history too (PS-ENV-009).
+    const concealed = await concealedHistory(
+      tx,
+      environment.id,
+      activeFrom(ownMembership),
+    );
 
     events.record(environmentObjectApprovalChanged, {
       resourceId: environment.id,
@@ -480,6 +499,11 @@ export const setObjectApproval = defineCommand({
       });
     }
 
-    return { required: input.required, changed: changed.length };
+    return {
+      required: input.required,
+      changed: changed.filter(
+        (row) => !isConcealed(concealed, toPosition(row.position)),
+      ).length,
+    };
   },
 });
