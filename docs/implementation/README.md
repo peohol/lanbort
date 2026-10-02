@@ -51,7 +51,7 @@ Leveranser:
 
 **Gate:** negative autorisasjonstester må være på plass før flere domener bygges.
 
-**Status (1. oktober 2026):** Levert. Reglene for ny serverkode står i [servergrense og autorisasjon](server-boundary.md).
+**Status (2. oktober 2026):** Levert. Reglene for ny serverkode står i [servergrense og autorisasjon](server-boundary.md).
 
 | Pakke | Leveranse | Status |
 | --- | --- | --- |
@@ -72,7 +72,7 @@ Leveranser:
 Bevisst utsatt:
 - ekte outbox-consumers (e-post/push) kommer i Fase 4, og Vercel Cron settes opp med hostede miljøer
 - hvem som kan utnevne plattformforvaltere i appen er ikke bestemt, så det skjer foreløpig bare via driftskommandoen
-- mekanisme for sterkere autentisering for plattformforvaltere venter på OD-0010; til da er handlinger som plattformforvalter stengt
+- mekanisme for sterkere autentisering for plattformforvaltere venter på OD-0010, som kan stå åpen etter Fase 1 men må avklares før slike handlinger tas i reell bruk (Port D); til da avvises de
 - endring av e-postadresse og synlighet per profilfelt (Fase 2)
 - egen databaserolle med minste privilegium for appen, og verifisering av Supabase Auths rate limits når innlogging går via serveren, før pilot (Port D)
 - oppbevaringstid for audit-hendelser venter på OD-0002
