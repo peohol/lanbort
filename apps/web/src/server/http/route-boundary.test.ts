@@ -39,6 +39,11 @@ const nonUserRoutes: Record<
     access: "scheduler",
     reason: "outbox worker, authenticated with the cron secret",
   },
+  "GET /api/internal/environment-memberships": {
+    access: "scheduler",
+    reason:
+      "ends expired transition periods, authenticated with the cron secret",
+  },
 };
 
 const httpMethods = [
