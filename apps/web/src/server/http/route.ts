@@ -31,10 +31,16 @@ import { errorResponse, toErrorResponse } from "./errors";
  */
 export type Access = "public" | "user" | "scheduler";
 
+/** Dynamic route segments, e.g. `{ objectId }` for `/api/objects/[objectId]`. */
+export type RouteParams = Readonly<
+  Record<string, string | string[] | undefined>
+>;
+
 interface BaseContext {
   readonly request: NextRequest;
   readonly requestId: string;
   readonly domain: DomainContext;
+  readonly params: RouteParams;
 }
 
 export interface PublicContext extends BaseContext {
@@ -169,9 +175,12 @@ export function createRouteFactory(runtime: Runtime) {
 
   function brand(
     access: Access,
-    handler: (request: NextRequest) => Promise<Response>,
+    handler: (request: NextRequest, params: RouteParams) => Promise<Response>,
   ): RouteHandler {
-    const wrapped = (request: NextRequest) => handler(request);
+    const wrapped = async (
+      request: NextRequest,
+      context?: { params?: Promise<unknown> },
+    ) => handler(request, ((await context?.params) ?? {}) as RouteParams);
 
     return Object.assign(wrapped, {
       [routeBoundary]: Object.freeze({ access }),
@@ -204,13 +213,14 @@ export function createRouteFactory(runtime: Runtime) {
   return {
     /** A route anyone may call, such as starting sign-in. */
     public(handler: HandlerOf<PublicContext>): RouteHandler {
-      return brand("public", (request) =>
+      return brand("public", (request, params) =>
         run("public", request, async (requestId) => {
           const session = await sessionFor(request, requestId);
 
           return handler({
             request,
             requestId,
+            params,
             get domain() {
               return session.domain();
             },
@@ -225,7 +235,7 @@ export function createRouteFactory(runtime: Runtime) {
 
     /** A route for signed-in users. */
     user(handler: HandlerOf<UserContext>): RouteHandler {
-      return brand("user", (request) =>
+      return brand("user", (request, params) =>
         run("user", request, async (requestId) => {
           const session = await sessionFor(request, requestId);
           const user = await session.user();
@@ -237,6 +247,7 @@ export function createRouteFactory(runtime: Runtime) {
           return handler({
             request,
             requestId,
+            params,
             ...user,
             domain: session.domain(),
             auth: session.auth(),
@@ -252,7 +263,7 @@ export function createRouteFactory(runtime: Runtime) {
     ): RouteHandler {
       const actor = systemActor(process);
 
-      return brand("scheduler", (request) =>
+      return brand("scheduler", (request, params) =>
         run("scheduler", request, async (requestId) => {
           const secret = runtime.cronSecret();
 
@@ -267,6 +278,7 @@ export function createRouteFactory(runtime: Runtime) {
           return handler({
             request,
             requestId,
+            params,
             actor,
             domain: runtime.domain(),
           });

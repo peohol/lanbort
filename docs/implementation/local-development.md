@@ -18,7 +18,7 @@ pnpm db:reset
 pnpm dev
 ```
 
-`pnpm db:start` starter lokal database, Supabase Auth og Mailpit (lokal e-postboks). `pnpm env:local` skriver `.env` fra `.env.example` med verdiene den kjørende lokale stacken har generert, slik at ingen nøkler ligger i repoet. `.env` er ignorert av git, og både Next.js-appen og verktøyene leser den.
+`pnpm db:start` starter lokal database, Supabase Auth, Supabase Storage (private objektbilder) og Mailpit (lokal e-postboks). `pnpm env:local` skriver `.env` fra `.env.example` med verdiene den kjørende lokale stacken har generert, slik at ingen nøkler ligger i repoet. `.env` er ignorert av git, og både Next.js-appen og verktøyene leser den.
 
 Innlogging bruker engangskode på e-post. Lokalt havner e-postene i Mailpit på <http://127.0.0.1:54324>. Malen ligger i `supabase/templates/`, og lokale Auth-innstillinger står under `[auth]` i `supabase/config.toml`. Hostede Supabase-prosjekter må få samme e-postmal og innstillinger når de etableres.
 
@@ -32,6 +32,7 @@ Innlogging bruker engangskode på e-post. Lokalt havner e-postene i Mailpit på 
 | `packages/database` | Kysely/Postgres-adapter og genererte databasetyper. Kun for serverkode |
 | `packages/domain` | Serverens domenekjerne: aktørmodell, policy-/autorisasjons-API, hendelser, transactional outbox, idempotente kommandoer, konto og plattformroller. Kun for serverkode |
 | `packages/auth` | Eneste adapter mot Supabase Auth. Gir leverandørnøytral, verifisert identitet. Kun for serverkode |
+| `packages/storage` | Eneste adapter mot Supabase Storage, og bildebehandling som fjerner metadata. Kun for serverkode |
 | `packages/observability` | Strukturert logging med tillatelsesliste for felt |
 | `supabase/` | Lokal Supabase-konfigurasjon, SQL-migrasjoner og pgTAP-tester |
 
@@ -78,4 +79,4 @@ Se [servergrense og autorisasjon](server-boundary.md) for hvordan nye API-er, po
 ## Kjente begrensninger i grunnlaget
 
 - CSP tillater `'unsafe-inline'` for skript fordi Next.js trenger det uten nonce-basert CSP. Innstramming vurderes før Port C (privat chat). `next dev` får i tillegg `'unsafe-eval'`, aldri produksjonsbygget.
-- Det finnes ennå ikke hostet staging- eller produksjonsmiljø på Vercel/Supabase.
+- Det finnes ennå ikke hostet staging- eller produksjonsmiljø på Vercel/Supabase. Når det etableres, trenger serveren `SUPABASE_SECRET_KEY` i plattformens hemmelighetslager for objektbilder; uten den svarer bilde-API-ene `unavailable`.
