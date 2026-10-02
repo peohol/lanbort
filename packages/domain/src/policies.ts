@@ -1,5 +1,6 @@
 import type { Policy } from "./authorization/policy";
 import { accountPolicies } from "./account/policies";
+import { objectPolicies } from "./objects/policies";
 import { processOutboxPolicy } from "./outbox/policy";
 import { platformPolicies } from "./platform/policies";
 import { socialPolicies } from "./social/policies";
@@ -11,6 +12,7 @@ import { socialPolicies } from "./social/policies";
 export const allPolicies: readonly Policy<never, never>[] = [
   ...accountPolicies,
   ...platformPolicies,
+  ...objectPolicies,
   ...socialPolicies,
   processOutboxPolicy,
 ];

@@ -22,6 +22,7 @@ fi
 sed \
   -e "s|^SUPABASE_URL=.*|SUPABASE_URL=$(value_of API_URL)|" \
   -e "s|^SUPABASE_PUBLISHABLE_KEY=.*|SUPABASE_PUBLISHABLE_KEY=${publishable_key}|" \
+  -e "s|^SUPABASE_SECRET_KEY=.*|SUPABASE_SECRET_KEY=$(value_of SECRET_KEY)|" \
   -e "s|^MAILPIT_URL=.*|MAILPIT_URL=$(value_of MAILPIT_URL)|" \
   -e "s|^DATABASE_URL=.*|DATABASE_URL=$(value_of DB_URL)|" \
   .env.example > .env

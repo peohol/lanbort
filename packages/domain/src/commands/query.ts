@@ -23,8 +23,14 @@ export interface QueryDefinition<I, R, C, O> {
     actor: Actor;
     input: I;
   }): Promise<Loaded<R, C> | null>;
-  /** Shapes the response from the authorized resource. */
-  present(args: { actor: Actor; input: I; resource: R; context: C }): O;
+  /** Shapes the response from the authorized resource, as of `now`. */
+  present(args: {
+    actor: Actor;
+    input: I;
+    resource: R;
+    context: C;
+    now: Date;
+  }): O;
 }
 
 export function defineQuery<I, R, C, O>(
@@ -68,5 +74,6 @@ export async function executeQuery<I, R, C, O>(
     input,
     resource: loaded.resource,
     context: loaded.context,
+    now,
   });
 }
