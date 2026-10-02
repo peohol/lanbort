@@ -4,3 +4,5 @@ export * from "./policies";
 export * from "./environment-commands";
 export * from "./membership-commands";
 export * from "./queries";
+export * from "./role-commands";
+export * from "./continuity-commands";

@@ -12,6 +12,7 @@ import { defineCommand } from "../commands/command";
 import { DomainError } from "../errors";
 import type { EventRecorder } from "../events/recorder";
 import { lockPair, socialRelationBetween } from "../social/pair";
+import { lapseInvitationsOf } from "./continuity-store";
 import {
   environmentIdInput,
   loadLockedAccess,
@@ -29,6 +30,7 @@ import {
   membershipTransitionCompleted,
 } from "./events";
 import {
+  acceptsNewActivity,
   type EnvironmentRecord,
   type MembershipRecord,
   unmetRequirements,
@@ -72,11 +74,11 @@ function conflict(message: string): never {
 }
 
 /**
- * Whether the environment takes new members and activations. Always true
- * until winding down arrives with WP-22.
+ * PS-ENV-012: a winding-down environment takes no new members or
+ * activations. Pending processes wait until it is final or cancelled.
  */
 function assertAcceptsMembers(environment: EnvironmentRecord): void {
-  if (environment.state !== "active") {
+  if (!acceptsNewActivity(environment)) {
     conflict("The environment does not take new members");
   }
 }
@@ -358,8 +360,9 @@ export const acceptInvitation = defineCommand({
 });
 
 /**
- * Leaving, withdrawing an application or declining an invitation. Owners and
- * administrators hand over their role first, which belongs to WP-22.
+ * Leaving, withdrawing an application or declining an invitation. An
+ * administrator resigns first, and the owner hands over ownership or winds
+ * the environment down (PS-ENV-003), so nobody leaves it without continuity.
  */
 export const leaveEnvironment = defineCommand({
   name: "environment_membership.leave",
@@ -392,6 +395,15 @@ export const leaveEnvironment = defineCommand({
       resourceId: membership.id,
       payload: { ...eventPayload(membership), reason },
     });
+    // A role invitation was for this membership; it does not wait for a
+    // later one.
+    await lapseInvitationsOf(
+      tx,
+      membership.environmentId,
+      membership.userId,
+      now,
+      events,
+    );
 
     return { membershipId: membership.id, state: "ended" as const };
   },

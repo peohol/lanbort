@@ -10,12 +10,12 @@ import type { Actor } from "../actor";
 import { defineCommand } from "../commands/command";
 import { DomainError } from "../errors";
 import type { EventRecorder } from "../events/recorder";
+import { grantRole } from "./continuity-store";
 import {
   environmentCreated,
   environmentDetailsUpdated,
   environmentRequirementsChanged,
   environmentRestrictionLifted,
-  environmentRoleGranted,
   membershipActivated,
   membershipTransitionCompleted,
   membershipTransitionStarted,
@@ -149,28 +149,12 @@ export const createEnvironment = defineCommand({
       .returning("id")
       .executeTakeFirstOrThrow();
 
-    await tx
-      .insertInto("app.environment_role_grants")
-      .values(
-        (["owner", "administrator"] as const).map((role) => ({
-          environment_id: id,
-          user_id: userId,
-          role,
-          granted_at: now,
-          granted_by_user_id: userId,
-        })),
-      )
-      .execute();
-
     events.record(environmentCreated, {
       resourceId: id,
       payload: { type: input.type },
     });
     for (const role of ["owner", "administrator"] as const) {
-      events.record(environmentRoleGranted, {
-        resourceId: id,
-        payload: { userId, role },
-      });
+      await grantRole(tx, id, userId, role, { userId }, now, events);
     }
     events.record(membershipActivated, {
       resourceId: membership.id,

@@ -44,6 +44,11 @@ const nonUserRoutes: Record<
     reason:
       "ends expired transition periods, authenticated with the cron secret",
   },
+  "GET /api/internal/environment-continuity": {
+    access: "scheduler",
+    reason:
+      "resolves ownerless and winding-down environments, authenticated with the cron secret",
+  },
 };
 
 const httpMethods = [
