@@ -47,4 +47,9 @@ Representative grant må være bundet til eksplisitte ressurser og handlinger og
 - sikre, HttpOnly-baserte nettlesersesjoner foretrekkes fremfor langlivede tokens eksponert for JavaScript
 - rotasjon/revokering ved sikkerhetshendelser
 - re-autentisering for kontosletting, eierskapsoverføring og andre sensitive handlinger
-- MFA skal kreves for plattformforvaltere før produksjon/bred pilot og bør støttes for miljøadministratorer
+- vanlige brukere skal ikke ha et generelt krav om MFA i pilotmodellen; verifisert e-post er den etablerte basisen for konto og innlogging
+- plattformforvaltere skal før produksjon/bred pilot ha et ekstra, sterkt autentiseringsnivå for privilegert tilgang; den konkrete mekanismen er ikke besluttet og skal avklares i OD-0010
+- TOTP/autentiseringsapp er derfor en mulig teknisk mekanisme, ikke en vedtatt produktegenskap
+- støtte for sterkere autentisering hos miljøadministratorer kan vurderes senere, men skal ikke gjøres obligatorisk uten en egen beslutning
+
+En framtidig overgang til eller supplering med en ekstern identitetsleverandør, herunder Vipps Login for norske brukere, er ikke del av pilotens nåværende innloggingsmodell. Muligheten skal utredes separat i OD-0011.
