@@ -12,5 +12,6 @@ export { idempotencyKeyPattern } from "./commands/idempotency";
 export * from "./authorization/policy-matrix";
 export * from "./account";
 export * from "./platform";
+export * from "./social";
 export * from "./outbox/policy";
 export * from "./policies";
