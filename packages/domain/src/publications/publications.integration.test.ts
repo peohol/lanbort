@@ -828,6 +828,55 @@ describe("concurrency", () => {
     }
   });
 
+  it("never releases a rejection while approval is being turned off", async () => {
+    for (let round = 0; round < 5; round++) {
+      const { admin, environmentId } = await openEnvironment();
+      const anna = await member(environmentId, admin);
+      await run(setObjectApproval, admin, { environmentId, required: true });
+      const { publicationId } = await publish(
+        anna,
+        await create(anna),
+        environmentId,
+      );
+
+      await Promise.all([
+        decide(rejectPublication, admin, environmentId, publicationId),
+        run(setObjectApproval, admin, { environmentId, required: false }),
+      ]);
+
+      expect(await statusOf(publicationId)).toMatchObject({
+        status: "rejected",
+      });
+    }
+  });
+
+  it("never lets a concurrent approval lift a block", async () => {
+    for (let round = 0; round < 5; round++) {
+      const { admin, environmentId } = await openEnvironment();
+      const anna = await member(environmentId, admin);
+      const other = await makeAdministrator(
+        environmentId,
+        admin,
+        await member(environmentId, admin),
+      );
+      await run(setObjectApproval, admin, { environmentId, required: true });
+      const { publicationId } = await publish(
+        anna,
+        await create(anna),
+        environmentId,
+      );
+
+      await Promise.allSettled([
+        decide(approvePublication, other, environmentId, publicationId),
+        decide(blockPublication, admin, environmentId, publicationId),
+      ]);
+
+      expect(await statusOf(publicationId)).toMatchObject({
+        status: "blocked",
+      });
+    }
+  });
+
   it("keeps one current publication when two owners publish at once", async () => {
     const { admin, environmentId } = await openEnvironment();
     const anna = await member(environmentId, admin);
