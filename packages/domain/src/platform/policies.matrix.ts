@@ -15,13 +15,14 @@ const target = (overrides: Partial<PlatformRoleTarget> = {}) => ({
   activeGrantId: null,
   ...overrides,
 });
-// Holding the role, even with MFA, does not let anyone appoint stewards.
+// Holding the role, even with stronger authentication, does not let anyone
+// appoint stewards.
 const steward = testUserActor({
   platformRoles: ["platform_steward"],
   authentication: {
     sessionId: "s",
     assurance: "aal2",
-    methods: [{ method: "totp", at: new Date() }],
+    methods: [{ method: "step_up", at: new Date() }],
   },
 });
 

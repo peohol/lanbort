@@ -7,11 +7,14 @@ import { platformRoleSchema } from "@lanbort/contracts";
  */
 export type AccountStatus = "pending_registration" | "active";
 
-/** Authentication assurance level (AAL2 = a second factor was verified). */
+/**
+ * Authentication assurance level. `aal2` is the stronger authentication that
+ * privileged roles need; its mechanism is not decided (OD-0010).
+ */
 export type AssuranceLevel = "aal1" | "aal2";
 
 export interface AuthenticationMethod {
-  /** For example `otp` (e-mail code) or `totp`. */
+  /** The provider's name for the method, for example `otp` (e-mail code). */
   readonly method: string;
   readonly at: Date;
 }

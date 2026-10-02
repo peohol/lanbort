@@ -57,7 +57,7 @@ Leveranser:
 | --- | --- | --- |
 | WP-10 | Supabase Auth bak serveradapter, innlogging/registrering med engangskode på e-post, HttpOnly-sesjon, intern bruker/profil atskilt fra leverandøridentiteten, registrering med ekte navn og 18+ | Ferdig |
 | WP-11 | Policy-API (aktør + handling + ressurs + kontekst + tilstand), standardiserte avslag, felles Route Handler-grense med meta-test og lint, testmatrise med tillatte og avviste tilfeller for hver policy | Ferdig |
-| WP-12 | Plattformforvalterrolle fra egne tildelinger, revisjonslogget driftskommando, regler for MFA (`aal2`), nylig innlogging og habilitet, autentiseringsapp (TOTP) og ny innlogging med e-postkode | Ferdig |
+| WP-12 | Plattformforvalterrolle fra egne tildelinger, revisjonslogget og idempotent driftskommando, mekanismenøytrale regler for sterkere autentisering (`aal2`), nylig innlogging og habilitet, og ny innlogging med e-postkode | Ferdig, mekanisme for sterkere autentisering venter på OD-0010 |
 | WP-13 | Append-only audit-hendelser, transactional outbox i samme transaksjon, idempotent worker med lease, retry og dead-letter | Ferdig |
 | WP-14 | Idempotente kommandoer: ingen dobbel utførelse, konsistent replay, trygt ved samtidige kall og ingen lekkasje mellom aktører | Ferdig |
 
@@ -72,7 +72,7 @@ Leveranser:
 Bevisst utsatt:
 - ekte outbox-consumers (e-post/push) kommer i Fase 4, og Vercel Cron settes opp med hostede miljøer
 - hvem som kan utnevne plattformforvaltere i appen er ikke bestemt, så det skjer foreløpig bare via driftskommandoen
-- bytte eller fjerne autentiseringsapp, og gjenoppretting ved tapt telefon, er ikke laget
+- mekanisme for sterkere autentisering for plattformforvaltere venter på OD-0010; til da er handlinger som plattformforvalter stengt
 - endring av e-postadresse og synlighet per profilfelt (Fase 2)
 - egen databaserolle med minste privilegium for appen, og verifisering av Supabase Auths rate limits når innlogging går via serveren, før pilot (Port D)
 - oppbevaringstid for audit-hendelser venter på OD-0002

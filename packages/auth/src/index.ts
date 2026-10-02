@@ -6,16 +6,6 @@ import { toIdentity, type VerifiedIdentity } from "./identity";
 export * from "./errors";
 export type { AuthenticationMethod, VerifiedIdentity } from "./identity";
 
-export type TotpStatus = "none" | "pending" | "verified";
-
-/** What the user needs to add Lånbort to an authenticator app. */
-export interface TotpEnrollment {
-  /** SVG QR code as a data URL. */
-  qrCode: string;
-  /** Shared secret for manual entry. */
-  secret: string;
-}
-
 /**
  * Lånbort's only adapter to the auth provider (ADR-0007). Everything vendor
  * specific stays in this package: callers get a provider-neutral identity and a
@@ -108,19 +98,6 @@ export interface AuthGateway {
   refreshSession(): Promise<void>;
   /** Revokes the current session at the provider and clears the cookies. */
   signOut(): Promise<void>;
-  /** The state of the signed-in user's authenticator app (TOTP) factor. */
-  totpStatus(): Promise<TotpStatus>;
-  /**
-   * Starts adding an authenticator app. An unconfirmed earlier attempt is
-   * replaced. Must not be called when a confirmed app exists.
-   */
-  enrollTotp(): Promise<TotpEnrollment>;
-  /**
-   * Verifies a code from the authenticator app: confirms a pending app, or
-   * raises the session to `aal2` with a confirmed one. Returns the session's
-   * new identity (cookies are set).
-   */
-  verifyTotp(code: string): Promise<VerifiedIdentity>;
 }
 
 export function createAuthGateway(
@@ -141,21 +118,6 @@ export function createAuthGateway(
     },
   });
   const auth = client.auth;
-
-  async function totpFactors() {
-    const { data, error } = await auth.mfa.listFactors();
-
-    if (error) {
-      throw providerError(error);
-    }
-
-    const totp = data.all.filter((factor) => factor.factor_type === "totp");
-
-    return {
-      verified: totp.find((factor) => factor.status === "verified"),
-      pending: totp.filter((factor) => factor.status === "unverified"),
-    };
-  }
 
   return {
     async requestEmailCode(email) {
@@ -216,64 +178,6 @@ export function createAuthGateway(
       if (error && !isClientError(error)) {
         throw providerError(error);
       }
-    },
-
-    async totpStatus() {
-      const factors = await totpFactors();
-
-      if (factors.verified) {
-        return "verified";
-      }
-
-      return factors.pending.length > 0 ? "pending" : "none";
-    },
-
-    async enrollTotp() {
-      const factors = await totpFactors();
-
-      if (factors.verified) {
-        throw new AuthProviderError("unavailable");
-      }
-
-      // The provider allows one unconfirmed factor per name; start over.
-      for (const factor of factors.pending) {
-        const { error } = await auth.mfa.unenroll({ factorId: factor.id });
-
-        if (error) {
-          throw providerError(error);
-        }
-      }
-
-      const { data, error } = await auth.mfa.enroll({
-        factorType: "totp",
-        issuer: "Lånbort",
-      });
-
-      if (error) {
-        throw providerError(error);
-      }
-
-      return { qrCode: data.totp.qr_code, secret: data.totp.secret };
-    },
-
-    async verifyTotp(code) {
-      const factors = await totpFactors();
-      const factor = factors.verified ?? factors.pending[0];
-
-      if (!factor) {
-        throw new AuthProviderError("invalid_code");
-      }
-
-      const { data, error } = await auth.mfa.challengeAndVerify({
-        factorId: factor.id,
-        code,
-      });
-
-      if (error) {
-        throw providerError(error, true);
-      }
-
-      return toIdentity(data.user, data.access_token);
     },
   };
 }

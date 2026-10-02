@@ -64,7 +64,7 @@ CI starter en isolert lokal Supabase-database, bygger den fra alle migrasjoner, 
 | --- | --- |
 | `quality` | Lint, typecheck, enhetstester, Prettier og produksjonsbygg (`pnpm check`) |
 | `database` | Migrasjoner fra tom database, pgTAP, typekontroll mot skjema og integrasjonstester mot databasen (`pnpm test:integration`) |
-| `e2e` | Playwright mot produksjonsbygget og lokal Supabase: røyktest (CSP, sikkerhetshoder, helse), registrering og innlogging med e-postkode, utlogging, autentiseringsapp (TOTP), ny innlogging og negative API-tester |
+| `e2e` | Playwright mot produksjonsbygget og lokal Supabase: røyktest (CSP, sikkerhetshoder, helse), registrering og innlogging med e-postkode, utlogging, ny innlogging og negative API-tester |
 | `security` | `pnpm audit` for produksjonsavhengigheter, selvtest av Gitleaks og skanning av hele git-historikken |
 
 CI har bare lesetilgang til repoet (`permissions: contents: read`), og avhengigheter installeres med `--frozen-lockfile`.

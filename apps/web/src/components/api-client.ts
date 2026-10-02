@@ -16,14 +16,24 @@ export type ApiResult<T> =
  * Same-origin JSON calls to Lånbort's API. Session cookies are HttpOnly and
  * travel automatically; the browser never handles tokens.
  */
-async function requestJson<T>(
+export async function postJson<T = unknown>(
   path: string,
-  init: RequestInit,
+  body: unknown,
+  options: { idempotencyKey?: string } = {},
 ): Promise<ApiResult<T>> {
   let response: Response;
 
   try {
-    response = await fetch(path, init);
+    response = await fetch(path, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(options.idempotencyKey
+          ? { [idempotencyKeyHeader]: options.idempotencyKey }
+          : {}),
+      },
+      body: JSON.stringify(body ?? {}),
+    });
   } catch {
     return { ok: false, code: "network" };
   }
@@ -48,25 +58,4 @@ async function requestJson<T>(
     ok: false,
     code: parsed.success ? parsed.data.error.code : "internal_error",
   };
-}
-
-export function postJson<T = unknown>(
-  path: string,
-  body: unknown,
-  options: { idempotencyKey?: string } = {},
-): Promise<ApiResult<T>> {
-  return requestJson<T>(path, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      ...(options.idempotencyKey
-        ? { [idempotencyKeyHeader]: options.idempotencyKey }
-        : {}),
-    },
-    body: JSON.stringify(body ?? {}),
-  });
-}
-
-export function getJson<T = unknown>(path: string): Promise<ApiResult<T>> {
-  return requestJson<T>(path, { method: "GET" });
 }

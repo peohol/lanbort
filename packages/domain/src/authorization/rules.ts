@@ -52,12 +52,16 @@ export function requirePlatformRole(role: PlatformRole): ActorRule {
 
 const assuranceRank: Record<AssuranceLevel, number> = { aal1: 1, aal2: 2 };
 
-/** The session reached the given assurance level (`aal2`: MFA verified). */
+/**
+ * The session reached the given assurance level. `aal2` is the stronger
+ * authentication privileged roles need; which mechanism provides it is not
+ * decided (OD-0010), see `account/identity.ts`.
+ */
 export function requireAssurance(level: AssuranceLevel): ActorRule {
   return userRule((actor) =>
     assuranceRank[actor.authentication.assurance] >= assuranceRank[level]
       ? allow
-      : deny("mfa_required"),
+      : deny("stronger_authentication_required"),
   );
 }
 
@@ -65,7 +69,7 @@ export function requireAssurance(level: AssuranceLevel): ActorRule {
 export const recentAuthenticationMaxAgeMs = 10 * 60 * 1000;
 
 /**
- * The user proved their identity (e-mail code or authenticator app) within
+ * The user proved their identity (for example with an e-mail code) within
  * `maxAgeMs`. Used for sensitive actions so that a stolen or forgotten
  * session alone is not enough (docs/architecture/04, 08).
  */

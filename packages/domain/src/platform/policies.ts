@@ -9,8 +9,9 @@ import {
 
 /**
  * Every action taken through the platform steward role: an active account
- * holding the role, in a session confirmed with the authenticator app
- * (docs/architecture/04: MFA is required for platform stewards). Policies for
+ * holding the role, in a session with stronger authentication (`aal2`,
+ * docs/architecture/04; the mechanism is open in OD-0010, so this stays closed
+ * until it is decided). Policies for
  * steward actions start with these rules and add their own, including
  * `requireNotInvolved` wherever a steward could be a party (PS-USR-009).
  */

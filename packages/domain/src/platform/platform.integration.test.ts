@@ -1,12 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { InsertQueryNode } from "kysely";
 import { afterAll, describe, expect, it } from "vitest";
 import { systemActor } from "../actor";
-import { recordMfaEnabled } from "../account/commands";
-import {
-  type AuthenticatedIdentity,
-  resolveUserActor,
-} from "../account/identity";
+import { resolveUserActor } from "../account/identity";
 import { authorizeActor, definePolicy } from "../authorization/policy";
 import { type DomainContext, executeCommand } from "../commands/command";
 import { ConsumerRegistry } from "../outbox/consumer";
@@ -233,102 +228,41 @@ describe("platform steward role (WP-12)", () => {
   });
 });
 
-describe("MFA audit record (WP-12)", () => {
-  const raised = (identity: AuthenticatedIdentity): AuthenticatedIdentity => ({
-    ...identity,
-    authentication: {
-      ...identity.authentication,
-      assurance: "aal2",
-      methods: [{ method: "totp", at: new Date() }],
-    },
-  });
-
-  async function mfaEvents(userId: string) {
-    return db
-      .selectFrom("app.audit_events")
-      .select(["event_type", "payload"])
-      .where("resource_id", "=", userId)
-      .where("event_type", "=", "account.mfa_enabled")
-      .execute();
-  }
-
-  // The database refuses audit writes, as in an outage right after the
-  // provider confirmed the app.
-  const auditWritesFail: DomainContext = {
-    ...domain,
-    db: db.withPlugin({
-      transformQuery: ({ node }) => {
-        if (
-          InsertQueryNode.is(node) &&
-          node.into?.table.identifier.name === "audit_events"
-        ) {
-          throw new Error("simulated audit write failure");
-        }
-        return node;
-      },
-      transformResult: async ({ result }) => result,
-    }),
-  };
-
+describe("stronger authentication (WP-12, OD-0010)", () => {
   const handleCase = definePolicy({
     action: "test.platform_case.handle",
     actor: [...platformStewardAccess],
   });
 
-  it("is required before a raised session is accepted for privileged work", async () => {
-    const { identity, actor } = await registerTestUser(domain);
+  it("is not accepted from the provider until a mechanism is decided", async () => {
+    const { identity } = await registerTestUser(domain);
     await executeCommand(domain, grantPlatformRole, {
       actor: ops,
       input: change(identity.email!),
       idempotencyKey: randomUUID(),
     });
 
-    // The provider has confirmed the app, but recording it fails: the raised
-    // session is not accepted at all, so no privileged call can follow.
-    await expect(
-      resolveUserActor(auditWritesFail, raised(identity)),
-    ).rejects.toThrow("simulated audit write failure");
-    expect(await mfaEvents(actor.userId)).toEqual([]);
+    // Whatever the provider reports, e.g. an authenticator app, no session
+    // counts as stronger yet, so privileged access stays closed.
+    for (const method of ["totp", "webauthn", "phone"]) {
+      const steward = await resolveUserActor(domain, {
+        ...identity,
+        authentication: {
+          ...identity.authentication,
+          assurance: "aal2",
+          methods: [{ method, at: new Date() }],
+        },
+      });
 
-    // The next privileged request repairs the record before it is allowed.
-    const steward = await resolveUserActor(domain, raised(identity));
-    expect(await mfaEvents(actor.userId)).toEqual([
-      { event_type: "account.mfa_enabled", payload: { method: "totp" } },
-    ]);
-    expect(() =>
-      authorizeActor(handleCase, { actor: steward!, now: new Date() }),
-    ).not.toThrow();
-  });
-
-  it("is written once, however often and concurrently the session is used", async () => {
-    const { identity, actor } = await registerTestUser(domain);
-
-    await Promise.all(
-      Array.from({ length: 4 }, () =>
-        resolveUserActor(domain, raised(identity)),
-      ),
-    );
-    await resolveUserActor(domain, raised(identity));
-
-    expect(await mfaEvents(actor.userId)).toHaveLength(1);
-  });
-
-  it("is not trusted on an account that could not have added an app", async () => {
-    const actor = await resolveUserActor(domain, raised(testIdentity()));
-
-    expect(actor).toMatchObject({
-      accountStatus: "pending_registration",
-      authentication: { assurance: "aal1" },
-    });
-    expect(await mfaEvents(actor!.userId)).toEqual([]);
-  });
-
-  it("is only written for a session confirmed with the second factor", async () => {
-    const { actor } = await registerTestUser(domain);
-
-    await expect(
-      executeCommand(domain, recordMfaEnabled, { actor, input: {} }),
-    ).rejects.toMatchObject({ code: "mfa_required" });
-    expect(await mfaEvents(actor.userId)).toEqual([]);
+      expect(steward).toMatchObject({
+        platformRoles: ["platform_steward"],
+        authentication: { assurance: "aal1" },
+      });
+      expect(() =>
+        authorizeActor(handleCase, { actor: steward!, now: new Date() }),
+      ).toThrow(
+        expect.objectContaining({ code: "stronger_authentication_required" }),
+      );
+    }
   });
 });

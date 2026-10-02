@@ -40,7 +40,7 @@ function steward(overrides: Partial<UserActor> = {}): UserActor {
       sessionId: "s",
       assurance: "aal2",
       methods: [
-        { method: "totp", at: ago(60_000) },
+        { method: "step_up", at: ago(60_000) },
         { method: "otp", at: ago(3_600_000) },
       ],
     },
@@ -56,7 +56,7 @@ type Case = Omit<PolicyCase<CaseResource, void>, "context" | "now">;
 const cases: PolicyCase<CaseResource, void>[] = (
   [
     {
-      name: "uninvolved steward with a fresh second factor",
+      name: "uninvolved steward with fresh stronger authentication",
       actor: stewardOnDuty,
       resource: someCase,
       expected: "allow",
@@ -74,7 +74,7 @@ const cases: PolicyCase<CaseResource, void>[] = (
       expected: "conflict_of_interest",
     },
     {
-      name: "steward without a second factor in this session",
+      name: "steward without stronger authentication in this session",
       actor: steward({
         authentication: {
           sessionId: "s",
@@ -83,7 +83,7 @@ const cases: PolicyCase<CaseResource, void>[] = (
         },
       }),
       resource: someCase,
-      expected: "mfa_required",
+      expected: "stronger_authentication_required",
     },
     {
       name: "steward whose last sign-in is too old",
@@ -92,7 +92,7 @@ const cases: PolicyCase<CaseResource, void>[] = (
           sessionId: "s",
           assurance: "aal2",
           methods: [
-            { method: "totp", at: ago(recentAuthenticationMaxAgeMs + 1) },
+            { method: "step_up", at: ago(recentAuthenticationMaxAgeMs + 1) },
           ],
         },
       }),
@@ -100,7 +100,7 @@ const cases: PolicyCase<CaseResource, void>[] = (
       expected: "reauthentication_required",
     },
     {
-      name: "user without the role, even with MFA",
+      name: "user without the role, even with stronger authentication",
       actor: steward({ platformRoles: [] }),
       resource: someCase,
       expected: "forbidden",

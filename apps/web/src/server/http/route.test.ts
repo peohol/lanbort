@@ -18,13 +18,6 @@ const signedOut: AuthGateway = {
   currentIdentity: async () => null,
   refreshSession: async () => {},
   signOut: async () => {},
-  totpStatus: async () => "none",
-  enrollTotp: async () => {
-    throw new Error("not used");
-  },
-  verifyTotp: async () => {
-    throw new Error("not used");
-  },
 };
 
 function factory(overrides: Partial<Runtime> = {}) {

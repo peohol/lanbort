@@ -10,7 +10,7 @@ const statusByCode = {
   // Concealed and missing resources are the same response (PS-NFR-002).
   not_found: 404,
   reauthentication_required: 403,
-  mfa_required: 403,
+  stronger_authentication_required: 403,
   conflict_of_interest: 403,
   invalid_input: 400,
   invalid_code: 400,

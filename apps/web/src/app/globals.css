@@ -88,13 +88,3 @@ button:disabled {
 .error {
   font-weight: 600;
 }
-
-.stack {
-  display: grid;
-  gap: 0.75rem;
-  max-width: 28rem;
-}
-
-code {
-  overflow-wrap: anywhere;
-}

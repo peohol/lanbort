@@ -26,9 +26,6 @@ export default async function HomePage() {
     <main>
       <h1>Hei, {account.realName}</h1>
       <p>Du er logget inn. Flere funksjoner kommer i neste faser.</p>
-      <p>
-        <Link href="/konto/sikkerhet">Innlogging og sikkerhet</Link>
-      </p>
       <SignOutButton />
     </main>
   );
