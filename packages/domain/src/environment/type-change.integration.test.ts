@@ -11,6 +11,7 @@ import { executeQuery } from "../commands/query";
 import { ConsumerRegistry } from "../outbox/consumer";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
+import { startTestVote, testVoteDays } from "../testing/type-changes";
 import {
   releaseDepartedUser,
   startEnvironmentWindDown,
@@ -162,6 +163,13 @@ const respond = (
   support: boolean,
 ) => output(respondToTypeChange, actor, { environmentId, proposalId, support });
 
+const proposeVote = (owner: UserActor, environmentId: string) =>
+  startTestVote(db, {
+    environmentId,
+    proposedByUserId: owner.userId,
+    at: clock,
+  });
+
 async function stateOf(actor: UserActor, environmentId: string) {
   const { membership } = await read(actor, environmentId);
   return { state: membership?.state, passiveReason: membership?.passiveReason };
@@ -276,6 +284,29 @@ describe("stricter types (PS-ENV-007)", () => {
         }),
       ).rejects.toMatchObject({ code: "conflict" });
     }
+    expect(await history(environmentId)).toEqual(["hidden"]);
+  });
+
+  it("start no hidden → closed vote while its deadline is undecided (OD-0012)", async () => {
+    const owner = await user();
+    const environmentId = await environment(owner, "hidden");
+    await member(environmentId, owner);
+
+    await expect(
+      run(changeEnvironmentType, owner, {
+        environmentId,
+        expectedType: "hidden",
+        type: "closed",
+      }),
+    ).rejects.toMatchObject({ code: "conflict" });
+    expect((await read(owner, environmentId)).typeChange).toBeNull();
+    expect(
+      await db
+        .selectFrom("app.environment_type_proposals")
+        .select("id")
+        .where("environment_id", "=", environmentId)
+        .execute(),
+    ).toEqual([]);
     expect(await history(environmentId)).toEqual(["hidden"]);
   });
 
@@ -404,15 +435,9 @@ describe("hidden → closed (PS-ENV-008)", () => {
       await member(environmentId, owner),
       await member(environmentId, owner),
     ] as const;
-    const { proposal } = await changeType(
-      owner,
-      environmentId,
-      "hidden",
-      "closed",
-    );
-    expect(proposal).toMatchObject({ process: "vote" });
+    const proposalId = await proposeVote(owner, environmentId);
 
-    return { owner, environmentId, members, proposalId: proposal!.id };
+    return { owner, environmentId, members, proposalId };
   }
 
   it("stays hidden without 2/3 of all active members; silence is not support", async () => {
@@ -424,7 +449,7 @@ describe("hidden → closed (PS-ENV-008)", () => {
     await respond(owner, environmentId, proposalId, true);
     await respond(a, environmentId, proposalId, true);
     await respond(b, environmentId, proposalId, false);
-    passDays(typeChangeDays.vote);
+    passDays(testVoteDays);
     await conclude();
 
     expect(await proposalOutcome(proposalId)).toEqual({
@@ -451,7 +476,7 @@ describe("hidden → closed (PS-ENV-008)", () => {
     // Only the latest answer counts.
     await respond(b, environmentId, proposalId, false);
     await respond(b, environmentId, proposalId, true);
-    passDays(typeChangeDays.vote);
+    passDays(testVoteDays);
     await conclude();
 
     expect(await proposalOutcome(proposalId)).toEqual({
@@ -468,7 +493,6 @@ describe("hidden → closed (PS-ENV-008)", () => {
       passiveReason: "type_change_not_accepted",
     });
     expect(await typeEvents(environmentId)).toEqual([
-      "environment.type_change_proposed",
       "environment.type_change_closed",
       "environment.type_changed",
     ]);
@@ -481,9 +505,7 @@ describe("hidden → closed at exactly 2/3", () => {
     const environmentId = await environment(owner, "hidden");
     const supporter = await member(environmentId, owner);
     const leaver = await member(environmentId, owner);
-    const proposalId = (
-      await changeType(owner, environmentId, "hidden", "closed")
-    ).proposal!.id;
+    const proposalId = await proposeVote(owner, environmentId);
     await respond(owner, environmentId, proposalId, true);
     await respond(supporter, environmentId, proposalId, true);
     // A member who joins during the vote is a voter too; one who leaves
@@ -491,7 +513,7 @@ describe("hidden → closed at exactly 2/3", () => {
     const latecomer = await member(environmentId, owner);
     await output(leaveEnvironment, leaver, { environmentId });
 
-    passDays(typeChangeDays.vote);
+    passDays(testVoteDays);
     await conclude();
 
     expect(await proposalOutcome(proposalId)).toEqual({
@@ -596,15 +618,10 @@ describe("historical privacy (PS-ENV-009)", () => {
     const supporter = await member(environmentId, owner);
     const keeper = await member(environmentId, owner);
     await makeAdministrator(environmentId, owner, keeper);
-    const { proposal } = await changeType(
-      owner,
-      environmentId,
-      "hidden",
-      "closed",
-    );
-    await respond(owner, environmentId, proposal!.id, true);
-    await respond(supporter, environmentId, proposal!.id, true);
-    passDays(typeChangeDays.vote);
+    const proposalId = await proposeVote(owner, environmentId);
+    await respond(owner, environmentId, proposalId, true);
+    await respond(supporter, environmentId, proposalId, true);
+    passDays(testVoteDays);
     await conclude();
     expect((await stateOf(keeper, environmentId)).state).toBe("passive");
 
@@ -741,9 +758,7 @@ describe("proposals", () => {
   it("lapse when the environment winds down", async () => {
     const owner = await user();
     const environmentId = await environment(owner, "hidden");
-    const proposalId = (
-      await changeType(owner, environmentId, "hidden", "closed")
-    ).proposal!.id;
+    const proposalId = await proposeVote(owner, environmentId);
     await respond(owner, environmentId, proposalId, true);
     await output(startEnvironmentWindDown, owner, { environmentId });
 
@@ -756,7 +771,7 @@ describe("proposals", () => {
       }),
     ).rejects.toMatchObject({ code: "conflict" });
 
-    passDays(typeChangeDays.vote);
+    passDays(testVoteDays);
     await conclude();
     expect((await proposalOutcome(proposalId)).outcome).toBe("lapsed");
     expect(await history(environmentId)).toEqual(["hidden"]);
@@ -766,10 +781,10 @@ describe("proposals", () => {
 describe("concurrency and retries", () => {
   it("lets only one of two simultaneous proposals through", async () => {
     const owner = await user();
-    const environmentId = await environment(owner, "hidden");
+    const environmentId = await environment(owner, "closed");
     const coAdministrator = await member(environmentId, owner);
     await makeAdministrator(environmentId, owner, coAdministrator);
-    const input = { environmentId, expectedType: "hidden", type: "closed" };
+    const input = { environmentId, expectedType: "closed", type: "open" };
 
     const results = await Promise.allSettled([
       run(changeEnvironmentType, owner, input),
@@ -843,9 +858,7 @@ describe("concurrency and retries", () => {
       await member(environmentId, owner),
       await member(environmentId, owner),
     ];
-    const proposalId = (
-      await changeType(owner, environmentId, "hidden", "closed")
-    ).proposal!.id;
+    const proposalId = await proposeVote(owner, environmentId);
 
     // Everyone answers at the same moment, the owner twice and differently.
     await Promise.all([
@@ -864,7 +877,7 @@ describe("concurrency and retries", () => {
     const ownerAnswer = (await read(owner, environmentId)).typeChange!
       .yourResponse;
 
-    passDays(typeChangeDays.vote);
+    passDays(testVoteDays);
     await conclude();
     // Whichever answer of the owner came last decides; 3 of 4 is enough
     // either way, so the outcome itself does not depend on the order.

@@ -18,9 +18,20 @@ import type { DomainContext } from "../commands/command";
 import { defineQuery, executeQuery } from "../commands/query";
 import {
   acceptsNewActivity,
+  activeSince,
   type EnvironmentAccess,
 } from "../environment/model";
+import {
+  type CreationSpan,
+  mayExposeHistory,
+  widenedAfterCreation,
+} from "../environment/privacy";
 import { loadEnvironmentAccess } from "../environment/store";
+import {
+  concealedHistory,
+  createdOutside,
+  typeHistories,
+} from "../environment/type-change-store";
 import { DomainError } from "../errors";
 import {
   calendarDate,
@@ -54,13 +65,16 @@ function viewerIdOf(actor: Actor): string | null {
  * The publications an active member finds in the environment (PS-OBJ-006,
  * PS-OBJ-009, PS-USR-006). Only active publications of active, unfrozen
  * objects that an owner still has active access behind, and never an object
- * whose owner and the viewer have blocked each other. This is the one place
- * discovery is decided: later rules (WP-23's historical privacy) belong here.
+ * whose owner and the viewer have blocked each other. Nor one published
+ * under a stricter type than the environment has had since, unless the
+ * viewer was already active then (PS-ENV-009, `concealed`). This is the one
+ * place discovery is decided.
  */
 function discoverablePublications(
   db: Db,
   environmentId: string,
   viewerId: string,
+  concealed: readonly CreationSpan[],
   now: Date,
 ) {
   return db
@@ -68,6 +82,7 @@ function discoverablePublications(
     .innerJoin("app.objects as object", "object.id", "publication.object_id")
     .where("publication.environment_id", "=", environmentId)
     .where("publication.status", "=", "active")
+    .where(createdOutside(sql.ref("publication.created_at"), concealed))
     .where("object.status", "=", "active")
     .where(
       ownerHasAccess(
@@ -145,7 +160,8 @@ function presentContent(
  * environment. A co-owner learns that the object is published somewhere,
  * but the environment and who published it only where they can see it
  * themselves: an open environment, or one they are a member of (vision:
- * «Medeierskap ved deaktivering, publisering og uttreden»).
+ * «Medeierskap ved deaktivering, publisering og uttreden»), and not where it
+ * was published under a stricter type before they became active there.
  */
 export const listObjectPublications = defineQuery({
   name: "environment_publication.list_for_object",
@@ -188,14 +204,38 @@ export const listObjectPublications = defineQuery({
           "environment.type",
           "environment.name",
           "membership.id as membership_id",
+          "membership.state as membership_state",
+          "membership.activated_at as membership_activated_at",
         ])
         .where("publication.object_id", "=", object.objectId)
         .orderBy("publication.environment_id")
         .orderBy("publication.created_at", "desc")
         .orderBy("publication.id", "desc")
         .execute();
+      const histories = await typeHistories(
+        tx,
+        rows.map((row) => row.environment_id),
+      );
+      const viewerId = viewerIdOf(actor);
+      const located = rows.map((row) => ({
+        ...row,
+        visible:
+          (row.type === "open" || row.membership_id !== null) &&
+          // PS-ENV-009: where the object was published under a stricter
+          // type stays with those who were there, and with its publisher.
+          (row.published_by_user_id === viewerId ||
+            mayExposeHistory(
+              widenedAfterCreation(
+                histories.get(row.environment_id) ?? [],
+                row.created_at,
+              ),
+              row.membership_state === "active"
+                ? row.membership_activated_at
+                : null,
+            )),
+      }));
 
-      return { resource: { ...object, rows }, context: undefined };
+      return { resource: { ...object, rows: located }, context: undefined };
     }),
   present: ({ resource }): ObjectPublicationList => ({
     publications: [...resource.rows]
@@ -205,7 +245,7 @@ export const listObjectPublications = defineQuery({
           (a.id < b.id ? 1 : -1),
       )
       .map((row) => {
-        const visible = row.type === "open" || row.membership_id !== null;
+        const { visible } = row;
 
         return {
           id: row.id,
@@ -230,6 +270,8 @@ export const listObjectPublications = defineQuery({
  * Publications for the environment's administrators to review (PS-ENV-011):
  * pending, active, rejected and blocked ones, with the object's global
  * content. Administrators see who published, a member of their environment.
+ * Like members, they never see what was published under a stricter type
+ * before they became active (PS-ENV-009).
  */
 export const listEnvironmentPublications = defineQuery({
   name: "environment_publication.list_for_environment",
@@ -271,6 +313,12 @@ export const listEnvironmentPublications = defineQuery({
             ])
             .where("publication.environment_id", "=", access.environment.id)
             .where(
+              createdOutside(
+                sql.ref("publication.created_at"),
+                await concealedFrom(tx, access),
+              ),
+            )
+            .where(
               "publication.status",
               "in",
               input.status
@@ -308,6 +356,14 @@ export const listEnvironmentPublications = defineQuery({
   }),
 });
 
+/** What the caller may not see of the environment's history (PS-ENV-009). */
+const concealedFrom = (db: Db, access: EnvironmentAccess) =>
+  concealedHistory(
+    db,
+    access.environment.id,
+    activeSince(access.ownMembership),
+  );
+
 /** An active member may discover objects only while the environment is active. */
 const discovers = (access: EnvironmentAccess) =>
   access.viewer.membership?.state === "active" &&
@@ -342,6 +398,7 @@ export const listEnvironmentObjects = defineQuery({
               tx,
               access.environment.id,
               viewerId,
+              await concealedFrom(tx, access),
               now,
             )
               .select([
@@ -430,12 +487,14 @@ const publishedImageFile = defineQuery({
         return null;
       }
 
+      const concealed = await concealedFrom(tx, access);
       const discoverable =
         discovers(access) &&
         (await discoverablePublications(
           tx,
           access.environment.id,
           viewerId,
+          concealed,
           now,
         )
           .select("publication.id")
@@ -448,6 +507,7 @@ const publishedImageFile = defineQuery({
           .where("environment_id", "=", access.environment.id)
           .where("object_id", "=", input.objectId)
           .where("status", "<>", "unpublished")
+          .where(createdOutside(sql.ref("created_at"), concealed))
           .executeTakeFirst()) !== undefined;
 
       return {

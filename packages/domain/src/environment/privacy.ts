@@ -18,14 +18,14 @@ export const isStricter = (to: EnvironmentType, from: EnvironmentType) =>
   privacyRank[to] > privacyRank[from];
 
 /**
- * PS-ENV-008: closed → open gives every member a week to accept; for
- * hidden → closed the specification names no voting period, and the same
- * week is used until one is decided.
+ * PS-ENV-008: closed → open gives every member a week to accept. For
+ * hidden → closed the specification names no voting period (OD-0012), so
+ * that vote cannot be started until one is decided. null means undecided.
  */
-export const typeChangeDays: Record<TypeChangeProcess, number> = {
+export const typeChangeDays = {
   consent: 7,
-  vote: 7,
-};
+  vote: null,
+} as const satisfies Record<TypeChangeProcess, number | null>;
 
 export type TypeChange =
   | { readonly kind: "stricter" }
@@ -167,3 +167,42 @@ export function mayExposeHistory(
       viewerActiveSince.getTime() < widenedAt.getTime())
   );
 }
+
+/** Creation times from `from` up to, not including, `until` (open if null). */
+export interface CreationSpan {
+  readonly from: Date;
+  readonly until: Date | null;
+}
+
+/**
+ * PS-ENV-009 for whole lists: the creation times whose things a viewer may
+ * not see. Everything created in one period of the type history shares its
+ * context, so `mayExposeHistory` decides per period, and lists that page in
+ * the database filter on creation time instead of row by row.
+ */
+export function concealedSpans(
+  periods: readonly TypePeriod[],
+  viewerActiveSince: Date | null,
+): CreationSpan[] {
+  return periods.flatMap((period, index) =>
+    mayExposeHistory(
+      widenedAfterCreation(periods, period.startedAt),
+      viewerActiveSince,
+    )
+      ? []
+      : [
+          {
+            from: period.startedAt,
+            until: periods[index + 1]?.startedAt ?? null,
+          },
+        ],
+  );
+}
+
+/** Whether something created at `createdAt` falls in a concealed span. */
+export const isConcealed = (spans: readonly CreationSpan[], createdAt: Date) =>
+  spans.some(
+    (span) =>
+      span.from.getTime() <= createdAt.getTime() &&
+      (span.until === null || createdAt.getTime() < span.until.getTime()),
+  );

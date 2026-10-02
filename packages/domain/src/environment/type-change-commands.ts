@@ -96,7 +96,12 @@ export const changeEnvironmentType = defineCommand({
       conflict("A type change is already proposed");
     }
 
-    const deadline = daysAfter(now, typeChangeDays[change.process]);
+    const days = typeChangeDays[change.process];
+    if (days === null) {
+      conflict("No deadline is decided for this type change");
+    }
+
+    const deadline = daysAfter(now, days);
     const { id } = await tx
       .insertInto("app.environment_type_proposals")
       .values({

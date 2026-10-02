@@ -1,6 +1,6 @@
 import type { EnvironmentType, TypeChangeProcess } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import type { Kysely } from "kysely";
+import { type Expression, type Kysely, type RawBuilder, sql } from "kysely";
 import type { z } from "zod";
 import type { EventRecorder } from "../events/recorder";
 import {
@@ -12,7 +12,12 @@ import {
   membershipReviewRequested,
   type typeChangeOutcomeSchema,
 } from "./events";
-import { processOf, type TypePeriod } from "./privacy";
+import {
+  type CreationSpan,
+  concealedSpans,
+  processOf,
+  type TypePeriod,
+} from "./privacy";
 
 /**
  * Database access for type changes (WP-23). Callers hold the lock on the
@@ -81,17 +86,71 @@ export async function typePeriods(
   db: Db,
   environmentId: string,
 ): Promise<TypePeriod[]> {
+  return (await typeHistories(db, [environmentId])).get(environmentId) ?? [];
+}
+
+/** The type histories of several environments, by environment id. */
+export async function typeHistories(
+  db: Db,
+  environmentIds: readonly string[],
+): Promise<Map<string, TypePeriod[]>> {
+  const histories = new Map<string, TypePeriod[]>();
+
+  if (environmentIds.length === 0) {
+    return histories;
+  }
+
   const rows = await db
     .selectFrom("app.environment_type_periods")
-    .select(["type", "started_at"])
-    .where("environment_id", "=", environmentId)
+    .select(["environment_id", "type", "started_at"])
+    .where("environment_id", "in", [...environmentIds])
     .orderBy("started_at")
     .execute();
 
-  return rows.map((row) => ({
-    type: row.type as EnvironmentType,
-    startedAt: row.started_at,
-  }));
+  for (const row of rows) {
+    const periods = histories.get(row.environment_id) ?? [];
+    periods.push({
+      type: row.type as EnvironmentType,
+      startedAt: row.started_at,
+    });
+    histories.set(row.environment_id, periods);
+  }
+
+  return histories;
+}
+
+/**
+ * What a viewer may not see of the environment's history (PS-ENV-009), for
+ * lists that filter with `createdOutside`. `viewerActiveSince` is the start
+ * of the viewer's current active period, null if they have none.
+ */
+export async function concealedHistory(
+  db: Db,
+  environmentId: string,
+  viewerActiveSince: Date | null,
+): Promise<CreationSpan[]> {
+  return concealedSpans(
+    await typePeriods(db, environmentId),
+    viewerActiveSince,
+  );
+}
+
+/** SQL: `createdAt` lies outside every concealed span. */
+export function createdOutside(
+  createdAt: Expression<Date>,
+  spans: readonly CreationSpan[],
+): RawBuilder<boolean> {
+  if (spans.length === 0) {
+    return sql<boolean>`true`;
+  }
+
+  const within = spans.map((span) =>
+    span.until === null
+      ? sql`${createdAt} >= ${span.from}`
+      : sql`(${createdAt} >= ${span.from} and ${createdAt} < ${span.until})`,
+  );
+
+  return sql<boolean>`not (${sql.join(within, sql` or `)})`;
 }
 
 export async function closeProposal(

@@ -242,6 +242,14 @@ export interface EnvironmentAccess {
   readonly viewer: Viewer;
 }
 
+/**
+ * Start of the member's current active period, null unless active. Historical
+ * privacy (PS-ENV-009) is measured from it.
+ */
+export const activeSince = (
+  membership: Pick<MembershipRecord, "state" | "activatedAt"> | null,
+) => (membership?.state === "active" ? membership.activatedAt : null);
+
 /** PS-ENV-013: how long administrators may claim a vacant ownership. */
 export const ownershipClaimDays = 7;
 

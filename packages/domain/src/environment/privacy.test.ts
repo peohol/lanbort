@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { DomainError } from "../errors";
 import {
   classifyTypeChange,
+  concealedSpans,
+  isConcealed,
   mayExposeHistory,
   type TypePeriod,
   votePasses,
@@ -85,5 +87,30 @@ describe("historical privacy (PS-ENV-009)", () => {
     expect(mayExposeHistory(at(10), at(10))).toBe(false);
     expect(mayExposeHistory(at(10), at(11))).toBe(false);
     expect(mayExposeHistory(at(10), null)).toBe(false);
+  });
+
+  it("conceals whole periods from viewers who joined after they widened", () => {
+    // Active since day 35: the hidden periods widened on days 10 and 30,
+    // before the viewer joined; the closed ones only on day 40.
+    expect(concealedSpans(periods, at(35))).toEqual([
+      { from: at(1), until: at(10) },
+      { from: at(20), until: at(30) },
+    ]);
+    expect(concealedSpans(periods, at(2))).toEqual([]);
+    expect(concealedSpans(periods, null)).toHaveLength(4);
+  });
+
+  it("agrees with the rule for single things at every moment", () => {
+    const viewers = [null, ...[1, 9, 10, 11, 25, 30, 35, 40, 45].map(at)];
+
+    for (const viewer of viewers) {
+      const spans = concealedSpans(periods, viewer);
+      for (let day = 1; day <= 45; day += 0.5) {
+        const createdAt = new Date(at(1).getTime() + (day - 1) * 86_400_000);
+        expect(isConcealed(spans, createdAt)).toBe(
+          !mayExposeHistory(widenedAfterCreation(periods, createdAt), viewer),
+        );
+      }
+    }
   });
 });

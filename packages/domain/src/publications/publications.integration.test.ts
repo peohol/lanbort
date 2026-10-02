@@ -22,8 +22,17 @@ import {
   joinEnvironment,
   leaveEnvironment,
 } from "../environment/membership-commands";
-import { accountLifecycleProcess } from "../environment/policies";
+import {
+  accountLifecycleProcess,
+  typeChangeProcess,
+} from "../environment/policies";
+import { typeChangeDays } from "../environment/privacy";
 import { findCurrentMembership, passivate } from "../environment/store";
+import {
+  changeEnvironmentType,
+  concludeTypeChanges,
+  respondToTypeChange,
+} from "../environment/type-change-commands";
 import {
   acceptRoleInvitation,
   inviteAdministrator,
@@ -46,6 +55,7 @@ import { ConsumerRegistry } from "../outbox/consumer";
 import { blockUser, liftUserBlock } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
+import { startTestVote, testVoteDays } from "../testing/type-changes";
 import {
   approvePublication,
   blockPublication,
@@ -241,6 +251,40 @@ async function statusOf(publicationId: string) {
     .executeTakeFirstOrThrow();
 
   return { status: row.status as PublicationStatus, endReason: row.end_reason };
+}
+
+/** Gives the object an image; returns how an actor reads it in the environment. */
+async function withImage(
+  owner: UserActor,
+  objectId: string,
+  environmentId: string,
+) {
+  const { imageId } = (
+    await uploadObjectImage(
+      domain,
+      {
+        store,
+        process: async (bytes) => ({
+          bytes,
+          contentType: "image/webp",
+          width: 10,
+          height: 10,
+        }),
+      },
+      {
+        actor: owner,
+        objectId,
+        bytes: new TextEncoder().encode(`img-${randomUUID()}`),
+        idempotencyKey: randomUUID(),
+      },
+    )
+  ).output;
+
+  return (actor: UserActor) =>
+    readPublishedObjectImage(domain, store, {
+      actor,
+      input: { environmentId, objectId, imageId },
+    });
 }
 
 const gateOf = (objectId: string, environmentId: string) =>
@@ -703,31 +747,7 @@ describe("co-ownership and blocks", () => {
     const anna = await member(environmentId, admin);
     const objectId = await create(anna);
     await publish(anna, objectId, environmentId);
-    const { imageId } = (
-      await uploadObjectImage(
-        domain,
-        {
-          store,
-          process: async (bytes) => ({
-            bytes,
-            contentType: "image/webp",
-            width: 10,
-            height: 10,
-          }),
-        },
-        {
-          actor: anna,
-          objectId,
-          bytes: new TextEncoder().encode(`img-${randomUUID()}`),
-          idempotencyKey: randomUUID(),
-        },
-      )
-    ).output;
-    const readImage = (actor: UserActor) =>
-      readPublishedObjectImage(domain, store, {
-        actor,
-        input: { environmentId, objectId, imageId },
-      });
+    const readImage = await withImage(anna, objectId, environmentId);
 
     expect((await readImage(viewer)).contentType).toBe("image/webp");
 
@@ -910,5 +930,157 @@ describe("concurrency", () => {
         .execute();
       expect(live, JSON.stringify(outcome.map((o) => o.status))).toEqual([]);
     }
+  });
+});
+
+describe("historical privacy (PS-ENV-009)", () => {
+  /** Lets every given member accept a proposal and decides it at its deadline. */
+  async function adopt(
+    environmentId: string,
+    proposalId: string,
+    days: number,
+    supporters: readonly UserActor[],
+  ) {
+    for (const supporter of supporters) {
+      await run(respondToTypeChange, supporter, {
+        environmentId,
+        proposalId,
+        support: true,
+      });
+    }
+    passDays(days);
+    await run(concludeTypeChanges, systemActor(typeChangeProcess), {});
+  }
+
+  const reviewedIds = async (actor: UserActor, environmentId: string) =>
+    (
+      await executeQuery(tick(), listEnvironmentPublications, {
+        actor,
+        input: { environmentId },
+      })
+    ).publications.map((publication) => publication.id);
+
+  it("keeps what was published while closed from those who joined after it opened", async () => {
+    const admin = await user();
+    const environmentId = await environment(admin, { type: "closed" });
+    const anna = await member(environmentId, admin);
+    const veteran = await member(environmentId, admin);
+    const before = await create(anna);
+    const { publicationId: beforeId } = await publish(
+      anna,
+      before,
+      environmentId,
+    );
+    const readImage = await withImage(anna, before, environmentId);
+    // A co-owner from outside sees that the object is published, not where.
+    const coOwner = await user();
+    const { invitationId } = await run(inviteCoOwner, anna, {
+      objectId: before,
+      userId: coOwner.userId,
+    });
+    await run(acceptCoOwnerInvitation, coOwner, { invitationId });
+
+    const { proposal } = await run(changeEnvironmentType, admin, {
+      environmentId,
+      expectedType: "closed",
+      type: "open",
+    });
+    await adopt(environmentId, proposal!.id, typeChangeDays.consent, [
+      admin,
+      anna,
+      veteran,
+    ]);
+
+    const newcomer = await member(environmentId, admin);
+    await join(environmentId, admin, coOwner);
+    const after = await create(anna);
+    const { publicationId: afterId } = await publish(
+      anna,
+      after,
+      environmentId,
+    );
+
+    expect(await found(veteran, environmentId)).toEqual([after, before]);
+    expect(await found(newcomer, environmentId)).toEqual([after]);
+    expect((await readImage(veteran)).contentType).toBe("image/webp");
+    await expect(readImage(newcomer)).rejects.toMatchObject(notFound);
+
+    const [asCoOwner] = await publicationsOf(coOwner, before);
+    expect(asCoOwner).toMatchObject({
+      id: beforeId,
+      environment: null,
+      publishedByUserId: null,
+    });
+    const [asPublisher] = await publicationsOf(anna, before);
+    expect(asPublisher?.environment).toMatchObject({ id: environmentId });
+
+    // Not even as administrator, in review lists, counts, images or decisions.
+    await makeAdministrator(environmentId, admin, newcomer);
+    expect(await reviewedIds(admin, environmentId)).toEqual([
+      afterId,
+      beforeId,
+    ]);
+    expect(await reviewedIds(newcomer, environmentId)).toEqual([afterId]);
+    await expect(readImage(newcomer)).rejects.toMatchObject(notFound);
+    for (const command of [rejectPublication, blockPublication]) {
+      await expect(
+        decide(command, newcomer, environmentId, beforeId),
+      ).rejects.toMatchObject(notFound);
+    }
+    expect(
+      await run(setObjectApproval, newcomer, { environmentId, required: true }),
+    ).toEqual({ required: true, changed: 1 });
+    expect((await statusOf(beforeId)).status).toBe("pending");
+    expect(
+      await run(setObjectApproval, admin, { environmentId, required: false }),
+    ).toEqual({ required: false, changed: 2 });
+
+    // Publishing anew puts the object in the open context for everyone.
+    await run(withdrawPublication, anna, {
+      objectId: before,
+      publicationId: beforeId,
+    });
+    await publish(anna, before, environmentId);
+    expect(await found(newcomer, environmentId)).toEqual([before, after]);
+  });
+
+  it("keeps what was published while hidden from those who joined after it became closed", async () => {
+    const admin = await user();
+    const environmentId = await environment(admin, { type: "hidden" });
+    const anna = await member(environmentId, admin);
+    const veteran = await member(environmentId, admin);
+    const objectId = await create(anna);
+    await publish(anna, objectId, environmentId);
+    const readImage = await withImage(anna, objectId, environmentId);
+
+    const proposalId = await startTestVote(db, {
+      environmentId,
+      proposedByUserId: admin.userId,
+      at: clock,
+    });
+    await adopt(environmentId, proposalId, testVoteDays, [
+      admin,
+      anna,
+      veteran,
+    ]);
+    expect(
+      (
+        await db
+          .selectFrom("app.environments")
+          .select("type")
+          .where("id", "=", environmentId)
+          .executeTakeFirstOrThrow()
+      ).type,
+    ).toBe("closed");
+
+    const newcomer = await member(environmentId, admin);
+    expect(await found(veteran, environmentId)).toEqual([objectId]);
+    expect(await found(newcomer, environmentId)).toEqual([]);
+    await expect(readImage(newcomer)).rejects.toMatchObject(notFound);
+
+    // A veteran who leaves and comes back is a newcomer to that history.
+    await run(leaveEnvironment, veteran, { environmentId });
+    await join(environmentId, admin, veteran);
+    expect(await found(veteran, environmentId)).toEqual([]);
   });
 });

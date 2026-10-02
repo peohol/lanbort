@@ -19,6 +19,7 @@ import {
   pendingRoleInvitations,
 } from "./continuity-store";
 import {
+  activeSince,
   type ContinuityRecord,
   effectiveState,
   isWindDownCancellable,
@@ -254,10 +255,6 @@ function historicallyVisible(
       viewerActiveSince,
     );
 }
-
-/** Start of the caller's current active period, if active. */
-const activeSince = (membership: MembershipRecord | null) =>
-  membership?.state === "active" ? membership.activatedAt : null;
 
 async function hasOpenClaim(
   db: Parameters<typeof findContinuity>[0],

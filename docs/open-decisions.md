@@ -125,7 +125,7 @@ Når spørsmålet er avgjort:
 - **Lag:** Produktspesifikasjon
 - **Status:** Åpen
 - **Berører:** PS-ENV-008, VP-08
-- **Spørsmål:** Hvor lang frist skal medlemmene ha til å stemme når et skjult miljø foreslås gjort lukket? Visjonen viser til «den fastsatte avstemningsfristen», men angir ingen lengde. Implementasjonen bruker inntil videre samme 7 dager som lukket → åpent, samlet ett sted (`typeChangeDays`).
+- **Spørsmål:** Hvor lang frist skal medlemmene ha til å stemme når et skjult miljø foreslås gjort lukket? Visjonen viser til «den fastsatte avstemningsfristen», men angir ingen lengde. Inntil dette er besluttet, avviser implementasjonen å starte en slik avstemning; selve avstemningsreglene (2/3 av alle aktive) er bygget og testet. Fristen settes ett sted (`typeChangeDays`).
 - **Avhenger av:** Produktvurdering.
 
 ## Avklart
