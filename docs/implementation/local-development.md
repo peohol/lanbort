@@ -27,9 +27,10 @@ Innlogging bruker engangskode på e-post. Lokalt havner e-postene i Mailpit på 
 | Mappe | Ansvar |
 | --- | --- |
 | `apps/web` | Next.js-app med UI og Route Handlers som HTTP/API-grense |
+| `apps/ops` | Revisjonsloggede driftskommandoer, foreløpig `pnpm ops:platform-role` |
 | `packages/contracts` | Delte API-kontrakter (Zod). Inneholder aldri serverens autorisasjonslogikk |
 | `packages/database` | Kysely/Postgres-adapter og genererte databasetyper. Kun for serverkode |
-| `packages/domain` | Serverens domenekjerne: aktørmodell, policy-/autorisasjons-API, hendelser, transactional outbox, idempotente kommandoer og konto. Kun for serverkode |
+| `packages/domain` | Serverens domenekjerne: aktørmodell, policy-/autorisasjons-API, hendelser, transactional outbox, idempotente kommandoer, konto og plattformroller. Kun for serverkode |
 | `packages/auth` | Eneste adapter mot Supabase Auth. Gir leverandørnøytral, verifisert identitet. Kun for serverkode |
 | `packages/observability` | Strukturert logging med tillatelsesliste for felt |
 | `supabase/` | Lokal Supabase-konfigurasjon, SQL-migrasjoner og pgTAP-tester |
@@ -63,7 +64,7 @@ CI starter en isolert lokal Supabase-database, bygger den fra alle migrasjoner, 
 | --- | --- |
 | `quality` | Lint, typecheck, enhetstester, Prettier og produksjonsbygg (`pnpm check`) |
 | `database` | Migrasjoner fra tom database, pgTAP, typekontroll mot skjema og integrasjonstester mot databasen (`pnpm test:integration`) |
-| `e2e` | Playwright mot produksjonsbygget og lokal Supabase: røyktest (CSP, sikkerhetshoder, helse), registrering og innlogging med e-postkode, utlogging og negative API-tester |
+| `e2e` | Playwright mot produksjonsbygget og lokal Supabase: røyktest (CSP, sikkerhetshoder, helse), registrering og innlogging med e-postkode, utlogging, ny innlogging og negative API-tester |
 | `security` | `pnpm audit` for produksjonsavhengigheter, selvtest av Gitleaks og skanning av hele git-historikken |
 
 CI har bare lesetilgang til repoet (`permissions: contents: read`), og avhengigheter installeres med `--frozen-lockfile`.

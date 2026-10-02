@@ -13,10 +13,12 @@ export const requestEmailCodeSchema = z.strictObject({
   email: emailAddressSchema,
 });
 
+export const emailCodeSchema = z.string().regex(/^\d{6,10}$/);
+
 /** Step 2: prove control of the address with the code from the e-mail. */
 export const verifyEmailCodeSchema = z.strictObject({
   email: emailAddressSchema,
-  code: z.string().regex(/^\d{6,10}$/),
+  code: emailCodeSchema,
 });
 
 export const signedInResponseSchema = z.strictObject({

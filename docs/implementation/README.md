@@ -1,6 +1,6 @@
 # Implementeringsplan
 
-> **Status:** Første implementeringsplan basert på validert produktspesifikasjon v0.1, UX-modell v0.1 og systemarkitektur v0.1. Fase 0 (implementeringsgrunnlag) er levert; ingen produktfunksjonalitet er bygget ennå.
+> **Status:** Første implementeringsplan basert på validert produktspesifikasjon v0.1, UX-modell v0.1 og systemarkitektur v0.1. Fase 0 (implementeringsgrunnlag) og Fase 1 (identitet, autorisasjon og hendelsesgrunnmur) er levert.
 
 ## Prinsipp
 
@@ -50,6 +50,32 @@ Leveranser:
 - idempotensmønster for kommandoer
 
 **Gate:** negative autorisasjonstester må være på plass før flere domener bygges.
+
+**Status (2. oktober 2026):** Levert. Reglene for ny serverkode står i [servergrense og autorisasjon](server-boundary.md).
+
+| Pakke | Leveranse | Status |
+| --- | --- | --- |
+| WP-10 | Supabase Auth bak serveradapter, innlogging/registrering med engangskode på e-post, HttpOnly-sesjon, intern bruker/profil atskilt fra leverandøridentiteten, registrering med ekte navn og 18+ | Ferdig |
+| WP-11 | Policy-API (aktør + handling + ressurs + kontekst + tilstand), standardiserte avslag, felles Route Handler-grense med meta-test og lint, testmatrise med tillatte og avviste tilfeller for hver policy | Ferdig |
+| WP-12 | Plattformforvalterrolle fra egne tildelinger, revisjonslogget og idempotent driftskommando, mekanismenøytrale regler for sterkere autentisering (`aal2`), nylig innlogging og habilitet, og ny innlogging med e-postkode | Ferdig, mekanisme for sterkere autentisering venter på OD-0010 |
+| WP-13 | Append-only audit-hendelser, transactional outbox i samme transaksjon, idempotent worker med lease, retry og dead-letter | Ferdig |
+| WP-14 | Idempotente kommandoer: ingen dobbel utførelse, konsistent replay, trygt ved samtidige kall og ingen lekkasje mellom aktører | Ferdig |
+
+**Port A er oppfylt:**
+- migrasjoner kjøres fra tom database i CI (`pnpm db:reset`), med pgTAP-tester for alle tabeller
+- autorisasjon har positive og negative tester: `policies.test.ts` krever begge utfall for hver policy, og integrasjons- og nettlesertester prøver avslag mot ekte database og API
+- alle sensitive API-er går gjennom `route.user`/`route.public`/`route.scheduler` og domenepolicyer, kontrollert av meta-test og lint
+- avhengigheter og hemmeligheter skannes i CI (`pnpm audit`, Gitleaks)
+- audit/outbox er testet mot ekte database, også retry, dead-letter og samtidige workere
+- gjentatt idempotent kommando gir ikke duplikat, også ved samtidige kall
+
+Bevisst utsatt:
+- ekte outbox-consumers (e-post/push) kommer i Fase 4, og Vercel Cron settes opp med hostede miljøer
+- hvem som kan utnevne plattformforvaltere i appen er ikke bestemt, så det skjer foreløpig bare via driftskommandoen
+- mekanisme for sterkere autentisering for plattformforvaltere venter på OD-0010, som kan stå åpen etter Fase 1 men må avklares før slike handlinger tas i reell bruk (Port D); til da avvises de
+- endring av e-postadresse og synlighet per profilfelt (Fase 2)
+- egen databaserolle med minste privilegium for appen, og verifisering av Supabase Auths rate limits når innlogging går via serveren, før pilot (Port D)
+- oppbevaringstid for audit-hendelser venter på OD-0002
 
 ### Fase 2 — Sosial modell, miljøer og objekter
 Mål: brukere kan etablere de kontekstene og objektene som senere lån bygger på.

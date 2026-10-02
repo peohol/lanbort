@@ -6,6 +6,7 @@ import {
   type PolicyMatrix,
 } from "./authorization/policy-matrix";
 import { outboxMatrices } from "./outbox/policy.matrix";
+import { platformMatrices } from "./platform/policies.matrix";
 import { allPolicies } from "./policies";
 
 /**
@@ -15,6 +16,7 @@ import { allPolicies } from "./policies";
 const matrices: readonly PolicyMatrix<never, never>[] = [
   ...accountMatrices,
   ...outboxMatrices,
+  ...platformMatrices,
 ] as never;
 
 describe("policy coverage", () => {

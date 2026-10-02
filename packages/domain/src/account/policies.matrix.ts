@@ -1,11 +1,24 @@
 import { anonymousActor, systemActor } from "../actor";
 import { policyMatrix } from "../authorization/policy-matrix";
 import { testUserActor } from "../testing/actors";
-import { completeRegistrationPolicy, readOwnAccount } from "./policies";
+import {
+  completeRegistrationPolicy,
+  readOwnAccount,
+  reauthenticatePolicy,
+} from "./policies";
 
 const pending = testUserActor({ accountStatus: "pending_registration" });
 const active = testUserActor();
 const other = testUserActor();
+
+// Signed in an hour ago: too long ago for sensitive actions.
+const stale = testUserActor({
+  authentication: {
+    sessionId: "session",
+    assurance: "aal1",
+    methods: [{ method: "otp", at: new Date(Date.now() - 3_600_000) }],
+  },
+});
 
 const own = (actor: typeof pending, status = actor.accountStatus) => ({
   userId: actor.userId,
@@ -76,6 +89,22 @@ export const accountMatrices = [
       name: "anonymous caller",
       actor: anonymousActor,
       resource: own(pending),
+      context: undefined,
+      expected: "unauthenticated",
+    },
+  ]),
+  policyMatrix(reauthenticatePolicy, [
+    {
+      name: "a signed-in user confirms their identity again",
+      actor: stale,
+      resource: undefined,
+      context: undefined,
+      expected: "allow",
+    },
+    {
+      name: "anonymous caller has no identity to confirm",
+      actor: anonymousActor,
+      resource: undefined,
       context: undefined,
       expected: "unauthenticated",
     },

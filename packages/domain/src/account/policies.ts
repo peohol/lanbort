@@ -38,4 +38,17 @@ export const completeRegistrationPolicy = definePolicy<AccountResource, void>({
   ],
 });
 
-export const accountPolicies = [readOwnAccount, completeRegistrationPolicy];
+/**
+ * Proving the identity again with a new e-mail code, before a sensitive
+ * action. The code always goes to the account's own verified address.
+ */
+export const reauthenticatePolicy = definePolicy({
+  action: "account.reauthenticate",
+  actor: [requireUser],
+});
+
+export const accountPolicies = [
+  readOwnAccount,
+  completeRegistrationPolicy,
+  reauthenticatePolicy,
+];

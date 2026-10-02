@@ -10,7 +10,7 @@ export const apiErrorCodes = [
   "forbidden",
   "not_found",
   "reauthentication_required",
-  "mfa_required",
+  "stronger_authentication_required",
   "conflict_of_interest",
   "invalid_input",
   "invalid_code",

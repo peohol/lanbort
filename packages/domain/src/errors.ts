@@ -10,7 +10,7 @@ export const denialReasons = [
   "forbidden",
   "not_found",
   "reauthentication_required",
-  "mfa_required",
+  "stronger_authentication_required",
   "conflict_of_interest",
 ] as const;
 

@@ -71,6 +71,20 @@ export interface AppOutboxMessages {
   status: Generated<string>;
 }
 
+export interface AppPlatformRoleGrants {
+  grant_reason: string;
+  granted_at: Generated<Timestamp>;
+  granted_by_process: string | null;
+  granted_by_user_id: string | null;
+  id: Generated<string>;
+  revoke_reason: string | null;
+  revoked_at: Timestamp | null;
+  revoked_by_process: string | null;
+  revoked_by_user_id: string | null;
+  role: string;
+  user_id: string;
+}
+
 export interface AppProfiles {
   created_at: Generated<Timestamp>;
   real_name: string;
@@ -98,6 +112,7 @@ export interface DB {
   "app.auth_identities": AppAuthIdentities;
   "app.idempotency_records": AppIdempotencyRecords;
   "app.outbox_messages": AppOutboxMessages;
+  "app.platform_role_grants": AppPlatformRoleGrants;
   "app.profiles": AppProfiles;
   "app.users": AppUsers;
   "app.verified_contacts": AppVerifiedContacts;

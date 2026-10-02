@@ -1,5 +1,11 @@
 import { DomainError } from "../errors";
-import type { AuthenticationContext, AccountStatus, UserActor } from "../actor";
+import {
+  type AccountStatus,
+  type AuthenticationContext,
+  type PlatformRole,
+  platformRoles,
+  type UserActor,
+} from "../actor";
 import type { DomainContext } from "../commands/command";
 import { EventRecorder, writeEvents } from "../events/recorder";
 import { sql } from "kysely";
@@ -18,16 +24,45 @@ export interface AuthenticatedIdentity {
   readonly authentication: AuthenticationContext;
 }
 
-function toActor(
-  userId: string,
-  status: string,
-  identity: AuthenticatedIdentity,
-): UserActor {
+interface UserRow {
+  readonly id: string;
+  readonly status: string;
+  readonly platform_roles: readonly string[];
+}
+
+function isPlatformRole(role: string): role is PlatformRole {
+  return (platformRoles as readonly string[]).includes(role);
+}
+
+/**
+ * Sign-in methods Lånbort accepts as the stronger authentication that
+ * privileged roles require (`aal2`). The mechanism is not decided (OD-0010),
+ * so none is accepted yet: privileged access stays closed whatever the auth
+ * provider reports, until a decided mechanism is added here together with an
+ * audited way to set it up.
+ */
+const strongAuthenticationMethods: readonly string[] = [];
+
+/** The provider's assurance, counted only with an accepted stronger method. */
+function trustedAuthentication(
+  authentication: AuthenticationContext,
+): AuthenticationContext {
+  const strong = authentication.methods.some(({ method }) =>
+    strongAuthenticationMethods.includes(method),
+  );
+
+  return authentication.assurance === "aal2" && !strong
+    ? { ...authentication, assurance: "aal1" }
+    : authentication;
+}
+
+function toActor(row: UserRow, identity: AuthenticatedIdentity): UserActor {
   return {
     kind: "user",
-    userId,
-    accountStatus: status as AccountStatus,
-    authentication: identity.authentication,
+    userId: row.id,
+    accountStatus: row.status as AccountStatus,
+    authentication: trustedAuthentication(identity.authentication),
+    platformRoles: row.platform_roles.filter(isPlatformRole),
   };
 }
 
@@ -38,7 +73,16 @@ async function findLinkedUser(
   return db
     .selectFrom("app.auth_identities as link")
     .innerJoin("app.users as user", "user.id", "link.user_id")
-    .select(["user.id", "user.status"])
+    .select([
+      "user.id",
+      "user.status",
+      // Read on every request, so a revoked role stops working immediately.
+      sql<string[]>`array(
+        select grant_row.role from app.platform_role_grants as grant_row
+        where grant_row.user_id = "user".id and grant_row.revoked_at is null
+        order by grant_row.role
+      )`.as("platform_roles"),
+    ])
     .where("link.provider", "=", identity.provider)
     .where("link.subject", "=", identity.subject)
     .executeTakeFirst();
@@ -61,12 +105,23 @@ export async function resolveUserActor(
     return null;
   }
 
-  const existing = await findLinkedUser(domain.db, identity);
+  const row =
+    (await findLinkedUser(domain.db, identity)) ??
+    (await createLinkedUser(
+      domain,
+      { ...identity, email: identity.email },
+      correlationId,
+    ));
 
-  if (existing) {
-    return toActor(existing.id, existing.status, identity);
-  }
+  return toActor(row, identity);
+}
 
+/** First sight of a verified identity: a new internal account. */
+async function createLinkedUser(
+  domain: DomainContext,
+  identity: AuthenticatedIdentity & { email: string },
+  correlationId: string | undefined,
+): Promise<UserRow> {
   const email = identity.email.toLowerCase();
 
   return domain.db.transaction().execute(async (tx) => {
@@ -83,7 +138,7 @@ export async function resolveUserActor(
     const linked = await findLinkedUser(tx, identity);
 
     if (linked) {
-      return toActor(linked.id, linked.status, identity);
+      return linked;
     }
 
     const emailTaken = await tx
@@ -124,7 +179,8 @@ export async function resolveUserActor(
       })
       .execute();
 
-    const actor = toActor(user.id, user.status, identity);
+    const created = { ...user, platform_roles: [] };
+    const actor = toActor(created, identity);
     const events = new EventRecorder();
     events.record(accountCreated, { resourceId: user.id, payload: {} });
     await writeEvents(tx, events, {
@@ -133,6 +189,6 @@ export async function resolveUserActor(
       consumers: domain.consumers,
     });
 
-    return actor;
+    return created;
   });
 }
