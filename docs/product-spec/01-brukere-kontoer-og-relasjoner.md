@@ -5,7 +5,7 @@
 ### PS-USR-001 — Minstekrav for konto i pilot
 **Forankring:** [Brukeridentitet og grunnkrav](../vision/02-brukere-roller-og-relasjoner.md)
 
-En ny bruker skal være minst 18 år, oppgi virkelig navn og verifisere minst én kontaktkanal. For pilotfasen brukes verifisert e-post som obligatorisk kontaktkanal. BankID er ikke et krav.
+En ny bruker skal være minst 18 år, oppgi virkelig navn og verifisere minst én kontaktkanal. For pilotfasen brukes verifisert e-post som obligatorisk kontaktkanal. BankID er ikke et krav. Framtidig Vipps-innlogging og et mulig sterkere identitetsgrunnlag utredes separat i OD-0011 og endrer ikke dette pilotkravet før en ny beslutning er tatt.
 
 ### PS-USR-002 — Minimal profil
 **Forankring:** [Profil og synlighet](../vision/02-brukere-roller-og-relasjoner.md)

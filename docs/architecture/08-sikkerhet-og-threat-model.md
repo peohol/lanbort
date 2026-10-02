@@ -18,7 +18,7 @@
 ### Konto-overtakelse
 **Risiko:** angriper får tilgang til lån, skjulte miljøer eller administrasjon.
 
-**Tiltak:** korte/revokerbare sesjoner, sikker recovery, rate limiting, re-autentisering ved sensitive handlinger og obligatorisk MFA for plattformforvaltere.
+**Tiltak:** korte/revokerbare sesjoner, sikker recovery, rate limiting, re-autentisering ved sensitive handlinger og sterkere autentisering for plattformforvaltere (mekanisme i OD-0010; til den er godkjent og implementert, avvises privilegerte plattformforvalterhandlinger).
 
 ### Autorisasjonsbypass / IDOR
 **Risiko:** bruker gjetter ID eller manipulerer API og får annen kontekst.
@@ -57,7 +57,7 @@
 **Tiltak:** kontekstkrav for første kontakt, rate limits, blokkering, rapportering, anti-automation-signaler og streng søke-/profiltilgang.
 
 ### Administrator-/plattformmisbruk
-**Tiltak:** minste privilegium, habilitetskontroll, MFA, revisjonslogg, begrenset sakstilgang og uavhengig behandlingsvei ved alvorlige saker.
+**Tiltak:** minste privilegium, habilitetskontroll, sterkere autentisering for privilegerte roller (OD-0010), revisjonslogg, begrenset sakstilgang og uavhengig behandlingsvei ved alvorlige saker.
 
 ### Backup-/restore-lekkasje
 **Risiko:** slettede eller tidligere begrensede data kommer tilbake som aktive.
