@@ -1,6 +1,8 @@
 import type {
   Environment,
+  EnvironmentContinuity,
   EnvironmentMemberships,
+  EnvironmentRoles,
   EnvironmentRole,
   EnvironmentSummary,
   EnvironmentType,
@@ -10,7 +12,15 @@ import type {
 import { z } from "zod";
 import { defineQuery } from "../commands/query";
 import {
+  type AdministratorRecord,
+  administrators,
+  findContinuity,
+  pendingRoleInvitations,
+} from "./continuity-store";
+import {
+  type ContinuityRecord,
   effectiveState,
+  isWindDownCancellable,
   type GivenAnswer,
   type MembershipRecord,
   type OwnEnvironmentRow,
@@ -19,6 +29,7 @@ import {
 } from "./model";
 import {
   listMembershipsPolicy,
+  listRolesPolicy,
   listOwnEnvironmentsPolicy,
   readEnvironmentPolicy,
 } from "./policies";
@@ -63,6 +74,34 @@ function presentMembership(
 }
 
 /**
+ * PS-ENV-012–014 as the caller's membership needs it: whether processes that
+ * need an administrator can be handled now, and any ownership vacancy or
+ * winding down in progress.
+ */
+function presentContinuity(
+  continuity: ContinuityRecord,
+  admins: readonly AdministratorRecord[],
+  claimedByYou: boolean,
+  now: Date,
+): EnvironmentContinuity {
+  const { vacancy, windDown } = continuity;
+
+  return {
+    administrationAvailable: admins.some((admin) => admin.canAct),
+    ownershipVacancy: vacancy
+      ? { claimDeadline: vacancy.claimDeadline.toISOString(), claimedByYou }
+      : null,
+    windDown: windDown
+      ? {
+          reason: windDown.reason,
+          finalAt: windDown.finalAt.toISOString(),
+          cancellable: isWindDownCancellable(windDown, now),
+        }
+      : null,
+  };
+}
+
+/**
  * One environment, as far as the caller may see it (PS-ENV-001): the public
  * details and requirements of an open or closed environment, never its
  * members or administrators; a hidden one only for its own members and
@@ -85,18 +124,32 @@ export const getEnvironment = defineQuery({
     }
 
     const own = access.ownMembership;
+    const userId = actor.kind === "user" ? actor.userId : null;
+    // Continuity is only for the environment's own members and invitees.
+    const continuity =
+      own && userId
+        ? {
+            record: await findContinuity(db, input.environmentId),
+            admins: await administrators(db, input.environmentId, now),
+            claimed: await hasOpenClaim(db, input.environmentId, userId),
+            invitations: await pendingRoleInvitations(db, input.environmentId, {
+              userId,
+            }),
+          }
+        : null;
 
     return {
       resource: {
         ...access,
         requirements: await currentRequirements(db, input.environmentId),
         answers: own ? ((await answersOf(db, [own.id])).get(own.id) ?? []) : [],
+        continuity,
       },
       context: undefined,
     };
   },
   present: ({ resource, now }): Environment => {
-    const { environment, ownMembership, viewer } = resource;
+    const { environment, ownMembership, viewer, continuity } = resource;
 
     return {
       id: environment.id,
@@ -123,9 +176,43 @@ export const getEnvironment = defineQuery({
           )
         : null,
       roles: [...viewer.roles],
+      continuity: continuity
+        ? presentContinuity(
+            continuity.record,
+            continuity.admins,
+            continuity.claimed,
+            now,
+          )
+        : null,
+      roleInvitations: (continuity?.invitations ?? []).map(({ id, role }) => ({
+        id,
+        role,
+      })),
     };
   },
 });
+
+async function hasOpenClaim(
+  db: Parameters<typeof findContinuity>[0],
+  environmentId: string,
+  userId: string,
+): Promise<boolean> {
+  const row = await db
+    .selectFrom("app.environment_ownership_claims as claim")
+    .innerJoin(
+      "app.environment_ownership_vacancies as vacancy",
+      "vacancy.id",
+      "claim.vacancy_id",
+    )
+    .select("claim.id")
+    .where("vacancy.environment_id", "=", environmentId)
+    .where("vacancy.closed_at", "is", null)
+    .where("claim.user_id", "=", userId)
+    .where("claim.withdrawn_at", "is", null)
+    .executeTakeFirst();
+
+  return row !== undefined;
+}
 
 /** The caller's own current memberships, including pending invitations. */
 export const listOwnEnvironments = defineQuery({
@@ -243,5 +330,68 @@ export const listMemberships = defineQuery({
       realName: membership.realName,
     })),
     restrictedUserIds: resource.restrictedUserIds,
+  }),
+});
+
+/**
+ * What administrators need to manage roles (PS-ENV-003): who holds which
+ * role and since when they have administered without interruption, which
+ * decides a vacant ownership (PS-ENV-013), and pending role invitations.
+ */
+export const listRoles = defineQuery({
+  name: "environment.list_roles",
+  input: environmentInput,
+  policy: listRolesPolicy,
+  load: async ({ db, actor, input, now }) => {
+    const access = await loadEnvironmentAccess(
+      db,
+      input.environmentId,
+      actor,
+      now,
+    );
+
+    if (!access) {
+      return null;
+    }
+
+    const admins = await administrators(db, input.environmentId, now);
+    const invitations = await pendingRoleInvitations(db, input.environmentId);
+    const userIds = [
+      ...new Set([
+        ...admins.map((admin) => admin.userId),
+        ...invitations.map((invitation) => invitation.userId),
+      ]),
+    ];
+    const names = new Map(
+      userIds.length === 0
+        ? []
+        : (
+            await db
+              .selectFrom("app.profiles")
+              .select(["user_id", "real_name"])
+              .where("user_id", "in", userIds)
+              .execute()
+          ).map((row) => [row.user_id, row.real_name]),
+    );
+    return {
+      resource: { ...access, admins, invitations, names },
+      context: undefined,
+    };
+  },
+  present: ({ resource }): EnvironmentRoles => ({
+    holders: resource.admins.map((admin) => ({
+      userId: admin.userId,
+      realName: resource.names.get(admin.userId) ?? null,
+      roles: admin.isOwner ? ["owner", "administrator"] : ["administrator"],
+      administratorSince: admin.administratorSince.toISOString(),
+    })),
+    invitations: resource.invitations.map((invitation) => ({
+      id: invitation.id,
+      userId: invitation.userId,
+      realName: resource.names.get(invitation.userId) ?? null,
+      role: invitation.role,
+      invitedByUserId: invitation.invitedByUserId,
+      createdAt: invitation.createdAt.toISOString(),
+    })),
   }),
 });

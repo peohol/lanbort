@@ -1,5 +1,6 @@
 import type {
   EnvironmentRole,
+  EnvironmentState,
   EnvironmentType,
   MembershipOrigin,
   MembershipPassiveReason,
@@ -8,6 +9,7 @@ import type {
   RequirementAnswer,
   RequirementDraft,
   RequirementKind,
+  WindDownReason,
 } from "@lanbort/contracts";
 import { DomainError } from "../errors";
 
@@ -19,7 +21,7 @@ import { DomainError } from "../errors";
 export interface EnvironmentRecord {
   readonly id: string;
   readonly type: EnvironmentType;
-  readonly state: "active";
+  readonly state: EnvironmentState;
   readonly name: string;
   readonly description: string | null;
   readonly audience: string | null;
@@ -60,8 +62,12 @@ export interface GivenAnswer {
  */
 export const requirementTransitionDays = 14;
 
+export function daysAfter(now: Date, days: number): Date {
+  return new Date(now.getTime() + days * 86_400_000);
+}
+
 export function transitionDeadlineFrom(now: Date): Date {
-  return new Date(now.getTime() + requirementTransitionDays * 86_400_000);
+  return daysAfter(now, requirementTransitionDays);
 }
 
 /**
@@ -229,4 +235,82 @@ export interface EnvironmentAccess {
   /** The caller's current membership as stored. */
   readonly ownMembership: MembershipRecord | null;
   readonly viewer: Viewer;
+}
+
+/** PS-ENV-013: how long administrators may claim a vacant ownership. */
+export const ownershipClaimDays = 7;
+
+/** PS-ENV-012: how long the owner may cancel a voluntary winding down. */
+export const windDownCancellationDays = 7;
+
+/**
+ * PS-ENV-012: only an active environment takes new members and new
+ * environment-based activity. Publishing (WP-25) and loans (Phase 3) use the
+ * same rule, so a winding-down environment starts nothing new.
+ */
+export function acceptsNewActivity(
+  environment: Pick<EnvironmentRecord, "state">,
+): boolean {
+  return environment.state === "active";
+}
+
+export interface OwnershipVacancyRecord {
+  readonly id: string;
+  readonly claimDeadline: Date;
+}
+
+export interface WindDownRecord {
+  readonly id: string;
+  readonly reason: WindDownReason;
+  readonly finalAt: Date;
+  /** The job has closed the processes left waiting. */
+  readonly settled: boolean;
+}
+
+/** The environment's current continuity exceptions, if any. */
+export interface ContinuityRecord {
+  readonly vacancy: OwnershipVacancyRecord | null;
+  readonly windDown: WindDownRecord | null;
+}
+
+export function isClaimOpen(vacancy: OwnershipVacancyRecord, now: Date) {
+  return now.getTime() < vacancy.claimDeadline.getTime();
+}
+
+/** Only a voluntary winding down, and only within its cancellation period. */
+export function isWindDownCancellable(
+  windDown: WindDownRecord,
+  now: Date,
+): boolean {
+  return (
+    windDown.reason === "voluntary" &&
+    !windDown.settled &&
+    now.getTime() < windDown.finalAt.getTime()
+  );
+}
+
+/** An administrator who registered interest in a vacant ownership. */
+export interface OwnershipCandidate {
+  readonly userId: string;
+  /** Start of the continuous administrator period. */
+  readonly administratorSince: Date;
+  readonly grantId: string;
+}
+
+/**
+ * PS-ENV-013: the candidate who has been administrator the longest without
+ * interruption becomes owner. When to register interest does not matter, so
+ * there is no race to react first. The grant id only breaks exact ties, to
+ * keep the outcome deterministic.
+ */
+export function chooseNewOwner(
+  candidates: readonly OwnershipCandidate[],
+): OwnershipCandidate | null {
+  return (
+    [...candidates].sort(
+      (a, b) =>
+        a.administratorSince.getTime() - b.administratorSince.getTime() ||
+        (a.grantId < b.grantId ? -1 : a.grantId > b.grantId ? 1 : 0),
+    )[0] ?? null
+  );
 }

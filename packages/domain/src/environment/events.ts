@@ -2,6 +2,7 @@ import {
   environmentRoleSchema,
   environmentTypeSchema,
   membershipPassiveReasonSchema,
+  windDownReasonSchema,
 } from "@lanbort/contracts";
 import { z } from "zod";
 import { defineEvent } from "../events/catalog";
@@ -45,6 +46,128 @@ export const environmentRoleGranted = defineEvent({
   kind: "audit",
   resourceType: "environment",
   payload: z.strictObject({ userId: z.uuid(), role: environmentRoleSchema }),
+});
+
+export const roleRevokeReasonSchema = z.enum([
+  "resigned",
+  "removed",
+  "transferred",
+  "account_departed",
+]);
+
+export const environmentRoleRevoked = defineEvent({
+  type: "environment.role_revoked",
+  version: 1,
+  kind: "audit",
+  resourceType: "environment",
+  payload: z.strictObject({
+    userId: z.uuid(),
+    role: environmentRoleSchema,
+    reason: roleRevokeReasonSchema,
+  }),
+});
+
+const roleInvitationPayload = {
+  invitationId: z.uuid(),
+  userId: z.uuid(),
+  role: environmentRoleSchema,
+};
+
+export const environmentRoleInvited = defineEvent({
+  type: "environment.role_invited",
+  version: 1,
+  kind: "audit",
+  resourceType: "environment",
+  payload: z.strictObject(roleInvitationPayload),
+});
+
+export const roleInvitationOutcomeSchema = z.enum([
+  "accepted",
+  "declined",
+  "withdrawn",
+  "lapsed",
+]);
+
+export const environmentRoleInvitationClosed = defineEvent({
+  type: "environment.role_invitation_closed",
+  version: 1,
+  kind: "audit",
+  resourceType: "environment",
+  payload: z.strictObject({
+    ...roleInvitationPayload,
+    outcome: roleInvitationOutcomeSchema,
+  }),
+});
+
+/** PS-ENV-013: the owner disappeared; administrators may claim until then. */
+export const environmentOwnershipVacated = defineEvent({
+  type: "environment.ownership_vacated",
+  version: 1,
+  kind: "domain",
+  resourceType: "environment",
+  payload: z.strictObject({
+    formerOwnerUserId: z.uuid(),
+    claimDeadline: z.iso.datetime(),
+  }),
+});
+
+export const environmentOwnershipClaimed = defineEvent({
+  type: "environment.ownership_claimed",
+  version: 1,
+  kind: "audit",
+  resourceType: "environment",
+  payload: z.strictObject({ userId: z.uuid() }),
+});
+
+export const environmentOwnershipClaimWithdrawn = defineEvent({
+  type: "environment.ownership_claim_withdrawn",
+  version: 1,
+  kind: "audit",
+  resourceType: "environment",
+  payload: z.strictObject({ userId: z.uuid() }),
+});
+
+export const environmentOwnershipVacancyClosed = defineEvent({
+  type: "environment.ownership_vacancy_closed",
+  version: 1,
+  kind: "domain",
+  resourceType: "environment",
+  payload: z.strictObject({
+    outcome: z.enum(["claimed", "wound_down"]),
+    newOwnerUserId: z.uuid().nullable(),
+  }),
+});
+
+/**
+ * PS-ENV-012: the environment takes nothing new from now on. Publishing
+ * (WP-25) ends its publications in reaction to this event.
+ */
+export const environmentWindDownStarted = defineEvent({
+  type: "environment.wind_down_started",
+  version: 1,
+  kind: "domain",
+  resourceType: "environment",
+  payload: z.strictObject({
+    reason: windDownReasonSchema,
+    finalAt: z.iso.datetime(),
+  }),
+});
+
+export const environmentWindDownCancelled = defineEvent({
+  type: "environment.wind_down_cancelled",
+  version: 1,
+  kind: "domain",
+  resourceType: "environment",
+  payload: z.strictObject({}),
+});
+
+/** The winding down can no longer be cancelled; waiting processes closed. */
+export const environmentWindDownFinalized = defineEvent({
+  type: "environment.wind_down_finalized",
+  version: 1,
+  kind: "domain",
+  resourceType: "environment",
+  payload: z.strictObject({}),
 });
 
 export const environmentRestrictionImposed = defineEvent({
@@ -125,8 +248,18 @@ export const membershipEnded = membershipEvent("ended", "domain", {
     "application_withdrawn",
     "invitation_declined",
     "invitation_withdrawn",
+    "environment_wound_down",
   ]),
 });
+
+/** A passive member's reactivation request closed without a decision. */
+export const membershipReviewClosed = membershipEvent(
+  "review_closed",
+  "domain",
+  {
+    reason: z.enum(["environment_wound_down"]),
+  },
+);
 
 /** PS-ENV-006: new requirements need action by `deadline`. */
 export const membershipTransitionStarted = membershipEvent(

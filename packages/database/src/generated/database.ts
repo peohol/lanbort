@@ -86,6 +86,25 @@ export interface AppEnvironmentMemberships {
   user_id: string;
 }
 
+export interface AppEnvironmentOwnershipClaims {
+  claimed_at: Generated<Timestamp>;
+  id: Generated<string>;
+  user_id: string;
+  vacancy_id: string;
+  withdrawn_at: Timestamp | null;
+}
+
+export interface AppEnvironmentOwnershipVacancies {
+  claim_deadline: Timestamp;
+  closed_at: Timestamp | null;
+  environment_id: string;
+  former_owner_user_id: string;
+  id: Generated<string>;
+  new_owner_user_id: string | null;
+  opened_at: Generated<Timestamp>;
+  outcome: string | null;
+}
+
 export interface AppEnvironmentRequirements {
   created_at: Generated<Timestamp>;
   environment_id: string;
@@ -103,9 +122,22 @@ export interface AppEnvironmentRoleGrants {
   granted_by_process: string | null;
   granted_by_user_id: string | null;
   id: Generated<string>;
+  revoke_reason: string | null;
   revoked_at: Timestamp | null;
   revoked_by_process: string | null;
   revoked_by_user_id: string | null;
+  role: string;
+  user_id: string;
+}
+
+export interface AppEnvironmentRoleInvitations {
+  closed_at: Timestamp | null;
+  closed_by_user_id: string | null;
+  created_at: Generated<Timestamp>;
+  environment_id: string;
+  id: Generated<string>;
+  invited_by_user_id: string;
+  outcome: string | null;
   role: string;
   user_id: string;
 }
@@ -124,6 +156,18 @@ export interface AppEnvironments {
   type: string;
   updated_at: Generated<Timestamp>;
   version: Generated<number>;
+}
+
+export interface AppEnvironmentWindDowns {
+  environment_id: string;
+  final_at: Timestamp;
+  id: Generated<string>;
+  outcome: string | null;
+  reason: string;
+  settled_at: Timestamp | null;
+  settled_by_user_id: string | null;
+  started_at: Generated<Timestamp>;
+  started_by_user_id: string | null;
 }
 
 export interface AppFriendships {
@@ -258,8 +302,12 @@ export interface DB {
   "app.environment_access_restrictions": AppEnvironmentAccessRestrictions;
   "app.environment_membership_answers": AppEnvironmentMembershipAnswers;
   "app.environment_memberships": AppEnvironmentMemberships;
+  "app.environment_ownership_claims": AppEnvironmentOwnershipClaims;
+  "app.environment_ownership_vacancies": AppEnvironmentOwnershipVacancies;
   "app.environment_requirements": AppEnvironmentRequirements;
   "app.environment_role_grants": AppEnvironmentRoleGrants;
+  "app.environment_role_invitations": AppEnvironmentRoleInvitations;
+  "app.environment_wind_downs": AppEnvironmentWindDowns;
   "app.environments": AppEnvironments;
   "app.friendships": AppFriendships;
   "app.idempotency_records": AppIdempotencyRecords;

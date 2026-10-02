@@ -1,5 +1,6 @@
 import type {
   EnvironmentRole,
+  EnvironmentState,
   EnvironmentType,
   MembershipOrigin,
   MembershipPassiveReason,
@@ -61,7 +62,7 @@ export async function findEnvironment(
     ? {
         id: row.id,
         type: row.type as EnvironmentType,
-        state: row.state as "active",
+        state: row.state as EnvironmentState,
         name: row.name,
         description: row.description,
         audience: row.audience,
