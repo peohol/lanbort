@@ -44,6 +44,7 @@ Supabase Auth brukes bare gjennom `packages/auth`. Nettleseren snakker aldri med
 - Hver miljøpolicy starter med samme synlighetsregel: åpne og lukkede miljøer kan leses av alle innloggede, mens et skjult miljø bare finnes for egne medlemmer og inviterte. Alle andre får `not_found`, akkurat som for et miljø som ikke finnes (PS-NFR-002). Administrasjon krever rollen og et aktivt medlemskap.
 - Kommandoer som endrer medlemskap eller krav i et miljø låser miljøraden, så innmelding, godkjenning og kravendring ikke kan krysse hverandre.
 - Et medlemskrav endres aldri. Endret tekst blir et nytt krav, og aktivering skjer etter kravene som gjelder da. Svar må dekke nøyaktig de gjeldende kravene, ellers gir kommandoen `conflict`.
+- En invitasjon er ny kontakt mellom administratoren og den inviterte. Blokkering i én av retningene stopper den med samme `not_found` som for en konto som ikke finnes. Eksisterende medlemskap og invitasjoner berøres ikke av senere blokkering.
 - Et aktivt medlem med utløpt overgangsfrist regnes som passivt med en gang. Den planlagte jobben `/api/internal/environment-memberships` registrerer overgangen etterpå.
 
 ## Privilegert tilgang, ny innlogging og habilitet

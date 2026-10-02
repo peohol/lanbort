@@ -14,6 +14,7 @@ import {
 } from "../commands/command";
 import { executeQuery } from "../commands/query";
 import { ConsumerRegistry } from "../outbox/consumer";
+import { blockUser, liftUserBlock } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser, testIdentity } from "../testing/identities";
 import {
@@ -724,6 +725,94 @@ describe("hidden environments (PS-NFR-002)", () => {
     await expect(
       run(inviteMember, owner, { environmentId, userId: owner.userId }),
     ).rejects.toMatchObject({ code: "conflict" });
+  });
+
+  it("are stopped by a block in either direction without revealing it", async () => {
+    const { owner, environmentId } = await hidden();
+    const blockedByOwner = await user();
+    const blockingOwner = await user();
+    const unrelated = await user();
+    await output(blockUser, owner, { userId: blockedByOwner.userId });
+    await output(blockUser, blockingOwner, { userId: owner.userId });
+
+    // Both directions give the same answer as an account that does not exist.
+    for (const userId of [
+      blockedByOwner.userId,
+      blockingOwner.userId,
+      randomUUID(),
+    ]) {
+      await expect(
+        run(inviteMember, owner, { environmentId, userId }),
+      ).rejects.toEqual(
+        expect.objectContaining({
+          code: "not_found",
+          message: "No such account",
+        }),
+      );
+    }
+    expect(await read(blockingOwner, environmentId).catch((e) => e.code)).toBe(
+      "not_found",
+    );
+
+    // Without a block, and once it is lifted, the invitation goes through.
+    await expect(
+      output(inviteMember, owner, { environmentId, userId: unrelated.userId }),
+    ).resolves.toMatchObject({ state: "pending" });
+    await output(liftUserBlock, owner, { userId: blockedByOwner.userId });
+    await expect(
+      output(inviteMember, owner, {
+        environmentId,
+        userId: blockedByOwner.userId,
+      }),
+    ).resolves.toMatchObject({ state: "pending" });
+  });
+
+  it("keep an existing invitation and membership when a block comes later", async () => {
+    const { owner, environmentId } = await hidden();
+    const member = await user();
+    const invitee = await user();
+    await output(inviteMember, owner, { environmentId, userId: member.userId });
+    await output(acceptInvitation, member, {
+      environmentId,
+      answers: await answersFor(member, environmentId),
+    });
+    await output(inviteMember, owner, {
+      environmentId,
+      userId: invitee.userId,
+    });
+
+    await output(blockUser, member, { userId: owner.userId });
+    await output(blockUser, owner, { userId: invitee.userId });
+
+    expect((await read(member, environmentId)).membership?.state).toBe(
+      "active",
+    );
+    await expect(
+      output(acceptInvitation, invitee, {
+        environmentId,
+        answers: await answersFor(invitee, environmentId),
+      }),
+    ).resolves.toMatchObject({ state: "active" });
+  });
+
+  it("serialize an invitation against a block placed at the same time", async () => {
+    const { owner, environmentId } = await hidden();
+    const other = await user();
+
+    const [invited] = await Promise.allSettled([
+      run(inviteMember, owner, { environmentId, userId: other.userId }),
+      run(blockUser, other, { userId: owner.userId }),
+    ]);
+    const { memberships: rows } = await memberships(owner, environmentId);
+    const invitation = rows.find((row) => row.userId === other.userId);
+
+    // Either the invitation came first and stands, or the block stopped it.
+    if (invited.status === "fulfilled") {
+      expect(invitation?.state).toBe("pending");
+    } else {
+      expect(invited.reason).toMatchObject({ code: "not_found" });
+      expect(invitation).toBeUndefined();
+    }
   });
 
   it("let members see the environment but not administer it", async () => {

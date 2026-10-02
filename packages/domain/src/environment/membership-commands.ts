@@ -11,6 +11,7 @@ import type { Actor } from "../actor";
 import { defineCommand } from "../commands/command";
 import { DomainError } from "../errors";
 import type { EventRecorder } from "../events/recorder";
+import { lockPair, socialRelationBetween } from "../social/pair";
 import {
   environmentIdInput,
   loadLockedAccess,
@@ -476,6 +477,18 @@ export const inviteMember = defineCommand({
       conflict("The user is barred; lift the restriction first");
     }
 
+    // An invitation is new contact between the two (PS-USR-006): a block in
+    // either direction stops it, and looks like an account that does not
+    // exist so it never reveals who blocked whom. The pair lock orders it
+    // against a block being placed at the same time.
+    const inviter = userIdOf(actor);
+    await lockPair(tx, inviter, input.userId);
+    if (
+      (await socialRelationBetween(tx, inviter, input.userId)).blockedEitherWay
+    ) {
+      throw new DomainError("not_found", "No such account");
+    }
+
     const membership = await tx
       .insertInto("app.environment_memberships")
       .values({
@@ -483,7 +496,7 @@ export const inviteMember = defineCommand({
         user_id: input.userId,
         state: "pending",
         origin: "invitation",
-        invited_by_user_id: userIdOf(actor),
+        invited_by_user_id: inviter,
         created_at: now,
         updated_at: now,
       })
