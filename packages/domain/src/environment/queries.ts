@@ -430,15 +430,18 @@ export const listRoles = defineQuery({
       await typePeriods(db, input.environmentId),
       activeSince(access.ownMembership),
     );
-    const hiddenHolders = new Set(
+    const hidden = new Set(
       (await listCurrentMemberships(db, input.environmentId, ["passive"]))
         .filter((membership) => !visible(membership))
         .map((membership) => membership.userId),
     );
     const admins = (await administrators(db, input.environmentId, now)).filter(
-      (admin) => !hiddenHolders.has(admin.userId),
+      (admin) => !hidden.has(admin.userId),
     );
-    const invitations = await pendingRoleInvitations(db, input.environmentId);
+    // A role invitation names its invitee just as much as a role does.
+    const invitations = (
+      await pendingRoleInvitations(db, input.environmentId)
+    ).filter((invitation) => !hidden.has(invitation.userId));
     const userIds = [
       ...new Set([
         ...admins.map((admin) => admin.userId),

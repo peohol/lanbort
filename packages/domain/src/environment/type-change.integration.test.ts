@@ -11,16 +11,21 @@ import { executeQuery } from "../commands/query";
 import { ConsumerRegistry } from "../outbox/consumer";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
-import { startEnvironmentWindDown } from "./continuity-commands";
+import {
+  releaseDepartedUser,
+  startEnvironmentWindDown,
+} from "./continuity-commands";
 import { createEnvironment } from "./environment-commands";
 import {
   acceptInvitation,
   approveMembership,
   inviteMember,
   joinEnvironment,
+  leaveEnvironment,
   submitAnswers,
+  withdrawInvitation,
 } from "./membership-commands";
-import { typeChangeProcess } from "./policies";
+import { accountLifecycleProcess, typeChangeProcess } from "./policies";
 import { typeChangeDays } from "./privacy";
 import {
   getEnvironment,
@@ -28,7 +33,11 @@ import {
   listOwnEnvironments,
   listRoles,
 } from "./queries";
-import { acceptRoleInvitation, inviteAdministrator } from "./role-commands";
+import {
+  acceptRoleInvitation,
+  inviteAdministrator,
+  resignAdministrator,
+} from "./role-commands";
 import {
   changeEnvironmentType,
   concludeTypeChanges,
@@ -466,6 +475,120 @@ describe("hidden → closed (PS-ENV-008)", () => {
   });
 });
 
+describe("hidden → closed at exactly 2/3", () => {
+  it("passes with 2 of 3 active members, counted at the deadline", async () => {
+    const owner = await user();
+    const environmentId = await environment(owner, "hidden");
+    const supporter = await member(environmentId, owner);
+    const leaver = await member(environmentId, owner);
+    const proposalId = (
+      await changeType(owner, environmentId, "hidden", "closed")
+    ).proposal!.id;
+    await respond(owner, environmentId, proposalId, true);
+    await respond(supporter, environmentId, proposalId, true);
+    // A member who joins during the vote is a voter too; one who leaves
+    // no longer counts.
+    const latecomer = await member(environmentId, owner);
+    await output(leaveEnvironment, leaver, { environmentId });
+
+    passDays(typeChangeDays.vote);
+    await conclude();
+
+    expect(await proposalOutcome(proposalId)).toEqual({
+      outcome: "adopted",
+      eligible_count: 3,
+      support_count: 2,
+    });
+    expect(await stateOf(latecomer, environmentId)).toEqual({
+      state: "passive",
+      passiveReason: "type_change_not_accepted",
+    });
+  });
+});
+
+describe("hidden invitations (PS-ENV-010)", () => {
+  it("belong to the environment and outlive the administrator who sent them", async () => {
+    const owner = await user();
+    const environmentId = await environment(owner, "hidden");
+    const sender = await member(environmentId, owner);
+    await makeAdministrator(environmentId, owner, sender);
+    const departing = await member(environmentId, owner);
+    await makeAdministrator(environmentId, owner, departing);
+    const ordinary = await member(environmentId, owner);
+    const [kept, afterDeparture, withdrawn, bystander] = [
+      await user(),
+      await user(),
+      await user(),
+      await user(),
+    ];
+
+    // Only administrators invite, and only to an existing account.
+    await expect(
+      run(inviteMember, ordinary, { environmentId, userId: bystander.userId }),
+    ).rejects.toMatchObject({ code: "forbidden" });
+    await expect(
+      run(inviteMember, owner, { environmentId, userId: randomUUID() }),
+    ).rejects.toMatchObject({ code: "not_found" });
+
+    for (const invitee of [kept, withdrawn]) {
+      await output(inviteMember, sender, {
+        environmentId,
+        userId: invitee.userId,
+      });
+    }
+    await output(inviteMember, departing, {
+      environmentId,
+      userId: afterDeparture.userId,
+    });
+
+    // The senders stop administering: one resigns and leaves, the other's
+    // account goes away.
+    await output(resignAdministrator, sender, { environmentId });
+    await output(leaveEnvironment, sender, { environmentId });
+    await executeCommand(tick(), releaseDepartedUser, {
+      actor: systemActor(accountLifecycleProcess),
+      input: { userId: departing.userId },
+    });
+
+    // Another administrator may still withdraw an invitation they did not send.
+    const { id: withdrawnId } = (await read(withdrawn, environmentId))
+      .membership!;
+    await output(withdrawInvitation, owner, {
+      environmentId,
+      membershipId: withdrawnId,
+    });
+    await expect(read(withdrawn, environmentId)).rejects.toMatchObject({
+      code: "not_found",
+    });
+
+    // Nobody else can use an invitation; the invited accounts still can.
+    await expect(
+      run(acceptInvitation, bystander, { environmentId, answers: [] }),
+    ).rejects.toMatchObject({ code: "not_found" });
+    for (const invitee of [kept, afterDeparture]) {
+      expect(
+        await output(acceptInvitation, invitee, { environmentId, answers: [] }),
+      ).toMatchObject({ state: "active" });
+    }
+
+    // The history keeps who sent each invitation.
+    const sentBy = await db
+      .selectFrom("app.environment_memberships")
+      .select(["user_id", "invited_by_user_id"])
+      .where("environment_id", "=", environmentId)
+      .where("user_id", "in", [kept.userId, afterDeparture.userId])
+      .execute();
+    expect(
+      Object.fromEntries(
+        sentBy.map((row) => [row.user_id, row.invited_by_user_id]),
+      ),
+    ).toEqual({
+      [kept.userId]: sender.userId,
+      [afterDeparture.userId]: departing.userId,
+    });
+  });
+});
+
 describe("historical privacy (PS-ENV-009)", () => {
   it("never shows passive members of a stricter context to later members", async () => {
     const owner = await user();
@@ -507,6 +630,20 @@ describe("historical privacy (PS-ENV-009)", () => {
     expect(await memberIds(newcomer, environmentId)).toEqual(
       expect.arrayContaining([owner.userId, supporter.userId, newcomer.userId]),
     );
+
+    // A pending role invitation does not name the hidden-era member either.
+    const { invitationId } = await output(inviteAdministrator, owner, {
+      environmentId,
+      userId: supporter.userId,
+    });
+    expect(
+      (
+        await executeQuery(domain, listRoles, {
+          actor: newcomer,
+          input: { environmentId },
+        })
+      ).invitations.map((invitation) => invitation.id),
+    ).toEqual([invitationId]);
 
     // Once the member accepts the new type, the ordinary rules apply.
     await output(joinEnvironment, keeper, { environmentId, answers: [] });
@@ -696,6 +833,69 @@ describe("concurrency and retries", () => {
     }
     expect((await proposalOutcome(proposalId)).outcome).toBe("lapsed");
     expect((await read(voter, environmentId)).type).toBe("hidden");
+  });
+
+  it("keeps one current answer when a member answers twice at once", async () => {
+    const owner = await user();
+    const environmentId = await environment(owner, "hidden");
+    const voters = [
+      await member(environmentId, owner),
+      await member(environmentId, owner),
+      await member(environmentId, owner),
+    ];
+    const proposalId = (
+      await changeType(owner, environmentId, "hidden", "closed")
+    ).proposal!.id;
+
+    // Everyone answers at the same moment, the owner twice and differently.
+    await Promise.all([
+      respond(owner, environmentId, proposalId, true),
+      respond(owner, environmentId, proposalId, false),
+      ...voters.map((voter) => respond(voter, environmentId, proposalId, true)),
+    ]);
+
+    const current = await db
+      .selectFrom("app.environment_type_responses")
+      .select(["membership_id", "support"])
+      .where("proposal_id", "=", proposalId)
+      .where("superseded_at", "is", null)
+      .execute();
+    expect(current).toHaveLength(4);
+    const ownerAnswer = (await read(owner, environmentId)).typeChange!
+      .yourResponse;
+
+    passDays(typeChangeDays.vote);
+    await conclude();
+    // Whichever answer of the owner came last decides; 3 of 4 is enough
+    // either way, so the outcome itself does not depend on the order.
+    expect(await proposalOutcome(proposalId)).toEqual({
+      outcome: "adopted",
+      eligible_count: 4,
+      support_count: ownerAnswer ? 4 : 3,
+    });
+  });
+
+  it("records an answer once when it is retried", async () => {
+    const owner = await user();
+    const environmentId = await environment(owner, "closed");
+    const proposalId = (
+      await changeType(owner, environmentId, "closed", "open")
+    ).proposal!.id;
+    const key = randomUUID();
+    const input = { environmentId, proposalId, support: true };
+
+    await Promise.all([
+      run(respondToTypeChange, owner, input, key),
+      run(respondToTypeChange, owner, input, key),
+    ]).catch(() => undefined);
+    await run(respondToTypeChange, owner, input, key);
+
+    const rows = await db
+      .selectFrom("app.environment_type_responses")
+      .select("id")
+      .where("proposal_id", "=", proposalId)
+      .execute();
+    expect(rows).toHaveLength(1);
   });
 
   it("returns the first result when a change is retried", async () => {
