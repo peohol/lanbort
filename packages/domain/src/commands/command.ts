@@ -57,6 +57,7 @@ export interface CommandDefinition<I, R, C, O> {
     tx: Transaction<Database>;
     actor: Actor;
     input: I;
+    now: Date;
   }): Promise<Loaded<R, C> | null>;
   execute(args: {
     tx: Transaction<Database>;
@@ -192,7 +193,12 @@ export async function executeCommand<I, R, C, O>(
       }
     }
 
-    const loaded = await command.load({ tx, actor: request.actor, input });
+    const loaded = await command.load({
+      tx,
+      actor: request.actor,
+      input,
+      now,
+    });
 
     if (!loaded) {
       throw new AuthorizationError(command.policy.action, "not_found");

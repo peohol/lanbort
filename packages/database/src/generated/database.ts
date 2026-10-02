@@ -49,6 +49,83 @@ export interface AppAuthIdentities {
   user_id: string;
 }
 
+export interface AppEnvironmentAccessRestrictions {
+  environment_id: string;
+  id: Generated<string>;
+  imposed_at: Generated<Timestamp>;
+  imposed_by_user_id: string;
+  lifted_at: Timestamp | null;
+  lifted_by_user_id: string | null;
+  user_id: string;
+}
+
+export interface AppEnvironmentMembershipAnswers {
+  answer: string | null;
+  environment_id: string;
+  given_at: Generated<Timestamp>;
+  membership_id: string;
+  requirement_id: string;
+}
+
+export interface AppEnvironmentMemberships {
+  activated_at: Timestamp | null;
+  activation_revision: number | null;
+  created_at: Generated<Timestamp>;
+  end_reason: string | null;
+  ended_at: Timestamp | null;
+  environment_id: string;
+  id: Generated<string>;
+  invited_by_user_id: string | null;
+  origin: string;
+  passive_reason: string | null;
+  passive_since: Timestamp | null;
+  review_stage: string | null;
+  state: string;
+  transition_deadline: Timestamp | null;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+}
+
+export interface AppEnvironmentRequirements {
+  created_at: Generated<Timestamp>;
+  environment_id: string;
+  id: Generated<string>;
+  introduced_in_revision: number;
+  kind: string;
+  position: number;
+  retired_in_revision: number | null;
+  text: string;
+}
+
+export interface AppEnvironmentRoleGrants {
+  environment_id: string;
+  granted_at: Generated<Timestamp>;
+  granted_by_process: string | null;
+  granted_by_user_id: string | null;
+  id: Generated<string>;
+  revoked_at: Timestamp | null;
+  revoked_by_process: string | null;
+  revoked_by_user_id: string | null;
+  role: string;
+  user_id: string;
+}
+
+export interface AppEnvironments {
+  audience: string | null;
+  created_at: Generated<Timestamp>;
+  created_by_user_id: string;
+  description: string | null;
+  id: Generated<string>;
+  location: string | null;
+  name: string;
+  object_focus: string | null;
+  requirements_revision: Generated<number>;
+  state: Generated<string>;
+  type: string;
+  updated_at: Generated<Timestamp>;
+  version: Generated<number>;
+}
+
 export interface AppFriendships {
   accepted_at: Timestamp | null;
   addressee_id: string;
@@ -178,6 +255,12 @@ export interface AppVerifiedContacts {
 export interface DB {
   "app.audit_events": AppAuditEvents;
   "app.auth_identities": AppAuthIdentities;
+  "app.environment_access_restrictions": AppEnvironmentAccessRestrictions;
+  "app.environment_membership_answers": AppEnvironmentMembershipAnswers;
+  "app.environment_memberships": AppEnvironmentMemberships;
+  "app.environment_requirements": AppEnvironmentRequirements;
+  "app.environment_role_grants": AppEnvironmentRoleGrants;
+  "app.environments": AppEnvironments;
   "app.friendships": AppFriendships;
   "app.idempotency_records": AppIdempotencyRecords;
   "app.object_availability_intervals": AppObjectAvailabilityIntervals;

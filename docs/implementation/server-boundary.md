@@ -39,6 +39,14 @@ Route Handler (route.user / route.public / route.scheduler)
 
 Supabase Auth brukes bare gjennom `packages/auth`. Nettleseren snakker aldri med Supabase direkte og får ingen token: sesjonen ligger i HttpOnly-cookies, og en `proxy` fornyer utløpte tilgangstokener. Endrende forespørsler må komme fra appens egen origin.
 
+## Miljøer
+
+- Hver miljøpolicy starter med samme synlighetsregel: åpne og lukkede miljøer kan leses av alle innloggede, mens et skjult miljø bare finnes for egne medlemmer og inviterte. Alle andre får `not_found`, akkurat som for et miljø som ikke finnes (PS-NFR-002). Administrasjon krever rollen og et aktivt medlemskap.
+- Kommandoer som endrer medlemskap eller krav i et miljø låser miljøraden, så innmelding, godkjenning og kravendring ikke kan krysse hverandre.
+- Et medlemskrav endres aldri. Endret tekst blir et nytt krav, og aktivering skjer etter kravene som gjelder da. Svar må dekke nøyaktig de gjeldende kravene, ellers gir kommandoen `conflict`.
+- En invitasjon er ny kontakt mellom administratoren og den inviterte. Blokkering i én av retningene stopper den med samme `not_found` som for en konto som ikke finnes. Eksisterende medlemskap og invitasjoner berøres ikke av senere blokkering.
+- Et aktivt medlem med utløpt overgangsfrist regnes som passivt med en gang. Den planlagte jobben `/api/internal/environment-memberships` registrerer overgangen etterpå.
+
 ## Privilegert tilgang, ny innlogging og habilitet
 
 - **Plattformforvalter** (PS-USR-008) er en eksplisitt rolle i `app.platform_role_grants`. Rollen leses fra databasen på hver forespørsel og hentes aldri fra Supabase-metadata, utviklertilgang eller databasetilgang. Tilbakekalling stempler raden, så historikken består, og den virker umiddelbart.

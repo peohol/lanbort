@@ -22,6 +22,7 @@ export interface QueryDefinition<I, R, C, O> {
     db: Kysely<Database>;
     actor: Actor;
     input: I;
+    now: Date;
   }): Promise<Loaded<R, C> | null>;
   /** Shapes the response from the authorized resource, as of `now`. */
   present(args: {
@@ -56,6 +57,7 @@ export async function executeQuery<I, R, C, O>(
     db: domain.db,
     actor: request.actor,
     input,
+    now,
   });
 
   if (!loaded) {
