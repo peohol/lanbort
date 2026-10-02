@@ -45,7 +45,7 @@ Mål: systemet kan vite hvem brukeren er, hva vedkommende får gjøre, og regist
 Leveranser:
 - konto, e-postverifisering, profil og sesjon
 - policy-/autorisasjonsrammeverk
-- plattformrolle og re-autentisering/MFA-grunnlag
+- plattformrolle, re-autentisering og mekanismenøytralt grunnlag for sterkere autentisering (mekanismen avklares i OD-0010)
 - audit events og transactional outbox
 - idempotensmønster for kommandoer
 
