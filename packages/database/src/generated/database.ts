@@ -3,4 +3,69 @@
  * Please do not edit it manually.
  */
 
-export interface DB {}
+import type { ColumnType } from "kysely";
+
+export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
+  ? ColumnType<S, I | undefined, U>
+  : ColumnType<T, T | undefined, T>;
+
+export type Int8 = ColumnType<string, bigint | number | string, bigint | number | string>;
+
+export type Json = JsonValue;
+
+export type JsonArray = JsonValue[];
+
+export type JsonObject = {
+  [x: string]: JsonValue | undefined;
+};
+
+export type JsonPrimitive = boolean | number | string | null;
+
+export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
+
+export type Timestamp = ColumnType<Date, Date | string, Date | string>;
+
+export interface AppAuditEvents {
+  actor_process: string | null;
+  actor_type: string;
+  actor_user_id: string | null;
+  causation_event_id: string | null;
+  correlation_id: string | null;
+  event_type: string;
+  event_version: number;
+  id: Generated<string>;
+  kind: string;
+  occurred_at: Generated<Timestamp>;
+  payload: Generated<Json>;
+  position: Generated<Int8>;
+  resource_id: string;
+  resource_type: string;
+}
+
+export interface AppIdempotencyRecords {
+  command: string;
+  created_at: Generated<Timestamp>;
+  idempotency_key: string;
+  request_hash: string;
+  response: Json;
+  scope: string;
+}
+
+export interface AppOutboxMessages {
+  attempts: Generated<number>;
+  available_at: Generated<Timestamp>;
+  consumer: string;
+  created_at: Generated<Timestamp>;
+  event_id: string;
+  finished_at: Timestamp | null;
+  id: Generated<string>;
+  last_error: string | null;
+  lease_token: string | null;
+  status: Generated<string>;
+}
+
+export interface DB {
+  "app.audit_events": AppAuditEvents;
+  "app.idempotency_records": AppIdempotencyRecords;
+  "app.outbox_messages": AppOutboxMessages;
+}

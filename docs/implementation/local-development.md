@@ -27,6 +27,7 @@ pnpm dev
 | `apps/web` | Next.js-app med UI og Route Handlers som HTTP/API-grense |
 | `packages/contracts` | Delte API-kontrakter (Zod). Inneholder aldri serverens autorisasjonslogikk |
 | `packages/database` | Kysely/Postgres-adapter og genererte databasetyper. Kun for serverkode |
+| `packages/domain` | Serverens domenekjerne: aktørmodell, policy-/autorisasjons-API, hendelser, transactional outbox og idempotente kommandoer. Kun for serverkode |
 | `packages/observability` | Strukturert logging med tillatelsesliste for felt |
 | `supabase/` | Lokal Supabase-konfigurasjon, SQL-migrasjoner og pgTAP-tester |
 
@@ -51,14 +52,14 @@ SQL-filene i `supabase/migrations/` er den autoritative skjemahistorikken. Den l
 
 ### Testdatabase
 
-CI starter en isolert lokal Supabase-database, bygger den fra alle migrasjoner, kjører pgTAP-testene, kontrollerer at genererte typer stemmer med skjemaet og kjører integrasjonstesten for databaseadapteren. Ingen delt eller hostet database brukes i testene.
+CI starter en isolert lokal Supabase-database, bygger den fra alle migrasjoner, kjører pgTAP-testene, kontrollerer at genererte typer stemmer med skjemaet og kjører alle `*.integration.test.ts` mot databasen (`pnpm test:integration`, som krever `DATABASE_URL`). Ingen delt eller hostet database brukes i testene.
 
 ## CI-kontroller
 
 | Jobb | Hva den beviser |
 | --- | --- |
 | `quality` | Lint, typecheck, enhetstester, Prettier og produksjonsbygg (`pnpm check`) |
-| `database` | Migrasjoner fra tom database, pgTAP, typekontroll mot skjema og adapter-røyktest |
+| `database` | Migrasjoner fra tom database, pgTAP, typekontroll mot skjema og integrasjonstester mot databasen (`pnpm test:integration`) |
 | `e2e` | Playwright-røyktest mot produksjonsbygget: siden laster uten CSP-brudd, sikkerhetshoder og helseendepunkt |
 | `security` | `pnpm audit` for produksjonsavhengigheter, selvtest av Gitleaks og skanning av hele git-historikken |
 
