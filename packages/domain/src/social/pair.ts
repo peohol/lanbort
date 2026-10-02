@@ -116,6 +116,22 @@ export async function loadPair(
   };
 }
 
+/**
+ * Runs several reads against one consistent snapshot, so a query never mixes
+ * state from before and after a concurrent social change (for example a
+ * friendship that a block has just ended next to that block).
+ */
+export function readSnapshot<T>(
+  db: Kysely<Database>,
+  read: (snapshot: Kysely<Database>) => Promise<T>,
+): Promise<T> {
+  return db
+    .transaction()
+    .setIsolationLevel("repeatable read")
+    .setAccessMode("read only")
+    .execute(read);
+}
+
 export function friendshipStateOf(pair: SocialPair): FriendshipState {
   const friendship = pair.openFriendship;
 

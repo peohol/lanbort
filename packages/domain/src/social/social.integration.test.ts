@@ -314,6 +314,27 @@ describe("retries, double taps and races", () => {
     }
   });
 
+  it("never shows a half-applied block in the overview or relation", async () => {
+    for (let round = 0; round < 4; round++) {
+      const [anna, bo] = await users();
+      await friends(anna, bo);
+
+      const [, ...reads] = await Promise.all([
+        run(blockUser, anna, bo),
+        ...Array.from({ length: 6 }, () =>
+          Promise.all([overview(anna), relation(anna, bo)]),
+        ),
+      ]);
+
+      for (const [seen, pair] of reads) {
+        const friendsWithBo = ids(seen.friends).includes(bo.userId);
+        const blocksBo = ids(seen.blocked).includes(bo.userId);
+        expect(friendsWithBo && blocksBo).toBe(false);
+        expect(pair.friendship === "friends" && pair.blockedByMe).toBe(false);
+      }
+    }
+  });
+
   it("keeps both blocks when two users block each other at the same time", async () => {
     const [anna, bo] = await users();
     await friends(anna, bo);
