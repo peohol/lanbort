@@ -19,7 +19,7 @@ const db = createDatabase({ connectionString, maxConnections: 2 });
 afterAll(() => db.destroy());
 const domain = { db, consumers: new ConsumerRegistry() };
 
-async function registeredEmail() {
+async function registeredAccount() {
   const email = `ops-${randomUUID()}@example.test`;
   const actor = await resolveUserActor(domain, {
     provider: "supabase",
@@ -33,12 +33,12 @@ async function registeredEmail() {
     input: { realName: "Drift Testesen", adultConfirmed: true },
     idempotencyKey: randomUUID(),
   });
-  return email;
+  return { email, userId: actor!.userId };
 }
 
 describe("ops:platform-role", () => {
   it("grants and revokes through the audited command", async () => {
-    const email = await registeredEmail();
+    const { email } = await registeredAccount();
 
     const granted = await runPlatformRoleCommand(domain, [
       "grant",
@@ -75,6 +75,44 @@ describe("ops:platform-role", () => {
         ])
       ).exitCode,
     ).toBe(0);
+  });
+
+  it("retries a change safely with the announced key", async () => {
+    const { email, userId } = await registeredAccount();
+    const keys: string[] = [];
+    const grant = (...extra: string[]) =>
+      runPlatformRoleCommand(
+        domain,
+        ["grant", "--email", email, "--reason", "Pilot steward", ...extra],
+        { announceKey: (key) => keys.push(key) },
+      );
+
+    const first = await grant();
+    expect(first.exitCode).toBe(0);
+    expect(keys).toHaveLength(1);
+
+    // The same key repeats the first result instead of refusing or regranting.
+    const retried = await grant("--idempotency-key", keys[0]!);
+    expect(retried).toEqual({
+      exitCode: 0,
+      message: `${first.message.slice(0, -1)}, already applied with this key.`,
+    });
+    expect(keys[1]).toBe(keys[0]);
+
+    const events = await db
+      .selectFrom("app.audit_events")
+      .select("event_type")
+      .where("resource_type", "=", "user")
+      .where("resource_id", "=", userId)
+      .where("event_type", "=", "platform_role.granted")
+      .execute();
+    expect(events).toHaveLength(1);
+
+    // A new key is a new change, which the active grant refuses.
+    expect(await grant()).toEqual({
+      exitCode: 1,
+      message: "Refused: conflict.",
+    });
   });
 
   it("refuses unknown accounts and incomplete input", async () => {

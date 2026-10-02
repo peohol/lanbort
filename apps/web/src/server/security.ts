@@ -6,11 +6,9 @@ import {
   authorizeActor,
   type DomainContext,
   enrollMfaPolicy,
-  executeCommand,
   type Policy,
   readSecurityPolicy,
   reauthenticatePolicy,
-  recordMfaEnabled,
   resolveUserActor,
   stepUpMfaPolicy,
   type UserActor,
@@ -105,18 +103,12 @@ export async function verifyTotp(
     context: undefined,
   });
 
+  // Resolving the raised (aal2) session records the confirmed app in the
+  // audit history, or fails, before anything can use it.
   const actor = await sameUserAfter(
     context,
     await context.auth.verifyTotp(code),
   );
-
-  // Also after a step-up: repairs the audit record if writing it failed
-  // right after the provider confirmed the app.
-  await executeCommand(context.domain, recordMfaEnabled, {
-    actor,
-    input: {},
-    correlationId: context.requestId,
-  });
 
   return {
     totp: "verified",

@@ -16,4 +16,21 @@ describe("ops:platform-role arguments", () => {
       message: usage,
     });
   });
+
+  it("rejects a malformed idempotency key before any change", async () => {
+    expect(
+      await runPlatformRoleCommand(noDatabase, [
+        "grant",
+        "--email",
+        "a@b.no",
+        "--reason",
+        "x",
+        "--idempotency-key",
+        "short",
+      ]),
+    ).toEqual({
+      exitCode: 1,
+      message: "Refused: invalid_input (idempotencyKey).",
+    });
+  });
 });

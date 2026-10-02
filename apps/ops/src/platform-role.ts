@@ -21,6 +21,10 @@ try {
   const outcome = await runPlatformRoleCommand(
     { db, consumers: new ConsumerRegistry() },
     process.argv.slice(2),
+    {
+      announceKey: (key) =>
+        console.error(`Idempotency key: ${key} (reuse it to retry safely)`),
+    },
   );
 
   (outcome.exitCode === 0 ? console.log : console.error)(outcome.message);

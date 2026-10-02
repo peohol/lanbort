@@ -73,11 +73,10 @@ export const completeRegistration = defineCommand({
 /**
  * Makes sure Lånbort's audit history has the authenticator app the provider
  * has confirmed. The provider owns the factor, so its change and this record
- * cannot share a transaction: this runs after every successful app
- * verification and records the event only once, which repairs a record lost
- * to a failure right after the provider confirmed the app. (Removing an app
- * is not supported yet; when it is, this must compare with the latest
- * removal.)
+ * cannot share a transaction. `resolveUserActor` runs this before it accepts
+ * an aal2 session without the record, and it writes the event only once.
+ * (Removing an app is not supported yet; when it is, this must compare with
+ * the latest removal.)
  */
 export const recordMfaEnabled = defineCommand({
   name: "account.record_mfa_enabled",

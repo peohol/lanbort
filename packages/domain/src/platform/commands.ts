@@ -75,8 +75,8 @@ export const grantPlatformRole = defineCommand({
   input: platformRoleChangeSchema,
   output: grantOutput,
   policy: grantPlatformRolePolicy,
-  // Repeating it is harmless: a second grant is refused as a conflict.
-  idempotency: "none",
+  // A retry with the same key returns the first result (docs/architecture/05).
+  idempotency: "required",
   load: ({ tx, input }) => loadTarget(tx, input),
   execute: async ({ tx, actor, input, resource, events, now }) => {
     if (resource.activeGrantId !== null) {
@@ -111,8 +111,7 @@ export const revokePlatformRole = defineCommand({
   input: platformRoleChangeSchema,
   output: grantOutput,
   policy: revokePlatformRolePolicy,
-  // Repeating it is harmless: there is no active grant left to revoke.
-  idempotency: "none",
+  idempotency: "required",
   load: ({ tx, input }) => loadTarget(tx, input),
   execute: async ({ tx, actor, input, resource, events, now }) => {
     const grantId = resource.activeGrantId as string;

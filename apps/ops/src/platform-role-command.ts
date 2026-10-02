@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { parseArgs } from "node:util";
 import {
   type DomainContext,
@@ -15,9 +16,11 @@ export const usage = `Grants or revokes a global product role (PS-USR-008).
   pnpm ops:platform-role revoke --email <address> --reason "<why>"
 
 Options:
-  --role     Role to change (default: platform_steward)
-  --email    Verified e-mail address of a registered account
-  --reason   Why the change is made; stored with the grant, never logged
+  --role             Role to change (default: platform_steward)
+  --email            Verified e-mail address of a registered account
+  --reason           Why the change is made; stored with the grant, never logged
+  --idempotency-key  Key from an earlier attempt, to retry the same change
+                     safely (default: a new key, printed before the change)
 `;
 
 const commands = { grant: grantPlatformRole, revoke: revokePlatformRole };
@@ -25,6 +28,11 @@ const commands = { grant: grantPlatformRole, revoke: revokePlatformRole };
 export interface CommandOutcome {
   readonly exitCode: 0 | 1 | 2;
   readonly message: string;
+}
+
+export interface CommandOptions {
+  /** Told the key before the change runs, so an interrupted run can be retried. */
+  readonly announceKey?: (key: string) => void;
 }
 
 /**
@@ -35,6 +43,7 @@ export interface CommandOutcome {
 export async function runPlatformRoleCommand(
   domain: DomainContext,
   argv: readonly string[],
+  { announceKey }: CommandOptions = {},
 ): Promise<CommandOutcome> {
   let parsed;
 
@@ -46,6 +55,7 @@ export async function runPlatformRoleCommand(
         role: { type: "string", default: "platform_steward" },
         email: { type: "string" },
         reason: { type: "string" },
+        "idempotency-key": { type: "string" },
       },
     });
   } catch {
@@ -59,15 +69,22 @@ export async function runPlatformRoleCommand(
     return { exitCode: 2, message: usage };
   }
 
+  const { "idempotency-key": givenKey, ...input } = parsed.values;
+  const idempotencyKey = givenKey ?? randomUUID();
+  announceKey?.(idempotencyKey);
+
   try {
-    const { output } = await executeCommand(domain, command, {
+    // The key identifies this one logical change: a retry with it returns the
+    // first result instead of changing the role again (docs/architecture/05).
+    const { output, replayed } = await executeCommand(domain, command, {
       actor: systemActor(platformRoleOpsProcess),
-      input: parsed.values,
+      input,
+      idempotencyKey,
     });
 
     return {
       exitCode: 0,
-      message: `${action === "grant" ? "Granted" : "Revoked"} ${parsed.values.role} (grant ${output.grantId}).`,
+      message: `${action === "grant" ? "Granted" : "Revoked"} ${input.role} (grant ${output.grantId})${replayed ? ", already applied with this key" : ""}.`,
     };
   } catch (error) {
     if (isDomainError(error)) {

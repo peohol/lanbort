@@ -6,10 +6,11 @@ import {
   platformRoles,
   type UserActor,
 } from "../actor";
-import type { DomainContext } from "../commands/command";
+import { type DomainContext, executeCommand } from "../commands/command";
 import { EventRecorder, writeEvents } from "../events/recorder";
 import { sql } from "kysely";
-import { accountCreated } from "./events";
+import { recordMfaEnabled } from "./commands";
+import { accountCreated, mfaEnabled } from "./events";
 
 /**
  * An identity as verified by the auth adapter, already stripped of vendor
@@ -28,6 +29,7 @@ interface UserRow {
   readonly id: string;
   readonly status: string;
   readonly platform_roles: readonly string[];
+  readonly mfa_recorded: boolean;
 }
 
 function isPlatformRole(role: string): role is PlatformRole {
@@ -60,6 +62,12 @@ async function findLinkedUser(
         where grant_row.user_id = "user".id and grant_row.revoked_at is null
         order by grant_row.role
       )`.as("platform_roles"),
+      sql<boolean>`exists(
+        select 1 from app.audit_events as event
+        where event.resource_type = ${mfaEnabled.resourceType}
+          and event.resource_id = "user".id::text
+          and event.event_type = ${mfaEnabled.type}
+      )`.as("mfa_recorded"),
     ])
     .where("link.provider", "=", identity.provider)
     .where("link.subject", "=", identity.subject)
@@ -83,12 +91,47 @@ export async function resolveUserActor(
     return null;
   }
 
-  const existing = await findLinkedUser(domain.db, identity);
+  const row =
+    (await findLinkedUser(domain.db, identity)) ??
+    (await createLinkedUser(
+      domain,
+      { ...identity, email: identity.email },
+      correlationId,
+    ));
+  const actor = toActor(row, identity);
 
-  if (existing) {
-    return toActor(existing, identity);
+  if (actor.authentication.assurance !== "aal2" || row.mfa_recorded) {
+    return actor;
   }
 
+  // A session raised with the authenticator app (aal2) is only accepted once
+  // the confirmed app is in the audit history. The provider confirms the app
+  // outside our transaction, so a record lost to a failure right after that
+  // is repaired here, before any request can use the raised session; if the
+  // repair fails, the request fails with it.
+  if (actor.accountStatus === "active") {
+    await executeCommand(domain, recordMfaEnabled, {
+      actor,
+      input: {},
+      correlationId,
+    });
+    return actor;
+  }
+
+  // Only active accounts can add an app, so there is nothing to record; the
+  // unrecorded raise is simply not trusted.
+  return {
+    ...actor,
+    authentication: { ...actor.authentication, assurance: "aal1" },
+  };
+}
+
+/** First sight of a verified identity: a new internal account. */
+async function createLinkedUser(
+  domain: DomainContext,
+  identity: AuthenticatedIdentity & { email: string },
+  correlationId: string | undefined,
+): Promise<UserRow> {
   const email = identity.email.toLowerCase();
 
   return domain.db.transaction().execute(async (tx) => {
@@ -105,7 +148,7 @@ export async function resolveUserActor(
     const linked = await findLinkedUser(tx, identity);
 
     if (linked) {
-      return toActor(linked, identity);
+      return linked;
     }
 
     const emailTaken = await tx
@@ -146,7 +189,8 @@ export async function resolveUserActor(
       })
       .execute();
 
-    const actor = toActor({ ...user, platform_roles: [] }, identity);
+    const created = { ...user, platform_roles: [], mfa_recorded: false };
+    const actor = toActor(created, identity);
     const events = new EventRecorder();
     events.record(accountCreated, { resourceId: user.id, payload: {} });
     await writeEvents(tx, events, {
@@ -155,6 +199,6 @@ export async function resolveUserActor(
       consumers: domain.consumers,
     });
 
-    return actor;
+    return created;
   });
 }
