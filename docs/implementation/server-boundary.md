@@ -29,6 +29,12 @@ Route Handler (route.user / route.public / route.scheduler)
 - Kategoristrukturen er åpen (OD-0006). Bare «Annet» finnes til den er besluttet; nye kategorier legges inn som data i en migrasjon.
 - Bilder går bare gjennom `@lanbort/storage`. Serveren dekoder og koder hvert bilde på nytt til WebP uten metadata (også posisjon) før det lagres i den private bøtta `object-images`, og leverer det ut bare etter objektets lesepolicy. Nettleseren når aldri lagringen direkte. Før en fil lagres, registreres opplastingen i outbox, så en fil som aldri ble knyttet til objektet (for eksempel etter et krasj), slettes etter 15 minutter. Filen til et fjernet bilde slettes etter commit, også via outbox.
 
+## Vennskap og blokkering
+
+- Sosiale kommandoer navngir bare den andre brukeren. Den som kaller er alltid den ene parten, så ingen input kan nå andres relasjoner. Alle endringer for samme par låses mot hverandre i databasen.
+- En bruker som har blokkert den som spør, skal se ut som en bruker som ikke finnes (`not_found`), både i svar og i lister. Om den andre har blokkert deg, returneres aldri, og blokkerings- og lukkingshendelser er audit-hendelser uten payload.
+- Nye domener som oppretter ny kontakt eller nye forpliktelser (direkte vennelån, chat, medeierskap, oppdagelse), sjekker relasjonen med `socialRelationBetween` i samme transaksjon som beslutningen. Etablerte lån, saker og anmeldelsesretter skal ikke sjekkes mot blokkering på nytt (PS-USR-007).
+
 ## Innlogging og sesjon
 
 Supabase Auth brukes bare gjennom `packages/auth`. Nettleseren snakker aldri med Supabase direkte og får ingen token: sesjonen ligger i HttpOnly-cookies, og en `proxy` fornyer utløpte tilgangstokener. Endrende forespørsler må komme fra appens egen origin.

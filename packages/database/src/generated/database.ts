@@ -49,6 +49,20 @@ export interface AppAuthIdentities {
   user_id: string;
 }
 
+export interface AppFriendships {
+  accepted_at: Timestamp | null;
+  addressee_id: string;
+  end_reason: string | null;
+  ended_at: Timestamp | null;
+  ended_by_user_id: string | null;
+  id: Generated<string>;
+  requested_at: Generated<Timestamp>;
+  requester_id: string;
+  status: Generated<string>;
+  user_high_id: Generated<string>;
+  user_low_id: Generated<string>;
+}
+
 export interface AppIdempotencyRecords {
   command: string;
   created_at: Generated<Timestamp>;
@@ -139,6 +153,14 @@ export interface AppProfiles {
   version: Generated<number>;
 }
 
+export interface AppUserBlocks {
+  blocked_id: string;
+  blocker_id: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  lifted_at: Timestamp | null;
+}
+
 export interface AppUsers {
   adult_confirmed_at: Timestamp | null;
   created_at: Generated<Timestamp>;
@@ -156,6 +178,7 @@ export interface AppVerifiedContacts {
 export interface DB {
   "app.audit_events": AppAuditEvents;
   "app.auth_identities": AppAuthIdentities;
+  "app.friendships": AppFriendships;
   "app.idempotency_records": AppIdempotencyRecords;
   "app.object_availability_intervals": AppObjectAvailabilityIntervals;
   "app.object_categories": AppObjectCategories;
@@ -165,6 +188,7 @@ export interface DB {
   "app.outbox_messages": AppOutboxMessages;
   "app.platform_role_grants": AppPlatformRoleGrants;
   "app.profiles": AppProfiles;
+  "app.user_blocks": AppUserBlocks;
   "app.users": AppUsers;
   "app.verified_contacts": AppVerifiedContacts;
 }
