@@ -106,6 +106,20 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Hvilken organisatorisk ordning skal brukes dersom alle interne plattformforvaltere er inhabile?
 - **Avhenger av:** Organisasjonsform og skala før bred lansering.
 
+### OD-0010 — Mekanisme for privilegert autentisering
+- **Lag:** Tverrgående
+- **Status:** Åpen
+- **Berører:** PS-USR-008, PS-USR-009, [autorisasjon og tilgang](architecture/04-autorisasjon-og-tilgang.md), ADR-0007, WP-12
+- **Spørsmål:** Hvilken konkret autentiseringsmekanisme skal gi det ekstra sikkerhetsnivået som kreves for plattformforvaltere og andre særskilt privilegerte handlinger?
+- **Avhenger av:** Sammenligning av sikkerhet, brukeropplevelse, recovery, leverandørmodenhet og kostnad for aktuelle alternativer, blant annet passkeys/WebAuthn, TOTP og leverandørbasert sterk re-autentisering. Vanlige brukere skal ikke gjøres avhengige av MFA som følge av denne beslutningen. TOTP/autentiseringsapp er ikke vedtatt som permanent løsning.
+
+### OD-0011 — Framtidig Vipps-innlogging og identitetsgrunnlag
+- **Lag:** Tverrgående
+- **Status:** Åpen
+- **Berører:** PS-USR-001, [brukeridentitet og grunnkrav](vision/02-brukere-roller-og-relasjoner.md), ADR-0007
+- **Spørsmål:** Skal Vipps på sikt brukes som foretrukket eller alternativ innlogging og som sterkere identitetsgrunnlag for norske brukere, og i så fall hvordan skal dette samspille med dagens konto- og autentiseringsmodell?
+- **Avhenger av:** Teknisk og kontraktsmessig utredning av Vipps Login, hvilke verifiserte identitetsopplysninger og sikkerhetsgarantier tjenesten faktisk gir, personvern, recovery og alternativ tilgang for brukere som ikke kan eller ønsker å bruke Vipps. Kostnad og mulig sponsor-/samarbeidsmodell med Vipps kan inngå i vurderingen, men skal ikke være en teknisk forutsetning. Det skal også vurderes særskilt om fersk Vipps-autentisering kan ha en rolle ved privilegert re-autentisering.
+
 ## Avklart
 
 ### OD-0009 — Konkret implementeringsstack og driftsleverandører
