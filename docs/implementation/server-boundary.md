@@ -23,7 +23,7 @@ Route Handler (route.user / route.public / route.scheduler)
 
 ## Objekter og bilder
 
-- Et objekt (PS-OBJ-001) har én global sannhet i `app.objects` og tilhører eierne i `app.object_owners`, aldri et miljø. Inntil publisering (WP-25) finnes, ser bare eierne objektet; alle andre får `not_found`.
+- Et objekt (PS-OBJ-001) har én global sannhet i `app.objects` og tilhører eierne i `app.object_owners`, aldri et miljø. Utenom en aktiv publisering (se under) ser bare eierne objektet; alle andre får `not_found`.
 - Endringer krever `expectedVersion`. Er objektet endret siden, avvises endringen med `conflict` i stedet for å overskrive nyere data.
 - Generell tilgjengelighet lagres som datointervaller som aldri overlapper; intervaller som berører hverandre slås sammen. Faktisk ledighet lagres aldri: den beregnes av `deriveAvailability` som tilgjengelighet minus sperrer. Nye domener som kan sperre nye lån (godkjente lån, uavklart besittelse, medeierbegrensninger), legger til en kilde i `availabilityBlockSources` i stedet for å lage egen ledig-status.
 - Kategoristrukturen er åpen (OD-0006). Bare «Annet» finnes til den er besluttet; nye kategorier legges inn som data i en migrasjon.
@@ -33,11 +33,20 @@ Route Handler (route.user / route.public / route.scheduler)
 
 - En medeier er en vanlig rad i `app.object_owners`, og alle registrerte eiere har de samme objektrettighetene (PS-OBJ-007). Medeierskap gir ikke innsyn i miljøkontekster eller lånedetaljer: policyer for publisering (WP-25) og lån (Fase 3) må sjekke sin egen relasjon i tillegg til eierskapet.
 - Man blir medeier bare ved å godta en invitasjon selv. Invitasjon og aksept tar parlåsen fra vennskap og blokkering mot hver eier (og ved aksept også mot de andre inviterte), så en samtidig blokkering enten stopper dem eller ser dem. En blokkering mellom den inviterte og en eier lukker invitasjonen, og ser ut som en konto eller invitasjon som ikke finnes.
-- En blokkering mellom to medeiere fryser objektet for nye lån i samme transaksjon som blokkeringen (databasetrigger på `app.user_blocks`). Frysingen ender bare når objektet har én eier igjen, ikke når blokkeringen oppheves. Finn-flater (WP-25) skal utelate frosne objekter (`loadFreezes`).
+- En blokkering mellom to medeiere fryser objektet for nye lån i samme transaksjon som blokkeringen (databasetrigger på `app.user_blocks`). Frysingen ender bare når objektet har én eier igjen, ikke når blokkeringen oppheves. Finn-flater utelater frosne objekter.
 - Medeierbegrensninger (veto) og frysing er kilder i `availabilityBlockSources`, så faktisk ledighet aldri kan åpnes ved å redigere tilgjengeligheten. Bare den som satte en begrensning kan oppheve den; den opphører når vedkommende trer ut.
 - Ingen kan fjerne en annen eier, bare tre ut selv, og den siste eieren kan ikke tre ut. Permanent sletting krever samtykke fra alle nåværende eiere.
 - Forpliktelser som hindrer uttreden og sletting (reserverte, aktive og uavklarte lån), legges til av Fase 3 i `objectCommitmentSources`. Feiler en kilde, feiler kommandoen.
 - Hver objektversjon har en uforanderlig rad i `app.object_revisions` med innhold, aktør og tidspunkt; databasen avviser en versjon uten. Gjenoppretting av tidligere innhold er en ny versjon. Fase 3 kan peke avtalesnapshot til en revisjon i stedet for dagens objekt (PS-OBJ-012).
+
+## Publisering i miljøer
+
+- En publisering (PS-OBJ-006) er en egen rad i `app.environment_publications`, aldri en del av objektet: publisering, godkjenning og avslutning endrer ikke objektet eller versjonen. Et objekt har høyst én gjeldende rad per miljø, og statusene er uavhengige mellom miljøer (PS-OBJ-017). En avsluttet publisering (`unpublished`) er historikk, og en ny publisering er en ny rad.
+- Publisering krever eierskap og aktivt medlemskap. Ventende og aktive publiseringer krever i tillegg at minst én nåværende eier har aktivt medlemskap. Det håndheves i databasen: en trigger avslutter publiseringen (`access_lost`) i samme transaksjon som den siste eieren mister tilgang, uansett årsak til passiveringen, og nekter å gjøre en publisering levende uten tilgang. En utløpt overgangsfrist teller som tapt tilgang med en gang ved lesing.
+- Forhåndsgodkjenning (PS-ENV-011) er et flagg på miljøet. Nye publiseringer starter som `pending` mens det er på. Å slå det på flytter aktive til `pending`, og å slå det av aktiverer bare `pending`. Avvisning (`rejected`) og blokkering (`blocked`) står til en administrator endrer dem, også gjennom tilgangstap, og er lokale: de er ikke plattformmoderering.
+- `loadPublicationGate` er grensen Fase 3 skal bruke for nye låneforespørsler gjennom et miljø: `open` (aktiv), `on_hold` (venter på godkjenning) eller `closed`. Etablerte lån berøres aldri av publiseringsstatus.
+- Hva et medlem finner i et miljø, avgjøres bare i `discoverablePublications`: aktive publiseringer av aktive, ufrosne objekter med en eier som har tilgang, og aldri et objekt der en eier og den som ser har blokkert hverandre. Senere regler for hva som kan vises (som historisk personvern) legges inn der. Eierne vises ikke, og medeiere ser bare miljøer de selv kan se.
+- Låserekkefølge: objekt, miljø, medlemskap, publisering.
 
 ## Vennskap og blokkering
 

@@ -105,6 +105,19 @@ export interface AppEnvironmentOwnershipVacancies {
   outcome: string | null;
 }
 
+export interface AppEnvironmentPublications {
+  created_at: Generated<Timestamp>;
+  end_reason: string | null;
+  ended_at: Timestamp | null;
+  ended_by_user_id: string | null;
+  environment_id: string;
+  id: Generated<string>;
+  object_id: string;
+  published_by_user_id: string;
+  status: string;
+  status_changed_at: Generated<Timestamp>;
+}
+
 export interface AppEnvironmentRequirements {
   created_at: Generated<Timestamp>;
   environment_id: string;
@@ -152,6 +165,7 @@ export interface AppEnvironments {
   name: string;
   object_focus: string | null;
   requirements_revision: Generated<number>;
+  requires_object_approval: Generated<boolean>;
   state: Generated<string>;
   type: string;
   updated_at: Generated<Timestamp>;
@@ -388,6 +402,7 @@ export interface DB {
   "app.environment_memberships": AppEnvironmentMemberships;
   "app.environment_ownership_claims": AppEnvironmentOwnershipClaims;
   "app.environment_ownership_vacancies": AppEnvironmentOwnershipVacancies;
+  "app.environment_publications": AppEnvironmentPublications;
   "app.environment_requirements": AppEnvironmentRequirements;
   "app.environment_role_grants": AppEnvironmentRoleGrants;
   "app.environment_role_invitations": AppEnvironmentRoleInvitations;

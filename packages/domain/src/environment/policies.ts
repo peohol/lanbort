@@ -28,7 +28,7 @@ export interface AdministeredMembership extends EnvironmentAccess {
  * including invited users; to everyone else it is indistinguishable from an
  * environment that does not exist. This rule comes first in every policy.
  */
-const canSeeEnvironment: ResourceRule<EnvironmentAccess, void> = ({
+export const canSeeEnvironment: ResourceRule<EnvironmentAccess, void> = ({
   resource,
 }) =>
   resource.environment.type !== "hidden" || resource.viewer.membership !== null
@@ -43,7 +43,7 @@ const hasMembership: ResourceRule<EnvironmentAccess, void> = ({ resource }) =>
  * An administrator acts only while holding the role and an active
  * membership; a passive member has no ordinary environment activity.
  */
-const isAdministrator: ResourceRule<EnvironmentAccess, void> = ({
+export const isAdministrator: ResourceRule<EnvironmentAccess, void> = ({
   resource,
 }) =>
   resource.viewer.roles.includes("administrator") &&

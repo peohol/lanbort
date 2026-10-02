@@ -29,6 +29,8 @@ export interface EnvironmentRecord {
   readonly location: string | null;
   readonly version: number;
   readonly requirementsRevision: number;
+  /** PS-ENV-011: objects need an administrator's approval (WP-25). */
+  readonly requiresObjectApproval: boolean;
 }
 
 export interface RequirementRecord {

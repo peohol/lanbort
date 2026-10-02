@@ -24,6 +24,7 @@ import {
   ownershipClaimDays,
   windDownCancellationDays,
 } from "./model";
+import { endEnvironmentPublications } from "../publications/store";
 
 /**
  * Database access for roles and continuity (WP-22). Callers hold the lock on
@@ -490,8 +491,9 @@ export async function startWindDown(
 /**
  * Once winding down is final, membership processes that waited for it end
  * neutrally (vision: «avsluttes kontrollert etter sin art»): applications and
- * invitations end, and passive members' reactivation requests close. Members,
- * roles and history stay.
+ * invitations end, passive members' reactivation requests close, and pending
+ * and active publications end (WP-25). Members, roles, history and the
+ * objects themselves stay.
  */
 export async function settleWindDown(
   db: Db,
@@ -522,6 +524,7 @@ export async function settleWindDown(
     .returning(["id", "user_id"])
     .execute();
 
+  await endEnvironmentPublications(db, environmentId, now, events);
   await db
     .updateTable("app.environment_wind_downs")
     .set({ settled_at: now, outcome: "finalized" })
