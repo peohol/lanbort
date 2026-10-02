@@ -14,6 +14,7 @@ export * from "./environment";
 export * from "./account";
 export * from "./platform";
 export * from "./objects";
+export * from "./publications";
 export * from "./social";
 export * from "./outbox/policy";
 export * from "./policies";

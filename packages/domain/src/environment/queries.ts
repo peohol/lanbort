@@ -162,6 +162,7 @@ export const getEnvironment = defineQuery({
       location: environment.location,
       version: environment.version,
       requirementsRevision: environment.requirementsRevision,
+      requiresObjectApproval: environment.requiresObjectApproval,
       requirements: resource.requirements.map(({ id, kind, text }) => ({
         id,
         kind,
