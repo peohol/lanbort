@@ -1,5 +1,6 @@
 import type { EnvironmentRole, EnvironmentType } from "@lanbort/contracts";
 import { anonymousActor, systemActor, type UserActor } from "../actor";
+import type { RoleInvitationRecord } from "./continuity-store";
 import type { Policy } from "../authorization/policy";
 import { type PolicyCase, policyMatrix } from "../authorization/policy-matrix";
 import type { DenialReason } from "../errors";
@@ -7,10 +8,27 @@ import { testUserActor } from "../testing/actors";
 import type { EnvironmentAccess, MembershipRecord, Viewer } from "./model";
 import {
   acceptInvitationPolicy,
+  acceptRoleInvitationPolicy,
+  accountLifecycleProcess,
   type AdministeredMembership,
   approveMembershipPolicy,
+  cancelWindDownPolicy,
+  claimOwnershipPolicy,
+  continuityProcess,
   createEnvironmentPolicy,
+  declineRoleInvitationPolicy,
   expireTransitionsPolicy,
+  inviteAdministratorPolicy,
+  listRolesPolicy,
+  offerOwnershipPolicy,
+  releaseDepartedUserPolicy,
+  removeAdministratorPolicy,
+  resignAdministratorPolicy,
+  type RoleInvitationAccess,
+  settleContinuityPolicy,
+  startWindDownPolicy,
+  withdrawOwnershipClaimPolicy,
+  withdrawRoleInvitationPolicy,
   inviteMemberPolicy,
   joinEnvironmentPolicy,
   leaveEnvironmentPolicy,
@@ -158,6 +176,199 @@ function decisionCases(): PolicyCase<AdministeredMembership, void>[] {
   ];
 }
 
+/**
+ * The owner's own powers (PS-ENV-003): only the owner with an active
+ * membership. Administrators cannot use them on each other, and a platform
+ * steward without the role gains nothing (PS-ENV-014).
+ */
+function ownerCases(): Case[] {
+  return [
+    expectCase("the owner", access("closed", administrator), "allow"),
+    expectCase(
+      "the owner of a winding-down hidden environment",
+      {
+        ...access("hidden", administrator),
+        environment: { ...access("hidden").environment, state: "winding_down" },
+      },
+      "allow",
+    ),
+    expectCase(
+      "an administrator who is not owner",
+      access("closed", member("active", ["administrator"])),
+      "forbidden",
+    ),
+    expectCase(
+      "an owner whose membership is passive",
+      access("closed", member("passive", ["owner", "administrator"])),
+      "forbidden",
+    ),
+    expectCase(
+      "a platform steward without the role",
+      access("open", member("active")),
+      "forbidden",
+      { ...user, platformRoles: ["platform_steward"] },
+    ),
+    expectCase("a non-member", access("open"), "forbidden"),
+    hiddenFromOutsiders(),
+    ...callerCases(access("closed", administrator)),
+  ];
+}
+
+/** Owner powers that also need a recent proof of identity. */
+function sensitiveOwnerCases(): Case[] {
+  const stale = new Date(Date.now() - 60 * 60 * 1000);
+
+  return [
+    ...ownerCases(),
+    expectCase(
+      "the owner without a recent proof of identity",
+      access("closed", administrator),
+      "reauthentication_required",
+      {
+        ...user,
+        authentication: {
+          ...user.authentication,
+          methods: [{ method: "otp", at: stale }],
+        },
+      },
+    ),
+  ];
+}
+
+/** Holding the administrator role in any membership state. */
+function roleHolderCases(): Case[] {
+  return [
+    expectCase(
+      "an administrator",
+      access("closed", member("active", ["administrator"])),
+      "allow",
+    ),
+    expectCase(
+      "an administrator whose membership is passive",
+      access("hidden", member("passive", ["administrator"])),
+      "allow",
+    ),
+    expectCase(
+      "an ordinary member",
+      access("closed", member("active")),
+      "forbidden",
+    ),
+    hiddenFromOutsiders(),
+    ...callerCases(access("closed", administrator)),
+  ];
+}
+
+function roleInvitation(
+  role: "owner" | "administrator",
+  userId: string,
+): RoleInvitationRecord {
+  return {
+    id: "00000000-0000-4000-8000-0000000000c1",
+    environmentId,
+    userId,
+    role,
+    invitedByUserId: applicantId,
+    createdAt: new Date(),
+  };
+}
+
+/** Only the invited user decides on a role invitation. */
+function inviteeCases(): PolicyCase<RoleInvitationAccess, void>[] {
+  const withInvitation = (
+    resource: EnvironmentAccess,
+    userId = user.userId,
+  ): RoleInvitationAccess => ({
+    ...resource,
+    invitation: roleInvitation("administrator", userId),
+  });
+  const someoneElse = "00000000-0000-4000-8000-0000000000a2";
+
+  return [
+    expectCase(
+      "the invited member",
+      access("closed", member("active")),
+      "allow",
+    ),
+    expectCase(
+      "the invited member of a hidden environment",
+      access("hidden", member("active")),
+      "allow",
+    ),
+    {
+      ...expectCase(
+        "an administrator, for someone else's invitation",
+        access("closed", administrator),
+        "not_found",
+      ),
+      resource: withInvitation(access("closed", administrator), someoneElse),
+    },
+    hiddenFromOutsiders(),
+    ...callerCases(access("closed", member("active"))),
+  ].map((testCase) =>
+    "invitation" in testCase.resource
+      ? (testCase as PolicyCase<RoleInvitationAccess, void>)
+      : { ...testCase, resource: withInvitation(testCase.resource) },
+  );
+}
+
+/** Any administrator withdraws an administrator invitation; a handover only the owner. */
+function withdrawRoleInvitationCases(): PolicyCase<
+  RoleInvitationAccess,
+  void
+>[] {
+  const withInvitation =
+    (role: "owner" | "administrator") =>
+    (testCase: Case): PolicyCase<RoleInvitationAccess, void> => ({
+      ...testCase,
+      resource: {
+        ...testCase.resource,
+        invitation: roleInvitation(role, applicantId),
+      },
+    });
+  const coAdministrator = access("closed", member("active", ["administrator"]));
+
+  return [
+    ...administrationCases().map(withInvitation("administrator")),
+    withInvitation("administrator")(
+      expectCase("an administrator who is not owner", coAdministrator, "allow"),
+    ),
+    withInvitation("owner")(
+      expectCase(
+        "the owner, for a handover",
+        access("closed", administrator),
+        "allow",
+      ),
+    ),
+    withInvitation("owner")(
+      expectCase(
+        "an administrator who is not owner, for a handover",
+        coAdministrator,
+        "forbidden",
+      ),
+    ),
+  ];
+}
+
+/** Scheduled jobs and lifecycle boundaries: only the named process. */
+const systemCases = (process: string): PolicyCase<void, void>[] =>
+  [
+    {
+      name: `the ${process} process`,
+      actor: systemActor(process),
+      expected: "allow" as const,
+    },
+    {
+      name: "another system process",
+      actor: systemActor("outbox.worker"),
+      expected: "forbidden" as const,
+    },
+    { name: "a signed-in user", actor: user, expected: "forbidden" as const },
+  ].map((testCase) => ({
+    ...testCase,
+    resource: undefined,
+    context: undefined,
+  }));
+
 const actorOnly = <R>(policy: Policy<R, void>, resource: R) =>
   policyMatrix(policy, [
     {
@@ -266,27 +477,22 @@ export const environmentMatrices = [
   policyMatrix(rejectMembershipPolicy, decisionCases()),
   policyMatrix(requestInformationPolicy, decisionCases()),
   policyMatrix(withdrawInvitationPolicy, decisionCases()),
-  policyMatrix(expireTransitionsPolicy, [
-    {
-      name: "the scheduled transition job",
-      actor: systemActor(membershipTransitionProcess),
-      resource: undefined,
-      context: undefined,
-      expected: "allow",
-    },
-    {
-      name: "another system process",
-      actor: systemActor("outbox.worker"),
-      resource: undefined,
-      context: undefined,
-      expected: "forbidden",
-    },
-    {
-      name: "a signed-in user",
-      actor: user,
-      resource: undefined,
-      context: undefined,
-      expected: "forbidden",
-    },
-  ]),
+  policyMatrix(listRolesPolicy, administrationCases()),
+  policyMatrix(inviteAdministratorPolicy, administrationCases()),
+  policyMatrix(claimOwnershipPolicy, administrationCases()),
+  policyMatrix(acceptRoleInvitationPolicy, inviteeCases()),
+  policyMatrix(declineRoleInvitationPolicy, inviteeCases()),
+  policyMatrix(withdrawRoleInvitationPolicy, withdrawRoleInvitationCases()),
+  policyMatrix(offerOwnershipPolicy, sensitiveOwnerCases()),
+  policyMatrix(startWindDownPolicy, sensitiveOwnerCases()),
+  policyMatrix(removeAdministratorPolicy, ownerCases()),
+  policyMatrix(cancelWindDownPolicy, ownerCases()),
+  policyMatrix(resignAdministratorPolicy, roleHolderCases()),
+  policyMatrix(withdrawOwnershipClaimPolicy, roleHolderCases()),
+  policyMatrix(settleContinuityPolicy, systemCases(continuityProcess)),
+  policyMatrix(releaseDepartedUserPolicy, systemCases(accountLifecycleProcess)),
+  policyMatrix(
+    expireTransitionsPolicy,
+    systemCases(membershipTransitionProcess),
+  ),
 ];

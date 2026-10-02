@@ -166,3 +166,78 @@ test("the transition job only runs for the scheduler", async ({ request }) => {
   expect(run.status()).toBe(200);
   expect(await run.json()).toMatchObject({ passivated: expect.any(Number) });
 });
+
+test("roles are taken on by accepting, and ownership is handed over (WP-22)", async ({
+  request,
+  playwright,
+  baseURL,
+}) => {
+  await registerThroughApi(request, undefined, "Eva Eier");
+  const { environmentId } = await (
+    await post(request, "", { name: "Borettslaget", type: "open" })
+  ).json();
+  const candidate = await signedInUser(playwright, baseURL!);
+  await post(candidate.context, "/membership/join", {
+    environmentId,
+    answers: [],
+  });
+
+  const invited = await post(request, "/roles/invite-administrator", {
+    environmentId,
+    userId: candidate.userId,
+  });
+  const { invitationId } = await invited.json();
+  // The role is not active before the member accepts.
+  expect(
+    (
+      await candidate.context.get(
+        `/api/environments/roles?environmentId=${environmentId}`,
+      )
+    ).status(),
+  ).toBe(403);
+  expect(
+    await (
+      await post(candidate.context, "/roles/accept", {
+        environmentId,
+        invitationId,
+      })
+    ).json(),
+  ).toEqual({ roles: ["administrator"] });
+
+  // Another administrator cannot use the owner's powers.
+  expect(
+    (await post(candidate.context, "/wind-down", { environmentId })).status(),
+  ).toBe(403);
+
+  // The owner signed in just now, which handing over requires.
+  const offer = await (
+    await post(request, "/roles/offer-ownership", {
+      environmentId,
+      userId: candidate.userId,
+    })
+  ).json();
+  await post(candidate.context, "/roles/accept", {
+    environmentId,
+    invitationId: offer.invitationId,
+  });
+  const { holders } = await (
+    await candidate.context.get(
+      `/api/environments/roles?environmentId=${environmentId}`,
+    )
+  ).json();
+  expect(holders.map((holder: { roles: string[] }) => holder.roles)).toEqual([
+    ["administrator"],
+    ["owner", "administrator"],
+  ]);
+});
+
+test("the continuity job only runs for the scheduler", async ({ request }) => {
+  const path = "/api/internal/environment-continuity";
+
+  expect((await request.get(path)).status()).toBe(401);
+  const run = await request.get(path, {
+    headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
+  });
+  expect(run.status()).toBe(200);
+  expect(await run.json()).toMatchObject({ finalized: expect.any(Number) });
+});

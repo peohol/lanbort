@@ -7,8 +7,10 @@ import {
 import {
   requireActiveAccount,
   requireNotInvolved,
+  requireRecentAuthentication,
   requireSystemProcess,
 } from "../authorization/rules";
+import type { RoleInvitationRecord } from "./continuity-store";
 import type {
   EnvironmentAccess,
   MembershipRecord,
@@ -48,6 +50,22 @@ const isAdministrator: ResourceRule<EnvironmentAccess, void> = ({
   resource.viewer.membership?.state === "active"
     ? allow
     : deny("forbidden");
+
+/**
+ * PS-ENV-003: the owner's own powers (handing over, winding down, removing
+ * administrators) need the owner role and an active membership.
+ */
+const isOwner: ResourceRule<EnvironmentAccess, void> = ({ resource }) =>
+  resource.viewer.roles.includes("owner") &&
+  resource.viewer.membership?.state === "active"
+    ? allow
+    : deny("forbidden");
+
+/** Holds the role in any membership state: a passive one may still resign. */
+const holdsAdministratorRole: ResourceRule<EnvironmentAccess, void> = ({
+  resource,
+}) =>
+  resource.viewer.roles.includes("administrator") ? allow : deny("forbidden");
 
 /** PS-ENV-004: a barred user cannot make a new membership attempt. */
 const isNotRestricted: ResourceRule<EnvironmentAccess, void> = ({
@@ -162,6 +180,144 @@ export const withdrawInvitationPolicy = decisionPolicy(
   "environment_membership.withdraw_invitation",
 );
 
+/** A pending role invitation and the environment it belongs to. */
+export interface RoleInvitationAccess extends EnvironmentAccess {
+  readonly invitation: RoleInvitationRecord;
+}
+
+/** Only the invited user sees an invitation; to anyone else it is unknown. */
+const isInvitee: ResourceRule<RoleInvitationAccess, void> = ({
+  actor,
+  resource,
+}) =>
+  actor.kind === "user" && resource.invitation.userId === actor.userId
+    ? allow
+    : deny("not_found");
+
+/**
+ * Any administrator may withdraw an administrator invitation, which belongs
+ * to the environment; an ownership handover is the owner's own offer.
+ */
+const mayWithdrawInvitation: ResourceRule<RoleInvitationAccess, void> = (
+  input,
+) => (input.resource.invitation.role === "owner" ? isOwner(input) : allow);
+
+/** Administrators see who holds and is invited to the roles. */
+export const listRolesPolicy = definePolicy<EnvironmentAccess, void>({
+  action: "environment.list_roles",
+  actor: [requireActiveAccount],
+  resource: [...administration],
+});
+
+/** PS-ENV-003: any administrator may invite a member to administer. */
+export const inviteAdministratorPolicy = definePolicy<EnvironmentAccess, void>({
+  action: "environment.invite_administrator",
+  actor: [requireActiveAccount],
+  resource: [...administration],
+});
+
+export const acceptRoleInvitationPolicy = definePolicy<
+  RoleInvitationAccess,
+  void
+>({
+  action: "environment.accept_role_invitation",
+  actor: [requireActiveAccount],
+  resource: [canSeeEnvironment, hasMembership, isInvitee],
+});
+
+export const declineRoleInvitationPolicy = definePolicy<
+  RoleInvitationAccess,
+  void
+>({
+  action: "environment.decline_role_invitation",
+  actor: [requireActiveAccount],
+  resource: [canSeeEnvironment, hasMembership, isInvitee],
+});
+
+export const withdrawRoleInvitationPolicy = definePolicy<
+  RoleInvitationAccess,
+  void
+>({
+  action: "environment.withdraw_role_invitation",
+  actor: [requireActiveAccount],
+  resource: [...administration, mayWithdrawInvitation],
+});
+
+/**
+ * Offering ownership to another administrator. Handing over is a sensitive
+ * action, so it needs a recent proof of identity (docs/architecture/04).
+ */
+export const offerOwnershipPolicy = definePolicy<EnvironmentAccess, void>({
+  action: "environment.offer_ownership",
+  actor: [requireActiveAccount, requireRecentAuthentication()],
+  resource: [canSeeEnvironment, isOwner],
+});
+
+/** Only the owner removes another administrator (PS-ENV-003). */
+export const removeAdministratorPolicy = definePolicy<EnvironmentAccess, void>({
+  action: "environment.remove_administrator",
+  actor: [requireActiveAccount],
+  resource: [canSeeEnvironment, isOwner],
+});
+
+export const resignAdministratorPolicy = definePolicy<EnvironmentAccess, void>({
+  action: "environment.resign_administrator",
+  actor: [requireActiveAccount],
+  resource: [canSeeEnvironment, holdsAdministratorRole],
+});
+
+/** PS-ENV-013: an administrator who can act registers interest. */
+export const claimOwnershipPolicy = definePolicy<EnvironmentAccess, void>({
+  action: "environment.claim_ownership",
+  actor: [requireActiveAccount],
+  resource: [...administration],
+});
+
+export const withdrawOwnershipClaimPolicy = definePolicy<
+  EnvironmentAccess,
+  void
+>({
+  action: "environment.withdraw_ownership_claim",
+  actor: [requireActiveAccount],
+  resource: [canSeeEnvironment, holdsAdministratorRole],
+});
+
+/** PS-ENV-012: only the owner starts winding down, with a recent proof. */
+export const startWindDownPolicy = definePolicy<EnvironmentAccess, void>({
+  action: "environment.start_wind_down",
+  actor: [requireActiveAccount, requireRecentAuthentication()],
+  resource: [canSeeEnvironment, isOwner],
+});
+
+export const cancelWindDownPolicy = definePolicy<EnvironmentAccess, void>({
+  action: "environment.cancel_wind_down",
+  actor: [requireActiveAccount],
+  resource: [canSeeEnvironment, isOwner],
+});
+
+/**
+ * The scheduled job that resolves expired ownership vacancies and settles
+ * final wind-downs (PS-ENV-012–013).
+ */
+export const continuityProcess = "environment.continuity";
+
+export const settleContinuityPolicy = definePolicy({
+  action: "environment.settle_continuity",
+  actor: [requireSystemProcess(continuityProcess)],
+});
+
+/**
+ * Account lifecycle (deactivation, controlled closure; PS-ADM-001–006) ends
+ * a departed user's environment roles through this boundary, which starts
+ * the continuity model where the user was owner (PS-ENV-013).
+ */
+export const accountLifecycleProcess = "account.lifecycle";
+
+export const releaseDepartedUserPolicy = definePolicy({
+  action: "environment.release_departed_user",
+  actor: [requireSystemProcess(accountLifecycleProcess)],
+});
+
 /** The scheduled job that ends expired transition periods (PS-ENV-006). */
 export const membershipTransitionProcess = "environment.membership_transitions";
 
@@ -188,4 +344,18 @@ export const environmentPolicies = [
   requestInformationPolicy,
   withdrawInvitationPolicy,
   expireTransitionsPolicy,
+  listRolesPolicy,
+  inviteAdministratorPolicy,
+  acceptRoleInvitationPolicy,
+  declineRoleInvitationPolicy,
+  withdrawRoleInvitationPolicy,
+  offerOwnershipPolicy,
+  removeAdministratorPolicy,
+  resignAdministratorPolicy,
+  claimOwnershipPolicy,
+  withdrawOwnershipClaimPolicy,
+  startWindDownPolicy,
+  cancelWindDownPolicy,
+  settleContinuityPolicy,
+  releaseDepartedUserPolicy,
 ];

@@ -3,7 +3,11 @@ import { z } from "zod";
 /** PS-ENV-001: the three privacy types of an environment. */
 export const environmentTypeSchema = z.enum(["open", "closed", "hidden"]);
 
-export const environmentStateSchema = z.enum(["active"]);
+/** PS-ENV-012: an environment winds down before it is archived. */
+export const environmentStateSchema = z.enum(["active", "winding_down"]);
+
+/** Started by the owner, or because nobody took over ownership (PS-ENV-013). */
+export const windDownReasonSchema = z.enum(["voluntary", "ownerless"]);
 
 /** PS-ENV-004: explicit membership states. */
 export const membershipStateSchema = z.enum([
@@ -136,6 +140,40 @@ const membershipFields = {
 
 export const ownMembershipSchema = z.strictObject(membershipFields);
 
+/**
+ * PS-ENV-012–014: the environment's continuity, for the caller's own
+ * membership. Shown so that waiting processes can be explained.
+ */
+export const environmentContinuitySchema = z.strictObject({
+  /**
+   * False while no administrator has an active membership. Processes that
+   * need one wait; nobody else decides them (PS-ENV-014).
+   */
+  administrationAvailable: z.boolean(),
+  /** PS-ENV-013: the owner is gone; administrators may claim ownership. */
+  ownershipVacancy: z
+    .strictObject({
+      claimDeadline: z.iso.datetime(),
+      /** The caller, an administrator, has registered interest. */
+      claimedByYou: z.boolean(),
+    })
+    .nullable(),
+  windDown: z
+    .strictObject({
+      reason: windDownReasonSchema,
+      /** When the owner can no longer cancel it. */
+      finalAt: z.iso.datetime(),
+      cancellable: z.boolean(),
+    })
+    .nullable(),
+});
+
+/** A pending invitation to the caller to take on a role. */
+export const ownRoleInvitationSchema = z.strictObject({
+  id: z.uuid(),
+  role: environmentRoleSchema,
+});
+
 export const environmentSchema = z.strictObject({
   id: z.uuid(),
   type: environmentTypeSchema,
@@ -151,6 +189,9 @@ export const environmentSchema = z.strictObject({
   /** The caller's own relation to the environment. */
   membership: ownMembershipSchema.nullable(),
   roles: z.array(environmentRoleSchema),
+  /** Null without a current membership. */
+  continuity: environmentContinuitySchema.nullable(),
+  roleInvitations: z.array(ownRoleInvitationSchema),
 });
 
 export const environmentSummarySchema = z.strictObject({
@@ -173,6 +214,30 @@ export const environmentMembershipsSchema = z.strictObject({
   restrictedUserIds: z.array(z.uuid()),
 });
 
+/** Who holds a role, and since when they have been administrator. */
+export const roleHolderSchema = z.strictObject({
+  userId: z.uuid(),
+  realName: z.string().nullable(),
+  roles: z.array(environmentRoleSchema),
+  /** Start of the continuous administrator period (PS-ENV-013). */
+  administratorSince: z.iso.datetime(),
+});
+
+export const pendingRoleInvitationSchema = z.strictObject({
+  id: z.uuid(),
+  userId: z.uuid(),
+  realName: z.string().nullable(),
+  role: environmentRoleSchema,
+  invitedByUserId: z.uuid(),
+  createdAt: z.iso.datetime(),
+});
+
+/** What administrators see of the environment's roles (PS-ENV-003). */
+export const environmentRolesSchema = z.strictObject({
+  holders: z.array(roleHolderSchema),
+  invitations: z.array(pendingRoleInvitationSchema),
+});
+
 export type EnvironmentType = z.infer<typeof environmentTypeSchema>;
 export type MembershipState = z.infer<typeof membershipStateSchema>;
 export type MembershipOrigin = z.infer<typeof membershipOriginSchema>;
@@ -182,6 +247,10 @@ export type MembershipPassiveReason = z.infer<
 >;
 export type RequirementKind = z.infer<typeof requirementKindSchema>;
 export type EnvironmentRole = z.infer<typeof environmentRoleSchema>;
+export type EnvironmentState = z.infer<typeof environmentStateSchema>;
+export type WindDownReason = z.infer<typeof windDownReasonSchema>;
+export type EnvironmentContinuity = z.infer<typeof environmentContinuitySchema>;
+export type EnvironmentRoles = z.infer<typeof environmentRolesSchema>;
 export type CreateEnvironment = z.infer<typeof createEnvironmentSchema>;
 export type RequirementDraft = z.infer<typeof requirementDraftSchema>;
 export type RequirementAnswer = z.infer<typeof requirementAnswerSchema>;
