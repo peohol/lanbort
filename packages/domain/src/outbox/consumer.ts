@@ -5,6 +5,8 @@ export interface StoredEvent {
   readonly version: number;
   readonly resourceType: string;
   readonly resourceId: string;
+  /** The user who acted; null when a system process did. */
+  readonly actorUserId: string | null;
   readonly correlationId: string | null;
   readonly occurredAt: Date;
   readonly payload: unknown;

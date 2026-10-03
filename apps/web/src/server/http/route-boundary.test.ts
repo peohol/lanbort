@@ -69,6 +69,11 @@ const nonUserRoutes: Record<
     reason:
       "publishes reviews whose window is over, authenticated with the cron secret",
   },
+  "GET /api/internal/notification-deadlines": {
+    access: "scheduler",
+    reason:
+      "tells loan parties about handover and return days, authenticated with the cron secret",
+  },
 };
 
 const httpMethods = [

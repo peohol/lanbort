@@ -758,6 +758,7 @@ describe("images (PS-OBJ-002)", () => {
         version: 1,
         resourceType: "object",
         resourceId: objectId,
+        actorUserId: null,
         correlationId: null,
         occurredAt,
         payload: { imageId },

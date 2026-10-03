@@ -33,11 +33,14 @@ import { registerTestUser } from "./identities";
  * the real commands against the test database. Each command moves the clock
  * a millisecond ahead, so events and statuses keep their order.
  */
-export function loanTestKit(db: Kysely<Database>) {
+export function loanTestKit(
+  db: Kysely<Database>,
+  options: { consumers?: ConsumerRegistry } = {},
+) {
   let clock = new Date();
   const domain: DomainContext = {
     db,
-    consumers: new ConsumerRegistry(),
+    consumers: options.consumers ?? new ConsumerRegistry(),
     clock: () => clock,
   };
   const tick = () => {
