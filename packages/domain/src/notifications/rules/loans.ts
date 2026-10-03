@@ -307,8 +307,11 @@ export const loanRules = [
       ? toSides("loan.not_completed", bothSides)(input)
       : [],
   ),
-  notifyOn(loanHandoverDisputed, ({ db, payload }) =>
-    possessionUncertain(db, payload.otherLoanIds),
+  notifyOn(
+    loanHandoverDisputed,
+    ({ db, payload }) => possessionUncertain(db, payload.otherLoanIds),
+    // About the other loans, which the actor may also be a party to.
+    { tellsActor: true },
   ),
   // The other side, and the responsible lender too when a co-owner
   // confirmed the receipt in the narrow role (PS-LOAN-015).
@@ -321,8 +324,11 @@ export const loanRules = [
       ({ outcome }) => outcome,
     ),
   ),
-  notifyOn(loanReturnDisputed, ({ db, payload }) =>
-    possessionUncertain(db, payload.otherLoanIds),
+  notifyOn(
+    loanReturnDisputed,
+    ({ db, payload }) => possessionUncertain(db, payload.otherLoanIds),
+    // About the other loans, which the actor may also be a party to.
+    { tellsActor: true },
   ),
   notifyOn(loanResponsibilityProposed, async ({ db, event, payload }) => {
     const parties = await loanParties(db, event.resourceId);

@@ -3,11 +3,17 @@ import type { Notification } from "@lanbort/contracts";
 import { afterAll, describe, expect, it } from "vitest";
 import { systemActor, type UserActor } from "../actor";
 import { executeQuery } from "../commands/query";
-import { inviteAdministrator } from "../environment/role-commands";
+import { updateRequirements } from "../environment/environment-commands";
 import {
   inviteMember,
   joinEnvironment,
+  withdrawInvitation,
 } from "../environment/membership-commands";
+import { inviteAdministrator } from "../environment/role-commands";
+import {
+  changeEnvironmentType,
+  withdrawTypeChange,
+} from "../environment/type-change-commands";
 import { acceptLoanAmendment, proposeLoanAmendment } from "../loans/amendments";
 import { approveLoanRequest } from "../loans/approval";
 import { cancelLoan } from "../loans/cancellation";
@@ -18,7 +24,7 @@ import {
   offerResponsibility,
 } from "../loans/responsibility";
 import { reportReturn } from "../loans/return";
-import { inviteCoOwner } from "../objects/co-owners";
+import { inviteCoOwner, withdrawCoOwnerInvitation } from "../objects/co-owners";
 import { updateObject } from "../objects/commands";
 import { ConsumerRegistry, type StoredEvent } from "../outbox/consumer";
 import { processOutboxBatch } from "../outbox/worker";
@@ -330,9 +336,8 @@ describe("loan requests", () => {
         target: request(requestId),
       },
     ]);
-    expect(await told(coOwner)).toMatchObject([
-      { kind: "object.co_owner_invited" },
-    ]);
+    // Nor about the invitation, accepted before it was delivered.
+    expect(await told(coOwner)).toEqual([]);
     expect(await told(setup.borrower)).toEqual([]);
 
     await run(declineLoanRequest, setup.owner, { requestId });
@@ -700,5 +705,82 @@ describe("environments and co-ownership", () => {
       detail: null,
       target: { type: "object_invitation", id: invitationId },
     });
+  });
+
+  it("tell nobody of an invitation or a proposal withdrawn before it was delivered", async () => {
+    const admin = await user();
+    const hidden = await environment(admin, { type: "hidden" });
+    const invited = await user();
+    const { membershipId } = await run(inviteMember, admin, {
+      environmentId: hidden,
+      userId: invited.userId,
+    });
+    await run(withdrawInvitation, admin, {
+      environmentId: hidden,
+      membershipId,
+    });
+
+    const objectId = await create(admin);
+    const { invitationId } = await run(inviteCoOwner, admin, {
+      objectId,
+      userId: invited.userId,
+    });
+    await run(withdrawCoOwnerInvitation, admin, { objectId, invitationId });
+
+    const closed = await environment(admin, { type: "closed" });
+    const colleague = await member(closed, admin);
+    await deliver();
+    const { proposal } = await run(changeEnvironmentType, admin, {
+      environmentId: closed,
+      expectedType: "closed",
+      type: "open",
+    });
+    await run(withdrawTypeChange, admin, {
+      environmentId: closed,
+      proposalId: proposal!.id,
+    });
+
+    expect(await told(invited)).toEqual([]);
+    expect(
+      (await told(colleague)).filter(
+        ({ kind }) => kind === "environment.type_change_proposed",
+      ),
+    ).toEqual([]);
+  });
+
+  it("tell the actor too when what they did leaves them something to do", async () => {
+    const admin = await user();
+    const environmentId = await environment(admin, { type: "closed" });
+    const colleague = await member(environmentId, admin);
+    const requirementsChanged = {
+      kind: "environment.requirements_changed",
+      level: "action",
+      detail: null,
+      target: { type: "environment", id: environmentId },
+    };
+
+    // The administrator is held to the new requirement as well.
+    await run(updateRequirements, admin, {
+      environmentId,
+      requirements: [{ kind: "information", text: "Hvilken leilighet?" }],
+      expectedRevision: 0,
+    });
+    expect(await told(admin)).toEqual([requirementsChanged]);
+    expect((await told(colleague)).at(-1)).toEqual(requirementsChanged);
+
+    // The one who proposes a weaker type answers like everyone else.
+    await run(changeEnvironmentType, admin, {
+      environmentId,
+      expectedType: "closed",
+      type: "open",
+    });
+    const proposed = {
+      kind: "environment.type_change_proposed",
+      level: "action",
+      detail: "open",
+      target: { type: "environment", id: environmentId },
+    };
+    expect((await told(admin)).at(-1)).toEqual(proposed);
+    expect((await told(colleague)).at(-1)).toEqual(proposed);
   });
 });

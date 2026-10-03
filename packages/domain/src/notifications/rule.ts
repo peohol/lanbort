@@ -22,6 +22,12 @@ export interface RuleInput<P> {
  */
 export interface NotificationRule {
   readonly eventType: string;
+  /**
+   * Whether the user who acted is told too. Normally not, since they know
+   * what they did; only when the event leaves them something to do
+   * themselves or concerns something other than what they acted on.
+   */
+  readonly tellsActor: boolean;
   drafts(
     input: Omit<RuleInput<unknown>, "payload">,
   ): Promise<NotificationDraft[]>;
@@ -32,9 +38,11 @@ export function notifyOn<P>(
   drafts: (
     input: RuleInput<P>,
   ) => Promise<readonly NotificationDraft[]> | readonly NotificationDraft[],
+  { tellsActor = false }: { readonly tellsActor?: boolean } = {},
 ): NotificationRule {
   return {
     eventType: event.type,
+    tellsActor,
     drafts: async (input) => [
       ...(await drafts({
         ...input,
@@ -57,4 +65,17 @@ export function tell(
     target,
     detail,
   }));
+}
+
+/**
+ * `drafts` only while `query` still finds what the event announced. The
+ * outbox runs after the fact, so an invitation or a proposal may already be
+ * withdrawn; its notification would then lead to something the recipient
+ * can no longer see.
+ */
+export async function whileStill(
+  query: { executeTakeFirst(): Promise<unknown> },
+  drafts: () => NotificationDraft[] | Promise<NotificationDraft[]>,
+): Promise<NotificationDraft[]> {
+  return (await query.executeTakeFirst()) === undefined ? [] : drafts();
 }
