@@ -27,9 +27,9 @@ describe("notification levels (PS-COM-003)", () => {
 });
 
 describe("preferences (PS-COM-002–003)", () => {
-  it("start from the pilot standard: everything in the app, e-mail only for required", () => {
+  it("start from the pilot standard: everything in the app, no e-mail for action or information", () => {
     expect(effectivePreferences([])).toEqual({
-      required: { in_app: true, email: true },
+      required: { in_app: true },
       action: { in_app: true, email: false },
       information: { in_app: true, email: false },
     });
@@ -46,7 +46,7 @@ describe("preferences (PS-COM-002–003)", () => {
     ]);
 
     expect(choices).toEqual({
-      required: { in_app: true, email: true },
+      required: { in_app: true },
       action: { in_app: true, email: true },
       information: { in_app: false, email: false },
     });

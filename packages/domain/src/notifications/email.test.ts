@@ -62,7 +62,7 @@ describe("notification e-mails (WP-41)", () => {
 });
 
 describe("which notifications go out by e-mail (pilot standard)", () => {
-  it("send the time-critical required kinds always, the others only when chosen and in the app", () => {
+  it("send the time-critical kinds always, the others only when chosen and in the app", () => {
     const standard = effectivePreferences([]);
 
     for (const kind of emailReserveKinds) {

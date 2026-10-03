@@ -243,10 +243,7 @@ describe("preferences (PS-COM-002–003)", () => {
       levels: [
         {
           level: "required",
-          channels: [
-            { channel: "in_app", enabled: true, configurable: false },
-            { channel: "email", enabled: true, configurable: false },
-          ],
+          channels: [{ channel: "in_app", enabled: true, configurable: false }],
         },
         {
           level: "action",

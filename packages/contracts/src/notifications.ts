@@ -68,12 +68,13 @@ export const notificationKinds = {
 export type NotificationKind = keyof typeof notificationKinds;
 
 /**
- * The required kinds that verified e-mail reserves for («Kanalstandard for
- * pilot»): time-critical events in an approved loan, each one of the
- * examples vision 06 gives under «Påkrevde varsler». Kansellering and
- * forslag til endring; kommende and passert returtid; behov for returavklaring
- * (and its handover counterpart, with the 72-hour deadline); konflikthendelser
- * og vesentlige avvik. Other required kinds stay in the app only, until
+ * The kinds that always go out by verified e-mail as the pilot's reserve
+ * channel («Kanalstandard for pilot»): time-critical events in an approved
+ * loan, each one of the examples vision 06 gives under «Påkrevde varsler».
+ * Kansellering and forslag til endring; kommende and passert returtid; behov
+ * for returavklaring (and its handover counterpart, with the 72-hour
+ * deadline); konflikthendelser og vesentlige avvik. This is a rule per kind,
+ * not a channel choice. Other required kinds stay in the app only, until
  * OD-0004 settles the channels per kind and level.
  */
 export const emailReserveKinds = [
@@ -168,17 +169,14 @@ interface ChannelRule {
 /**
  * PS-COM-003 and the pilot's channel standard: required and action
  * notifications are always in the app, information can be turned off
- * entirely, and the external channel can be turned off for action and
- * information. Verified e-mail is the reserve channel for the time-critical
- * required kinds ({@link emailReserveKinds}), so it cannot be turned off
- * there, and it starts off for the other two levels. Final defaults per
+ * entirely, and the external channel can be chosen for action and
+ * information and starts off. The level is about the app only: whether a
+ * required notification goes out by e-mail follows from its kind
+ * ({@link emailReserveKinds}), not from a channel choice. Final defaults per
  * channel are OD-0004.
  */
 export const notificationChannelRules = {
-  required: {
-    in_app: { configurable: false, default: true },
-    email: { configurable: false, default: true },
-  },
+  required: { in_app: { configurable: false, default: true } },
   action: {
     in_app: { configurable: false, default: true },
     email: { configurable: true, default: false },
