@@ -2,6 +2,7 @@ import {
   handoverOutcomeSchema,
   loanRequestEndReasonSchema,
   loanRequestRoleSchema,
+  returnOutcomeSchema,
 } from "@lanbort/contracts";
 import { z } from "zod";
 import { defineEvent } from "../events/catalog";
@@ -146,4 +147,37 @@ export const loanHandoverDisputed = loanEvent("handover_disputed", {
  */
 export const loanNotCompleted = loanEvent("not_completed", {
   basis: z.enum(["agreed", "unanswered"]),
+});
+
+/**
+ * PS-LOAN-014–017: a party's statement about the return of
+ * `agreementVersion` was made (a confirmation once its undo buffer is over,
+ * or at once). The actor is that party, or the process that made a waiting
+ * confirmation; `role` says whose statement it is. A confirmation that was
+ * undone was never sent and has no event.
+ */
+export const loanReturnReported = loanEvent("return_reported", {
+  role: loanRequestRoleSchema,
+  outcome: returnOutcomeSchema,
+  agreementVersion: z.int().min(1),
+});
+
+/**
+ * PS-LOAN-015/020: the responsible lender confirmed receiving the object,
+ * so the loan ended as returned and its reservation is free; `early` when
+ * that was before its agreed last day.
+ */
+export const loanReturned = loanEvent("returned", {
+  early: z.boolean(),
+});
+
+/**
+ * PS-LOAN-014/017: the parties contradict each other about the return, or a
+ * confirmed return was contradicted later (`reopened`). The object is
+ * blocked for new colliding loans; loans of it already approved stay, and
+ * their parties may need to know (`otherLoanIds`, scenario 58).
+ */
+export const loanReturnDisputed = loanEvent("return_disputed", {
+  reopened: z.boolean(),
+  otherLoanIds: z.array(z.uuid()),
 });

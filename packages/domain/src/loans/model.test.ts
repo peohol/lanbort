@@ -17,7 +17,13 @@ import {
   openStanding,
   presentedLoanStatus,
   presentedStatus,
+  repeatsLastStatement,
+  type ReturnStatement,
+  returnEffectiveAt,
+  returnRefusal,
+  returnVerdict,
   statusAfterHandover,
+  statusAfterReturn,
   samePeriod,
   toApiPeriod,
   validateDesiredPeriod,
@@ -282,6 +288,7 @@ describe("amendmentFits (PS-LOAN-010, scenario 26)", () => {
   it("extends into days that are actually available", () => {
     expect(
       amendmentFits(
+        "reserved",
         current,
         { from: "2026-10-06", until: "2026-10-12" },
         effective,
@@ -293,6 +300,7 @@ describe("amendmentFits (PS-LOAN-010, scenario 26)", () => {
   it("never reaches into another loan's reservation", () => {
     expect(
       amendmentFits(
+        "reserved",
         current,
         { from: "2026-10-06", until: "2026-10-13" },
         effective,
@@ -304,6 +312,7 @@ describe("amendmentFits (PS-LOAN-010, scenario 26)", () => {
   it("keeps or gives back its own days without checking them", () => {
     expect(
       amendmentFits(
+        "reserved",
         current,
         { from: "2026-10-07", until: "2026-10-09" },
         [],
@@ -315,6 +324,7 @@ describe("amendmentFits (PS-LOAN-010, scenario 26)", () => {
   it("moves to another free period, and the start earlier", () => {
     expect(
       amendmentFits(
+        "reserved",
         current,
         { from: "2026-10-15", until: "2026-10-20" },
         effective,
@@ -323,6 +333,7 @@ describe("amendmentFits (PS-LOAN-010, scenario 26)", () => {
     ).toBe(true);
     expect(
       amendmentFits(
+        "reserved",
         current,
         { from: "2026-10-04", until: "2026-10-10" },
         effective,
@@ -334,12 +345,36 @@ describe("amendmentFits (PS-LOAN-010, scenario 26)", () => {
   it("does not start in the past", () => {
     expect(
       amendmentFits(
+        "reserved",
         current,
         { from: "2026-10-02", until: "2026-10-10" },
         [{ from: "2026-10-01", until: null }],
         today,
       ),
     ).toBe(false);
+  });
+
+  it("keeps the start once handed over, and needs a return day still ahead", () => {
+    // Handed over on 1 October; today is the 3rd.
+    const lent = { from: "2026-10-01", until: "2026-10-05" };
+    const open = [{ from: "2026-10-01", until: null }];
+    const fits = (from: string, until: string) =>
+      amendmentFits("active", lent, { from, until }, open, today);
+
+    expect(fits("2026-10-01", "2026-10-08")).toBe(true);
+    expect(fits("2026-10-01", "2026-10-04")).toBe(true);
+    expect(fits("2026-10-02", "2026-10-08")).toBe(false);
+    expect(fits("2026-10-01", today)).toBe(false);
+    // Days it takes back that it held already are not checked again.
+    expect(
+      amendmentFits(
+        "late",
+        lent,
+        { from: "2026-10-01", until: "2026-10-06" },
+        [{ from: "2026-10-05", until: "2026-10-06" }],
+        today,
+      ),
+    ).toBe(true);
   });
 });
 
@@ -492,5 +527,173 @@ describe("the handover (PS-LOAN-012–013)", () => {
         today,
       ),
     ).not.toBeNull();
+  });
+});
+
+describe("the return (PS-LOAN-014–017)", () => {
+  const at = new Date("2026-10-08T10:00:00Z");
+  const said = (
+    ...statements: [ReturnStatement["role"], ReturnStatement["outcome"]][]
+  ): ReturnStatement[] =>
+    statements.map(([role, outcome]) => ({ role, outcome, reportedAt: at }));
+  // Lent 5–7 October: the return day is the 7th.
+  const period = { from: "2026-10-05", until: "2026-10-08" };
+  const loan = (status: Parameters<typeof returnRefusal>[0]["status"]) => ({
+    status,
+    endReason: status === "ended" ? "returned" : null,
+    period,
+  });
+
+  it("reads the statements without counting silence or the date as anything", () => {
+    expect(returnVerdict([])).toBe("none");
+    expect(returnVerdict(said(["borrower", "returned"]))).toBe("returned");
+    expect(returnVerdict(said(["lender", "not_received"]))).toBe(
+      "not_received",
+    );
+    expect(returnVerdict(said(["borrower", "still_has"]))).toBe("late");
+    expect(
+      returnVerdict(said(["borrower", "returned"], ["lender", "not_received"])),
+    ).toBe("disputed");
+    // The latest statement of each side counts.
+    expect(
+      returnVerdict(said(["borrower", "still_has"], ["borrower", "returned"])),
+    ).toBe("returned");
+  });
+
+  it("ends with the lender's receipt, whatever the borrower said before", () => {
+    expect(returnVerdict(said(["lender", "received"]))).toBe("received");
+    expect(
+      returnVerdict(said(["borrower", "still_has"], ["lender", "received"])),
+    ).toBe("received");
+    expect(
+      returnVerdict(
+        said(
+          ["lender", "not_received"],
+          ["borrower", "returned"],
+          ["lender", "received"],
+        ),
+      ),
+    ).toBe("received");
+  });
+
+  it("reopens a receipt contradicted later, until a new receipt", () => {
+    expect(
+      returnVerdict(said(["lender", "received"], ["borrower", "still_has"])),
+    ).toBe("reopened");
+    expect(
+      returnVerdict(
+        said(
+          ["lender", "received"],
+          ["lender", "not_received"],
+          ["borrower", "returned"],
+        ),
+      ),
+    ).toBe("reopened");
+    expect(
+      returnVerdict(
+        said(
+          ["lender", "received"],
+          ["lender", "not_received"],
+          ["lender", "received"],
+        ),
+      ),
+    ).toBe("received");
+  });
+
+  it("leads to the stored status", () => {
+    expect(statusAfterReturn("none")).toBe("active");
+    expect(statusAfterReturn("returned")).toBe("awaiting_return");
+    expect(statusAfterReturn("not_received")).toBe("awaiting_return");
+    expect(statusAfterReturn("late")).toBe("late");
+    expect(statusAfterReturn("disputed")).toBe("return_disputed");
+    expect(statusAfterReturn("reopened")).toBe("return_disputed");
+    expect(statusAfterReturn("received")).toBe("ended");
+  });
+
+  it("shows an active loan as awaiting return once its return day is over, never as late", () => {
+    expect(presentedLoanStatus("active", period, "2026-10-07")).toBe("active");
+    expect(presentedLoanStatus("active", period, "2026-10-08")).toBe(
+      "awaiting_return",
+    );
+    expect(presentedLoanStatus("late", period, "2026-10-08")).toBe("late");
+    expect(presentedLoanStatus("return_disputed", period, "2026-10-08")).toBe(
+      "disputed",
+    );
+  });
+
+  it("allows «still has it» and an unprompted «not received» only after the return day", () => {
+    const before = "2026-10-07";
+    const after = "2026-10-08";
+
+    expect(returnRefusal(loan("active"), [], "returned", before)).toBeNull();
+    expect(returnRefusal(loan("active"), [], "received", before)).toBeNull();
+    expect(
+      returnRefusal(loan("active"), [], "still_has", before),
+    ).not.toBeNull();
+    expect(returnRefusal(loan("active"), [], "still_has", after)).toBeNull();
+    expect(
+      returnRefusal(loan("active"), [], "not_received", before),
+    ).not.toBeNull();
+    expect(
+      returnRefusal(
+        loan("awaiting_return"),
+        said(["borrower", "returned"]),
+        "not_received",
+        before,
+      ),
+    ).toBeNull();
+  });
+
+  it("refuses statements before the handover, and after any other ending", () => {
+    expect(
+      returnRefusal(loan("reserved"), [], "received", "2026-10-06"),
+    ).not.toBeNull();
+    expect(
+      returnRefusal(loan("disputed"), [], "received", "2026-10-06"),
+    ).not.toBeNull();
+    expect(
+      returnRefusal(
+        { status: "ended", endReason: "cancelled", period },
+        [],
+        "not_received",
+        "2026-10-06",
+      ),
+    ).not.toBeNull();
+  });
+
+  it("lets only a contradiction of the receipt reopen a returned loan, at any time", () => {
+    const received = said(["lender", "received"]);
+    const early = "2026-10-06";
+
+    expect(
+      returnRefusal(loan("ended"), received, "not_received", early),
+    ).toBeNull();
+    expect(
+      returnRefusal(loan("ended"), received, "still_has", early),
+    ).toBeNull();
+    expect(
+      returnRefusal(loan("ended"), received, "returned", early),
+    ).not.toBeNull();
+    expect(
+      returnRefusal(loan("ended"), received, "received", early),
+    ).not.toBeNull();
+  });
+
+  it("treats saying the same again, with nobody speaking since, as a repeat", () => {
+    const statements = said(["borrower", "returned"]);
+
+    expect(repeatsLastStatement(statements, "borrower", "returned")).toBe(true);
+    expect(repeatsLastStatement(statements, "lender", "received")).toBe(false);
+    expect(
+      repeatsLastStatement(
+        said(["borrower", "returned"], ["lender", "not_received"]),
+        "borrower",
+        "returned",
+      ),
+    ).toBe(false);
+  });
+
+  it("gives a confirmation 30 seconds before it is made", () => {
+    expect(returnEffectiveAt(at)).toEqual(new Date("2026-10-08T10:00:30Z"));
   });
 });
