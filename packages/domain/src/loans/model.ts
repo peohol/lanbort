@@ -1,17 +1,23 @@
 import type {
   DesiredEnd,
   DesiredStart,
+  LoanPeriod,
   LoanRequestEndReason,
   LoanRequestStatus,
 } from "@lanbort/contracts";
 import type { HistoryPosition } from "../environment/privacy";
 import { DomainError } from "../errors";
-import { addDays, type DateInterval } from "../objects/availability";
+import {
+  addDays,
+  type DateInterval,
+  subtractIntervals,
+} from "../objects/availability";
 
 /**
- * Pure rules of loan requests (WP-30, PS-LOAN-001–005). A request is the
- * same whether it came through an environment or directly between friends;
- * only its origin differs. Approval and reservation are WP-31's.
+ * Pure rules of loan requests (WP-30, PS-LOAN-001–005) and of the period an
+ * approval reserves (WP-31, PS-LOAN-006/007). A request is the same whether
+ * it came through an environment or directly between friends; only its
+ * origin differs.
  */
 
 /** An open request can still become a loan (stored statuses). */
@@ -22,7 +28,9 @@ export const openLoanRequestStatuses = [
 
 export type OpenLoanRequestStatus = (typeof openLoanRequestStatuses)[number];
 
-export type StoredLoanRequestStatus = OpenLoanRequestStatus | "ended";
+/** `approved` and `ended` are final: the request never changes again. */
+export type StoredLoanRequestStatus =
+  OpenLoanRequestStatus | "approved" | "ended";
 
 export type LoanRequestOriginKind = "environment" | "direct";
 
@@ -85,8 +93,8 @@ export function presentedStatus(
   request: Pick<LoanRequestRecord, "status" | "endReason">,
   standing: LoanRequestStanding,
 ): { status: LoanRequestStatus; endReason: LoanRequestEndReason | null } {
-  if (request.status === "ended") {
-    return { status: "ended", endReason: request.endReason };
+  if (!isOpen(request.status)) {
+    return { status: request.status, endReason: request.endReason };
   }
 
   if (standing.kind === "ended") {
@@ -131,15 +139,15 @@ export function validateDesiredPeriod(
  * one interval of the object's actual availability as of `today`, or null if
  * none does. A dated start fixes the period. «As soon as possible» begins on
  * the first available day from which the whole duration, or every day up to
- * the desired last day, is available without a break. WP-31 decides the
- * period actually reserved.
+ * the desired last day, is available without a break. Approval reserves
+ * exactly this period (PS-LOAN-006).
  */
 export function earliestPeriod(
   start: DesiredStart,
   end: DesiredEnd,
   effective: readonly DateInterval[],
   today: string,
-): DateInterval | null {
+): LoanPeriodInterval | null {
   const candidates =
     start.kind === "date"
       ? [start.date]
@@ -150,11 +158,7 @@ export function earliestPeriod(
         );
 
   for (const from of candidates) {
-    const period = {
-      from,
-      until:
-        end.kind === "date" ? addDays(end.date, 1) : addDays(from, end.days),
-    };
+    const period = periodFrom(from, end);
 
     if (period.from < period.until && withinAvailability(period, effective)) {
       return period;
@@ -164,9 +168,23 @@ export function earliestPeriod(
   return null;
 }
 
+/** A loan period: calendar dates, `[from, until)`, always bounded. */
+export interface LoanPeriodInterval {
+  readonly from: string;
+  readonly until: string;
+}
+
+/** The period that starts on `from` and ends as asked. */
+function periodFrom(from: string, end: DesiredEnd): LoanPeriodInterval {
+  return {
+    from,
+    until: end.kind === "date" ? addDays(end.date, 1) : addDays(from, end.days),
+  };
+}
+
 /** Whether `period` lies within one interval of actual availability. */
 export function withinAvailability(
-  period: { readonly from: string; readonly until: string },
+  period: LoanPeriodInterval,
   effective: readonly DateInterval[],
 ): boolean {
   return effective.some(
@@ -175,4 +193,41 @@ export function withinAvailability(
       interval.from <= period.from &&
       (interval.until === null || period.until <= interval.until),
   );
+}
+
+/**
+ * PS-LOAN-007: the open requests that collide with a period just reserved,
+ * given the actual availability before it. A request with a start date
+ * collides when its period overlaps the reservation. «As soon as possible»
+ * has no fixed period, so it collides when it fitted before and no longer
+ * fits anywhere because of the reservation; if it still fits later, it
+ * stays open. Requests that do not collide stay open as they are.
+ */
+export function collidingRequests<
+  R extends Pick<LoanRequestRecord, "start" | "end">,
+>(
+  requests: readonly R[],
+  reserved: LoanPeriodInterval,
+  effectiveBefore: readonly DateInterval[],
+  today: string,
+): R[] {
+  const effectiveAfter = subtractIntervals(effectiveBefore, [reserved]);
+
+  return requests.filter((request) =>
+    request.start.kind === "date"
+      ? overlaps(periodFrom(request.start.date, request.end), reserved)
+      : earliestPeriod(request.start, request.end, effectiveBefore, today) !==
+          null &&
+        earliestPeriod(request.start, request.end, effectiveAfter, today) ===
+          null,
+  );
+}
+
+function overlaps(a: LoanPeriodInterval, b: LoanPeriodInterval): boolean {
+  return a.from < b.until && b.from < a.until;
+}
+
+/** The API form of a period, with its last day inclusive. */
+export function toApiPeriod(period: LoanPeriodInterval): LoanPeriod {
+  return { start: period.from, end: addDays(period.until, -1) };
 }

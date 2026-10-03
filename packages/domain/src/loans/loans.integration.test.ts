@@ -1,58 +1,35 @@
 import { randomUUID } from "node:crypto";
 import {
-  type CreateEnvironment,
   type LoanRequestRole,
   responsibilityDeclarationVersion,
 } from "@lanbort/contracts";
 import { afterAll, describe, expect, it } from "vitest";
-import { type Actor, systemActor, type UserActor } from "../actor";
-import {
-  type CommandDefinition,
-  type DomainContext,
-  executeCommand,
-} from "../commands/command";
+import { systemActor, type UserActor } from "../actor";
 import { executeQuery } from "../commands/query";
 import { startEnvironmentWindDown } from "../environment/continuity-commands";
-import { createEnvironment } from "../environment/environment-commands";
-import {
-  acceptInvitation,
-  inviteMember,
-  joinEnvironment,
-  leaveEnvironment,
-} from "../environment/membership-commands";
+import { leaveEnvironment } from "../environment/membership-commands";
 import { typeChangeProcess } from "../environment/policies";
 import {
   concludeTypeChanges,
   respondToTypeChange,
 } from "../environment/type-change-commands";
 import { addDays, calendarDate } from "../objects/availability";
-import {
-  acceptCoOwnerInvitation,
-  inviteCoOwner,
-  leaveObject,
-} from "../objects/co-owners";
-import { archiveObject, createObject, updateObject } from "../objects/commands";
+import { leaveObject } from "../objects/co-owners";
+import { archiveObject, updateObject } from "../objects/commands";
 import { consentToObjectDeletion } from "../objects/deletion";
-import { ConsumerRegistry } from "../outbox/consumer";
 import {
   approvePublication,
   publishObject,
   setObjectApproval,
   withdrawPublication,
 } from "../publications/commands";
-import {
-  acceptFriendRequest,
-  blockUser,
-  removeFriend,
-  sendFriendRequest,
-} from "../social/commands";
+import { blockUser, removeFriend, sendFriendRequest } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
-import { registerTestUser } from "../testing/identities";
+import { loanTestKit } from "../testing/loans";
 import { startTestVote } from "../testing/type-changes";
 import {
   acceptResponsibility,
   confirmLoanTerms,
-  createLoanRequest,
   declineLoanRequest,
   withdrawLoanRequest,
 } from "./commands";
@@ -65,156 +42,28 @@ import {
 const db = connectTestDatabase();
 afterAll(() => db.destroy());
 
-let clock = new Date();
-const domain: DomainContext = {
-  db,
-  consumers: new ConsumerRegistry(),
-  clock: () => clock,
-};
-const tick = () => {
-  clock = new Date(clock.getTime() + 1);
-  return domain;
-};
-
-function run<I, R, C, O>(
-  command: CommandDefinition<I, R, C, O>,
-  actor: Actor,
-  input: object,
-  idempotencyKey: string = randomUUID(),
-): Promise<O> {
-  tick();
-  return executeCommand(domain, command, {
-    actor,
-    input,
-    ...(command.idempotency === "none" ? {} : { idempotencyKey }),
-  }).then((result) => result.output);
-}
-
-const user = async () => (await registerTestUser(domain)).actor;
+const kit = loanTestKit(db);
+const {
+  tick,
+  run,
+  user,
+  environment,
+  join,
+  member,
+  create,
+  addCoOwner,
+  friends,
+  versionOf,
+  published,
+  environmentOrigin,
+  ask,
+  stored,
+} = kit;
 
 const notFound = { code: "not_found" };
 const forbidden = { code: "forbidden" };
 const conflict = { code: "conflict" };
 const invalid = { code: "invalid_input" };
-
-async function environment(
-  owner: UserActor,
-  input: Partial<CreateEnvironment> = {},
-) {
-  const { environmentId } = await run(createEnvironment, owner, {
-    name: "Borettslaget",
-    type: "open",
-    ...input,
-  });
-
-  return environmentId;
-}
-
-/** Makes `actor` an active member: joining an open environment, invited otherwise. */
-async function join(environmentId: string, admin: UserActor, actor: UserActor) {
-  const { type } = await db
-    .selectFrom("app.environments")
-    .select("type")
-    .where("id", "=", environmentId)
-    .executeTakeFirstOrThrow();
-
-  if (type === "open") {
-    await run(joinEnvironment, actor, { environmentId, answers: [] });
-  } else {
-    await run(inviteMember, admin, { environmentId, userId: actor.userId });
-    await run(acceptInvitation, actor, { environmentId, answers: [] });
-  }
-
-  return actor;
-}
-
-const member = async (environmentId: string, admin: UserActor) =>
-  join(environmentId, admin, await user());
-
-async function create(owner: UserActor, loanTerms?: string) {
-  const { objectId } = await run(createObject, owner, {
-    title: "Tilhenger",
-    categoryId: "annet",
-    description: "Liten tilhenger med presenning.",
-    ...(loanTerms === undefined ? {} : { loanTerms }),
-    availability: [{ start: calendarDate(clock), end: null }],
-  });
-
-  return objectId;
-}
-
-async function addCoOwner(
-  owner: UserActor,
-  objectId: string,
-  other: UserActor,
-) {
-  const { invitationId } = await run(inviteCoOwner, owner, {
-    objectId,
-    userId: other.userId,
-  });
-  await run(acceptCoOwnerInvitation, other, { invitationId });
-}
-
-async function friends(a: UserActor, b: UserActor) {
-  await run(sendFriendRequest, a, { userId: b.userId });
-  await run(acceptFriendRequest, b, { userId: a.userId });
-}
-
-const versionOf = async (objectId: string) =>
-  (
-    await db
-      .selectFrom("app.objects")
-      .select("version")
-      .where("id", "=", objectId)
-      .executeTakeFirstOrThrow()
-  ).version;
-
-/** An open environment with an owner whose object is published there. */
-async function published(input: Partial<CreateEnvironment> = {}) {
-  const admin = await user();
-  const environmentId = await environment(admin, input);
-  const owner = await member(environmentId, admin);
-  const borrower = await member(environmentId, admin);
-  const objectId = await create(owner, "Må vaskes etter bruk.");
-  const { publicationId } = await run(publishObject, owner, {
-    objectId,
-    environmentId,
-  });
-
-  return { admin, environmentId, owner, borrower, objectId, publicationId };
-}
-
-const environmentOrigin = (environmentId: string) => ({
-  kind: "environment",
-  environmentId,
-});
-
-/** A request as the borrower sends it after looking at the object now. */
-async function ask(
-  borrower: UserActor,
-  objectId: string,
-  origin: object,
-  input: object = {},
-  idempotencyKey?: string,
-) {
-  const direct = (origin as { kind: string }).kind === "direct";
-
-  return run(
-    createLoanRequest,
-    borrower,
-    {
-      objectId,
-      origin,
-      start: { kind: "asap" },
-      end: { kind: "duration", days: 3 },
-      message: "Kan jeg låne den til helgen?",
-      termsVersion: await versionOf(objectId),
-      ...(direct ? { responsibilityDeclarationVersion } : {}),
-      ...input,
-    },
-    idempotencyKey,
-  );
-}
 
 const read = (actor: UserActor, requestId: string) =>
   executeQuery(tick(), readLoanRequest, { actor, input: { requestId } });
@@ -228,22 +77,8 @@ async function listed(actor: UserActor, role: LoanRequestRole) {
   return requests.map((request) => request.id);
 }
 
-async function stored(requestId: string) {
-  return db
-    .selectFrom("app.loan_requests")
-    .select(["status", "end_reason", "terms_version"])
-    .where("id", "=", requestId)
-    .executeTakeFirstOrThrow();
-}
-
 const eventsFor = (requestId: string) =>
-  db
-    .selectFrom("app.audit_events")
-    .select(["event_type", "payload"])
-    .where("resource_type", "=", "loan_request")
-    .where("resource_id", "=", requestId)
-    .orderBy("position")
-    .execute();
+  kit.eventsFor("loan_request", requestId);
 
 const ended = (reason: string) => ({ status: "ended", end_reason: reason });
 
@@ -251,7 +86,7 @@ describe("a request through an environment (PS-LOAN-001/004)", () => {
   it("keeps its origin and what was asked for, and shows it to both sides", async () => {
     const { environmentId, owner, borrower, objectId, publicationId } =
       await published();
-    const today = calendarDate(clock);
+    const today = calendarDate(kit.now());
 
     const preview = await executeQuery(tick(), previewLoanRequest, {
       actor: borrower,
@@ -371,7 +206,7 @@ describe("a request through an environment (PS-LOAN-001/004)", () => {
 
   it("asks for a period within the object's actual availability", async () => {
     const { environmentId, owner, borrower, objectId } = await published();
-    const today = calendarDate(clock);
+    const today = calendarDate(kit.now());
     const origin = environmentOrigin(environmentId);
 
     await expect(
@@ -410,7 +245,7 @@ describe("a request through an environment (PS-LOAN-001/004)", () => {
 
   it("asks as soon as possible only for a period that fits without a break", async () => {
     const { environmentId, owner, borrower, objectId } = await published();
-    const today = calendarDate(clock);
+    const today = calendarDate(kit.now());
     const origin = environmentOrigin(environmentId);
     const asap = (end: object) =>
       ask(borrower, objectId, origin, {
@@ -946,9 +781,9 @@ describe("historical privacy (PS-ENV-009)", () => {
     const proposalId = await startTestVote(db, {
       environmentId,
       proposedByUserId: admin.userId,
-      at: clock,
+      at: kit.now(),
       change: { from: "closed", to: "open" },
-      deadline: new Date(clock.getTime() + 60_000),
+      deadline: new Date(kit.now().getTime() + 60_000),
     });
     for (const supporter of [admin, owner, borrower]) {
       await run(respondToTypeChange, supporter, {
@@ -957,7 +792,7 @@ describe("historical privacy (PS-ENV-009)", () => {
         support: true,
       });
     }
-    clock = new Date(clock.getTime() + 61_000);
+    kit.advance(61_000);
     await run(concludeTypeChanges, systemActor(typeChangeProcess), {});
     expect(
       (

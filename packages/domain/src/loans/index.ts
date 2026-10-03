@@ -3,4 +3,5 @@ export * from "./events";
 export * from "./policies";
 export * from "./access";
 export * from "./commands";
+export * from "./approval";
 export * from "./queries";

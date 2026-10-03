@@ -6,8 +6,12 @@ import { loadEnvironmentAccess } from "../environment/store";
 import { loadObjectState, type ObjectState } from "../objects/state";
 import { findsObject } from "../publications/queries";
 import { lockPair } from "../social/pair";
-import { assessOrigin, type RequestOrigin } from "./access";
-import type { LoanRequestRecord } from "./model";
+import {
+  assessOrigin,
+  type OriginAssessment,
+  type RequestOrigin,
+} from "./access";
+import { isOpen, type LoanRequestRecord } from "./model";
 import type { LoanRequestResource, LoanRequestTarget } from "./policies";
 import { findLoanRequest, loadLenderScope, visibleToLender } from "./store";
 
@@ -103,20 +107,27 @@ export interface LoadedRequest extends LoanRequestResource {
   readonly request: LoanRequestRecord;
   /** Null once the object is deleted. */
   readonly object: ObjectState | null;
+  /**
+   * With `assess`, whether the access behind the open request still holds
+   * ({@link assessOrigin}); null otherwise, and for a request that is no
+   * longer open.
+   */
+  readonly assessment: OriginAssessment | null;
 }
 
 /**
  * The request with who may act on it, or null if it does not exist. With
- * `lock`, the object is locked first, then the social pair between a lender
- * and the borrower (so a friendship or block cannot change under the
- * decision), then the request itself.
+ * `lock`, the object is locked first, then (with `assess`) everything the
+ * request's access builds on, then the social pair between a lender and the
+ * borrower (so a friendship or block cannot change under the decision), then
+ * the request itself.
  */
 export async function loadRequest(
   db: Db,
   actor: Actor,
   requestId: string,
   now: Date,
-  options: { lock?: boolean } = {},
+  options: { lock?: boolean; assess?: boolean } = {},
 ): Promise<{ resource: LoadedRequest; context: undefined } | null> {
   const found = await findLoanRequest(db, requestId);
 
@@ -128,6 +139,19 @@ export async function loadRequest(
     found.objectId === null
       ? null
       : await loadObjectState(db, found.objectId, options);
+  // An approved or ended request never opens again, so this holds even if
+  // it changed before the request's own lock below.
+  const assessment =
+    options.assess && object && isOpen(found.status)
+      ? await assessOrigin(
+          db,
+          object,
+          found.borrowerUserId,
+          originOf(found),
+          now,
+          options,
+        )
+      : null;
 
   if (options.lock && actor.userId !== found.borrowerUserId) {
     await lockPair(db, actor.userId, found.borrowerUserId);
@@ -145,6 +169,7 @@ export async function loadRequest(
     resource: {
       request,
       object,
+      assessment,
       borrowerUserId: request.borrowerUserId,
       lenderIds:
         actor.userId !== request.borrowerUserId &&

@@ -244,6 +244,21 @@ export interface AppIdempotencyRecords {
   scope: string;
 }
 
+export interface AppLoanAgreements {
+  category_id: string;
+  description: string;
+  lender_user_id: string;
+  loan_id: string;
+  loan_terms: string | null;
+  object_version: number;
+  period: string;
+  recorded_at: Generated<Timestamp>;
+  responsibility_declaration_version: number | null;
+  terms_version: number;
+  title: string;
+  version: number;
+}
+
 export interface AppLoanRequestResponsibilityAcceptances {
   accepted_at: Generated<Timestamp>;
   declaration_version: number;
@@ -273,6 +288,24 @@ export interface AppLoanRequests {
   status: Generated<string>;
   status_changed_at: Generated<Timestamp>;
   terms_version: number | null;
+}
+
+export interface AppLoanReservations {
+  loan_id: string;
+  object_id: string;
+  period: string;
+}
+
+export interface AppLoans {
+  approved_at: Generated<Timestamp>;
+  borrower_user_id: string;
+  id: Generated<string>;
+  object_id: string;
+  owner_ids_at_approval: string[];
+  request_id: string;
+  responsible_lender_id: string;
+  status: Generated<string>;
+  status_changed_at: Generated<Timestamp>;
 }
 
 export interface AppObjectAvailabilityIntervals {
@@ -448,8 +481,11 @@ export interface DB {
   "app.environments": AppEnvironments;
   "app.friendships": AppFriendships;
   "app.idempotency_records": AppIdempotencyRecords;
+  "app.loan_agreements": AppLoanAgreements;
   "app.loan_request_responsibility_acceptances": AppLoanRequestResponsibilityAcceptances;
   "app.loan_requests": AppLoanRequests;
+  "app.loan_reservations": AppLoanReservations;
+  "app.loans": AppLoans;
   "app.object_availability_intervals": AppObjectAvailabilityIntervals;
   "app.object_categories": AppObjectCategories;
   "app.object_co_owner_invitations": AppObjectCoOwnerInvitations;

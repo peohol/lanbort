@@ -41,7 +41,7 @@ import {
 import { loadRequest, loadTarget } from "./resources";
 import {
   desiredColumns,
-  endLoanRequest,
+  endLoanRequests,
   loadDerivedAvailability,
   termsDiffer,
 } from "./store";
@@ -245,7 +245,13 @@ export const withdrawLoanRequest = defineCommand({
       return result(request);
     }
 
-    await endLoanRequest(tx, request.id, "withdrawn", actingUserId(actor), now);
+    await endLoanRequests(
+      tx,
+      [request.id],
+      "withdrawn",
+      actingUserId(actor),
+      now,
+    );
     events.record(loanRequestWithdrawn, {
       resourceId: request.id,
       payload: { objectId: object.objectId },
@@ -274,7 +280,13 @@ export const declineLoanRequest = defineCommand({
       return result(request);
     }
 
-    await endLoanRequest(tx, request.id, "declined", actingUserId(actor), now);
+    await endLoanRequests(
+      tx,
+      [request.id],
+      "declined",
+      actingUserId(actor),
+      now,
+    );
     events.record(loanRequestDeclined, {
       resourceId: request.id,
       payload: { objectId: object.objectId },
