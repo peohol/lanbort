@@ -133,14 +133,22 @@ export async function findLoanRequest(
   return row ? toLoanRequest(row) : null;
 }
 
-export async function endLoanRequest(
+/**
+ * Ends those of `requestIds` that are still open, and returns their ids.
+ * Requests that ended or were approved in the meantime stay as they are.
+ */
+export async function endLoanRequests(
   db: Db,
-  requestId: string,
+  requestIds: readonly string[],
   reason: LoanRequestEndReason,
   endedByUserId: string | null,
   now: Date,
-): Promise<void> {
-  await db
+): Promise<string[]> {
+  if (requestIds.length === 0) {
+    return [];
+  }
+
+  const ended = await db
     .updateTable("app.loan_requests")
     .set({
       status: "ended",
@@ -149,9 +157,29 @@ export async function endLoanRequest(
       end_reason: reason,
       ended_by_user_id: endedByUserId,
     })
-    .where("id", "=", requestId)
+    .where("id", "in", [...requestIds])
     .where("status", "in", [...openLoanRequestStatuses])
+    .returning("id")
     .execute();
+
+  return ended.map((row) => row.id);
+}
+
+/** The object's open requests, oldest first. */
+export async function findOpenLoanRequests(
+  db: Db,
+  objectId: string,
+): Promise<LoanRequestRecord[]> {
+  const rows = await db
+    .selectFrom("app.loan_requests as request")
+    .select(requestSelection)
+    .where("request.object_id", "=", objectId)
+    .where("request.status", "in", [...openLoanRequestStatuses])
+    .orderBy("request.created_at")
+    .orderBy("request.id")
+    .execute();
+
+  return rows.map(toLoanRequest);
 }
 
 /**
@@ -285,6 +313,9 @@ export async function loadLenderScope(
  *   made under a stricter type before they became active (PS-ENV-009);
  * - and never across a block in either direction (PS-USR-006), nor for
  *   their own request (made before they became an owner).
+ * The responsible lender of the loan an approved request became always sees
+ * it: access lost after approval does not take away what the loan needs
+ * (PS-LOAN-002, Port B).
  */
 export function visibleToLender(scope: LenderScope): RawBuilder<boolean> {
   const environments =
@@ -303,16 +334,24 @@ export function visibleToLender(scope: LenderScope): RawBuilder<boolean> {
     request.borrower_user_id <> ${scope.userId}
     and (
       exists (
-        select 1 from app.object_owners
-        where object_id = request.object_id and user_id = ${scope.userId}
+        select 1 from app.loans
+        where request_id = request.id and responsible_lender_id = ${scope.userId}
       )
-      or ${scope.userId} = any(request.former_owner_ids)
+      or (
+        (
+          exists (
+            select 1 from app.object_owners
+            where object_id = request.object_id and user_id = ${scope.userId}
+          )
+          or ${scope.userId} = any(request.former_owner_ids)
+        )
+        and not app.users_blocked(request.borrower_user_id, ${scope.userId})
+        and case request.origin
+          when 'direct' then app.users_are_friends(request.borrower_user_id, ${scope.userId})
+          else (${environments})
+        end
+      )
     )
-    and not app.users_blocked(request.borrower_user_id, ${scope.userId})
-    and case request.origin
-      when 'direct' then app.users_are_friends(request.borrower_user_id, ${scope.userId})
-      else (${environments})
-    end
   )`;
 }
 

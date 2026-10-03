@@ -1,4 +1,5 @@
 import {
+  type Loan,
   type LoanRequest,
   type LoanRequestList,
   type LoanRequestPreview,
@@ -6,6 +7,7 @@ import {
   loanRequestListQuerySchema,
   loanRequestPageSize,
   loanRequestPreviewQuerySchema,
+  loanReadQuerySchema,
   loanRequestReadQuerySchema,
   responsibilityDeclarationVersion,
 } from "@lanbort/contracts";
@@ -23,13 +25,16 @@ import {
   type LoanRequestRecord,
   openStanding,
   presentedStatus,
+  toApiPeriod,
 } from "./model";
 import {
   listLoanRequestsPolicy,
   previewLoanRequestPolicy,
+  readLoanPolicy,
   readLoanRequestPolicy,
   roleOf,
 } from "./policies";
+import { findLoan } from "./reservations";
 import { afterCursor, loadRequest, loadTarget, originOf } from "./resources";
 import {
   loadAcceptances,
@@ -247,6 +252,10 @@ async function describe(
         (acceptance) => acceptance.userId === viewerId,
       ),
     },
+    loanId:
+      request.status === "approved"
+        ? ((await findLoan(db, { requestId: request.id }))?.id ?? null)
+        : null,
     createdAt: request.createdAt.toISOString(),
     statusChangedAt: request.statusChangedAt.toISOString(),
   };
@@ -332,4 +341,44 @@ export const listLoanRequests = defineQuery({
       };
     }),
   present: ({ resource }): LoanRequestList => resource,
+});
+
+/**
+ * A loan and what was agreed, for its borrower and its responsible lender
+ * (PS-LOAN-006/008). The agreement is the snapshot taken at approval, never
+ * the object as it is now.
+ */
+export const readLoan = defineQuery({
+  name: "loan.read",
+  input: loanReadQuerySchema,
+  policy: readLoanPolicy,
+  load: async ({ db, input }) => {
+    const loan = await findLoan(db, { loanId: input.loanId });
+
+    return loan ? { resource: loan, context: undefined } : null;
+  },
+  present: ({ actor, resource }): Loan => ({
+    id: resource.id,
+    requestId: resource.requestId,
+    objectId: resource.objectId,
+    role:
+      actor.kind === "user" && actor.userId === resource.borrowerUserId
+        ? "borrower"
+        : "lender",
+    borrowerUserId: resource.borrowerUserId,
+    responsibleLenderId: resource.responsibleLenderId,
+    status: resource.status,
+    period: toApiPeriod(resource.agreement.period),
+    agreement: {
+      version: resource.agreement.version,
+      objectVersion: resource.agreement.objectVersion,
+      title: resource.agreement.title,
+      categoryId: resource.agreement.categoryId,
+      description: resource.agreement.description,
+      loanTerms: resource.agreement.loanTerms,
+      responsibilityDeclarationVersion:
+        resource.agreement.responsibilityDeclarationVersion,
+    },
+    approvedAt: resource.approvedAt.toISOString(),
+  }),
 });

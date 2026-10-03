@@ -114,9 +114,17 @@ export const withdrawLoanRequestPolicy = partyPolicy("loan_request.withdraw", [
 /**
  * Any owner who sees the request may decline it: limiting new commitments is
  * every co-owner's right (vision «Uenighet mellom medeiere om framtidig
- * utlån»). Approving is WP-31's.
+ * utlån»).
  */
 export const declineLoanRequestPolicy = partyPolicy("loan_request.decline", [
+  "lender",
+]);
+
+/**
+ * PS-LOAN-006/008: any owner who sees the request may approve it, and
+ * becomes its responsible lender.
+ */
+export const approveLoanRequestPolicy = partyPolicy("loan_request.approve", [
   "lender",
 ]);
 
@@ -138,13 +146,40 @@ export const listLoanRequestsPolicy = definePolicy<unknown, void>({
   actor: [requireActiveAccount],
 });
 
+/**
+ * The parties of a loan: its borrower and its responsible lender
+ * (PS-LOAN-008). They keep what the loan needs whatever happens to the
+ * friendship or membership it came from (PS-LOAN-002).
+ */
+export interface LoanResource {
+  readonly borrowerUserId: string;
+  readonly responsibleLenderId: string;
+}
+
+/** The loan and its agreement, for its parties only; others do not see it. */
+export const readLoanPolicy = definePolicy<LoanResource, void>({
+  action: "loan.read",
+  actor: [requireActiveAccount],
+  resource: [
+    ({ actor, resource }) =>
+      actor.kind === "user" &&
+      [resource.borrowerUserId, resource.responsibleLenderId].includes(
+        actor.userId,
+      )
+        ? allow
+        : deny("not_found"),
+  ],
+});
+
 export const loanRequestPolicies = [
   createLoanRequestPolicy,
   previewLoanRequestPolicy,
   readLoanRequestPolicy,
   withdrawLoanRequestPolicy,
   declineLoanRequestPolicy,
+  approveLoanRequestPolicy,
   confirmLoanTermsPolicy,
   acceptResponsibilityPolicy,
   listLoanRequestsPolicy,
+  readLoanPolicy,
 ];

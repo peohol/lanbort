@@ -105,6 +105,7 @@ export const acceptResponsibilitySchema = z.strictObject({
 
 /**
  * - `requested`: waits for the owners' answer («forespurt»).
+ * - `approved`: an owner approved it; it is a loan now (WP-31).
  * - `awaiting_terms_confirmation`: the terms changed after the borrower
  *   confirmed them; it cannot be approved until they confirm the new ones.
  * - `on_hold`: the environment holds it (its publication waits for approval,
@@ -115,6 +116,7 @@ export const loanRequestStatusSchema = z.enum([
   "requested",
   "awaiting_terms_confirmation",
   "on_hold",
+  "approved",
   "ended",
 ]);
 
@@ -125,6 +127,8 @@ export const loanRequestStatusSchema = z.enum([
  * - `publication_ended`: the object is no longer published there.
  * - `object_unavailable`: archived, frozen, deleted, or no longer someone
  *   else's.
+ * - `period_unavailable`: another request was approved for a colliding
+ *   period (PS-LOAN-007).
  */
 export const loanRequestEndReasonSchema = z.enum([
   "withdrawn",
@@ -132,6 +136,7 @@ export const loanRequestEndReasonSchema = z.enum([
   "access_lost",
   "publication_ended",
   "object_unavailable",
+  "period_unavailable",
 ]);
 
 export const loanRequestResultSchema = z.strictObject({
@@ -234,6 +239,8 @@ export const loanRequestSchema = z.strictObject({
       acceptedByYou: z.boolean(),
     })
     .nullable(),
+  /** The loan its approval created, once `approved`. */
+  loanId: z.uuid().nullable(),
   createdAt: z.iso.datetime(),
   statusChangedAt: z.iso.datetime(),
 });
@@ -242,6 +249,63 @@ export const loanRequestListSchema = z.strictObject({
   requests: z.array(loanRequestSchema),
   /** Pass as `cursor` for the next page; null on the last one. */
   nextCursor: loanRequestIdSchema.nullable(),
+});
+
+/**
+ * The period of a loan: calendar dates, both inclusive, like availability
+ * intervals in the API, but always with an end.
+ */
+export const loanPeriodSchema = z.strictObject({
+  start: calendarDateSchema,
+  end: calendarDateSchema,
+});
+
+export const loanIdSchema = z.uuid();
+
+/**
+ * PS-LOAN-006: an owner who sees the request approves it. The period is the
+ * one asked for; «as soon as possible» starts on the earliest day the whole
+ * period fits. The approver becomes the responsible lender (PS-LOAN-008).
+ */
+export const approveLoanRequestSchema = loanRequestReferenceSchema;
+
+export const loanApprovalResultSchema = z.strictObject({
+  requestId: loanRequestIdSchema,
+  loanId: loanIdSchema,
+  status: z.literal("approved"),
+  period: loanPeriodSchema,
+});
+
+/** `reserved`: approved and holding its period («reservert»). */
+export const loanStatusSchema = z.enum(["reserved"]);
+
+export const loanReadQuerySchema = z.strictObject({ loanId: loanIdSchema });
+
+/**
+ * A loan as its borrower or responsible lender sees it. The agreement is
+ * what was approved, as it was then: later changes to the object never
+ * change it.
+ */
+export const loanSchema = z.strictObject({
+  id: loanIdSchema,
+  requestId: loanRequestIdSchema,
+  objectId: objectIdSchema,
+  role: loanRequestRoleSchema,
+  borrowerUserId: z.uuid(),
+  responsibleLenderId: z.uuid(),
+  status: loanStatusSchema,
+  period: loanPeriodSchema,
+  agreement: z.strictObject({
+    version: z.int(),
+    objectVersion: z.int(),
+    title: z.string(),
+    categoryId: objectCategoryIdSchema,
+    description: z.string(),
+    loanTerms: z.string().nullable(),
+    /** The declaration both parties accepted; direct loans only. */
+    responsibilityDeclarationVersion: z.int().nullable(),
+  }),
+  approvedAt: z.iso.datetime(),
 });
 
 export type LoanRequestOrigin = z.infer<typeof loanRequestOriginSchema>;
@@ -254,3 +318,7 @@ export type LoanRequestRole = z.infer<typeof loanRequestRoleSchema>;
 export type LoanRequestPreview = z.infer<typeof loanRequestPreviewSchema>;
 export type LoanRequest = z.infer<typeof loanRequestSchema>;
 export type LoanRequestList = z.infer<typeof loanRequestListSchema>;
+export type LoanPeriod = z.infer<typeof loanPeriodSchema>;
+export type LoanApprovalResult = z.infer<typeof loanApprovalResultSchema>;
+export type LoanStatus = z.infer<typeof loanStatusSchema>;
+export type Loan = z.infer<typeof loanSchema>;

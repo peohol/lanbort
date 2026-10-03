@@ -1,5 +1,6 @@
 import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
+import { loanCommitments } from "../loans/reservations";
 
 /**
  * An obligation on the object that ordinary ownership changes must not break:
@@ -24,8 +25,10 @@ export interface ObjectCommitmentSource {
   ): Promise<readonly ObjectCommitment[]>;
 }
 
-/** None yet: no loans exist before Phase 3. */
-export const objectCommitmentSources: readonly ObjectCommitmentSource[] = [];
+/** Reserved loans (WP-31); later loan statuses join through the same source. */
+export const objectCommitmentSources: readonly ObjectCommitmentSource[] = [
+  loanCommitments,
+];
 
 /** Every commitment on the object, from every source. */
 export async function loadCommitments(

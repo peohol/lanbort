@@ -1,4 +1,7 @@
-import { loanRequestRoleSchema } from "@lanbort/contracts";
+import {
+  loanRequestEndReasonSchema,
+  loanRequestRoleSchema,
+} from "@lanbort/contracts";
 import { z } from "zod";
 import { defineEvent } from "../events/catalog";
 
@@ -8,7 +11,8 @@ import { defineEvent } from "../events/catalog";
  * names its object so later consumers (Phase 4 notifications) can act on it.
  * The database ends requests neutrally when access is lost (PS-LOAN-002);
  * those endings are recorded on the request itself, like WP-25's
- * publications.
+ * publications. Endings the domain decides, such as a colliding approval
+ * (PS-LOAN-007), are events, still without saying whose request won.
  */
 const loanRequestEvent = <Shape extends z.ZodRawShape>(
   type: string,
@@ -46,3 +50,35 @@ export const loanRequestResponsibilityAccepted = loanRequestEvent(
     declarationVersion: z.int().min(1),
   },
 );
+
+/** PS-LOAN-006: the request became this loan. */
+export const loanRequestApproved = loanRequestEvent("approved", {
+  loanId: z.uuid(),
+});
+
+/** The domain ended an open request neutrally (PS-LOAN-007). */
+export const loanRequestEnded = loanRequestEvent("ended", {
+  reason: loanRequestEndReasonSchema.extract(["period_unavailable"]),
+});
+
+/**
+ * Loan events carry ids and versions only, like requests': never the
+ * period, the terms or the agreement's content. The resource is the loan.
+ */
+const loanEvent = <Shape extends z.ZodRawShape>(type: string, extra: Shape) =>
+  defineEvent({
+    type: `loan.${type}`,
+    version: 1,
+    kind: "domain",
+    resourceType: "loan",
+    payload: z.strictObject({ objectId: z.uuid(), ...extra }),
+  });
+
+/**
+ * PS-LOAN-006/008: approved and reserved, with its agreement. The actor is
+ * the approver, who is the responsible lender.
+ */
+export const loanReserved = loanEvent("reserved", {
+  requestId: z.uuid(),
+  agreementVersion: z.int().min(1),
+});

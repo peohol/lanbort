@@ -5,13 +5,16 @@ import type { DenialReason } from "../errors";
 import { testUserActor } from "../testing/actors";
 import {
   acceptResponsibilityPolicy,
+  approveLoanRequestPolicy,
   confirmLoanTermsPolicy,
   createLoanRequestPolicy,
   declineLoanRequestPolicy,
   type LoanRequestResource,
   type LoanRequestTarget,
+  type LoanResource,
   listLoanRequestsPolicy,
   previewLoanRequestPolicy,
+  readLoanPolicy,
   readLoanRequestPolicy,
   withdrawLoanRequestPolicy,
 } from "./policies";
@@ -80,6 +83,12 @@ const request: LoanRequestResource = {
   lenderIds: [owner.userId],
 };
 
+/** The owner approved and is the responsible lender. */
+const loan: LoanResource = {
+  borrowerUserId: borrower.userId,
+  responsibleLenderId: owner.userId,
+};
+
 const partyCases = (allowed: { borrower: boolean; lender: boolean }) => [
   expectCase(
     "the borrower",
@@ -114,10 +123,23 @@ export const loanMatrices = [
   partyMatrix(readLoanRequestPolicy, { borrower: true, lender: true }),
   partyMatrix(withdrawLoanRequestPolicy, { borrower: true, lender: false }),
   partyMatrix(declineLoanRequestPolicy, { borrower: false, lender: true }),
+  partyMatrix(approveLoanRequestPolicy, { borrower: false, lender: true }),
   partyMatrix(confirmLoanTermsPolicy, { borrower: true, lender: false }),
   partyMatrix(acceptResponsibilityPolicy, { borrower: true, lender: true }),
   policyMatrix(listLoanRequestsPolicy, [
     expectCase("a signed-in user", borrower, undefined, "allow"),
     ...callerCases(undefined),
+  ]),
+  policyMatrix(readLoanPolicy, [
+    expectCase("the borrower", borrower, loan, "allow"),
+    expectCase("the responsible lender", owner, loan, "allow"),
+    expectCase(
+      "a co-owner who is not the responsible lender",
+      coOwner,
+      loan,
+      "not_found",
+    ),
+    expectCase("anyone else", stranger, loan, "not_found"),
+    ...callerCases(loan),
   ]),
 ];
