@@ -7,6 +7,7 @@ import { createDatabase } from "@lanbort/database";
 import {
   ConsumerRegistry,
   type DomainContext,
+  notificationGenerator,
   objectImageFileCleanup,
 } from "@lanbort/domain";
 import { serverEnv } from "./env";
@@ -24,14 +25,15 @@ export interface Runtime {
 }
 
 /**
- * Side effects run from the outbox (ADR-0004, ADR-0008). Notifications and
- * e-mail delivery arrive in Phase 4.
+ * Side effects run from the outbox (ADR-0004, ADR-0008): image file cleanup
+ * and the in-app notifications (WP-40). E-mail delivery arrives with WP-41.
  */
 export const outboxConsumers = new ConsumerRegistry([
   objectImageFileCleanup({
     store: () => objectImageServices()?.store,
     db: () => runtime.domain().db,
   }),
+  notificationGenerator({ db: () => runtime.domain().db }),
 ]);
 
 let domain: DomainContext | undefined;

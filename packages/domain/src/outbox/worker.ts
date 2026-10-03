@@ -44,6 +44,7 @@ interface ClaimedMessage {
   event_version: number;
   resource_type: string;
   resource_id: string;
+  actor_user_id: string | null;
   correlation_id: string | null;
   occurred_at: Date;
   payload: unknown;
@@ -86,7 +87,8 @@ async function claim(
     )
     select claimed.id, claimed.consumer, claimed.attempts, claimed.event_id,
       event.event_type, event.event_version, event.resource_type,
-      event.resource_id, event.correlation_id, event.occurred_at, event.payload
+      event.resource_id, event.actor_user_id, event.correlation_id,
+      event.occurred_at, event.payload
     from claimed
     join app.audit_events as event on event.id = claimed.event_id
     order by event.position
@@ -102,6 +104,7 @@ function toStoredEvent(message: ClaimedMessage): StoredEvent {
     version: message.event_version,
     resourceType: message.resource_type,
     resourceId: message.resource_id,
+    actorUserId: message.actor_user_id,
     correlationId: message.correlation_id,
     occurredAt: message.occurred_at,
     payload: message.payload,
