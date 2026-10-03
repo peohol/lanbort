@@ -8,6 +8,8 @@ import {
   objectCommitmentSources,
 } from "../objects/commitments";
 import { consentToObjectDeletion } from "../objects/deletion";
+import { submitLoanReview } from "../reviews/commands";
+import { readLoanReviews } from "../reviews/queries";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
 import { approveLoanRequest } from "./approval";
@@ -47,6 +49,7 @@ const {
 const notFound = { code: "not_found" };
 const forbidden = { code: "forbidden" };
 const conflict = { code: "conflict" };
+const invalidInput = { code: "invalid_input" };
 const oneDay = 24 * 60 * 60 * 1000;
 const unresolved = systemActor(unresolvedEndingProcess);
 
@@ -184,6 +187,42 @@ describe("an administratively unresolved loan (PS-LOAN-018–019)", () => {
         .where("object_id", "=", objectId)
         .execute(),
     ).toEqual([{ user_id: coOwner.userId }]);
+  });
+
+  it("lets both parties review only what is not in dispute, marked as unresolved (PS-TRUST-001)", async () => {
+    const { owner, borrower, loanId } = await disputedLoan();
+    const review = (actor: UserActor, dimensions: readonly string[]) =>
+      run(submitLoanReview, actor, {
+        loanId,
+        scores: dimensions.map((dimension) => ({ dimension, score: 4 })),
+      });
+    await endUnresolved(loanId);
+
+    for (const actor of [borrower, owner]) {
+      expect(
+        (
+          await executeQuery(tick(), readLoanReviews, {
+            actor,
+            input: { loanId },
+          })
+        ).window,
+      ).toMatchObject({
+        status: "open",
+        basis: "unresolved",
+        dimensions: ["communication"],
+      });
+    }
+
+    // Whether it was handed over, on time or as described is the dispute.
+    await expect(
+      review(borrower, ["available_at_handover", "communication"]),
+    ).rejects.toMatchObject(invalidInput);
+    expect(await review(borrower, ["communication"])).toMatchObject({
+      status: "hidden",
+    });
+    expect(await review(owner, ["communication"])).toMatchObject({
+      status: "published",
+    });
   });
 
   it("ends only a loan whose handover or return is unsettled, and only by its process", async () => {
