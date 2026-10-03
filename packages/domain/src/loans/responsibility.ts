@@ -37,7 +37,11 @@ import {
   withdrawResponsibilityTransferPolicy,
 } from "./policies";
 import { type LoadedLoan, loadLockedLoan } from "./resources";
-import { findLoan, type LoanRecord } from "./reservations";
+import {
+  findControlConfirmation,
+  findLoan,
+  type LoanRecord,
+} from "./reservations";
 import {
   type CoOwnerReach,
   coOwnerLoanIds,
@@ -655,6 +659,8 @@ interface CoOwnerLoanRecord {
   readonly transfer: TransferRecord | null;
   readonly reach: CoOwnerReach;
   readonly openTransfer: boolean;
+  /** The loan ended unresolved and nobody has confirmed control yet. */
+  readonly awaitingControl: boolean;
   readonly pending:
     Awaited<ReturnType<typeof findPendingReturns>>[number] | null;
 }
@@ -695,6 +701,9 @@ export const listCoOwnerLoans = defineQuery({
           transfer: transfer?.possible ? transfer : null,
           reach: await loadCoOwnerReach(tx, loanId, userId),
           openTransfer: (await findTransfer(tx, loanId))?.possible ?? false,
+          awaitingControl:
+            loan.ending?.reason === "unresolved" &&
+            (await findControlConfirmation(tx, loanId)) === null,
           pending,
         });
       }
@@ -711,7 +720,14 @@ export const listCoOwnerLoans = defineQuery({
       const mayConfirmReceipt =
         reach.receivesForLender && inReturnPhase(loan.status);
 
-      if (!item.transfer && !mayTakeOver && !mayConfirmReceipt) {
+      const mayConfirmControl = item.awaitingControl;
+
+      if (
+        !item.transfer &&
+        !mayTakeOver &&
+        !mayConfirmReceipt &&
+        !mayConfirmControl
+      ) {
         return [];
       }
 
@@ -730,6 +746,7 @@ export const listCoOwnerLoans = defineQuery({
           transfer: item.transfer && presentTransfer(item.transfer),
           mayTakeOver,
           mayConfirmReceipt,
+          mayConfirmControl,
           pending: item.pending && {
             outcome: item.pending.outcome,
             effectiveAt: item.pending.effectiveAt.toISOString(),
