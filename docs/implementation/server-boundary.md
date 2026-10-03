@@ -92,7 +92,7 @@ Route Handler (route.user / route.public / route.scheduler)
 - Ved uenighet vet ingen hvem som har objektet. Fra det omstridte lånets overleveringsdag og uten slutt sperres objektet for nye lån og for nye dager i andre lån (`loanPossessionBlocks`, i databasen `app.possession_uncertain`). Lån som allerede er godkjent, består uendret (scenario 61); ID-ene deres følger hendelsen `loan.handover_disputed` slik at partene kan varsles senere (WP-40). Sperren forsvinner når partene blir enige.
 - `active` og `disputed` holder reservasjonen og er forpliktelser som `reserved` (`committedLoanStatuses`). Kansellering gjelder ikke lenger; et åpent endringsforslag som flytter overleveringsdagen, bortfaller når lånet blir overlevert.
 - Bare partene kan uttale seg. Vennskap, medlemskap og blokkering sjekkes ikke (PS-LOAN-002, scenario 81). Hendelsene (`loan.handover_reported`, `loan.handed_over`, `loan.handover_disputed`, `loan.not_completed`) har bare ID-er, versjoner og koder; `basis` sier om begge var enige eller om svaret uteble, aldri hvem som hadde skylden.
-- Administrativ avslutning av en uavklart overlevering hører til saksbehandlingen (WP-45, PS-LOAN-018) og finnes ikke ennå. Pilotstandarden sier ikke hva som skal skje når ingen av partene sier noe etter overleveringsdagen; lånet venter da i avklaring.
+- En uavklart overlevering kan mekles og avsluttes administrativt (WP-45, se under). Pilotstandarden sier ikke hva som skal skje når ingen av partene sier noe etter overleveringsdagen; lånet venter da i avklaring.
 
 ## Retur og tidlig retur (WP-34)
 
@@ -107,7 +107,7 @@ Route Handler (route.user / route.public / route.scheduler)
 - Mens besittelsen er usikker (`awaiting_return`, `late`, `return_disputed`), sperres objektet fra lånets startdag og uten slutt for nye lån og nye dager i andre lån (`loanPossessionBlocks`, i databasen `app.possession_uncertain`). Et `active` lån med passert returdag sperrer fra returdagen (`appliesFrom`; tidsavhengig, så bare i domenet). Godkjente lån består uendret (scenario 58).
 - Forlengelse under lånet (PS-LOAN-010): for `active` og `late` kan partene avtale ny returdato, men ikke ny startdag, og den nye returdagen må ligge fram i tid. Nye dager må være ledige utenom lånets egne sperrer (`open`). Ny avtaleversjon gjør retur-utsagnene til historikk, og et forsinket lån blir `active` igjen. Har en part allerede sagt noe om returen, må det avklares først.
 - Bare partene kan uttale seg. Vennskap, medlemskap og blokkering sjekkes ikke (PS-LOAN-002, PS-LOAN-021, scenario 81). Hendelsene (`loan.return_reported`, `loan.returned`, `loan.return_disputed`) har bare ID-er, versjoner og koder.
-- Senere arbeidspakker: administrativ uavklart avslutning og eiers bekreftelse av kontroll før nye lån (PS-LOAN-018–019) hører til saksbehandlingen (WP-45). Varsler om returdag og om uenighet til andre godkjente lån kommer med WP-40.
+- Administrativ uavklart avslutning og eiers bekreftelse av kontroll før nye lån (PS-LOAN-018–019) er beskrevet under WP-45. Varsler om returdag og om uenighet til andre godkjente lån kommer med WP-40.
 
 ## Ansvarlig utlåner og minimumstilgang (WP-35)
 
@@ -121,6 +121,24 @@ Route Handler (route.user / route.public / route.scheduler)
 - `loan.list_for_co_owner` viser en medeier bare lån der de har en åpen overføring eller kan overta eller bekrefte mottak, med periode, tittel og egen ventende bekreftelse; ikke låntakers identitet utover det overføringen sier.
 - Minimumstilgang (PS-LOAN-021): partene beholder lesing, kansellering, avtaleendring, overlevering, retur og overføring når medlemskap, publisering, vennskap eller kontakt opphører, og når de blokkerer hverandre. Kravet til partenes stilling er samlet i `requireLoanStanding` (i dag aktiv konto), som WP-53 utvider for deaktiverte kontoer.
 - Hendelsene `loan.responsibility_proposed`, `loan.responsibility_answered`, `loan.responsibility_transferred`, `loan.responsibility_declined` og `loan.responsibility_withdrawn` har bare ID-er og koder. WP-40 varsler ut fra dem.
+
+## Administrative saker og kø (WP-45)
+
+- En sak (`app.cases`) er en styrt prosess med eksplisitt tilgang, aldri privat chat eller varsel (PS-COM-001, PS-COM-013). Sakstypene er `environment_contact` (et aktivt medlem skriver til miljøets administratorer som funksjon, PS-COM-010), `loan_mediation` (en part i et miljølån ber administratorene mekle om overlevering eller retur) og `unavailability_report` (konfidensiell melding om at en bruker kan være død eller varig utilgjengelig, PS-COM-015).
+- Deltakerne (`app.case_participants`) er den som åpnet, og i en mekling begge parter; en ny ansvarlig utlåner blir med av seg selv. Deltakelse består uansett medlemskap, vennskap og blokkering. Den en melding gjelder, er aldri deltaker og får `not_found`.
+- Hvem som kan behandle, følger av sakstypen (`app.case_handler`): miljøets administratorer med aktivt medlemskap, eller plattformforvaltere for meldinger. Plattformforvaltere går i tillegg gjennom `platformStewardAccess` (aal2), så meldingene er stengt for behandling til OD-0010 er besluttet. Ingen som er involvert (`app.case_involved`: den som åpnet, den saken gjelder, deltakere, den som har trådt til side, og for mekling alle med interesse i lånet og objektet) kan behandle; de får `conflict_of_interest` (PS-USR-009) og ser ikke saken i køen.
+- Køen (`case.list_environment_queue`, `case.list_platform_queue`) viser sakene den som spør kan behandle. Én behandler kan ta saken (`case.claim`), gi den tilbake, gi den videre til en annen behandler eller tre til side (`case.recuse`, også for den som har den). Mister behandleren rollen, medlemskapet, en aktiv konto eller blir involvert, går saken tilbake til køen i samme transaksjon, med grunn i historikken (`returned_to_queue`, `app.return_cases_to_queue`); kommandoene gjør det samme for det bare tiden endrer. Deltakerne ser bare om saken er tatt, venter i kø eller at ingen kan behandle den nå (UX-EXC-009).
+- Hvem som skriver når: i en kontakt skriver medlemmet fritt. I mekling og melding skriver deltakeren ett innlegg og venter så til behandleren åpner en ny runde for én eller alle (`case.open_round`). Partenes innlegg i en mekling er skjult for hverandre til behandleren deler dem (`case.share_statements`, PS-COM-012); senere innlegg venter på neste deling. Behandleren skriver til alle, til én deltaker eller bare til behandlerne (internt notat), og vises for deltakerne som funksjonen, ikke som person.
+- Alt som skrives og gjøres, er append-only. En rettelse er et nytt innlegg som peker på eget tidligere innlegg til samme mottakere (PS-COM-014); behandleren kan rette også etter at saken er lukket. Å lukke en sak avgjør ingenting om lånet eller kontoen: administratoren er mekler, ikke dommer, og en melding endrer ingenting av seg selv.
+- Hendelsene (`case.*`) har bare ID-er og koder, aldri tekst eller den en melding gjelder. Varsler (WP-40) leser `app.case_actions`, som også har det databasen gjør selv.
+- Mekling tilbys for miljølån når partene er uenige, og når en retur har ventet på avklaring i 7 dager (pilotstandard, `mediationOffered`). Et vennelån har ingen administratorer og får ingen mekling.
+- En melding om utilgjengelighet krever et konkret forhold (venner, et lån mellom dem, felles medeierskap eller aktivt medlemskap i samme miljø) og ingen blokkering (`related`).
+
+## Uavklart avslutning og eiers kontroll (WP-45)
+
+- Et lån kan avsluttes som administrativt uavklart (`loan.end_unresolved`, PS-LOAN-018) når overlevering eller retur ikke er avklart (`unresolvedEndable`). Det avsluttes av ingen part, utsagnene står, og ingen får skylden. Hvem som kan starte det, er ikke besluttet (OD-0017): bare prosessen `loan.unresolved_endings` kan, og ingenting i produktet kjører den.
+- Etterpå sperres objektet for nye lån som mens besittelsen var usikker, til en nåværende eier som ikke er låntaker bekrefter å ha det tilbake (`loan.confirm_control`, `app.loan_control_confirmations`, PS-LOAN-019). Godkjente lån består. Partene ser bekreftelsen i lånet (`control`), og medeiere som ikke er parter, ser lånet i `loan.list_for_co_owner` med `mayConfirmControl`.
+- WP-53 og senere pakker som endrer `app.guard_loan_update`, `app.ensure_loan_consistent` eller `app.possession_uncertain`, må bygge videre på versjonene her.
 
 ## Vennskap og blokkering
 

@@ -42,7 +42,7 @@ import {
   readLoanRequestPolicy,
   roleOf,
 } from "./policies";
-import { findLoan } from "./reservations";
+import { findControlConfirmation, findLoan } from "./reservations";
 import { afterCursor, loadRequest, loadTarget, originOf } from "./resources";
 import { presentTransfer } from "./responsibility";
 import { findTransfer } from "./responsibility-store";
@@ -422,9 +422,21 @@ export const readLoan = defineQuery({
       const pending = await findPendingReturns(tx, loan.id);
       const open = await findTransfer(tx, loan.id);
       const transfer = open?.possible ? open : null;
+      const control =
+        loan.ending?.reason === "unresolved"
+          ? { confirmedAt: await findControlConfirmation(tx, loan.id) }
+          : null;
 
       return {
-        resource: { ...loan, amendment, handover, returns, pending, transfer },
+        resource: {
+          ...loan,
+          amendment,
+          handover,
+          returns,
+          pending,
+          transfer,
+          control,
+        },
         context: undefined,
       };
     }),
@@ -493,6 +505,9 @@ export const readLoan = defineQuery({
       },
       responsibilityTransfer:
         resource.transfer && presentTransfer(resource.transfer),
+      control: resource.control && {
+        confirmedAt: resource.control.confirmedAt?.toISOString() ?? null,
+      },
       approvedAt: resource.approvedAt.toISOString(),
     };
   },
