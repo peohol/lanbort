@@ -7,7 +7,8 @@ import { registerThroughApi } from "./helpers";
  * accept the responsibility declaration, the owner approves it into a loan
  * that reserves its period, both agree to extend it, and the borrower
  * cancels it before the handover; another loan is handed over on its
- * handover day and returned early.
+ * handover day and returned early; the lender hands a third loan's role to
+ * a co-owner.
  */
 
 const post = (
@@ -334,6 +335,116 @@ test("a party confirms the handover, and the lender the early return (WP-33–34
     ending: { reason: "returned", endedBy: "lender" },
     return: { borrower: null, lender: { outcome: "received" } },
   });
+});
+
+test("the lender hands the role to a co-owner who accepts it (WP-35)", async ({
+  request,
+  playwright,
+  baseURL,
+}) => {
+  const context = () =>
+    playwright.request.newContext({
+      baseURL: baseURL!,
+      extraHTTPHeaders: { origin: baseURL! },
+    });
+  await registerThroughApi(request);
+  const anna = await accountId(request);
+  const bo = await context();
+  await registerThroughApi(bo);
+  const boId = await accountId(bo);
+  const dag = await context();
+  await registerThroughApi(dag);
+  const dagId = await accountId(dag);
+  const stranger = await context();
+  await registerThroughApi(stranger);
+  await post(request, "/api/social/friend-requests", { userId: boId });
+  await post(bo, "/api/social/friend-requests/accept", { userId: anna });
+
+  // Dag co-owns the object before the loan is approved.
+  const { objectId } = await (
+    await post(request, "/api/objects", {
+      title: "Tilhenger",
+      categoryId: "annet",
+      description: "Skapbil-tilhenger, 750 kg.",
+      availability: [{ start: "2030-06-01", end: null }],
+    })
+  ).json();
+  const { invitationId } = await (
+    await post(request, `/api/objects/${objectId}/co-owners/invitations`, {
+      userId: dagId,
+    })
+  ).json();
+  await post(dag, "/api/object-invitations/accept", { invitationId });
+
+  const preview = await (
+    await bo.get(`/api/loan-requests/preview?objectId=${objectId}`)
+  ).json();
+  const { requestId } = await (
+    await post(bo, "/api/loan-requests", {
+      objectId,
+      origin: { kind: "direct" },
+      start: { kind: "date", date: "2030-06-10" },
+      end: { kind: "date", date: "2030-06-12" },
+      message: "Kan jeg låne den?",
+      termsVersion: preview.termsVersion,
+      responsibilityDeclarationVersion:
+        preview.responsibilityDeclarationVersion,
+    })
+  ).json();
+  await post(request, `/api/loan-requests/${requestId}/responsibility`, {
+    declarationVersion: preview.responsibilityDeclarationVersion,
+  });
+  const { loanId } = await (
+    await post(request, `/api/loan-requests/${requestId}/approve`)
+  ).json();
+  const loanPath = `/api/loans/${loanId}`;
+
+  // Only the responsible lender offers the role; nobody takes it over while
+  // the lender is available.
+  const toDag = { toUserId: dagId };
+  expect((await post(bo, `${loanPath}/responsibility`, toDag)).status()).toBe(
+    403,
+  );
+  expect(
+    (await post(stranger, `${loanPath}/responsibility`, toDag)).status(),
+  ).toBe(404);
+  expect(
+    (await post(dag, `${loanPath}/responsibility/take-over`)).status(),
+  ).toBe(404);
+
+  const offered = await post(request, `${loanPath}/responsibility`, toDag);
+  expect(offered.status()).toBe(200);
+  const { transferId } = await offered.json();
+  expect(
+    (await (await bo.get(loanPath)).json()).responsibilityTransfer,
+  ).toMatchObject({
+    id: transferId,
+    toUserId: dagId,
+    needsBorrowerConsent: false,
+  });
+  expect(
+    (await (await dag.get("/api/loans/co-owner")).json()).items,
+  ).toMatchObject([{ loanId, objectId, transfer: { id: transferId } }]);
+
+  const transferPath = `${loanPath}/responsibility/${transferId}`;
+  expect((await post(bo, `${transferPath}/accept`)).status()).toBe(403);
+  const accepted = await post(dag, `${transferPath}/accept`);
+  expect(accepted.status()).toBe(200);
+  expect(await accepted.json()).toEqual({
+    loanId,
+    transferId,
+    status: "completed",
+    responsibleLenderId: dagId,
+  });
+
+  // Dag is the lender of the same agreement; Anna no longer sees the loan.
+  expect(await (await dag.get(loanPath)).json()).toMatchObject({
+    role: "lender",
+    responsibleLenderId: dagId,
+    period: { start: "2030-06-10", end: "2030-06-12" },
+    responsibilityTransfer: null,
+  });
+  expect((await request.get(loanPath)).status()).toBe(404);
 });
 
 test("the handover deadline job only runs for the scheduler", async ({
