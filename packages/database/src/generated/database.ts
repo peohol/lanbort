@@ -49,6 +49,51 @@ export interface AppAuthIdentities {
   user_id: string;
 }
 
+export interface AppCaseActions {
+  actor_user_id: string | null;
+  at: Timestamp;
+  case_id: string;
+  id: Generated<string>;
+  kind: string;
+  position: Generated<Int8>;
+  reason: string | null;
+  target_user_id: string | null;
+}
+
+export interface AppCaseEntries {
+  audience: string;
+  audience_user_id: string | null;
+  author_user_id: string;
+  body: string;
+  capacity: string;
+  case_id: string;
+  corrects_entry_id: string | null;
+  created_at: Timestamp;
+  id: Generated<string>;
+  position: Generated<Int8>;
+}
+
+export interface AppCaseParticipants {
+  case_id: string;
+  joined_at: Timestamp;
+  may_write: boolean;
+  role: string;
+  user_id: string;
+}
+
+export interface AppCases {
+  assignee_user_id: string | null;
+  closed_at: Timestamp | null;
+  environment_id: string | null;
+  id: Generated<string>;
+  kind: string;
+  loan_id: string | null;
+  opened_at: Timestamp;
+  opened_by_user_id: string;
+  status: Generated<string>;
+  subject_user_id: string | null;
+}
+
 export interface AppEnvironmentAccessRestrictions {
   environment_id: string;
   id: Generated<string>;
@@ -270,6 +315,12 @@ export interface AppLoanAmendments {
   resolved_at: Timestamp | null;
   resolved_by_user_id: string | null;
   status: Generated<string>;
+}
+
+export interface AppLoanControlConfirmations {
+  confirmed_at: Timestamp;
+  confirmed_by_user_id: string;
+  loan_id: string;
 }
 
 export interface AppLoanHandoverReports {
@@ -614,6 +665,10 @@ export interface AppVerifiedContacts {
 export interface DB {
   "app.audit_events": AppAuditEvents;
   "app.auth_identities": AppAuthIdentities;
+  "app.case_actions": AppCaseActions;
+  "app.case_entries": AppCaseEntries;
+  "app.case_participants": AppCaseParticipants;
+  "app.cases": AppCases;
   "app.environment_access_restrictions": AppEnvironmentAccessRestrictions;
   "app.environment_membership_answers": AppEnvironmentMembershipAnswers;
   "app.environment_memberships": AppEnvironmentMemberships;
@@ -632,6 +687,7 @@ export interface DB {
   "app.idempotency_records": AppIdempotencyRecords;
   "app.loan_agreements": AppLoanAgreements;
   "app.loan_amendments": AppLoanAmendments;
+  "app.loan_control_confirmations": AppLoanControlConfirmations;
   "app.loan_handover_reports": AppLoanHandoverReports;
   "app.loan_lender_transfers": AppLoanLenderTransfers;
   "app.loan_lender_unavailability": AppLoanLenderUnavailability;

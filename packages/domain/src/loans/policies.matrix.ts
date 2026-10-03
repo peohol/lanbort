@@ -11,13 +11,16 @@ import {
   cancelLoanPolicy,
   concludeHandoversPolicy,
   concludeReturnsPolicy,
+  confirmLoanControlPolicy,
   confirmLoanTermsPolicy,
   createLoanRequestPolicy,
   declineLoanAmendmentPolicy,
   declineLoanRequestPolicy,
   declineResponsibilityTransferPolicy,
+  endLoanUnresolvedPolicy,
   handoverProcess,
   type LoanAmendmentResource,
+  type LoanControlResource,
   type LoanReceiptResource,
   type LoanReturnResource,
   type LoanRequestResource,
@@ -33,10 +36,12 @@ import {
   readLoanRequestPolicy,
   reportHandoverPolicy,
   reportReturnPolicy,
+  requestLoanMediationPolicy,
   type ResponsibilityTransferResource,
   returnProcess,
   takeOverResponsibilityPolicy,
   undoReturnPolicy,
+  unresolvedEndingProcess,
   withdrawLoanAmendmentPolicy,
   withdrawLoanRequestPolicy,
   withdrawResponsibilityTransferPolicy,
@@ -368,29 +373,74 @@ const answerers = (kind: "voluntary" | "takeover", consent: boolean) => ({
   recipient: kind === "voluntary",
 });
 
-/** A scheduled job runs only as its own process. */
-const processMatrix = (policy: Policy<void, void>, process: string) =>
+/** A scheduled job, or a process acting on `resource`, runs only as itself. */
+const processMatrix = <R = void>(
+  policy: Policy<R, void>,
+  process: string,
+  resource = undefined as R,
+) =>
   policyMatrix(policy, [
     expectCase(
       `the ${process} process`,
       systemActor(process),
-      undefined,
+      resource,
       "allow",
     ),
     expectCase(
       "another system process",
       systemActor("outbox.worker"),
-      undefined,
+      resource,
       "forbidden",
     ),
-    expectCase("a party of a loan", borrower, undefined, "forbidden"),
+    expectCase("a party of a loan", borrower, resource, "forbidden"),
     expectCase(
       "an account that has not completed registration",
       pendingAccount,
-      undefined,
+      resource,
       "forbidden",
     ),
   ]);
+
+/**
+ * PS-LOAN-019: any current owner confirms having the object back after the
+ * loan ended unresolved; the borrower never does. On any other loan, only
+ * its responsible lender learns that there is nothing to confirm.
+ */
+const controlLoan = (endedUnresolved: boolean): LoanControlResource => ({
+  ...loan,
+  ownerIds: [owner.userId, coOwner.userId],
+  endedUnresolved,
+});
+
+const controlMatrix = policyMatrix(confirmLoanControlPolicy, [
+  expectCase("the responsible lender", owner, controlLoan(true), "allow"),
+  expectCase(
+    "a co-owner who is not a party",
+    coOwner,
+    controlLoan(true),
+    "allow",
+  ),
+  expectCase("the borrower", borrower, controlLoan(true), "forbidden"),
+  expectCase(
+    "someone who no longer owns the object",
+    stranger,
+    controlLoan(true),
+    "not_found",
+  ),
+  expectCase(
+    "the lender of a loan that did not end unresolved",
+    owner,
+    controlLoan(false),
+    "allow",
+  ),
+  expectCase(
+    "a co-owner of a loan that did not end unresolved does not see it",
+    coOwner,
+    controlLoan(false),
+    "not_found",
+  ),
+  ...callerCases(controlLoan(true)),
+]);
 
 export const loanMatrices = [
   policyMatrix(createLoanRequestPolicy, targetCases),
@@ -432,4 +482,7 @@ export const loanMatrices = [
     expectCase("a signed-in user", coOwner, undefined, "allow"),
     ...callerCases(undefined),
   ]),
+  loanPartyMatrix(requestLoanMediationPolicy),
+  processMatrix(endLoanUnresolvedPolicy, unresolvedEndingProcess, loan),
+  controlMatrix,
 ];

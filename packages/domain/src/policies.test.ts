@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { accountMatrices } from "./account/policies.matrix";
+import { caseMatrices } from "./cases/policies.matrix";
 import { environmentMatrices } from "./environment/policies.matrix";
 import { loanMatrices } from "./loans/policies.matrix";
 import { notificationMatrices } from "./notifications/policies.matrix";
@@ -31,6 +32,7 @@ const matrices: readonly PolicyMatrix<never, never>[] = [
   ...reviewMatrices,
   ...socialMatrices,
   ...notificationMatrices,
+  ...caseMatrices,
 ] as never;
 
 describe("policy coverage", () => {

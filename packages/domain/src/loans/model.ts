@@ -720,3 +720,80 @@ export function repeatsLastStatement(
 
   return last?.role === role && last.outcome === outcome;
 }
+
+/**
+ * PS-LOAN-018: whether a loan's handover or return is still unsettled, so
+ * the loan could end as administratively unresolved: a reserved loan whose
+ * handover day is over and about which nobody has said anything, a disputed
+ * handover, an active loan whose return day is over, and a return that is
+ * unsettled, late or disputed. A loan that ended, or is simply running, has
+ * nothing to clarify, and neither has one whose «not handed over» waits for
+ * its answer: that deadline settles it (PS-LOAN-012). Who may end a loan
+ * so, and after what process, is not decided (OD-0017).
+ */
+export function unresolvedEndable(
+  loan: {
+    readonly status: StoredLoanStatus;
+    readonly period: LoanPeriodInterval;
+    readonly handover: HandoverVerdict;
+  },
+  today: string,
+): boolean {
+  const { status, period } = loan;
+
+  switch (status) {
+    case "reserved":
+      return !beforeHandover(period, today) && loan.handover === "none";
+    case "active":
+      return returnDayOver(period, today);
+    case "disputed":
+    case "awaiting_return":
+    case "late":
+    case "return_disputed":
+      return true;
+    case "ended":
+      return false;
+  }
+}
+
+/**
+ * Pilot standard (product spec 04, «Tidsfrister som pilotstandard»): how
+ * long a return can wait for clarification before a clarification process
+ * is offered. Silence still makes nobody late or at fault.
+ */
+export const returnClarificationDays = 7;
+
+/**
+ * Whether a loan through an environment may now go to mediation by the
+ * environment's administrators (vision 05, «Konflikt om tilbakelevering»):
+ * at once when the parties contradict each other about the handover or the
+ * return, and once the return has waited {@link returnClarificationDays}
+ * days for clarification: from the moment a party's word left it awaiting
+ * clarification, or from the agreed return day when nobody said anything.
+ * A late loan is not in question (the borrower says they still have it),
+ * and neither is a loan before its return day.
+ */
+export function mediationOffered(
+  loan: {
+    readonly status: StoredLoanStatus;
+    readonly statusChangedAt: Date;
+    readonly period: LoanPeriodInterval;
+  },
+  now: Date,
+  today: string,
+): boolean {
+  switch (loan.status) {
+    case "disputed":
+    case "return_disputed":
+      return true;
+    case "awaiting_return":
+      return (
+        now.getTime() - loan.statusChangedAt.getTime() >=
+        returnClarificationDays * 86_400_000
+      );
+    case "active":
+      return today >= addDays(loan.period.until, returnClarificationDays);
+    default:
+      return false;
+  }
+}
