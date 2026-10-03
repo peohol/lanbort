@@ -540,6 +540,27 @@ describe("the undo buffer (PS-LOAN-016)", () => {
     expect(await statements(loanId)).toHaveLength(1);
   });
 
+  it("records a confirmation as of when it took effect, however late the job comes", async () => {
+    const { owner, borrower, objectId, loanId } = await activeLoan(0, 1);
+
+    await say(owner, loanId, "received");
+    const effectiveAt = new Date(kit.now().getTime() + undoBuffer);
+    // The job only comes by after the loan's last day.
+    kit.advance(3 * oneDay);
+    await conclude();
+
+    expect(await loanOf(borrower, loanId)).toMatchObject({
+      status: "ended",
+      ending: { reason: "returned", endedAt: effectiveAt.toISOString() },
+      return: { lender: { reportedAt: effectiveAt.toISOString() } },
+    });
+    // It was returned before the last day, so the return was early.
+    expect((await eventsFor("loan", loanId)).at(-1)).toEqual({
+      event_type: "loan.returned",
+      payload: { objectId, early: true },
+    });
+  });
+
   it("counts a confirmation from when it took effect, before the job comes by", async () => {
     const { owner, borrower, loanId } = await activeLoan(0, 4);
 
