@@ -82,3 +82,35 @@ export const loanReserved = loanEvent("reserved", {
   requestId: z.uuid(),
   agreementVersion: z.int().min(1),
 });
+
+/**
+ * PS-LOAN-011: a party cancelled the reserved loan before the handover. The
+ * actor is that party; `role` says which side they were on.
+ */
+export const loanCancelled = loanEvent("cancelled", {
+  role: loanRequestRoleSchema,
+});
+
+const amendmentId = z.uuid();
+
+/** PS-LOAN-010: a party proposed a change on top of `baseVersion`. */
+export const loanAmendmentProposed = loanEvent("amendment_proposed", {
+  amendmentId,
+  baseVersion: z.int().min(1),
+});
+
+/** The other party agreed: the change is `agreementVersion` now. */
+export const loanAmendmentAccepted = loanEvent("amendment_accepted", {
+  amendmentId,
+  agreementVersion: z.int().min(2),
+});
+
+/** The other party said no; the agreement stands as it was. */
+export const loanAmendmentDeclined = loanEvent("amendment_declined", {
+  amendmentId,
+});
+
+/** The proposer took the proposal back. */
+export const loanAmendmentWithdrawn = loanEvent("amendment_withdrawn", {
+  amendmentId,
+});

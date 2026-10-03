@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { DomainError } from "../errors";
 import {
+  amendmentFits,
+  beforeHandover,
   collidingRequests,
   earliestPeriod,
   endedStanding,
+  fromApiPeriod,
   isOpen,
   openStanding,
   presentedStatus,
+  samePeriod,
   toApiPeriod,
   validateDesiredPeriod,
 } from "./model";
@@ -235,5 +239,98 @@ describe("toApiPeriod", () => {
       start: "2026-10-06",
       end: "2026-10-09",
     });
+  });
+});
+
+describe("fromApiPeriod", () => {
+  it("is the inverse of toApiPeriod", () => {
+    const period = { from: "2026-10-06", until: "2026-10-10" };
+
+    expect(fromApiPeriod(toApiPeriod(period))).toEqual(period);
+    expect(samePeriod(fromApiPeriod(toApiPeriod(period)), period)).toBe(true);
+    expect(samePeriod(period, { ...period, until: "2026-10-11" })).toBe(false);
+  });
+});
+
+describe("beforeHandover (PS-LOAN-011)", () => {
+  const period = { from: "2026-10-06", until: "2026-10-10" };
+
+  it("lasts until the handover day is over", () => {
+    expect(beforeHandover(period, "2026-10-03")).toBe(true);
+    expect(beforeHandover(period, "2026-10-06")).toBe(true);
+    expect(beforeHandover(period, "2026-10-07")).toBe(false);
+  });
+});
+
+describe("amendmentFits (PS-LOAN-010, scenario 26)", () => {
+  // Anne's loan holds 6–9 October; Kari's holds 12–14 October.
+  const current = { from: "2026-10-06", until: "2026-10-10" };
+  const effective = [
+    { from: today, until: "2026-10-06" },
+    { from: "2026-10-10", until: "2026-10-12" },
+    { from: "2026-10-15", until: null },
+  ];
+
+  it("extends into days that are actually available", () => {
+    expect(
+      amendmentFits(
+        current,
+        { from: "2026-10-06", until: "2026-10-12" },
+        effective,
+        today,
+      ),
+    ).toBe(true);
+  });
+
+  it("never reaches into another loan's reservation", () => {
+    expect(
+      amendmentFits(
+        current,
+        { from: "2026-10-06", until: "2026-10-13" },
+        effective,
+        today,
+      ),
+    ).toBe(false);
+  });
+
+  it("keeps or gives back its own days without checking them", () => {
+    expect(
+      amendmentFits(
+        current,
+        { from: "2026-10-07", until: "2026-10-09" },
+        [],
+        today,
+      ),
+    ).toBe(true);
+  });
+
+  it("moves to another free period, and the start earlier", () => {
+    expect(
+      amendmentFits(
+        current,
+        { from: "2026-10-15", until: "2026-10-20" },
+        effective,
+        today,
+      ),
+    ).toBe(true);
+    expect(
+      amendmentFits(
+        current,
+        { from: "2026-10-04", until: "2026-10-10" },
+        effective,
+        today,
+      ),
+    ).toBe(true);
+  });
+
+  it("does not start in the past", () => {
+    expect(
+      amendmentFits(
+        current,
+        { from: "2026-10-02", until: "2026-10-10" },
+        [{ from: "2026-10-01", until: null }],
+        today,
+      ),
+    ).toBe(false);
   });
 });

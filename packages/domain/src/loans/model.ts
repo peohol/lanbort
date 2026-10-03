@@ -231,3 +231,51 @@ function overlaps(a: LoanPeriodInterval, b: LoanPeriodInterval): boolean {
 export function toApiPeriod(period: LoanPeriodInterval): LoanPeriod {
   return { start: period.from, end: addDays(period.until, -1) };
 }
+
+/** The internal form of an API period. */
+export function fromApiPeriod(period: LoanPeriod): LoanPeriodInterval {
+  return { from: period.start, until: addDays(period.end, 1) };
+}
+
+export function samePeriod(
+  a: LoanPeriodInterval,
+  b: LoanPeriodInterval,
+): boolean {
+  return a.from === b.from && a.until === b.until;
+}
+
+/**
+ * PS-LOAN-011: a reserved loan is before its handover until the agreed
+ * handover day (the period's first day) is over. Until then either party
+ * may cancel it, or propose and agree changes. After it, a loan that was not
+ * handed over is a matter for the handover clarification (PS-LOAN-012,
+ * WP-33), never a cancellation.
+ */
+export function beforeHandover(
+  period: LoanPeriodInterval,
+  today: string,
+): boolean {
+  return today <= period.from;
+}
+
+/**
+ * PS-LOAN-010, scenario 26: whether the agreed period can become `proposed`.
+ * The days it keeps are the loan's own already; every day it adds must be
+ * actually available (`effective`, which the loan's own reservation already
+ * blocks), so a change never reaches into another loan's reservation or a
+ * co-owner's restriction. It cannot start in the past.
+ */
+export function amendmentFits(
+  current: LoanPeriodInterval,
+  proposed: LoanPeriodInterval,
+  effective: readonly DateInterval[],
+  today: string,
+): boolean {
+  return (
+    proposed.from >= today &&
+    // The pieces of a bounded period are bounded.
+    (subtractIntervals([proposed], [current]) as LoanPeriodInterval[]).every(
+      (added) => withinAvailability(added, effective),
+    )
+  );
+}

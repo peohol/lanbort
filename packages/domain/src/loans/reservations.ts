@@ -1,4 +1,4 @@
-import type { LoanStatus } from "@lanbort/contracts";
+import type { LoanEndReason, LoanStatus } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
 import type { AvailabilityBlockSource } from "../objects/blocks";
@@ -7,17 +7,22 @@ import type { ObjectState } from "../objects/state";
 import type { LoanPeriodInterval } from "./model";
 
 /**
- * Database access for approved loans (WP-31): the loan, its agreement
- * snapshot and the reservation of its period. Commands lock the object
- * before they reserve, so approvals of one object run one after another; the
- * database's exclusion constraint refuses overlapping reservations anyway.
+ * Database access for approved loans (WP-31, WP-32): the loan, its agreement
+ * snapshots and the reservation of its period, and its cancellation. Commands
+ * lock the object before they reserve, move or release a period, so changes
+ * to one object's loans run one after another; the database's exclusion
+ * constraint refuses overlapping reservations anyway.
  */
 type Db = Kysely<Database>;
 
-/** Loan statuses that hold the object: its period and its lender. */
+/**
+ * Loan statuses that hold the object: its period and its lender. An ended
+ * loan holds nothing.
+ */
 export const committedLoanStatuses: readonly LoanStatus[] = ["reserved"];
 
-const rangeOf = (period: LoanPeriodInterval) =>
+/** The database form of a period. */
+export const rangeOf = (period: LoanPeriodInterval) =>
   sql<string>`daterange(${period.from}::date, ${period.until}::date, '[)')`;
 
 /**
@@ -144,13 +149,21 @@ export async function reserveLoan(
 export interface LoanRecord {
   readonly id: string;
   readonly requestId: string;
-  readonly objectId: string;
+  /** Null once an ended loan's object is deleted. */
+  readonly objectId: string | null;
   readonly borrowerUserId: string;
   readonly responsibleLenderId: string;
   readonly status: LoanStatus;
   readonly approvedAt: Date;
+  readonly ending: {
+    readonly reason: LoanEndReason;
+    readonly endedAt: Date;
+    readonly endedByUserId: string | null;
+  } | null;
+  /** The current agreement: its latest version. */
   readonly agreement: {
     readonly version: number;
+    readonly agreedAt: Date;
     readonly objectVersion: number;
     readonly title: string;
     readonly categoryId: string;
@@ -161,11 +174,31 @@ export interface LoanRecord {
   };
 }
 
-/** The loan with its current agreement, by its id or its request's. */
+/**
+ * The loan with its current agreement, by its id or its request's. With
+ * `lock`, the loan's row is locked for the rest of the transaction first, so
+ * whatever ends or changes it runs one after another (the caller has locked
+ * the object before, as approvals do).
+ */
 export async function findLoan(
   db: Db,
   by: { readonly loanId: string } | { readonly requestId: string },
+  options: { lock?: boolean } = {},
 ): Promise<LoanRecord | null> {
+  const [column, value] =
+    "loanId" in by
+      ? (["loan.id", by.loanId] as const)
+      : (["loan.request_id", by.requestId] as const);
+
+  if (options.lock) {
+    await db
+      .selectFrom("app.loans as loan")
+      .select("loan.id")
+      .where(column, "=", value)
+      .forUpdate()
+      .execute();
+  }
+
   const row = await db
     .selectFrom("app.loans as loan")
     .innerJoin(
@@ -181,7 +214,11 @@ export async function findLoan(
       "loan.responsible_lender_id",
       "loan.status",
       "loan.approved_at",
+      "loan.end_reason",
+      "loan.ended_at",
+      "loan.ended_by_user_id",
       "agreement.version",
+      "agreement.recorded_at",
       "agreement.object_version",
       "agreement.title",
       "agreement.category_id",
@@ -191,11 +228,7 @@ export async function findLoan(
       sql<string>`upper(agreement.period)::text`.as("until"),
       "agreement.responsibility_declaration_version",
     ])
-    .where(
-      "loanId" in by ? "loan.id" : "loan.request_id",
-      "=",
-      "loanId" in by ? by.loanId : by.requestId,
-    )
+    .where(column, "=", value)
     .orderBy("agreement.version", "desc")
     .limit(1)
     .executeTakeFirst();
@@ -209,8 +242,17 @@ export async function findLoan(
         responsibleLenderId: row.responsible_lender_id,
         status: row.status as LoanStatus,
         approvedAt: row.approved_at,
+        ending:
+          row.end_reason === null || row.ended_at === null
+            ? null
+            : {
+                reason: row.end_reason as LoanEndReason,
+                endedAt: row.ended_at,
+                endedByUserId: row.ended_by_user_id,
+              },
         agreement: {
           version: row.version,
+          agreedAt: row.recorded_at,
           objectVersion: row.object_version,
           title: row.title,
           categoryId: row.category_id,
@@ -222,4 +264,41 @@ export async function findLoan(
         },
       }
     : null;
+}
+
+/**
+ * PS-LOAN-011: ends the reserved loan as cancelled by `userId` and releases
+ * its reservation, so its period is free again. The agreement versions and
+ * the request stay as they are; the database lapses an open proposal with
+ * it and checks at commit that nothing is left reserved.
+ */
+export async function cancelReservedLoan(
+  db: Db,
+  input: {
+    readonly loanId: string;
+    readonly userId: string;
+    readonly now: Date;
+  },
+): Promise<void> {
+  const ended = await db
+    .updateTable("app.loans")
+    .set({
+      status: "ended",
+      end_reason: "cancelled",
+      ended_at: input.now,
+      ended_by_user_id: input.userId,
+      status_changed_at: input.now,
+    })
+    .where("id", "=", input.loanId)
+    .where("status", "=", "reserved")
+    .executeTakeFirst();
+
+  if (ended.numUpdatedRows !== 1n) {
+    throw new Error("Only a reserved loan is cancelled");
+  }
+
+  await db
+    .deleteFrom("app.loan_reservations")
+    .where("loan_id", "=", input.loanId)
+    .execute();
 }

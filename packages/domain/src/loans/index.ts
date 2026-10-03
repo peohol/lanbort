@@ -5,3 +5,5 @@ export * from "./access";
 export * from "./commands";
 export * from "./approval";
 export * from "./queries";
+export * from "./cancellation";
+export * from "./amendments";

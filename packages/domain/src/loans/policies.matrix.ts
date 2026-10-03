@@ -4,18 +4,24 @@ import type { Policy } from "../authorization/policy";
 import type { DenialReason } from "../errors";
 import { testUserActor } from "../testing/actors";
 import {
+  acceptLoanAmendmentPolicy,
   acceptResponsibilityPolicy,
   approveLoanRequestPolicy,
+  cancelLoanPolicy,
   confirmLoanTermsPolicy,
   createLoanRequestPolicy,
+  declineLoanAmendmentPolicy,
   declineLoanRequestPolicy,
+  type LoanAmendmentResource,
   type LoanRequestResource,
   type LoanRequestTarget,
   type LoanResource,
   listLoanRequestsPolicy,
   previewLoanRequestPolicy,
+  proposeLoanAmendmentPolicy,
   readLoanPolicy,
   readLoanRequestPolicy,
+  withdrawLoanAmendmentPolicy,
   withdrawLoanRequestPolicy,
 } from "./policies";
 
@@ -89,6 +95,64 @@ const loan: LoanResource = {
   responsibleLenderId: owner.userId,
 };
 
+/**
+ * Only the loan's parties: other co-owners, who may see the request, do not
+ * see the loan or act on it, however the friendship or membership behind it
+ * changed.
+ */
+const loanCases = <R extends LoanResource>(
+  resource: R,
+  allowed: { borrower: boolean; lender: boolean },
+) => [
+  expectCase(
+    "the borrower",
+    borrower,
+    resource,
+    allowed.borrower ? "allow" : "forbidden",
+  ),
+  expectCase(
+    "the responsible lender",
+    owner,
+    resource,
+    allowed.lender ? "allow" : "forbidden",
+  ),
+  expectCase(
+    "a co-owner who is not the responsible lender",
+    coOwner,
+    resource,
+    "not_found",
+  ),
+  expectCase("anyone else", stranger, resource, "not_found"),
+  ...callerCases(resource),
+];
+
+const loanPartyMatrix = (policy: Policy<LoanResource, void>) =>
+  policyMatrix(policy, loanCases(loan, { borrower: true, lender: true }));
+
+/**
+ * PS-LOAN-010: on a proposal by either side, the other side answers it and
+ * the proposing side may withdraw it; nobody agrees with themselves.
+ */
+const amendmentMatrix = (
+  policy: Policy<LoanAmendmentResource, void>,
+  allowed: "other" | "proposer",
+) =>
+  policyMatrix(
+    policy,
+    (["borrower", "lender"] as const).flatMap((proposerRole) =>
+      loanCases(
+        { ...loan, proposerRole },
+        {
+          borrower: (proposerRole === "borrower") === (allowed === "proposer"),
+          lender: (proposerRole === "lender") === (allowed === "proposer"),
+        },
+      ).map((testCase) => ({
+        ...testCase,
+        name: `${testCase.name}, on the ${proposerRole}'s proposal`,
+      })),
+    ),
+  );
+
 const partyCases = (allowed: { borrower: boolean; lender: boolean }) => [
   expectCase(
     "the borrower",
@@ -130,16 +194,10 @@ export const loanMatrices = [
     expectCase("a signed-in user", borrower, undefined, "allow"),
     ...callerCases(undefined),
   ]),
-  policyMatrix(readLoanPolicy, [
-    expectCase("the borrower", borrower, loan, "allow"),
-    expectCase("the responsible lender", owner, loan, "allow"),
-    expectCase(
-      "a co-owner who is not the responsible lender",
-      coOwner,
-      loan,
-      "not_found",
-    ),
-    expectCase("anyone else", stranger, loan, "not_found"),
-    ...callerCases(loan),
-  ]),
+  loanPartyMatrix(readLoanPolicy),
+  loanPartyMatrix(cancelLoanPolicy),
+  loanPartyMatrix(proposeLoanAmendmentPolicy),
+  amendmentMatrix(acceptLoanAmendmentPolicy, "other"),
+  amendmentMatrix(declineLoanAmendmentPolicy, "other"),
+  amendmentMatrix(withdrawLoanAmendmentPolicy, "proposer"),
 ];

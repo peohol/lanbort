@@ -11,8 +11,15 @@ import {
   type OriginAssessment,
   type RequestOrigin,
 } from "./access";
+import { findAmendment, type LoanAmendmentRecord } from "./amendment-store";
 import { isOpen, type LoanRequestRecord } from "./model";
-import type { LoanRequestResource, LoanRequestTarget } from "./policies";
+import type {
+  LoanAmendmentResource,
+  LoanRequestResource,
+  LoanRequestTarget,
+  LoanResource,
+} from "./policies";
+import { findLoan, type LoanRecord } from "./reservations";
 import { findLoanRequest, loadLenderScope, visibleToLender } from "./store";
 
 type Db = Kysely<Database>;
@@ -179,6 +186,79 @@ export async function loadRequest(
     },
     context: undefined,
   };
+}
+
+export interface LoadedLoan extends LoanResource {
+  readonly loan: LoanRecord;
+  /** Null once an ended loan's object is deleted. */
+  readonly object: ObjectState | null;
+}
+
+/**
+ * The loan with its parties, or null if it does not exist. With `lock`, its
+ * object is locked first, then the loan, so changes to one object's loans
+ * and its approvals run one after another. Nothing else is checked: the
+ * friendship, membership or block between the parties no longer matters
+ * once the loan exists (PS-LOAN-002, vision «Blokkering ... før
+ * overlevering»).
+ */
+export async function loadLoan(
+  db: Db,
+  loanId: string,
+  options: { lock?: boolean } = {},
+): Promise<LoadedLoan | null> {
+  const found = await findLoan(db, { loanId });
+  const object =
+    found?.objectId == null
+      ? null
+      : await loadObjectState(db, found.objectId, options);
+  const loan = options.lock ? await findLoan(db, { loanId }, options) : found;
+
+  return loan
+    ? {
+        loan,
+        object,
+        borrowerUserId: loan.borrowerUserId,
+        responsibleLenderId: loan.responsibleLenderId,
+      }
+    : null;
+}
+
+/** The loan, locked for the rest of the command, as its policy resource. */
+export async function loadLockedLoan(
+  db: Db,
+  loanId: string,
+): Promise<{ resource: LoadedLoan; context: undefined } | null> {
+  const loaded = await loadLoan(db, loanId, { lock: true });
+
+  return loaded ? { resource: loaded, context: undefined } : null;
+}
+
+export interface LoadedAmendment extends LoadedLoan, LoanAmendmentResource {
+  readonly amendment: LoanAmendmentRecord;
+}
+
+/** A proposal on the loan, locked after the loan with `lock`. */
+export async function loadAmendment(
+  db: Db,
+  input: { readonly loanId: string; readonly amendmentId: string },
+  options: { lock?: boolean } = {},
+): Promise<{ resource: LoadedAmendment; context: undefined } | null> {
+  const loaded = await loadLoan(db, input.loanId, options);
+  const amendment =
+    loaded &&
+    (await findAmendment(db, input.loanId, input.amendmentId, options));
+
+  return loaded && amendment
+    ? {
+        resource: {
+          ...loaded,
+          amendment,
+          proposerRole: amendment.proposerRole,
+        },
+        context: undefined,
+      }
+    : null;
 }
 
 /** Rows after the cursor, newest first. */

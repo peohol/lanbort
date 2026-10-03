@@ -4,7 +4,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import type { UserActor } from "../actor";
 import { executeQuery } from "../commands/query";
 import { leaveEnvironment } from "../environment/membership-commands";
-import { addDays, calendarDate } from "../objects/availability";
+import { calendarDate } from "../objects/availability";
 import { leaveObject } from "../objects/co-owners";
 import { loadObjectState } from "../objects/state";
 import { archiveObject, updateObject } from "../objects/commands";
@@ -40,6 +40,8 @@ const {
   published,
   environmentOrigin,
   ask,
+  day,
+  dated,
   stored,
   eventsFor,
 } = kit;
@@ -49,12 +51,6 @@ const forbidden = { code: "forbidden" };
 const conflict = { code: "conflict" };
 
 const today = () => calendarDate(kit.now());
-/** The calendar date `n` days from today. */
-const day = (n: number) => addDays(today(), n);
-const dated = (from: number, to: number) => ({
-  start: { kind: "date", date: day(from) },
-  end: { kind: "date", date: day(to) },
-});
 
 const approve = (actor: UserActor, requestId: string, key?: string) =>
   run(approveLoanRequest, actor, { requestId }, key);

@@ -276,10 +276,79 @@ export const loanApprovalResultSchema = z.strictObject({
   period: loanPeriodSchema,
 });
 
-/** `reserved`: approved and holding its period («reservert»). */
-export const loanStatusSchema = z.enum(["reserved"]);
+/**
+ * - `reserved`: approved and holding its period («reservert»).
+ * - `ended`: over; see `endReason` («avsluttet»).
+ */
+export const loanStatusSchema = z.enum(["reserved", "ended"]);
+
+/**
+ * How a loan ended. `cancelled`: one of the parties ended it before the
+ * handover (PS-LOAN-011). Later work packages add the other endings.
+ */
+export const loanEndReasonSchema = z.enum(["cancelled"]);
 
 export const loanReadQuerySchema = z.strictObject({ loanId: loanIdSchema });
+
+export const loanReferenceSchema = loanReadQuerySchema;
+
+/**
+ * PS-LOAN-011: either party ends a reserved loan before the handover, on
+ * their own, and its period is free again.
+ */
+export const cancelLoanSchema = loanReferenceSchema;
+
+export const loanCancellationResultSchema = z.strictObject({
+  loanId: loanIdSchema,
+  status: z.literal("ended"),
+  endReason: z.literal("cancelled"),
+  /** Which party cancelled: the caller, or the other party who was first. */
+  endedBy: loanRequestRoleSchema,
+});
+
+/**
+ * PS-LOAN-010: a party proposes a new period for the agreement version they
+ * saw: a new handover (first day), a new return date (last day), or both.
+ * Nothing changes until the other party accepts it.
+ */
+export const proposeLoanAmendmentSchema = z.strictObject({
+  loanId: loanIdSchema,
+  agreementVersion: z.int().min(1),
+  period: loanPeriodSchema.refine(({ start, end }) => end >= start, {
+    path: ["end"],
+  }),
+});
+
+export const loanAmendmentIdSchema = z.uuid();
+
+/** The other party accepts or declines; the proposer may withdraw. */
+export const loanAmendmentReferenceSchema = z.strictObject({
+  loanId: loanIdSchema,
+  amendmentId: loanAmendmentIdSchema,
+});
+
+/**
+ * - `proposed`: waits for the other party («venter på svar»).
+ * - `accepted`: agreed; it is the agreement's next version.
+ * - `declined`: the other party said no; the agreement stands.
+ * - `withdrawn`: the proposer took it back.
+ * - `lapsed`: the loan ended before anyone answered.
+ */
+export const loanAmendmentStatusSchema = z.enum([
+  "proposed",
+  "accepted",
+  "declined",
+  "withdrawn",
+  "lapsed",
+]);
+
+export const loanAmendmentResultSchema = z.strictObject({
+  loanId: loanIdSchema,
+  amendmentId: loanAmendmentIdSchema,
+  status: loanAmendmentStatusSchema,
+  /** The loan's current agreement version after the command. */
+  agreementVersion: z.int(),
+});
 
 /**
  * A loan as its borrower or responsible lender sees it. The agreement is
@@ -289,14 +358,27 @@ export const loanReadQuerySchema = z.strictObject({ loanId: loanIdSchema });
 export const loanSchema = z.strictObject({
   id: loanIdSchema,
   requestId: loanRequestIdSchema,
-  objectId: objectIdSchema,
+  /** Null once an ended loan's object is deleted. */
+  objectId: objectIdSchema.nullable(),
   role: loanRequestRoleSchema,
   borrowerUserId: z.uuid(),
   responsibleLenderId: z.uuid(),
   status: loanStatusSchema,
+  /** How and when it ended; null while it lasts. */
+  ending: z
+    .strictObject({
+      reason: loanEndReasonSchema,
+      /** The party who ended it; null when no party did. */
+      endedBy: loanRequestRoleSchema.nullable(),
+      endedAt: z.iso.datetime(),
+    })
+    .nullable(),
+  /** The period of the current agreement. */
   period: loanPeriodSchema,
+  /** The current agreement: version 1 is the approval, later ones agreed changes. */
   agreement: z.strictObject({
     version: z.int(),
+    agreedAt: z.iso.datetime(),
     objectVersion: z.int(),
     title: z.string(),
     categoryId: objectCategoryIdSchema,
@@ -305,6 +387,18 @@ export const loanSchema = z.strictObject({
     /** The declaration both parties accepted; direct loans only. */
     responsibilityDeclarationVersion: z.int().nullable(),
   }),
+  /**
+   * The open proposal to change the agreement, if any. Whoever did not
+   * propose it is the one who accepts or declines it (UX-JRN-005).
+   */
+  amendment: z
+    .strictObject({
+      id: loanAmendmentIdSchema,
+      period: loanPeriodSchema,
+      proposedBy: loanRequestRoleSchema,
+      proposedAt: z.iso.datetime(),
+    })
+    .nullable(),
   approvedAt: z.iso.datetime(),
 });
 
@@ -321,4 +415,11 @@ export type LoanRequestList = z.infer<typeof loanRequestListSchema>;
 export type LoanPeriod = z.infer<typeof loanPeriodSchema>;
 export type LoanApprovalResult = z.infer<typeof loanApprovalResultSchema>;
 export type LoanStatus = z.infer<typeof loanStatusSchema>;
+export type LoanEndReason = z.infer<typeof loanEndReasonSchema>;
 export type Loan = z.infer<typeof loanSchema>;
+export type LoanCancellationResult = z.infer<
+  typeof loanCancellationResultSchema
+>;
+export type ProposeLoanAmendment = z.infer<typeof proposeLoanAmendmentSchema>;
+export type LoanAmendmentStatus = z.infer<typeof loanAmendmentStatusSchema>;
+export type LoanAmendmentResult = z.infer<typeof loanAmendmentResultSchema>;

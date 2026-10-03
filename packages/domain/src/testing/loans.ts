@@ -17,8 +17,9 @@ import {
   inviteMember,
   joinEnvironment,
 } from "../environment/membership-commands";
+import { approveLoanRequest } from "../loans/approval";
 import { createLoanRequest } from "../loans/commands";
-import { calendarDate } from "../objects/availability";
+import { addDays, calendarDate } from "../objects/availability";
 import { acceptCoOwnerInvitation, inviteCoOwner } from "../objects/co-owners";
 import { createObject } from "../objects/commands";
 import { ConsumerRegistry } from "../outbox/consumer";
@@ -27,7 +28,7 @@ import { acceptFriendRequest, sendFriendRequest } from "../social/commands";
 import { registerTestUser } from "./identities";
 
 /**
- * Shared steps for the loan integration tests (WP-30, WP-31): users,
+ * Shared steps for the loan integration tests (WP-30–WP-32): users,
  * environments, objects, co-owners, friendships and requests, made through
  * the real commands against the test database. Each command moves the clock
  * a millisecond ahead, so events and statuses keep their order.
@@ -190,6 +191,34 @@ export function loanTestKit(db: Kysely<Database>) {
     );
   }
 
+  /** The calendar date `n` days from today. */
+  const day = (n: number) => addDays(calendarDate(clock), n);
+
+  /** A dated request from day `from` to day `to`, both inclusive. */
+  const dated = (from: number, to: number) => ({
+    start: { kind: "date", date: day(from) },
+    end: { kind: "date", date: day(to) },
+  });
+
+  /**
+   * A reserved loan: the owner of an object published in an environment
+   * approves the borrower's request for days `from`–`to`.
+   */
+  async function reservedLoan(from = 2, to = 4) {
+    const setup = await published();
+    const { requestId } = await ask(
+      setup.borrower,
+      setup.objectId,
+      environmentOrigin(setup.environmentId),
+      dated(from, to),
+    );
+    const { loanId } = await run(approveLoanRequest, setup.owner, {
+      requestId,
+    });
+
+    return { ...setup, requestId, loanId };
+  }
+
   async function stored(requestId: string) {
     return db
       .selectFrom("app.loan_requests")
@@ -228,6 +257,9 @@ export function loanTestKit(db: Kysely<Database>) {
     published,
     environmentOrigin,
     ask,
+    day,
+    dated,
+    reservedLoan,
     stored,
     eventsFor,
   };
