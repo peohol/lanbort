@@ -21,5 +21,7 @@ export * from "./trust";
 export * from "./social";
 export * from "./notifications";
 export * from "./cases";
+export * from "./subscriptions";
+export * from "./questions";
 export * from "./outbox/policy";
 export * from "./policies";
