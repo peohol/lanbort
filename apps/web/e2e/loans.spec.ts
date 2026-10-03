@@ -3,11 +3,11 @@ import { type APIRequestContext, expect, test } from "@playwright/test";
 import { registerThroughApi } from "./helpers";
 
 /**
- * WP-30–33 over HTTP: a friend asks to borrow an object directly, both
+ * WP-30–34 over HTTP: a friend asks to borrow an object directly, both
  * accept the responsibility declaration, the owner approves it into a loan
  * that reserves its period, both agree to extend it, and the borrower
  * cancels it before the handover; another loan is handed over on its
- * handover day.
+ * handover day and returned early.
  */
 
 const post = (
@@ -199,7 +199,7 @@ const today = () =>
     day: "2-digit",
   }).format(new Date());
 
-test("a party confirms the handover on the handover day (WP-33)", async ({
+test("a party confirms the handover, and the lender the early return (WP-33–34)", async ({
   request,
   playwright,
   baseURL,
@@ -283,6 +283,57 @@ test("a party confirms the handover on the handover day (WP-33)", async ({
 
   // Handed over, it can no longer be cancelled.
   expect((await post(request, `${loanPath}/cancel`)).status()).toBe(409);
+
+  // The return (WP-34): each side says only its own statement.
+  const returnPath = `${loanPath}/return`;
+  expect(
+    (
+      await post(bo, returnPath, { agreementVersion: 1, outcome: "received" })
+    ).status(),
+  ).toBe(403);
+  expect(
+    (
+      await post(stranger, returnPath, {
+        agreementVersion: 1,
+        outcome: "returned",
+      })
+    ).status(),
+  ).toBe(404);
+
+  // The borrower's confirmation waits 30 seconds and can be undone.
+  const returned = await post(bo, returnPath, {
+    agreementVersion: 1,
+    outcome: "returned",
+  });
+  expect(returned.status()).toBe(200);
+  expect(await returned.json()).toMatchObject({
+    status: "active",
+    pending: { outcome: "returned", effectiveAt: expect.any(String) },
+  });
+  expect(
+    (await (await request.get(loanPath)).json()).return.pending,
+  ).toBeNull();
+  const undone = await post(bo, `${returnPath}/undo`);
+  expect(undone.status()).toBe(200);
+  expect(await undone.json()).toMatchObject({ pending: null });
+
+  // The lender's receipt, made at once, ends it early.
+  const received = await post(request, returnPath, {
+    agreementVersion: 1,
+    outcome: "received",
+    immediately: true,
+  });
+  expect(await received.json()).toEqual({
+    loanId,
+    status: "ended",
+    agreementVersion: 1,
+    pending: null,
+  });
+  expect(await (await bo.get(loanPath)).json()).toMatchObject({
+    status: "ended",
+    ending: { reason: "returned", endedBy: "lender" },
+    return: { borrower: null, lender: { outcome: "received" } },
+  });
 });
 
 test("the handover deadline job only runs for the scheduler", async ({
@@ -296,4 +347,17 @@ test("the handover deadline job only runs for the scheduler", async ({
   });
   expect(run.status()).toBe(200);
   expect(await run.json()).toEqual({ notCompleted: expect.any(Number) });
+});
+
+test("the return confirmation job only runs for the scheduler", async ({
+  request,
+}) => {
+  const path = "/api/internal/loan-returns";
+
+  expect((await request.get(path)).status()).toBe(401);
+  const run = await request.get(path, {
+    headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
+  });
+  expect(run.status()).toBe(200);
+  expect(await run.json()).toEqual({ made: expect.any(Number) });
 });

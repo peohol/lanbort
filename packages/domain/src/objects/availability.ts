@@ -26,6 +26,13 @@ export interface DateInterval {
  */
 export interface AvailabilityBlock {
   readonly period: DateInterval;
+  /**
+   * A block that holds only from this day on, such as an active loan whose
+   * return day has passed (PS-LOAN-014). Blocks without it always hold.
+   */
+  readonly appliesFrom?: string;
+  /** The loan the block comes from, so a loan's own blocks can be left out. */
+  readonly loanId?: string;
 }
 
 /**
@@ -196,6 +203,11 @@ export interface DerivedAvailability {
   /** Actual availability from today on. */
   readonly effective: DateInterval[];
   /**
+   * General availability minus the blocks that hold today, also before
+   * today: what an agreed loan period may cover (PS-LOAN-010).
+   */
+  readonly open: DateInterval[];
+  /**
    * At least one future or current day is actually available. An object
    * without general availability can never be offered (PS-OBJ-002).
    */
@@ -213,16 +225,19 @@ export function deriveAvailability(input: {
   readonly blocks: readonly AvailabilityBlock[];
   readonly today: string;
 }): DerivedAvailability {
-  const effective =
+  const open =
     input.status === "archived"
       ? []
-      : intervalsFrom(
-          subtractIntervals(
-            input.availability,
-            input.blocks.map((block) => block.period),
-          ),
-          input.today,
+      : subtractIntervals(
+          input.availability,
+          input.blocks
+            .filter(
+              ({ appliesFrom }) =>
+                appliesFrom === undefined || appliesFrom <= input.today,
+            )
+            .map((block) => block.period),
         );
+  const effective = intervalsFrom(open, input.today);
 
-  return { effective, availableForNewLoans: effective.length > 0 };
+  return { effective, open, availableForNewLoans: effective.length > 0 };
 }

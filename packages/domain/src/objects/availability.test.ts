@@ -142,6 +142,7 @@ describe("deriveAvailability: actual availability is derived (PS-OBJ-001, 003–
       }),
     ).toEqual({
       effective: [{ from: "2030-10-05", until: "2030-11-01" }],
+      open: general,
       availableForNewLoans: true,
     });
   });
@@ -168,7 +169,49 @@ describe("deriveAvailability: actual availability is derived (PS-OBJ-001, 003–
         blocks: [{ period: { from: "2030-09-01", until: null } }],
         today,
       }),
-    ).toEqual({ effective: [], availableForNewLoans: false });
+    ).toEqual({ effective: [], open: [], availableForNewLoans: false });
+  });
+
+  it("subtracts a block only from the day it applies, e.g. an overdue return (PS-LOAN-014)", () => {
+    const overdue = {
+      period: { from: "2030-10-08", until: null },
+      appliesFrom: "2030-10-08",
+    };
+    const before = deriveAvailability({
+      status: "active",
+      availability: general,
+      blocks: [overdue],
+      today,
+    });
+    const after = deriveAvailability({
+      status: "active",
+      availability: general,
+      blocks: [overdue],
+      today: "2030-10-08",
+    });
+
+    expect(before.effective).toEqual([
+      { from: "2030-10-05", until: "2030-11-01" },
+    ]);
+    expect(after).toEqual({
+      effective: [],
+      open: [{ from: "2030-10-01", until: "2030-10-08" }],
+      availableForNewLoans: false,
+    });
+  });
+
+  it("keeps what holds today before today too, for agreed periods (PS-LOAN-010)", () => {
+    expect(
+      deriveAvailability({
+        status: "active",
+        availability: general,
+        blocks: [{ period: { from: "2030-10-03", until: "2030-10-04" } }],
+        today,
+      }).open,
+    ).toEqual([
+      { from: "2030-10-01", until: "2030-10-03" },
+      { from: "2030-10-04", until: "2030-11-01" },
+    ]);
   });
 
   it("cannot be offered without general availability (PS-OBJ-002)", () => {
@@ -179,7 +222,7 @@ describe("deriveAvailability: actual availability is derived (PS-OBJ-001, 003–
         blocks: [],
         today,
       }),
-    ).toEqual({ effective: [], availableForNewLoans: false });
+    ).toEqual({ effective: [], open: [], availableForNewLoans: false });
   });
 
   it("cannot be offered when all availability is in the past", () => {
@@ -201,7 +244,7 @@ describe("deriveAvailability: actual availability is derived (PS-OBJ-001, 003–
         blocks: [],
         today,
       }),
-    ).toEqual({ effective: [], availableForNewLoans: false });
+    ).toEqual({ effective: [], open: [], availableForNewLoans: false });
   });
 });
 

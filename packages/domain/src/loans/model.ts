@@ -7,6 +7,7 @@ import type {
   LoanRequestRole,
   LoanRequestStatus,
   LoanStatus,
+  ReturnOutcome,
 } from "@lanbort/contracts";
 import type { HistoryPosition } from "../environment/privacy";
 import { DomainError } from "../errors";
@@ -265,30 +266,83 @@ export function beforeHandover(
  * The statuses a loan is stored with. «Awaiting handover clarification» is
  * never stored: it is a reserved loan whose handover day is over
  * ({@link presentedLoanStatus}), so it needs no job to begin, and an agreed
- * new handover day ends it by itself.
+ * new handover day ends it by itself. Likewise an active loan whose return
+ * day is over is shown as awaiting return clarification. A disputed return
+ * (`return_disputed`) is shown as `disputed`, like a disputed handover.
  */
-export type StoredLoanStatus = Exclude<LoanStatus, "awaiting_handover">;
+export type StoredLoanStatus =
+  Exclude<LoanStatus, "awaiting_handover"> | "return_disputed";
+
+/**
+ * The statuses of a loan that was handed over and has not ended: the
+ * return statements decide among them (PS-LOAN-014–017).
+ */
+export const returnPhaseStatuses = [
+  "active",
+  "awaiting_return",
+  "late",
+  "return_disputed",
+] as const satisfies readonly StoredLoanStatus[];
+
+export function inReturnPhase(status: StoredLoanStatus): boolean {
+  return (returnPhaseStatuses as readonly string[]).includes(status);
+}
+
+/**
+ * Whether the agreed period can still change (PS-LOAN-010): a reserved
+ * loan's handover and return day, and an active or late loan's return day
+ * (extension, vision «Når returtidspunktet passeres»). An unsettled or
+ * disputed return is settled first.
+ */
+export function periodChangeable(status: StoredLoanStatus): boolean {
+  return status === "reserved" || status === "active" || status === "late";
+}
 
 /**
  * Why a loan in `status` can no longer be cancelled or have its agreement
- * changed like a reserved one: it has ended, or it is past the handover
- * (handed over, or disputed).
+ * changed: it has ended, it is past its handover (cancelling), or its
+ * handover or return is not settled (changing).
  */
 export function notReservedReason(status: StoredLoanStatus): string {
-  return status === "ended"
-    ? "The loan has ended"
-    : "The loan is past its handover";
+  switch (status) {
+    case "ended":
+      return "The loan has ended";
+    case "active":
+    case "late":
+      return "The loan is past its handover";
+    default:
+      return "The loan is not settled";
+  }
 }
 
-/** PS-LOAN-012: the status shown for a loan as of `today`. */
+/** PS-LOAN-012/014: the status shown for a loan as of `today`. */
 export function presentedLoanStatus(
   status: StoredLoanStatus,
   period: LoanPeriodInterval,
   today: string,
 ): LoanStatus {
-  return status === "reserved" && !beforeHandover(period, today)
-    ? "awaiting_handover"
-    : status;
+  switch (status) {
+    case "reserved":
+      return beforeHandover(period, today) ? status : "awaiting_handover";
+    case "active":
+      return returnDayOver(period, today) ? "awaiting_return" : status;
+    case "return_disputed":
+      return "disputed";
+    default:
+      return status;
+  }
+}
+
+/**
+ * PS-LOAN-014: the agreed return day (the period's last day) is over. Only
+ * then is a loan awaiting return clarification by itself, and only then can
+ * the borrower say they still have it.
+ */
+export function returnDayOver(
+  period: LoanPeriodInterval,
+  today: string,
+): boolean {
+  return today >= period.until;
 }
 
 /**
@@ -430,27 +484,239 @@ export function handoverRefusal(
         : { message: "The handover is settled", fields: ["outcome"] };
     case "disputed":
       return null;
+    case "awaiting_return":
+    case "late":
+    case "return_disputed":
+      return { message: "The handover is settled", fields: ["outcome"] };
   }
 }
 
 /**
  * PS-LOAN-010, scenario 26: whether the agreed period can become `proposed`.
  * The days it keeps are the loan's own already; every day it adds must be
- * actually available (`effective`, which the loan's own reservation already
- * blocks), so a change never reaches into another loan's reservation or a
- * co-owner's restriction. It cannot start in the past.
+ * open (`open`: general availability minus every other block, the loan's
+ * own excluded), so a change never reaches into another loan's reservation,
+ * uncertain possession or a co-owner's restriction. Before the handover the
+ * period cannot start in the past; after it, the handover day stays and only
+ * the return day moves, to today or later (an extension may cover the days
+ * the borrower has already kept the object).
  */
 export function amendmentFits(
+  status: StoredLoanStatus,
   current: LoanPeriodInterval,
   proposed: LoanPeriodInterval,
-  effective: readonly DateInterval[],
+  open: readonly DateInterval[],
   today: string,
 ): boolean {
+  const timely =
+    status === "reserved"
+      ? proposed.from >= today
+      : proposed.from === current.from && proposed.until > today;
+
   return (
-    proposed.from >= today &&
+    timely &&
     // The pieces of a bounded period are bounded.
     (subtractIntervals([proposed], [current]) as LoanPeriodInterval[]).every(
-      (added) => withinAvailability(added, effective),
+      (added) => withinAvailability(added, open),
     )
   );
+}
+
+/**
+ * PS-LOAN-016, pilot standard: how long a return confirmation waits before
+ * it is made. Until then its party can undo it as if it was never sent, or
+ * make it at once.
+ */
+export const returnUndoSeconds = 30;
+
+export function returnEffectiveAt(requestedAt: Date): Date {
+  return new Date(requestedAt.getTime() + returnUndoSeconds * 1000);
+}
+
+/** The return statements that wait for the undo buffer (PS-LOAN-016). */
+export const returnConfirmations = [
+  "returned",
+  "received",
+] as const satisfies readonly ReturnOutcome[];
+
+export type ReturnConfirmation = (typeof returnConfirmations)[number];
+
+export function isReturnConfirmation(
+  outcome: ReturnOutcome,
+): outcome is ReturnConfirmation {
+  return (returnConfirmations as readonly string[]).includes(outcome);
+}
+
+/** The side that says `outcome`: each statement belongs to one side. */
+export function returnSide(outcome: ReturnOutcome): LoanRequestRole {
+  return outcome === "returned" || outcome === "still_has"
+    ? "borrower"
+    : "lender";
+}
+
+/** A statement about the return, in the order it was made. */
+export interface ReturnStatement {
+  readonly role: LoanRequestRole;
+  readonly outcome: ReturnOutcome;
+  readonly reportedAt: Date;
+}
+
+/**
+ * What the return statements on the current agreement say (PS-LOAN-014–017;
+ * the database's `app.loan_return_verdict` is the same rule), from all of
+ * them in order:
+ * - `received`: the lender's latest receipt, not contradicted since;
+ * - `reopened`: a receipt that the lender (`not_received`) or the borrower
+ *   (`still_has`) contradicted afterwards;
+ * otherwise by the latest statement of each side:
+ * - `disputed`: returned, and not received;
+ * - `late`: the borrower still has it;
+ * - `returned` / `not_received`: one side's word, not settled;
+ * - `none`: nobody has said anything.
+ */
+export type ReturnVerdict =
+  | "none"
+  | "returned"
+  | "not_received"
+  | "late"
+  | "disputed"
+  | "received"
+  | "reopened";
+
+const contradictsReceipt = (outcome: ReturnOutcome) =>
+  outcome === "still_has" || outcome === "not_received";
+
+export function returnVerdict(
+  statements: readonly ReturnStatement[],
+): ReturnVerdict {
+  const receipt = statements
+    .map(({ outcome }) => outcome)
+    .lastIndexOf("received");
+
+  if (receipt >= 0) {
+    return statements
+      .slice(receipt + 1)
+      .some(({ outcome }) => contradictsReceipt(outcome))
+      ? "reopened"
+      : "received";
+  }
+
+  const borrower = latestReturnStatement(statements, "borrower")?.outcome;
+  const lender = latestReturnStatement(statements, "lender")?.outcome;
+
+  if (borrower === "still_has") {
+    return "late";
+  }
+
+  if (borrower === "returned") {
+    return lender === "not_received" ? "disputed" : "returned";
+  }
+
+  return lender === "not_received" ? "not_received" : "none";
+}
+
+/** The latest statement of one side, if it has said anything. */
+export function latestReturnStatement(
+  statements: readonly ReturnStatement[],
+  role: LoanRequestRole,
+): ReturnStatement | null {
+  return (
+    [...statements].reverse().find((statement) => statement.role === role) ??
+    null
+  );
+}
+
+/**
+ * The stored status a return verdict leads to: the lender's receipt ends the
+ * loan as returned, at once, also before the return day (PS-LOAN-015/020);
+ * one side's word leaves it awaiting clarification, the borrower who still
+ * has it makes it late, and contradicting statements, or a receipt
+ * contradicted later, make it disputed (PS-LOAN-017). A reopened loan stays
+ * disputed until the lender confirms a receipt again.
+ */
+export function statusAfterReturn(verdict: ReturnVerdict): StoredLoanStatus {
+  switch (verdict) {
+    case "none":
+      return "active";
+    case "returned":
+    case "not_received":
+      return "awaiting_return";
+    case "late":
+      return "late";
+    case "disputed":
+    case "reopened":
+      return "return_disputed";
+    case "received":
+      return "ended";
+  }
+}
+
+/**
+ * Why `role` may not say `outcome` now, or null if they may
+ * (PS-LOAN-014–017). The caller has returned already if it repeats their
+ * side's latest statement and nobody spoke since.
+ * - Statements belong to a loan in its return phase, or contradict the
+ *   receipt that ended it (`still_has`, `not_received`), which reopens it.
+ * - The borrower can say they still have it only once the return day is
+ *   over (before that, it is simply an active loan), or to contradict a
+ *   receipt.
+ * - The lender can say they have not received it once the return day is
+ *   over, when the borrower says it was returned, or to contradict a
+ *   receipt.
+ */
+export function returnRefusal(
+  loan: {
+    readonly status: StoredLoanStatus;
+    readonly endReason: string | null;
+    readonly period: LoanPeriodInterval;
+  },
+  statements: readonly ReturnStatement[],
+  outcome: ReturnOutcome,
+  today: string,
+): { readonly message: string; readonly fields: readonly string[] } | null {
+  const verdict = returnVerdict(statements);
+  const againstReceipt =
+    contradictsReceipt(outcome) &&
+    (verdict === "received" || verdict === "reopened");
+
+  if (loan.status === "ended") {
+    return loan.endReason === "returned" && againstReceipt
+      ? null
+      : { message: "The loan has ended", fields: [] };
+  }
+
+  if (!inReturnPhase(loan.status)) {
+    return { message: "The object has not been handed over", fields: [] };
+  }
+
+  const dayOver = returnDayOver(loan.period, today) || againstReceipt;
+
+  switch (outcome) {
+    case "still_has":
+      return dayOver
+        ? null
+        : { message: "The return day is not over", fields: ["outcome"] };
+    case "not_received":
+      return dayOver ||
+        latestReturnStatement(statements, "borrower")?.outcome === "returned"
+        ? null
+        : { message: "The return day is not over", fields: ["outcome"] };
+    case "returned":
+    case "received":
+      return null;
+  }
+}
+
+/**
+ * Whether `role` saying `outcome` changes nothing: it is what their side
+ * said last, and nobody has spoken since.
+ */
+export function repeatsLastStatement(
+  statements: readonly ReturnStatement[],
+  role: LoanRequestRole,
+  outcome: ReturnOutcome,
+): boolean {
+  const last = statements.at(-1);
+
+  return last?.role === role && last.outcome === outcome;
 }

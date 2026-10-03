@@ -9,12 +9,14 @@ import {
   approveLoanRequestPolicy,
   cancelLoanPolicy,
   concludeHandoversPolicy,
+  concludeReturnsPolicy,
   confirmLoanTermsPolicy,
   createLoanRequestPolicy,
   declineLoanAmendmentPolicy,
   declineLoanRequestPolicy,
   handoverProcess,
   type LoanAmendmentResource,
+  type LoanReturnResource,
   type LoanRequestResource,
   type LoanRequestTarget,
   type LoanResource,
@@ -24,6 +26,9 @@ import {
   readLoanPolicy,
   readLoanRequestPolicy,
   reportHandoverPolicy,
+  reportReturnPolicy,
+  returnProcess,
+  undoReturnPolicy,
   withdrawLoanAmendmentPolicy,
   withdrawLoanRequestPolicy,
 } from "./policies";
@@ -184,6 +189,47 @@ const partyMatrix = (
   allowed: { borrower: boolean; lender: boolean },
 ) => policyMatrix(policy, partyCases(allowed));
 
+/**
+ * PS-LOAN-014–015: a return statement belongs to one side; the other party
+ * may not say it for them (WP-35 adds a co-owner's narrow receipt).
+ */
+const returnMatrix = policyMatrix(
+  reportReturnPolicy,
+  (["borrower", "lender"] as const).flatMap((side) =>
+    loanCases<LoanReturnResource>(
+      { ...loan, side },
+      { borrower: side === "borrower", lender: side === "lender" },
+    ).map((testCase) => ({
+      ...testCase,
+      name: `${testCase.name}, on a ${side}'s statement`,
+    })),
+  ),
+);
+
+/** A scheduled job runs only as its own process. */
+const processMatrix = (policy: Policy<void, void>, process: string) =>
+  policyMatrix(policy, [
+    expectCase(
+      `the ${process} process`,
+      systemActor(process),
+      undefined,
+      "allow",
+    ),
+    expectCase(
+      "another system process",
+      systemActor("outbox.worker"),
+      undefined,
+      "forbidden",
+    ),
+    expectCase("a party of a loan", borrower, undefined, "forbidden"),
+    expectCase(
+      "an account that has not completed registration",
+      pendingAccount,
+      undefined,
+      "forbidden",
+    ),
+  ]);
+
 export const loanMatrices = [
   policyMatrix(createLoanRequestPolicy, targetCases),
   policyMatrix(previewLoanRequestPolicy, targetCases),
@@ -204,25 +250,8 @@ export const loanMatrices = [
   amendmentMatrix(declineLoanAmendmentPolicy, "other"),
   amendmentMatrix(withdrawLoanAmendmentPolicy, "proposer"),
   loanPartyMatrix(reportHandoverPolicy),
-  policyMatrix(concludeHandoversPolicy, [
-    expectCase(
-      `the ${handoverProcess} process`,
-      systemActor(handoverProcess),
-      undefined,
-      "allow",
-    ),
-    expectCase(
-      "another system process",
-      systemActor("outbox.worker"),
-      undefined,
-      "forbidden",
-    ),
-    expectCase("a party of a loan", borrower, undefined, "forbidden"),
-    expectCase(
-      "an account that has not completed registration",
-      pendingAccount,
-      undefined,
-      "forbidden",
-    ),
-  ]),
+  processMatrix(concludeHandoversPolicy, handoverProcess),
+  returnMatrix,
+  loanPartyMatrix(undoReturnPolicy),
+  processMatrix(concludeReturnsPolicy, returnProcess),
 ];

@@ -281,6 +281,40 @@ export const concludeHandoversPolicy = definePolicy({
   actor: [requireSystemProcess(handoverProcess)],
 });
 
+/** A return statement on a loan, with the side that statement belongs to. */
+export interface LoanReturnResource extends LoanResource {
+  readonly side: LoanRequestRole;
+}
+
+/**
+ * PS-LOAN-014–015: each side says its own statements: the borrower that it
+ * was returned or that they still have it, the responsible lender that it
+ * was received or not. Only the responsible lender's receipt ends the loan;
+ * another co-owner is not a party (the narrow receipt by a co-owner comes
+ * with WP-35).
+ */
+export const reportReturnPolicy = loanPartyPolicy<LoanReturnResource>(
+  "loan.report_return",
+  ({ side }) => [side],
+);
+
+/** PS-LOAN-016: each party undoes only their own waiting confirmation. */
+export const undoReturnPolicy = loanPartyPolicy<LoanResource>(
+  "loan.undo_return",
+  bothSides,
+);
+
+/**
+ * The scheduled job that makes return confirmations whose undo buffer is
+ * over (PS-LOAN-016).
+ */
+export const returnProcess = "loan.returns";
+
+export const concludeReturnsPolicy = definePolicy({
+  action: "loan.conclude_returns",
+  actor: [requireSystemProcess(returnProcess)],
+});
+
 export const loanRequestPolicies = [
   createLoanRequestPolicy,
   previewLoanRequestPolicy,
@@ -299,4 +333,7 @@ export const loanRequestPolicies = [
   withdrawLoanAmendmentPolicy,
   reportHandoverPolicy,
   concludeHandoversPolicy,
+  reportReturnPolicy,
+  undoReturnPolicy,
+  concludeReturnsPolicy,
 ];

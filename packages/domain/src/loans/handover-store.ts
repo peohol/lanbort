@@ -19,17 +19,25 @@ import { committedLoanStatuses } from "./reservations";
  */
 type Db = Kysely<Database>;
 
-/** The latest statement of each side on agreement `version`. */
+/**
+ * The agreement versions the current handover day holds on: from the latest
+ * version that changed it (`app.loan_handover_version`). An agreed new
+ * handover day makes earlier statements history; an agreed new return day
+ * during the loan (WP-34) keeps them.
+ */
+const sinceHandoverDay = (loanId: string) =>
+  sql<number>`app.loan_handover_version(${loanId})`;
+
+/** The latest statement of each side about the current handover day. */
 export async function loadHandoverReading(
   db: Db,
   loanId: string,
-  version: number,
 ): Promise<HandoverReading> {
   const rows = await db
     .selectFrom("app.loan_handover_reports")
     .select(["reporter_role", "outcome", "reported_at", "answer_due_at"])
     .where("loan_id", "=", loanId)
-    .where("agreement_version", "=", version)
+    .where("agreement_version", ">=", sinceHandoverDay(loanId))
     .orderBy("position")
     .execute();
 
@@ -122,8 +130,8 @@ export async function dueHandoverAnswers(
     .where("report.answer_due_at", "<=", now)
     .where(
       "report.agreement_version",
-      "=",
-      sql<number>`(app.current_loan_agreement(loan.id)).version`,
+      ">=",
+      sql<number>`app.loan_handover_version(loan.id)`,
     )
     .orderBy("report.answer_due_at")
     .limit(limit)

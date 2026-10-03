@@ -209,13 +209,15 @@ export async function termsDiffer(
  * The object's actual availability as of `today`, from its global truth
  * (PS-OBJ-004/005), as requests and agreement changes are checked against
  * it. Requests are only checked on active objects; an archived object has
- * none.
+ * none. A loan's agreement change leaves out the loan's own blocks
+ * (`exceptLoanId`).
  */
 export async function loadDerivedAvailability(
   db: Db,
   objectId: string,
   today: string,
   status: ObjectStatus = "active",
+  options: { readonly exceptLoanId?: string } = {},
 ): Promise<DerivedAvailability> {
   // One connection serves a transaction, so these run one after another.
   const availability = await loadAvailability(db, [objectId]);
@@ -224,7 +226,10 @@ export async function loadDerivedAvailability(
   return deriveAvailability({
     status,
     availability: availability.get(objectId) ?? [],
-    blocks: blocks.get(objectId) ?? [],
+    blocks: (blocks.get(objectId) ?? []).filter(
+      ({ loanId }) =>
+        options.exceptLoanId === undefined || loanId !== options.exceptLoanId,
+    ),
     today,
   });
 }
