@@ -7,9 +7,17 @@ import {
   earliestPeriod,
   endedStanding,
   fromApiPeriod,
+  type HandoverReading,
+  type HandoverStatement,
+  handoverAnswerDue,
+  handoverRefusal,
+  handoverVerdict,
   isOpen,
+  noHandoverStatements,
   openStanding,
+  presentedLoanStatus,
   presentedStatus,
+  statusAfterHandover,
   samePeriod,
   toApiPeriod,
   validateDesiredPeriod,
@@ -332,5 +340,157 @@ describe("amendmentFits (PS-LOAN-010, scenario 26)", () => {
         today,
       ),
     ).toBe(false);
+  });
+});
+
+describe("the handover (PS-LOAN-012–013)", () => {
+  const at = new Date("2026-10-05T10:00:00Z");
+  const handedOver: HandoverStatement = {
+    outcome: "handed_over",
+    reportedAt: at,
+    answerDueAt: null,
+  };
+  const notHandedOver: HandoverStatement = {
+    outcome: "not_handed_over",
+    reportedAt: at,
+    answerDueAt: handoverAnswerDue(at),
+  };
+  const reading = (
+    borrower: HandoverStatement | null,
+    lender: HandoverStatement | null,
+  ): HandoverReading => ({ borrower, lender });
+  const period = { from: "2026-10-05", until: "2026-10-08" };
+
+  it("gives the other side 72 hours to answer", () => {
+    expect(handoverAnswerDue(at).toISOString()).toBe(
+      "2026-10-08T10:00:00.000Z",
+    );
+  });
+
+  it("reads the statements without counting silence as anything", () => {
+    expect(handoverVerdict(noHandoverStatements, at)).toBe("none");
+    expect(handoverVerdict(reading(handedOver, null), at)).toBe("handed_over");
+    expect(handoverVerdict(reading(null, handedOver), at)).toBe("handed_over");
+    expect(handoverVerdict(reading(handedOver, handedOver), at)).toBe(
+      "handed_over",
+    );
+    expect(handoverVerdict(reading(handedOver, notHandedOver), at)).toBe(
+      "disputed",
+    );
+    expect(handoverVerdict(reading(notHandedOver, handedOver), at)).toBe(
+      "disputed",
+    );
+    expect(handoverVerdict(reading(notHandedOver, notHandedOver), at)).toBe(
+      "not_handed_over",
+    );
+  });
+
+  it("lets an unanswered «not handed over» stand only after its deadline", () => {
+    const due = handoverAnswerDue(at);
+    const before = new Date(due.getTime() - 1);
+
+    expect(handoverVerdict(reading(null, notHandedOver), before)).toBe(
+      "awaiting_answer",
+    );
+    expect(handoverVerdict(reading(null, notHandedOver), due)).toBe(
+      "unanswered",
+    );
+    expect(handoverVerdict(reading(notHandedOver, null), due)).toBe(
+      "unanswered",
+    );
+  });
+
+  it("leads to the stored status", () => {
+    expect(statusAfterHandover("none")).toBe("reserved");
+    expect(statusAfterHandover("awaiting_answer")).toBe("reserved");
+    expect(statusAfterHandover("handed_over")).toBe("active");
+    expect(statusAfterHandover("disputed")).toBe("disputed");
+    expect(statusAfterHandover("not_handed_over")).toBe("ended");
+    expect(statusAfterHandover("unanswered")).toBe("ended");
+  });
+
+  it("shows a reserved loan as awaiting handover once its handover day is over", () => {
+    expect(presentedLoanStatus("reserved", period, "2026-10-05")).toBe(
+      "reserved",
+    );
+    expect(presentedLoanStatus("reserved", period, "2026-10-06")).toBe(
+      "awaiting_handover",
+    );
+    expect(presentedLoanStatus("active", period, "2026-10-06")).toBe("active");
+    expect(presentedLoanStatus("ended", period, "2026-10-06")).toBe("ended");
+  });
+
+  it("allows «handed over» from the handover day, «not handed over» after it", () => {
+    const refusal = (outcome: "handed_over" | "not_handed_over", day: string) =>
+      handoverRefusal(
+        "reserved",
+        period,
+        noHandoverStatements,
+        "borrower",
+        outcome,
+        day,
+      );
+
+    expect(refusal("handed_over", "2026-10-04")).not.toBeNull();
+    expect(refusal("handed_over", "2026-10-05")).toBeNull();
+    expect(refusal("not_handed_over", "2026-10-05")).not.toBeNull();
+    expect(refusal("not_handed_over", "2026-10-06")).toBeNull();
+  });
+
+  it("lets only the silent side contradict an active loan, and either side change a dispute", () => {
+    const active = reading(handedOver, null);
+    const disputed = reading(handedOver, notHandedOver);
+    const today = "2026-10-06";
+
+    expect(
+      handoverRefusal(
+        "active",
+        period,
+        active,
+        "lender",
+        "not_handed_over",
+        today,
+      ),
+    ).toBeNull();
+    expect(
+      handoverRefusal(
+        "active",
+        period,
+        active,
+        "borrower",
+        "not_handed_over",
+        today,
+      ),
+    ).not.toBeNull();
+    expect(
+      handoverRefusal(
+        "disputed",
+        period,
+        disputed,
+        "borrower",
+        "not_handed_over",
+        today,
+      ),
+    ).toBeNull();
+    expect(
+      handoverRefusal(
+        "disputed",
+        period,
+        disputed,
+        "lender",
+        "handed_over",
+        today,
+      ),
+    ).toBeNull();
+    expect(
+      handoverRefusal(
+        "ended",
+        period,
+        noHandoverStatements,
+        "lender",
+        "handed_over",
+        today,
+      ),
+    ).not.toBeNull();
   });
 });

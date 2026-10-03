@@ -1,6 +1,9 @@
 import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
-import { loanReservationBlocks } from "../loans/reservations";
+import {
+  loanPossessionBlocks,
+  loanReservationBlocks,
+} from "../loans/reservations";
 import type { AvailabilityBlock } from "./availability";
 import {
   coOwnerFreezeBlocks,
@@ -21,11 +24,12 @@ export interface AvailabilityBlockSource {
   ): Promise<readonly (AvailabilityBlock & { readonly objectId: string })[]>;
 }
 
-/** Unresolved possession is added later in Phase 3 (WP-33/34). */
+/** Unresolved possession after a return is added with WP-34. */
 export const availabilityBlockSources: readonly AvailabilityBlockSource[] = [
   coOwnerRestrictionBlocks,
   coOwnerFreezeBlocks,
   loanReservationBlocks,
+  loanPossessionBlocks,
 ];
 
 /** All blocks per object, from every source. */

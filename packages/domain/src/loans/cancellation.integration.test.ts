@@ -200,7 +200,7 @@ describe("cancelling a reserved loan (PS-LOAN-011)", () => {
       fields: ["handover"],
     });
     await expect(cancel(owner, loanId)).rejects.toMatchObject(conflict);
-    expect((await loanOf(borrower, loanId)).status).toBe("reserved");
+    expect((await loanOf(borrower, loanId)).status).toBe("awaiting_handover");
     expect(await reservations(loanId)).toHaveLength(1);
   });
 

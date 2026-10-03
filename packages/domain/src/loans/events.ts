@@ -1,4 +1,5 @@
 import {
+  handoverOutcomeSchema,
   loanRequestEndReasonSchema,
   loanRequestRoleSchema,
 } from "@lanbort/contracts";
@@ -113,4 +114,36 @@ export const loanAmendmentDeclined = loanEvent("amendment_declined", {
 /** The proposer took the proposal back. */
 export const loanAmendmentWithdrawn = loanEvent("amendment_withdrawn", {
   amendmentId,
+});
+
+/**
+ * PS-LOAN-012: a party said what happened at the handover of
+ * `agreementVersion`. The actor is that party.
+ */
+export const loanHandoverReported = loanEvent("handover_reported", {
+  role: loanRequestRoleSchema,
+  outcome: handoverOutcomeSchema,
+  agreementVersion: z.int().min(1),
+});
+
+/** The object was handed over: the loan is active («utlånt»). */
+export const loanHandedOver = loanEvent("handed_over", {});
+
+/**
+ * PS-LOAN-013: the parties disagree on whether it was handed over. The
+ * object is blocked for new colliding loans; the loans of it that were
+ * already approved stay, and their parties may need to know
+ * (`otherLoanIds`, scenario 61).
+ */
+export const loanHandoverDisputed = loanEvent("handover_disputed", {
+  otherLoanIds: z.array(z.uuid()),
+});
+
+/**
+ * PS-LOAN-012: the loan ended as not completed, because both parties said
+ * so (`agreed`), or one did and the other did not answer in time
+ * (`unanswered`). Neither says whose fault it was.
+ */
+export const loanNotCompleted = loanEvent("not_completed", {
+  basis: z.enum(["agreed", "unanswered"]),
 });

@@ -8,10 +8,12 @@ import {
   acceptResponsibilityPolicy,
   approveLoanRequestPolicy,
   cancelLoanPolicy,
+  concludeHandoversPolicy,
   confirmLoanTermsPolicy,
   createLoanRequestPolicy,
   declineLoanAmendmentPolicy,
   declineLoanRequestPolicy,
+  handoverProcess,
   type LoanAmendmentResource,
   type LoanRequestResource,
   type LoanRequestTarget,
@@ -21,6 +23,7 @@ import {
   proposeLoanAmendmentPolicy,
   readLoanPolicy,
   readLoanRequestPolicy,
+  reportHandoverPolicy,
   withdrawLoanAmendmentPolicy,
   withdrawLoanRequestPolicy,
 } from "./policies";
@@ -200,4 +203,26 @@ export const loanMatrices = [
   amendmentMatrix(acceptLoanAmendmentPolicy, "other"),
   amendmentMatrix(declineLoanAmendmentPolicy, "other"),
   amendmentMatrix(withdrawLoanAmendmentPolicy, "proposer"),
+  loanPartyMatrix(reportHandoverPolicy),
+  policyMatrix(concludeHandoversPolicy, [
+    expectCase(
+      `the ${handoverProcess} process`,
+      systemActor(handoverProcess),
+      undefined,
+      "allow",
+    ),
+    expectCase(
+      "another system process",
+      systemActor("outbox.worker"),
+      undefined,
+      "forbidden",
+    ),
+    expectCase("a party of a loan", borrower, undefined, "forbidden"),
+    expectCase(
+      "an account that has not completed registration",
+      pendingAccount,
+      undefined,
+      "forbidden",
+    ),
+  ]),
 ];

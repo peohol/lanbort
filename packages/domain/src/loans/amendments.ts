@@ -26,9 +26,9 @@ import {
 } from "./events";
 import {
   amendmentFits,
-  beforeHandover,
   fromApiPeriod,
   type LoanPeriodInterval,
+  notReservedReason,
   samePeriod,
 } from "./model";
 import {
@@ -60,19 +60,18 @@ type Db = Kysely<Database>;
 type ChangeableLoan = LoadedLoan & { readonly object: ObjectState };
 
 /**
- * The agreement can still change: the loan is reserved and its handover day
- * is not over (`beforeHandover`). Later stages bring their own changes.
+ * The agreement can still change: the loan is reserved. That includes the
+ * handover clarification after the handover day: agreeing a new handover
+ * day there is how the loan goes on (PS-LOAN-012), and its period cannot
+ * start in the past ({@link amendmentFits}). The statements made about the
+ * old handover stay on the old version. Changes during the loan (extension)
+ * come with the return (WP-34).
  */
 function requireChangeable(
   resource: LoadedLoan,
-  today: string,
 ): asserts resource is ChangeableLoan {
   if (resource.loan.status !== "reserved" || !resource.object) {
-    conflict("The loan has ended");
-  }
-
-  if (!beforeHandover(resource.loan.agreement.period, today)) {
-    conflict("The handover day has passed", ["handover"]);
+    conflict(notReservedReason(resource.loan.status));
   }
 }
 
@@ -129,7 +128,7 @@ export const proposeLoanAmendment = defineCommand({
       throw new Error("The policy allows only a party of the loan");
     }
 
-    requireChangeable(resource, today);
+    requireChangeable(resource);
 
     if (input.agreementVersion !== loan.agreement.version) {
       conflict("The agreement has changed", ["agreementVersion"]);
@@ -229,7 +228,7 @@ export const acceptLoanAmendment = defineCommand({
     }
 
     const today = calendarDate(now);
-    requireChangeable(resource, today);
+    requireChangeable(resource);
 
     if (amendment.baseVersion !== loan.agreement.version) {
       conflict("The agreement has changed");

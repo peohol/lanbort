@@ -6,7 +6,10 @@ import {
   deny,
   type ResourceRule,
 } from "../authorization/policy";
-import { requireActiveAccount } from "../authorization/rules";
+import {
+  requireActiveAccount,
+  requireSystemProcess,
+} from "../authorization/rules";
 
 /**
  * An object someone wants to request through an origin. `reachable` is
@@ -258,6 +261,26 @@ export const withdrawLoanAmendmentPolicy =
     proposingSide,
   );
 
+/**
+ * PS-LOAN-012–013: either party says whether the object was handed over.
+ * Only the parties: another co-owner was not there for the loan.
+ */
+export const reportHandoverPolicy = loanPartyPolicy<LoanResource>(
+  "loan.report_handover",
+  bothSides,
+);
+
+/**
+ * The scheduled job that ends loans as not completed when a «not handed
+ * over» statement went unanswered past its deadline (PS-LOAN-012).
+ */
+export const handoverProcess = "loan.handovers";
+
+export const concludeHandoversPolicy = definePolicy({
+  action: "loan.conclude_handovers",
+  actor: [requireSystemProcess(handoverProcess)],
+});
+
 export const loanRequestPolicies = [
   createLoanRequestPolicy,
   previewLoanRequestPolicy,
@@ -274,4 +297,6 @@ export const loanRequestPolicies = [
   acceptLoanAmendmentPolicy,
   declineLoanAmendmentPolicy,
   withdrawLoanAmendmentPolicy,
+  reportHandoverPolicy,
+  concludeHandoversPolicy,
 ];
