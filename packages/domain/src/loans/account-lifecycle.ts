@@ -5,7 +5,7 @@ import type { EventRecorder } from "../events/recorder";
 import { calendarDate } from "../objects/availability";
 import { loanStopped } from "./events";
 import { beforeHandover } from "./model";
-import { endLoan } from "./reservations";
+import { awaitingControl, endLoan } from "./reservations";
 
 type Db = Kysely<Database>;
 
@@ -15,8 +15,9 @@ const partyTo = (userId: string) =>
 
 /**
  * PS-ADM-004: every loan that has not ended binds both parties: a reserved,
- * active or unresolved loan still needs them. An ended loan does not, also
- * when it ended unresolved.
+ * active or disputed loan still needs them. A loan that ended unresolved
+ * still binds its responsible lender until an owner confirms having the
+ * object back (PS-LOAN-019), as it does as an object commitment.
  */
 export const loanBindings: AccountBindingSource = {
   name: "loans",
@@ -24,8 +25,15 @@ export const loanBindings: AccountBindingSource = {
     const rows = await db
       .selectFrom("app.loans as loan")
       .select("loan.id")
-      .where(partyTo(userId))
-      .where("loan.status", "<>", "ended")
+      .where((eb) =>
+        eb.or([
+          eb.and([partyTo(userId), eb("loan.status", "<>", "ended")]),
+          eb.and([
+            eb("loan.responsible_lender_id", "=", userId),
+            awaitingControl,
+          ]),
+        ]),
+      )
       .orderBy("loan.id")
       .execute();
 

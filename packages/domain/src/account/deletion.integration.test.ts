@@ -1,10 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
-import { type AccountStatus, type UserActor } from "../actor";
+import { type AccountStatus, systemActor, type UserActor } from "../actor";
 import { executeQuery } from "../commands/query";
 import { joinEnvironment } from "../environment/membership-commands";
 import { approveLoanRequest } from "../loans/approval";
 import { cancelLoan } from "../loans/cancellation";
+import { reportHandover } from "../loans/handover";
+import { unresolvedEndingProcess } from "../loans/policies";
+import { confirmLoanControl, endLoanUnresolved } from "../loans/unresolved";
 import { inviteCoOwner } from "../objects/co-owners";
 import type { StoredEvent } from "../outbox/consumer";
 import { blockUser, sendFriendRequest } from "../social/commands";
@@ -143,6 +146,34 @@ describe("bindings (PS-ADM-004)", () => {
     expect(await check(borrower)).toEqual({ bindings: [] });
     await remove(borrower);
     expect(await statusOf(borrower.userId)).toBe("deleted");
+  });
+
+  it("keeps the lender of a loan that ended unresolved until the object is back", async () => {
+    const { owner, borrower, loanId } = await reservedLoan(1, 3);
+    kit.advance(2 * 24 * 60 * 60 * 1000);
+    for (const [actor, outcome] of [
+      [owner, "handed_over"],
+      [borrower, "not_handed_over"],
+    ] as const) {
+      await run(reportHandover, actor, {
+        loanId,
+        agreementVersion: 1,
+        outcome,
+      });
+    }
+    await run(endLoanUnresolved, systemActor(unresolvedEndingProcess), {
+      loanId,
+    });
+
+    // The borrower's part is over; the lender still has to follow it up.
+    expect(await check(borrower)).toEqual({ bindings: [] });
+    expect(await check(owner)).toEqual({
+      bindings: [{ kind: "loan", resourceId: loanId }],
+    });
+    await expect(remove(owner)).rejects.toMatchObject({ code: "conflict" });
+
+    await run(confirmLoanControl, owner, { loanId });
+    expect(await check(owner)).toEqual({ bindings: [] });
   });
 
   it("lets an owner who deactivated first go: the environment continues without them", async () => {
