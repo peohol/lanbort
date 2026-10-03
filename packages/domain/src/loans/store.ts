@@ -313,9 +313,10 @@ export async function loadLenderScope(
  *   made under a stricter type before they became active (PS-ENV-009);
  * - and never across a block in either direction (PS-USR-006), nor for
  *   their own request (made before they became an owner).
- * The responsible lender of the loan an approved request became always sees
- * it: access lost after approval does not take away what the loan needs
- * (PS-LOAN-002, Port B).
+ * An approved request is seen only by the owners of the moment it was
+ * approved: co-ownership that starts later applies to future loans only.
+ * Its responsible lender always sees it: access lost after approval does
+ * not take away what the loan needs (PS-LOAN-002, Port B).
  */
 export function visibleToLender(scope: LenderScope): RawBuilder<boolean> {
   const environments =
@@ -344,6 +345,11 @@ export function visibleToLender(scope: LenderScope): RawBuilder<boolean> {
             where object_id = request.object_id and user_id = ${scope.userId}
           )
           or ${scope.userId} = any(request.former_owner_ids)
+        )
+        and not exists (
+          select 1 from app.loans
+          where request_id = request.id
+            and not ${scope.userId} = any(owner_ids_at_approval)
         )
         and not app.users_blocked(request.borrower_user_id, ${scope.userId})
         and case request.origin

@@ -91,12 +91,19 @@ create table app.loans (
   object_id uuid not null references app.objects (id),
   borrower_user_id uuid not null references app.users (id),
   responsible_lender_id uuid not null references app.users (id),
+  -- The owners when the loan was approved. Co-ownership that starts later
+  -- applies to future loans only: a later co-owner never sees this loan or
+  -- its request (vision «Medeierskap»), and only these owners can take over
+  -- responsibility without the borrower's consent (PS-LOAN-009, WP-35).
+  owner_ids_at_approval uuid[] not null,
   -- reserved: approved, not yet handed over. Later work packages add the
   -- rest of the loan's course (PS-LOAN-010–021).
   status text not null default 'reserved' check (status in ('reserved')),
   approved_at timestamptz not null default clock_timestamp(),
   status_changed_at timestamptz not null default clock_timestamp(),
-  constraint loans_parties_differ check (responsible_lender_id <> borrower_user_id)
+  constraint loans_parties_differ check (responsible_lender_id <> borrower_user_id),
+  constraint loans_lender_was_owner
+    check (responsible_lender_id = any(owner_ids_at_approval))
 );
 
 comment on table app.loans is
@@ -172,8 +179,8 @@ create trigger loan_reservations_immutable
 -- A loan is only made from a request that can be approved now (PS-LOAN-002,
 -- PS-LOAN-005, PS-LOAN-008): still `requested` (not waiting for the borrower
 -- to confirm new terms), with its access behind it, approved by an owner who
--- has the borrower's relation to the origin. The domain checks this first;
--- this is the backstop.
+-- has the borrower's relation to the origin, with the owners of that moment
+-- recorded. The domain checks this first; this is the backstop.
 create function app.guard_new_loan()
 returns trigger
 language plpgsql
@@ -191,6 +198,13 @@ begin
     or not exists (
       select 1 from app.object_owners
       where object_id = new.object_id and user_id = new.responsible_lender_id
+    )
+    or (
+      select array_agg(user_id order by user_id) from app.object_owners
+      where object_id = new.object_id
+    ) is distinct from (
+      select array_agg(distinct owner_id order by owner_id)
+      from unnest(new.owner_ids_at_approval) as owner_id
     )
     or not app.loan_request_access_holds(
       request.object_id, request.borrower_user_id, request.origin,

@@ -70,9 +70,9 @@ export const loanCommitments: ObjectCommitmentSource = {
 
 /**
  * PS-LOAN-006/008: makes the request a loan, as one whole: the loan with the
- * approver as responsible lender, its agreement (version 1) copied from the
- * object as it is now, the reservation of `period`, and the request marked
- * approved. The caller has checked everything and holds the object's lock;
+ * approver as responsible lender and the owners of this moment, its
+ * agreement (version 1) copied from the object as it is now, the
+ * reservation of `period`, and the request marked approved. The caller has checked everything and holds the object's lock;
  * the database refuses the rest (WP-31 migration).
  */
 export async function reserveLoan(
@@ -96,6 +96,7 @@ export async function reserveLoan(
       object_id: object.objectId,
       borrower_user_id: input.borrowerUserId,
       responsible_lender_id: input.lenderUserId,
+      owner_ids_at_approval: [...object.ownerIds],
       approved_at: now,
       status_changed_at: now,
     })

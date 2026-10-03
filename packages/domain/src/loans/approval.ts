@@ -127,8 +127,10 @@ async function endCollidingRequests(
  *    and the reservation are made, and the request is approved;
  * 6. colliding open requests end neutrally;
  * 7. events are written with the transaction.
- * Approving a request that is already approved returns its loan, so a retry
- * (with or without the same key) never makes a second one.
+ * The responsible lender approving a request they already approved gets
+ * its loan back, so a retry (with or without the same key) never makes a
+ * second one. Anyone else is told it can no longer be approved: a co-owner
+ * who lost the race did not approve anything.
  */
 export const approveLoanRequest = defineCommand({
   name: "loan_request.approve",
@@ -146,6 +148,10 @@ export const approveLoanRequest = defineCommand({
 
       if (!loan) {
         throw new Error("An approved loan request without its loan");
+      }
+
+      if (loan.responsibleLenderId !== actingUserId(actor)) {
+        conflict("The request has already been approved");
       }
 
       return approvalResult({

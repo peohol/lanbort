@@ -301,6 +301,7 @@ export interface AppLoans {
   borrower_user_id: string;
   id: Generated<string>;
   object_id: string;
+  owner_ids_at_approval: string[];
   request_id: string;
   responsible_lender_id: string;
   status: Generated<string>;

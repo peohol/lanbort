@@ -449,6 +449,38 @@ describe("co-owners (PS-LOAN-008)", () => {
 
     await expect(approve(outsider, requestId)).rejects.toMatchObject(notFound);
   });
+
+  it("keeps an approved request from a co-owner who joins after approval", async () => {
+    const { environmentId, admin, owner, coOwner, borrower, objectId } =
+      await coOwned();
+    const { requestId } = await ask(
+      borrower,
+      objectId,
+      environmentOrigin(environmentId),
+    );
+    const open = await ask(
+      await member(environmentId, admin),
+      objectId,
+      environmentOrigin(environmentId),
+      dated(20, 22),
+    );
+    const { loanId } = await approve(coOwner, requestId);
+
+    // Joining later covers future loans only (vision 04, co-ownership).
+    const later = await member(environmentId, admin);
+    await addCoOwner(owner, objectId, later);
+
+    await expect(readRequest(later, requestId)).rejects.toMatchObject(notFound);
+    await expect(loanOf(later, loanId)).rejects.toMatchObject(notFound);
+    await expect(approve(later, requestId)).rejects.toMatchObject(notFound);
+    expect(await lenderList(later)).toEqual([open.requestId]);
+    // The owners at approval still see it.
+    expect(await readRequest(owner, requestId)).toMatchObject({
+      status: "approved",
+      loanId,
+    });
+    expect(await lenderList(coOwner)).toContain(requestId);
+  });
 });
 
 describe("colliding requests (PS-LOAN-007)", () => {
@@ -601,7 +633,7 @@ describe("concurrent approvals (PS-NFR-004, Port B)", () => {
     }
   });
 
-  it("makes one loan when the same request is approved twice at once", async () => {
+  it("makes one loan, and one success, when two co-owners approve the same request at once", async () => {
     const { environmentId, owner, coOwner, borrower, objectId } =
       await coOwned();
     const { requestId } = await ask(
@@ -610,12 +642,30 @@ describe("concurrent approvals (PS-NFR-004, Port B)", () => {
       environmentOrigin(environmentId),
     );
 
-    const [a, b] = await Promise.all([
+    const results = await Promise.allSettled([
       approve(owner, requestId),
       approve(coOwner, requestId),
     ]);
-    expect(a.loanId).toBe(b.loanId);
+
+    // Only the co-owner who won is told they approved it.
+    const won = results.findIndex((result) => result.status === "fulfilled");
+    expect(
+      results.filter((result) => result.status === "fulfilled"),
+    ).toHaveLength(1);
+    expect(results[1 - won]).toEqual(
+      expect.objectContaining({ reason: expect.objectContaining(conflict) }),
+    );
+    const [loan] = await loansFor(requestId);
+    expect(loan?.responsible_lender_id).toBe(
+      (won === 0 ? owner : coOwner).userId,
+    );
     expect(await loansFor(requestId)).toHaveLength(1);
+
+    // The winner may retry; the other still may not.
+    const winner = won === 0 ? owner : coOwner;
+    const loser = won === 0 ? coOwner : owner;
+    expect((await approve(winner, requestId)).loanId).toBe(loan?.id);
+    await expect(approve(loser, requestId)).rejects.toMatchObject(conflict);
   });
 
   it("approves requests that do not overlap, also at the same time", async () => {

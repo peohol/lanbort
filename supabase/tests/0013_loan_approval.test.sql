@@ -1,6 +1,6 @@
 begin;
 
-select plan(23);
+select plan(24);
 
 select ok(
   not has_table_privilege(role_name, table_name, 'SELECT'),
@@ -76,8 +76,10 @@ language plpgsql
 as $$
 begin
   set constraints app.loans_complete deferred;
-  insert into app.loans (id, request_id, object_id, borrower_user_id, responsible_lender_id)
-  values (loan, request, '00000000-0000-4000-8000-0000000000f1', borrower, lender);
+  insert into app.loans (id, request_id, object_id, borrower_user_id, responsible_lender_id,
+    owner_ids_at_approval)
+  values (loan, request, '00000000-0000-4000-8000-0000000000f1', borrower, lender,
+    array['00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000d1']::uuid[]);
   insert into app.loan_agreements (
     loan_id, version, object_version, terms_version, title, category_id,
     description, loan_terms, period, lender_user_id
@@ -122,15 +124,29 @@ select throws_ok(
 select throws_ok(
   $$
     set constraints app.loans_complete deferred;
-    insert into app.loans (id, request_id, object_id, borrower_user_id, responsible_lender_id)
+    insert into app.loans (id, request_id, object_id, borrower_user_id, responsible_lender_id,
+    owner_ids_at_approval)
     values ('00000000-0000-4000-8000-000000000301', '00000000-0000-4000-8000-000000000201',
       '00000000-0000-4000-8000-0000000000f1', '00000000-0000-4000-8000-0000000000b1',
-      '00000000-0000-4000-8000-0000000000a1');
+      '00000000-0000-4000-8000-0000000000a1', array['00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000d1']::uuid[]);
     set constraints app.loans_complete immediate
   $$,
   '23001',
   null,
   'a loan is never without its agreement and reservation (PS-LOAN-006)'
+);
+
+select throws_ok(
+  $$
+    insert into app.loans (request_id, object_id, borrower_user_id, responsible_lender_id,
+      owner_ids_at_approval)
+    values ('00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-0000000000f1',
+      '00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-0000000000a1',
+      array['00000000-0000-4000-8000-0000000000a1']::uuid[])
+  $$,
+  '23001',
+  null,
+  'a loan records exactly the owners of the moment it was approved'
 );
 
 select throws_ok(
@@ -168,9 +184,11 @@ select lives_ok(
 
 select throws_ok(
   $$
-    insert into app.loans (request_id, object_id, borrower_user_id, responsible_lender_id)
+    insert into app.loans (request_id, object_id, borrower_user_id, responsible_lender_id,
+    owner_ids_at_approval)
     values ('00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-0000000000f1',
-      '00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-0000000000a1')
+      '00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-0000000000a1',
+      array['00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000d1']::uuid[])
   $$,
   '23001',
   null,
@@ -236,10 +254,11 @@ values ('00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-0000000
 
 select throws_ok(
   $$
-    insert into app.loans (id, request_id, object_id, borrower_user_id, responsible_lender_id)
+    insert into app.loans (id, request_id, object_id, borrower_user_id, responsible_lender_id,
+    owner_ids_at_approval)
     values ('00000000-0000-4000-8000-000000000303', '00000000-0000-4000-8000-000000000203',
       '00000000-0000-4000-8000-0000000000f1', '00000000-0000-4000-8000-0000000000e5',
-      '00000000-0000-4000-8000-0000000000d1');
+      '00000000-0000-4000-8000-0000000000d1', array['00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000d1']::uuid[]);
     insert into app.loan_agreements (
       loan_id, version, object_version, terms_version, title, category_id,
       description, loan_terms, period, lender_user_id, responsibility_declaration_version
@@ -265,9 +284,11 @@ where id = '00000000-0000-4000-8000-0000000000f1';
 
 select throws_ok(
   $$
-    insert into app.loans (request_id, object_id, borrower_user_id, responsible_lender_id)
+    insert into app.loans (request_id, object_id, borrower_user_id, responsible_lender_id,
+    owner_ids_at_approval)
     values ('00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-0000000000f1',
-      '00000000-0000-4000-8000-0000000000e5', '00000000-0000-4000-8000-0000000000d1')
+      '00000000-0000-4000-8000-0000000000e5', '00000000-0000-4000-8000-0000000000d1',
+      array['00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000d1']::uuid[])
   $$,
   '23001',
   null,
