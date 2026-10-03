@@ -168,17 +168,25 @@ export const loanPossessionBlocks: AvailabilityBlockSource = {
 };
 
 /**
- * PS-OBJ-010/011: a reserved loan is a commitment of its responsible lender,
- * so they cannot leave the object, and nobody can delete it, while it lasts.
+ * PS-OBJ-010/011: a loan that holds the object is a commitment of its
+ * responsible lender, so they cannot leave the object, and nobody can
+ * delete it, while it lasts. A loan that ended unresolved still needs
+ * following up until an owner confirms having the object back
+ * (PS-LOAN-019), so it counts too.
  */
 export const loanCommitments: ObjectCommitmentSource = {
   name: "loans",
   load: async (db, objectId) => {
     const rows = await db
-      .selectFrom("app.loans")
-      .select("responsible_lender_id")
-      .where("object_id", "=", objectId)
-      .where("status", "in", [...committedLoanStatuses])
+      .selectFrom("app.loans as loan")
+      .select("loan.responsible_lender_id")
+      .where("loan.object_id", "=", objectId)
+      .where((eb) =>
+        eb.or([
+          eb("loan.status", "in", [...committedLoanStatuses]),
+          awaitingControl,
+        ]),
+      )
       .execute();
 
     return rows.map((row) => ({
