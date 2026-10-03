@@ -4,7 +4,7 @@ import { systemActor, type UserActor } from "../actor";
 import { executeQuery } from "../commands/query";
 import { leaveEnvironment } from "../environment/membership-commands";
 import { leaveObject } from "../objects/co-owners";
-import { blockUser } from "../social/commands";
+import { blockUser, liftUserBlock } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
 import { proposeLoanAmendment, withdrawLoanAmendment } from "./amendments";
@@ -403,6 +403,51 @@ describe("voluntary transfer (PS-LOAN-009)", () => {
     ).rejects.toMatchObject(conflict);
   });
 
+  it("lapses an offer for good once what it rests on is lost", async () => {
+    // A block that is lifted again does not bring the offer back.
+    const blocked = await activeLoan();
+    const first = await offer(blocked.owner, blocked.loanId, blocked.coOwner);
+    await run(blockUser, blocked.borrower, { userId: blocked.coOwner.userId });
+    await run(liftUserBlock, blocked.borrower, {
+      userId: blocked.coOwner.userId,
+    });
+    expect(await transfers(blocked.loanId)).toEqual([
+      expect.objectContaining({ status: "lapsed" }),
+    ]);
+    expect(
+      (await accept(blocked.coOwner, blocked.loanId, first.transferId)).status,
+    ).toBe("lapsed");
+
+    // Nor does owning the object again after leaving it.
+    const left = await activeLoan();
+    const second = await offer(left.owner, left.loanId, left.coOwner);
+    await run(leaveObject, left.coOwner, { objectId: left.objectId });
+    await addCoOwner(left.owner, left.objectId, left.coOwner);
+    expect(
+      (await accept(left.coOwner, left.loanId, second.transferId)).status,
+    ).toBe("lapsed");
+    expect((await stored(left.loanId)).responsible_lender_id).toBe(
+      left.owner.userId,
+    );
+  });
+
+  it("answers an offer the due receipt ended with its lapse", async () => {
+    const { owner, coOwner, borrower, loanId } = await activeLoan();
+    const { transferId } = await offer(owner, loanId, coOwner);
+    await sayNow(borrower, loanId, "returned");
+    await say(owner, loanId, "received");
+    kit.advance(undoBuffer);
+
+    expect(await accept(coOwner, loanId, transferId)).toMatchObject({
+      status: "lapsed",
+      responsibleLenderId: owner.userId,
+    });
+    expect(await stored(loanId)).toMatchObject({
+      status: "ended",
+      ended_by_user_id: owner.userId,
+    });
+  });
+
   it("hands on the lender's side as it stands", async () => {
     const { owner, coOwner, borrower, loanId } = await coOwnedLoan(2, 4);
     const { amendmentId } = await run(proposeLoanAmendment, owner, {
@@ -606,6 +651,19 @@ describe("a co-owner's narrow receipt (PS-LOAN-015)", () => {
     expect((await sayNow(owner, loanId, "not_received")).status).toBe(
       "disputed",
     );
+  });
+
+  it("ends with the loan", async () => {
+    const { owner, coOwner, borrower, loanId } = await activeLoan();
+    await sayNow(borrower, loanId, "returned");
+    await unavailable(loanId, owner);
+    await sayNow(coOwner, loanId, "received");
+
+    await expect(sayNow(coOwner, loanId, "received")).rejects.toMatchObject(
+      notFound,
+    );
+    await expect(takeOver(coOwner, loanId)).rejects.toMatchObject(notFound);
+    expect(await coOwnerLoans(coOwner)).toEqual([]);
   });
 
   it("is only for the circle, and lapses when the role is lost", async () => {

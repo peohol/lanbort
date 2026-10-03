@@ -437,9 +437,9 @@ async function loadLockedTransfer({
 }
 
 /**
- * The transfer as an answer finds it once due returns are made: a transfer
- * that is still open but can no longer complete lapses now, and the answer
- * gets that.
+ * The transfer as an answer finds it once due returns are made, read again
+ * since ending the loan lapses it: a transfer that is still open but can no
+ * longer complete lapses now, and the answer gets that.
  */
 async function settledTransfer(
   tx: Db,
@@ -448,7 +448,13 @@ async function settledTransfer(
   events: EventRecorder,
 ): Promise<{ loan: LoanRecord; transfer: TransferRecord }> {
   const { loan } = await settleDueReturns(tx, resource.loan, now, events);
-  const transfer = resource.record;
+  const transfer = await findTransfer(tx, loan.id, {
+    transferId: resource.record.id,
+  });
+
+  if (!transfer) {
+    throw new Error("A transfer that disappeared");
+  }
 
   if (transfer.status === "proposed" && !transfer.possible) {
     await resolveTransfer(tx, {
