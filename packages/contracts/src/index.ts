@@ -9,3 +9,4 @@ export * from "./social";
 export * from "./publications";
 export * from "./loans";
 export * from "./cases";
+export * from "./reviews";
