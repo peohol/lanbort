@@ -465,6 +465,32 @@ describe("a loan that reopens after publication (PS-TRUST-008)", () => {
       [1, 0],
     ]);
   });
+
+  it("counts a review published at the deadline before the loan reopened", async () => {
+    const setup = await published();
+    const { owner, borrower } = setup;
+    const loanId = await returnedLoan(setup);
+    await run(submitLoanReview, owner, {
+      loanId,
+      scores: scoring(lenderDimensions, 4),
+    });
+
+    // The deadline passes, and the loan reopens before the job came by.
+    kit.advance(15 * oneDay);
+    await say(borrower, loanId, "still_has");
+
+    const { asBorrower, reviews } = await profileOf(borrower, borrower);
+    expect(asBorrower.reviews).toBe(1);
+    expect(
+      asBorrower.dimensions.map(({ count, setAside }) => [count, setAside]),
+    ).toEqual([
+      [1, 0],
+      [0, 1],
+      [0, 1],
+      [1, 0],
+    ]);
+    expect(reviews[0]?.loanReopenedAt).not.toBeNull();
+  });
 });
 
 describe("listing the reviews", () => {
