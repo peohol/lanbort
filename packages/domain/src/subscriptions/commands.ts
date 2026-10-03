@@ -3,12 +3,12 @@ import {
   subscribeToObjectSchema,
   unsubscribeFromObjectSchema,
 } from "@lanbort/contracts";
-import { z } from "zod";
+import type { Database } from "@lanbort/database";
+import type { Kysely } from "kysely";
 import { defineCommand } from "../commands/command";
 import { actingUserId } from "../objects/state";
 import { whereUserFinds } from "../publications/queries";
 import {
-  lookAtSubscribedObjectsPolicy,
   subscribeToObjectPolicy,
   unsubscribeFromObjectPolicy,
 } from "./policies";
@@ -83,30 +83,16 @@ export const unsubscribeFromObject = defineCommand({
  * Looks at every subscribed object again ({@link lookAgain}). Events make
  * most changes known at once (`objectAvailabilityWatcher`); this catches
  * what only time changes, such as a return day passing without a confirmed
- * return. Safe to run repeatedly and concurrently.
+ * return. A batch of subscriptions per transaction rather than one command,
+ * so the job never holds the locks of all of them at once; the caller
+ * authorizes the scheduler first (`lookAtSubscribedObjectsPolicy`). Safe to
+ * run repeatedly and concurrently.
  */
-export const lookAtSubscribedObjects = defineCommand({
-  name: "object_subscription.look_again",
-  input: z.strictObject({}),
-  output: z.strictObject({ notified: z.int().nonnegative() }),
-  policy: lookAtSubscribedObjectsPolicy,
-  idempotency: "none",
-  load: async () => ({ resource: undefined, context: undefined }),
-  execute: async ({ tx, now }) => {
-    const objects = await tx
-      .selectFrom("app.object_subscriptions")
-      .select("object_id")
-      .distinct()
-      .orderBy("object_id")
-      .execute();
-
-    return {
-      notified: await lookAgain(
-        tx,
-        objects.map((row) => row.object_id),
-        `look:${now.getTime()}`,
-        now,
-      ),
-    };
-  },
-});
+export async function lookAtSubscribedObjects(
+  db: Kysely<Database>,
+  now: Date,
+): Promise<{ notified: number }> {
+  return {
+    notified: await lookAgain(db, "all", `look:${now.getTime()}`, now),
+  };
+}

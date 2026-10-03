@@ -9,7 +9,6 @@ import {
   distinctDrafts,
   effectivePreferences,
   levelOf,
-  type NotificationDraft,
   shownInApp,
 } from "./model";
 
@@ -97,40 +96,13 @@ describe("notification drafts", () => {
     ).toHaveLength(3);
   });
 
-  it("run every rule of an event type together", async () => {
-    const target = {
-      type: "object_subscription",
-      id: "subscription-1",
-    } as const;
-    const tellOne =
-      (recipientId: string) => async (): Promise<NotificationDraft[]> => [
-        { recipientId, kind: "object.changed", target },
-      ];
-    const byType = rulesByEventType([
-      {
-        eventType: "object.updated",
-        tellsActor: false,
-        drafts: tellOne("anna"),
-      },
-      { eventType: "object.updated", tellsActor: false, drafts: tellOne("bo") },
-      { eventType: "object.updated", tellsActor: true, drafts: tellOne("bo") },
-      {
-        eventType: "object.archived",
-        tellsActor: false,
-        drafts: tellOne("cato"),
-      },
-    ]);
+  it("have one rule per event type", () => {
+    const rule = notificationRules[0]!;
 
-    expect([...byType.keys()]).toEqual(["object.updated", "object.archived"]);
-    // Bo acted: only the rule that tells the actor reaches them.
-    expect(
-      await byType
-        .get("object.updated")!
-        .drafts({ event: { actorUserId: "bo" } } as never),
-    ).toMatchObject([{ recipientId: "anna" }, { recipientId: "bo" }]);
-    expect(new Set(notificationRules.map((rule) => rule.eventType)).size).toBe(
-      rulesByEventType(notificationRules).size,
+    expect(rulesByEventType(notificationRules).size).toBe(
+      notificationRules.length,
     );
+    expect(() => rulesByEventType([rule, rule])).toThrow(/Two notification/);
   });
 });
 

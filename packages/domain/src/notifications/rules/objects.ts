@@ -1,10 +1,3 @@
-import type { ObjectChangeField } from "@lanbort/contracts";
-import {
-  objectImageAdded,
-  objectImageRemoved,
-  objectReverted,
-  objectUpdated,
-} from "../../objects/events";
 import {
   objectQuestionAsked,
   objectQuestionReplied,
@@ -14,22 +7,37 @@ import {
   loadQuestion,
   seesQuestion,
 } from "../../questions/store";
-import { tellSubscribers, withAccess } from "../../subscriptions/store";
+import { holdFinding } from "../../publications/store";
 import { type Db, notifyOn, type RuleInput, tell } from "../rule";
 
 const questionTarget = (id: string) =>
   ({ type: "object_question", id }) as const;
 
-/** Of `userIds`, those who see the question now, in order. */
+/**
+ * Of `userIds`, those who see the question now, in order. What that rests on
+ * is held first, together with the blocks between them and `others` (the
+ * asker, the poster), so access lost at the same time is either seen here or
+ * lost only after the notifications exist (the generator's transaction).
+ */
 async function seeing(
   db: Db,
   question: NonNullable<Awaited<ReturnType<typeof loadQuestion>>>,
   userIds: Iterable<string>,
+  others: readonly string[],
   now: Date,
 ) {
+  const candidates = [...new Set(userIds)];
   const kept: string[] = [];
 
-  for (const userId of new Set(userIds)) {
+  await holdFinding(
+    db,
+    candidates.map((userId) => ({ userId, objectId: question.objectId })),
+    candidates.flatMap((userId) =>
+      others.map((other) => [userId, other] as const),
+    ),
+  );
+
+  for (const userId of candidates) {
     if (await seesQuestion(db, question, userId, now)) {
       kept.push(userId);
     }
@@ -60,6 +68,7 @@ async function questionAsked({ db, event, now }: RuleInput<unknown>) {
       db,
       question,
       owners.map((owner) => owner.user_id),
+      [question.askedByUserId],
       now,
     ),
     "object.question_asked",
@@ -101,6 +110,7 @@ async function questionReplied({
     db,
     question,
     [question.askedByUserId, ...earlier.map((row) => row.author_user_id)],
+    [question.askedByUserId, post.author_user_id],
     now,
   )) {
     if (!(await blockedEitherWay(db, userId, post.author_user_id))) {
@@ -115,57 +125,7 @@ async function questionReplied({
   );
 }
 
-/** Fields whose change is told to subscribers; availability tells itself. */
-const contentChanged = (fields: readonly ObjectChangeField[]) =>
-  fields.some((field) => field !== "availability");
-
-/**
- * Vision 06, «Informasjonsvarsler»: subscribers who still find the object
- * learn that its content changed (PS-OBJ-014). Until they have read that,
- * further edits add nothing, so a run of edits is one notification.
- */
-async function objectChanged({ db, event, now }: RuleInput<unknown>) {
-  const subscriptions = await db
-    .selectFrom("app.object_subscriptions")
-    .select(["id", "user_id", "object_id"])
-    .where("object_id", "=", event.resourceId)
-    .where(({ not, exists, selectFrom }) =>
-      not(
-        exists(
-          selectFrom("app.notifications")
-            .select("app.notifications.id")
-            .whereRef(
-              "app.notifications.recipient_id",
-              "=",
-              "app.object_subscriptions.user_id",
-            )
-            .whereRef(
-              "app.notifications.target_id",
-              "=",
-              "app.object_subscriptions.id",
-            )
-            .where("app.notifications.kind", "=", "object.changed")
-            .where("app.notifications.read_at", "is", null),
-        ),
-      ),
-    )
-    .execute();
-
-  return tellSubscribers(
-    await withAccess(db, subscriptions, now),
-    "object.changed",
-  );
-}
-
 export const objectRules = [
   notifyOn(objectQuestionAsked, questionAsked),
   notifyOn(objectQuestionReplied, questionReplied),
-  notifyOn(objectUpdated, (input) =>
-    contentChanged(input.payload.changedFields) ? objectChanged(input) : [],
-  ),
-  notifyOn(objectReverted, (input) =>
-    contentChanged(input.payload.changedFields) ? objectChanged(input) : [],
-  ),
-  notifyOn(objectImageAdded, objectChanged),
-  notifyOn(objectImageRemoved, objectChanged),
 ];

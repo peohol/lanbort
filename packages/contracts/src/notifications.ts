@@ -75,7 +75,6 @@ export const notificationKinds = {
   "object.question_asked": "action",
   "object.question_replied": "information",
   "object.available": "information",
-  "object.changed": "information",
 } as const satisfies Record<string, NotificationLevel>;
 
 export type NotificationKind = keyof typeof notificationKinds;

@@ -7,4 +7,5 @@ export * from "./case-queue";
 export * from "./generator";
 export * from "./email";
 export * from "./delivery";
+export { stillConcerns } from "./concerns";
 export { recordNotifications } from "./store";

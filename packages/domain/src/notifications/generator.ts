@@ -16,56 +16,18 @@ export const notificationRules: readonly NotificationRule[] = [
   ...objectRules,
 ];
 
-/**
- * What a rule tells about an event: nobody is told about what they did
- * themselves, unless the rule says it leaves them something to do
- * (`tellsActor`).
- */
-async function draftsOf(
-  rule: NotificationRule,
-  input: Parameters<NotificationRule["drafts"]>[0],
-) {
-  const drafts = await rule.drafts(input);
-
-  return rule.tellsActor
-    ? drafts
-    : drafts.filter((draft) => draft.recipientId !== input.event.actorUserId);
-}
-
-/**
- * One rule per event type. An event can concern several groups (an edit of
- * an object tells waiting borrowers about new terms and subscribers about
- * new content), so the rules for one type are run together, each with its
- * own `tellsActor`; a person reached by more than one of them is told once
- * (`distinctDrafts`).
- */
 export function rulesByEventType(rules: readonly NotificationRule[]) {
-  const groups = new Map<string, NotificationRule[]>();
+  const byType = new Map<string, NotificationRule>();
 
   for (const rule of rules) {
-    groups.set(rule.eventType, [...(groups.get(rule.eventType) ?? []), rule]);
+    if (byType.has(rule.eventType)) {
+      throw new Error(`Two notification rules for ${rule.eventType}`);
+    }
+
+    byType.set(rule.eventType, rule);
   }
 
-  return new Map(
-    [...groups].map(([eventType, group]): [string, NotificationRule] => [
-      eventType,
-      {
-        eventType,
-        // Each rule of the group has already left out the actor or not.
-        tellsActor: true,
-        drafts: async (input) => {
-          const drafts = [];
-
-          // One after another: the rules share the generator's connection.
-          for (const rule of group) {
-            drafts.push(...(await draftsOf(rule, input)));
-          }
-
-          return drafts;
-        },
-      },
-    ]),
-  );
+  return byType;
 }
 
 export const notificationConsumerName = "notifications.generate";
@@ -73,10 +35,13 @@ export const notificationConsumerName = "notifications.generate";
 /**
  * Makes notifications from committed domain events (outbox, at-least-once;
  * docs/architecture/07, «Varsler»). Who is told is decided from the event's
- * ids and the current state, and nobody is told about what they did
- * themselves unless the rule says so (`rulesByEventType`). Notifications
- * are keyed by their event, so a redelivery makes nothing twice. A failure here is retried on its own and never touches the
- * domain change that recorded the event (PS-COM-002).
+ * ids and the current state. Nobody is told about what they did themselves,
+ * unless the rule says it leaves them something to do (`tellsActor`).
+ * Notifications are keyed by their event, so a redelivery makes nothing
+ * twice. Who is told and the notifications are one transaction, so a rule
+ * can hold still what it decided on until they are stored. A failure here is
+ * retried on its own and never touches the domain change that recorded the
+ * event (PS-COM-002).
  */
 export function notificationGenerator({
   db,
@@ -99,14 +64,22 @@ export function notificationGenerator({
         return;
       }
 
-      const database = db();
+      await db()
+        .transaction()
+        .execute(async (tx) => {
+          const drafts = await rule.drafts({ db: tx, event, now: clock() });
 
-      await recordNotifications(
-        database,
-        `event:${event.id}`,
-        event.occurredAt,
-        await rule.drafts({ db: database, event, now: clock() }),
-      );
+          await recordNotifications(
+            tx,
+            `event:${event.id}`,
+            event.occurredAt,
+            rule.tellsActor
+              ? drafts
+              : drafts.filter(
+                  (draft) => draft.recipientId !== event.actorUserId,
+                ),
+          );
+        });
     },
   });
 }

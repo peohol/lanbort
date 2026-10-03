@@ -1,6 +1,7 @@
 import {
-  executeCommand,
+  authorizeActor,
   lookAtSubscribedObjects,
+  lookAtSubscribedObjectsPolicy,
   objectAvailabilityProcess,
 } from "@lanbort/domain";
 import { route } from "@/server/http/route";
@@ -15,14 +16,10 @@ export const dynamic = "force-dynamic";
  */
 export const GET = route.scheduler(
   objectAvailabilityProcess,
-  async ({ actor, domain, requestId }) =>
-    Response.json(
-      (
-        await executeCommand(domain, lookAtSubscribedObjects, {
-          actor,
-          input: {},
-          correlationId: requestId,
-        })
-      ).output,
-    ),
+  async ({ actor, domain }) => {
+    const now = new Date();
+    authorizeActor(lookAtSubscribedObjectsPolicy, { actor, now });
+
+    return Response.json(await lookAtSubscribedObjects(domain.db, now));
+  },
 );

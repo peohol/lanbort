@@ -11,7 +11,7 @@ import { registerThroughApi } from "./helpers";
  * WP-63 over HTTP: a member asks about an object in an environment, the
  * owner is told and answers there, and a member of another environment
  * where the object is also published sees none of it; a member subscribes
- * to the object and is told when its content changes.
+ * to the object and sees it as they find it.
  */
 
 const cron = { authorization: `Bearer ${process.env.CRON_SECRET}` };
@@ -151,29 +151,18 @@ test("questions stay in their environment, and subscribers hear of changes", asy
     ).status(),
   ).toBe(404);
 
-  // Subscribing, and hearing of a change.
+  // Subscribing shows the object as the neighbour finds it.
   expect((await subscription(neighbour, "", { objectId })).status()).toBe(200);
-  const { version } = await (
-    await request.get(`/api/objects/${objectId}`)
-  ).json();
-  await request.patch(`/api/objects/${objectId}`, {
-    data: {
-      expectedVersion: version,
-      description: "Fire meter, nye gummiføtter.",
-    },
-    headers: { "Idempotency-Key": randomUUID() },
-  });
-  const changed = await notified(neighbour, "object.changed");
   const { subscriptions } = await (
     await neighbour.get("/api/object-subscriptions")
   ).json();
   expect(subscriptions).toEqual([
     expect.objectContaining({
-      id: changed.target.id,
       objectId,
       active: true,
       object: expect.objectContaining({
-        description: "Fire meter, nye gummiføtter.",
+        title: "Stige",
+        foundIn: [expect.objectContaining({ environmentId: block })],
       }),
     }),
   ]);

@@ -7,6 +7,7 @@ import { calendarDate, deriveAvailability } from "../objects/availability";
 import { loadAvailabilityBlocks } from "../objects/blocks";
 import { loadAvailability } from "../objects/state";
 import { whereUserFinds } from "../publications/queries";
+import { holdFinding } from "../publications/store";
 
 type Db = Kysely<Database>;
 
@@ -94,39 +95,90 @@ export function tellSubscribers(
   );
 }
 
+/** Subscriptions looked at per transaction, so that a look holds few locks. */
+const lookBatchSize = 50;
+
+/** The subscriptions a look covers: those of some objects, or all. */
+export type LookScope = { readonly objectIds: readonly string[] } | "all";
+
 /**
- * Looks at the objects' availability again and tells the subscribers of
- * each object that has become available for new loans since the last look
- * (vision 04, «Abonnement»). Must run in a transaction: the subscriptions
- * are locked first, in one order, so two looks at the same object run one
- * after another and the second sees what the first stored; only then is
- * availability derived, from the state committed by then. Whoever no longer
- * finds the object is not told, but their last look is stored all the same,
- * so regaining access later tells them nothing old. `source` keys the
- * notifications (see `recordNotifications`).
+ * Looks at the subscribed objects' availability again and tells the
+ * subscribers of each object that has become available for new loans since
+ * their last look (vision 04, «Abonnement»). A batch of subscriptions at a
+ * time, each in its own transaction (`lookAtBatch`); a look that stops
+ * half-way can simply run again. `source` keys the notifications (see
+ * `recordNotifications`).
  */
 export async function lookAgain(
-  tx: Db,
-  objectIds: readonly string[],
+  db: Db,
+  scope: LookScope,
   source: string,
   now: Date,
 ): Promise<number> {
-  if (objectIds.length === 0) {
-    return 0;
+  let notified = 0;
+  let after: string | null = null;
+
+  do {
+    const batch: { notified: number; last: string | null } = await db
+      .transaction()
+      .execute((tx) => lookAtBatch(tx, scope, after, source, now));
+
+    notified += batch.notified;
+    after = batch.last;
+  } while (after !== null);
+
+  return notified;
+}
+
+/**
+ * One batch of a look. The subscriptions are locked first, in one order, so
+ * two looks at the same subscription run one after the other and the second
+ * sees what the first stored. What the subscribers' access rests on is held
+ * next (`holdFinding`), so access lost at the same time is either seen here
+ * or lost only after these notifications exist. Only then is availability
+ * derived, from the state committed by then. Whoever no longer finds the
+ * object is not told, but their last look is stored all the same, so
+ * regaining access later tells them nothing old. Returns the last
+ * subscription looked at while there may be more.
+ */
+async function lookAtBatch(
+  tx: Db,
+  scope: LookScope,
+  after: string | null,
+  source: string,
+  now: Date,
+): Promise<{ notified: number; last: string | null }> {
+  if (scope !== "all" && scope.objectIds.length === 0) {
+    return { notified: 0, last: null };
   }
 
-  const subscriptions = await tx
+  let query = tx
     .selectFrom("app.object_subscriptions")
     .select(["id", "user_id", "object_id", "available"])
-    .where("object_id", "in", [...objectIds])
     .orderBy("id")
-    .forUpdate()
-    .execute();
-  const available = await availableForNewLoans(
+    .limit(lookBatchSize)
+    .forUpdate();
+
+  if (scope !== "all") {
+    query = query.where("object_id", "in", [...scope.objectIds]);
+  }
+
+  if (after !== null) {
+    query = query.where("id", ">", after);
+  }
+
+  const subscriptions = await query.execute();
+  const objectIds = [...new Set(subscriptions.map((row) => row.object_id))];
+
+  // Losing access, like ending the subscription, waits for this look.
+  await holdFinding(
     tx,
-    [...new Set(subscriptions.map((row) => row.object_id))],
-    now,
+    subscriptions.map((row) => ({
+      userId: row.user_id,
+      objectId: row.object_id,
+    })),
   );
+  const available = await availableForNewLoans(tx, objectIds, now);
   const changed = subscriptions.filter((row) => {
     const current = available.get(row.object_id);
     return current !== undefined && current !== row.available;
@@ -148,13 +200,17 @@ export async function lookAgain(
 
   const becameAvailable = changed.filter((row) => !row.available);
 
-  return recordNotifications(
-    tx,
-    source,
-    now,
-    tellSubscribers(
-      await withAccess(tx, becameAvailable, now),
-      "object.available",
+  return {
+    notified: await recordNotifications(
+      tx,
+      source,
+      now,
+      tellSubscribers(
+        await withAccess(tx, becameAvailable, now),
+        "object.available",
+      ),
     ),
-  );
+    last:
+      subscriptions.length === lookBatchSize ? subscriptions.at(-1)!.id : null,
+  };
 }

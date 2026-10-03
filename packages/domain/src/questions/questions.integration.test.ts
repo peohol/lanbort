@@ -4,6 +4,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import type { UserActor } from "../actor";
 import { executeQuery } from "../commands/query";
 import { leaveEnvironment } from "../environment/membership-commands";
+import { stillConcerns } from "../notifications/concerns";
 import { notificationGenerator } from "../notifications/generator";
 import { listNotifications } from "../notifications/queries";
 import { consentToObjectDeletion } from "../objects/deletion";
@@ -13,6 +14,12 @@ import { publishObject, withdrawPublication } from "../publications/commands";
 import { blockUser } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
+import {
+  commitWhileRacing,
+  endMembership,
+  notifiedSince,
+  storedEvent,
+} from "../testing/races";
 import { askObjectQuestion, replyToObjectQuestion } from "./commands";
 import { listObjectQuestions, readObjectQuestion } from "./queries";
 
@@ -23,9 +30,8 @@ import { listObjectQuestions, readObjectQuestion } from "./queries";
 const db = connectTestDatabase();
 afterAll(() => db.destroy());
 
-const consumers = new ConsumerRegistry([
-  notificationGenerator({ db: () => db }),
-]);
+const generator = notificationGenerator({ db: () => db });
+const consumers = new ConsumerRegistry([generator]);
 const kit = loanTestKit(db, { consumers });
 const { run, tick, user, environment, join, member, addCoOwner, published } =
   kit;
@@ -360,5 +366,47 @@ describe("blocking (PS-USR-006)", () => {
     expect(await told(blocker)).toEqual([]);
     // Others still see everything.
     expect((await read(admin, questionId)).posts).toHaveLength(3);
+  });
+});
+
+describe("racing the end of access (PS-OBJ-015)", () => {
+  it("tells nothing to an asker who loses access while the answer is told", async () => {
+    const { environmentId, owner, borrower, objectId } = await published();
+    const { questionId } = await ask(borrower, environmentId, objectId);
+    await reply(owner, questionId);
+    expect(await told(borrower)).toHaveLength(1);
+    // The same answer told again under a new event: the generator itself,
+    // not an outbox run, whose batch would hold other test files' events
+    // while it waits.
+    const event = {
+      ...(await storedEvent(db, "object_question.replied", questionId)),
+      id: randomUUID(),
+    };
+
+    const { changedAt } = await commitWhileRacing(
+      db,
+      endMembership(environmentId, borrower.userId, kit.now()),
+      () => generator.handle({ messageId: randomUUID(), attempt: 1, event }),
+    );
+
+    expect(await notifiedSince(db, borrower.userId, changedAt)).toEqual([]);
+  });
+
+  it("leaves nothing to deliver once the recipient no longer sees the question", async () => {
+    const { environmentId, owner, borrower, objectId } = await published();
+    const { questionId } = await ask(borrower, environmentId, objectId);
+    await reply(owner, questionId);
+    const [answered] = await told(borrower);
+    const concerns = () =>
+      stillConcerns(
+        db,
+        { recipientId: borrower.userId, target: answered!.target },
+        kit.now(),
+      );
+    expect(await concerns()).toBe(true);
+
+    await run(leaveEnvironment, borrower, { environmentId });
+
+    expect(await concerns()).toBe(false);
   });
 });

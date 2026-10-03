@@ -6,6 +6,7 @@ import type { Database } from "@lanbort/database";
 import { type Expression, type Kysely, type RawBuilder, sql } from "kysely";
 import { toPosition } from "../environment/privacy";
 import type { EventRecorder } from "../events/recorder";
+import { lockPairs } from "../social/pair";
 import { publicationEnded } from "./events";
 import { livePublicationStatuses, type PublicationRecord } from "./model";
 
@@ -151,6 +152,102 @@ export function ownerHasAccess(
       and (access_membership.transition_deadline is null
         or access_membership.transition_deadline > ${now})
   )`;
+}
+
+/** A user and an object they may find. */
+export interface Finder {
+  readonly userId: string;
+  readonly objectId: string;
+}
+
+/**
+ * Holds still, until the transaction ends, what decides whether each user
+ * finds their object (`whereUserFinds`): the objects with their owners and
+ * freezes, the environments they are published in, the users' and the
+ * owners' memberships there, the publications, and blocks between each user
+ * and the object's owners or anyone in `pairs`. Whatever takes access away
+ * has then either committed before the caller reads it, or waits until the
+ * caller has acted on what it read (PS-OBJ-014–015). In the lock order of
+ * the module, with the social pairs last as in `assessOrigin`.
+ */
+export async function holdFinding(
+  tx: Db,
+  finders: readonly Finder[],
+  pairs: readonly (readonly [string, string])[] = [],
+): Promise<void> {
+  const objectIds = [...new Set(finders.map((finder) => finder.objectId))];
+
+  if (objectIds.length === 0) {
+    return;
+  }
+
+  await tx
+    .selectFrom("app.objects")
+    .select("id")
+    .where("id", "in", objectIds)
+    .orderBy("id")
+    .forShare()
+    .execute();
+
+  const owners = await tx
+    .selectFrom("app.object_owners")
+    .select(["object_id", "user_id"])
+    .where("object_id", "in", objectIds)
+    .execute();
+  const publications = await tx
+    .selectFrom("app.environment_publications")
+    .select(["id", "environment_id"])
+    .where("object_id", "in", objectIds)
+    .where("status", "=", "active")
+    .orderBy("id")
+    .execute();
+  const environmentIds = [
+    ...new Set(publications.map((row) => row.environment_id)),
+  ];
+  const people = [
+    ...new Set([
+      ...finders.map((finder) => finder.userId),
+      ...owners.map((owner) => owner.user_id),
+    ]),
+  ];
+
+  if (publications.length > 0) {
+    await tx
+      .selectFrom("app.environments")
+      .select("id")
+      .where("id", "in", environmentIds)
+      .orderBy("id")
+      .forShare()
+      .execute();
+    await tx
+      .selectFrom("app.environment_memberships")
+      .select("id")
+      .where("environment_id", "in", environmentIds)
+      .where("user_id", "in", people)
+      .orderBy("id")
+      .forShare()
+      .execute();
+    await tx
+      .selectFrom("app.environment_publications")
+      .select("id")
+      .where(
+        "id",
+        "in",
+        publications.map((row) => row.id),
+      )
+      .orderBy("id")
+      .forShare()
+      .execute();
+  }
+
+  await lockPairs(tx, [
+    ...pairs,
+    ...finders.flatMap(({ userId, objectId }) =>
+      owners
+        .filter((owner) => owner.object_id === objectId)
+        .map((owner) => [userId, owner.user_id] as const),
+    ),
+  ]);
 }
 
 /** Whether an owner of the object has active access to the environment now. */

@@ -51,8 +51,8 @@ export const objectAvailabilityConsumerName = "object_subscriptions.watch";
 /**
  * Looks at an object's availability again after each committed event that
  * may have changed it, and tells its subscribers when it has become
- * available (outbox, at-least-once). The look and its notifications are one
- * transaction, so a redelivered event finds nothing new to tell.
+ * available (outbox, at-least-once). Each look and its notifications are
+ * one transaction, so a redelivered event finds nothing new to tell.
  */
 export function objectAvailabilityWatcher({
   db,
@@ -65,15 +65,16 @@ export function objectAvailabilityWatcher({
     name: objectAvailabilityConsumerName,
     eventTypes: availabilityEventTypes,
     handle: async ({ event }) => {
-      await db()
-        .transaction()
-        .execute(async (tx) => {
-          const objectId = await objectOf(tx, event);
+      const objectId = await objectOf(db(), event);
 
-          if (objectId !== null) {
-            await lookAgain(tx, [objectId], `event:${event.id}`, clock());
-          }
-        });
+      if (objectId !== null) {
+        await lookAgain(
+          db(),
+          { objectIds: [objectId] },
+          `event:${event.id}`,
+          clock(),
+        );
+      }
     },
   });
 }

@@ -1,11 +1,13 @@
+import { randomUUID } from "node:crypto";
 import type { Notification } from "@lanbort/contracts";
 import { afterAll, describe, expect, it } from "vitest";
 import { systemActor, type UserActor } from "../actor";
+import { authorizeActor } from "../authorization/policy";
 import { executeQuery } from "../commands/query";
 import { leaveEnvironment } from "../environment/membership-commands";
 import { reportHandover } from "../loans/handover";
 import { reportReturn } from "../loans/return";
-import { markNotificationsRead } from "../notifications/commands";
+import { stillConcerns } from "../notifications/concerns";
 import { notificationGenerator } from "../notifications/generator";
 import { listNotifications } from "../notifications/queries";
 import { updateObject } from "../objects/commands";
@@ -19,13 +21,22 @@ import { publishObject } from "../publications/commands";
 import { blockUser } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
+import {
+  commitWhileRacing,
+  endMembership,
+  notifiedSince,
+} from "../testing/races";
 import { objectAvailabilityWatcher } from "./availability";
 import {
   lookAtSubscribedObjects,
   subscribeToObject,
   unsubscribeFromObject,
 } from "./commands";
-import { objectAvailabilityProcess } from "./policies";
+import {
+  lookAtSubscribedObjectsPolicy,
+  objectAvailabilityProcess,
+} from "./policies";
+import { lookAgain as lookAgainAt } from "./store";
 import { listObjectSubscriptions } from "./queries";
 
 /**
@@ -82,8 +93,14 @@ const subscribe = (actor: UserActor, objectId: string) =>
 const subscriptions = (actor: UserActor) =>
   executeQuery(tick(), listObjectSubscriptions, { actor, input: {} });
 
-const lookAgain = () =>
-  run(lookAtSubscribedObjects, systemActor(objectAvailabilityProcess), {});
+/** The scheduled job, as its route runs it. */
+const lookAgain = () => {
+  authorizeActor(lookAtSubscribedObjectsPolicy, {
+    actor: systemActor(objectAvailabilityProcess),
+    now: kit.now(),
+  });
+  return lookAtSubscribedObjects(db, kit.now());
+};
 
 async function edit(owner: UserActor, objectId: string, change: object) {
   await run(updateObject, owner, {
@@ -159,7 +176,9 @@ describe("subscribing (PS-OBJ-014)", () => {
     ]);
 
     // Nothing about the object is told while it is inactive.
-    await edit(owner, objectId, { title: "Ny tilhenger" });
+    const lift = await restrict(owner, objectId);
+    await deliver();
+    await lift();
     expect(await told(borrower)).toEqual([]);
 
     expect(await run(unsubscribeFromObject, borrower, { objectId })).toEqual({
@@ -190,50 +209,19 @@ describe("subscribing (PS-OBJ-014)", () => {
   });
 });
 
-describe("changes to the object (vision 06, «Informasjonsvarsler»)", () => {
-  it("are told once until read, and not for availability alone", async () => {
+describe("changes to the object's content (OD-0019)", () => {
+  it("tell subscribers nothing while it is open which changes are told", async () => {
     const { owner, borrower, objectId } = await published();
     await subscribe(borrower, objectId);
-    const [subscription] = (await subscriptions(borrower)).subscriptions;
 
     await edit(owner, objectId, { description: "Nå med nytt dekk." });
     await edit(owner, objectId, { title: "Tilhenger med dekk" });
-    const first = await told(borrower);
-    expect(
-      first.map(({ kind, level, target }) => ({ kind, level, target })),
-    ).toEqual([
-      {
-        kind: "object.changed",
-        level: "information",
-        target: { type: "object_subscription", id: subscription!.id },
-      },
-    ]);
-
-    await run(markNotificationsRead, borrower, {
-      notificationIds: [first[0]!.id],
-    });
-    await edit(owner, objectId, {
-      availability: [{ start: kit.day(0), end: kit.day(60) }],
-    });
-    expect(await told(borrower)).toHaveLength(1);
-
-    await edit(owner, objectId, { loanTerms: "Må vaskes." });
-    expect(await kinds(borrower)).toEqual(["object.changed", "object.changed"]);
-    // The owner who made the change is not a subscriber and is told nothing.
-    expect(await told(owner)).toEqual([]);
-  });
-
-  it("are not told to a subscriber the owner has blocked since", async () => {
-    const { owner, borrower, objectId } = await published();
-    await subscribe(borrower, objectId);
-
-    await run(blockUser, owner, { userId: borrower.userId });
-    await edit(owner, objectId, { description: "Ny beskrivelse." });
 
     expect(await told(borrower)).toEqual([]);
+    // What the subscription shows is the object as it is now.
     expect((await subscriptions(borrower)).subscriptions[0]).toMatchObject({
-      active: false,
-      object: null,
+      active: true,
+      object: { title: "Tilhenger med dekk" },
     });
   });
 });
@@ -270,6 +258,22 @@ describe("becoming available again (vision 04, «Abonnement»)", () => {
       "object.available",
       "object.available",
     ]);
+  });
+
+  it("is not told to a subscriber the owner has blocked since", async () => {
+    const { owner, borrower, objectId } = await published();
+    const lift = await restrict(owner, objectId);
+    await subscribe(borrower, objectId);
+    await deliver();
+
+    await run(blockUser, owner, { userId: borrower.userId });
+    await lift();
+
+    expect(await told(borrower)).toEqual([]);
+    expect((await subscriptions(borrower)).subscriptions[0]).toMatchObject({
+      active: false,
+      object: null,
+    });
   });
 
   it("is not told to a subscriber without access, nor later when access returns", async () => {
@@ -330,5 +334,102 @@ describe("becoming available again (vision 04, «Abonnement»)", () => {
     await Promise.all([lookAgain(), deliver(), lookAgain(), deliver()]);
 
     expect(await kinds(borrower)).toEqual(["object.available"]);
+  });
+});
+
+describe("racing the end of access (PS-OBJ-014)", () => {
+  /**
+   * A subscriber whose last look saw the object unavailable, so the next
+   * look tells them it is available. Set directly, after the setup's events
+   * were handled, so nothing else looks first.
+   */
+  async function aboutToBeTold() {
+    const setup = await published();
+    await subscribe(setup.borrower, setup.objectId);
+    await deliver();
+    await db
+      .updateTable("app.object_subscriptions")
+      .set({ available: false })
+      .where("user_id", "=", setup.borrower.userId)
+      .where("object_id", "=", setup.objectId)
+      .execute();
+
+    return setup;
+  }
+
+  /** What the availability watcher does for an event about the object. */
+  const look = (objectId: string) => () =>
+    lookAgainAt(
+      db,
+      { objectIds: [objectId] },
+      `race:${randomUUID()}`,
+      kit.now(),
+    );
+
+  it("tells nothing to a subscriber who loses access while it looks", async () => {
+    const { environmentId, borrower, objectId } = await aboutToBeTold();
+
+    const { changedAt } = await commitWhileRacing(
+      db,
+      endMembership(environmentId, borrower.userId, kit.now()),
+      look(objectId),
+    );
+
+    expect(await notifiedSince(db, borrower.userId, changedAt)).toEqual([]);
+  });
+
+  it("tells nothing when the subscription ends while it looks", async () => {
+    const { borrower, objectId } = await aboutToBeTold();
+
+    const { changedAt } = await commitWhileRacing(
+      db,
+      (tx) =>
+        tx
+          .deleteFrom("app.object_subscriptions")
+          .where("user_id", "=", borrower.userId)
+          .where("object_id", "=", objectId)
+          .execute(),
+      look(objectId),
+    );
+
+    expect(await notifiedSince(db, borrower.userId, changedAt)).toEqual([]);
+  });
+
+  it("tells a subscriber whose access stays, so the race is real", async () => {
+    const { borrower, objectId } = await aboutToBeTold();
+
+    expect(await look(objectId)()).toBe(1);
+    expect(await kinds(borrower)).toEqual(["object.available"]);
+  });
+
+  it("leaves nothing to deliver once access or the subscription is gone", async () => {
+    const first = await aboutToBeTold();
+    const second = await aboutToBeTold();
+    await look(first.objectId)();
+    await look(second.objectId)();
+    const notifications = [
+      { ...first, notification: (await told(first.borrower))[0]! },
+      { ...second, notification: (await told(second.borrower))[0]! },
+    ];
+    const concerns = () =>
+      Promise.all(
+        notifications.map(({ borrower, notification }) =>
+          stillConcerns(
+            db,
+            { recipientId: borrower.userId, target: notification.target },
+            kit.now(),
+          ),
+        ),
+      );
+    expect(await concerns()).toEqual([true, true]);
+
+    await run(leaveEnvironment, first.borrower, {
+      environmentId: first.environmentId,
+    });
+    await run(unsubscribeFromObject, second.borrower, {
+      objectId: second.objectId,
+    });
+
+    expect(await concerns()).toEqual([false, false]);
   });
 });
