@@ -249,6 +249,7 @@ describe("the return (PS-LOAN-014–015)", () => {
         role: "borrower",
         outcome: "returned",
         agreementVersion: 1,
+        reportedAs: "party",
       },
     });
 

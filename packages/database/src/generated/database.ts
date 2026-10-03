@@ -284,6 +284,29 @@ export interface AppLoanHandoverReports {
   reporter_role: string;
 }
 
+export interface AppLoanLenderTransfers {
+  borrower_consent_required: boolean;
+  borrower_consented_at: Timestamp | null;
+  from_user_id: string;
+  id: Generated<string>;
+  kind: string;
+  loan_id: string;
+  position: Generated<Int8>;
+  proposed_at: Timestamp;
+  recipient_accepted_at: Timestamp | null;
+  resolved_at: Timestamp | null;
+  resolved_by_user_id: string | null;
+  status: Generated<string>;
+  to_user_id: string;
+}
+
+export interface AppLoanLenderUnavailability {
+  established_at: Timestamp;
+  id: Generated<string>;
+  lender_user_id: string;
+  loan_id: string;
+}
+
 export interface AppLoanRequestResponsibilityAcceptances {
   accepted_at: Generated<Timestamp>;
   declaration_version: number;
@@ -327,6 +350,7 @@ export interface AppLoanReturnConfirmations {
   id: Generated<string>;
   loan_id: string;
   outcome: string;
+  reported_as: Generated<string>;
   reporter_role: string;
   requested_at: Timestamp;
   requested_by_user_id: string;
@@ -341,6 +365,7 @@ export interface AppLoanReturnReports {
   loan_id: string;
   outcome: string;
   position: Generated<Int8>;
+  reported_as: Generated<string>;
   reported_at: Generated<Timestamp>;
   reported_by_user_id: string;
   reporter_role: string;
@@ -537,6 +562,8 @@ export interface DB {
   "app.loan_agreements": AppLoanAgreements;
   "app.loan_amendments": AppLoanAmendments;
   "app.loan_handover_reports": AppLoanHandoverReports;
+  "app.loan_lender_transfers": AppLoanLenderTransfers;
+  "app.loan_lender_unavailability": AppLoanLenderUnavailability;
   "app.loan_request_responsibility_acceptances": AppLoanRequestResponsibilityAcceptances;
   "app.loan_requests": AppLoanRequests;
   "app.loan_reservations": AppLoanReservations;

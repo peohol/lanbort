@@ -423,7 +423,11 @@ export const returnOutcomeSchema = z.enum([
  * they ask for it `immediately` (PS-LOAN-016); sending it again with
  * `immediately` while it waits makes it at once. The other statements count
  * at once. After the loan ended as returned, a party can still contradict
- * the receipt (`not_received`, `still_has`), which reopens it.
+ * the receipt (`not_received`, `still_has`), which reopens it. While the
+ * responsible lender is established as unavailable, a co-owner who owned
+ * the object when the loan was approved may confirm the receipt
+ * (`received`) for the lender's side without becoming responsible
+ * (PS-LOAN-015).
  */
 export const reportReturnSchema = z.strictObject({
   loanId: loanIdSchema,
@@ -459,12 +463,102 @@ const handoverStatementSchema = z
   })
   .nullable();
 
+/**
+ * Who made a return statement: the party of its side, or, for the lender's
+ * receipt only, a co-owner who confirmed the receipt while the responsible
+ * lender was unavailable, without becoming responsible (PS-LOAN-015).
+ */
+export const returnReporterSchema = z.enum(["party", "co_owner"]);
+
 const returnStatementSchema = z
   .strictObject({
     outcome: returnOutcomeSchema,
     reportedAt: z.iso.datetime(),
+    reportedAs: returnReporterSchema,
   })
   .nullable();
+
+export const responsibilityTransferIdSchema = z.uuid();
+
+/**
+ * PS-LOAN-009: how the responsible lender changes.
+ * - `voluntary`: the responsible lender offered the role to a co-owner.
+ * - `takeover`: a co-owner took the role over while the responsible lender
+ *   was established as really unavailable.
+ */
+export const responsibilityTransferKindSchema = z.enum([
+  "voluntary",
+  "takeover",
+]);
+
+/**
+ * - `proposed`: waits for the recipient to accept it (voluntary), for the
+ *   borrower's consent (a later co-owner), or both.
+ * - `completed`: the recipient is the responsible lender now.
+ * - `declined`: the recipient or the borrower said no.
+ * - `withdrawn`: whoever proposed it took it back.
+ * - `lapsed`: it could no longer happen: the loan ended, the role moved, or
+ *   the recipient can no longer step in.
+ */
+export const responsibilityTransferStatusSchema = z.enum([
+  "proposed",
+  "completed",
+  "declined",
+  "withdrawn",
+  "lapsed",
+]);
+
+/**
+ * A change of the responsible lender as those it concerns see it. The
+ * recipient sees it before they are a party, so it says nothing about the
+ * loan beyond who is involved.
+ */
+export const responsibilityTransferSchema = z.strictObject({
+  id: responsibilityTransferIdSchema,
+  kind: responsibilityTransferKindSchema,
+  fromUserId: z.uuid(),
+  toUserId: z.uuid(),
+  /** The recipient became a co-owner after the loan was approved. */
+  needsBorrowerConsent: z.boolean(),
+  recipientAccepted: z.boolean(),
+  borrowerConsented: z.boolean(),
+  proposedAt: z.iso.datetime(),
+});
+
+/**
+ * PS-LOAN-009: the responsible lender offers the role to a co-owner. It
+ * moves when the co-owner accepts, and, for a co-owner who joined after the
+ * loan was approved, when the borrower consents too. The agreement does not
+ * change.
+ */
+export const offerResponsibilitySchema = z.strictObject({
+  loanId: loanIdSchema,
+  toUserId: z.uuid(),
+});
+
+/**
+ * PS-LOAN-009: a co-owner takes the role over while the responsible lender
+ * is established as really unavailable; a co-owner who joined after the
+ * loan was approved also needs the borrower's consent.
+ */
+export const takeOverResponsibilitySchema = loanReferenceSchema;
+
+/**
+ * The recipient accepts or declines an offer, the borrower consents to or
+ * declines a later co-owner, and whoever proposed it may withdraw it.
+ */
+export const responsibilityTransferReferenceSchema = z.strictObject({
+  loanId: loanIdSchema,
+  transferId: responsibilityTransferIdSchema,
+});
+
+export const responsibilityTransferResultSchema = z.strictObject({
+  loanId: loanIdSchema,
+  transferId: responsibilityTransferIdSchema,
+  status: responsibilityTransferStatusSchema,
+  /** The loan's responsible lender after the command. */
+  responsibleLenderId: z.uuid(),
+});
 
 /**
  * A loan as its borrower or responsible lender sees it. The agreement is
@@ -484,7 +578,10 @@ export const loanSchema = z.strictObject({
   ending: z
     .strictObject({
       reason: loanEndReasonSchema,
-      /** The party who ended it; null when no party did. */
+      /**
+       * The party who ended it; null when no party did: not completed, or
+       * a co-owner confirmed the receipt for the lender's side.
+       */
       endedBy: loanRequestRoleSchema.nullable(),
       endedAt: z.iso.datetime(),
     })
@@ -536,7 +633,36 @@ export const loanSchema = z.strictObject({
     lender: returnStatementSchema,
     pending: pendingReturnSchema,
   }),
+  /** The open change of the responsible lender, if any (PS-LOAN-009). */
+  responsibilityTransfer: responsibilityTransferSchema.nullable(),
   approvedAt: z.iso.datetime(),
+});
+
+/**
+ * A loan as a co-owner who is not its party sees it, only while there is
+ * something for them to do (PS-LOAN-009, PS-LOAN-015): an offer of the
+ * responsible lender's role, their own takeover waiting for the borrower,
+ * or, while the responsible lender is established as unavailable, taking
+ * over or confirming the receipt. It says only what that needs.
+ */
+export const coOwnerLoanSchema = z.strictObject({
+  loanId: loanIdSchema,
+  objectId: objectIdSchema,
+  status: loanStatusSchema,
+  agreementVersion: z.int(),
+  title: z.string(),
+  period: loanPeriodSchema,
+  /** The open transfer to the caller, if any. */
+  transfer: responsibilityTransferSchema.nullable(),
+  mayTakeOver: z.boolean(),
+  /** The caller may confirm the receipt (`loan.report_return`, `received`). */
+  mayConfirmReceipt: z.boolean(),
+  /** The caller's own receipt while it can be undone. */
+  pending: pendingReturnSchema,
+});
+
+export const coOwnerLoanListSchema = z.strictObject({
+  items: z.array(coOwnerLoanSchema),
 });
 
 export type LoanRequestOrigin = z.infer<typeof loanRequestOriginSchema>;
@@ -566,3 +692,18 @@ export type LoanHandoverResult = z.infer<typeof loanHandoverResultSchema>;
 export type ReturnOutcome = z.infer<typeof returnOutcomeSchema>;
 export type ReportReturn = z.infer<typeof reportReturnSchema>;
 export type LoanReturnResult = z.infer<typeof loanReturnResultSchema>;
+export type ReturnReporter = z.infer<typeof returnReporterSchema>;
+export type ResponsibilityTransferKind = z.infer<
+  typeof responsibilityTransferKindSchema
+>;
+export type ResponsibilityTransferStatus = z.infer<
+  typeof responsibilityTransferStatusSchema
+>;
+export type ResponsibilityTransfer = z.infer<
+  typeof responsibilityTransferSchema
+>;
+export type ResponsibilityTransferResult = z.infer<
+  typeof responsibilityTransferResultSchema
+>;
+export type CoOwnerLoan = z.infer<typeof coOwnerLoanSchema>;
+export type CoOwnerLoanList = z.infer<typeof coOwnerLoanListSchema>;

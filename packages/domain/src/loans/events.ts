@@ -2,7 +2,9 @@ import {
   handoverOutcomeSchema,
   loanRequestEndReasonSchema,
   loanRequestRoleSchema,
+  responsibilityTransferKindSchema,
   returnOutcomeSchema,
+  returnReporterSchema,
 } from "@lanbort/contracts";
 import { z } from "zod";
 import { defineEvent } from "../events/catalog";
@@ -152,20 +154,24 @@ export const loanNotCompleted = loanEvent("not_completed", {
 /**
  * PS-LOAN-014–017: a party's statement about the return of
  * `agreementVersion` was made (a confirmation once its undo buffer is over,
- * or at once). The actor is that party, or the process that made a waiting
- * confirmation; `role` says whose statement it is. A confirmation that was
- * undone was never sent and has no event.
+ * or at once). The actor is that party (or the co-owner who confirmed the
+ * receipt for the lender's side), or the process that made a waiting
+ * confirmation; `role` says whose side the statement is on. A confirmation
+ * that was undone was never sent and has no event.
  */
 export const loanReturnReported = loanEvent("return_reported", {
   role: loanRequestRoleSchema,
   outcome: returnOutcomeSchema,
   agreementVersion: z.int().min(1),
+  /** A co-owner's narrow receipt for the lender's side (PS-LOAN-015). */
+  reportedAs: returnReporterSchema,
 });
 
 /**
- * PS-LOAN-015/020: the responsible lender confirmed receiving the object,
- * so the loan ended as returned and its reservation is free; `early` when
- * that was before its agreed last day.
+ * PS-LOAN-015/020: the responsible lender (or a co-owner in the narrow
+ * receipt role) confirmed receiving the object, so the loan ended as
+ * returned and its reservation is free; `early` when that was before its
+ * agreed last day.
  */
 export const loanReturned = loanEvent("returned", {
   early: z.boolean(),
@@ -181,3 +187,52 @@ export const loanReturnDisputed = loanEvent("return_disputed", {
   reopened: z.boolean(),
   otherLoanIds: z.array(z.uuid()),
 });
+
+const transferId = z.uuid();
+
+/**
+ * PS-LOAN-009: a change of the responsible lender was proposed: the lender
+ * offered the role to `toUserId` (`voluntary`), or a later co-owner took it
+ * over and the borrower's consent is needed (`takeover`).
+ */
+export const loanResponsibilityProposed = loanEvent("responsibility_proposed", {
+  transferId,
+  kind: responsibilityTransferKindSchema,
+  toUserId: z.uuid(),
+  needsBorrowerConsent: z.boolean(),
+});
+
+/**
+ * One of the answers a proposed transfer needs: the recipient accepted it,
+ * or the borrower consented to a later co-owner.
+ */
+export const loanResponsibilityAnswered = loanEvent("responsibility_answered", {
+  transferId,
+  answer: z.enum(["recipient", "borrower"]),
+});
+
+/**
+ * PS-LOAN-009: `toUserId` is the responsible lender now. The agreement is
+ * unchanged. The borrower is to be told clearly (WP-40), without having to
+ * approve the change itself unless the recipient joined later.
+ */
+export const loanResponsibilityTransferred = loanEvent(
+  "responsibility_transferred",
+  {
+    transferId,
+    kind: responsibilityTransferKindSchema,
+    fromUserId: z.uuid(),
+    toUserId: z.uuid(),
+  },
+);
+
+/** The recipient or the borrower said no; the role stays where it was. */
+export const loanResponsibilityDeclined = loanEvent("responsibility_declined", {
+  transferId,
+});
+
+/** Whoever proposed the transfer took it back. */
+export const loanResponsibilityWithdrawn = loanEvent(
+  "responsibility_withdrawn",
+  { transferId },
+);

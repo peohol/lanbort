@@ -6,6 +6,7 @@ import { testUserActor } from "../testing/actors";
 import {
   acceptLoanAmendmentPolicy,
   acceptResponsibilityPolicy,
+  acceptResponsibilityTransferPolicy,
   approveLoanRequestPolicy,
   cancelLoanPolicy,
   concludeHandoversPolicy,
@@ -14,23 +15,31 @@ import {
   createLoanRequestPolicy,
   declineLoanAmendmentPolicy,
   declineLoanRequestPolicy,
+  declineResponsibilityTransferPolicy,
   handoverProcess,
   type LoanAmendmentResource,
+  type LoanReceiptResource,
   type LoanReturnResource,
   type LoanRequestResource,
   type LoanRequestTarget,
   type LoanResource,
+  type LoanTakeoverResource,
+  listCoOwnerLoansPolicy,
   listLoanRequestsPolicy,
+  offerResponsibilityPolicy,
   previewLoanRequestPolicy,
   proposeLoanAmendmentPolicy,
   readLoanPolicy,
   readLoanRequestPolicy,
   reportHandoverPolicy,
   reportReturnPolicy,
+  type ResponsibilityTransferResource,
   returnProcess,
+  takeOverResponsibilityPolicy,
   undoReturnPolicy,
   withdrawLoanAmendmentPolicy,
   withdrawLoanRequestPolicy,
+  withdrawResponsibilityTransferPolicy,
 } from "./policies";
 
 const borrower = testUserActor();
@@ -190,21 +199,174 @@ const partyMatrix = (
 ) => policyMatrix(policy, partyCases(allowed));
 
 /**
- * PS-LOAN-014–015: a return statement belongs to one side; the other party
- * may not say it for them (WP-35 adds a co-owner's narrow receipt).
+ * PS-LOAN-015: a co-owner of the circle while the responsible lender is
+ * established as unavailable may confirm the lender side's receipt; the
+ * role never lifts a party beyond their own side.
  */
-const returnMatrix = policyMatrix(
-  reportReturnPolicy,
-  (["borrower", "lender"] as const).flatMap((side) =>
+const receiverCases = <R extends LoanReceiptResource>(
+  resource: R,
+  expected: { borrower: "allow" | DenialReason },
+) => [
+  expectCase(
+    "a co-owner in the narrow receipt role",
+    coOwner,
+    { ...resource, receivesForLender: true },
+    "allow",
+  ),
+  expectCase(
+    "the borrower is still only their own side",
+    borrower,
+    { ...resource, receivesForLender: true },
+    expected.borrower,
+  ),
+];
+
+/**
+ * PS-LOAN-014–015: a return statement belongs to one side; the other party
+ * may not say it for them. A co-owner in the narrow receipt role confirms
+ * the lender side's receipt (the loader grants the role for `received`
+ * only).
+ */
+const returnMatrix = policyMatrix(reportReturnPolicy, [
+  ...(["borrower", "lender"] as const).flatMap((side) =>
     loanCases<LoanReturnResource>(
-      { ...loan, side },
+      { ...loan, side, receivesForLender: false },
       { borrower: side === "borrower", lender: side === "lender" },
     ).map((testCase) => ({
       ...testCase,
       name: `${testCase.name}, on a ${side}'s statement`,
     })),
   ),
-);
+  ...receiverCases<LoanReturnResource>(
+    { ...loan, side: "lender", receivesForLender: false },
+    { borrower: "forbidden" },
+  ),
+]);
+
+/** PS-LOAN-016: the parties, and a co-owner undoing their own receipt. */
+const undoMatrix = policyMatrix(undoReturnPolicy, [
+  ...loanCases<LoanReceiptResource>(
+    { ...loan, receivesForLender: false },
+    { borrower: true, lender: true },
+  ),
+  ...receiverCases<LoanReceiptResource>(
+    { ...loan, receivesForLender: false },
+    { borrower: "allow" },
+  ),
+]);
+
+const takeover = (
+  standing: LoanTakeoverResource["standing"],
+  lenderUnavailable: boolean,
+): LoanTakeoverResource => ({ ...loan, standing, lenderUnavailable });
+
+/**
+ * PS-LOAN-009: a co-owner who can step in takes over only while the
+ * responsible lender is established as unavailable; otherwise the loan
+ * stays invisible to them. The parties may not.
+ */
+const takeoverMatrix = policyMatrix(takeOverResponsibilityPolicy, [
+  expectCase(
+    "a co-owner of the circle, the lender unavailable",
+    coOwner,
+    takeover("circle", true),
+    "allow",
+  ),
+  expectCase(
+    "a later co-owner, the lender unavailable",
+    coOwner,
+    takeover("later", true),
+    "allow",
+  ),
+  expectCase(
+    "a co-owner while the lender is available",
+    coOwner,
+    takeover("circle", false),
+    "not_found",
+  ),
+  expectCase(
+    "someone who cannot step in (not an owner, or blocked with the borrower)",
+    stranger,
+    takeover(null, true),
+    "not_found",
+  ),
+  expectCase(
+    "the responsible lender",
+    owner,
+    takeover(null, true),
+    "forbidden",
+  ),
+  expectCase("the borrower", borrower, takeover(null, true), "forbidden"),
+  ...callerCases(takeover("circle", true)),
+]);
+
+const transfer = (
+  kind: "voluntary" | "takeover",
+  needsBorrowerConsent: boolean,
+): ResponsibilityTransferResource => ({
+  ...loan,
+  transfer: {
+    kind,
+    fromUserId: owner.userId,
+    toUserId: coOwner.userId,
+    needsBorrowerConsent,
+  },
+});
+
+const transferShapes = [
+  ["voluntary", false, "an offer to a co-owner of the circle"],
+  ["voluntary", true, "an offer to a later co-owner"],
+  ["takeover", true, "a later co-owner's takeover"],
+] as const;
+
+/**
+ * PS-LOAN-009: on each kind of open transfer, `allowed` act; everyone else
+ * it concerns may not, and to anyone else it does not exist.
+ */
+const transferMatrix = (
+  policy: Policy<ResponsibilityTransferResource, void>,
+  allowed: (
+    kind: "voluntary" | "takeover",
+    needsBorrowerConsent: boolean,
+  ) => { borrower: boolean; lender: boolean; recipient: boolean },
+) =>
+  policyMatrix(policy, [
+    ...transferShapes.flatMap(([kind, consent, shape]) => {
+      const resource = transfer(kind, consent);
+      const may = allowed(kind, consent);
+      const outcome = (yes: boolean) => (yes ? "allow" : "forbidden");
+
+      return [
+        expectCase(
+          `the borrower, on ${shape}`,
+          borrower,
+          resource,
+          outcome(may.borrower),
+        ),
+        expectCase(
+          `the responsible lender, on ${shape}`,
+          owner,
+          resource,
+          outcome(may.lender),
+        ),
+        expectCase(
+          `the recipient, on ${shape}`,
+          coOwner,
+          resource,
+          outcome(may.recipient),
+        ),
+        expectCase(`anyone else, on ${shape}`, stranger, resource, "not_found"),
+      ];
+    }),
+    ...callerCases(transfer("voluntary", false)),
+  ]);
+
+/** The recipient answers an offer; the borrower answers when asked. */
+const answerers = (kind: "voluntary" | "takeover", consent: boolean) => ({
+  borrower: consent,
+  lender: false,
+  recipient: kind === "voluntary",
+});
 
 /** A scheduled job runs only as its own process. */
 const processMatrix = (policy: Policy<void, void>, process: string) =>
@@ -252,6 +414,22 @@ export const loanMatrices = [
   loanPartyMatrix(reportHandoverPolicy),
   processMatrix(concludeHandoversPolicy, handoverProcess),
   returnMatrix,
-  loanPartyMatrix(undoReturnPolicy),
+  undoMatrix,
   processMatrix(concludeReturnsPolicy, returnProcess),
+  policyMatrix(
+    offerResponsibilityPolicy,
+    loanCases(loan, { borrower: false, lender: true }),
+  ),
+  takeoverMatrix,
+  transferMatrix(acceptResponsibilityTransferPolicy, answerers),
+  transferMatrix(declineResponsibilityTransferPolicy, answerers),
+  transferMatrix(withdrawResponsibilityTransferPolicy, (kind) => ({
+    borrower: false,
+    lender: kind === "voluntary",
+    recipient: kind === "takeover",
+  })),
+  policyMatrix(listCoOwnerLoansPolicy, [
+    expectCase("a signed-in user", coOwner, undefined, "allow"),
+    ...callerCases(undefined),
+  ]),
 ];

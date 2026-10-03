@@ -9,3 +9,4 @@ export * from "./cancellation";
 export * from "./amendments";
 export * from "./handover";
 export * from "./return";
+export * from "./responsibility";

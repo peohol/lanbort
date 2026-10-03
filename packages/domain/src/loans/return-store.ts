@@ -1,4 +1,8 @@
-import type { LoanRequestRole, ReturnOutcome } from "@lanbort/contracts";
+import type {
+  LoanRequestRole,
+  ReturnOutcome,
+  ReturnReporter,
+} from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
 import {
@@ -12,20 +16,26 @@ import {
  * PS-LOAN-014–017) and for return confirmations in their undo buffer
  * (PS-LOAN-016). Statements are append-only; all of them on the current
  * agreement version count, in order. The database lets only a party speak
- * for their side and checks at commit that the loan's status is what the
- * statements say.
+ * for their side, or a co-owner confirm the lender side's receipt in the
+ * narrow role (WP-35, `app.loan_speaker_allowed`), and checks at commit that
+ * the loan's status is what the statements say.
  */
 type Db = Kysely<Database>;
+
+/** A statement as recorded: also who made it, the party or a co-owner. */
+export interface RecordedReturnStatement extends ReturnStatement {
+  readonly reportedAs: ReturnReporter;
+}
 
 /** The return statements on agreement `version`, in the order they were made. */
 export async function loadReturnStatements(
   db: Db,
   loanId: string,
   version: number,
-): Promise<ReturnStatement[]> {
+): Promise<RecordedReturnStatement[]> {
   const rows = await db
     .selectFrom("app.loan_return_reports")
-    .select(["reporter_role", "outcome", "reported_at"])
+    .select(["reporter_role", "outcome", "reported_at", "reported_as"])
     .where("loan_id", "=", loanId)
     .where("agreement_version", "=", version)
     .orderBy("position")
@@ -35,10 +45,14 @@ export async function loadReturnStatements(
     role: row.reporter_role as LoanRequestRole,
     outcome: row.outcome as ReturnOutcome,
     reportedAt: row.reported_at,
+    reportedAs: row.reported_as as ReturnReporter,
   }));
 }
 
-/** Records what `role` says now, made from `confirmationId` if it waited. */
+/**
+ * Records what `role` says now, as its party or a co-owner (`reportedAs`),
+ * made from `confirmationId` if it waited.
+ */
 export async function insertReturnStatement(
   db: Db,
   input: {
@@ -46,11 +60,12 @@ export async function insertReturnStatement(
     readonly agreementVersion: number;
     readonly userId: string;
     readonly role: LoanRequestRole;
+    readonly reportedAs: ReturnReporter;
     readonly outcome: ReturnOutcome;
     readonly confirmationId: string | null;
     readonly now: Date;
   },
-): Promise<ReturnStatement> {
+): Promise<RecordedReturnStatement> {
   await db
     .insertInto("app.loan_return_reports")
     .values({
@@ -58,13 +73,19 @@ export async function insertReturnStatement(
       agreement_version: input.agreementVersion,
       reported_by_user_id: input.userId,
       reporter_role: input.role,
+      reported_as: input.reportedAs,
       outcome: input.outcome,
       reported_at: input.now,
       confirmation_id: input.confirmationId,
     })
     .execute();
 
-  return { role: input.role, outcome: input.outcome, reportedAt: input.now };
+  return {
+    role: input.role,
+    outcome: input.outcome,
+    reportedAt: input.now,
+    reportedAs: input.reportedAs,
+  };
 }
 
 /** A return confirmation that waits in its undo buffer. */
@@ -74,6 +95,7 @@ export interface PendingReturn {
   readonly agreementVersion: number;
   readonly userId: string;
   readonly role: LoanRequestRole;
+  readonly reportedAs: ReturnReporter;
   readonly outcome: ReturnConfirmation;
   readonly effectiveAt: Date;
 }
@@ -84,6 +106,7 @@ const pendingSelection = [
   "agreement_version",
   "requested_by_user_id",
   "reporter_role",
+  "reported_as",
   "outcome",
   "effective_at",
 ] as const;
@@ -94,6 +117,7 @@ function toPending(row: {
   agreement_version: number;
   requested_by_user_id: string;
   reporter_role: string;
+  reported_as: string;
   outcome: string;
   effective_at: Date;
 }): PendingReturn {
@@ -103,6 +127,7 @@ function toPending(row: {
     agreementVersion: row.agreement_version,
     userId: row.requested_by_user_id,
     role: row.reporter_role as LoanRequestRole,
+    reportedAs: row.reported_as as ReturnReporter,
     outcome: row.outcome as ReturnConfirmation,
     effectiveAt: row.effective_at,
   };
@@ -110,7 +135,7 @@ function toPending(row: {
 
 /**
  * The loan's waiting confirmations, the earliest to take effect first; only
- * `role`'s with `role`, only those due by `dueBy` with `dueBy`.
+ * `role`'s side with `role`, only those due by `dueBy` with `dueBy`.
  */
 export async function findPendingReturns(
   db: Db,
@@ -144,6 +169,7 @@ export async function insertPendingReturn(
     readonly agreementVersion: number;
     readonly userId: string;
     readonly role: LoanRequestRole;
+    readonly reportedAs: ReturnReporter;
     readonly outcome: ReturnConfirmation;
     readonly now: Date;
   },
@@ -156,6 +182,7 @@ export async function insertPendingReturn(
       agreement_version: input.agreementVersion,
       requested_by_user_id: input.userId,
       reporter_role: input.role,
+      reported_as: input.reportedAs,
       outcome: input.outcome,
       requested_at: input.now,
       effective_at: effectiveAt,
@@ -223,19 +250,19 @@ export async function dueReturnConfirmations(
 }
 
 /**
- * How `role`'s latest return confirmation on the loan ended, if it has one:
- * an undo that comes again, or too late, is told apart by it.
+ * How `userId`'s latest return confirmation on the loan ended, if they have
+ * one: an undo that comes again, or too late, is told apart by it.
  */
 export async function latestConfirmationStatus(
   db: Db,
   loanId: string,
-  role: LoanRequestRole,
+  userId: string,
 ): Promise<string | null> {
   const row = await db
     .selectFrom("app.loan_return_confirmations")
     .select("status")
     .where("loan_id", "=", loanId)
-    .where("reporter_role", "=", role)
+    .where("requested_by_user_id", "=", userId)
     .orderBy("requested_at", "desc")
     .orderBy("id", "desc")
     .executeTakeFirst();

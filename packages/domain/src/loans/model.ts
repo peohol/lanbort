@@ -616,10 +616,10 @@ export function returnVerdict(
 }
 
 /** The latest statement of one side, if it has said anything. */
-export function latestReturnStatement(
-  statements: readonly ReturnStatement[],
+export function latestReturnStatement<S extends ReturnStatement>(
+  statements: readonly S[],
   role: LoanRequestRole,
-): ReturnStatement | null {
+): S | null {
   return (
     [...statements].reverse().find((statement) => statement.role === role) ??
     null
