@@ -3,10 +3,11 @@ import { type APIRequestContext, expect, test } from "@playwright/test";
 import { registerThroughApi } from "./helpers";
 
 /**
- * WP-30–32 over HTTP: a friend asks to borrow an object directly, both
+ * WP-30–33 over HTTP: a friend asks to borrow an object directly, both
  * accept the responsibility declaration, the owner approves it into a loan
  * that reserves its period, both agree to extend it, and the borrower
- * cancels it before the handover.
+ * cancels it before the handover; another loan is handed over on its
+ * handover day.
  */
 
 const post = (
@@ -187,4 +188,112 @@ test("an owner approves a friend's request into a reserved loan", async ({
     (await (await request.get(`/api/objects/${objectId}`)).json())
       .effectiveAvailability,
   ).toEqual([{ start: "2030-06-01", end: null }]);
+});
+
+/** Today's date in the product's time zone. */
+const today = () =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Oslo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+test("a party confirms the handover on the handover day (WP-33)", async ({
+  request,
+  playwright,
+  baseURL,
+}) => {
+  const context = () =>
+    playwright.request.newContext({
+      baseURL: baseURL!,
+      extraHTTPHeaders: { origin: baseURL! },
+    });
+  await registerThroughApi(request);
+  const anna = await accountId(request);
+  const bo = await context();
+  await registerThroughApi(bo);
+  const boId = await accountId(bo);
+  const stranger = await context();
+  await registerThroughApi(stranger);
+  await post(request, "/api/social/friend-requests", { userId: boId });
+  await post(bo, "/api/social/friend-requests/accept", { userId: anna });
+
+  const { objectId } = await (
+    await post(request, "/api/objects", {
+      title: "Stige",
+      categoryId: "annet",
+      description: "Aluminiumsstige, 4 meter.",
+      availability: [{ start: today(), end: null }],
+    })
+  ).json();
+  const preview = await (
+    await bo.get(`/api/loan-requests/preview?objectId=${objectId}`)
+  ).json();
+  const { requestId } = await (
+    await post(bo, "/api/loan-requests", {
+      objectId,
+      origin: { kind: "direct" },
+      start: { kind: "date", date: today() },
+      end: { kind: "duration", days: 2 },
+      message: "Kan jeg låne den i dag?",
+      termsVersion: preview.termsVersion,
+      responsibilityDeclarationVersion:
+        preview.responsibilityDeclarationVersion,
+    })
+  ).json();
+  await post(request, `/api/loan-requests/${requestId}/responsibility`, {
+    declarationVersion: preview.responsibilityDeclarationVersion,
+  });
+  const { loanId } = await (
+    await post(request, `/api/loan-requests/${requestId}/approve`)
+  ).json();
+  const loanPath = `/api/loans/${loanId}`;
+
+  // Only the parties speak; «not handed over» waits until the day is over.
+  const handedOver = { agreementVersion: 1, outcome: "handed_over" };
+  expect(
+    (await post(stranger, `${loanPath}/handover`, handedOver)).status(),
+  ).toBe(404);
+  expect(
+    (
+      await post(bo, `${loanPath}/handover`, {
+        agreementVersion: 1,
+        outcome: "not_handed_over",
+      })
+    ).status(),
+  ).toBe(409);
+
+  const confirmed = await post(bo, `${loanPath}/handover`, handedOver);
+  expect(confirmed.status()).toBe(200);
+  expect(await confirmed.json()).toEqual({
+    loanId,
+    status: "active",
+    agreementVersion: 1,
+  });
+  expect(await (await request.get(loanPath)).json()).toMatchObject({
+    role: "lender",
+    status: "active",
+    handover: {
+      borrower: { outcome: "handed_over" },
+      lender: null,
+      answerDueAt: null,
+    },
+  });
+
+  // Handed over, it can no longer be cancelled.
+  expect((await post(request, `${loanPath}/cancel`)).status()).toBe(409);
+});
+
+test("the handover deadline job only runs for the scheduler", async ({
+  request,
+}) => {
+  const path = "/api/internal/loan-handovers";
+
+  expect((await request.get(path)).status()).toBe(401);
+  const run = await request.get(path, {
+    headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
+  });
+  expect(run.status()).toBe(200);
+  expect(await run.json()).toEqual({ notCompleted: expect.any(Number) });
 });

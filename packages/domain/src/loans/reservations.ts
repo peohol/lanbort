@@ -1,10 +1,10 @@
-import type { LoanEndReason, LoanStatus } from "@lanbort/contracts";
+import type { LoanEndReason } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
 import type { AvailabilityBlockSource } from "../objects/blocks";
 import type { ObjectCommitmentSource } from "../objects/commitments";
 import type { ObjectState } from "../objects/state";
-import type { LoanPeriodInterval } from "./model";
+import type { LoanPeriodInterval, StoredLoanStatus } from "./model";
 
 /**
  * Database access for approved loans (WP-31, WP-32): the loan, its agreement
@@ -19,7 +19,11 @@ type Db = Kysely<Database>;
  * Loan statuses that hold the object: its period and its lender. An ended
  * loan holds nothing.
  */
-export const committedLoanStatuses: readonly LoanStatus[] = ["reserved"];
+export const committedLoanStatuses: readonly StoredLoanStatus[] = [
+  "reserved",
+  "active",
+  "disputed",
+];
 
 /** The database form of a period. */
 export const rangeOf = (period: LoanPeriodInterval) =>
@@ -49,6 +53,43 @@ export const loanReservationBlocks: AvailabilityBlockSource = {
     return rows.map((row) => ({
       objectId: row.object_id,
       period: { from: row.from, until: row.until },
+    }));
+  },
+};
+
+/**
+ * PS-LOAN-013, PS-OBJ-005: while the parties disagree on whether a loan was
+ * handed over, nobody knows who has the object, so it is blocked for new
+ * colliding loans from that loan's handover day on, with no end, until they
+ * agree. Loans already approved for later keep their reservations
+ * (scenario 61); this only limits new ones, as the database does
+ * (`app.possession_uncertain`).
+ */
+export const loanPossessionBlocks: AvailabilityBlockSource = {
+  name: "loan_possession",
+  load: async (db, objectIds) => {
+    if (objectIds.length === 0) {
+      return [];
+    }
+
+    const rows = await db
+      .selectFrom("app.loans as loan")
+      .innerJoin(
+        "app.loan_reservations as reservation",
+        "reservation.loan_id",
+        "loan.id",
+      )
+      .select([
+        "reservation.object_id",
+        sql<string>`lower(reservation.period)::text`.as("from"),
+      ])
+      .where("reservation.object_id", "in", objectIds)
+      .where("loan.status", "=", "disputed")
+      .execute();
+
+    return rows.map((row) => ({
+      objectId: row.object_id,
+      period: { from: row.from, until: null },
     }));
   },
 };
@@ -153,7 +194,7 @@ export interface LoanRecord {
   readonly objectId: string | null;
   readonly borrowerUserId: string;
   readonly responsibleLenderId: string;
-  readonly status: LoanStatus;
+  readonly status: StoredLoanStatus;
   readonly approvedAt: Date;
   readonly ending: {
     readonly reason: LoanEndReason;
@@ -240,7 +281,7 @@ export async function findLoan(
         objectId: row.object_id,
         borrowerUserId: row.borrower_user_id,
         responsibleLenderId: row.responsible_lender_id,
-        status: row.status as LoanStatus,
+        status: row.status as StoredLoanStatus,
         approvedAt: row.approved_at,
         ending:
           row.end_reason === null || row.ended_at === null
@@ -267,16 +308,19 @@ export async function findLoan(
 }
 
 /**
- * PS-LOAN-011: ends the reserved loan as cancelled by `userId` and releases
- * its reservation, so its period is free again. The agreement versions and
- * the request stay as they are; the database lapses an open proposal with
- * it and checks at commit that nothing is left reserved.
+ * Ends the loan, if it is still in one of `from`, recording how, when and
+ * by whom (null: by no party), and releases its reservation so the period is
+ * free again. The agreement versions, statements and the request stay as
+ * they are; the database lapses an open proposal with it and checks at
+ * commit that the ending is what the loan's state allows.
  */
-export async function cancelReservedLoan(
+export async function endLoan(
   db: Db,
   input: {
     readonly loanId: string;
-    readonly userId: string;
+    readonly from: readonly StoredLoanStatus[];
+    readonly reason: LoanEndReason;
+    readonly endedByUserId: string | null;
     readonly now: Date;
   },
 ): Promise<void> {
@@ -284,17 +328,17 @@ export async function cancelReservedLoan(
     .updateTable("app.loans")
     .set({
       status: "ended",
-      end_reason: "cancelled",
+      end_reason: input.reason,
       ended_at: input.now,
-      ended_by_user_id: input.userId,
+      ended_by_user_id: input.endedByUserId,
       status_changed_at: input.now,
     })
     .where("id", "=", input.loanId)
-    .where("status", "=", "reserved")
+    .where("status", "in", [...input.from])
     .executeTakeFirst();
 
   if (ended.numUpdatedRows !== 1n) {
-    throw new Error("Only a reserved loan is cancelled");
+    throw new Error(`Only a loan that is ${input.from.join(" or ")} ends`);
   }
 
   await db
@@ -302,3 +346,20 @@ export async function cancelReservedLoan(
     .where("loan_id", "=", input.loanId)
     .execute();
 }
+
+/** PS-LOAN-011: a party cancels the reserved loan before the handover. */
+export const cancelReservedLoan = (
+  db: Db,
+  input: {
+    readonly loanId: string;
+    readonly userId: string;
+    readonly now: Date;
+  },
+) =>
+  endLoan(db, {
+    loanId: input.loanId,
+    from: ["reserved"],
+    reason: "cancelled",
+    endedByUserId: input.userId,
+    now: input.now,
+  });

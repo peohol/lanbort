@@ -8,7 +8,7 @@ import { DomainError } from "../errors";
 import { calendarDate } from "../objects/availability";
 import { actingUserId } from "../objects/state";
 import { loanCancelled } from "./events";
-import { beforeHandover } from "./model";
+import { beforeHandover, notReservedReason } from "./model";
 import { cancelLoanPolicy, partyRole } from "./policies";
 import { loadLockedLoan } from "./resources";
 import { cancelReservedLoan, type LoanRecord } from "./reservations";
@@ -66,7 +66,7 @@ export const cancelLoan = defineCommand({
         return cancellationResult(loan, loan.ending.endedByUserId);
       }
 
-      conflict("The loan has ended");
+      conflict(notReservedReason(loan.status));
     }
 
     if (!beforeHandover(loan.agreement.period, calendarDate(now))) {

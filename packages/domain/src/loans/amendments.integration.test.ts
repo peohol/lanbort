@@ -365,17 +365,25 @@ describe("answering a proposal (PS-LOAN-010)", () => {
     );
   });
 
-  it("is refused once the handover day is over", async () => {
+  it("after the handover day, agrees only a new handover that is not in the past (PS-LOAN-012)", async () => {
     const { owner, borrower, loanId } = await reservedLoan(1, 3);
     const { amendmentId } = await propose(borrower, loanId, 1, 5);
 
+    // The handover clarification has begun: a period that starts in the
+    // past cannot be agreed any more.
     kit.advance(2 * oneDay);
     await expect(accept(owner, loanId, amendmentId)).rejects.toMatchObject({
       ...conflict,
-      fields: ["handover"],
+      fields: ["period"],
     });
-    await expect(propose(owner, loanId, 3, 5)).rejects.toMatchObject(conflict);
     expect(await reservation(loanId)).toBe(range(-1, 1));
+
+    // A new handover day ends the clarification: the loan is reserved again.
+    await withdraw(borrower, loanId, amendmentId);
+    const later = await propose(owner, loanId, 3, 5);
+    await accept(borrower, loanId, later.amendmentId);
+    expect(await reservation(loanId)).toBe(range(3, 5));
+    expect((await loanOf(borrower, loanId)).status).toBe("reserved");
   });
 });
 

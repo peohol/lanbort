@@ -278,15 +278,32 @@ export const loanApprovalResultSchema = z.strictObject({
 
 /**
  * - `reserved`: approved and holding its period («reservert»).
+ * - `awaiting_handover`: the handover day is over and nobody has said yet
+ *   whether the object was handed over, or one party says it was not and the
+ *   other may still answer («avventer overleveringsavklaring», PS-LOAN-012).
+ * - `active`: handed over («utlånt»).
+ * - `disputed`: the parties disagree on whether it was handed over
+ *   («usikker/uenighet», PS-LOAN-013).
  * - `ended`: over; see `endReason` («avsluttet»).
  */
-export const loanStatusSchema = z.enum(["reserved", "ended"]);
+export const loanStatusSchema = z.enum([
+  "reserved",
+  "awaiting_handover",
+  "active",
+  "disputed",
+  "ended",
+]);
 
 /**
- * How a loan ended. `cancelled`: one of the parties ended it before the
- * handover (PS-LOAN-011). Later work packages add the other endings.
+ * How a loan ended:
+ * - `cancelled`: one of the parties ended it before the handover
+ *   (PS-LOAN-011).
+ * - `not_completed`: the handover time came, but the object was never
+ *   handed over («ikke gjennomført», PS-LOAN-012). It says nothing about
+ *   whose fault that was.
+ * Later work packages add the other endings.
  */
-export const loanEndReasonSchema = z.enum(["cancelled"]);
+export const loanEndReasonSchema = z.enum(["cancelled", "not_completed"]);
 
 export const loanReadQuerySchema = z.strictObject({ loanId: loanIdSchema });
 
@@ -350,6 +367,34 @@ export const loanAmendmentResultSchema = z.strictObject({
   agreementVersion: z.int(),
 });
 
+/** What a party says happened at the handover (PS-LOAN-012). */
+export const handoverOutcomeSchema = z.enum(["handed_over", "not_handed_over"]);
+
+/**
+ * PS-LOAN-012–013: a party says whether the object was handed over, on the
+ * agreement version they saw. Saying it was handed over is possible from the
+ * handover day on; saying it was not, once the handover day is over.
+ */
+export const reportHandoverSchema = z.strictObject({
+  loanId: loanIdSchema,
+  agreementVersion: z.int().min(1),
+  outcome: handoverOutcomeSchema,
+});
+
+export const loanHandoverResultSchema = z.strictObject({
+  loanId: loanIdSchema,
+  /** The loan's status after the statement. */
+  status: loanStatusSchema,
+  agreementVersion: z.int(),
+});
+
+const handoverStatementSchema = z
+  .strictObject({
+    outcome: handoverOutcomeSchema,
+    reportedAt: z.iso.datetime(),
+  })
+  .nullable();
+
 /**
  * A loan as its borrower or responsible lender sees it. The agreement is
  * what was approved, as it was then: later changes to the object never
@@ -399,6 +444,17 @@ export const loanSchema = z.strictObject({
       proposedAt: z.iso.datetime(),
     })
     .nullable(),
+  /**
+   * What each party has said about the handover of the current agreement,
+   * if anything. `answerDueAt`: when one party says it was not handed over
+   * and the other has not answered, the loan ends as not completed after
+   * this time unless the other answers (PS-LOAN-012).
+   */
+  handover: z.strictObject({
+    borrower: handoverStatementSchema,
+    lender: handoverStatementSchema,
+    answerDueAt: z.iso.datetime().nullable(),
+  }),
   approvedAt: z.iso.datetime(),
 });
 
@@ -423,3 +479,6 @@ export type LoanCancellationResult = z.infer<
 export type ProposeLoanAmendment = z.infer<typeof proposeLoanAmendmentSchema>;
 export type LoanAmendmentStatus = z.infer<typeof loanAmendmentStatusSchema>;
 export type LoanAmendmentResult = z.infer<typeof loanAmendmentResultSchema>;
+export type HandoverOutcome = z.infer<typeof handoverOutcomeSchema>;
+export type ReportHandover = z.infer<typeof reportHandoverSchema>;
+export type LoanHandoverResult = z.infer<typeof loanHandoverResultSchema>;

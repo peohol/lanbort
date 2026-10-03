@@ -21,11 +21,16 @@ import { calendarDate, toApiInterval } from "../objects/availability";
 import { inSnapshot, loadObjectState } from "../objects/state";
 import { assessOrigin } from "./access";
 import { findOpenAmendment } from "./amendment-store";
+import { loadHandoverReading } from "./handover-store";
 import {
+  type HandoverReading,
+  type HandoverStatement,
   isOpen,
   type LoanRequestRecord,
   openStanding,
+  presentedLoanStatus,
   presentedStatus,
+  type StoredLoanStatus,
   toApiPeriod,
 } from "./model";
 import {
@@ -346,6 +351,29 @@ export const listLoanRequests = defineQuery({
   present: ({ resource }): LoanRequestList => resource,
 });
 
+const presentStatement = (statement: HandoverStatement | null) =>
+  statement && {
+    outcome: statement.outcome,
+    reportedAt: statement.reportedAt.toISOString(),
+  };
+
+/**
+ * While a reserved loan waits for an answer to «not handed over», when the
+ * waiting ends (PS-LOAN-012). Once the other side has answered, or the loan
+ * has moved on, there is no deadline.
+ */
+function answerDue(
+  status: StoredLoanStatus,
+  { borrower, lender }: HandoverReading,
+): string | null {
+  const waiting =
+    status === "reserved" && (borrower === null) !== (lender === null)
+      ? (borrower ?? lender)
+      : null;
+
+  return waiting?.answerDueAt?.toISOString() ?? null;
+}
+
 /**
  * A loan and what was agreed, for its borrower and its responsible lender
  * (PS-LOAN-006/008), also after it ended. The agreement is its current
@@ -367,11 +395,19 @@ export const readLoan = defineQuery({
       }
 
       const amendment = await findOpenAmendment(tx, loan.id);
+      const handover = await loadHandoverReading(
+        tx,
+        loan.id,
+        loan.agreement.version,
+      );
 
-      return { resource: { ...loan, amendment }, context: undefined };
+      return {
+        resource: { ...loan, amendment, handover },
+        context: undefined,
+      };
     }),
-  present: ({ actor, resource }): Loan => {
-    const ending = resource.ending;
+  present: ({ actor, resource, now }): Loan => {
+    const { ending, handover } = resource;
 
     return {
       id: resource.id,
@@ -380,7 +416,11 @@ export const readLoan = defineQuery({
       role: loanRoleOf(actor, resource) ?? "lender",
       borrowerUserId: resource.borrowerUserId,
       responsibleLenderId: resource.responsibleLenderId,
-      status: resource.status,
+      status: presentedLoanStatus(
+        resource.status,
+        resource.agreement.period,
+        calendarDate(now),
+      ),
       ending: ending && {
         reason: ending.reason,
         endedBy: ending.endedByUserId
@@ -405,6 +445,11 @@ export const readLoan = defineQuery({
         period: toApiPeriod(resource.amendment.period),
         proposedBy: resource.amendment.proposerRole,
         proposedAt: resource.amendment.proposedAt.toISOString(),
+      },
+      handover: {
+        borrower: presentStatement(handover.borrower),
+        lender: presentStatement(handover.lender),
+        answerDueAt: answerDue(resource.status, handover),
       },
       approvedAt: resource.approvedAt.toISOString(),
     };

@@ -54,6 +54,11 @@ const nonUserRoutes: Record<
     reason:
       "decides proposed type changes at their deadline, authenticated with the cron secret",
   },
+  "GET /api/internal/loan-handovers": {
+    access: "scheduler",
+    reason:
+      "ends unanswered handover clarifications at their deadline, authenticated with the cron secret",
+  },
 };
 
 const httpMethods = [

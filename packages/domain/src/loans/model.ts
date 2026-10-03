@@ -1,9 +1,12 @@
 import type {
   DesiredEnd,
   DesiredStart,
+  HandoverOutcome,
   LoanPeriod,
   LoanRequestEndReason,
+  LoanRequestRole,
   LoanRequestStatus,
+  LoanStatus,
 } from "@lanbort/contracts";
 import type { HistoryPosition } from "../environment/privacy";
 import { DomainError } from "../errors";
@@ -247,15 +250,187 @@ export function samePeriod(
 /**
  * PS-LOAN-011: a reserved loan is before its handover until the agreed
  * handover day (the period's first day) is over. Until then either party
- * may cancel it, or propose and agree changes. After it, a loan that was not
- * handed over is a matter for the handover clarification (PS-LOAN-012,
- * WP-33), never a cancellation.
+ * may cancel it. After it, a loan that was not handed over is a matter for
+ * the handover clarification (PS-LOAN-012), never a cancellation: the
+ * parties say what happened, or agree a new handover day.
  */
 export function beforeHandover(
   period: LoanPeriodInterval,
   today: string,
 ): boolean {
   return today <= period.from;
+}
+
+/**
+ * The statuses a loan is stored with. «Awaiting handover clarification» is
+ * never stored: it is a reserved loan whose handover day is over
+ * ({@link presentedLoanStatus}), so it needs no job to begin, and an agreed
+ * new handover day ends it by itself.
+ */
+export type StoredLoanStatus = Exclude<LoanStatus, "awaiting_handover">;
+
+/**
+ * Why a loan in `status` can no longer be cancelled or have its agreement
+ * changed like a reserved one: it has ended, or it is past the handover
+ * (handed over, or disputed).
+ */
+export function notReservedReason(status: StoredLoanStatus): string {
+  return status === "ended"
+    ? "The loan has ended"
+    : "The loan is past its handover";
+}
+
+/** PS-LOAN-012: the status shown for a loan as of `today`. */
+export function presentedLoanStatus(
+  status: StoredLoanStatus,
+  period: LoanPeriodInterval,
+  today: string,
+): LoanStatus {
+  return status === "reserved" && !beforeHandover(period, today)
+    ? "awaiting_handover"
+    : status;
+}
+
+/**
+ * PS-LOAN-012, pilot standard: how long the other party has to answer a
+ * statement that the object was not handed over before it alone can end
+ * the loan as not completed. Silence only lets the deadline pass; it is
+ * never taken as the silent party's fault.
+ */
+export const handoverAnswerHours = 72;
+
+export function handoverAnswerDue(reportedAt: Date): Date {
+  return new Date(reportedAt.getTime() + handoverAnswerHours * 60 * 60 * 1000);
+}
+
+/** A party's statement about the handover of the current agreement. */
+export interface HandoverStatement {
+  readonly outcome: HandoverOutcome;
+  readonly reportedAt: Date;
+  /** When the other side's time to answer ends; «not handed over» only. */
+  readonly answerDueAt: Date | null;
+}
+
+/** The latest statement of each side on the current agreement. */
+export type HandoverReading = Readonly<
+  Record<LoanRequestRole, HandoverStatement | null>
+>;
+
+export const noHandoverStatements: HandoverReading = Object.freeze({
+  borrower: null,
+  lender: null,
+});
+
+/**
+ * What the parties' current statements say as of `now` (PS-LOAN-012–013;
+ * the database's `app.loan_handover_verdict` is the same rule):
+ * - `none`: nobody has said anything.
+ * - `handed_over`: it was handed over, and nobody says otherwise.
+ * - `disputed`: one says it was handed over, the other that it was not.
+ * - `not_handed_over`: both say it was not.
+ * - `awaiting_answer`: one says it was not; the other may still answer.
+ * - `unanswered`: one says it was not, and the other did not answer in time.
+ */
+export type HandoverVerdict =
+  | "none"
+  | "handed_over"
+  | "disputed"
+  | "not_handed_over"
+  | "awaiting_answer"
+  | "unanswered";
+
+export function handoverVerdict(
+  reading: HandoverReading,
+  now: Date,
+): HandoverVerdict {
+  const statements = [reading.borrower, reading.lender].filter(
+    (statement) => statement !== null,
+  );
+
+  if (statements.length === 0) {
+    return "none";
+  }
+
+  if (statements.every(({ outcome }) => outcome === "handed_over")) {
+    return "handed_over";
+  }
+
+  if (statements.some(({ outcome }) => outcome === "handed_over")) {
+    return "disputed";
+  }
+
+  if (statements.length === 2) {
+    return "not_handed_over";
+  }
+
+  const due = statements[0]?.answerDueAt;
+
+  return due && due.getTime() <= now.getTime()
+    ? "unanswered"
+    : "awaiting_answer";
+}
+
+/**
+ * The stored status a verdict leads to: active once handed over, disputed
+ * while the parties disagree (PS-LOAN-013), ended as not completed when both
+ * say it was not handed over or the other side let the deadline pass, and
+ * reserved for as long as nothing is settled.
+ */
+export function statusAfterHandover(
+  verdict: HandoverVerdict,
+): StoredLoanStatus {
+  switch (verdict) {
+    case "handed_over":
+      return "active";
+    case "disputed":
+      return "disputed";
+    case "not_handed_over":
+    case "unanswered":
+      return "ended";
+    case "none":
+    case "awaiting_answer":
+      return "reserved";
+  }
+}
+
+/**
+ * Why `role` may not say `outcome` now, or null if they may
+ * (PS-LOAN-012–013). The caller has returned already if it is what they
+ * said last.
+ * - A reserved loan is handed over from its handover day on, never before
+ *   (the period would have to change first); «not handed over» belongs to
+ *   the clarification after the handover day, before it the parties cancel.
+ * - Once it is active, only the side that has not spoken may still
+ *   contradict it; the side that said it was handed over cannot take that
+ *   back on its own.
+ * - While it is disputed, either side may change what they say.
+ */
+export function handoverRefusal(
+  status: StoredLoanStatus,
+  period: LoanPeriodInterval,
+  reading: HandoverReading,
+  role: LoanRequestRole,
+  outcome: HandoverOutcome,
+  today: string,
+): { readonly message: string; readonly fields: readonly string[] } | null {
+  switch (status) {
+    case "ended":
+      return { message: "The loan has ended", fields: [] };
+    case "reserved":
+      if (today < period.from) {
+        return { message: "The handover day has not come", fields: [] };
+      }
+
+      return outcome === "not_handed_over" && beforeHandover(period, today)
+        ? { message: "The handover day is not over", fields: ["outcome"] }
+        : null;
+    case "active":
+      return reading[role] === null
+        ? null
+        : { message: "The handover is settled", fields: ["outcome"] };
+    case "disputed":
+      return null;
+  }
 }
 
 /**
