@@ -111,16 +111,9 @@ describe("an administratively unresolved loan (PS-LOAN-018–019)", () => {
       payload: { objectId, otherLoanIds: [] },
     });
 
-    // Nothing is free until an owner has it back, and the loan still needs
-    // following up: its lender cannot leave, nobody can delete the object.
+    // Nothing is free until an owner has it back.
     expect(await effective(objectId)).toEqual([]);
     await expect(request()).rejects.toMatchObject(conflict);
-    await expect(run(leaveObject, owner, { objectId })).rejects.toMatchObject(
-      conflict,
-    );
-    await expect(
-      run(consentToObjectDeletion, coOwner, { objectId }),
-    ).rejects.toMatchObject(conflict);
 
     // A co-owner who is not a party sees what they may do, and nothing else.
     expect(
@@ -157,14 +150,40 @@ describe("an administratively unresolved loan (PS-LOAN-018–019)", () => {
       ).items,
     ).toEqual([]);
 
-    expect(
-      await loadCommitments(db, objectId, objectCommitmentSources),
-    ).toEqual([]);
     expect(await effective(objectId)).toEqual([{ from: day(0), until: null }]);
     const { requestId } = await request();
     expect(await run(approveLoanRequest, owner, { requestId })).toMatchObject({
       status: "approved",
     });
+  });
+
+  it("binds its lender and the object until an owner confirms having it back", async () => {
+    const { owner, coOwner, objectId, loanId } = await disputedLoan();
+    const leave = () => run(leaveObject, owner, { objectId });
+    const consent = () => run(consentToObjectDeletion, coOwner, { objectId });
+    await endUnresolved(loanId);
+
+    // PS-OBJ-010/011: the loan still needs following up, so its lender
+    // cannot leave the object and nobody can delete it.
+    await expect(leave()).rejects.toMatchObject(conflict);
+    await expect(consent()).rejects.toMatchObject(conflict);
+    expect(
+      await loadCommitments(db, objectId, objectCommitmentSources),
+    ).toEqual([{ responsibleOwnerId: owner.userId }]);
+
+    await confirm(owner, loanId);
+    expect(
+      await loadCommitments(db, objectId, objectCommitmentSources),
+    ).toEqual([]);
+    await consent();
+    await leave();
+    expect(
+      await db
+        .selectFrom("app.object_owners")
+        .select("user_id")
+        .where("object_id", "=", objectId)
+        .execute(),
+    ).toEqual([{ user_id: coOwner.userId }]);
   });
 
   it("ends only a loan whose handover or return is unsettled, and only by its process", async () => {
