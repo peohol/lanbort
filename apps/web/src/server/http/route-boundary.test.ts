@@ -54,6 +54,11 @@ const nonUserRoutes: Record<
     reason:
       "decides proposed type changes at their deadline, authenticated with the cron secret",
   },
+  "GET /api/internal/case-queue-returns": {
+    access: "scheduler",
+    reason:
+      "tells handlers about cases returned to the queue, authenticated with the cron secret",
+  },
   "GET /api/internal/loan-handovers": {
     access: "scheduler",
     reason:
@@ -68,6 +73,11 @@ const nonUserRoutes: Record<
     access: "scheduler",
     reason:
       "publishes reviews whose window is over, authenticated with the cron secret",
+  },
+  "GET /api/internal/notification-deadlines": {
+    access: "scheduler",
+    reason:
+      "tells loan parties about handover and return days, authenticated with the cron secret",
   },
 };
 

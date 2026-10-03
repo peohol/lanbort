@@ -523,3 +523,16 @@ export async function related(
 
   return rows[0]?.related ?? false;
 }
+
+/** Everyone who may handle the open case now (`app.case_handlers`). */
+export async function caseHandlers(
+  db: Db,
+  caseId: string,
+  now: Date,
+): Promise<string[]> {
+  const { rows } = await sql<{ user_id: string }>`
+    select user_id from app.case_handlers(${caseId}, ${now}) as user_id
+  `.execute(db);
+
+  return rows.map((row) => row.user_id);
+}

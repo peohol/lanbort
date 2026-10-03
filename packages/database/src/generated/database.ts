@@ -62,6 +62,11 @@ export interface AppAuthIdentities {
   user_id: string;
 }
 
+export interface AppCaseActionNotices {
+  action_id: string;
+  noticed_at: Timestamp;
+}
+
 export interface AppCaseActions {
   actor_user_id: string | null;
   at: Timestamp;
@@ -490,6 +495,29 @@ export interface AppLoans {
   status_changed_at: Generated<Timestamp>;
 }
 
+export interface AppNotificationPreferences {
+  channel: string;
+  enabled: boolean;
+  level: string;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+}
+
+export interface AppNotifications {
+  created_at: Generated<Timestamp>;
+  detail: string | null;
+  id: Generated<string>;
+  kind: string;
+  level: string;
+  occurred_at: Timestamp;
+  position: Generated<Int8>;
+  read_at: Timestamp | null;
+  recipient_id: string;
+  source_key: string;
+  target_id: string;
+  target_type: string;
+}
+
 export interface AppObjectAvailabilityIntervals {
   id: Generated<string>;
   object_id: string;
@@ -658,6 +686,7 @@ export interface DB {
   "app.account_status_changes": AppAccountStatusChanges;
   "app.audit_events": AppAuditEvents;
   "app.auth_identities": AppAuthIdentities;
+  "app.case_action_notices": AppCaseActionNotices;
   "app.case_actions": AppCaseActions;
   "app.case_entries": AppCaseEntries;
   "app.case_participants": AppCaseParticipants;
@@ -694,6 +723,8 @@ export interface DB {
   "app.loan_review_scores": AppLoanReviewScores;
   "app.loan_reviews": AppLoanReviews;
   "app.loans": AppLoans;
+  "app.notification_preferences": AppNotificationPreferences;
+  "app.notifications": AppNotifications;
   "app.object_availability_intervals": AppObjectAvailabilityIntervals;
   "app.object_categories": AppObjectCategories;
   "app.object_co_owner_invitations": AppObjectCoOwnerInvitations;

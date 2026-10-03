@@ -1,13 +1,11 @@
--- Loan endings without review rights yet (WP-53 with WP-45 and WP-50).
+-- Loan endings without review dimensions (WP-53 with WP-50).
 --
 -- The review window opens for the endings `app.review_dimensions` names
--- (PS-TRUST-001). A loan can also end administratively: stopped by a
--- suspension before its handover (`stopped`, PS-ADM-003) or unresolved by no
--- party (`unresolved`, PS-LOAN-018). Neither has review dimensions yet, so
--- such an ending opens no window, and a window paused by a reopening stays
--- paused, instead of the ending being refused. Which dimensions an unresolved
--- loan can be reviewed on (PS-TRUST-001: undisputed ones, marked unresolved)
--- is added as dimension data, with the ending in the window's basis.
+-- (PS-TRUST-001). A suspension stops a reserved loan before its handover
+-- (`stopped`, PS-ADM-003), and no dimension names that ending yet. An
+-- ending no dimension names opens no window, and a window paused by a
+-- reopening stays paused, instead of the ending being refused. An ending is made reviewable by naming it in the
+-- dimensions and the window's basis (as `unresolved` is, WP-45).
 
 create or replace function app.follow_loan_review_period()
 returns trigger

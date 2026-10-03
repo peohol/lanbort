@@ -11,6 +11,7 @@ import {
   ConsumerRegistry,
   type DomainContext,
   type IdentityProviderAdmin,
+  notificationGenerator,
   objectImageFileCleanup,
 } from "@lanbort/domain";
 import { serverEnv } from "./env";
@@ -50,14 +51,16 @@ function identityAdmin(): IdentityProviderAdmin | undefined {
 }
 
 /**
- * Side effects run from the outbox (ADR-0004, ADR-0008). Notifications and
- * e-mail delivery arrive in Phase 4.
+ * Side effects run from the outbox (ADR-0004, ADR-0008): image file cleanup,
+ * the in-app notifications (WP-40) and removing a deleted account's sign-in
+ * identity (WP-53). E-mail delivery arrives with WP-41.
  */
 export const outboxConsumers = new ConsumerRegistry([
   objectImageFileCleanup({
     store: () => objectImageServices()?.store,
     db: () => runtime.domain().db,
   }),
+  notificationGenerator({ db: () => runtime.domain().db }),
   accountIdentityRemoval({
     identities: identityAdmin,
     domain: () => runtime.domain(),
