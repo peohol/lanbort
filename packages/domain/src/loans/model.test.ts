@@ -13,6 +13,7 @@ import {
   handoverRefusal,
   handoverVerdict,
   isOpen,
+  mediationOffered,
   noHandoverStatements,
   openStanding,
   presentedLoanStatus,
@@ -26,6 +27,7 @@ import {
   statusAfterReturn,
   samePeriod,
   toApiPeriod,
+  unresolvedEndable,
   validateDesiredPeriod,
 } from "./model";
 
@@ -695,5 +697,68 @@ describe("the return (PS-LOAN-014–017)", () => {
 
   it("gives a confirmation 30 seconds before it is made", () => {
     expect(returnEffectiveAt(at)).toEqual(new Date("2026-10-08T10:00:30Z"));
+  });
+});
+
+describe("an unsettled loan (PS-LOAN-018, vision 05)", () => {
+  const period = { from: "2026-10-10", until: "2026-10-13" };
+  const now = new Date("2026-10-20T12:00:00Z");
+
+  it("ends unresolved only while its handover or return is unsettled", () => {
+    const endable = (
+      status: Parameters<typeof unresolvedEndable>[0]["status"],
+      today: string,
+      handover: Parameters<typeof unresolvedEndable>[0]["handover"] = "none",
+    ) => unresolvedEndable({ status, period, handover }, today);
+
+    expect(endable("reserved", "2026-10-10")).toBe(false);
+    expect(endable("reserved", "2026-10-11")).toBe(true);
+    // A «not handed over» waiting for its answer has its own process.
+    expect(endable("reserved", "2026-10-11", "awaiting_answer")).toBe(false);
+    expect(endable("active", "2026-10-12")).toBe(false);
+    expect(endable("active", "2026-10-13")).toBe(true);
+    for (const status of [
+      "disputed",
+      "awaiting_return",
+      "late",
+      "return_disputed",
+    ] as const) {
+      expect(endable(status, "2026-10-11")).toBe(true);
+    }
+    expect(endable("ended", "2026-10-20")).toBe(false);
+  });
+
+  it("goes to mediation at once when disputed, and after seven days of an unclear return", () => {
+    const offered = (
+      status: Parameters<typeof mediationOffered>[0]["status"],
+      statusChangedAt: string,
+      today: string,
+    ) =>
+      mediationOffered(
+        { status, statusChangedAt: new Date(statusChangedAt), period },
+        now,
+        today,
+      );
+
+    expect(offered("disputed", "2026-10-20T11:00:00Z", "2026-10-20")).toBe(
+      true,
+    );
+    expect(
+      offered("return_disputed", "2026-10-20T11:00:00Z", "2026-10-20"),
+    ).toBe(true);
+    expect(
+      offered("awaiting_return", "2026-10-13T12:00:01Z", "2026-10-20"),
+    ).toBe(false);
+    expect(
+      offered("awaiting_return", "2026-10-13T12:00:00Z", "2026-10-20"),
+    ).toBe(true);
+    // Nobody said anything: counted from the agreed return day.
+    expect(offered("active", "2026-10-11T08:00:00Z", "2026-10-19")).toBe(false);
+    expect(offered("active", "2026-10-11T08:00:00Z", "2026-10-20")).toBe(true);
+    // The borrower says they still have it: not in question.
+    expect(offered("late", "2026-10-01T00:00:00Z", "2026-10-20")).toBe(false);
+    expect(offered("reserved", "2026-10-01T00:00:00Z", "2026-10-20")).toBe(
+      false,
+    );
   });
 });

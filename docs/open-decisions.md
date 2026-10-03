@@ -156,6 +156,13 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Hva skal til før ansvarlig utlåner regnes som reelt utilgjengelig for et lån, slik at en medeier kan overta ansvaret eller bekrefte fysisk mottak i den snevre rollen? Hvem fastslår det (frist uten svar, melding fra medeier eller låntaker, saksbehandling), og hvordan skilles det fra kortvarig fravær og fra død/varig utilgjengelighet (OD-0003)? Inntil dette er besluttet, registrerer ingen del av produktet utilgjengelighet. Overtakelse og snever mottaksbekreftelse er ferdig bygget og testet, men kan først tas i bruk når denne beslutningen gir dem en kilde. Frivillig overføring virker uavhengig av dette.
 - **Avhenger av:** Produktvurdering, eventuelt saksbehandlingen (WP-45) og OD-0003.
 
+### OD-0017 — Hvem avslutter et lån som administrativt uavklart, og når
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-LOAN-018, PS-LOAN-019, PS-COM-011, OD-0010
+- **Spørsmål:** Hvem kan avslutte et lån som administrativt uavklart (miljøets administrator som mekler, plattformforvalter, en frist uten avklaring, eller partene selv), og etter hvilken prosess? Visjonen sier at dette fastsettes senere, og at administratoren i et miljølån er mekler, ikke dommer. Inntil dette er besluttet, kan bare en egen prosess avslutte et lån slik, og ingenting i produktet kjører den. Selve avslutningen, sperren av objektet og eiers bekreftelse av kontroll før nye lån er ferdig bygget og testet. Gjelder det også direkte vennelån, som ikke har noen administrator?
+- **Avhenger av:** Produktvurdering, eventuelt OD-0010 for plattformforvalter.
+
 ### OD-0018 — Når en konto regnes som inaktiv
 - **Lag:** Produktspesifikasjon
 - **Status:** Åpen

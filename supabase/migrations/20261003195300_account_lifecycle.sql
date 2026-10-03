@@ -388,13 +388,13 @@ create trigger users_stop_new_activity
 alter table app.loans
   drop constraint loans_end_reason_check,
   add constraint loans_end_reason_check check (
-    end_reason in ('cancelled', 'not_completed', 'returned', 'stopped')
+    end_reason in ('cancelled', 'not_completed', 'returned', 'unresolved', 'stopped')
   ),
   add constraint loans_stopped_by_nobody check (
     end_reason is distinct from 'stopped' or ended_by_user_id is null
   );
 
--- As in WP-35, and a stopped loan, like a cancelled one, ended before
+-- As in WP-45, and a stopped loan, like a cancelled one, ended before
 -- anything was said about its handover or return.
 create or replace function app.ensure_loan_consistent()
 returns trigger
@@ -475,6 +475,7 @@ begin
             order by position desc
             limit 1
           )
+        when 'unresolved' then loan.ended_by_user_id is null and returned <> 'received'
       end
     end, false)
   then
