@@ -10,3 +10,4 @@ export * from "./publications";
 export * from "./loans";
 export * from "./reviews";
 export * from "./notifications";
+export * from "./home";

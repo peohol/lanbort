@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { postJson } from "./api-client";
+import { getJson, postJson } from "./api-client";
 
 function respond(body: string, status: number) {
   vi.stubGlobal(
@@ -42,6 +42,17 @@ describe("postJson", () => {
     expect(await postJson("/api/x", {})).toEqual({
       ok: false,
       code: "network",
+    });
+  });
+});
+
+describe("getJson", () => {
+  it("returns the API's data", async () => {
+    respond(JSON.stringify({ unreadCount: 2 }), 200);
+
+    expect(await getJson("/api/x")).toEqual({
+      ok: true,
+      data: { unreadCount: 2 },
     });
   });
 });

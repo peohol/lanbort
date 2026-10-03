@@ -4,6 +4,7 @@ import { type PolicyCase, policyMatrix } from "../authorization/policy-matrix";
 import type { DenialReason } from "../errors";
 import { testUserActor } from "../testing/actors";
 import {
+  listPendingLoanReviewsPolicy,
   publishDueLoanReviewsPolicy,
   readLoanReviewsPolicy,
   type ReviewPartiesResource,
@@ -81,5 +82,26 @@ export const reviewMatrices = [
       "forbidden",
     ),
     expectCase("a party of a loan", borrower, undefined, "forbidden"),
+  ]),
+  policyMatrix(listPendingLoanReviewsPolicy, [
+    expectCase("a signed-in user", borrower, undefined, "allow"),
+    expectCase(
+      "anonymous caller",
+      anonymousActor,
+      undefined,
+      "unauthenticated",
+    ),
+    expectCase(
+      "an account that has not completed registration",
+      pendingAccount,
+      undefined,
+      "registration_required",
+    ),
+    expectCase(
+      "system processes act on nobody's behalf",
+      systemActor(reviewPublicationProcess),
+      undefined,
+      "unauthenticated",
+    ),
   ]),
 ];

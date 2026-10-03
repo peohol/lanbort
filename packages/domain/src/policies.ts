@@ -1,6 +1,7 @@
 import type { Policy } from "./authorization/policy";
 import { accountPolicies } from "./account/policies";
 import { environmentPolicies } from "./environment/policies";
+import { homePolicies } from "./home/policies";
 import { loanRequestPolicies } from "./loans/policies";
 import { notificationPolicies } from "./notifications/policies";
 import { objectPolicies } from "./objects/policies";
@@ -24,5 +25,6 @@ export const allPolicies: readonly Policy<never, never>[] = [
   ...reviewPolicies,
   ...socialPolicies,
   ...notificationPolicies,
+  ...homePolicies,
   processOutboxPolicy,
 ];

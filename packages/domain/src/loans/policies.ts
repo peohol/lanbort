@@ -516,6 +516,15 @@ export const listCoOwnerLoansPolicy = definePolicy<unknown, void>({
   actor: [requireActiveAccount],
 });
 
+/**
+ * The caller's own loans. Like reading one, it needs only the standing that
+ * keeps what an existing loan needs (PS-LOAN-021).
+ */
+export const listLoansPolicy = definePolicy<unknown, void>({
+  action: "loan.list",
+  actor: [requireLoanStanding],
+});
+
 export const loanRequestPolicies = [
   createLoanRequestPolicy,
   previewLoanRequestPolicy,
@@ -543,4 +552,5 @@ export const loanRequestPolicies = [
   declineResponsibilityTransferPolicy,
   withdrawResponsibilityTransferPolicy,
   listCoOwnerLoansPolicy,
+  listLoansPolicy,
 ];

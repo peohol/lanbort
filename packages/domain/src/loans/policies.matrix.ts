@@ -26,6 +26,7 @@ import {
   type LoanTakeoverResource,
   listCoOwnerLoansPolicy,
   listLoanRequestsPolicy,
+  listLoansPolicy,
   offerResponsibilityPolicy,
   previewLoanRequestPolicy,
   proposeLoanAmendmentPolicy,
@@ -430,6 +431,10 @@ export const loanMatrices = [
   })),
   policyMatrix(listCoOwnerLoansPolicy, [
     expectCase("a signed-in user", coOwner, undefined, "allow"),
+    ...callerCases(undefined),
+  ]),
+  policyMatrix(listLoansPolicy, [
+    expectCase("a signed-in user", borrower, undefined, "allow"),
     ...callerCases(undefined),
   ]),
 ];

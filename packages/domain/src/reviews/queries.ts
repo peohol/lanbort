@@ -3,11 +3,14 @@ import {
   type LoanReview,
   type LoanReviews,
   loanReviewsQuerySchema,
+  type PendingLoanReviewList,
 } from "@lanbort/contracts";
+import { sql } from "kysely";
+import { z } from "zod";
 import type { Loaded } from "../commands/command";
 import { defineQuery } from "../commands/query";
 import { findLoan } from "../loans/reservations";
-import { inSnapshot } from "../objects/state";
+import { actingUserId, inSnapshot } from "../objects/state";
 import { reviewParties } from "./commands";
 import {
   otherSide,
@@ -17,6 +20,7 @@ import {
   windowOver,
 } from "./model";
 import {
+  listPendingLoanReviewsPolicy,
   type ReviewPartiesResource,
   readLoanReviewsPolicy,
   reviewRoleOf,
@@ -196,4 +200,73 @@ export const readLoanReviews = defineQuery({
         : null,
     };
   },
+});
+
+/**
+ * The reviews the caller may still write (PS-TRUST-002–003): the windows
+ * of their ended loans that are open as of now, where they have not
+ * reviewed the other party. Soonest deadline first.
+ */
+export const listPendingLoanReviews = defineQuery({
+  name: "loan_review.list_pending",
+  input: z.strictObject({}),
+  policy: listPendingLoanReviewsPolicy,
+  load: async ({ db, actor, now }) => {
+    const userId = actingUserId(actor);
+    const rows = await db
+      .selectFrom("app.loan_review_periods as window")
+      .select([
+        "window.loan_id",
+        "window.borrower_user_id",
+        "window.due_at",
+        (eb) =>
+          eb
+            .selectFrom("app.loan_agreements as agreement")
+            .select("agreement.title")
+            .whereRef("agreement.loan_id", "=", "window.loan_id")
+            .orderBy("agreement.version", "desc")
+            .limit(1)
+            .as("title"),
+      ])
+      .where("window.status", "=", "open")
+      .where("window.due_at", ">", now)
+      .where((eb) =>
+        eb.or([
+          eb("window.borrower_user_id", "=", userId),
+          eb("window.lender_user_id", "=", userId),
+        ]),
+      )
+      .where(({ not, exists, selectFrom }) =>
+        not(
+          exists(
+            selectFrom("app.loan_reviews as review")
+              .select(sql`1`.as("one"))
+              .whereRef("review.loan_id", "=", "window.loan_id")
+              .where("review.author_user_id", "=", userId)
+              .where("review.status", "<>", "lapsed"),
+          ),
+        ),
+      )
+      .orderBy("window.due_at")
+      .orderBy("window.loan_id")
+      .execute();
+
+    return {
+      resource: rows.map((row) => ({
+        loanId: row.loan_id,
+        role: (row.borrower_user_id === userId
+          ? "borrower"
+          : "lender") as LoanRequestRole,
+        title: row.title ?? "",
+        dueAt: row.due_at,
+      })),
+      context: undefined,
+    };
+  },
+  present: ({ resource }): PendingLoanReviewList => ({
+    reviews: resource.map((review) => ({
+      ...review,
+      dueAt: review.dueAt?.toISOString() ?? null,
+    })),
+  }),
 });

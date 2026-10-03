@@ -148,6 +148,22 @@ export const loanReviewsSchema = z.strictObject({
   received: loanReviewSchema.nullable(),
 });
 
+/**
+ * A review the caller may still write: the loan's window is open and they
+ * have not reviewed the other party yet (PS-TRUST-002–003). The title is
+ * the object's in the loan's agreement.
+ */
+export const pendingLoanReviewSchema = z.strictObject({
+  loanId: loanIdSchema,
+  role: loanRequestRoleSchema,
+  title: z.string(),
+  dueAt: z.iso.datetime().nullable(),
+});
+
+export const pendingLoanReviewListSchema = z.strictObject({
+  reviews: z.array(pendingLoanReviewSchema),
+});
+
 export type SubmitLoanReview = z.infer<typeof submitLoanReviewSchema>;
 export type LoanReviewStatus = z.infer<typeof loanReviewStatusSchema>;
 export type LoanReviewResult = z.infer<typeof loanReviewResultSchema>;
@@ -158,3 +174,5 @@ export type LoanReviewResponseResult = z.infer<
 export type LoanReviewWindow = z.infer<typeof loanReviewWindowSchema>;
 export type LoanReview = z.infer<typeof loanReviewSchema>;
 export type LoanReviews = z.infer<typeof loanReviewsSchema>;
+export type PendingLoanReview = z.infer<typeof pendingLoanReviewSchema>;
+export type PendingLoanReviewList = z.infer<typeof pendingLoanReviewListSchema>;

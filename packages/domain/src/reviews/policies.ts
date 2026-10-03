@@ -69,6 +69,12 @@ export const respondToLoanReviewPolicy = reviewPartyPolicy(
   "loan_review.respond",
 );
 
+/** The reviews the caller may still write, as a party of each loan. */
+export const listPendingLoanReviewsPolicy = definePolicy<unknown, void>({
+  action: "loan_review.list_pending",
+  actor: [requireLoanStanding],
+});
+
 /** The scheduled job that publishes reviews when their window is over. */
 export const reviewPublicationProcess = "loan_review.publications";
 
@@ -82,4 +88,5 @@ export const reviewPolicies = [
   submitLoanReviewPolicy,
   respondToLoanReviewPolicy,
   publishDueLoanReviewsPolicy,
+  listPendingLoanReviewsPolicy,
 ];

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { SignOutButton } from "@/components/sign-out-button";
-import { getPageAccount } from "@/server/session";
+import { readHome } from "@lanbort/domain";
+import { HomeView } from "@/components/home-view";
+import { getPageAccount, pageQuery } from "@/server/session";
 
 export default async function HomePage() {
   const account = await getPageAccount();
@@ -22,11 +23,7 @@ export default async function HomePage() {
     );
   }
 
-  return (
-    <main>
-      <h1>Hei, {account.realName}</h1>
-      <p>Du er logget inn. Flere funksjoner kommer i neste faser.</p>
-      <SignOutButton />
-    </main>
-  );
+  const home = await pageQuery(readHome, {});
+
+  return <HomeView realName={account.realName ?? ""} home={home!} />;
 }

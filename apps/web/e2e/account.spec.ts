@@ -51,6 +51,8 @@ test("a new user registers with e-mail code, name and 18+ and can sign out", asy
     "Hei, Kari Nordmann",
   );
 
+  // Signing out is in the account context, behind the user's own avatar.
+  await page.getByRole("link", { name: /^Konto og innstillinger/ }).click();
   await page.getByRole("button", { name: "Logg ut" }).click();
   await expect(
     page.getByRole("link", { name: "Logg inn eller opprett konto" }),
