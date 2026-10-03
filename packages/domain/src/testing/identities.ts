@@ -7,9 +7,13 @@ import {
 } from "../account/identity";
 import { type DomainContext, executeCommand } from "../commands/command";
 
-/** A freshly verified provider identity with a unique e-mail address. */
+/**
+ * A provider identity with a unique e-mail address, verified `at` (now by
+ * default).
+ */
 export function testIdentity(
   overrides: Partial<AuthenticatedIdentity> = {},
+  at = new Date(),
 ): AuthenticatedIdentity {
   return {
     provider: "supabase",
@@ -19,16 +23,19 @@ export function testIdentity(
     authentication: {
       sessionId: randomUUID(),
       assurance: "aal1",
-      methods: [{ method: "otp", at: new Date() }],
+      methods: [{ method: "otp", at }],
     },
     ...overrides,
   };
 }
 
-/** Signs a new identity in and completes its registration. */
+/**
+ * Signs a new identity in, verified at the domain's clock, and completes its
+ * registration.
+ */
 export async function registerTestUser(
   domain: DomainContext,
-  identity = testIdentity(),
+  identity = testIdentity({}, domain.clock?.()),
 ): Promise<{ identity: AuthenticatedIdentity; actor: UserActor }> {
   const pending = await resolveUserActor(domain, identity);
 

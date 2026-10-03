@@ -38,9 +38,7 @@ afterAll(() => db.destroy());
 // job, which makes every confirmation that is due, so this file's clock
 // starts a year ahead: what waits here waits until these tests say. This
 // file runs no global job itself, so it never reaches into theirs.
-const kit = loanTestKit(db, {
-  startAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-});
+const kit = loanTestKit(db, { startInDays: 365 });
 const {
   run,
   tick,
