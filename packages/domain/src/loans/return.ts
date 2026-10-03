@@ -206,10 +206,11 @@ async function makeStatement(
 }
 
 /**
- * Makes a waiting confirmation now: when its buffer is over, or early when
- * its party asks for it. It is made on the agreement and status the loan
- * has now; if it can no longer be (the database lapses those as they move
- * on), it lapses.
+ * Makes a waiting confirmation: when its buffer is over, as of the moment
+ * it took effect, however late the job or the next command comes by; or
+ * now, when its party asks for it early. It is made on the agreement and
+ * status the loan has then; if it can no longer be (the database lapses
+ * those as they move on), it lapses.
  */
 async function makePending(
   db: Db,
@@ -226,12 +227,19 @@ async function makePending(
     return loan;
   }
 
+  // Due confirmations ran first (settleDueReturns), so nothing that
+  // happened to the loan since can come before this moment.
+  const at = pending.effectiveAt < now ? pending.effectiveAt : now;
   const statements = await loadReturnStatements(
     db,
     loan.id,
     loan.agreement.version,
   );
-  await resolvePendingReturn(db, { id: pending.id, status: "applied", now });
+  await resolvePendingReturn(db, {
+    id: pending.id,
+    status: "applied",
+    now: at,
+  });
   await makeStatement(
     db,
     {
@@ -241,7 +249,7 @@ async function makePending(
       role: pending.role,
       outcome: pending.outcome,
       confirmationId: pending.id,
-      now,
+      now: at,
     },
     events,
   );
