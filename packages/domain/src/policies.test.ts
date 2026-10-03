@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { accountMatrices } from "./account/policies.matrix";
 import { environmentMatrices } from "./environment/policies.matrix";
+import { loanMatrices } from "./loans/policies.matrix";
 import {
   matrixGaps,
   outcomeOf,
@@ -24,6 +25,7 @@ const matrices: readonly PolicyMatrix<never, never>[] = [
   ...platformMatrices,
   ...objectMatrices,
   ...publicationMatrices,
+  ...loanMatrices,
   ...socialMatrices,
 ] as never;
 

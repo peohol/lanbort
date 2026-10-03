@@ -244,6 +244,36 @@ export interface AppIdempotencyRecords {
   scope: string;
 }
 
+export interface AppLoanRequestResponsibilityAcceptances {
+  accepted_at: Generated<Timestamp>;
+  declaration_version: number;
+  origin: Generated<string>;
+  request_id: string;
+  role: string;
+  user_id: string;
+}
+
+export interface AppLoanRequests {
+  borrower_user_id: string;
+  created_at: Generated<Timestamp>;
+  desired_days: number | null;
+  desired_end: Timestamp | null;
+  desired_start: Timestamp | null;
+  end_reason: string | null;
+  ended_at: Timestamp | null;
+  ended_by_user_id: string | null;
+  environment_id: string | null;
+  id: Generated<string>;
+  message: string;
+  object_id: string;
+  origin: string;
+  position: Int8 | null;
+  publication_id: string | null;
+  status: Generated<string>;
+  status_changed_at: Generated<Timestamp>;
+  terms_version: number;
+}
+
 export interface AppObjectAvailabilityIntervals {
   id: Generated<string>;
   object_id: string;
@@ -417,6 +447,8 @@ export interface DB {
   "app.environments": AppEnvironments;
   "app.friendships": AppFriendships;
   "app.idempotency_records": AppIdempotencyRecords;
+  "app.loan_request_responsibility_acceptances": AppLoanRequestResponsibilityAcceptances;
+  "app.loan_requests": AppLoanRequests;
   "app.object_availability_intervals": AppObjectAvailabilityIntervals;
   "app.object_categories": AppObjectCategories;
   "app.object_co_owner_invitations": AppObjectCoOwnerInvitations;

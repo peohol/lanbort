@@ -459,6 +459,33 @@ export const listEnvironmentObjects = defineQuery({
   }),
 });
 
+/**
+ * Whether the viewer finds the object in the environment now, by the same
+ * rule as the list (PS-OBJ-006, PS-ENV-009). Phase 3 uses it before a loan
+ * request is made through the environment.
+ */
+export async function findsObject(
+  db: Db,
+  access: EnvironmentAccess,
+  objectId: string,
+  viewerId: string,
+  now: Date,
+): Promise<boolean> {
+  return (
+    discovers(access) &&
+    (await discoverablePublications(
+      db,
+      access.environment.id,
+      viewerId,
+      await concealedFrom(db, access),
+      now,
+    )
+      .select("publication.id")
+      .where("publication.object_id", "=", objectId)
+      .executeTakeFirst()) !== undefined
+  );
+}
+
 /** Authorizes reading an image through a publication. */
 const publishedImageFile = defineQuery({
   name: "environment_object.read_image",
@@ -487,18 +514,13 @@ const publishedImageFile = defineQuery({
       }
 
       const concealed = await concealedFrom(tx, access);
-      const discoverable =
-        discovers(access) &&
-        (await discoverablePublications(
-          tx,
-          access.environment.id,
-          viewerId,
-          concealed,
-          now,
-        )
-          .select("publication.id")
-          .where("publication.object_id", "=", input.objectId)
-          .executeTakeFirst()) !== undefined;
+      const discoverable = await findsObject(
+        tx,
+        access,
+        input.objectId,
+        viewerId,
+        now,
+      );
       const underReview =
         (await tx
           .selectFrom("app.environment_publications")

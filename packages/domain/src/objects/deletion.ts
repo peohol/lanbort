@@ -26,6 +26,7 @@ const objectReference = z.strictObject({ objectId: objectIdSchema });
 
 /** Tables holding the object's own rows, children first. */
 const objectRowTables = [
+  "app.loan_requests",
   "app.environment_publications",
   "app.object_deletion_consents",
   "app.object_co_owner_invitations",

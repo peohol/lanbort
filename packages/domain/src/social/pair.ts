@@ -179,3 +179,55 @@ export async function socialRelationBetween(
       pair !== null && (pair.blockedByActor || pair.blockedByOther),
   };
 }
+
+/**
+ * Takes the social pair lock between `userId` and each of `others`, in one
+ * global order so two commands never wait on each other's locks. A block or
+ * an ended friendship between any of the pairs is then either already
+ * visible or waits for this transaction, whose new rows its triggers will
+ * see.
+ */
+export async function lockPairsWith(
+  tx: Kysely<Database>,
+  userId: string,
+  others: readonly string[],
+): Promise<void> {
+  const pairKey = (other: string) => orderedPair(userId, other).join(":");
+  const ordered = [...new Set(others)]
+    .filter((other) => other !== userId)
+    .sort((a, b) => (pairKey(a) < pairKey(b) ? -1 : 1));
+
+  for (const other of ordered) {
+    await lockPair(tx, userId, other);
+  }
+}
+
+/** A block in either direction between `userId` and any of `others`. */
+export async function blockedWithAny(
+  db: Kysely<Database>,
+  userId: string,
+  others: readonly string[],
+): Promise<boolean> {
+  for (const other of others) {
+    if ((await socialRelationBetween(db, userId, other)).blockedEitherWay) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/** An active friendship between `userId` and any of `others`. */
+export async function friendsWithAny(
+  db: Kysely<Database>,
+  userId: string,
+  others: readonly string[],
+): Promise<boolean> {
+  for (const other of others) {
+    if ((await socialRelationBetween(db, userId, other)).friends) {
+      return true;
+    }
+  }
+
+  return false;
+}
