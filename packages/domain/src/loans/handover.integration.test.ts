@@ -103,7 +103,9 @@ const loanEvents = async (loanId: string) =>
 /** A reserved loan for days 1–3 whose handover day is over. */
 async function pastHandover() {
   const loan = await reservedLoan(1, 3);
-  kit.advance(2 * oneDay);
+  // An hour more, so a day that is 25 hours long (the end of summer time)
+  // never leaves the clock on the handover day.
+  kit.advance(2 * oneDay + oneHour);
   return loan;
 }
 
