@@ -4,11 +4,13 @@ import { type PolicyCase, policyMatrix } from "../authorization/policy-matrix";
 import type { DenialReason } from "../errors";
 import { testUserActor } from "../testing/actors";
 import {
+  deliverNotificationEmailsPolicy,
   listNotificationsPolicy,
   markAllNotificationsReadPolicy,
   markNotificationsReadPolicy,
   type NotificationsResource,
   notificationDeadlineProcess,
+  notificationEmailProcess,
   notifyLoanDeadlinesPolicy,
   readNotificationPreferencesPolicy,
   setNotificationPreferencePolicy,
@@ -104,6 +106,22 @@ export const notificationMatrices = [
     expectCase(
       "another system process",
       systemActor("loan.returns"),
+      undefined,
+      "forbidden",
+    ),
+    expectCase("a signed-in user", me, undefined, "forbidden"),
+    expectCase("anonymous caller", anonymousActor, undefined, "forbidden"),
+  ]),
+  policyMatrix(deliverNotificationEmailsPolicy, [
+    expectCase(
+      "the e-mail job",
+      systemActor(notificationEmailProcess),
+      undefined,
+      "allow",
+    ),
+    expectCase(
+      "the deadline job",
+      systemActor(notificationDeadlineProcess),
       undefined,
       "forbidden",
     ),

@@ -12,6 +12,14 @@ const serverEnvSchema = z.object({
   SUPABASE_SECRET_KEY: z.string().min(1).optional(),
   /** Shared secret for scheduled jobs (Vercel Cron sends it as a bearer token). */
   CRON_SECRET: z.string().min(32).optional(),
+  /**
+   * Notification e-mail (WP-41): the Resend API key (server only), the sender
+   * on a verified domain and the app's public address for links. Without all
+   * three, e-mails wait in the queue and the e-mail job answers `unavailable`.
+   */
+  RESEND_API_KEY: z.string().min(1).optional(),
+  NOTIFICATION_EMAIL_FROM: z.string().min(3).optional(),
+  APP_URL: z.url().optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

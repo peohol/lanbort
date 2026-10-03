@@ -17,7 +17,7 @@ export const notificationLevelSchema = z.enum(notificationLevels);
 
 /**
  * Where a user can be told. In-app is the notification centre; e-mail is the
- * pilot's external reserve channel (WP-41). Web push is not decided (OD-0004).
+ * pilot's external reserve channel. Web push is not decided (OD-0004).
  */
 export const notificationChannels = ["in_app", "email"] as const;
 export const notificationChannelSchema = z.enum(notificationChannels);
@@ -149,13 +149,16 @@ interface ChannelRule {
  * PS-COM-003 and the pilot's channel standard: required and action
  * notifications are always in the app, information can be turned off
  * entirely, and the external channel can be turned off for action and
- * information. E-mail is the reserve channel for security and time-critical
- * loan events only, so it starts off for the other two levels. How e-mail
- * applies to required notifications is the external delivery's (WP-41);
- * final defaults per channel are OD-0004.
+ * information. Verified e-mail is the reserve channel for the required
+ * level, the security and account events and the important events in
+ * approved loans, so it is always on there, and it starts off for the other
+ * two levels. Final defaults per channel are OD-0004.
  */
 export const notificationChannelRules = {
-  required: { in_app: { configurable: false, default: true } },
+  required: {
+    in_app: { configurable: false, default: true },
+    email: { configurable: false, default: true },
+  },
   action: {
     in_app: { configurable: false, default: true },
     email: { configurable: true, default: false },

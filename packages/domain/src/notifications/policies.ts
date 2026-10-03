@@ -65,6 +65,14 @@ export const notifyLoanDeadlinesPolicy = definePolicy({
   actor: [requireSystemProcess(notificationDeadlineProcess)],
 });
 
+/** Name of the scheduled job that sends notification e-mails (WP-41). */
+export const notificationEmailProcess = "notifications.email";
+
+export const deliverNotificationEmailsPolicy = definePolicy({
+  action: "notification.deliver_emails",
+  actor: [requireSystemProcess(notificationEmailProcess)],
+});
+
 export const notificationPolicies = [
   listNotificationsPolicy,
   readNotificationPreferencesPolicy,
@@ -72,4 +80,5 @@ export const notificationPolicies = [
   markNotificationsReadPolicy,
   markAllNotificationsReadPolicy,
   notifyLoanDeadlinesPolicy,
+  deliverNotificationEmailsPolicy,
 ];

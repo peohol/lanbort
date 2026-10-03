@@ -74,6 +74,11 @@ const nonUserRoutes: Record<
     reason:
       "tells loan parties about handover and return days, authenticated with the cron secret",
   },
+  "GET /api/internal/notification-emails": {
+    access: "scheduler",
+    reason:
+      "sends queued notification e-mails, authenticated with the cron secret",
+  },
 };
 
 const httpMethods = [

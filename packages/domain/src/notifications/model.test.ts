@@ -27,9 +27,9 @@ describe("notification levels (PS-COM-003)", () => {
 });
 
 describe("preferences (PS-COM-002–003)", () => {
-  it("start from the pilot standard: everything in the app, no e-mail for action or information", () => {
+  it("start from the pilot standard: everything in the app, e-mail only for required", () => {
     expect(effectivePreferences([])).toEqual({
-      required: { in_app: true },
+      required: { in_app: true, email: true },
       action: { in_app: true, email: false },
       information: { in_app: true, email: false },
     });
@@ -41,11 +41,12 @@ describe("preferences (PS-COM-002–003)", () => {
       { level: "action", channel: "email", enabled: true },
       // Not configurable: ignored even if it were ever stored.
       { level: "required", channel: "in_app", enabled: false },
+      { level: "required", channel: "email", enabled: false },
       { level: "action", channel: "in_app", enabled: false },
     ]);
 
     expect(choices).toEqual({
-      required: { in_app: true },
+      required: { in_app: true, email: true },
       action: { in_app: true, email: true },
       information: { in_app: false, email: false },
     });

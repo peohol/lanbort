@@ -80,6 +80,19 @@ export function shownInApp(
   );
 }
 
+/**
+ * Whether a notification of `level` also goes out by e-mail, the pilot's
+ * external reserve channel: always for required notifications, and for the
+ * other levels only when the user chose it. Only notifications that are in
+ * the app go out, since the e-mail leads back to them.
+ */
+export function sendsEmail(
+  level: NotificationLevel,
+  preferences: EffectivePreferences,
+): boolean {
+  return shownInApp(level, preferences) && preferences[level].email === true;
+}
+
 export function presentPreferences(
   preferences: EffectivePreferences,
 ): NotificationPreferences {
