@@ -371,6 +371,46 @@ export interface AppLoanReturnReports {
   reporter_role: string;
 }
 
+export interface AppLoanReviewPeriods {
+  basis: string;
+  borrower_user_id: string;
+  closed_as: string | null;
+  closed_at: Timestamp | null;
+  due_at: Timestamp | null;
+  lender_user_id: string;
+  loan_id: string;
+  opened_at: Timestamp;
+  status: Generated<string>;
+}
+
+export interface AppLoanReviewResponses {
+  author_user_id: string;
+  body: string;
+  responded_at: Timestamp;
+  review_id: string;
+}
+
+export interface AppLoanReviews {
+  author_role: string;
+  author_user_id: string;
+  body: string | null;
+  id: Generated<string>;
+  loan_id: string;
+  published_at: Timestamp | null;
+  status: Generated<string>;
+  subject_user_id: string;
+  submitted_at: Timestamp;
+  updated_at: Timestamp;
+  version: Generated<number>;
+}
+
+export interface AppLoanReviewScores {
+  dimension: string;
+  review_id: string;
+  reviewer_role: string;
+  score: number;
+}
+
 export interface AppLoans {
   approved_at: Generated<Timestamp>;
   borrower_user_id: string;
@@ -518,6 +558,14 @@ export interface AppProfiles {
   version: Generated<number>;
 }
 
+export interface AppReviewDimensions {
+  code: string;
+  endings: string[];
+  position: number;
+  rests_on_return: boolean;
+  reviewer_role: string;
+}
+
 export interface AppUserBlocks {
   blocked_id: string;
   blocker_id: string;
@@ -569,6 +617,10 @@ export interface DB {
   "app.loan_reservations": AppLoanReservations;
   "app.loan_return_confirmations": AppLoanReturnConfirmations;
   "app.loan_return_reports": AppLoanReturnReports;
+  "app.loan_review_periods": AppLoanReviewPeriods;
+  "app.loan_review_responses": AppLoanReviewResponses;
+  "app.loan_review_scores": AppLoanReviewScores;
+  "app.loan_reviews": AppLoanReviews;
   "app.loans": AppLoans;
   "app.object_availability_intervals": AppObjectAvailabilityIntervals;
   "app.object_categories": AppObjectCategories;
@@ -583,6 +635,7 @@ export interface DB {
   "app.outbox_messages": AppOutboxMessages;
   "app.platform_role_grants": AppPlatformRoleGrants;
   "app.profiles": AppProfiles;
+  "app.review_dimensions": AppReviewDimensions;
   "app.user_blocks": AppUserBlocks;
   "app.users": AppUsers;
   "app.verified_contacts": AppVerifiedContacts;
