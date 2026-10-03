@@ -259,6 +259,19 @@ export interface AppLoanAgreements {
   version: number;
 }
 
+export interface AppLoanAmendments {
+  base_version: number;
+  id: Generated<string>;
+  loan_id: string;
+  period: string;
+  proposed_at: Generated<Timestamp>;
+  proposed_by_user_id: string;
+  proposer_role: string;
+  resolved_at: Timestamp | null;
+  resolved_by_user_id: string | null;
+  status: Generated<string>;
+}
+
 export interface AppLoanRequestResponsibilityAcceptances {
   accepted_at: Generated<Timestamp>;
   declaration_version: number;
@@ -299,8 +312,11 @@ export interface AppLoanReservations {
 export interface AppLoans {
   approved_at: Generated<Timestamp>;
   borrower_user_id: string;
+  end_reason: string | null;
+  ended_at: Timestamp | null;
+  ended_by_user_id: string | null;
   id: Generated<string>;
-  object_id: string;
+  object_id: string | null;
   owner_ids_at_approval: string[];
   request_id: string;
   responsible_lender_id: string;
@@ -482,6 +498,7 @@ export interface DB {
   "app.friendships": AppFriendships;
   "app.idempotency_records": AppIdempotencyRecords;
   "app.loan_agreements": AppLoanAgreements;
+  "app.loan_amendments": AppLoanAmendments;
   "app.loan_request_responsibility_acceptances": AppLoanRequestResponsibilityAcceptances;
   "app.loan_requests": AppLoanRequests;
   "app.loan_reservations": AppLoanReservations;

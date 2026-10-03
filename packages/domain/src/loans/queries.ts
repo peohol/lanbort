@@ -20,6 +20,7 @@ import { findEnvironment, loadEnvironmentAccess } from "../environment/store";
 import { calendarDate, toApiInterval } from "../objects/availability";
 import { inSnapshot, loadObjectState } from "../objects/state";
 import { assessOrigin } from "./access";
+import { findOpenAmendment } from "./amendment-store";
 import {
   isOpen,
   type LoanRequestRecord,
@@ -29,6 +30,8 @@ import {
 } from "./model";
 import {
   listLoanRequestsPolicy,
+  loanRoleOf,
+  partyRole,
   previewLoanRequestPolicy,
   readLoanPolicy,
   readLoanRequestPolicy,
@@ -345,40 +348,65 @@ export const listLoanRequests = defineQuery({
 
 /**
  * A loan and what was agreed, for its borrower and its responsible lender
- * (PS-LOAN-006/008). The agreement is the snapshot taken at approval, never
- * the object as it is now.
+ * (PS-LOAN-006/008), also after it ended. The agreement is its current
+ * version: the snapshot taken at approval, with the changes both parties
+ * agreed since (PS-LOAN-010), never the object as it is now. An open
+ * proposal is shown to both, with the side that made it, so each can see
+ * who has to answer (UX-JRN-005).
  */
 export const readLoan = defineQuery({
   name: "loan.read",
   input: loanReadQuerySchema,
   policy: readLoanPolicy,
-  load: async ({ db, input }) => {
-    const loan = await findLoan(db, { loanId: input.loanId });
+  load: ({ db, input }) =>
+    inSnapshot(db, async (tx) => {
+      const loan = await findLoan(tx, { loanId: input.loanId });
 
-    return loan ? { resource: loan, context: undefined } : null;
+      if (!loan) {
+        return null;
+      }
+
+      const amendment = await findOpenAmendment(tx, loan.id);
+
+      return { resource: { ...loan, amendment }, context: undefined };
+    }),
+  present: ({ actor, resource }): Loan => {
+    const ending = resource.ending;
+
+    return {
+      id: resource.id,
+      requestId: resource.requestId,
+      objectId: resource.objectId,
+      role: loanRoleOf(actor, resource) ?? "lender",
+      borrowerUserId: resource.borrowerUserId,
+      responsibleLenderId: resource.responsibleLenderId,
+      status: resource.status,
+      ending: ending && {
+        reason: ending.reason,
+        endedBy: ending.endedByUserId
+          ? partyRole(resource, ending.endedByUserId)
+          : null,
+        endedAt: ending.endedAt.toISOString(),
+      },
+      period: toApiPeriod(resource.agreement.period),
+      agreement: {
+        version: resource.agreement.version,
+        agreedAt: resource.agreement.agreedAt.toISOString(),
+        objectVersion: resource.agreement.objectVersion,
+        title: resource.agreement.title,
+        categoryId: resource.agreement.categoryId,
+        description: resource.agreement.description,
+        loanTerms: resource.agreement.loanTerms,
+        responsibilityDeclarationVersion:
+          resource.agreement.responsibilityDeclarationVersion,
+      },
+      amendment: resource.amendment && {
+        id: resource.amendment.id,
+        period: toApiPeriod(resource.amendment.period),
+        proposedBy: resource.amendment.proposerRole,
+        proposedAt: resource.amendment.proposedAt.toISOString(),
+      },
+      approvedAt: resource.approvedAt.toISOString(),
+    };
   },
-  present: ({ actor, resource }): Loan => ({
-    id: resource.id,
-    requestId: resource.requestId,
-    objectId: resource.objectId,
-    role:
-      actor.kind === "user" && actor.userId === resource.borrowerUserId
-        ? "borrower"
-        : "lender",
-    borrowerUserId: resource.borrowerUserId,
-    responsibleLenderId: resource.responsibleLenderId,
-    status: resource.status,
-    period: toApiPeriod(resource.agreement.period),
-    agreement: {
-      version: resource.agreement.version,
-      objectVersion: resource.agreement.objectVersion,
-      title: resource.agreement.title,
-      categoryId: resource.agreement.categoryId,
-      description: resource.agreement.description,
-      loanTerms: resource.agreement.loanTerms,
-      responsibilityDeclarationVersion:
-        resource.agreement.responsibilityDeclarationVersion,
-    },
-    approvedAt: resource.approvedAt.toISOString(),
-  }),
 });

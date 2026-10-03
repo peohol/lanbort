@@ -156,20 +156,107 @@ export interface LoanResource {
   readonly responsibleLenderId: string;
 }
 
+/** The user's side of the loan, or null if they are not a party. */
+export function partyRole(
+  resource: LoanResource,
+  userId: string,
+): LoanRequestRole | null {
+  if (userId === resource.borrowerUserId) {
+    return "borrower";
+  }
+
+  return userId === resource.responsibleLenderId ? "lender" : null;
+}
+
+export function loanRoleOf(
+  actor: Actor,
+  resource: LoanResource,
+): LoanRequestRole | null {
+  return actor.kind === "user" ? partyRole(resource, actor.userId) : null;
+}
+
+/**
+ * Only the parties see the loan or act on it; to everyone else, other
+ * co-owners included, it does not exist. A party is allowed `sides`: the
+ * other side learns that it may not (`forbidden`).
+ */
+function asLoanParty<R extends LoanResource>(
+  sides: (resource: R) => readonly LoanRequestRole[],
+): ResourceRule<R, void> {
+  return ({ actor, resource }) => {
+    const role = loanRoleOf(actor, resource);
+
+    if (role === null) {
+      return deny("not_found");
+    }
+
+    return sides(resource).includes(role) ? allow : deny("forbidden");
+  };
+}
+
+const bothSides = () => ["borrower", "lender"] as const;
+
+function loanPartyPolicy<R extends LoanResource>(
+  action: string,
+  sides: (resource: R) => readonly LoanRequestRole[],
+) {
+  return definePolicy<R, void>({
+    action,
+    actor: [requireActiveAccount],
+    resource: [asLoanParty(sides)],
+  });
+}
+
 /** The loan and its agreement, for its parties only; others do not see it. */
-export const readLoanPolicy = definePolicy<LoanResource, void>({
-  action: "loan.read",
-  actor: [requireActiveAccount],
-  resource: [
-    ({ actor, resource }) =>
-      actor.kind === "user" &&
-      [resource.borrowerUserId, resource.responsibleLenderId].includes(
-        actor.userId,
-      )
-        ? allow
-        : deny("not_found"),
-  ],
-});
+export const readLoanPolicy = loanPartyPolicy<LoanResource>(
+  "loan.read",
+  bothSides,
+);
+
+/**
+ * PS-LOAN-011: either party cancels on their own. Owning the object is not
+ * enough: other co-owners are not parties of the loan.
+ */
+export const cancelLoanPolicy = loanPartyPolicy<LoanResource>(
+  "loan.cancel",
+  bothSides,
+);
+
+/** PS-LOAN-010: either party proposes a change. */
+export const proposeLoanAmendmentPolicy = loanPartyPolicy<LoanResource>(
+  "loan.propose_amendment",
+  bothSides,
+);
+
+/** A proposal on a loan, with the side that made it. */
+export interface LoanAmendmentResource extends LoanResource {
+  readonly proposerRole: LoanRequestRole;
+}
+
+const otherSide = ({ proposerRole }: LoanAmendmentResource) =>
+  [proposerRole === "borrower" ? "lender" : "borrower"] as const;
+
+const proposingSide = ({ proposerRole }: LoanAmendmentResource) =>
+  [proposerRole] as const;
+
+/**
+ * PS-LOAN-010: a change takes effect only with the other party's consent,
+ * so only they accept or decline it; nobody agrees with themselves.
+ */
+export const acceptLoanAmendmentPolicy = loanPartyPolicy<LoanAmendmentResource>(
+  "loan.accept_amendment",
+  otherSide,
+);
+
+export const declineLoanAmendmentPolicy =
+  loanPartyPolicy<LoanAmendmentResource>("loan.decline_amendment", otherSide);
+
+/** The proposing side takes its proposal back. */
+export const withdrawLoanAmendmentPolicy =
+  loanPartyPolicy<LoanAmendmentResource>(
+    "loan.withdraw_amendment",
+    proposingSide,
+  );
 
 export const loanRequestPolicies = [
   createLoanRequestPolicy,
@@ -182,4 +269,9 @@ export const loanRequestPolicies = [
   acceptResponsibilityPolicy,
   listLoanRequestsPolicy,
   readLoanPolicy,
+  cancelLoanPolicy,
+  proposeLoanAmendmentPolicy,
+  acceptLoanAmendmentPolicy,
+  declineLoanAmendmentPolicy,
+  withdrawLoanAmendmentPolicy,
 ];

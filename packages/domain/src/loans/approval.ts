@@ -71,12 +71,14 @@ async function requireDeclaration(
 
 /**
  * PS-LOAN-007: ends the other open requests that collide with the period
- * just reserved, neutrally. Those that do not collide stay open.
+ * just reserved, by an approval or an agreed change (WP-32), neutrally.
+ * Those that do not collide stay open.
  */
-async function endCollidingRequests(
+export async function endCollidingRequests(
   db: Db,
   input: {
     readonly objectId: string;
+    /** The request of the loan that reserved the period. */
     readonly approvedId: string;
     readonly period: LoanPeriodInterval;
     readonly effectiveBefore: readonly DateInterval[];

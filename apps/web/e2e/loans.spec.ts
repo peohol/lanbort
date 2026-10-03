@@ -3,9 +3,10 @@ import { type APIRequestContext, expect, test } from "@playwright/test";
 import { registerThroughApi } from "./helpers";
 
 /**
- * WP-30/31 over HTTP: a friend asks to borrow an object directly, both
- * accept the responsibility declaration, and the owner approves it into a
- * loan that reserves its period.
+ * WP-30–32 over HTTP: a friend asks to borrow an object directly, both
+ * accept the responsibility declaration, the owner approves it into a loan
+ * that reserves its period, both agree to extend it, and the borrower
+ * cancels it before the handover.
  */
 
 const post = (
@@ -136,4 +137,54 @@ test("an owner approves a friend's request into a reserved loan", async ({
     { start: "2030-06-01", end: "2030-06-09" },
     { start: "2030-06-13", end: null },
   ]);
+
+  // The borrower proposes two more days; only the owner can agree to them.
+  const loanPath = `/api/loans/${result.loanId}`;
+  const proposal = {
+    agreementVersion: 1,
+    period: { start: "2030-06-10", end: "2030-06-14" },
+  };
+  expect(
+    (await post(stranger, `${loanPath}/amendments`, proposal)).status(),
+  ).toBe(404);
+  const proposed = await post(bo, `${loanPath}/amendments`, proposal);
+  expect(proposed.status()).toBe(200);
+  const { amendmentId } = await proposed.json();
+  expect(
+    (await post(bo, `${loanPath}/amendments/${amendmentId}/accept`)).status(),
+  ).toBe(403);
+  expect(
+    await (
+      await post(request, `${loanPath}/amendments/${amendmentId}/accept`)
+    ).json(),
+  ).toEqual({
+    loanId: result.loanId,
+    amendmentId,
+    status: "accepted",
+    agreementVersion: 2,
+  });
+  expect(await (await bo.get(loanPath)).json()).toMatchObject({
+    period: { start: "2030-06-10", end: "2030-06-14" },
+    agreement: { version: 2, loanTerms: "Vaskes etter bruk." },
+    amendment: null,
+  });
+
+  // Either party cancels before the handover; nobody else can.
+  expect((await post(stranger, `${loanPath}/cancel`)).status()).toBe(404);
+  const cancelled = await post(bo, `${loanPath}/cancel`);
+  expect(await cancelled.json()).toEqual({
+    loanId: result.loanId,
+    status: "ended",
+    endReason: "cancelled",
+    endedBy: "borrower",
+  });
+  expect(await (await request.get(loanPath)).json()).toMatchObject({
+    status: "ended",
+    ending: { reason: "cancelled", endedBy: "borrower" },
+    agreement: { version: 2 },
+  });
+  expect(
+    (await (await request.get(`/api/objects/${objectId}`)).json())
+      .effectiveAvailability,
+  ).toEqual([{ start: "2030-06-01", end: null }]);
 });

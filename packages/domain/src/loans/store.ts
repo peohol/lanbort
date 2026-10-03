@@ -3,6 +3,7 @@ import type {
   DesiredStart,
   LoanRequestEndReason,
   LoanRequestRole,
+  ObjectStatus,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, type RawBuilder, sql } from "kysely";
@@ -205,20 +206,23 @@ export async function termsDiffer(
 }
 
 /**
- * The active object's actual availability as of `today`, from its global
- * truth (PS-OBJ-004/005), as requests are checked against it.
+ * The object's actual availability as of `today`, from its global truth
+ * (PS-OBJ-004/005), as requests and agreement changes are checked against
+ * it. Requests are only checked on active objects; an archived object has
+ * none.
  */
 export async function loadDerivedAvailability(
   db: Db,
   objectId: string,
   today: string,
+  status: ObjectStatus = "active",
 ): Promise<DerivedAvailability> {
   // One connection serves a transaction, so these run one after another.
   const availability = await loadAvailability(db, [objectId]);
   const blocks = await loadAvailabilityBlocks(db, [objectId]);
 
   return deriveAvailability({
-    status: "active",
+    status,
     availability: availability.get(objectId) ?? [],
     blocks: blocks.get(objectId) ?? [],
     today,
