@@ -21,9 +21,7 @@ import {
   leaveEnvironment,
 } from "../environment/membership-commands";
 import { typeChangeProcess } from "../environment/policies";
-import { typeChangeDays } from "../environment/privacy";
 import {
-  changeEnvironmentType,
   concludeTypeChanges,
   respondToTypeChange,
 } from "../environment/type-change-commands";
@@ -50,6 +48,7 @@ import {
 } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
+import { startTestVote } from "../testing/type-changes";
 import {
   acceptResponsibility,
   confirmLoanTerms,
@@ -75,9 +74,6 @@ const domain: DomainContext = {
 const tick = () => {
   clock = new Date(clock.getTime() + 1);
   return domain;
-};
-const passDays = (days: number) => {
-  clock = new Date(clock.getTime() + days * 86_400_000 + 1000);
 };
 
 function run<I, R, C, O>(
@@ -410,6 +406,53 @@ describe("a request through an environment (PS-LOAN-001/004)", () => {
         })
       ).status,
     ).toBe("requested");
+  });
+
+  it("asks as soon as possible only for a period that fits without a break", async () => {
+    const { environmentId, owner, borrower, objectId } = await published();
+    const today = calendarDate(clock);
+    const origin = environmentOrigin(environmentId);
+    const asap = (end: object) =>
+      ask(borrower, objectId, origin, {
+        start: { kind: "asap" },
+        end,
+      });
+
+    // Available for four days, then from the eleventh day on.
+    await run(updateObject, owner, {
+      objectId,
+      expectedVersion: await versionOf(objectId),
+      availability: [
+        { start: today, end: addDays(today, 3) },
+        { start: addDays(today, 10), end: null },
+      ],
+    });
+
+    expect((await asap({ kind: "duration", days: 4 })).status).toBe(
+      "requested",
+    );
+    // Too long for the first interval, but the second has room.
+    expect((await asap({ kind: "duration", days: 30 })).status).toBe(
+      "requested",
+    );
+    expect(
+      (await asap({ kind: "date", date: addDays(today, 12) })).status,
+    ).toBe("requested");
+    // The days up to the last one are broken by the gap.
+    await expect(
+      asap({ kind: "date", date: addDays(today, 6) }),
+    ).rejects.toMatchObject({ ...conflict, fields: ["start"] });
+
+    // Only the short interval left.
+    await run(updateObject, owner, {
+      objectId,
+      expectedVersion: await versionOf(objectId),
+      availability: [{ start: today, end: addDays(today, 3) }],
+    });
+    await expect(asap({ kind: "duration", days: 5 })).rejects.toMatchObject({
+      ...conflict,
+      fields: ["start"],
+    });
   });
 
   it("is held while the publication waits for approval, and while winding down", async () => {
@@ -899,20 +942,32 @@ describe("historical privacy (PS-ENV-009)", () => {
     const coOwner = await user();
     await addCoOwner(owner, objectId, coOwner);
 
-    const { proposal } = await run(changeEnvironmentType, admin, {
+    // Opened by consent within minutes (see startTestVote).
+    const proposalId = await startTestVote(db, {
       environmentId,
-      expectedType: "closed",
-      type: "open",
+      proposedByUserId: admin.userId,
+      at: clock,
+      change: { from: "closed", to: "open" },
+      deadline: new Date(clock.getTime() + 60_000),
     });
     for (const supporter of [admin, owner, borrower]) {
       await run(respondToTypeChange, supporter, {
         environmentId,
-        proposalId: proposal!.id,
+        proposalId,
         support: true,
       });
     }
-    passDays(typeChangeDays.consent);
+    clock = new Date(clock.getTime() + 61_000);
     await run(concludeTypeChanges, systemActor(typeChangeProcess), {});
+    expect(
+      (
+        await db
+          .selectFrom("app.environments")
+          .select("type")
+          .where("id", "=", environmentId)
+          .executeTakeFirstOrThrow()
+      ).type,
+    ).toBe("open");
     await join(environmentId, admin, coOwner);
 
     expect(await listed(owner, "lender")).toEqual([requestId]);
@@ -965,17 +1020,81 @@ describe("historical privacy (PS-ENV-009)", () => {
 });
 
 describe("deleting the object", () => {
-  it("is not held back by requests, and takes them along", async () => {
-    const owner = await user();
-    const borrower = await user();
-    await friends(borrower, owner);
-    const objectId = await create(owner);
-    const { requestId } = await ask(borrower, objectId, { kind: "direct" });
+  it("is not held back by requests, which end neutrally and stay as history", async () => {
+    const { admin, environmentId, owner, borrower, objectId } =
+      await published();
+    const coOwner = await user();
+    await addCoOwner(owner, objectId, coOwner);
+    await friends(borrower, coOwner);
+    const other = await member(environmentId, admin);
+    const stranger = await user();
+    const { requestId: open } = await ask(
+      borrower,
+      objectId,
+      environmentOrigin(environmentId),
+    );
+    const { requestId: direct } = await ask(borrower, objectId, {
+      kind: "direct",
+    });
+    const { requestId: withdrawn } = await ask(
+      other,
+      objectId,
+      environmentOrigin(environmentId),
+    );
+    await run(withdrawLoanRequest, other, { requestId: withdrawn });
 
-    expect(await run(consentToObjectDeletion, owner, { objectId })).toEqual({
+    await run(consentToObjectDeletion, owner, { objectId });
+    expect(await run(consentToObjectDeletion, coOwner, { objectId })).toEqual({
       objectId,
       deleted: true,
     });
-    await expect(read(borrower, requestId)).rejects.toMatchObject(notFound);
+
+    const deleted = {
+      objectId: null,
+      object: null,
+      confirmedTerms: null,
+      pendingTerms: null,
+      status: "ended",
+    };
+    expect(await read(borrower, open)).toMatchObject({
+      ...deleted,
+      role: "borrower",
+      endReason: "object_unavailable",
+      message: "Kan jeg låne den til helgen?",
+      origin: { kind: "environment", environment: { id: environmentId } },
+    });
+    expect(await read(borrower, direct)).toMatchObject({
+      ...deleted,
+      endReason: "object_unavailable",
+      origin: { kind: "direct" },
+      responsibility: { acceptedByBorrower: true },
+    });
+    expect(await read(other, withdrawn)).toMatchObject({
+      ...deleted,
+      endReason: "withdrawn",
+    });
+    expect(await listed(borrower, "borrower")).toEqual([direct, open]);
+
+    // The owners keep seeing what they saw, through the same relation.
+    expect(await read(owner, open)).toMatchObject({
+      ...deleted,
+      role: "lender",
+    });
+    expect(await listed(owner, "lender")).toEqual([withdrawn, open]);
+    expect(await listed(coOwner, "lender")).toEqual([direct]);
+    await expect(read(coOwner, open)).rejects.toMatchObject(notFound);
+    await expect(read(stranger, open)).rejects.toMatchObject(notFound);
+
+    // Nothing more happens to them.
+    await expect(
+      run(confirmLoanTerms, borrower, { requestId: open, termsVersion: 1 }),
+    ).rejects.toMatchObject(conflict);
+    expect(await run(declineLoanRequest, owner, { requestId: open })).toEqual({
+      requestId: open,
+      status: "ended",
+    });
+    expect((await eventsFor(open)).map((event) => event.event_type)).toEqual([
+      "loan_request.created",
+    ]);
   });
 });

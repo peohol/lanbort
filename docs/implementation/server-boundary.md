@@ -56,6 +56,8 @@ Route Handler (route.user / route.public / route.scheduler)
 - Den som ikke kan nå objektet gjennom opprinnelsen, får `not_found`. Gjennom et miljø avgjør `findsObject` det med samme regel som miljøets liste. En eier ser en forespørsel som utlåner bare med låntakerens relasjon til opprinnelsen: vennskap (direkte), eller aktivt medlemskap uten at forespørselen ble gjort under en strengere type før eieren ble aktiv (`visibleToLender`). Eierskap alene er ikke nok.
 - `terms_version` peker på objektrevisjonen med vilkårene låntaker så og bekreftet. En ny revisjon med andre vilkår (`app.loan_terms_differ`, OD-0014) setter åpne forespørsler til `awaiting_terms_confirmation` til låntaker bekrefter gjeldende versjon.
 - Direkte forespørsler har en ansvarserklæring med versjon (`responsibilityDeclarationVersion`). Låntaker godtar den når forespørselen sendes; en eier som er låntakers venn, godtar med egen kommando. Hver aksept er en uforanderlig rad. Godkjenning (WP-31) må sjekke at eieren som godkjenner har godtatt gjeldende versjon.
+- Ønsket periode må få plass i ett sammenhengende intervall av faktisk ledighet (`earliestPeriod`). «Så snart som mulig» starter første ledige dag der hele varigheten, eller alle dager fram til ønsket sluttdag, er ledige uten brudd.
+- Sletting av objektet stopper ikke på forespørsler. `app.release_loan_requests` avslutter de åpne nøytralt og løsner alle fra objektets rader før de slettes. Forespørslene består som historikk for begge parter uten objektets innhold, og eierne på slettetidspunktet (`former_owner_ids`) ser dem fortsatt med samme relasjonskrav.
 - Meldingen lagres bare på forespørselen og kopieres aldri til hendelser eller logger (OD-0015).
 
 ## Vennskap og blokkering

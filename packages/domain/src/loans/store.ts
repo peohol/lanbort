@@ -45,6 +45,7 @@ export const requestSelection = [
   "request.desired_days",
   "request.message",
   "request.terms_version",
+  "request.former_owner_ids",
   "request.status",
   "request.end_reason",
   "request.ended_by_user_id",
@@ -54,7 +55,7 @@ export const requestSelection = [
 
 export interface LoanRequestRow {
   id: string;
-  object_id: string;
+  object_id: string | null;
   borrower_user_id: string;
   origin: string;
   environment_id: string | null;
@@ -64,7 +65,8 @@ export interface LoanRequestRow {
   desired_end: string | null;
   desired_days: number | null;
   message: string;
-  terms_version: number;
+  terms_version: number | null;
+  former_owner_ids: string[] | null;
   status: string;
   end_reason: string | null;
   ended_by_user_id: string | null;
@@ -94,6 +96,7 @@ export function toLoanRequest(row: LoanRequestRow): LoanRequestRecord {
     end,
     message: row.message,
     termsVersion: row.terms_version,
+    formerOwnerIds: row.former_owner_ids,
     status: row.status as StoredLoanRequestStatus,
     endReason: row.end_reason as LoanRequestEndReason | null,
     endedByUserId: row.ended_by_user_id,
@@ -273,7 +276,8 @@ export async function loadLenderScope(
 
 /**
  * SQL: the request (aliased `request`) is visible to the scope's user as a
- * lender. Ownership alone is not enough (docs/architecture/04): the owner
+ * lender: as an owner of the object, or of the deleted object when it was
+ * deleted. Ownership alone is not enough (docs/architecture/04): the owner
  * also needs the borrower's relation to the origin, so they see neither the
  * borrower nor a hidden origin they could not otherwise see.
  * - direct: they are the borrower's friend;
@@ -297,9 +301,12 @@ export function visibleToLender(scope: LenderScope): RawBuilder<boolean> {
 
   return sql<boolean>`(
     request.borrower_user_id <> ${scope.userId}
-    and exists (
-      select 1 from app.object_owners
-      where object_id = request.object_id and user_id = ${scope.userId}
+    and (
+      exists (
+        select 1 from app.object_owners
+        where object_id = request.object_id and user_id = ${scope.userId}
+      )
+      or ${scope.userId} = any(request.former_owner_ids)
     )
     and not app.users_blocked(request.borrower_user_id, ${scope.userId})
     and case request.origin

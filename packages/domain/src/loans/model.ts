@@ -28,7 +28,8 @@ export type LoanRequestOriginKind = "environment" | "direct";
 
 export interface LoanRequestRecord {
   readonly id: string;
-  readonly objectId: string;
+  /** Null once the object is deleted; the request has ended then. */
+  readonly objectId: string | null;
   readonly borrowerUserId: string;
   readonly origin: LoanRequestOriginKind;
   /** Set for an environment request, with the publication it builds on. */
@@ -40,7 +41,9 @@ export interface LoanRequestRecord {
   readonly end: DesiredEnd;
   readonly message: string;
   /** The object version whose terms the borrower confirmed (PS-LOAN-005). */
-  readonly termsVersion: number;
+  readonly termsVersion: number | null;
+  /** The owners when the object was deleted; null while it exists. */
+  readonly formerOwnerIds: readonly string[] | null;
   readonly status: StoredLoanRequestStatus;
   readonly endReason: LoanRequestEndReason | null;
   readonly endedByUserId: string | null;
@@ -124,55 +127,52 @@ export function validateDesiredPeriod(
 }
 
 /**
- * The days a request asks for, `[from, until)`, as of `today`. «As soon as
- * possible» counts from today; WP-31 decides the period actually reserved.
+ * PS-LOAN-004: the earliest period, `[from, until)`, that fits entirely in
+ * one interval of the object's actual availability as of `today`, or null if
+ * none does. A dated start fixes the period. «As soon as possible» begins on
+ * the first available day from which the whole duration, or every day up to
+ * the desired last day, is available without a break. WP-31 decides the
+ * period actually reserved.
  */
-export function desiredPeriod(
+export function earliestPeriod(
   start: DesiredStart,
   end: DesiredEnd,
+  effective: readonly DateInterval[],
   today: string,
-): DateInterval {
-  const from = start.kind === "date" ? start.date : today;
+): DateInterval | null {
+  const candidates =
+    start.kind === "date"
+      ? [start.date]
+      : effective.flatMap((interval) =>
+          interval.from === null
+            ? []
+            : [interval.from < today ? today : interval.from],
+        );
 
-  return {
-    from,
-    until: end.kind === "date" ? addDays(end.date, 1) : addDays(from, end.days),
-  };
+  for (const from of candidates) {
+    const period = {
+      from,
+      until:
+        end.kind === "date" ? addDays(end.date, 1) : addDays(from, end.days),
+    };
+
+    if (period.from < period.until && withinAvailability(period, effective)) {
+      return period;
+    }
+  }
+
+  return null;
 }
 
 /** Whether `period` lies within one interval of actual availability. */
 export function withinAvailability(
-  period: DateInterval,
+  period: { readonly from: string; readonly until: string },
   effective: readonly DateInterval[],
 ): boolean {
   return effective.some(
     (interval) =>
       interval.from !== null &&
-      period.from !== null &&
       interval.from <= period.from &&
-      (interval.until === null ||
-        (period.until !== null && period.until <= interval.until)),
-  );
-}
-
-/**
- * PS-LOAN-004 against the object's actual availability: a dated request
- * must fit in it, and «as soon as possible» needs some available day ahead,
- * no later than a desired last day.
- */
-export function fitsAvailability(
-  start: DesiredStart,
-  end: DesiredEnd,
-  effective: readonly DateInterval[],
-  today: string,
-): boolean {
-  if (start.kind === "date") {
-    return withinAvailability(desiredPeriod(start, end, today), effective);
-  }
-
-  return effective.some(
-    (interval) =>
-      end.kind === "duration" ||
-      (interval.from !== null && interval.from <= end.date),
+      (interval.until === null || period.until <= interval.until),
   );
 }

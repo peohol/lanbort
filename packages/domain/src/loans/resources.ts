@@ -101,7 +101,8 @@ async function seesAsLender(
 
 export interface LoadedRequest extends LoanRequestResource {
   readonly request: LoanRequestRecord;
-  readonly object: ObjectState;
+  /** Null once the object is deleted. */
+  readonly object: ObjectState | null;
 }
 
 /**
@@ -118,11 +119,15 @@ export async function loadRequest(
   options: { lock?: boolean } = {},
 ): Promise<{ resource: LoadedRequest; context: undefined } | null> {
   const found = await findLoanRequest(db, requestId);
-  const object = found && (await loadObjectState(db, found.objectId, options));
 
-  if (!found || !object || actor.kind !== "user") {
+  if (!found || actor.kind !== "user") {
     return null;
   }
+
+  const object =
+    found.objectId === null
+      ? null
+      : await loadObjectState(db, found.objectId, options);
 
   if (options.lock && actor.userId !== found.borrowerUserId) {
     await lockPair(db, actor.userId, found.borrowerUserId);

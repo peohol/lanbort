@@ -1,6 +1,6 @@
 begin;
 
-select plan(21);
+select plan(24);
 
 select ok(
   not has_table_privilege(role_name, table_name, 'SELECT'),
@@ -278,6 +278,41 @@ select is(
   (select count(*)::int from app.audit_events where resource_type = 'loan_request'),
   0,
   'ending a request in the database records no events'
+);
+
+select throws_ok(
+  $$
+    update app.loan_requests
+    set object_id = null, publication_id = null, terms_version = null,
+      former_owner_ids = array['00000000-0000-4000-8000-0000000000a1'::uuid],
+      message = 'Endret'
+    where id = '00000000-0000-4000-8000-000000000203'
+  $$,
+  '23001',
+  null,
+  'letting go of the object changes nothing else'
+);
+
+-- The ladder is deleted: its requests let go of it before its rows go.
+select app.release_loan_requests('00000000-0000-4000-8000-0000000000f1', now());
+delete from app.environment_publications
+where object_id = '00000000-0000-4000-8000-0000000000f1';
+delete from app.object_revisions
+where object_id = '00000000-0000-4000-8000-0000000000f1';
+
+select results_eq(
+  $$ select count(*)::int, bool_and(object_id is null and terms_version is null
+       and publication_id is null and status = 'ended'),
+       bool_and(former_owner_ids = array['00000000-0000-4000-8000-0000000000a1'::uuid])
+     from app.loan_requests $$,
+  $$ values (3, true, true) $$,
+  'requests outlive their deleted object, with its owners of that time'
+);
+
+select results_eq(
+  $$ select end_reason from app.loan_requests order by id $$,
+  $$ values ('access_lost'::text), ('access_lost'::text), ('publication_ended'::text) $$,
+  'how a request ended stays as it was'
 );
 
 select * from finish();

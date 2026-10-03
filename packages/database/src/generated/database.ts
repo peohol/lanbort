@@ -263,15 +263,16 @@ export interface AppLoanRequests {
   ended_at: Timestamp | null;
   ended_by_user_id: string | null;
   environment_id: string | null;
+  former_owner_ids: string[] | null;
   id: Generated<string>;
   message: string;
-  object_id: string;
+  object_id: string | null;
   origin: string;
   position: Int8 | null;
   publication_id: string | null;
   status: Generated<string>;
   status_changed_at: Generated<Timestamp>;
-  terms_version: number;
+  terms_version: number | null;
 }
 
 export interface AppObjectAvailabilityIntervals {

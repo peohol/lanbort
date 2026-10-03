@@ -1,6 +1,6 @@
 import { objectDeletionResultSchema, objectIdSchema } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import type { Kysely } from "kysely";
+import { type Kysely, sql } from "kysely";
 import { z } from "zod";
 import { defineCommand } from "../commands/command";
 import { DomainError } from "../errors";
@@ -26,7 +26,6 @@ const objectReference = z.strictObject({ objectId: objectIdSchema });
 
 /** Tables holding the object's own rows, children first. */
 const objectRowTables = [
-  "app.loan_requests",
   "app.environment_publications",
   "app.object_deletion_consents",
   "app.object_co_owner_invitations",
@@ -47,7 +46,14 @@ async function deleteObject(
   tx: Kysely<Database>,
   object: ObjectState,
   events: EventRecorder,
+  now: Date,
 ): Promise<void> {
+  // Loan requests outlive the object as the parties' history: open ones end
+  // neutrally, and all of them let go of the rows deleted below.
+  await sql`select app.release_loan_requests(${object.objectId}, ${now})`.execute(
+    tx,
+  );
+
   const images = await tx
     .selectFrom("app.object_images")
     .select("id")
@@ -130,7 +136,7 @@ export function defineConsentToObjectDeletion(
       );
 
       if (allConsent) {
-        await deleteObject(tx, resource, events);
+        await deleteObject(tx, resource, events, now);
       }
 
       return { objectId, deleted: allConsent };

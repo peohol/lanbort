@@ -123,7 +123,8 @@ export const loanRequestStatusSchema = z.enum([
  * - `access_lost`: the borrower's access through the origin is gone (left the
  *   environment, the friendship ended, or a block between the parties).
  * - `publication_ended`: the object is no longer published there.
- * - `object_unavailable`: archived, frozen, or no longer someone else's.
+ * - `object_unavailable`: archived, frozen, deleted, or no longer someone
+ *   else's.
  */
 export const loanRequestEndReasonSchema = z.enum([
   "withdrawn",
@@ -184,7 +185,8 @@ const termsSchema = z.strictObject({
 /** A request as its borrower or a lender sees it. */
 export const loanRequestSchema = z.strictObject({
   id: loanRequestIdSchema,
-  objectId: objectIdSchema,
+  /** Null once the object is deleted; the request has ended then. */
+  objectId: objectIdSchema.nullable(),
   role: loanRequestRoleSchema,
   borrowerUserId: z.uuid(),
   /**
@@ -209,12 +211,17 @@ export const loanRequestSchema = z.strictObject({
   message: z.string(),
   status: loanRequestStatusSchema,
   endReason: loanRequestEndReasonSchema.nullable(),
-  /** The object as of the terms the borrower confirmed. */
-  object: z.strictObject({
-    title: z.string(),
-    categoryId: objectCategoryIdSchema,
-  }),
-  confirmedTerms: termsSchema,
+  /**
+   * The object as of the terms the borrower confirmed. Null, like the
+   * terms, once the object is deleted: its content goes with it.
+   */
+  object: z
+    .strictObject({
+      title: z.string(),
+      categoryId: objectCategoryIdSchema,
+    })
+    .nullable(),
+  confirmedTerms: termsSchema.nullable(),
   /** The current terms while the borrower has to confirm them. */
   pendingTerms: termsSchema.nullable(),
   /** Direct requests only (PS-LOAN-003). */

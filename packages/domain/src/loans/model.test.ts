@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { DomainError } from "../errors";
 import {
-  desiredPeriod,
+  earliestPeriod,
   endedStanding,
-  fitsAvailability,
   isOpen,
   openStanding,
   presentedStatus,
@@ -98,20 +97,7 @@ describe("validateDesiredPeriod", () => {
   });
 });
 
-describe("desiredPeriod", () => {
-  it("counts an inclusive end and a duration as half-open days", () => {
-    expect(desiredPeriod(on("2026-10-05"), on("2026-10-07"), today)).toEqual({
-      from: "2026-10-05",
-      until: "2026-10-08",
-    });
-    expect(desiredPeriod(asap, days(2), today)).toEqual({
-      from: today,
-      until: "2026-10-05",
-    });
-  });
-});
-
-describe("fitsAvailability", () => {
+describe("earliestPeriod", () => {
   const effective = [
     { from: "2026-10-03", until: "2026-10-10" },
     { from: "2026-10-20", until: null },
@@ -119,26 +105,59 @@ describe("fitsAvailability", () => {
 
   it("needs a dated request to lie within one available interval", () => {
     expect(
-      fitsAvailability(on("2026-10-04"), on("2026-10-09"), effective, today),
-    ).toBe(true);
-    expect(fitsAvailability(on("2026-10-08"), days(5), effective, today)).toBe(
-      false,
+      earliestPeriod(on("2026-10-05"), on("2026-10-07"), effective, today),
+    ).toEqual({ from: "2026-10-05", until: "2026-10-08" });
+    expect(earliestPeriod(on("2026-10-08"), days(5), effective, today)).toBe(
+      null,
     );
     expect(
-      fitsAvailability(on("2026-11-01"), days(400), effective, today),
-    ).toBe(true);
+      earliestPeriod(on("2026-11-01"), days(400), effective, today),
+    ).toEqual({ from: "2026-11-01", until: "2027-12-06" });
   });
 
-  it("needs some available day for as soon as possible, before a desired end", () => {
-    expect(fitsAvailability(asap, days(30), effective, today)).toBe(true);
-    expect(fitsAvailability(asap, days(1), [], today)).toBe(false);
+  it("starts as soon as possible where the whole duration fits", () => {
+    expect(earliestPeriod(asap, days(2), effective, today)).toEqual({
+      from: today,
+      until: "2026-10-05",
+    });
+    // The first interval is too short for eight days; the next one is not.
+    expect(earliestPeriod(asap, days(8), effective, today)).toEqual({
+      from: "2026-10-20",
+      until: "2026-10-28",
+    });
+    expect(earliestPeriod(asap, days(8), [effective[0]!], today)).toBeNull();
+    expect(earliestPeriod(asap, days(1), [], today)).toBeNull();
+  });
+
+  it("needs every day up to a desired last day without a break", () => {
+    expect(earliestPeriod(asap, on("2026-10-09"), effective, today)).toEqual({
+      from: today,
+      until: "2026-10-10",
+    });
+    // Available days before and after, but a break in between.
+    expect(earliestPeriod(asap, on("2026-10-15"), effective, today)).toBeNull();
+    expect(earliestPeriod(asap, on("2026-10-25"), effective, today)).toEqual({
+      from: "2026-10-20",
+      until: "2026-10-26",
+    });
     expect(
-      fitsAvailability(
+      earliestPeriod(
         asap,
         on("2026-10-15"),
         [{ from: "2026-10-20", until: null }],
         today,
       ),
-    ).toBe(false);
+    ).toBeNull();
+  });
+
+  it("never starts before today", () => {
+    expect(
+      earliestPeriod(
+        asap,
+        days(2),
+        [{ from: "2026-10-01", until: "2026-10-05" }],
+        today,
+      ),
+    ).toEqual({ from: today, until: "2026-10-05" });
   });
 });

@@ -141,24 +141,26 @@ async function describeOrigin(
 }
 
 /**
- * A request as `role` sees it now. Its status counts access that is gone
- * already (`presentedStatus`); the terms are the confirmed revision, and
- * while confirmation is awaited, the current one too (PS-LOAN-005). Only
- * acceptances of the current declaration by the borrower and by current
- * owners count (PS-LOAN-003).
+ * The request's status and object as of now. Its status counts access that
+ * is gone already (`presentedStatus`); the terms are the confirmed revision,
+ * and while confirmation is awaited, the current one too (PS-LOAN-005). A
+ * deleted object leaves the ended request without its content, and its
+ * owners as they were then.
  */
-async function describe(
-  db: Db,
-  actor: Actor,
-  request: LoanRequestRecord,
-  role: LoanRequestRole,
-  now: Date,
-): Promise<LoanRequest> {
-  const object = await loadObjectState(db, request.objectId);
+async function describeObject(db: Db, request: LoanRequestRecord, now: Date) {
+  const object =
+    request.objectId === null
+      ? null
+      : await loadObjectState(db, request.objectId);
 
-  if (!object) {
-    // Deleting an object deletes its requests in the same transaction.
-    throw new Error("A loan request without its object");
+  if (!object || request.termsVersion === null) {
+    return {
+      ...presentedStatus(request, openStanding),
+      object: null,
+      confirmedTerms: null,
+      pendingTerms: null,
+      ownerIds: request.formerOwnerIds ?? [],
+    };
   }
 
   const standing = isOpen(request.status)
@@ -172,8 +174,8 @@ async function describe(
         )
       ).standing
     : openStanding;
-  const { status, endReason } = presentedStatus(request, standing);
-  const awaiting = status === "awaiting_terms_confirmation";
+  const presented = presentedStatus(request, standing);
+  const awaiting = presented.status === "awaiting_terms_confirmation";
   const terms = await termsAt(
     db,
     object.objectId,
@@ -186,6 +188,32 @@ async function describe(
     throw new Error("A loan request without its confirmed revision");
   }
 
+  return {
+    ...presented,
+    object: { title: confirmed.title, categoryId: confirmed.categoryId },
+    confirmedTerms: {
+      version: request.termsVersion,
+      loanTerms: confirmed.loanTerms,
+    },
+    pendingTerms: pending
+      ? { version: object.version, loanTerms: pending.loanTerms }
+      : null,
+    ownerIds: object.ownerIds,
+  };
+}
+
+/**
+ * A request as `role` sees it now. Only acceptances of the current
+ * declaration by the borrower and by the owners count (PS-LOAN-003).
+ */
+async function describe(
+  db: Db,
+  actor: Actor,
+  request: LoanRequestRecord,
+  role: LoanRequestRole,
+  now: Date,
+): Promise<LoanRequest> {
+  const { ownerIds, ...described } = await describeObject(db, request, now);
   const viewerId = actor.kind === "user" ? actor.userId : null;
   const acceptances =
     request.origin === "direct"
@@ -206,23 +234,14 @@ async function describe(
     start: request.start,
     end: request.end,
     message: request.message,
-    status,
-    endReason,
-    object: { title: confirmed.title, categoryId: confirmed.categoryId },
-    confirmedTerms: {
-      version: request.termsVersion,
-      loanTerms: confirmed.loanTerms,
-    },
-    pendingTerms: pending
-      ? { version: object.version, loanTerms: pending.loanTerms }
-      : null,
+    ...described,
     responsibility: acceptances && {
       version: responsibilityDeclarationVersion,
       acceptedByBorrower: acceptances.some(
         (acceptance) => acceptance.userId === request.borrowerUserId,
       ),
       acceptedByLender: acceptances.some((acceptance) =>
-        object.ownerIds.includes(acceptance.userId),
+        ownerIds.includes(acceptance.userId),
       ),
       acceptedByYou: acceptances.some(
         (acceptance) => acceptance.userId === viewerId,

@@ -25,7 +25,7 @@ import {
   loanRequestWithdrawn,
 } from "./events";
 import {
-  fitsAvailability,
+  earliestPeriod,
   isOpen,
   type LoanRequestRecord,
   validateDesiredPeriod,
@@ -79,7 +79,7 @@ async function requireAvailable(
 ): Promise<void> {
   const { effective } = await loadDerivedAvailability(db, objectId, today);
 
-  if (!fitsAvailability(request.start, request.end, effective, today)) {
+  if (!earliestPeriod(request.start, request.end, effective, today)) {
     conflict("The object is not available then", ["start"]);
   }
 }
@@ -239,16 +239,16 @@ export const withdrawLoanRequest = defineCommand({
   idempotency: "required",
   load: (args) => lockedRequest(args),
   execute: async ({ tx, actor, resource, events, now }) => {
-    const { request } = resource;
+    const { request, object } = resource;
 
-    if (!isOpen(request.status)) {
+    if (!isOpen(request.status) || !object) {
       return result(request);
     }
 
     await endLoanRequest(tx, request.id, "withdrawn", actingUserId(actor), now);
     events.record(loanRequestWithdrawn, {
       resourceId: request.id,
-      payload: { objectId: request.objectId },
+      payload: { objectId: object.objectId },
     });
 
     return { requestId: request.id, status: "ended" as const };
@@ -268,16 +268,16 @@ export const declineLoanRequest = defineCommand({
   idempotency: "required",
   load: (args) => lockedRequest(args),
   execute: async ({ tx, actor, resource, events, now }) => {
-    const { request } = resource;
+    const { request, object } = resource;
 
-    if (!isOpen(request.status)) {
+    if (!isOpen(request.status) || !object) {
       return result(request);
     }
 
     await endLoanRequest(tx, request.id, "declined", actingUserId(actor), now);
     events.record(loanRequestDeclined, {
       resourceId: request.id,
-      payload: { objectId: request.objectId },
+      payload: { objectId: object.objectId },
     });
 
     return { requestId: request.id, status: "ended" as const };
@@ -299,7 +299,7 @@ export const confirmLoanTerms = defineCommand({
   execute: async ({ tx, input, resource, events, now }) => {
     const { request, object } = resource;
 
-    if (!isOpen(request.status)) {
+    if (!isOpen(request.status) || !object) {
       conflict("The request has ended");
     }
 
@@ -325,7 +325,7 @@ export const confirmLoanTerms = defineCommand({
       .execute();
     events.record(loanRequestTermsConfirmed, {
       resourceId: request.id,
-      payload: { objectId: request.objectId, termsVersion: input.termsVersion },
+      payload: { objectId: object.objectId, termsVersion: input.termsVersion },
     });
 
     return { requestId: request.id, status: "requested" as const };
@@ -347,7 +347,7 @@ export const acceptResponsibility = defineCommand({
   idempotency: "required",
   load: (args) => lockedRequest(args),
   execute: async ({ tx, actor, input, resource, events, now }) => {
-    const { request } = resource;
+    const { request, object } = resource;
 
     if (request.origin !== "direct") {
       conflict("Only a direct request has a responsibility declaration");
@@ -357,14 +357,14 @@ export const acceptResponsibility = defineCommand({
       conflict("The declaration has changed", ["declarationVersion"]);
     }
 
-    if (!isOpen(request.status)) {
+    if (!isOpen(request.status) || !object) {
       conflict("The request has ended");
     }
 
     await recordAcceptance(
       tx,
       request.id,
-      request.objectId,
+      object.objectId,
       actingUserId(actor),
       roleOf(actor, resource) ?? "borrower",
       now,

@@ -95,7 +95,10 @@ revoke execute on function app.loan_terms_differ(uuid, integer, integer) from pu
 
 create table app.loan_requests (
   id uuid primary key default gen_random_uuid(),
-  object_id uuid not null references app.objects (id),
+  -- Null once the object is deleted: the request stays as the parties'
+  -- history, ended, without the object's content (vision «Inaktive objekter
+  -- og sletting»). Its owners at that time stay in `former_owner_ids`.
+  object_id uuid references app.objects (id),
   borrower_user_id uuid not null references app.users (id),
   -- PS-LOAN-001: how the request came about. Only the origin differs; the
   -- request is the same either way.
@@ -121,7 +124,8 @@ create table app.loan_requests (
   ),
   -- PS-LOAN-005: the object version whose terms the borrower saw and
   -- confirmed. The revision history is the record of what they said.
-  terms_version integer not null,
+  terms_version integer,
+  former_owner_ids uuid[],
   status text not null default 'requested'
     check (status in ('requested', 'awaiting_terms_confirmation', 'ended')),
   created_at timestamptz not null default clock_timestamp(),
@@ -145,8 +149,13 @@ create table app.loan_requests (
     references app.object_revisions (object_id, version),
   constraint loan_requests_origin_shape check (
     (origin = 'environment') = (environment_id is not null)
-    and (environment_id is null) = (publication_id is null)
+    and (publication_id is not null) = (environment_id is not null and object_id is not null)
     and (environment_id is null) = (position is null)
+  ),
+  constraint loan_requests_object_shape check (
+    (object_id is null) = (terms_version is null)
+    and (object_id is null) = (former_owner_ids is not null)
+    and (object_id is not null or status = 'ended')
   ),
   constraint loan_requests_period_shape check (
     num_nonnulls(desired_end, desired_days) = 1
@@ -252,20 +261,50 @@ create trigger loan_requests_access_guard
   before insert on app.loan_requests
   for each row execute function app.guard_new_loan_request();
 
--- An ended request is history and never changes again.
-create trigger loan_requests_history
-  before update on app.loan_requests
-  for each row execute function app.guard_history_update(
+-- An ended request is history and never changes again, with one exception:
+-- when its object is deleted, it lets go of the object's rows (object,
+-- publication and revision) and keeps the owners of that time instead.
+create function app.guard_loan_request_update()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  detached text[] := array['object_id', 'publication_id', 'terms_version', 'former_owner_ids'];
+  mutable text[] := array[
     'ended_at', 'status', 'status_changed_at', 'end_reason', 'ended_by_user_id',
     'terms_version'
-  );
+  ];
+begin
+  if old.object_id is not null and new.object_id is null then
+    if old.ended_at is null
+      or (to_jsonb(old) - detached) is distinct from (to_jsonb(new) - detached)
+    then
+      raise exception 'only an ended loan request (%) lets go of its object', old.id
+        using errcode = 'restrict_violation';
+    end if;
+  elsif old.ended_at is not null
+    or (to_jsonb(old) - mutable) is distinct from (to_jsonb(new) - mutable)
+  then
+    raise exception 'only % may change on app.loan_requests', array_to_string(mutable, ', ')
+      using errcode = 'restrict_violation';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke execute on function app.guard_loan_request_update() from public;
+
+create trigger loan_requests_history
+  before update on app.loan_requests
+  for each row execute function app.guard_loan_request_update();
 
 -- PS-LOAN-003: each party's explicit acceptance of the responsibility
 -- declaration for this concrete direct request, and the version of the
 -- declaration it was given for. Only direct requests have one. A lender's
 -- acceptance is any owner's; WP-31 checks that the owner who approves has
--- accepted. Acceptances are never rewritten; they go only with the request
--- when its object is deleted.
+-- accepted. Acceptances are never rewritten.
 create table app.loan_request_responsibility_acceptances (
   request_id uuid not null,
   origin text not null default 'direct' check (origin = 'direct'),
@@ -276,7 +315,6 @@ create table app.loan_request_responsibility_acceptances (
   primary key (request_id, user_id, declaration_version),
   constraint loan_request_responsibility_acceptances_request_fkey
     foreign key (request_id, origin) references app.loan_requests (id, origin)
-    on delete cascade
 );
 
 comment on table app.loan_request_responsibility_acceptances is
@@ -336,6 +374,35 @@ as $$
 $$;
 
 revoke execute on function app.end_loan_requests(uuid[], text, timestamptz) from public;
+
+-- The object is deleted (PS-OBJ-011): its open requests end neutrally, and
+-- every request lets go of the object's rows before they are deleted, so
+-- both parties keep their history (vision «Inaktive objekter og sletting»).
+-- Called by the deletion command before it deletes anything.
+create function app.release_loan_requests(object uuid, at timestamptz)
+returns void
+language sql
+set search_path = ''
+as $$
+  select app.end_loan_requests(
+    array(select id from app.loan_requests where object_id = object),
+    'object_unavailable',
+    at
+  );
+
+  update app.loan_requests
+  set object_id = null,
+    publication_id = null,
+    terms_version = null,
+    former_owner_ids = array(
+      select user_id from app.object_owners
+      where object_id = object
+      order by added_at, user_id
+    )
+  where object_id = object;
+$$;
+
+revoke execute on function app.release_loan_requests(uuid, timestamptz) from public;
 
 -- The borrower's membership in the origin environment stops being active,
 -- for any reason (leaving, requirements not met, a type change not accepted).
