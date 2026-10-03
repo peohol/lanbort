@@ -16,11 +16,11 @@ import {
   setObjectRestriction,
 } from "../objects/restrictions";
 import { ConsumerRegistry } from "../outbox/consumer";
-import { processOutboxBatch } from "../outbox/worker";
 import { publishObject } from "../publications/commands";
 import { blockUser } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
+import { deliverAll } from "../testing/outbox";
 import {
   commitWhileRacing,
   endMembership,
@@ -68,7 +68,7 @@ const oneDay = 24 * 60 * 60 * 1000;
 const notFound = { code: "not_found" };
 
 async function deliver() {
-  while ((await processOutboxBatch(db, consumers, { batchSize: 100 })).claimed);
+  await deliverAll(db, consumers);
 }
 
 /** The actor's notifications about subscriptions, oldest first. */

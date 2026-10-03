@@ -9,11 +9,11 @@ import { notificationGenerator } from "../notifications/generator";
 import { listNotifications } from "../notifications/queries";
 import { consentToObjectDeletion } from "../objects/deletion";
 import { ConsumerRegistry } from "../outbox/consumer";
-import { processOutboxBatch } from "../outbox/worker";
 import { publishObject, withdrawPublication } from "../publications/commands";
 import { blockUser } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
+import { deliverAll } from "../testing/outbox";
 import {
   commitWhileRacing,
   endMembership,
@@ -39,7 +39,7 @@ const { run, tick, user, environment, join, member, addCoOwner, published } =
 const notFound = { code: "not_found" };
 
 async function deliver() {
-  while ((await processOutboxBatch(db, consumers, { batchSize: 100 })).claimed);
+  await deliverAll(db, consumers);
 }
 
 /** What the actor was told about questions, oldest first. */

@@ -27,10 +27,10 @@ import { reportReturn } from "../loans/return";
 import { inviteCoOwner, withdrawCoOwnerInvitation } from "../objects/co-owners";
 import { updateObject } from "../objects/commands";
 import { ConsumerRegistry, type StoredEvent } from "../outbox/consumer";
-import { processOutboxBatch } from "../outbox/worker";
 import { acceptFriendRequest, sendFriendRequest } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
+import { deliverAll } from "../testing/outbox";
 import {
   markAllNotificationsRead,
   markNotificationsRead,
@@ -75,7 +75,7 @@ const invalidInput = { code: "invalid_input" };
 
 /** Runs the outbox until nothing for the generator is due. */
 async function deliver() {
-  while ((await processOutboxBatch(db, consumers, { batchSize: 100 })).claimed);
+  await deliverAll(db, consumers);
 }
 
 const centre = (actor: UserActor, cursor?: string) =>
