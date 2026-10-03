@@ -1,17 +1,29 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { type AccountStatus, systemActor, type UserActor } from "../actor";
+import {
+  openCaseRound,
+  openEnvironmentContact,
+  requestLoanMediation,
+  writeCaseEntry,
+} from "../cases/commands";
+import { listOwnCases, readCase } from "../cases/queries";
 import { executeQuery } from "../commands/query";
 import { approveLoanRequest } from "../loans/approval";
 import { proposeLoanAmendment } from "../loans/amendments";
+import { EventRecorder } from "../events/recorder";
 import { reportHandover } from "../loans/handover";
 import { readLoan } from "../loans/queries";
+import { acceptCoOwnerInvitation, inviteCoOwner } from "../objects/co-owners";
+import { sendFriendRequest } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { testIdentity } from "../testing/identities";
 import { loanTestKit } from "../testing/loans";
 import { resolveUserActor } from "./identity";
 import {
+  changeAccountStatus,
   deactivateAccount,
+  loadAccountForChange,
   makeAccountDormant,
   reactivateAccount,
   reinstateAccount,
@@ -153,7 +165,7 @@ describe("deactivation (PS-ADM-002)", () => {
     ).rejects.toMatchObject({ code: "account_inactive" });
     // Even with an actor read before the change: the locked state decides.
     await expect(run(deactivateAccount, actor, {})).rejects.toMatchObject({
-      code: "forbidden",
+      code: "account_inactive",
     });
     expect(await changes(actor.userId)).toHaveLength(1);
   });
@@ -235,6 +247,52 @@ describe("deactivation (PS-ADM-002)", () => {
         .where("environment_id", "=", environmentId)
         .executeTakeFirst(),
     ).toEqual({ reason: "ownerless", started_by_user_id: null });
+  });
+
+  it("keeps taking part in an open case as a party, and opens none (PS-ADM-002)", async () => {
+    const { owner, borrower, admin, loanId, environmentId } =
+      await reservedLoan(1, 3);
+    kit.advance(2 * oneDay);
+    for (const [actor, outcome] of [
+      [owner, "handed_over"],
+      [borrower, "not_handed_over"],
+    ] as const) {
+      await run(reportHandover, actor, {
+        loanId,
+        agreementVersion: 1,
+        outcome,
+      });
+    }
+    const { caseId } = await run(requestLoanMediation, borrower, {
+      loanId,
+      body: "Jeg fikk den aldri.",
+    });
+
+    await deactivate(borrower);
+    const resting = await current(borrower);
+    const query = { actor: resting, input: { caseId } };
+    expect(
+      (await executeQuery(kit.tick(), readCase, query)).entries.map(
+        (entry) => entry.body,
+      ),
+    ).toEqual(["Jeg fikk den aldri."]);
+    expect(
+      (
+        await executeQuery(kit.tick(), listOwnCases, {
+          actor: resting,
+          input: {},
+        })
+      ).items,
+    ).toEqual([expect.objectContaining({ id: caseId })]);
+    await run(openCaseRound, admin, { caseId, userId: borrower.userId });
+    await run(writeCaseEntry, resting, { caseId, body: "Jeg var hjemme." });
+
+    await expect(
+      run(openEnvironmentContact, resting, {
+        environmentId,
+        body: "Hei",
+      }),
+    ).rejects.toMatchObject({ code: "account_inactive" });
   });
 
   it("keeps the minimum access to loans already under way, and nothing new", async () => {
@@ -478,7 +536,114 @@ describe("suspension (PS-ADM-003, PS-ADM-014)", () => {
   });
 });
 
+/**
+ * Runs `attempt` while the account's change to `to` holds its lock, and
+ * checks that it waits for the change instead of building on the state from
+ * before it. Returns the attempt's outcome once the change has committed.
+ */
+async function duringChange(
+  actor: UserActor,
+  to: "deactivated" | "deleted",
+  attempt: () => Promise<unknown>,
+): Promise<unknown> {
+  let outcome: Promise<unknown> = Promise.resolve();
+
+  await db.transaction().execute(async (tx) => {
+    const loaded = await loadAccountForChange(tx, actor.userId);
+    await changeAccountStatus(
+      tx,
+      { account: loaded!.resource, to, reason: "user_request", actor },
+      new EventRecorder(),
+      kit.now(),
+    );
+
+    outcome = attempt();
+    const state = await Promise.race([
+      outcome.then(
+        () => "settled",
+        () => "settled",
+      ),
+      new Promise((resolve) => setTimeout(() => resolve("waiting"), 300)),
+    ]);
+    expect(state).toBe("waiting");
+  });
+
+  return outcome;
+}
+
 describe("races", () => {
+  for (const to of ["deactivated", "deleted"] as const) {
+    it(`holds the account's own new activity until it is ${to}, then refuses it`, async () => {
+      const owner = await user();
+      const inactive = { code: "account_inactive" };
+
+      await expect(
+        duringChange(owner, to, () => create(owner)),
+      ).rejects.toMatchObject(inactive);
+      const founder = await user();
+      await expect(
+        duringChange(founder, to, () => environment(founder)),
+      ).rejects.toMatchObject(inactive);
+
+      const other = await user();
+      await expect(
+        duringChange(other, to, () =>
+          run(sendFriendRequest, other, { userId: owner.userId }),
+        ),
+      ).rejects.toMatchObject(inactive);
+      for (const id of [owner.userId, founder.userId, other.userId]) {
+        expect(await account(id)).toMatchObject({ status: to });
+      }
+    });
+
+    it(`never binds an account that is ${to} meanwhile to someone else's new activity`, async () => {
+      const owner = await user();
+      const objectId = await create(owner);
+      const conflict = { code: "conflict" };
+
+      // A co-ownership invitation to it, and a friend request.
+      const invited = await user();
+      await expect(
+        duringChange(invited, to, () =>
+          run(inviteCoOwner, owner, { objectId, userId: invited.userId }),
+        ),
+      ).rejects.toMatchObject(conflict);
+      const addressee = await user();
+      await expect(
+        duringChange(addressee, to, () =>
+          run(sendFriendRequest, owner, { userId: addressee.userId }),
+        ),
+      ).rejects.toMatchObject(conflict);
+
+      // Its acceptance of a co-ownership offered before.
+      const accepting = await user();
+      const { invitationId } = await run(inviteCoOwner, owner, {
+        objectId,
+        userId: accepting.userId,
+      });
+      await expect(
+        duringChange(accepting, to, () =>
+          run(acceptCoOwnerInvitation, accepting, { invitationId }),
+        ),
+      ).rejects.toMatchObject({ code: "account_inactive" });
+
+      expect(
+        await db
+          .selectFrom("app.object_owners")
+          .select("user_id")
+          .where("object_id", "=", objectId)
+          .execute(),
+      ).toEqual([{ user_id: owner.userId }]);
+      expect(
+        await db
+          .selectFrom("app.friendships")
+          .select("id")
+          .where("addressee_id", "=", addressee.userId)
+          .execute(),
+      ).toEqual([]);
+    });
+  }
+
   it("never approves a loan for a borrower who deactivated meanwhile", async () => {
     for (let round = 0; round < 5; round++) {
       const setup = await published();

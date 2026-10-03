@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { type AccountStatus, systemActor, type UserActor } from "../actor";
+import { closeCase, requestLoanMediation } from "../cases/commands";
 import { executeQuery } from "../commands/query";
 import { joinEnvironment } from "../environment/membership-commands";
 import { approveLoanRequest } from "../loans/approval";
@@ -8,8 +9,10 @@ import { cancelLoan } from "../loans/cancellation";
 import { reportHandover } from "../loans/handover";
 import { unresolvedEndingProcess } from "../loans/policies";
 import { confirmLoanControl, endLoanUnresolved } from "../loans/unresolved";
-import { inviteCoOwner } from "../objects/co-owners";
+import { acceptCoOwnerInvitation, inviteCoOwner } from "../objects/co-owners";
 import type { StoredEvent } from "../outbox/consumer";
+import { publishDueLoanReviews, submitLoanReview } from "../reviews/commands";
+import { reviewPublicationProcess } from "../reviews/policies";
 import { blockUser, sendFriendRequest } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser, testIdentity } from "../testing/identities";
@@ -174,6 +177,39 @@ describe("bindings (PS-ADM-004)", () => {
 
     await run(confirmLoanControl, owner, { loanId });
     expect(await check(owner)).toEqual({ bindings: [] });
+  });
+
+  it("keeps the parties of an open mediation until it is closed", async () => {
+    const { owner, borrower, admin, loanId } = await reservedLoan(1, 3);
+    kit.advance(2 * 24 * 60 * 60 * 1000);
+    for (const [actor, outcome] of [
+      [owner, "handed_over"],
+      [borrower, "not_handed_over"],
+    ] as const) {
+      await run(reportHandover, actor, {
+        loanId,
+        agreementVersion: 1,
+        outcome,
+      });
+    }
+    const { caseId } = await run(requestLoanMediation, borrower, {
+      loanId,
+      body: "Jeg fikk den aldri.",
+    });
+    await run(endLoanUnresolved, systemActor(unresolvedEndingProcess), {
+      loanId,
+    });
+
+    // The loan no longer binds the borrower; the mediation still does.
+    expect(await check(borrower)).toEqual({
+      bindings: [{ kind: "case", resourceId: caseId }],
+    });
+    await expect(remove(borrower)).rejects.toMatchObject({ code: "conflict" });
+
+    await run(closeCase, admin, { caseId });
+    expect(await check(borrower)).toEqual({ bindings: [] });
+    await remove(borrower);
+    expect(await statusOf(borrower.userId)).toBe("deleted");
   });
 
   it("lets an owner who deactivated first go: the environment continues without them", async () => {
@@ -502,6 +538,65 @@ describe("removing the sign-in identity (PS-ADM-006)", () => {
   });
 });
 
+describe("review rights (PS-ADM-005, PS-TRUST-003)", () => {
+  const communication = [{ dimension: "communication", score: 5 }];
+  const review = (actor: UserActor, loanId: string, extra = {}) =>
+    run(submitLoanReview, actor, {
+      loanId,
+      scores: communication,
+      ...extra,
+    });
+  const reviewsOf = (loanId: string) =>
+    db
+      .selectFrom("app.loan_reviews")
+      .select(["author_role", "status"])
+      .where("loan_id", "=", loanId)
+      .orderBy("author_role")
+      .execute();
+  const lapsed = async (loanId: string) =>
+    (await eventsFor("loan", loanId)).filter(
+      (event) => event.event_type === "loan_review.right_lapsed",
+    );
+
+  it("lapses the deleted party's unused right, and the other's stands", async () => {
+    const { owner, borrower, loanId } = await reservedLoan();
+    await run(cancelLoan, borrower, { loanId });
+    await review(owner, loanId);
+
+    await remove(borrower);
+    expect(await lapsed(loanId)).toEqual([
+      {
+        event_type: "loan_review.right_lapsed",
+        payload: { role: "borrower" },
+      },
+    ]);
+
+    // The other party still revises, and their review is published as
+    // usual when the window is over.
+    await review(owner, loanId, { expectedVersion: 1 });
+    kit.advance(15 * 24 * 60 * 60 * 1000);
+    await run(publishDueLoanReviews, systemActor(reviewPublicationProcess), {});
+    expect(await reviewsOf(loanId)).toEqual([
+      { author_role: "lender", status: "published" },
+    ]);
+  });
+
+  it("publishes a review the deleted party gave with the other's", async () => {
+    const { owner, borrower, loanId } = await reservedLoan();
+    await run(cancelLoan, borrower, { loanId });
+    await review(borrower, loanId);
+
+    await remove(borrower);
+    expect(await lapsed(loanId)).toEqual([]);
+
+    await review(owner, loanId);
+    expect(await reviewsOf(loanId)).toEqual([
+      { author_role: "borrower", status: "published" },
+      { author_role: "lender", status: "published" },
+    ]);
+  });
+});
+
 describe("races", () => {
   it("never opens a request for the object of an account being deleted", async () => {
     for (let round = 0; round < 5; round++) {
@@ -522,6 +617,49 @@ describe("races", () => {
           .select("id")
           .where("borrower_user_id", "=", borrower.userId)
           .where("status", "<>", "ended")
+          .execute(),
+      ).toEqual([]);
+    }
+  });
+
+  it("never leaves a deleted account owning what was created or accepted meanwhile", async () => {
+    for (let round = 0; round < 5; round++) {
+      const owner = await user();
+      const leaving = await user();
+      const objectId = await create(owner);
+      const { invitationId } = await run(inviteCoOwner, owner, {
+        objectId,
+        userId: leaving.userId,
+      });
+
+      const outcomes = await Promise.allSettled([
+        create(leaving),
+        environment(leaving),
+        run(acceptCoOwnerInvitation, leaving, { invitationId }),
+        remove(leaving),
+      ]);
+
+      // Each attempt is refused for what it is, never for a lock.
+      for (const outcome of outcomes) {
+        if (outcome.status === "rejected") {
+          expect(["account_inactive", "conflict"]).toContain(
+            outcome.reason.code,
+          );
+        }
+      }
+      if (outcomes[3].status === "rejected") {
+        // An environment it created first binds it.
+        expect(outcomes[1].status).toBe("fulfilled");
+        continue;
+      }
+      expect(await statusOf(leaving.userId)).toBe("deleted");
+      expect(await rowsOf("app.object_owners", leaving.userId)).toEqual([]);
+      expect(
+        await db
+          .selectFrom("app.environment_role_grants")
+          .select("environment_id")
+          .where("user_id", "=", leaving.userId)
+          .where("revoked_at", "is", null)
           .execute(),
       ).toEqual([]);
     }

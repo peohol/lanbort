@@ -170,6 +170,7 @@ function ownChange(
     policy,
     idempotency: "required",
     load: loadOwnAccountForChange,
+    actorAccount: "change",
     execute: ({ tx, actor, resource, events, now }) =>
       changeAccountStatus(
         tx,

@@ -1,14 +1,14 @@
 import type { AccountBinding } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
+import { caseBindings } from "../cases/account-bindings";
 import { environmentOwnershipBindings } from "../environment/account-bindings";
 import { loanBindings } from "../loans/account-lifecycle";
 
 /**
  * Where PS-ADM-004's bindings come from: what must be finished or handed
  * over before an account can be deleted. Later work packages add their
- * source here (for example cases from WP-45) instead of a parallel check,
- * so deletion sees every binding. A source that fails makes the command
+ * source here instead of a parallel check, so deletion sees every binding. A source that fails makes the command
  * fail: nothing is deleted on an unknown answer.
  */
 export interface AccountBindingSource {
@@ -19,6 +19,7 @@ export interface AccountBindingSource {
 export const accountBindingSources: readonly AccountBindingSource[] = [
   loanBindings,
   environmentOwnershipBindings,
+  caseBindings,
 ];
 
 /** Every binding of the account, from every source. */

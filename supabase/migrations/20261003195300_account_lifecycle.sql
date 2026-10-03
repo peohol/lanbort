@@ -280,11 +280,12 @@ as $$
     end;
 $$;
 
--- A new request or loan holds the accounts it is for (the columns named in
--- the trigger arguments) until it commits, and they must be active. A
+-- New activity holds the accounts it is for (the columns named in the
+-- trigger arguments, where set) until it commits, and they must be active. A
 -- concurrent change of state therefore either comes first, and the new
--- request or loan is refused, or waits and then sees it (and ends it, for a
--- request). The domain locks the same accounts first in its commands.
+-- activity is refused, or waits and then sees it (and ends it, for a
+-- request). The domain locks the signed-in actor's account first in every
+-- command; this also holds the other accounts a command builds on.
 create function app.require_active_accounts()
 returns trigger
 language plpgsql
@@ -292,7 +293,9 @@ set search_path = ''
 as $$
 declare
   accounts uuid[] := array(
-    select (to_jsonb(new) ->> column_name)::uuid from unnest(tg_argv) as column_name
+    select (to_jsonb(new) ->> column_name)::uuid
+    from unnest(tg_argv) as column_name
+    where to_jsonb(new) ->> column_name is not null
   );
 begin
   perform 1 from app.users where id = any(accounts) order by id for share;
@@ -302,7 +305,7 @@ begin
     where not app.account_accepts_new_activity(account)
   ) then
     raise exception 'an account of this % does not take new activity', tg_table_name
-      using errcode = 'restrict_violation';
+      using errcode = 'restrict_violation', constraint = 'account_takes_new_activity';
   end if;
 
   return new;
@@ -320,6 +323,82 @@ create trigger loans_active_accounts
   for each row execute function app.require_active_accounts(
     'borrower_user_id', 'responsible_lender_id'
   );
+
+-- Everything else that builds a new relation or binding on an account
+-- (PS-ADM-001–002): objects and their ownership, co-ownership invitations,
+-- environments, memberships, roles and claims to them, type proposals,
+-- publications, friendships, and taking on a loan's lender role. Only the
+-- accounts the new row binds count: a lender handing the role on, or anyone
+-- winding down, does it with minimum access.
+create trigger objects_active_accounts
+  before insert on app.objects
+  for each row execute function app.require_active_accounts('created_by_user_id');
+
+create trigger object_owners_active_accounts
+  before insert on app.object_owners
+  for each row execute function app.require_active_accounts('user_id');
+
+create trigger object_co_owner_invitations_active_accounts
+  before insert on app.object_co_owner_invitations
+  for each row execute function app.require_active_accounts(
+    'invited_by_user_id', 'invited_user_id'
+  );
+
+create trigger environments_active_accounts
+  before insert on app.environments
+  for each row execute function app.require_active_accounts('created_by_user_id');
+
+create trigger environment_memberships_active_accounts
+  before insert on app.environment_memberships
+  for each row execute function app.require_active_accounts(
+    'user_id', 'invited_by_user_id'
+  );
+
+create trigger environment_memberships_activation_active_accounts
+  before update of state on app.environment_memberships
+  for each row
+  when (old.state <> 'active' and new.state = 'active')
+  execute function app.require_active_accounts('user_id');
+
+create trigger environment_role_invitations_active_accounts
+  before insert on app.environment_role_invitations
+  for each row execute function app.require_active_accounts(
+    'invited_by_user_id', 'user_id'
+  );
+
+create trigger environment_role_grants_active_accounts
+  before insert on app.environment_role_grants
+  for each row execute function app.require_active_accounts('user_id');
+
+create trigger environment_ownership_claims_active_accounts
+  before insert on app.environment_ownership_claims
+  for each row execute function app.require_active_accounts('user_id');
+
+create trigger environment_type_proposals_active_accounts
+  before insert on app.environment_type_proposals
+  for each row execute function app.require_active_accounts('proposed_by_user_id');
+
+create trigger environment_publications_active_accounts
+  before insert on app.environment_publications
+  for each row execute function app.require_active_accounts('published_by_user_id');
+
+create trigger friendships_active_accounts
+  before insert on app.friendships
+  for each row execute function app.require_active_accounts('requester_id', 'addressee_id');
+
+create trigger friendships_acceptance_active_accounts
+  before update of status on app.friendships
+  for each row
+  when (old.status = 'pending' and new.status = 'active')
+  execute function app.require_active_accounts('requester_id', 'addressee_id');
+
+create trigger loan_lender_transfers_active_accounts
+  before insert on app.loan_lender_transfers
+  for each row execute function app.require_active_accounts('to_user_id');
+
+create trigger loan_request_responsibility_acceptances_active_accounts
+  before insert on app.loan_request_responsibility_acceptances
+  for each row execute function app.require_active_accounts('user_id');
 
 -- An account stops being active: what was waiting for it to start
 -- something new ends neutrally, like any other lost access (PS-LOAN-002):

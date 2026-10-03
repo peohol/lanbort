@@ -15,6 +15,7 @@ export const completeRegistration = defineCommand({
   output: z.strictObject({ status: z.literal("active") }),
   policy: completeRegistrationPolicy,
   idempotency: "required",
+  actorAccount: "change",
   load: async ({ tx, actor }) => {
     if (actor.kind !== "user") {
       return null;

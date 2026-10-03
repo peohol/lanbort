@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(28);
 
 select ok(
   not has_table_privilege(role_name, 'app.account_status_changes', 'SELECT'),
@@ -179,6 +179,35 @@ select throws_ok(
       '00000000-0000-4000-8000-0000000000b1')$$,
   '23001', null,
   'a deactivated account makes no new request'
+);
+
+-- Nothing else new binds him either, also when someone else starts it.
+select throws_ok(
+  $$insert into app.friendships (requester_id, addressee_id)
+    values ('00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-0000000000b1')$$,
+  '23001', null,
+  'nobody befriends a deactivated account'
+);
+
+select throws_ok(
+  $$insert into app.object_co_owner_invitations (object_id, invited_user_id, invited_by_user_id)
+    values ('00000000-0000-4000-8000-0000000000f1', '00000000-0000-4000-8000-0000000000b1',
+      '00000000-0000-4000-8000-0000000000a1')$$,
+  '23001', null,
+  'nobody invites a deactivated account to co-own'
+);
+
+select throws_ok(
+  $$insert into app.environments (type, name, created_by_user_id)
+    values ('open', 'Nytt', '00000000-0000-4000-8000-0000000000b1')$$,
+  '23001', null,
+  'a deactivated account creates no environment'
+);
+
+select lives_ok(
+  $$insert into app.friendships (requester_id, addressee_id)
+    values ('00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-0000000000a1')$$,
+  'active accounts still befriend each other'
 );
 
 select throws_ok(

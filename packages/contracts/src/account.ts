@@ -65,20 +65,23 @@ export const accountLifecycleResultSchema = z.strictObject({
 /**
  * PS-ADM-004: what still binds the account and must be handled before it
  * can be deleted:
- * - `loan`: a reserved, active or unresolved loan as borrower or as
- *   responsible lender;
+ * - `loan`: a loan that has not ended, as borrower or as responsible
+ *   lender, or one that ended unresolved and awaits an owner's control, as
+ *   its responsible lender;
  * - `environment_ownership`: the owner of an environment, who hands it over
- *   or winds it down first.
+ *   or winds it down first;
+ * - `case`: an open mediation, as one of its parties.
  * Pending invitations and unused rights are not bindings (PS-ADM-005).
  */
 export const accountBindingKindSchema = z.enum([
   "loan",
   "environment_ownership",
+  "case",
 ]);
 
 export const accountBindingSchema = z.strictObject({
   kind: accountBindingKindSchema,
-  /** The loan or environment it is about. */
+  /** The loan, environment or case it is about. */
   resourceId: z.uuid(),
 });
 

@@ -33,6 +33,7 @@ import { deleteObject } from "../objects/deletion";
 import { loadObjectState } from "../objects/state";
 import { defineConsumer, OutboxDeliveryError } from "../outbox/consumer";
 import { platformRoleRevoked } from "../platform/events";
+import { reviewRightsStep } from "../reviews/account-deletion";
 import { friendshipEndedByAccountDeletion } from "../social/events";
 import {
   type AccountBindingSource,
@@ -59,8 +60,7 @@ type Db = Kysely<Database>;
 /**
  * One part of what deleting an account removes or ends (PS-ADM-005–006).
  * Steps run in order in the deletion's transaction, after the account is
- * marked deleted. Later work packages add theirs here (for example the
- * lapse of unused review rights from WP-50).
+ * marked deleted. Later work packages add theirs here.
  */
 export interface AccountDeletionStep {
   readonly name: string;
@@ -264,6 +264,7 @@ export const accountDeletionSteps: readonly AccountDeletionStep[] = [
   friendshipsStep,
   coOwnerInvitationsStep,
   platformRolesStep,
+  reviewRightsStep,
   personalDataStep,
 ];
 
@@ -315,6 +316,7 @@ export function defineAccountDeletion(
       output: accountLifecycleResultSchema,
       policy: deleteOwnAccountPolicy,
       idempotency: "none",
+      actorAccount: "change",
       load: loadOwnAccountForChange,
       execute: ({ tx, actor, resource, events, now }) =>
         deleteAccount(
