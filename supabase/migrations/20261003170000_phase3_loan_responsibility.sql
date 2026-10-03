@@ -89,8 +89,9 @@ revoke execute on function app.loan_lender_unavailable(app.loans) from public;
 
 -- How `candidate` could step into the lender's side of the loan:
 -- 'circle' when they owned the object at approval, 'later' when they became
--- a co-owner since (PS-LOAN-009). Null when they cannot at all: they are a
--- party, no longer own the object, or are blocked with the borrower.
+-- a co-owner since (PS-LOAN-009). Null when they cannot at all: the loan
+-- has ended, they are a party, no longer own the object, or are blocked
+-- with the borrower.
 create function app.loan_co_owner_standing(loan app.loans, candidate uuid)
 returns text
 language sql
@@ -98,7 +99,8 @@ stable
 set search_path = ''
 as $$
   select case
-    when candidate in (loan.borrower_user_id, loan.responsible_lender_id)
+    when loan.status = 'ended'
+      or candidate in (loan.borrower_user_id, loan.responsible_lender_id)
       or loan.object_id is null
       or not exists (
         select 1 from app.object_owners
@@ -472,6 +474,75 @@ create trigger loans_lapse_lender_transfers
   for each row
   when (new.status = 'ended' and old.status <> 'ended')
   execute function app.lapse_lender_transfers();
+
+-- An open transfer that can no longer complete lapses at `at`.
+create function app.lapse_impossible_lender_transfers(transfer_ids uuid[], at timestamptz)
+returns void
+language sql
+set search_path = ''
+as $$
+  update app.loan_lender_transfers as transfer
+  set status = 'lapsed', resolved_at = at
+  where transfer.id = any(transfer_ids)
+    and transfer.status = 'proposed'
+    and not app.lender_transfer_possible(transfer);
+$$;
+
+revoke execute on function app.lapse_impossible_lender_transfers(uuid[], timestamptz)
+  from public;
+
+-- Losing what a transfer rests on ends it for good: it does not come back
+-- when the recipient owns the object again or the block is lifted.
+create function app.lapse_lender_transfers_after_owner_left()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  perform app.lapse_impossible_lender_transfers(
+    array(
+      select transfer.id
+      from app.loan_lender_transfers as transfer
+      join app.loans as loan on loan.id = transfer.loan_id
+      where loan.object_id = old.object_id and transfer.status = 'proposed'
+    ),
+    clock_timestamp()
+  );
+
+  return null;
+end;
+$$;
+
+revoke execute on function app.lapse_lender_transfers_after_owner_left() from public;
+
+create trigger object_owners_lapse_lender_transfers
+  after delete on app.object_owners
+  for each row execute function app.lapse_lender_transfers_after_owner_left();
+
+create function app.lapse_lender_transfers_after_block()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  perform app.lapse_impossible_lender_transfers(
+    array(
+      select id from app.loan_lender_transfers
+      where status = 'proposed'
+        and to_user_id in (new.blocker_id, new.blocked_id)
+    ),
+    new.created_at
+  );
+
+  return null;
+end;
+$$;
+
+revoke execute on function app.lapse_lender_transfers_after_block() from public;
+
+create trigger user_blocks_lapse_lender_transfers
+  after insert on app.user_blocks
+  for each row execute function app.lapse_lender_transfers_after_block();
 
 -- The circle check moves to the transfers: a later co-owner can become the
 -- responsible lender with the borrower's consent. The approver was an owner
