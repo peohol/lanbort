@@ -4,6 +4,7 @@ import { EmailSendError, MemoryEmailSender } from "@lanbort/email/testing";
 import { sql } from "kysely";
 import { afterAll, describe, expect, it } from "vitest";
 import type { UserActor } from "../actor";
+import { cancelLoan } from "../loans/cancellation";
 import { ConsumerRegistry, defineConsumer } from "../outbox/consumer";
 import { processOutboxBatch } from "../outbox/worker";
 import { sendFriendRequest } from "../social/commands";
@@ -207,17 +208,19 @@ describe("which notifications go out by e-mail (PS-COM-003, pilot standard)", ()
     ]);
   });
 
-  it("tells the borrower of an approved loan by e-mail, through the outbox", async () => {
-    const { borrower, loanId } = await reservedLoan();
+  it("tells the other party of a cancelled loan by e-mail through the outbox, but not of the approval", async () => {
+    const { borrower, owner, loanId } = await reservedLoan();
+    await run(cancelLoan, owner, { loanId });
     await deliverEvents();
     const sender = new MemoryEmailSender();
     await sendEmails(sender);
 
+    // Both are required; only the cancellation is time-critical.
     expect(await deliveriesOf(borrower)).toEqual([
-      expect.objectContaining({ kind: "loan.approved", status: "sent" }),
+      expect.objectContaining({ kind: "loan.cancelled", status: "sent" }),
     ]);
     const [email] = sender.to(await addressOf(borrower));
-    expect(email?.subject).toBe("Et lån er godkjent");
+    expect(email?.subject).toBe("Et lån er kansellert");
     // Only the kind and a link to the notification, never the loan itself.
     expect(JSON.stringify(email)).not.toContain(loanId);
   });

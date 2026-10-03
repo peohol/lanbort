@@ -102,7 +102,7 @@ export async function recordNotifications(
   await queueEmails(
     db,
     source,
-    shown.filter((draft) => sendsEmail(levelOf(draft.kind), chosen(draft)!)),
+    shown.filter((draft) => sendsEmail(draft.kind, chosen(draft)!)),
   );
 
   return inserted.length;

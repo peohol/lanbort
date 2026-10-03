@@ -1,4 +1,4 @@
-import { notificationKinds, type NotificationKind } from "@lanbort/contracts";
+import { emailReserveKinds, notificationKinds } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import {
   composeNotificationEmail,
@@ -28,7 +28,7 @@ describe("notification e-mails (WP-41)", () => {
     expect(email.subject).toBe("Et lån er kansellert");
     expect(email.text).toBe(
       `Et lån er kansellert.\n\nÅpne Lånbort for å se hva det gjelder:\n${link}\n\n` +
-        "Du får denne e-posten fordi viktige varsler om lån du er part i alltid sendes på e-post.\n",
+        "Du får denne e-posten fordi tidskritiske varsler om lån du er part i alltid sendes på e-post.\n",
     );
     expect(email.html).toContain(`<a href="${link}">`);
     expect(email.html).toContain('lang="nb"');
@@ -61,14 +61,19 @@ describe("notification e-mails (WP-41)", () => {
   });
 });
 
-describe("which levels go out by e-mail (pilot standard)", () => {
-  it("send required notifications always, the others only when chosen and in the app", () => {
+describe("which notifications go out by e-mail (pilot standard)", () => {
+  it("send the time-critical required kinds always, the others only when chosen and in the app", () => {
     const standard = effectivePreferences([]);
-    const level = (kind: NotificationKind) => notificationKinds[kind];
 
-    expect(sendsEmail(level("loan.cancelled"), standard)).toBe(true);
-    expect(sendsEmail(level("social.friend_request"), standard)).toBe(false);
-    expect(sendsEmail("information", standard)).toBe(false);
+    for (const kind of emailReserveKinds) {
+      expect(notificationKinds[kind]).toBe("required");
+      expect(sendsEmail(kind, standard)).toBe(true);
+    }
+    // Required, but not time-critical: in the app only.
+    expect(sendsEmail("loan.approved", standard)).toBe(false);
+    expect(sendsEmail("loan.amendment_withdrawn", standard)).toBe(false);
+    expect(sendsEmail("social.friend_request", standard)).toBe(false);
+    expect(sendsEmail("social.friend_request_accepted", standard)).toBe(false);
 
     const chosen = effectivePreferences([
       // Not configurable: ignored even if it were ever stored.
@@ -77,8 +82,9 @@ describe("which levels go out by e-mail (pilot standard)", () => {
       { level: "information", channel: "email", enabled: true },
       { level: "information", channel: "in_app", enabled: false },
     ]);
-    expect(sendsEmail("required", chosen)).toBe(true);
-    expect(sendsEmail("action", chosen)).toBe(true);
-    expect(sendsEmail("information", chosen)).toBe(false);
+    expect(sendsEmail("loan.cancelled", chosen)).toBe(true);
+    expect(sendsEmail("loan.approved", chosen)).toBe(false);
+    expect(sendsEmail("social.friend_request", chosen)).toBe(true);
+    expect(sendsEmail("social.friend_request_accepted", chosen)).toBe(false);
   });
 });

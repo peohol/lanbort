@@ -194,11 +194,12 @@ export async function deliverNotificationEmails(
   };
 
   for (const delivery of deliveries) {
+    const kind = delivery.kind as NotificationKind;
     const level = delivery.level as NotificationLevel;
     const chosen = preferences.get(delivery.recipient_id);
     const skip = skipReason(
       delivery,
-      chosen !== undefined && sendsEmail(level, chosen),
+      chosen !== undefined && sendsEmail(kind, chosen),
       clock(),
     );
     let outcome: Outcome;
@@ -210,7 +211,7 @@ export async function deliverNotificationEmails(
         await services.sender.send({
           to: delivery.address,
           ...composeNotificationEmail({
-            kind: delivery.kind as NotificationKind,
+            kind,
             level,
             notificationId: delivery.notification_id,
             appUrl: services.appUrl,

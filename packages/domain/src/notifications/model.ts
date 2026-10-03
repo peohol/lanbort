@@ -1,5 +1,6 @@
 import {
   channelRule,
+  emailReserveKinds,
   type NotificationChannel,
   type NotificationKind,
   type NotificationLevel,
@@ -80,17 +81,26 @@ export function shownInApp(
   );
 }
 
+const reserveKinds: ReadonlySet<NotificationKind> = new Set(emailReserveKinds);
+
 /**
- * Whether a notification of `level` also goes out by e-mail, the pilot's
- * external reserve channel: always for required notifications, and for the
- * other levels only when the user chose it. Only notifications that are in
- * the app go out, since the e-mail leads back to them.
+ * Whether a notification of `kind` also goes out by e-mail, the pilot's
+ * external reserve channel: required notifications only for the
+ * time-critical kinds ({@link emailReserveKinds}), and the other levels only
+ * when the user chose it. Only notifications that are in the app go out,
+ * since the e-mail leads back to them.
  */
 export function sendsEmail(
-  level: NotificationLevel,
+  kind: NotificationKind,
   preferences: EffectivePreferences,
 ): boolean {
-  return shownInApp(level, preferences) && preferences[level].email === true;
+  const level = levelOf(kind);
+
+  return (
+    shownInApp(level, preferences) &&
+    preferences[level].email === true &&
+    (level !== "required" || reserveKinds.has(kind))
+  );
 }
 
 export function presentPreferences(

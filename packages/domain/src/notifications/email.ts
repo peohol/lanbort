@@ -55,7 +55,7 @@ export const notificationEmailSubjects = {
 /** Why the recipient gets the e-mail at all (PS-COM-003). */
 const reasons = {
   required:
-    "Du får denne e-posten fordi viktige varsler om lån du er part i alltid sendes på e-post.",
+    "Du får denne e-posten fordi tidskritiske varsler om lån du er part i alltid sendes på e-post.",
   action:
     "Du får denne e-posten fordi du har valgt e-post for handlingsvarsler. Du kan slå det av i varslingsvalgene i Lånbort.",
   information:
