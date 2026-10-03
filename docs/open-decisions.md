@@ -149,6 +149,13 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Er meldingen i en låneforespørsel privat fritekst som skal ende-til-ende-krypteres (PS-COM-005), eller del av den strukturerte henvendelsen (PS-COM-006)? Inntil dette er besluttet, lagres den på forespørselen, vises bare for partene og kopieres aldri til hendelser eller logger. Kommer den inn under kryptering, flyttes den til chatten når OD-0005 er besluttet.
 - **Avhenger av:** OD-0005 og produktvurdering.
 
+### OD-0016 — Når ansvarlig utlåner regnes som reelt utilgjengelig
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-LOAN-009, PS-LOAN-015, PS-LOAN-021, scenario 10, OD-0003
+- **Spørsmål:** Hva skal til før ansvarlig utlåner regnes som reelt utilgjengelig for et lån, slik at en medeier kan overta ansvaret eller bekrefte fysisk mottak i den snevre rollen? Hvem fastslår det (frist uten svar, melding fra medeier eller låntaker, saksbehandling), og hvordan skilles det fra kortvarig fravær og fra død/varig utilgjengelighet (OD-0003)? Inntil dette er besluttet, registrerer ingen del av produktet utilgjengelighet. Overtakelse og snever mottaksbekreftelse er ferdig bygget og testet, men kan først tas i bruk når denne beslutningen gir dem en kilde. Frivillig overføring virker uavhengig av dette.
+- **Avhenger av:** Produktvurdering, eventuelt saksbehandlingen (WP-45) og OD-0003.
+
 ## Avklart
 
 ### OD-0009 — Konkret implementeringsstack og driftsleverandører

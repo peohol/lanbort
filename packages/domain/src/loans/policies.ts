@@ -1,6 +1,7 @@
 import type { LoanRequestRole } from "@lanbort/contracts";
 import type { Actor } from "../actor";
 import {
+  type ActorRule,
   allow,
   definePolicy,
   deny,
@@ -199,13 +200,27 @@ function asLoanParty<R extends LoanResource>(
 
 const bothSides = () => ["borrower", "lender"] as const;
 
+/**
+ * PS-LOAN-021, PS-ADM-002: the account standing that keeps what an existing
+ * loan needs to be finished or handed on: seeing it, saying what happened at
+ * the handover and the return, cancelling it, handing the lender's role on,
+ * and declining or withdrawing what was proposed. Friendship, membership,
+ * publication and blocks never take these away (the loaders check none of
+ * them). Today it is every active account, like any action; when accounts
+ * can be deactivated or suspended (WP-53), this is the one rule that lets
+ * such an account keep exactly these actions, and nothing that makes a new
+ * commitment (proposing or accepting a change, taking a role on).
+ */
+export const requireLoanStanding: ActorRule = requireActiveAccount;
+
 function loanPartyPolicy<R extends LoanResource>(
   action: string,
   sides: (resource: R) => readonly LoanRequestRole[],
+  standing: ActorRule = requireActiveAccount,
 ) {
   return definePolicy<R, void>({
     action,
-    actor: [requireActiveAccount],
+    actor: [standing],
     resource: [asLoanParty(sides)],
   });
 }
@@ -214,6 +229,7 @@ function loanPartyPolicy<R extends LoanResource>(
 export const readLoanPolicy = loanPartyPolicy<LoanResource>(
   "loan.read",
   bothSides,
+  requireLoanStanding,
 );
 
 /**
@@ -223,6 +239,7 @@ export const readLoanPolicy = loanPartyPolicy<LoanResource>(
 export const cancelLoanPolicy = loanPartyPolicy<LoanResource>(
   "loan.cancel",
   bothSides,
+  requireLoanStanding,
 );
 
 /** PS-LOAN-010: either party proposes a change. */
@@ -252,13 +269,18 @@ export const acceptLoanAmendmentPolicy = loanPartyPolicy<LoanAmendmentResource>(
 );
 
 export const declineLoanAmendmentPolicy =
-  loanPartyPolicy<LoanAmendmentResource>("loan.decline_amendment", otherSide);
+  loanPartyPolicy<LoanAmendmentResource>(
+    "loan.decline_amendment",
+    otherSide,
+    requireLoanStanding,
+  );
 
 /** The proposing side takes its proposal back. */
 export const withdrawLoanAmendmentPolicy =
   loanPartyPolicy<LoanAmendmentResource>(
     "loan.withdraw_amendment",
     proposingSide,
+    requireLoanStanding,
   );
 
 /**
@@ -268,6 +290,7 @@ export const withdrawLoanAmendmentPolicy =
 export const reportHandoverPolicy = loanPartyPolicy<LoanResource>(
   "loan.report_handover",
   bothSides,
+  requireLoanStanding,
 );
 
 /**
@@ -281,28 +304,63 @@ export const concludeHandoversPolicy = definePolicy({
   actor: [requireSystemProcess(handoverProcess)],
 });
 
-/** A return statement on a loan, with the side that statement belongs to. */
-export interface LoanReturnResource extends LoanResource {
+/**
+ * A loan with whether the caller, who is not its party, may confirm the
+ * receipt for the lender's side: a co-owner who owned the object at
+ * approval, while the responsible lender is established as really
+ * unavailable (PS-LOAN-015, `app.loan_receives_for_lender`).
+ */
+export interface LoanReceiptResource extends LoanResource {
+  readonly receivesForLender: boolean;
+}
+
+/**
+ * The parties as `sides` allows, and a co-owner in the narrow receipt role.
+ * To any other co-owner the loan still does not exist.
+ */
+function asPartyOrReceiver<R extends LoanReceiptResource>(
+  sides: (resource: R) => readonly LoanRequestRole[],
+): ResourceRule<R, void> {
+  const asParty = asLoanParty(sides);
+
+  return (input) =>
+    loanRoleOf(input.actor, input.resource) === null &&
+    input.resource.receivesForLender
+      ? allow
+      : asParty(input);
+}
+
+/**
+ * A return statement on a loan, with the side that statement belongs to.
+ * `receivesForLender` holds only for the lender's receipt.
+ */
+export interface LoanReturnResource extends LoanReceiptResource {
   readonly side: LoanRequestRole;
 }
 
 /**
  * PS-LOAN-014–015: each side says its own statements: the borrower that it
  * was returned or that they still have it, the responsible lender that it
- * was received or not. Only the responsible lender's receipt ends the loan;
- * another co-owner is not a party (the narrow receipt by a co-owner comes
- * with WP-35).
+ * was received or not. Only the lender side's receipt ends the loan. While
+ * the responsible lender is established as unavailable, a co-owner of the
+ * circle may confirm that receipt without becoming responsible; ownership
+ * alone is never enough.
  */
-export const reportReturnPolicy = loanPartyPolicy<LoanReturnResource>(
-  "loan.report_return",
-  ({ side }) => [side],
-);
+export const reportReturnPolicy = definePolicy<LoanReturnResource, void>({
+  action: "loan.report_return",
+  actor: [requireLoanStanding],
+  resource: [asPartyOrReceiver(({ side }) => [side])],
+});
 
-/** PS-LOAN-016: each party undoes only their own waiting confirmation. */
-export const undoReturnPolicy = loanPartyPolicy<LoanResource>(
-  "loan.undo_return",
-  bothSides,
-);
+/**
+ * PS-LOAN-016: each party, or a co-owner in the narrow receipt role, undoes
+ * only their own waiting confirmation.
+ */
+export const undoReturnPolicy = definePolicy<LoanReceiptResource, void>({
+  action: "loan.undo_return",
+  actor: [requireLoanStanding],
+  resource: [asPartyOrReceiver(bothSides)],
+});
 
 /**
  * The scheduled job that makes return confirmations whose undo buffer is
@@ -313,6 +371,149 @@ export const returnProcess = "loan.returns";
 export const concludeReturnsPolicy = definePolicy({
   action: "loan.conclude_returns",
   actor: [requireSystemProcess(returnProcess)],
+});
+
+/** PS-LOAN-009: the responsible lender offers the role to a co-owner. */
+export const offerResponsibilityPolicy = loanPartyPolicy<LoanResource>(
+  "loan.offer_responsibility",
+  () => ["lender"],
+  requireLoanStanding,
+);
+
+/**
+ * A loan with what the caller could do for its lender side
+ * (`app.loan_co_owner_standing`): null when they cannot step in at all.
+ */
+export interface LoanTakeoverResource extends LoanResource {
+  readonly standing: "circle" | "later" | null;
+  readonly lenderUnavailable: boolean;
+}
+
+/**
+ * PS-LOAN-009: a co-owner who can step in takes the role over, only while
+ * the responsible lender is established as really unavailable. The parties
+ * learn that they may not; to anyone else, other co-owners included, the
+ * loan does not exist.
+ */
+const mayTakeOver: ResourceRule<LoanTakeoverResource, void> = ({
+  actor,
+  resource,
+}) => {
+  if (loanRoleOf(actor, resource) !== null) {
+    return deny("forbidden");
+  }
+
+  return resource.standing !== null && resource.lenderUnavailable
+    ? allow
+    : deny("not_found");
+};
+
+export const takeOverResponsibilityPolicy = definePolicy<
+  LoanTakeoverResource,
+  void
+>({
+  action: "loan.take_over_responsibility",
+  actor: [requireActiveAccount],
+  resource: [mayTakeOver],
+});
+
+/** An open change of the responsible lender and the loan it is on. */
+export interface ResponsibilityTransferResource extends LoanResource {
+  readonly transfer: {
+    readonly kind: "voluntary" | "takeover";
+    readonly fromUserId: string;
+    readonly toUserId: string;
+    readonly needsBorrowerConsent: boolean;
+  };
+}
+
+/** Who answers the transfer: the recipient of an offer, the borrower when asked. */
+export function transferAnswerers({
+  borrowerUserId,
+  transfer,
+}: ResponsibilityTransferResource): string[] {
+  return [
+    ...(transfer.kind === "voluntary" ? [transfer.toUserId] : []),
+    ...(transfer.needsBorrowerConsent ? [borrowerUserId] : []),
+  ];
+}
+
+/** Who proposed it: the lender who offers the role, or the co-owner taking it. */
+export const transferProposer = ({
+  transfer,
+}: ResponsibilityTransferResource) =>
+  transfer.kind === "voluntary" ? transfer.fromUserId : transfer.toUserId;
+
+/**
+ * Only `allowed` act on the transfer. Everyone it concerns (the parties and
+ * the recipient) learns that they may not; to anyone else it does not exist.
+ */
+function onTransfer(
+  allowed: (resource: ResponsibilityTransferResource) => readonly string[],
+): ResourceRule<ResponsibilityTransferResource, void> {
+  return ({ actor, resource }) => {
+    if (actor.kind !== "user") {
+      return deny("not_found");
+    }
+
+    if (allowed(resource).includes(actor.userId)) {
+      return allow;
+    }
+
+    const concerned = [
+      resource.borrowerUserId,
+      resource.responsibleLenderId,
+      resource.transfer.fromUserId,
+      resource.transfer.toUserId,
+    ];
+
+    return concerned.includes(actor.userId)
+      ? deny("forbidden")
+      : deny("not_found");
+  };
+}
+
+/**
+ * PS-LOAN-009: the recipient accepts the role offered to them (nobody is
+ * made responsible against their will), and the borrower consents when a
+ * co-owner who joined after the approval steps in.
+ */
+export const acceptResponsibilityTransferPolicy = definePolicy<
+  ResponsibilityTransferResource,
+  void
+>({
+  action: "loan.accept_responsibility_transfer",
+  actor: [requireActiveAccount],
+  resource: [onTransfer(transferAnswerers)],
+});
+
+/** The same answerers may say no. */
+export const declineResponsibilityTransferPolicy = definePolicy<
+  ResponsibilityTransferResource,
+  void
+>({
+  action: "loan.decline_responsibility_transfer",
+  actor: [requireLoanStanding],
+  resource: [onTransfer(transferAnswerers)],
+});
+
+/** Whoever proposed the transfer takes it back. */
+export const withdrawResponsibilityTransferPolicy = definePolicy<
+  ResponsibilityTransferResource,
+  void
+>({
+  action: "loan.withdraw_responsibility_transfer",
+  actor: [requireLoanStanding],
+  resource: [onTransfer((resource) => [transferProposer(resource)])],
+});
+
+/**
+ * A co-owner's own list of loans they may act on without being a party
+ * (PS-LOAN-009, PS-LOAN-015).
+ */
+export const listCoOwnerLoansPolicy = definePolicy<unknown, void>({
+  action: "loan.list_for_co_owner",
+  actor: [requireActiveAccount],
 });
 
 export const loanRequestPolicies = [
@@ -336,4 +537,10 @@ export const loanRequestPolicies = [
   reportReturnPolicy,
   undoReturnPolicy,
   concludeReturnsPolicy,
+  offerResponsibilityPolicy,
+  takeOverResponsibilityPolicy,
+  acceptResponsibilityTransferPolicy,
+  declineResponsibilityTransferPolicy,
+  withdrawResponsibilityTransferPolicy,
+  listCoOwnerLoansPolicy,
 ];

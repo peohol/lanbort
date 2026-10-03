@@ -44,7 +44,13 @@ import {
 } from "./policies";
 import { findLoan } from "./reservations";
 import { afterCursor, loadRequest, loadTarget, originOf } from "./resources";
-import { findPendingReturns, loadReturnStatements } from "./return-store";
+import { presentTransfer } from "./responsibility";
+import { findTransfer } from "./responsibility-store";
+import {
+  findPendingReturns,
+  loadReturnStatements,
+  type RecordedReturnStatement,
+} from "./return-store";
 import {
   loadAcceptances,
   loadDerivedAvailability,
@@ -360,6 +366,13 @@ const presentStatement = <O extends string>(
     reportedAt: statement.reportedAt.toISOString(),
   };
 
+const presentReturnStatement = (statement: RecordedReturnStatement | null) =>
+  statement && {
+    outcome: statement.outcome,
+    reportedAt: statement.reportedAt.toISOString(),
+    reportedAs: statement.reportedAs,
+  };
+
 /**
  * While a reserved loan waits for an answer to «not handed over», when the
  * waiting ends (PS-LOAN-012). Once the other side has answered, or the loan
@@ -383,7 +396,9 @@ function answerDue(
  * version: the snapshot taken at approval, with the changes both parties
  * agreed since (PS-LOAN-010), never the object as it is now. An open
  * proposal is shown to both, with the side that made it, so each can see
- * who has to answer (UX-JRN-005).
+ * who has to answer (UX-JRN-005), and so is an open change of the
+ * responsible lender (PS-LOAN-009). A co-owner's narrow receipt shows as
+ * the lender side's statement, marked as theirs.
  */
 export const readLoan = defineQuery({
   name: "loan.read",
@@ -405,16 +420,20 @@ export const readLoan = defineQuery({
         loan.agreement.version,
       );
       const pending = await findPendingReturns(tx, loan.id);
+      const open = await findTransfer(tx, loan.id);
+      const transfer = open?.possible ? open : null;
 
       return {
-        resource: { ...loan, amendment, handover, returns, pending },
+        resource: { ...loan, amendment, handover, returns, pending, transfer },
         context: undefined,
       };
     }),
   present: ({ actor, resource, now }): Loan => {
     const { ending, handover, returns } = resource;
     const role = loanRoleOf(actor, resource);
-    const pending = resource.pending.find((own) => own.role === role);
+    const pending = resource.pending.find(
+      (own) => actor.kind === "user" && own.userId === actor.userId,
+    );
 
     return {
       id: resource.id,
@@ -459,8 +478,12 @@ export const readLoan = defineQuery({
         answerDueAt: answerDue(resource.status, handover),
       },
       return: {
-        borrower: presentStatement(latestReturnStatement(returns, "borrower")),
-        lender: presentStatement(latestReturnStatement(returns, "lender")),
+        borrower: presentReturnStatement(
+          latestReturnStatement(returns, "borrower"),
+        ),
+        lender: presentReturnStatement(
+          latestReturnStatement(returns, "lender"),
+        ),
         pending: pending
           ? {
               outcome: pending.outcome,
@@ -468,6 +491,8 @@ export const readLoan = defineQuery({
             }
           : null,
       },
+      responsibilityTransfer:
+        resource.transfer && presentTransfer(resource.transfer),
       approvedAt: resource.approvedAt.toISOString(),
     };
   },
