@@ -49,6 +49,11 @@ export interface AppAuthIdentities {
   user_id: string;
 }
 
+export interface AppCaseActionNotices {
+  action_id: string;
+  noticed_at: Timestamp;
+}
+
 export interface AppCaseActions {
   actor_user_id: string | null;
   at: Timestamp;
@@ -665,6 +670,7 @@ export interface AppVerifiedContacts {
 export interface DB {
   "app.audit_events": AppAuditEvents;
   "app.auth_identities": AppAuthIdentities;
+  "app.case_action_notices": AppCaseActionNotices;
   "app.case_actions": AppCaseActions;
   "app.case_entries": AppCaseEntries;
   "app.case_participants": AppCaseParticipants;
