@@ -59,6 +59,11 @@ const nonUserRoutes: Record<
     reason:
       "ends unanswered handover clarifications at their deadline, authenticated with the cron secret",
   },
+  "GET /api/internal/loan-returns": {
+    access: "scheduler",
+    reason:
+      "makes return confirmations whose undo buffer is over, authenticated with the cron secret",
+  },
 };
 
 const httpMethods = [

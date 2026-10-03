@@ -321,6 +321,31 @@ export interface AppLoanReservations {
   period: string;
 }
 
+export interface AppLoanReturnConfirmations {
+  agreement_version: number;
+  effective_at: Timestamp;
+  id: Generated<string>;
+  loan_id: string;
+  outcome: string;
+  reporter_role: string;
+  requested_at: Timestamp;
+  requested_by_user_id: string;
+  resolved_at: Timestamp | null;
+  status: Generated<string>;
+}
+
+export interface AppLoanReturnReports {
+  agreement_version: number;
+  confirmation_id: string | null;
+  id: Generated<string>;
+  loan_id: string;
+  outcome: string;
+  position: Generated<Int8>;
+  reported_at: Generated<Timestamp>;
+  reported_by_user_id: string;
+  reporter_role: string;
+}
+
 export interface AppLoans {
   approved_at: Generated<Timestamp>;
   borrower_user_id: string;
@@ -515,6 +540,8 @@ export interface DB {
   "app.loan_request_responsibility_acceptances": AppLoanRequestResponsibilityAcceptances;
   "app.loan_requests": AppLoanRequests;
   "app.loan_reservations": AppLoanReservations;
+  "app.loan_return_confirmations": AppLoanReturnConfirmations;
+  "app.loan_return_reports": AppLoanReturnReports;
   "app.loans": AppLoans;
   "app.object_availability_intervals": AppObjectAvailabilityIntervals;
   "app.object_categories": AppObjectCategories;

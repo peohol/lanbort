@@ -4,7 +4,11 @@ import { type Kysely, sql } from "kysely";
 import type { AvailabilityBlockSource } from "../objects/blocks";
 import type { ObjectCommitmentSource } from "../objects/commitments";
 import type { ObjectState } from "../objects/state";
-import type { LoanPeriodInterval, StoredLoanStatus } from "./model";
+import {
+  type LoanPeriodInterval,
+  returnPhaseStatuses,
+  type StoredLoanStatus,
+} from "./model";
 
 /**
  * Database access for approved loans (WP-31, WP-32): the loan, its agreement
@@ -21,8 +25,21 @@ type Db = Kysely<Database>;
  */
 export const committedLoanStatuses: readonly StoredLoanStatus[] = [
   "reserved",
-  "active",
   "disputed",
+  ...returnPhaseStatuses,
+];
+
+/**
+ * The statuses in which nobody knows for sure who has the object
+ * (PS-LOAN-013/014/017): a disputed handover, a return that is unsettled
+ * or disputed, a borrower who still has it. The database's
+ * `app.possession_uncertain` uses the same list.
+ */
+export const possessionUncertainStatuses: readonly StoredLoanStatus[] = [
+  "disputed",
+  "awaiting_return",
+  "late",
+  "return_disputed",
 ];
 
 /** The database form of a period. */
@@ -43,6 +60,7 @@ export const loanReservationBlocks: AvailabilityBlockSource = {
     const rows = await db
       .selectFrom("app.loan_reservations")
       .select([
+        "loan_id",
         "object_id",
         sql<string>`lower(period)::text`.as("from"),
         sql<string>`upper(period)::text`.as("until"),
@@ -52,18 +70,24 @@ export const loanReservationBlocks: AvailabilityBlockSource = {
 
     return rows.map((row) => ({
       objectId: row.object_id,
+      loanId: row.loan_id,
       period: { from: row.from, until: row.until },
     }));
   },
 };
 
 /**
- * PS-LOAN-013, PS-OBJ-005: while the parties disagree on whether a loan was
- * handed over, nobody knows who has the object, so it is blocked for new
- * colliding loans from that loan's handover day on, with no end, until they
- * agree. Loans already approved for later keep their reservations
- * (scenario 61); this only limits new ones, as the database does
- * (`app.possession_uncertain`).
+ * PS-LOAN-013/014/017, PS-OBJ-005: while nobody knows for sure who has the
+ * object ({@link possessionUncertainStatuses}), it is blocked for new
+ * colliding loans from that loan's handover day on, with no end, until the
+ * parties settle it. The same holds once an active loan's return day is
+ * over without a confirmed return: the object may still be with the
+ * borrower, so from that day on it is blocked too (`appliesFrom`; only the
+ * domain knows the day, the database checks the statuses). Loans already
+ * approved for later keep their reservations (scenarios 58 and 61); this
+ * only limits new ones, as the database does (`app.possession_uncertain`).
+ * A reopened loan holds no reservation, so the days come from its
+ * agreement.
  */
 export const loanPossessionBlocks: AvailabilityBlockSource = {
   name: "loan_possession",
@@ -74,23 +98,39 @@ export const loanPossessionBlocks: AvailabilityBlockSource = {
 
     const rows = await db
       .selectFrom("app.loans as loan")
-      .innerJoin(
-        "app.loan_reservations as reservation",
-        "reservation.loan_id",
-        "loan.id",
-      )
       .select([
-        "reservation.object_id",
-        sql<string>`lower(reservation.period)::text`.as("from"),
+        "loan.id",
+        "loan.object_id",
+        "loan.status",
+        sql<string>`lower((app.current_loan_agreement(loan.id)).period)::text`.as(
+          "from",
+        ),
+        sql<string>`upper((app.current_loan_agreement(loan.id)).period)::text`.as(
+          "until",
+        ),
       ])
-      .where("reservation.object_id", "in", objectIds)
-      .where("loan.status", "=", "disputed")
+      .where("loan.object_id", "in", objectIds)
+      .where("loan.status", "in", [...possessionUncertainStatuses, "active"])
       .execute();
 
-    return rows.map((row) => ({
-      objectId: row.object_id,
-      period: { from: row.from, until: null },
-    }));
+    return rows.flatMap((row) =>
+      row.object_id === null
+        ? []
+        : [
+            row.status === "active"
+              ? {
+                  objectId: row.object_id,
+                  loanId: row.id,
+                  period: { from: row.until, until: null },
+                  appliesFrom: row.until,
+                }
+              : {
+                  objectId: row.object_id,
+                  loanId: row.id,
+                  period: { from: row.from, until: null },
+                },
+          ],
+    );
   },
 };
 

@@ -282,14 +282,23 @@ export const loanApprovalResultSchema = z.strictObject({
  *   whether the object was handed over, or one party says it was not and the
  *   other may still answer («avventer overleveringsavklaring», PS-LOAN-012).
  * - `active`: handed over («utlånt»).
- * - `disputed`: the parties disagree on whether it was handed over
- *   («usikker/uenighet», PS-LOAN-013).
+ * - `awaiting_return`: the return day is over, or a party has said
+ *   something about the return, and the responsible lender has not
+ *   confirmed receiving it («avventer returavklaring», PS-LOAN-014). It
+ *   never means late by itself.
+ * - `late`: the borrower says they still have the object after the return
+ *   day, without an agreed extension («forsinket», PS-LOAN-014).
+ * - `disputed`: the parties disagree on whether it was handed over or
+ *   returned, or a confirmed return was contradicted later
+ *   («usikker/uenighet», PS-LOAN-013, PS-LOAN-017).
  * - `ended`: over; see `endReason` («avsluttet»).
  */
 export const loanStatusSchema = z.enum([
   "reserved",
   "awaiting_handover",
   "active",
+  "awaiting_return",
+  "late",
   "disputed",
   "ended",
 ]);
@@ -301,9 +310,15 @@ export const loanStatusSchema = z.enum([
  * - `not_completed`: the handover time came, but the object was never
  *   handed over («ikke gjennomført», PS-LOAN-012). It says nothing about
  *   whose fault that was.
- * Later work packages add the other endings.
+ * - `returned`: the responsible lender confirmed receiving the object back
+ *   (PS-LOAN-015), possibly before the agreed return day (PS-LOAN-020).
+ * Later work packages add the administrative endings.
  */
-export const loanEndReasonSchema = z.enum(["cancelled", "not_completed"]);
+export const loanEndReasonSchema = z.enum([
+  "cancelled",
+  "not_completed",
+  "returned",
+]);
 
 export const loanReadQuerySchema = z.strictObject({ loanId: loanIdSchema });
 
@@ -388,9 +403,65 @@ export const loanHandoverResultSchema = z.strictObject({
   agreementVersion: z.int(),
 });
 
+/**
+ * What a party says about the return (PS-LOAN-014–015): the borrower that
+ * it was `returned` or that they `still_has` it, the responsible lender that
+ * it was `received` or `not_received`. Only the lender's receipt ends the
+ * loan.
+ */
+export const returnOutcomeSchema = z.enum([
+  "returned",
+  "still_has",
+  "received",
+  "not_received",
+]);
+
+/**
+ * PS-LOAN-014–017: a party says what happened at the return, on the
+ * agreement version they saw. A return confirmation (`returned`,
+ * `received`) waits 30 seconds, during which its party can undo it, unless
+ * they ask for it `immediately` (PS-LOAN-016); sending it again with
+ * `immediately` while it waits makes it at once. The other statements count
+ * at once. After the loan ended as returned, a party can still contradict
+ * the receipt (`not_received`, `still_has`), which reopens it.
+ */
+export const reportReturnSchema = z.strictObject({
+  loanId: loanIdSchema,
+  agreementVersion: z.int().min(1),
+  outcome: returnOutcomeSchema,
+  immediately: z.boolean().optional(),
+});
+
+/** The caller's return confirmation while it can still be undone. */
+const pendingReturnSchema = z
+  .strictObject({
+    outcome: returnOutcomeSchema.extract(["returned", "received"]),
+    /** When it is made unless undone first. */
+    effectiveAt: z.iso.datetime(),
+  })
+  .nullable();
+
+/** PS-LOAN-016: the caller takes back their waiting return confirmation. */
+export const undoReturnSchema = loanReferenceSchema;
+
+export const loanReturnResultSchema = z.strictObject({
+  loanId: loanIdSchema,
+  /** The loan's status after the command. */
+  status: loanStatusSchema,
+  agreementVersion: z.int(),
+  pending: pendingReturnSchema,
+});
+
 const handoverStatementSchema = z
   .strictObject({
     outcome: handoverOutcomeSchema,
+    reportedAt: z.iso.datetime(),
+  })
+  .nullable();
+
+const returnStatementSchema = z
+  .strictObject({
+    outcome: returnOutcomeSchema,
     reportedAt: z.iso.datetime(),
   })
   .nullable();
@@ -455,6 +526,16 @@ export const loanSchema = z.strictObject({
     lender: handoverStatementSchema,
     answerDueAt: z.iso.datetime().nullable(),
   }),
+  /**
+   * What each party has said about the return of the current agreement, if
+   * anything, and the caller's own confirmation while it can be undone
+   * (only the caller sees it).
+   */
+  return: z.strictObject({
+    borrower: returnStatementSchema,
+    lender: returnStatementSchema,
+    pending: pendingReturnSchema,
+  }),
   approvedAt: z.iso.datetime(),
 });
 
@@ -482,3 +563,6 @@ export type LoanAmendmentResult = z.infer<typeof loanAmendmentResultSchema>;
 export type HandoverOutcome = z.infer<typeof handoverOutcomeSchema>;
 export type ReportHandover = z.infer<typeof reportHandoverSchema>;
 export type LoanHandoverResult = z.infer<typeof loanHandoverResultSchema>;
+export type ReturnOutcome = z.infer<typeof returnOutcomeSchema>;
+export type ReportReturn = z.infer<typeof reportReturnSchema>;
+export type LoanReturnResult = z.infer<typeof loanReturnResultSchema>;

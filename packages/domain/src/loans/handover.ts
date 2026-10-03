@@ -40,6 +40,7 @@ import {
 } from "./policies";
 import { loadLockedLoan } from "./resources";
 import { endLoan, findLoan, type LoanRecord } from "./reservations";
+import { settleDueReturns } from "./return";
 
 /**
  * The handover and the active loan (WP-33, PS-LOAN-012–013). The parties say
@@ -152,7 +153,7 @@ const handoverResult = (
  * 3. the caller may say it now ({@link handoverRefusal}): «handed over»
  *    from the handover day on, «not handed over» once that day is over, and
  *    once the loan is active only the side that has not spoken may still
- *    contradict it;
+ *    contradict it; once the return is under way (WP-34), it is settled;
  * 4. the statement is recorded (append-only), and the loan moves to what
  *    the statements of both sides now say ({@link statusAfterHandover}):
  *    one side's «handed over» makes it active, contradicting statements
@@ -172,7 +173,8 @@ export const reportHandover = defineCommand({
   idempotency: "required",
   load: ({ tx, input }) => loadLockedLoan(tx, input.loanId),
   execute: async ({ tx, actor, input, resource, events, now }) => {
-    const { loan } = resource;
+    // A return confirmation that already took effect counts first.
+    const { loan } = await settleDueReturns(tx, resource.loan, now, events);
     const role = loanRoleOf(actor, resource);
 
     if (!role) {
@@ -183,11 +185,7 @@ export const reportHandover = defineCommand({
       conflict("The agreement has changed", ["agreementVersion"]);
     }
 
-    const reading = await loadHandoverReading(
-      tx,
-      loan.id,
-      loan.agreement.version,
-    );
+    const reading = await loadHandoverReading(tx, loan.id);
 
     if (reading[role]?.outcome === input.outcome) {
       return handoverResult(loan, loan.status, now);
@@ -271,11 +269,7 @@ export const concludeHandovers = defineCommand({
       if (loan?.status !== "reserved" || loan.objectId !== due.objectId)
         continue;
 
-      const reading = await loadHandoverReading(
-        tx,
-        loan.id,
-        loan.agreement.version,
-      );
+      const reading = await loadHandoverReading(tx, loan.id);
       const verdict = handoverVerdict(reading, now);
       if (verdict !== "unanswered") continue;
 

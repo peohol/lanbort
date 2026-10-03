@@ -24,7 +24,6 @@ export interface AvailabilityBlockSource {
   ): Promise<readonly (AvailabilityBlock & { readonly objectId: string })[]>;
 }
 
-/** Unresolved possession after a return is added with WP-34. */
 export const availabilityBlockSources: readonly AvailabilityBlockSource[] = [
   coOwnerRestrictionBlocks,
   coOwnerFreezeBlocks,
@@ -50,8 +49,8 @@ export async function loadAvailabilityBlocks(
     sources.map((source) => source.load(db, objectIds)),
   );
 
-  for (const { objectId, period } of loaded.flat()) {
-    blocks.get(objectId)?.push({ period });
+  for (const { objectId, ...block } of loaded.flat()) {
+    blocks.get(objectId)?.push(block);
   }
 
   return blocks;

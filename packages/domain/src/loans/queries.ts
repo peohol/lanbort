@@ -24,7 +24,7 @@ import { findOpenAmendment } from "./amendment-store";
 import { loadHandoverReading } from "./handover-store";
 import {
   type HandoverReading,
-  type HandoverStatement,
+  latestReturnStatement,
   isOpen,
   type LoanRequestRecord,
   openStanding,
@@ -44,6 +44,7 @@ import {
 } from "./policies";
 import { findLoan } from "./reservations";
 import { afterCursor, loadRequest, loadTarget, originOf } from "./resources";
+import { findPendingReturns, loadReturnStatements } from "./return-store";
 import {
   loadAcceptances,
   loadDerivedAvailability,
@@ -351,7 +352,9 @@ export const listLoanRequests = defineQuery({
   present: ({ resource }): LoanRequestList => resource,
 });
 
-const presentStatement = (statement: HandoverStatement | null) =>
+const presentStatement = <O extends string>(
+  statement: { outcome: O; reportedAt: Date } | null,
+) =>
   statement && {
     outcome: statement.outcome,
     reportedAt: statement.reportedAt.toISOString(),
@@ -395,25 +398,29 @@ export const readLoan = defineQuery({
       }
 
       const amendment = await findOpenAmendment(tx, loan.id);
-      const handover = await loadHandoverReading(
+      const handover = await loadHandoverReading(tx, loan.id);
+      const returns = await loadReturnStatements(
         tx,
         loan.id,
         loan.agreement.version,
       );
+      const pending = await findPendingReturns(tx, loan.id);
 
       return {
-        resource: { ...loan, amendment, handover },
+        resource: { ...loan, amendment, handover, returns, pending },
         context: undefined,
       };
     }),
   present: ({ actor, resource, now }): Loan => {
-    const { ending, handover } = resource;
+    const { ending, handover, returns } = resource;
+    const role = loanRoleOf(actor, resource);
+    const pending = resource.pending.find((own) => own.role === role);
 
     return {
       id: resource.id,
       requestId: resource.requestId,
       objectId: resource.objectId,
-      role: loanRoleOf(actor, resource) ?? "lender",
+      role: role ?? "lender",
       borrowerUserId: resource.borrowerUserId,
       responsibleLenderId: resource.responsibleLenderId,
       status: presentedLoanStatus(
@@ -450,6 +457,16 @@ export const readLoan = defineQuery({
         borrower: presentStatement(handover.borrower),
         lender: presentStatement(handover.lender),
         answerDueAt: answerDue(resource.status, handover),
+      },
+      return: {
+        borrower: presentStatement(latestReturnStatement(returns, "borrower")),
+        lender: presentStatement(latestReturnStatement(returns, "lender")),
+        pending: pending
+          ? {
+              outcome: pending.outcome,
+              effectiveAt: pending.effectiveAt.toISOString(),
+            }
+          : null,
       },
       approvedAt: resource.approvedAt.toISOString(),
     };

@@ -8,7 +8,7 @@ import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
 import { defineCommand } from "../commands/command";
 import { DomainError } from "../errors";
-import { calendarDate, type DateInterval } from "../objects/availability";
+import { calendarDate } from "../objects/availability";
 import { actingUserId, type ObjectState } from "../objects/state";
 import {
   agreeLoanPeriod,
@@ -24,11 +24,15 @@ import {
   loanAmendmentProposed,
   loanAmendmentWithdrawn,
 } from "./events";
+import type { EventRecorder } from "../events/recorder";
+import { setLoanStatus } from "./handover-store";
 import {
   amendmentFits,
   fromApiPeriod,
   type LoanPeriodInterval,
   notReservedReason,
+  periodChangeable,
+  type StoredLoanStatus,
   samePeriod,
 } from "./model";
 import {
@@ -39,6 +43,7 @@ import {
   withdrawLoanAmendmentPolicy,
 } from "./policies";
 import { type LoadedLoan, loadAmendment, loadLockedLoan } from "./resources";
+import { settleDueReturns } from "./return";
 import { loadDerivedAvailability } from "./store";
 
 function conflict(message: string, fields: readonly string[] = []): never {
@@ -60,45 +65,63 @@ type Db = Kysely<Database>;
 type ChangeableLoan = LoadedLoan & { readonly object: ObjectState };
 
 /**
- * The agreement can still change: the loan is reserved. That includes the
- * handover clarification after the handover day: agreeing a new handover
- * day there is how the loan goes on (PS-LOAN-012), and its period cannot
- * start in the past ({@link amendmentFits}). The statements made about the
- * old handover stay on the old version. Changes during the loan (extension)
- * come with the return (WP-34).
+ * The resource with return confirmations that are due made first
+ * ({@link settleDueReturns}), so an agreed change never overtakes a receipt
+ * that already took effect.
+ */
+async function settled<R extends LoadedLoan>(
+  db: Db,
+  resource: R,
+  now: Date,
+  events: EventRecorder,
+): Promise<R> {
+  const { loan, made } = await settleDueReturns(db, resource.loan, now, events);
+
+  return made === 0 ? resource : { ...resource, loan };
+}
+
+/**
+ * The agreement can still change ({@link periodChangeable}): the loan is
+ * reserved, including the handover clarification after the handover day,
+ * where agreeing a new handover day is how the loan goes on (PS-LOAN-012);
+ * or it is handed over and active or late, where only the return day moves
+ * (extension, PS-LOAN-014). The statements about the old handover or return
+ * stay on the old version as history.
  */
 function requireChangeable(
   resource: LoadedLoan,
 ): asserts resource is ChangeableLoan {
-  if (resource.loan.status !== "reserved" || !resource.object) {
+  if (!periodChangeable(resource.loan.status) || !resource.object) {
     conflict(notReservedReason(resource.loan.status));
   }
 }
 
 /**
  * Scenario 26: the period can become `proposed` only if every day it adds
- * is actually available now, so it never reaches into another approved
- * loan's reservation or a co-owner's restriction ({@link amendmentFits}).
- * Returns the availability it was checked against.
+ * is open now, so it never reaches into another approved loan's
+ * reservation, uncertain possession or a co-owner's restriction
+ * ({@link amendmentFits}). The loan's own reservation and possession are its
+ * own, and do not count.
  */
 async function requireFits(
   db: Db,
   { loan, object }: ChangeableLoan,
   proposed: LoanPeriodInterval,
   today: string,
-): Promise<DateInterval[]> {
-  const { effective } = await loadDerivedAvailability(
+): Promise<void> {
+  const { open } = await loadDerivedAvailability(
     db,
     object.objectId,
     today,
     object.status,
+    { exceptLoanId: loan.id },
   );
 
-  if (!amendmentFits(loan.agreement.period, proposed, effective, today)) {
+  if (
+    !amendmentFits(loan.status, loan.agreement.period, proposed, open, today)
+  ) {
     conflict("The object is not available then", ["period"]);
   }
-
-  return effective;
 }
 
 /**
@@ -118,7 +141,8 @@ export const proposeLoanAmendment = defineCommand({
   policy: proposeLoanAmendmentPolicy,
   idempotency: "required",
   load: ({ tx, input }) => loadLockedLoan(tx, input.loanId),
-  execute: async ({ tx, actor, input, resource, events, now }) => {
+  execute: async ({ tx, actor, input, resource: loaded, events, now }) => {
+    const resource = await settled(tx, loaded, now, events);
     const { loan } = resource;
     const role = loanRoleOf(actor, resource);
     const today = calendarDate(now);
@@ -148,12 +172,7 @@ export const proposeLoanAmendment = defineCommand({
       throw new DomainError("invalid_input", "Nothing changes", ["period"]);
     }
 
-    if (period.from < today) {
-      throw new DomainError("invalid_input", "The start has passed", [
-        "period.start",
-      ]);
-    }
-
+    requireTimely(loan.status, loan.agreement.period, period, today);
     await requireFits(tx, resource, period, today);
 
     const amendmentId = await insertAmendment(tx, {
@@ -180,6 +199,35 @@ export const proposeLoanAmendment = defineCommand({
     );
   },
 });
+
+/**
+ * Before the handover a new period cannot start in the past; after it, the
+ * handover day stays and the new return day is today or later.
+ */
+function requireTimely(
+  status: StoredLoanStatus,
+  current: LoanPeriodInterval,
+  proposed: LoanPeriodInterval,
+  today: string,
+): void {
+  if (status === "reserved" && proposed.from < today) {
+    throw new DomainError("invalid_input", "The start has passed", [
+      "period.start",
+    ]);
+  }
+
+  if (status !== "reserved" && proposed.from !== current.from) {
+    throw new DomainError("invalid_input", "The handover has happened", [
+      "period.start",
+    ]);
+  }
+
+  if (status !== "reserved" && proposed.until <= today) {
+    throw new DomainError("invalid_input", "The return day has passed", [
+      "period.end",
+    ]);
+  }
+}
 
 const loadLockedAmendment = ({
   tx,
@@ -216,7 +264,8 @@ export const acceptLoanAmendment = defineCommand({
   policy: acceptLoanAmendmentPolicy,
   idempotency: "required",
   load: loadLockedAmendment,
-  execute: async ({ tx, actor, resource, events, now }) => {
+  execute: async ({ tx, actor, resource: loaded, events, now }) => {
+    const resource = await settled(tx, loaded, now, events);
     const { loan, amendment } = resource;
 
     if (amendment.status === "accepted") {
@@ -234,7 +283,13 @@ export const acceptLoanAmendment = defineCommand({
       conflict("The agreement has changed");
     }
 
-    const effective = await requireFits(tx, resource, amendment.period, today);
+    await requireFits(tx, resource, amendment.period, today);
+    const { effective } = await loadDerivedAvailability(
+      tx,
+      resource.object.objectId,
+      today,
+      resource.object.status,
+    );
     const version = loan.agreement.version + 1;
 
     await agreeLoanPeriod(tx, {
@@ -245,6 +300,18 @@ export const acceptLoanAmendment = defineCommand({
       period: amendment.period,
       now,
     });
+
+    // The borrower who still had it has an agreed return day again: the
+    // statements on the old version are history (vision «Når
+    // returtidspunktet passeres»).
+    if (loan.status === "late") {
+      await setLoanStatus(tx, {
+        loanId: loan.id,
+        from: "late",
+        to: "active",
+        now,
+      });
+    }
 
     events.record(loanAmendmentAccepted, {
       resourceId: loan.id,

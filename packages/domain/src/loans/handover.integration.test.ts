@@ -161,7 +161,8 @@ describe("the handover (PS-LOAN-012)", () => {
       });
     }
 
-    // It holds its period as before; cancelling and changing are over.
+    // It holds its period as before; cancelling and a new handover day are
+    // over (only the return day can still be changed, WP-34).
     expect(await reservation(loanId)).toBe(range(0, 2));
     await expect(run(cancelLoan, owner, { loanId })).rejects.toMatchObject(
       conflict,
@@ -170,9 +171,9 @@ describe("the handover (PS-LOAN-012)", () => {
       run(proposeLoanAmendment, borrower, {
         loanId,
         agreementVersion: 1,
-        period: { start: day(0), end: day(5) },
+        period: { start: day(1), end: day(5) },
       }),
-    ).rejects.toMatchObject(conflict);
+    ).rejects.toMatchObject({ code: "invalid_input" });
 
     // The other side agrees; the side that confirmed cannot take it back.
     expect((await say(owner, loanId, "handed_over")).status).toBe("active");
@@ -240,8 +241,12 @@ describe("the handover (PS-LOAN-012)", () => {
     expect(await statusOf(loanId)).toMatchObject({ status: "reserved" });
     expect(await loanEvents(loanId)).toEqual(["loan.reserved"]);
 
-    // It can still be handed over late.
-    expect((await say(owner, loanId, "handed_over")).status).toBe("active");
+    // It can still be handed over late; past its return day, it then awaits
+    // the return at once (WP-34).
+    expect((await say(owner, loanId, "handed_over")).status).toBe(
+      "awaiting_return",
+    );
+    expect(await statusOf(loanId)).toMatchObject({ status: "active" });
   });
 
   it("ends as not completed, not cancelled, when both say it was not handed over", async () => {
