@@ -384,9 +384,9 @@ describe("the handover (PS-LOAN-012)", () => {
     const { amendmentId } = await run(proposeLoanAmendment, owner, {
       loanId,
       agreementVersion: 1,
-      // Long enough that the return day is not over 73 hours later at any
-      // time of day.
-      period: { start: day(1), end: day(4) },
+      // Long enough that the return day is not over when the old
+      // clarification's deadline passes below, whatever the time of day.
+      period: { start: day(1), end: day(5) },
     });
     await run(acceptLoanAmendment, borrower, { loanId, amendmentId });
 
