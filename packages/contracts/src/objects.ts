@@ -13,8 +13,8 @@ export const objectImageMaxUploadBytes = 4 * 1024 * 1024;
 export const availabilityMaxIntervals = 50;
 
 const noControlCharacters = /^[^\p{Cc}]*$/u;
-// Free text may contain line breaks and tabs, but no other control characters.
-const multilineText = /^(?:[^\p{Cc}]|[\t\n\r])*$/u;
+/** Free text may contain line breaks and tabs, but no other control characters. */
+export const multilineText = /^(?:[^\p{Cc}]|[\t\n\r])*$/u;
 
 export const objectIdSchema = z.uuid();
 export const objectImageIdSchema = z.uuid();

@@ -12,7 +12,7 @@ import { z } from "zod";
 import { defineCommand } from "../commands/command";
 import { defineQuery } from "../commands/query";
 import { DomainError } from "../errors";
-import { lockPair, socialRelationBetween } from "../social/pair";
+import { blockedWithAny, lockPairsWith } from "../social/pair";
 import {
   loadCommitments,
   type ObjectCommitmentSource,
@@ -44,42 +44,6 @@ import {
 } from "./state";
 
 const notFound = () => new DomainError("not_found", "No such invitation");
-
-/**
- * Takes the social pair lock between `userId` and each of `others`, in one
- * global order so two commands never wait on each other's locks. A block
- * between any of the pairs is then either already visible or waits for this
- * transaction, whose new invitation or owner its trigger will see.
- */
-async function lockPairsWith(
-  tx: Kysely<Database>,
-  userId: string,
-  others: readonly string[],
-): Promise<void> {
-  const pairKey = (other: string) => [userId, other].sort().join(":");
-  const ordered = [...new Set(others)]
-    .filter((other) => other !== userId)
-    .sort((a, b) => (pairKey(a) < pairKey(b) ? -1 : 1));
-
-  for (const other of ordered) {
-    await lockPair(tx, userId, other);
-  }
-}
-
-/** A block in either direction between `userId` and any of `others`. */
-async function blockedWithAny(
-  tx: Kysely<Database>,
-  userId: string,
-  others: readonly string[],
-): Promise<boolean> {
-  for (const other of others) {
-    if ((await socialRelationBetween(tx, userId, other)).blockedEitherWay) {
-      return true;
-    }
-  }
-
-  return false;
-}
 
 /**
  * PS-OBJ-007: an owner invites another registered user to become a co-owner.

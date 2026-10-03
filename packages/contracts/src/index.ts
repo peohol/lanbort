@@ -7,3 +7,4 @@ export * from "./security";
 export * from "./objects";
 export * from "./social";
 export * from "./publications";
+export * from "./loans";

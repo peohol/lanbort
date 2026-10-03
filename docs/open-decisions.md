@@ -128,6 +128,27 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Hvor lang frist skal medlemmene ha til å stemme når et skjult miljø foreslås gjort lukket? Visjonen viser til «den fastsatte avstemningsfristen», men angir ingen lengde. Inntil dette er besluttet, avviser implementasjonen å starte en slik avstemning; selve avstemningsreglene (2/3 av alle aktive) er bygget og testet. Fristen settes ett sted (`typeChangeDays`).
 - **Avhenger av:** Produktvurdering.
 
+### OD-0013 — Hvor venner finner hverandres objekter
+- **Lag:** Produktspesifikasjon / UX
+- **Status:** Åpen
+- **Berører:** PS-LOAN-001, PS-USR-004
+- **Spørsmål:** Hvilken flate skal en venn bruke for å se eiernes objekter før en direkte låneforespørsel? Inntil dette er besluttet, finnes ingen liste over venners objekter. Forhåndsvisningen av en direkte forespørsel svarer bare for et objekt-ID den som spør allerede har, og bare når vedkommende er venn med en eier.
+- **Avhenger av:** Produktvurdering og UX for direkte vennelån.
+
+### OD-0014 — Vesentlig eller redaksjonell vilkårsendring
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-LOAN-005
+- **Spørsmål:** Hvordan skilles en vesentlig vilkårsendring fra en redaksjonell? Vilkårene er fritekst, så systemet kan ikke avgjøre det selv. Inntil dette er besluttet, krever enhver endring i objektets lånevilkår ny bekreftelse fra låntaker. Andre endringer (tittel, beskrivelse, bilder) gjør det ikke. Regelen står ett sted (`app.loan_terms_differ`).
+- **Avhenger av:** Produktvurdering, eventuelt et valg for eier om endringen er vesentlig.
+
+### OD-0015 — Meldingen i en låneforespørsel og ende-til-ende-kryptering
+- **Lag:** Produktspesifikasjon / Arkitektur
+- **Status:** Åpen
+- **Berører:** PS-LOAN-004, PS-COM-005, PS-COM-006, PS-NFR-007, OD-0005
+- **Spørsmål:** Er meldingen i en låneforespørsel privat fritekst som skal ende-til-ende-krypteres (PS-COM-005), eller del av den strukturerte henvendelsen (PS-COM-006)? Inntil dette er besluttet, lagres den på forespørselen, vises bare for partene og kopieres aldri til hendelser eller logger. Kommer den inn under kryptering, flyttes den til chatten når OD-0005 er besluttet.
+- **Avhenger av:** OD-0005 og produktvurdering.
+
 ## Avklart
 
 ### OD-0009 — Konkret implementeringsstack og driftsleverandører

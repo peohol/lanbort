@@ -1,3 +1,4 @@
+import type { PublicationStatus } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
 import { findEnvironment } from "../environment/store";
@@ -19,7 +20,11 @@ export async function loadPublicationGate(
   target: { objectId: string; environmentId: string },
   now: Date,
   options: { lock?: boolean } = {},
-): Promise<{ publicationId: string | null; gate: PublicationGate }> {
+): Promise<{
+  publicationId: string | null;
+  status: PublicationStatus | null;
+  gate: PublicationGate;
+}> {
   const environment = await findEnvironment(db, target.environmentId);
   const publication =
     environment &&
@@ -31,11 +36,12 @@ export async function loadPublicationGate(
     ));
 
   if (!environment || !publication) {
-    return { publicationId: null, gate: "closed" };
+    return { publicationId: null, status: null, gate: "closed" };
   }
 
   return {
     publicationId: publication.id,
+    status: publication.status,
     gate: publicationGate({
       environment,
       status: publication.status,

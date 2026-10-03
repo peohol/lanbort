@@ -48,6 +48,18 @@ Route Handler (route.user / route.public / route.scheduler)
 - Hva et medlem finner i et miljø, avgjøres bare i `discoverablePublications`: aktive publiseringer av aktive, ufrosne objekter med en eier som har tilgang, og aldri et objekt der en eier og den som ser har blokkert hverandre, eller som ble publisert under en strengere type før den som ser ble aktiv (historisk personvern). Eierne vises ikke, og medeiere ser bare miljøer de selv kan se.
 - Låserekkefølge: objekt, miljø, medlemskap, publisering.
 
+## Låneforespørsler (WP-30)
+
+- En låneforespørsel (PS-LOAN-001–005) er én rad i `app.loan_requests`, uansett om den kom gjennom et miljø eller direkte mellom venner. Bare opprinnelsen (`origin`) skiller dem. En miljøforespørsel peker på publiseringen den bygger på og har sin posisjon i miljøets historikk (PS-ENV-009). Ingenting reserveres, og forespørsler sperrer ikke ledighet; det er WP-31.
+- `assessOrigin` er den ene sjekken av om tilgangen bak en forespørsel fortsatt står: objektet tar nye lån og låntaker er ikke eier, ingen blokkering mot noen eier, og enten vennskap med minst én eier (direkte) eller aktivt medlemskap og samme publisering med åpen port (miljø). En publisering som venter på godkjenning, eller et miljø under avvikling som ennå kan avbrytes, holder forespørselen (`on_hold`) i stedet for å avslutte den. Med `lock` tar den låsene i rekkefølgen objekt, miljø, medlemskap, publisering, sosiale par.
+- Bortfall før godkjenning avslutter åpne forespørsler nøytralt i databasen, i samme transaksjon som årsaken (medlemskap, publisering, vennskap, blokkering, frysing, arkivering, eierskifte), uten hendelser. Årsakene (`access_lost`, `publication_ended`, `object_unavailable`) sier aldri hvem som gjorde hva. En avsluttet forespørsel endres aldri igjen.
+- Den som ikke kan nå objektet gjennom opprinnelsen, får `not_found`. Gjennom et miljø avgjør `findsObject` det med samme regel som miljøets liste. En eier ser en forespørsel som utlåner bare med låntakerens relasjon til opprinnelsen: vennskap (direkte), eller aktivt medlemskap uten at forespørselen ble gjort under en strengere type før eieren ble aktiv (`visibleToLender`). Eierskap alene er ikke nok.
+- `terms_version` peker på objektrevisjonen med vilkårene låntaker så og bekreftet. En ny revisjon med andre vilkår (`app.loan_terms_differ`, OD-0014) setter åpne forespørsler til `awaiting_terms_confirmation` til låntaker bekrefter gjeldende versjon.
+- Direkte forespørsler har en ansvarserklæring med versjon (`responsibilityDeclarationVersion`). Låntaker godtar den når forespørselen sendes; en eier som er låntakers venn, godtar med egen kommando. Hver aksept er en uforanderlig rad. Godkjenning (WP-31) må sjekke at eieren som godkjenner har godtatt gjeldende versjon.
+- Ønsket periode må få plass i ett sammenhengende intervall av faktisk ledighet (`earliestPeriod`). «Så snart som mulig» starter første ledige dag der hele varigheten, eller alle dager fram til ønsket sluttdag, er ledige uten brudd.
+- Sletting av objektet stopper ikke på forespørsler. `app.release_loan_requests` avslutter de åpne nøytralt og løsner alle fra objektets rader før de slettes. Forespørslene består som historikk for begge parter uten objektets innhold, og eierne på slettetidspunktet (`former_owner_ids`) ser dem fortsatt med samme relasjonskrav.
+- Meldingen lagres bare på forespørselen og kopieres aldri til hendelser eller logger (OD-0015).
+
 ## Vennskap og blokkering
 
 - Sosiale kommandoer navngir bare den andre brukeren. Den som kaller er alltid den ene parten, så ingen input kan nå andres relasjoner. Alle endringer for samme par låses mot hverandre i databasen.
