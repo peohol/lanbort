@@ -4,6 +4,7 @@ import type {
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
+import { accountStatuses } from "../account/store";
 import {
   distinctDrafts,
   effectivePreferences,
@@ -48,8 +49,9 @@ export async function loadPreferences(db: Db, userIds: readonly string[]) {
  * recipient turned off in the app is left out (PS-COM-003). Each
  * notification is keyed by its source, kind and target, so making the same
  * source again (a redelivered event, a repeated job run) changes nothing.
- * This is the one way notifications are made; external delivery (WP-41)
- * starts from what it inserts.
+ * A deleted account is told nothing any more (PS-ADM-006). This is the one
+ * way notifications are made; external delivery (WP-41) starts from what it
+ * inserts.
  */
 export async function recordNotifications(
   db: Db,
@@ -58,12 +60,18 @@ export async function recordNotifications(
   drafts: readonly NotificationDraft[],
 ): Promise<number> {
   const distinct = distinctDrafts(drafts);
-  const preferences = await loadPreferences(db, [
-    ...new Set(distinct.map((draft) => draft.recipientId)),
-  ]);
+  const recipients = [...new Set(distinct.map((draft) => draft.recipientId))];
+  const preferences = await loadPreferences(db, recipients);
+  const statuses = await accountStatuses(db, recipients);
   const shown = distinct.filter((draft) => {
     const chosen = preferences.get(draft.recipientId);
-    return chosen !== undefined && shownInApp(levelOf(draft.kind), chosen);
+    const status = statuses.get(draft.recipientId);
+    return (
+      chosen !== undefined &&
+      status !== undefined &&
+      status !== "deleted" &&
+      shownInApp(levelOf(draft.kind), chosen)
+    );
   });
 
   if (shown.length === 0) {

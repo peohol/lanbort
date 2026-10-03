@@ -9,6 +9,7 @@ import { cancelLoan } from "../loans/cancellation";
 import { reportHandover } from "../loans/handover";
 import { unresolvedEndingProcess } from "../loans/policies";
 import { confirmLoanControl, endLoanUnresolved } from "../loans/unresolved";
+import { recordNotifications } from "../notifications/store";
 import { acceptCoOwnerInvitation, inviteCoOwner } from "../objects/co-owners";
 import type { StoredEvent } from "../outbox/consumer";
 import { publishDueLoanReviews, submitLoanReview } from "../reviews/commands";
@@ -289,9 +290,56 @@ describe("deleting an account (PS-ADM-005–006)", () => {
       kind: "direct",
     });
 
+    // Its own notification and notification preference.
+    await db
+      .insertInto("app.notifications")
+      .values({
+        recipient_id: leaving.userId,
+        kind: "loan.request_received",
+        level: "action",
+        target_type: "loan_request",
+        target_id: requestId,
+        source_key: `test:${requestId}`,
+        occurred_at: kit.now(),
+      })
+      .execute();
+    await db
+      .insertInto("app.notification_preferences")
+      .values({
+        user_id: leaving.userId,
+        level: "information",
+        channel: "email",
+        enabled: false,
+      })
+      .execute();
+
     await remove(leaving);
 
     expect(await statusOf(leaving.userId)).toBe("deleted");
+    expect(
+      await db
+        .selectFrom("app.notifications")
+        .select("id")
+        .where("recipient_id", "=", leaving.userId)
+        .execute(),
+    ).toEqual([]);
+    expect(
+      await db
+        .selectFrom("app.notification_preferences")
+        .select("user_id")
+        .where("user_id", "=", leaving.userId)
+        .execute(),
+    ).toEqual([]);
+    // And it is told nothing any more.
+    expect(
+      await recordNotifications(db, "test", kit.now(), [
+        {
+          recipientId: leaving.userId,
+          kind: "loan.approved",
+          target: { type: "loan_request", id: requestId },
+        },
+      ]),
+    ).toBe(0);
     // Signing in with the identity finds nobody, and creates nobody.
     expect(await resolveUserActor(kit.domain, identity)).toBeNull();
     expect(await rowsOf("app.profiles", leaving.userId)).toEqual([]);
@@ -453,6 +501,7 @@ describe("removing the sign-in identity (PS-ADM-006)", () => {
       version: row.event_version,
       resourceType: row.resource_type,
       resourceId: row.resource_id,
+      actorUserId: row.actor_user_id,
       correlationId: row.correlation_id,
       occurredAt: row.occurred_at,
       payload: row.payload,
@@ -528,6 +577,7 @@ describe("removing the sign-in identity (PS-ADM-006)", () => {
           version: 1,
           resourceType: "user",
           resourceId: actor.userId,
+          actorUserId: null,
           correlationId: null,
           occurredAt: new Date(),
           payload: { from: "active" },

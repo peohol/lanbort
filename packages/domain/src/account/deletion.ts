@@ -236,8 +236,8 @@ const platformRolesStep: AccountDeletionStep = {
 };
 
 /**
- * PS-ADM-006: the profile, verified contact addresses and stored command
- * results go. What remains of the account is its internal id, its state and
+ * PS-ADM-006: the profile, verified contact addresses, stored command
+ * results, and the account's own notifications and preferences go. What remains of the account is its internal id, its state and
  * the records of its changes, so shared history (loans, requests, events)
  * keeps its references but shows no name. How long the remaining history is
  * kept is not decided (OD-0002), so nothing here removes it.
@@ -253,6 +253,14 @@ const personalDataStep: AccountDeletionStep = {
     await db
       .deleteFrom("app.idempotency_records")
       .where("scope", "=", userScope(userId))
+      .execute();
+    await db
+      .deleteFrom("app.notifications")
+      .where("recipient_id", "=", userId)
+      .execute();
+    await db
+      .deleteFrom("app.notification_preferences")
+      .where("user_id", "=", userId)
       .execute();
   },
 };
