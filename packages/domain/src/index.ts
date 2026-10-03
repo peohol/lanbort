@@ -16,6 +16,7 @@ export * from "./platform";
 export * from "./objects";
 export * from "./publications";
 export * from "./loans";
+export * from "./reviews";
 export * from "./social";
 export * from "./outbox/policy";
 export * from "./policies";

@@ -64,6 +64,11 @@ const nonUserRoutes: Record<
     reason:
       "makes return confirmations whose undo buffer is over, authenticated with the cron secret",
   },
+  "GET /api/internal/loan-reviews": {
+    access: "scheduler",
+    reason:
+      "publishes reviews whose window is over, authenticated with the cron secret",
+  },
 };
 
 const httpMethods = [
