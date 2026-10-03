@@ -738,16 +738,28 @@ describe("a loan that reopens (PS-TRUST-008)", () => {
     await sayNow(owner, loanId, "not_received");
     const reopenedAt = kit.now().toISOString();
 
+    // Its time was over before the reopening: no pause, and reads count it
+    // as published from the deadline on.
+    expect(await window(loanId)).toMatchObject({ status: "open", due_at: due });
+    const published = {
+      status: "published",
+      publishedAt: due.toISOString(),
+      loanReopenedAt: reopenedAt,
+    };
+    expect((await reviewsOf(owner, loanId)).received).toMatchObject(published);
+
+    // The job records it like any other window whose time is over.
+    await publishDue();
     expect(await window(loanId)).toMatchObject({
       status: "closed",
       closed_as: "deadline",
       closed_at: due,
     });
-    expect((await reviewsOf(owner, loanId)).received).toMatchObject({
-      status: "published",
-      publishedAt: due.toISOString(),
-      loanReopenedAt: reopenedAt,
+    expect((await reviewEvents(loanId)).at(-1)).toEqual({
+      type: "loan_review.published",
+      payload: { loanId, authorRole: "borrower", basis: "deadline" },
     });
+    expect((await reviewsOf(owner, loanId)).received).toMatchObject(published);
   });
 
   it("lapses a hidden review when the lender's role moved while it was reopened", async () => {

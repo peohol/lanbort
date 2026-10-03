@@ -491,9 +491,10 @@ create trigger loan_review_responses_guard
 -- - it ends: the window opens; a paused one opens again for this ending, and
 --   its hidden reviews that no longer fit (another ending, or another party
 --   after the lender's role moved while it was reopened) lapse;
--- - an ended loan reopens: an open window pauses, unless the window was over
---   before the reopening, in which case it closed then and its reviews were
---   published as of the deadline. A closed window stays as it is.
+-- - an ended loan reopens: an open window pauses, unless its time was over
+--   before the reopening; then it stays as it is, and the publication job
+--   closes it as of the deadline, like any other window whose time is over.
+--   A closed window stays as it is.
 create function app.follow_loan_review_period()
 returns trigger
 language plpgsql
@@ -528,16 +529,10 @@ begin
         and review.status = 'hidden'
         and not app.loan_review_fits(review);
     end if;
-  elsif period.status = 'open' then
-    if new.status_changed_at >= period.due_at then
-      update app.loan_review_periods
-      set status = 'closed', closed_at = due_at, closed_as = 'deadline'
-      where loan_id = new.id;
-    else
-      update app.loan_review_periods
-      set status = 'paused', due_at = null
-      where loan_id = new.id;
-    end if;
+  elsif period.status = 'open' and new.status_changed_at < period.due_at then
+    update app.loan_review_periods
+    set status = 'paused', due_at = null
+    where loan_id = new.id;
   end if;
 
   return null;
