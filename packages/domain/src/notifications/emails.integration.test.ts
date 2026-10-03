@@ -393,3 +393,202 @@ describe("e-mails no longer worth sending", () => {
     expect(sender.to(await addressOf(late))).toEqual([]);
   });
 });
+
+/** True if `promise` has not settled after `ms`: it is waiting on a lock. */
+async function stillWaiting(promise: Promise<unknown>, ms = 300) {
+  const waiting = Symbol("waiting");
+  const settled = await Promise.race([
+    promise.then(
+      () => undefined,
+      () => undefined,
+    ),
+    new Promise((resolve) => setTimeout(() => resolve(waiting), ms)),
+  ]);
+
+  return settled === waiting;
+}
+
+/**
+ * Each change that makes a queued e-mail pointless, made the way the app
+ * makes it. A changed address is covered on its own below: the e-mail still
+ * goes out, to the new one.
+ */
+const changes = [
+  {
+    name: "reading the notification in the app",
+    kind: "loan.cancelled",
+    code: "read",
+    setup: async () => {},
+    change: (actor: UserActor, notificationId: string) =>
+      run(markNotificationsRead, actor, { notificationIds: [notificationId] }),
+  },
+  {
+    name: "turning e-mail off",
+    kind: "social.friend_request",
+    code: "turned_off",
+    setup: (actor: UserActor) =>
+      run(setNotificationPreference, actor, {
+        level: "action",
+        channel: "email",
+        enabled: true,
+      }),
+    change: (actor: UserActor) =>
+      run(setNotificationPreference, actor, {
+        level: "action",
+        channel: "email",
+        enabled: false,
+      }),
+  },
+  {
+    name: "removing the verified address",
+    kind: "loan.cancelled",
+    code: "no_address",
+    setup: async () => {},
+    change: (actor: UserActor) =>
+      db
+        .deleteFrom("app.verified_contacts")
+        .where("user_id", "=", actor.userId)
+        .execute(),
+  },
+] as const;
+
+function changeAddress(actor: UserActor, address: string) {
+  return db
+    .updateTable("app.verified_contacts")
+    .set({ address })
+    .where("user_id", "=", actor.userId)
+    .where("kind", "=", "email")
+    .execute();
+}
+
+/**
+ * Holds the e-mail job in the middle of sending to someone notified before
+ * `actor`, so `actor`'s e-mail is claimed, with what was true then, but not
+ * yet checked or sent.
+ */
+async function holdEarlierEmail(sender: MemoryEmailSender) {
+  const earlier = await user();
+  await notify(earlier);
+  return sender.hold(await addressOf(earlier));
+}
+
+function runJob(sender: MemoryEmailSender) {
+  return sendEmails(sender, { batchSize: 1000 });
+}
+
+describe("changes while the e-mail job runs (WP-41)", () => {
+  for (const { name, kind, code, setup, change } of changes) {
+    it(`stops an e-mail already claimed after ${name}`, async () => {
+      const sender = new MemoryEmailSender();
+      const earlier = await holdEarlierEmail(sender);
+      const anna = await user();
+      const address = await addressOf(anna);
+      await setup(anna);
+      const { notificationId } = await notify(anna, kind);
+
+      const job = runJob(sender);
+      await earlier.reached;
+      await change(anna, notificationId);
+      earlier.release();
+      await job;
+
+      expect(await deliveriesOf(anna)).toEqual([
+        expect.objectContaining({ status: "skipped", code }),
+      ]);
+      expect(sender.attemptsTo(address)).toEqual([]);
+    });
+
+    it(`lets an e-mail being sent finish before ${name} returns`, async () => {
+      const sender = new MemoryEmailSender();
+      const anna = await user();
+      const address = await addressOf(anna);
+      await setup(anna);
+      const { notificationId } = await notify(anna, kind);
+      const held = sender.hold(address);
+
+      const job = runJob(sender);
+      await held.reached;
+      const changing = change(anna, notificationId);
+      expect(await stillWaiting(changing)).toBe(true);
+
+      held.release();
+      await Promise.all([job, changing]);
+      // It was on its way before the change; nothing goes out after it.
+      expect(sender.attemptsTo(address)).toHaveLength(1);
+      expect(await deliveriesOf(anna)).toEqual([
+        expect.objectContaining({ status: "sent" }),
+      ]);
+    });
+  }
+
+  it("holds the job while a change is not yet committed, and then honours it", async () => {
+    const sender = new MemoryEmailSender();
+    const earlier = await holdEarlierEmail(sender);
+    const anna = await user();
+    const address = await addressOf(anna);
+    const { notificationId } = await notify(anna);
+    let commit!: () => void;
+    const committed = new Promise<void>((resolve) => (commit = resolve));
+    let changed!: () => void;
+    const changedInTransaction = new Promise<void>(
+      (resolve) => (changed = resolve),
+    );
+
+    const job = runJob(sender);
+    await earlier.reached;
+    const reading = db.transaction().execute(async (tx) => {
+      await tx
+        .updateTable("app.notifications")
+        .set({ read_at: new Date() })
+        .where("id", "=", notificationId)
+        .execute();
+      changed();
+      await committed;
+    });
+    await changedInTransaction;
+    earlier.release();
+    expect(await stillWaiting(job)).toBe(true);
+
+    commit();
+    await Promise.all([reading, job]);
+    expect(await deliveriesOf(anna)).toEqual([
+      expect.objectContaining({ status: "skipped", code: "read" }),
+    ]);
+    expect(sender.attemptsTo(address)).toEqual([]);
+  });
+
+  it("sends an e-mail claimed before the address changed to the new address only", async () => {
+    const sender = new MemoryEmailSender();
+    const earlier = await holdEarlierEmail(sender);
+    const anna = await user();
+    const oldAddress = await addressOf(anna);
+    const newAddress = `${randomUUID()}@lanbort.test`;
+    await notify(anna);
+
+    const job = runJob(sender);
+    await earlier.reached;
+    await changeAddress(anna, newAddress);
+    earlier.release();
+    await job;
+
+    expect(sender.attemptsTo(oldAddress)).toEqual([]);
+    expect(sender.to(newAddress)).toHaveLength(1);
+  });
+
+  it("lets an e-mail being sent finish before an address change returns", async () => {
+    const sender = new MemoryEmailSender();
+    const anna = await user();
+    const oldAddress = await addressOf(anna);
+    await notify(anna);
+    const held = sender.hold(oldAddress);
+
+    const job = runJob(sender);
+    await held.reached;
+    const changing = changeAddress(anna, `${randomUUID()}@lanbort.test`);
+    expect(await stillWaiting(changing)).toBe(true);
+
+    held.release();
+    await Promise.all([job, changing]);
+    expect(sender.attemptsTo(oldAddress)).toHaveLength(1);
+  });
+});

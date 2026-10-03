@@ -1,6 +1,6 @@
 begin;
 
-select plan(9);
+select plan(12);
 
 select ok(
   not has_table_privilege(role_name, 'app.notification_deliveries', 'SELECT'),
@@ -74,6 +74,16 @@ select lives_ok(
     where id = '00000000-0000-4000-8000-000000000501'$$,
   'a sent delivery is finished'
 );
+
+-- Changes that make an e-mail pointless wait for a send under way (the
+-- races themselves are tested in emails.integration.test.ts).
+select has_trigger('app', 'notifications', 'notifications_read_locks_emails',
+  'reading a notification locks its pending e-mail');
+select has_trigger('app', 'notification_preferences',
+  'notification_preferences_lock_emails',
+  'a channel choice locks the recipient''s pending e-mails');
+select has_trigger('app', 'verified_contacts', 'verified_contacts_lock_emails',
+  'an address change locks the recipient''s pending e-mails');
 
 select * from finish();
 rollback;

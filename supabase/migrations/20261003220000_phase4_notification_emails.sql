@@ -40,3 +40,61 @@ comment on table app.notification_deliveries is
 create index notification_deliveries_due_idx
   on app.notification_deliveries (available_at, id)
   where status = 'pending';
+
+-- What decides whether an e-mail is still worth sending: whether the
+-- notification is read, the recipient's channel choices and their verified
+-- address. The e-mail job locks a pending delivery and checks all three
+-- again, under that lock, right before it sends. A change to any of them
+-- also locks the recipient's pending deliveries before it is committed, so
+-- it waits for a send already under way, and a send that has not started
+-- yet sees the change. Once such a change is committed, no e-mail goes out
+-- on what was there before.
+create function app.lock_pending_notification_emails(p_recipient_id uuid)
+returns void
+language plpgsql
+as $$
+begin
+  perform 1
+  from app.notification_deliveries as delivery
+  join app.notifications as notification
+    on notification.id = delivery.notification_id
+  where notification.recipient_id = p_recipient_id
+    and delivery.status = 'pending'
+  order by delivery.id
+  for update of delivery;
+end;
+$$;
+
+create function app.notification_email_relevance_changed()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_table_name = 'notifications' then
+    perform 1
+    from app.notification_deliveries
+    where notification_id = new.id and status = 'pending'
+    for update;
+  else
+    perform app.lock_pending_notification_emails(
+      case when tg_op = 'DELETE' then old.user_id else new.user_id end
+    );
+  end if;
+
+  return null;
+end;
+$$;
+
+create trigger notifications_read_locks_emails
+  after update of read_at on app.notifications
+  for each row
+  when (old.read_at is distinct from new.read_at)
+  execute function app.notification_email_relevance_changed();
+
+create trigger notification_preferences_lock_emails
+  after insert or update on app.notification_preferences
+  for each row execute function app.notification_email_relevance_changed();
+
+create trigger verified_contacts_lock_emails
+  after insert or update or delete on app.verified_contacts
+  for each row execute function app.notification_email_relevance_changed();

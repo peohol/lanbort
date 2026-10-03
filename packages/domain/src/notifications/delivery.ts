@@ -49,19 +49,24 @@ const defaults = {
 interface ClaimedDelivery {
   id: string;
   attempts: number;
-  notification_id: string;
-  recipient_id: string;
-  kind: string;
-  level: string;
-  read_at: Date | null;
-  notified_at: Date;
+}
+
+/** A claimed delivery, read again under its lock. */
+interface CurrentDelivery extends ClaimedDelivery {
+  notificationId: string;
+  recipientId: string;
+  kind: NotificationKind;
+  level: NotificationLevel;
+  readAt: Date | null;
+  notifiedAt: Date;
   address: string | null;
 }
 
 /**
  * Claims due deliveries with `FOR UPDATE SKIP LOCKED`, as the outbox worker
- * does, so concurrent runs never send the same one. The claim moves
- * `available_at` to the lease expiry: if this run dies, it is retried.
+ * does, so concurrent runs never send the same one, oldest first. The
+ * claim moves `available_at` to the lease expiry: if this run dies, it is
+ * retried.
  */
 async function claim(
   db: Kysely<Database>,
@@ -71,7 +76,7 @@ async function claim(
 ): Promise<ClaimedDelivery[]> {
   const result = await sql<ClaimedDelivery>`
     with due as (
-      select id
+      select id, available_at
       from app.notification_deliveries
       where status = 'pending' and available_at <= now() and channel = 'email'
       order by available_at, id
@@ -84,21 +89,68 @@ async function claim(
           available_at = now() + make_interval(secs => ${leaseSeconds})
       from due
       where delivery.id = due.id
-      returning delivery.id, delivery.attempts, delivery.notification_id
+      returning delivery.id, delivery.attempts, due.available_at
     )
-    select claimed.id, claimed.attempts, claimed.notification_id,
-      notification.recipient_id, notification.kind, notification.level,
-      notification.read_at, notification.created_at as notified_at,
-      contact.address
-    from claimed
-    join app.notifications as notification
-      on notification.id = claimed.notification_id
-    left join app.verified_contacts as contact
-      on contact.user_id = notification.recipient_id and contact.kind = 'email'
-    order by notification.position
+    select id, attempts from claimed order by available_at, id
   `.execute(db);
 
   return result.rows;
+}
+
+/**
+ * Locks a claimed delivery, then reads what decides whether it is still
+ * worth sending. Reading after the lock, in statements of their own, sees
+ * every change committed before it: whoever reads the notification, changes
+ * a channel or the verified address locks the recipient's pending
+ * deliveries too (database triggers), so they wait for this transaction or
+ * it waits for them. Null if the lease is lost.
+ */
+async function lockCurrent(
+  tx: Kysely<Database>,
+  claimed: ClaimedDelivery,
+  leaseToken: string,
+): Promise<CurrentDelivery | null> {
+  const locked = await tx
+    .selectFrom("app.notification_deliveries")
+    .select("notification_id")
+    .where("id", "=", claimed.id)
+    .where("lease_token", "=", leaseToken)
+    .where("status", "=", "pending")
+    .forUpdate()
+    .executeTakeFirst();
+
+  if (!locked) {
+    return null;
+  }
+
+  const notification = await tx
+    .selectFrom("app.notifications as notification")
+    .leftJoin("app.verified_contacts as contact", (join) =>
+      join
+        .onRef("contact.user_id", "=", "notification.recipient_id")
+        .on("contact.kind", "=", "email"),
+    )
+    .select([
+      "notification.recipient_id",
+      "notification.kind",
+      "notification.level",
+      "notification.read_at",
+      "notification.created_at",
+      "contact.address",
+    ])
+    .where("notification.id", "=", locked.notification_id)
+    .executeTakeFirstOrThrow();
+
+  return {
+    ...claimed,
+    notificationId: locked.notification_id,
+    recipientId: notification.recipient_id,
+    kind: notification.kind as NotificationKind,
+    level: notification.level as NotificationLevel,
+    readAt: notification.read_at,
+    notifiedAt: notification.created_at,
+    address: notification.address,
+  };
 }
 
 type Outcome =
@@ -108,13 +160,14 @@ type Outcome =
 
 /** Only the holder of the current lease may settle a delivery. */
 async function settle(
-  db: Kysely<Database>,
+  tx: Kysely<Database>,
   delivery: ClaimedDelivery,
   leaseToken: string,
   outcome: Outcome,
-): Promise<boolean> {
+): Promise<void> {
   const pending = outcome.status === "pending";
-  const result = await db
+
+  await tx
     .updateTable("app.notification_deliveries")
     .set({
       status: outcome.status,
@@ -128,9 +181,7 @@ async function settle(
     .where("id", "=", delivery.id)
     .where("lease_token", "=", leaseToken)
     .where("status", "=", "pending")
-    .executeTakeFirst();
-
-  return result.numUpdatedRows > 0n;
+    .execute();
 }
 
 /**
@@ -139,18 +190,18 @@ async function settle(
  * or no verified address any more.
  */
 function skipReason(
-  delivery: ClaimedDelivery,
+  delivery: CurrentDelivery,
   emailStillChosen: boolean,
   now: Date,
 ): string | null {
   if (
-    now.getTime() - delivery.notified_at.getTime() >
+    now.getTime() - delivery.notifiedAt.getTime() >
     notificationEmailMaxAgeMs
   ) {
     return "expired";
   }
 
-  if (delivery.read_at !== null) {
+  if (delivery.readAt !== null) {
     return "read";
   }
 
@@ -163,10 +214,12 @@ function skipReason(
 
 /**
  * Sends one batch of due notification e-mails (WP-41). Each delivery is
- * sent and settled on its own: a failure is retried later with the outbox's
- * backoff, and never touches the notification or the domain (PS-COM-002).
- * Every attempt uses the same idempotency key, so the provider sends a
- * message once even if a result is lost.
+ * checked, sent and settled on its own, in one transaction that holds its
+ * lock (see {@link lockCurrent}), so a change that makes the e-mail
+ * pointless, once committed, always stops it. A failure is retried later
+ * with the outbox's backoff, and never touches the notification or the
+ * domain (PS-COM-002). Every attempt uses the same idempotency key, so the
+ * provider sends a message once even if a result is lost.
  */
 export async function deliverNotificationEmails(
   db: Kysely<Database>,
@@ -176,73 +229,44 @@ export async function deliverNotificationEmails(
   const { clock = () => new Date(), ...rest } = options;
   const settings = { ...defaults, ...rest };
   const leaseToken = randomUUID();
-  const deliveries = await claim(
+  const claimed = await claim(
     db,
     leaseToken,
     settings.batchSize,
     settings.leaseSeconds,
   );
-  const preferences = await loadPreferences(db, [
-    ...new Set(deliveries.map((delivery) => delivery.recipient_id)),
-  ]);
   const result: NotificationEmailBatchResult = {
-    claimed: deliveries.length,
+    claimed: claimed.length,
     sent: 0,
     skipped: 0,
     retried: 0,
     dead: 0,
   };
 
-  for (const delivery of deliveries) {
-    const kind = delivery.kind as NotificationKind;
-    const level = delivery.level as NotificationLevel;
-    const chosen = preferences.get(delivery.recipient_id);
-    const skip = skipReason(
-      delivery,
-      chosen !== undefined && sendsEmail(kind, chosen),
-      clock(),
-    );
-    let outcome: Outcome;
+  for (const delivery of claimed) {
+    const outcome = await db.transaction().execute(async (tx) => {
+      const current = await lockCurrent(tx, delivery, leaseToken);
 
-    if (skip !== null || delivery.address === null) {
-      outcome = { status: "skipped", code: skip ?? "no_address" };
-    } else {
-      try {
-        await services.sender.send({
-          to: delivery.address,
-          ...composeNotificationEmail({
-            kind,
-            level,
-            notificationId: delivery.notification_id,
-            appUrl: services.appUrl,
-          }),
-          idempotencyKey: `notification-email/${delivery.id}`,
-        });
-        outcome = { status: "sent" };
-      } catch (error) {
-        const failure =
-          error instanceof EmailSendError
-            ? error
-            : new EmailSendError("unexpected_error", true);
-
-        outcome =
-          !failure.retryable || delivery.attempts >= settings.maxAttempts
-            ? { status: "dead", code: failure.code }
-            : {
-                status: "pending",
-                code: failure.code,
-                retryInSeconds: settings.retryDelaySeconds(delivery.attempts),
-              };
-
-        writeLog(
-          outcome.status === "dead" ? "error" : "warn",
-          "notification_email.failed",
-          { job: notificationEmailProcess, attempt: delivery.attempts },
-        );
+      if (!current) {
+        return null;
       }
-    }
 
-    if (await settle(db, delivery, leaseToken, outcome)) {
+      const chosen = (await loadPreferences(tx, [current.recipientId])).get(
+        current.recipientId,
+      );
+      const settled = await attempt(
+        current,
+        chosen !== undefined && sendsEmail(current.kind, chosen),
+        clock(),
+        services,
+        settings,
+      );
+
+      await settle(tx, delivery, leaseToken, settled);
+      return settled;
+    });
+
+    if (outcome) {
       result[outcome.status === "pending" ? "retried" : outcome.status] += 1;
     }
   }
@@ -253,4 +277,52 @@ export async function deliverNotificationEmails(
   });
 
   return result;
+}
+
+async function attempt(
+  delivery: CurrentDelivery,
+  emailStillChosen: boolean,
+  now: Date,
+  services: NotificationEmailServices,
+  settings: Required<OutboxWorkerOptions>,
+): Promise<Outcome> {
+  const skip = skipReason(delivery, emailStillChosen, now);
+
+  if (skip !== null || delivery.address === null) {
+    return { status: "skipped", code: skip ?? "no_address" };
+  }
+
+  try {
+    await services.sender.send({
+      to: delivery.address,
+      ...composeNotificationEmail({
+        kind: delivery.kind,
+        level: delivery.level,
+        notificationId: delivery.notificationId,
+        appUrl: services.appUrl,
+      }),
+      idempotencyKey: `notification-email/${delivery.id}`,
+    });
+    return { status: "sent" };
+  } catch (error) {
+    const failure =
+      error instanceof EmailSendError
+        ? error
+        : new EmailSendError("unexpected_error", true);
+    const dead =
+      !failure.retryable || delivery.attempts >= settings.maxAttempts;
+
+    writeLog(dead ? "error" : "warn", "notification_email.failed", {
+      job: notificationEmailProcess,
+      attempt: delivery.attempts,
+    });
+
+    return dead
+      ? { status: "dead", code: failure.code }
+      : {
+          status: "pending",
+          code: failure.code,
+          retryInSeconds: settings.retryDelaySeconds(delivery.attempts),
+        };
+  }
 }
