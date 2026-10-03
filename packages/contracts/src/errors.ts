@@ -7,6 +7,7 @@ import { z } from "zod";
 export const apiErrorCodes = [
   "unauthenticated",
   "registration_required",
+  "account_inactive",
   "forbidden",
   "not_found",
   "reauthentication_required",

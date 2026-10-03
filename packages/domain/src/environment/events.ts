@@ -300,6 +300,7 @@ export const membershipEnded = membershipEvent("ended", "domain", {
     "invitation_withdrawn",
     "environment_wound_down",
     "environment_type_changed",
+    "account_deleted",
   ]),
 });
 

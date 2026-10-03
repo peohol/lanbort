@@ -1,5 +1,7 @@
 import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
+import { takesNewActivity } from "../account/model";
+import { accountStatuses } from "../account/store";
 import { acceptsNewActivity, effectiveState } from "../environment/model";
 import { findCurrentMembership, findEnvironment } from "../environment/store";
 import { loadFreezes } from "../objects/co-owner-blocks";
@@ -31,10 +33,13 @@ export interface OriginAssessment {
 /**
  * PS-LOAN-002: whether the access a request needs still holds now. The one
  * check for making a request, showing it and (WP-31) approving it:
- * - the object takes new loans (active, not frozen by its co-owners) and the
- *   borrower is not one of its owners;
+ * - the object takes new loans (active, not frozen by its co-owners, with
+ *   an owner whose account is active) and the borrower is not one of its
+ *   owners;
+ * - the borrower's account is active (PS-ADM-001);
  * - no block either way between the borrower and any owner (PS-USR-006);
- * - direct: an active friendship with at least one owner (PS-USR-004);
+ * - direct: an active friendship with at least one owner whose account is
+ *   active (PS-USR-004);
  * - environment: the borrower's membership is active now, the same
  *   publication is still there, and its gate (WP-25) is open. A publication
  *   waiting for approval, or an environment that is winding down but may
@@ -68,12 +73,23 @@ export async function assessOrigin(
     publicationId: publication?.publicationId ?? null,
   });
 
+  // Commands locked these accounts before the object (account/store.ts).
+  const accounts = await accountStatuses(db, [borrowerId, ...object.ownerIds]);
+  const lenderIds = object.ownerIds.filter((ownerId) =>
+    takesNewActivity(accounts.get(ownerId)),
+  );
+
   if (
     object.status !== "active" ||
     object.ownerIds.includes(borrowerId) ||
+    lenderIds.length === 0 ||
     (await loadFreezes(db, [object.objectId])).size > 0
   ) {
     return assessed(endedStanding("object_unavailable"));
+  }
+
+  if (!takesNewActivity(accounts.get(borrowerId))) {
+    return assessed(endedStanding("access_lost"));
   }
 
   if (await blockedWithAny(db, borrowerId, object.ownerIds)) {
@@ -85,7 +101,7 @@ export async function assessOrigin(
   }
 
   return assessed(
-    (await friendsWithAny(db, borrowerId, object.ownerIds))
+    (await friendsWithAny(db, borrowerId, lenderIds))
       ? openStanding
       : endedStanding("access_lost"),
   );

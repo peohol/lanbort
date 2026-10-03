@@ -156,6 +156,13 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Hva skal til før ansvarlig utlåner regnes som reelt utilgjengelig for et lån, slik at en medeier kan overta ansvaret eller bekrefte fysisk mottak i den snevre rollen? Hvem fastslår det (frist uten svar, melding fra medeier eller låntaker, saksbehandling), og hvordan skilles det fra kortvarig fravær og fra død/varig utilgjengelighet (OD-0003)? Inntil dette er besluttet, registrerer ingen del av produktet utilgjengelighet. Overtakelse og snever mottaksbekreftelse er ferdig bygget og testet, men kan først tas i bruk når denne beslutningen gir dem en kilde. Frivillig overføring virker uavhengig av dette.
 - **Avhenger av:** Produktvurdering, eventuelt saksbehandlingen (WP-45) og OD-0003.
 
+### OD-0018 — Når en konto regnes som inaktiv
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-ADM-001, pilotregel for inaktivitet (docs/product-spec/07)
+- **Spørsmål:** Etter hvor lang tids inaktivitet skal en konto settes i dvale, hva regnes som aktivitet, og hvilket varsel (kanal, frist) skal brukeren få før det skjer? Dvalemekanismen er bygget (`account.make_dormant`, bare for prosessen `account.inactivity`), men ingen jobb kaller den før dette er besluttet.
+- **Avhenger av:** Produktvurdering, varslingskanaler (OD-0004) og eventuelt OD-0002.
+
 ## Avklart
 
 ### OD-0009 — Konkret implementeringsstack og driftsleverandører

@@ -3,3 +3,7 @@ export * from "./policies";
 export * from "./identity";
 export * from "./commands";
 export * from "./queries";
+export * from "./model";
+export * from "./bindings";
+export * from "./lifecycle";
+export * from "./deletion";

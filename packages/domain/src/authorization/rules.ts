@@ -1,3 +1,4 @@
+import { keepsMinimumAccess, takesNewActivity } from "../account/model";
 import type { AssuranceLevel, PlatformRole, UserActor } from "../actor";
 import {
   type ActorInput,
@@ -24,12 +25,33 @@ export function userRule(
 
 export const requireUser: ActorRule = userRule(() => allow);
 
+/** Why an account that is not active may not do something. */
+function inactiveAccount(actor: UserActor): Decision {
+  return deny(
+    actor.accountStatus === "pending_registration"
+      ? "registration_required"
+      : "account_inactive",
+  );
+}
+
 /**
  * The default for every product action: a signed-in user whose registration
- * is complete (PS-USR-001). Pending accounts may only finish registering.
+ * is complete (PS-USR-001) and whose account takes new activity
+ * (PS-ADM-001). Pending accounts may only finish registering; deactivated,
+ * dormant, suspended and closing accounts keep only their minimum access.
  */
 export const requireActiveAccount: ActorRule = userRule((actor) =>
-  actor.accountStatus === "active" ? allow : deny("registration_required"),
+  takesNewActivity(actor.accountStatus) ? allow : inactiveAccount(actor),
+);
+
+/**
+ * PS-ADM-002–003, PS-LOAN-021: the minimum access an account keeps to what
+ * it is already bound by, also while deactivated, dormant, suspended or
+ * closing: seeing and finishing its existing loans, and winding its
+ * ownership down. Only for actions that start nothing new.
+ */
+export const requireMinimumAccess: ActorRule = userRule((actor) =>
+  keepsMinimumAccess(actor.accountStatus) ? allow : inactiveAccount(actor),
 );
 
 /** Only the named scheduled job or worker may act. */

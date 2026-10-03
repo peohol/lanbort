@@ -66,7 +66,8 @@ function viewerIdOf(actor: Actor): string | null {
 /**
  * The publications an active member finds in the environment (PS-OBJ-006,
  * PS-OBJ-009, PS-USR-006). Only active publications of active, unfrozen
- * objects that an owner still has active access behind, and never an object
+ * objects that an owner still has active access behind and that an owner's
+ * active account can lend (PS-ADM-002), and never an object
  * whose owner and the viewer have blocked each other. Nor one published
  * under a stricter type than the environment has had since, unless the
  * viewer was already active then (PS-ENV-009, `concealed`). This is the one
@@ -86,6 +87,7 @@ function discoverablePublications(
     .where("publication.status", "=", "active")
     .where(createdOutside(sql.ref("publication.position"), concealed))
     .where("object.status", "=", "active")
+    .where(sql<boolean>`app.object_has_active_owner(publication.object_id)`)
     .where(
       ownerHasAccess(
         sql.ref("publication.object_id"),

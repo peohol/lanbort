@@ -1,6 +1,7 @@
 import type { ObjectStatus, OwnObject } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql, type Updateable } from "kysely";
+import { lockAccounts } from "../account/store";
 import type { Actor } from "../actor";
 import { DomainError } from "../errors";
 import {
@@ -168,7 +169,11 @@ function toState(
 export async function loadObjectState(
   db: Kysely<Database>,
   objectId: string,
-  options: { lock?: boolean } = {},
+  options: {
+    lock?: boolean;
+    /** With `lock`, further accounts to lock along with the owners'. */
+    accounts?: readonly string[];
+  } = {},
 ): Promise<ObjectState | null> {
   let query = db
     .selectFrom("app.objects")
@@ -176,6 +181,13 @@ export async function loadObjectState(
     .where("id", "=", objectId);
 
   if (options.lock) {
+    // Accounts before the object (account/store.ts), so the owners' states
+    // and those of `accounts` hold until commit.
+    const owners = (await ownersOf(db, [objectId])).get(objectId) ?? [];
+    await lockAccounts(db, [
+      ...(options.accounts ?? []),
+      ...owners.map((owner) => owner.userId),
+    ]);
     query = query.forUpdate();
   }
 

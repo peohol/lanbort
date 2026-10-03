@@ -22,6 +22,38 @@ const object: ObjectResource = {
   ownerIds: [owner.userId, coOwner.userId],
 };
 
+/**
+ * What an owner whose account is not active keeps (PS-ADM-002): seeing
+ * their things and winding their ownership down. Everything else needs an
+ * active account.
+ */
+const minimumAccess = new Set([
+  "object.list_own",
+  "object.read",
+  "object.archive",
+  "object.leave",
+  "object.consent_to_deletion",
+  "object.withdraw_deletion_consent",
+  "object.withdraw_co_owner_invitation",
+  "object_invitation.decline",
+  "object_invitation.list",
+]);
+
+const deactivatedCase = <R>(
+  action: string,
+  name: string,
+  actor: typeof owner,
+  resource: R,
+) => ({
+  name: `${name} with a deactivated account`,
+  actor: { ...actor, accountStatus: "deactivated" as const },
+  resource,
+  context: undefined,
+  expected: minimumAccess.has(action)
+    ? ("allow" as const)
+    : ("account_inactive" as const),
+});
+
 const invitee = testUserActor();
 const invitation: CoOwnerInvitationResource = {
   invitationId: "00000000-0000-4000-8000-000000000002",
@@ -44,6 +76,7 @@ const registeredUserMatrix = (
       context: undefined,
       expected: "allow",
     },
+    deactivatedCase(policy.action, "registered user", owner, undefined),
     {
       name: "registration not completed",
       actor: pending,
@@ -111,6 +144,7 @@ export const objectMatrices = [
         context: undefined,
         expected: "allow",
       },
+      deactivatedCase(policy.action, "the invited user", invitee, invitation),
       {
         name: "the inviting owner cannot answer for them",
         actor: owner,
@@ -150,6 +184,7 @@ export const objectMatrices = [
         context: undefined,
         expected: "allow",
       },
+      deactivatedCase(policy.action, "owner", owner, object),
       {
         name: "every registered owner has the same rights",
         actor: coOwner,

@@ -6,6 +6,7 @@ import { type DomainErrorCode, isDomainError } from "@lanbort/domain";
 const statusByCode = {
   unauthenticated: 401,
   registration_required: 403,
+  account_inactive: 403,
   forbidden: 403,
   // Concealed and missing resources are the same response (PS-NFR-002).
   not_found: 404,

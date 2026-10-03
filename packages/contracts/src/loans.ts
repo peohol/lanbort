@@ -312,12 +312,16 @@ export const loanStatusSchema = z.enum([
  *   whose fault that was.
  * - `returned`: the responsible lender confirmed receiving the object back
  *   (PS-LOAN-015), possibly before the agreed return day (PS-LOAN-020).
- * Later work packages add the administrative endings.
+ * - `stopped`: a platform measure (a party's suspension) stopped it before
+ *   its handover day (PS-ADM-003). It is neither party's cancellation, and
+ *   it says nothing about why (UX-EXC-007).
+ * Later work packages add the other administrative endings.
  */
 export const loanEndReasonSchema = z.enum([
   "cancelled",
   "not_completed",
   "returned",
+  "stopped",
 ]);
 
 export const loanReadQuerySchema = z.strictObject({ loanId: loanIdSchema });

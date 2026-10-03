@@ -25,6 +25,19 @@ export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
+export interface AppAccountStatusChanges {
+  basis: string | null;
+  changed_at: Timestamp;
+  changed_by_process: string | null;
+  changed_by_user_id: string | null;
+  from_status: string;
+  id: Generated<string>;
+  position: Generated<Int8>;
+  reason: string;
+  to_status: string;
+  user_id: string;
+}
+
 export interface AppAuditEvents {
   actor_process: string | null;
   actor_type: string;
@@ -531,6 +544,8 @@ export interface AppUsers {
   created_at: Generated<Timestamp>;
   id: Generated<string>;
   status: Generated<string>;
+  status_changed_at: Timestamp | null;
+  status_reason: string | null;
 }
 
 export interface AppVerifiedContacts {
@@ -541,6 +556,7 @@ export interface AppVerifiedContacts {
 }
 
 export interface DB {
+  "app.account_status_changes": AppAccountStatusChanges;
   "app.audit_events": AppAuditEvents;
   "app.auth_identities": AppAuthIdentities;
   "app.environment_access_restrictions": AppEnvironmentAccessRestrictions;

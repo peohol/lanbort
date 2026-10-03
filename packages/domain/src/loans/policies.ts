@@ -9,6 +9,7 @@ import {
 } from "../authorization/policy";
 import {
   requireActiveAccount,
+  requireMinimumAccess,
   requireSystemProcess,
 } from "../authorization/rules";
 
@@ -97,18 +98,27 @@ function asParty(
   };
 }
 
-function partyPolicy(action: string, roles: readonly LoanRequestRole[]) {
+function partyPolicy(
+  action: string,
+  roles: readonly LoanRequestRole[],
+  standing: ActorRule = requireActiveAccount,
+) {
   return definePolicy<LoanRequestResource, void>({
     action,
-    actor: [requireActiveAccount],
+    actor: [standing],
     resource: [asParty(roles)],
   });
 }
 
-export const readLoanRequestPolicy = partyPolicy("loan_request.read", [
-  "borrower",
-  "lender",
-]);
+/**
+ * A party sees the request also while their account is not active: an
+ * approved request is part of their loan (PS-ADM-002).
+ */
+export const readLoanRequestPolicy = partyPolicy(
+  "loan_request.read",
+  ["borrower", "lender"],
+  requireMinimumAccess,
+);
 
 /** The borrower takes their own request back. */
 export const withdrawLoanRequestPolicy = partyPolicy("loan_request.withdraw", [
@@ -144,10 +154,13 @@ export const acceptResponsibilityPolicy = partyPolicy(
   ["borrower", "lender"],
 );
 
-/** The caller's own requests, as borrower or as lender. */
+/**
+ * The caller's own requests, as borrower or as lender, also while their
+ * account is not active (PS-ADM-002): they lead to the caller's loans.
+ */
 export const listLoanRequestsPolicy = definePolicy<unknown, void>({
   action: "loan_request.list",
-  actor: [requireActiveAccount],
+  actor: [requireMinimumAccess],
 });
 
 /**
@@ -206,12 +219,11 @@ const bothSides = () => ["borrower", "lender"] as const;
  * the handover and the return, cancelling it, handing the lender's role on,
  * and declining or withdrawing what was proposed. Friendship, membership,
  * publication and blocks never take these away (the loaders check none of
- * them). Today it is every active account, like any action; when accounts
- * can be deactivated or suspended (WP-53), this is the one rule that lets
- * such an account keep exactly these actions, and nothing that makes a new
- * commitment (proposing or accepting a change, taking a role on).
+ * them). A deactivated, dormant, suspended or closing account keeps exactly
+ * these actions (PS-ADM-002–003, `requireMinimumAccess`), and nothing that
+ * makes a new commitment (proposing or accepting a change, taking a role on).
  */
-export const requireLoanStanding: ActorRule = requireActiveAccount;
+export const requireLoanStanding: ActorRule = requireMinimumAccess;
 
 function loanPartyPolicy<R extends LoanResource>(
   action: string,

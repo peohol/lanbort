@@ -1,12 +1,16 @@
 import {
+  type AuthAdmin,
   type AuthGateway,
   type CookieStore,
+  createAuthAdmin,
   createAuthGateway,
 } from "@lanbort/auth";
 import { createDatabase } from "@lanbort/database";
 import {
+  accountIdentityRemoval,
   ConsumerRegistry,
   type DomainContext,
+  type IdentityProviderAdmin,
   objectImageFileCleanup,
 } from "@lanbort/domain";
 import { serverEnv } from "./env";
@@ -23,6 +27,28 @@ export interface Runtime {
   cronSecret(): string | undefined;
 }
 
+let authAdmin: AuthAdmin | undefined;
+
+/**
+ * The provider's identity administration, or undefined when this environment
+ * has no secret key configured; removing deleted accounts' identities then
+ * waits in the outbox and is retried.
+ */
+function identityAdmin(): IdentityProviderAdmin | undefined {
+  const env = serverEnv();
+
+  if (!env.SUPABASE_SECRET_KEY) {
+    return undefined;
+  }
+
+  const admin = (authAdmin ??= createAuthAdmin({
+    url: env.SUPABASE_URL,
+    secretKey: env.SUPABASE_SECRET_KEY,
+  }));
+
+  return { deleteIdentity: (subject) => admin.deleteUser(subject) };
+}
+
 /**
  * Side effects run from the outbox (ADR-0004, ADR-0008). Notifications and
  * e-mail delivery arrive in Phase 4.
@@ -31,6 +57,10 @@ export const outboxConsumers = new ConsumerRegistry([
   objectImageFileCleanup({
     store: () => objectImageServices()?.store,
     db: () => runtime.domain().db,
+  }),
+  accountIdentityRemoval({
+    identities: identityAdmin,
+    domain: () => runtime.domain(),
   }),
 ]);
 

@@ -48,6 +48,25 @@ const coOwner = testUserActor();
 const stranger = testUserActor();
 const pendingAccount = testUserActor({ accountStatus: "pending_registration" });
 
+/** What a party keeps while their account is not active (PS-ADM-002). */
+type Standing = "allow" | "account_inactive";
+
+/** The same party, with a deactivated or suspended account. */
+const inactiveCases = <R>(
+  party: Actor & { kind: "user" },
+  side: string,
+  resource: R,
+  expected: Standing,
+) =>
+  (["deactivated", "suspended"] as const).map((accountStatus) =>
+    expectCase(
+      `the ${side} with a ${accountStatus} account`,
+      { ...party, accountStatus },
+      resource,
+      expected,
+    ),
+  );
+
 function expectCase<R>(
   name: string,
   actor: Actor,
@@ -120,7 +139,14 @@ const loan: LoanResource = {
 const loanCases = <R extends LoanResource>(
   resource: R,
   allowed: { borrower: boolean; lender: boolean },
+  standing: Standing = "allow",
 ) => [
+  ...(allowed.borrower
+    ? inactiveCases(borrower, "borrower", resource, standing)
+    : []),
+  ...(allowed.lender
+    ? inactiveCases(owner, "responsible lender", resource, standing)
+    : []),
   expectCase(
     "the borrower",
     borrower,
@@ -143,8 +169,14 @@ const loanCases = <R extends LoanResource>(
   ...callerCases(resource),
 ];
 
-const loanPartyMatrix = (policy: Policy<LoanResource, void>) =>
-  policyMatrix(policy, loanCases(loan, { borrower: true, lender: true }));
+const loanPartyMatrix = (
+  policy: Policy<LoanResource, void>,
+  standing: Standing = "allow",
+) =>
+  policyMatrix(
+    policy,
+    loanCases(loan, { borrower: true, lender: true }, standing),
+  );
 
 /**
  * PS-LOAN-010: on a proposal by either side, the other side answers it and
@@ -153,6 +185,7 @@ const loanPartyMatrix = (policy: Policy<LoanResource, void>) =>
 const amendmentMatrix = (
   policy: Policy<LoanAmendmentResource, void>,
   allowed: "other" | "proposer",
+  standing: Standing = "allow",
 ) =>
   policyMatrix(
     policy,
@@ -163,6 +196,7 @@ const amendmentMatrix = (
           borrower: (proposerRole === "borrower") === (allowed === "proposer"),
           lender: (proposerRole === "lender") === (allowed === "proposer"),
         },
+        standing,
       ).map((testCase) => ({
         ...testCase,
         name: `${testCase.name}, on the ${proposerRole}'s proposal`,
@@ -170,7 +204,14 @@ const amendmentMatrix = (
     ),
   );
 
-const partyCases = (allowed: { borrower: boolean; lender: boolean }) => [
+const partyCases = (
+  allowed: { borrower: boolean; lender: boolean },
+  standing: Standing,
+) => [
+  ...(allowed.borrower
+    ? inactiveCases(borrower, "borrower", request, standing)
+    : []),
+  ...(allowed.lender ? inactiveCases(owner, "lender", request, standing) : []),
   expectCase(
     "the borrower",
     borrower,
@@ -196,7 +237,8 @@ const partyCases = (allowed: { borrower: boolean; lender: boolean }) => [
 const partyMatrix = (
   policy: Policy<LoanRequestResource, void>,
   allowed: { borrower: boolean; lender: boolean },
-) => policyMatrix(policy, partyCases(allowed));
+  standing: Standing = "account_inactive",
+) => policyMatrix(policy, partyCases(allowed, standing));
 
 /**
  * PS-LOAN-015: a co-owner of the circle while the responsible lender is
@@ -395,7 +437,7 @@ const processMatrix = (policy: Policy<void, void>, process: string) =>
 export const loanMatrices = [
   policyMatrix(createLoanRequestPolicy, targetCases),
   policyMatrix(previewLoanRequestPolicy, targetCases),
-  partyMatrix(readLoanRequestPolicy, { borrower: true, lender: true }),
+  partyMatrix(readLoanRequestPolicy, { borrower: true, lender: true }, "allow"),
   partyMatrix(withdrawLoanRequestPolicy, { borrower: true, lender: false }),
   partyMatrix(declineLoanRequestPolicy, { borrower: false, lender: true }),
   partyMatrix(approveLoanRequestPolicy, { borrower: false, lender: true }),
@@ -403,12 +445,13 @@ export const loanMatrices = [
   partyMatrix(acceptResponsibilityPolicy, { borrower: true, lender: true }),
   policyMatrix(listLoanRequestsPolicy, [
     expectCase("a signed-in user", borrower, undefined, "allow"),
+    ...inactiveCases(borrower, "user", undefined, "allow"),
     ...callerCases(undefined),
   ]),
   loanPartyMatrix(readLoanPolicy),
   loanPartyMatrix(cancelLoanPolicy),
-  loanPartyMatrix(proposeLoanAmendmentPolicy),
-  amendmentMatrix(acceptLoanAmendmentPolicy, "other"),
+  loanPartyMatrix(proposeLoanAmendmentPolicy, "account_inactive"),
+  amendmentMatrix(acceptLoanAmendmentPolicy, "other", "account_inactive"),
   amendmentMatrix(declineLoanAmendmentPolicy, "other"),
   amendmentMatrix(withdrawLoanAmendmentPolicy, "proposer"),
   loanPartyMatrix(reportHandoverPolicy),
