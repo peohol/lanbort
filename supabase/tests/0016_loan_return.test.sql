@@ -278,13 +278,16 @@ select throws_ok(
 );
 
 select throws_ok(
-  $$ update app.loans set status = 'ended', status_changed_at = clock_timestamp(),
-       end_reason = 'returned', ended_at = clock_timestamp(),
-       ended_by_user_id = '00000000-0000-4000-8000-0000000000b1'
-     where id = '00000000-0000-4000-8000-000000000301' $$,
-  '23514',
+  $$
+    select pg_temp.say('00000000-0000-4000-8000-000000000301',
+      '00000000-0000-4000-8000-0000000000a1', 'lender', 'received');
+    select pg_temp.returned('00000000-0000-4000-8000-000000000301',
+      '00000000-0000-4000-8000-0000000000b1');
+    select pg_temp.check_now();
+  $$,
+  '23001',
   null,
-  'only the responsible lender''s receipt ends a loan as returned'
+  'only the receipt that counts ends a loan as returned, by whoever made it'
 );
 
 select lives_ok(

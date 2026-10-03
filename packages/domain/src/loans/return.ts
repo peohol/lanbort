@@ -2,11 +2,13 @@ import {
   type LoanReturnResult,
   loanReferenceSchema,
   loanReturnResultSchema,
+  type ReturnReporter,
   reportReturnSchema,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import type { Kysely } from "kysely";
+import type { Kysely, Transaction } from "kysely";
 import { z } from "zod";
+import type { Actor } from "../actor";
 import { defineCommand } from "../commands/command";
 import { DomainError } from "../errors";
 import type { EventRecorder } from "../events/recorder";
@@ -39,6 +41,7 @@ import {
 } from "./policies";
 import { loadLockedLoan } from "./resources";
 import { endLoan, findLoan, type LoanRecord } from "./reservations";
+import { loadCoOwnerReach, speakerAllowed } from "./responsibility-store";
 import {
   dueReturnConfirmations,
   findPendingReturns,
@@ -165,6 +168,7 @@ async function makeStatement(
     readonly statements: readonly ReturnStatement[];
     readonly userId: string;
     readonly role: ReturnStatement["role"];
+    readonly reportedAs: ReturnReporter;
     readonly outcome: ReturnStatement["outcome"];
     readonly confirmationId: string | null;
     readonly now: Date;
@@ -178,6 +182,7 @@ async function makeStatement(
     agreementVersion: loan.agreement.version,
     userId: input.userId,
     role: input.role,
+    reportedAs: input.reportedAs,
     outcome: input.outcome,
     confirmationId: input.confirmationId,
     now,
@@ -189,6 +194,7 @@ async function makeStatement(
       role: input.role,
       outcome: input.outcome,
       agreementVersion: loan.agreement.version,
+      reportedAs: input.reportedAs,
     },
   });
 
@@ -205,12 +211,23 @@ async function makeStatement(
   );
 }
 
+/** Whoever made the waiting confirmation may still speak for its side. */
+const stillSpeaks = (db: Db, pending: PendingReturn) =>
+  speakerAllowed(db, {
+    loanId: pending.loanId,
+    role: pending.role,
+    userId: pending.userId,
+    reportedAs: pending.reportedAs,
+  });
+
 /**
  * Makes a waiting confirmation: when its buffer is over, as of the moment
  * it took effect, however late the job or the next command comes by; or
  * now, when its party asks for it early. It is made on the agreement and
- * status the loan has then; if it can no longer be (the database lapses
- * those as they move on), it lapses.
+ * status the loan has then, by someone who may still speak for its side; if
+ * it can no longer be (the database lapses those whose loan or agreement
+ * moved on), it lapses. So does one whose maker lost that right since: the
+ * lender's role moved on (WP-35), or a co-owner lost the narrow receipt role.
  */
 async function makePending(
   db: Db,
@@ -221,7 +238,8 @@ async function makePending(
 ): Promise<LoanRecord> {
   if (
     !inReturnPhase(loan.status) ||
-    pending.agreementVersion !== loan.agreement.version
+    pending.agreementVersion !== loan.agreement.version ||
+    !(await stillSpeaks(db, pending))
   ) {
     await resolvePendingReturn(db, { id: pending.id, status: "lapsed", now });
     return loan;
@@ -247,6 +265,7 @@ async function makePending(
       statements,
       userId: pending.userId,
       role: pending.role,
+      reportedAs: pending.reportedAs,
       outcome: pending.outcome,
       confirmationId: pending.id,
       now: at,
@@ -297,6 +316,69 @@ export async function settleDueReturns(
   return { loan: current, made };
 }
 
+/**
+ * Lapses the loan's waiting confirmations whose makers may no longer speak
+ * for their side, at once: when the lender's role moves (WP-35), the former
+ * lender's confirmation is not made later in someone else's name.
+ */
+export async function lapseUnspokenReturns(
+  db: Db,
+  loanId: string,
+  now: Date,
+): Promise<void> {
+  for (const pending of await findPendingReturns(db, loanId)) {
+    if (!(await stillSpeaks(db, pending))) {
+      await resolvePendingReturn(db, { id: pending.id, status: "lapsed", now });
+    }
+  }
+}
+
+/**
+ * The loan, locked, with whether the caller, who is not its party, may
+ * confirm the receipt for the lender's side (PS-LOAN-015). `receipt` says
+ * whether the caller asks to: nobody else gets that far.
+ */
+async function loadReturnLoan(
+  tx: Transaction<Database>,
+  actor: Actor,
+  loanId: string,
+  receipt: boolean,
+) {
+  const loaded = await loadLockedLoan(tx, loanId);
+
+  if (!loaded) {
+    return null;
+  }
+
+  const outsider =
+    receipt && actor.kind === "user" && !loanRoleOf(actor, loaded.resource);
+
+  return {
+    ...loaded.resource,
+    receivesForLender:
+      outsider &&
+      (await loadCoOwnerReach(tx, loanId, actor.userId)).receivesForLender,
+  };
+}
+
+/** Who speaks: the party of `side`, or a co-owner in the narrow receipt role. */
+function speakingAs(
+  actor: Actor,
+  resource: Parameters<typeof loanRoleOf>[1] & { receivesForLender: boolean },
+): { role: ReturnStatement["role"]; reportedAs: ReturnReporter } {
+  const role = loanRoleOf(actor, resource);
+
+  if (role) {
+    return { role, reportedAs: "party" };
+  }
+
+  if (!resource.receivesForLender) {
+    throw new Error("The policy allows only a party or a receiving co-owner");
+  }
+
+  return { role: "lender", reportedAs: "co_owner" };
+}
+
 const returnResult = (
   loan: Pick<LoanRecord, "id" | "agreement">,
   status: StoredLoanStatus,
@@ -337,10 +419,15 @@ const returnResult = (
  *    word alone never does.
  * Saying again what one's side said last, with nobody speaking since,
  * returns the loan as it is. While the caller's own confirmation waits, they
- * undo or make it before saying something else. Nothing else is checked: a
- * friendship, membership or block that is gone never stops a party from
- * settling the return (PS-LOAN-002, scenario 81), and other co-owners are
- * not parties.
+ * undo or make it before saying something else; while someone else's
+ * confirmation waits on the same side, the caller waits for it. Nothing
+ * else is checked: a friendship, membership or block that is gone never
+ * stops a party from settling the return (PS-LOAN-002, PS-LOAN-021,
+ * scenario 81). Other co-owners are not parties, except that while the
+ * responsible lender is established as unavailable, a co-owner of the
+ * circle may confirm the receipt for the lender's side without becoming
+ * responsible (PS-LOAN-015); it is recorded as theirs, and ends the loan
+ * like the lender's.
  */
 export const reportReturn = defineCommand({
   name: "loan.report_return",
@@ -348,18 +435,23 @@ export const reportReturn = defineCommand({
   output: loanReturnResultSchema,
   policy: reportReturnPolicy,
   idempotency: "required",
-  load: async ({ tx, input }) => {
-    const loaded = await loadLockedLoan(tx, input.loanId);
+  load: async ({ tx, actor, input }) => {
+    const loaded = await loadReturnLoan(
+      tx,
+      actor,
+      input.loanId,
+      input.outcome === "received",
+    );
 
     return (
       loaded && {
-        resource: { ...loaded.resource, side: returnSide(input.outcome) },
+        resource: { ...loaded, side: returnSide(input.outcome) },
         context: undefined,
       }
     );
   },
   execute: async ({ tx, actor, input, resource, events, now }) => {
-    const role = loanRoleOf(actor, resource);
+    const { role, reportedAs } = speakingAs(actor, resource);
 
     if (role !== resource.side) {
       throw new Error("The policy allows only the statement's own side");
@@ -371,9 +463,14 @@ export const reportReturn = defineCommand({
       conflict("The agreement has changed", ["agreementVersion"]);
     }
 
+    const userId = actingUserId(actor);
     const [own] = await findPendingReturns(tx, loan.id, { role });
 
     if (own) {
+      if (own.userId !== userId) {
+        conflict("A return confirmation for this side is waiting");
+      }
+
       if (own.outcome !== input.outcome) {
         conflict("Your return confirmation is waiting", ["outcome"]);
       }
@@ -411,14 +508,13 @@ export const reportReturn = defineCommand({
       conflict(refusal.message, refusal.fields);
     }
 
-    const userId = actingUserId(actor);
-
     if (isReturnConfirmation(input.outcome) && !input.immediately) {
       const pending = await insertPendingReturn(tx, {
         loanId: loan.id,
         agreementVersion: loan.agreement.version,
         userId,
         role,
+        reportedAs,
         outcome: input.outcome,
         now,
       });
@@ -433,6 +529,7 @@ export const reportReturn = defineCommand({
         statements,
         userId,
         role,
+        reportedAs,
         outcome: input.outcome,
         confirmationId: null,
         now,
@@ -449,7 +546,8 @@ export const reportReturn = defineCommand({
  * before it takes effect, as if it was never sent: nobody else saw it, and
  * it has no event. Undoing it again returns the loan as it is. Once the
  * buffer is over it is made and stays: a mistake is then corrected with a
- * new statement (PS-LOAN-017).
+ * new statement (PS-LOAN-017). A co-owner undoes their own receipt the same
+ * way while they hold the narrow receipt role.
  */
 export const undoReturn = defineCommand({
   name: "loan.undo_return",
@@ -457,21 +555,23 @@ export const undoReturn = defineCommand({
   output: loanReturnResultSchema,
   policy: undoReturnPolicy,
   idempotency: "required",
-  load: ({ tx, input }) => loadLockedLoan(tx, input.loanId),
+  load: async ({ tx, actor, input }) => {
+    const loaded = await loadReturnLoan(tx, actor, input.loanId, true);
+
+    return loaded && { resource: loaded, context: undefined };
+  },
   execute: async ({ tx, actor, resource, events, now }) => {
-    const role = loanRoleOf(actor, resource);
-
-    if (!role) {
-      throw new Error("The policy allows only a party of the loan");
-    }
-
+    const { role } = speakingAs(actor, resource);
+    const userId = actingUserId(actor);
     const { loan } = await settleDueReturns(tx, resource.loan, now, events);
-    const [own] = await findPendingReturns(tx, loan.id, { role });
+    const own = (await findPendingReturns(tx, loan.id, { role })).find(
+      (pending) => pending.userId === userId,
+    );
 
     if (own) {
       await resolvePendingReturn(tx, { id: own.id, status: "withdrawn", now });
     } else if (
-      (await latestConfirmationStatus(tx, loan.id, role)) !== "withdrawn"
+      (await latestConfirmationStatus(tx, loan.id, userId)) !== "withdrawn"
     ) {
       conflict("No return confirmation is waiting");
     }
