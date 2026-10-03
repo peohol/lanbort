@@ -27,6 +27,9 @@ import { publishObject } from "../publications/commands";
 import { acceptFriendRequest, sendFriendRequest } from "../social/commands";
 import { registerTestUser } from "./identities";
 
+const oneHour = 60 * 60 * 1000;
+const oneDay = 24 * oneHour;
+
 /**
  * Shared steps for the loan integration tests (WP-30–WP-32): users,
  * environments, objects, co-owners, friendships and requests, made through
@@ -247,6 +250,24 @@ export function loanTestKit(
     /** Moves the clock `ms` ahead. */
     advance: (ms: number) => {
       clock = new Date(clock.getTime() + ms);
+    },
+    /**
+     * Moves the clock `days` calendar days ahead in the product's time zone,
+     * at about the same time of day. Days are 23 or 25 hours long when summer
+     * time starts or ends, so a whole number of 24-hour days can land a day
+     * short or a day too far.
+     */
+    advanceDays: (days: number) => {
+      const target = addDays(calendarDate(clock), days);
+      clock = new Date(clock.getTime() + days * oneDay);
+
+      while (calendarDate(clock) < target) {
+        clock = new Date(clock.getTime() + oneHour);
+      }
+
+      while (calendarDate(clock) > target) {
+        clock = new Date(clock.getTime() - oneHour);
+      }
     },
     run,
     user,
