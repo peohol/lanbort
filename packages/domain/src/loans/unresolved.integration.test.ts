@@ -2,6 +2,12 @@ import { afterAll, describe, expect, it } from "vitest";
 import { systemActor, type UserActor } from "../actor";
 import { executeQuery } from "../commands/query";
 import { calendarDate } from "../objects/availability";
+import { leaveObject } from "../objects/co-owners";
+import {
+  loadCommitments,
+  objectCommitmentSources,
+} from "../objects/commitments";
+import { consentToObjectDeletion } from "../objects/deletion";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
 import { approveLoanRequest } from "./approval";
@@ -105,9 +111,16 @@ describe("an administratively unresolved loan (PS-LOAN-018–019)", () => {
       payload: { objectId, otherLoanIds: [] },
     });
 
-    // Nothing is free until an owner has it back.
+    // Nothing is free until an owner has it back, and the loan still needs
+    // following up: its lender cannot leave, nobody can delete the object.
     expect(await effective(objectId)).toEqual([]);
     await expect(request()).rejects.toMatchObject(conflict);
+    await expect(run(leaveObject, owner, { objectId })).rejects.toMatchObject(
+      conflict,
+    );
+    await expect(
+      run(consentToObjectDeletion, coOwner, { objectId }),
+    ).rejects.toMatchObject(conflict);
 
     // A co-owner who is not a party sees what they may do, and nothing else.
     expect(
@@ -144,6 +157,9 @@ describe("an administratively unresolved loan (PS-LOAN-018–019)", () => {
       ).items,
     ).toEqual([]);
 
+    expect(
+      await loadCommitments(db, objectId, objectCommitmentSources),
+    ).toEqual([]);
     expect(await effective(objectId)).toEqual([{ from: day(0), until: null }]);
     const { requestId } = await request();
     expect(await run(approveLoanRequest, owner, { requestId })).toMatchObject({
