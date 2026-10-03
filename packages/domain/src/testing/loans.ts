@@ -35,9 +35,18 @@ import { registerTestUser } from "./identities";
  */
 export function loanTestKit(
   db: Kysely<Database>,
-  options: { consumers?: ConsumerRegistry } = {},
+  options: {
+    consumers?: ConsumerRegistry;
+    /**
+     * Where the clock starts. Test files share one database and run at
+     * once, and the scheduled jobs act on every loan that is due; a file
+     * whose waiting confirmations must stay waiting starts its clock beyond
+     * where the other files move theirs.
+     */
+    startAt?: Date;
+  } = {},
 ) {
-  let clock = new Date();
+  let clock = options.startAt ?? new Date();
   const domain: DomainContext = {
     db,
     consumers: options.consumers ?? new ConsumerRegistry(),
