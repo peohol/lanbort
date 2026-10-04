@@ -327,10 +327,31 @@ export async function saveAnswers(
  * environment row and the caller's membership are locked for the command, so
  * membership changes in one environment are serialized.
  */
-export async function loadEnvironmentAccess(
+export function loadEnvironmentAccess(
   db: Db,
   environmentId: string,
   actor: Actor,
+  now: Date,
+  options: { lock?: boolean } = {},
+): Promise<EnvironmentAccess | null> {
+  return loadUserAccess(
+    db,
+    environmentId,
+    actor.kind === "user" ? actor.userId : null,
+    now,
+    options,
+  );
+}
+
+/**
+ * The environment and a user's relation to it, as the policies would see it
+ * if that user acted (null: no user). For deciding what someone else, such
+ * as the recipient of a notification, may see.
+ */
+export async function loadUserAccess(
+  db: Db,
+  environmentId: string,
+  userId: string | null,
   now: Date,
   options: { lock?: boolean } = {},
 ): Promise<EnvironmentAccess | null> {
@@ -340,7 +361,7 @@ export async function loadEnvironmentAccess(
     return null;
   }
 
-  if (actor.kind !== "user") {
+  if (userId === null) {
     return {
       environment,
       ownMembership: null,
@@ -352,11 +373,11 @@ export async function loadEnvironmentAccess(
   const membership = await findCurrentMembership(
     db,
     environmentId,
-    actor.userId,
+    userId,
     options,
   );
-  const roles = await findActiveRoles(db, environmentId, actor.userId);
-  const restricted = await isRestricted(db, environmentId, actor.userId);
+  const roles = await findActiveRoles(db, environmentId, userId);
+  const restricted = await isRestricted(db, environmentId, userId);
 
   return {
     environment,

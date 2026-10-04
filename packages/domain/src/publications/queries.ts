@@ -28,7 +28,7 @@ import {
   toPosition,
   widenedAfterCreation,
 } from "../environment/privacy";
-import { loadEnvironmentAccess } from "../environment/store";
+import { loadEnvironmentAccess, loadUserAccess } from "../environment/store";
 import {
   concealedHistory,
   createdOutside,
@@ -134,7 +134,7 @@ function page<T extends { id: string }>(rows: readonly T[]) {
   };
 }
 
-interface ContentRow {
+export interface ContentRow {
   readonly object_id: string;
   readonly title: string;
   readonly category_id: string;
@@ -142,7 +142,8 @@ interface ContentRow {
   readonly loan_terms: string | null;
 }
 
-function presentContent(
+/** The object's global content as it is shown through a publication. */
+export function presentContent(
   row: ContentRow,
   images: ReadonlyMap<string, readonly ObjectImageRow[]>,
 ) {
@@ -462,9 +463,38 @@ export const listEnvironmentObjects = defineQuery({
 });
 
 /**
- * Whether the viewer finds the object in the environment now, by the same
- * rule as the list (PS-OBJ-006, PS-ENV-009). Phase 3 uses it before a loan
- * request is made through the environment.
+ * The publication through which the viewer finds each of the objects in the
+ * environment now, by the same rule as the list (PS-OBJ-006, PS-ENV-009).
+ * Objects the viewer does not find there are left out.
+ */
+export async function findPublications(
+  db: Db,
+  access: EnvironmentAccess,
+  objectIds: readonly string[],
+  viewerId: string,
+  now: Date,
+): Promise<Map<string, string>> {
+  if (!discovers(access) || objectIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await discoverablePublications(
+    db,
+    access.environment.id,
+    viewerId,
+    await concealedFrom(db, access),
+    now,
+  )
+    .select(["publication.id", "publication.object_id"])
+    .where("publication.object_id", "in", [...objectIds])
+    .execute();
+
+  return new Map(rows.map((row) => [row.object_id, row.id]));
+}
+
+/**
+ * Whether the viewer finds the object in the environment now. Phase 3 uses
+ * it before a loan request is made through the environment.
  */
 export async function findsObject(
   db: Db,
@@ -473,19 +503,67 @@ export async function findsObject(
   viewerId: string,
   now: Date,
 ): Promise<boolean> {
-  return (
-    discovers(access) &&
-    (await discoverablePublications(
-      db,
-      access.environment.id,
-      viewerId,
-      await concealedFrom(db, access),
-      now,
-    )
-      .select("publication.id")
-      .where("publication.object_id", "=", objectId)
-      .executeTakeFirst()) !== undefined
+  return (await findPublications(db, access, [objectId], viewerId, now)).has(
+    objectId,
   );
+}
+
+/** One place a user finds an object. */
+export interface FoundPublication {
+  readonly environmentId: string;
+  readonly publicationId: string;
+}
+
+/**
+ * Every environment in which the user finds each of the objects now, by the
+ * rule above. This is what seeing an object means for someone who does not
+ * own it, so whatever follows an object outside its environments (such as a
+ * subscription, PS-OBJ-014) asks this, not the access it once had.
+ */
+export async function whereUserFinds(
+  db: Db,
+  userId: string,
+  objectIds: readonly string[],
+  now: Date,
+): Promise<Map<string, FoundPublication[]>> {
+  const found = new Map<string, FoundPublication[]>();
+
+  if (objectIds.length === 0) {
+    return found;
+  }
+
+  // Only the user's own environments can have a publication they find.
+  const environments = await db
+    .selectFrom("app.environment_publications as publication")
+    .innerJoin("app.environment_memberships as membership", (join) =>
+      join
+        .onRef("membership.environment_id", "=", "publication.environment_id")
+        .on("membership.user_id", "=", userId)
+        .on("membership.state", "=", "active"),
+    )
+    .select("publication.environment_id")
+    .distinct()
+    .where("publication.object_id", "in", [...objectIds])
+    .where("publication.status", "=", "active")
+    .orderBy("publication.environment_id")
+    .execute();
+
+  // One after another: the caller may hold a single connection.
+  for (const { environment_id: environmentId } of environments) {
+    const access = await loadUserAccess(db, environmentId, userId, now);
+    const publications = access
+      ? await findPublications(db, access, objectIds, userId, now)
+      : new Map<string, string>();
+
+    for (const [objectId, publicationId] of publications) {
+      found.set(objectId, [
+        ...(found.get(objectId) ?? []),
+        { environmentId, publicationId },
+      ]);
+    }
+  }
+
+  return found;
 }
 
 /** Authorizes reading an image through a publication. */

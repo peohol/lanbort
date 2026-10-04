@@ -170,6 +170,13 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Etter hvor lang tids inaktivitet skal en konto settes i dvale, hva regnes som aktivitet, og hvilket varsel (kanal, frist) skal brukeren få før det skjer? Dvalemekanismen er bygget (`account.make_dormant`, bare for prosessen `account.inactivity`), men ingen jobb kaller den før dette er besluttet.
 - **Avhenger av:** Produktvurdering, varslingskanaler (OD-0004) og eventuelt OD-0002.
 
+### OD-0019 — Hvilke abonnementshendelser som varsles, og hvor ofte
+- **Lag:** Produktspesifikasjon / UX
+- **Status:** Åpen
+- **Berører:** PS-OBJ-014, PS-COM-003, [visjon 04](vision/04-utlansobjekter.md) («Abonnement», «Vesentlige endringer»)
+- **Spørsmål:** Hvilke hendelser skal et objektabonnement varsle om som standard, hvilke kan brukeren velge selv, og hvor ofte kan samme person varsles om et objekt (visjonen nevner omtrent hver andre time for hyppige redigeringer)? Gjelder det for eksempel endret tittel, beskrivelse, vilkår eller bilder? Inntil dette er besluttet, varsler et abonnement bare at objektet er blitt tilgjengelig for nye lån igjen, som visjonen fremhever; endringer i innholdet varsler ingen abonnenter. Nye regler legges inn ved siden av den regelen og samme tilgangskontroll.
+- **Avhenger av:** Produktvurdering og varslingspreferanser (OD-0004).
+
 ## Avklart
 
 ### OD-0009 — Konkret implementeringsstack og driftsleverandører

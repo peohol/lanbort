@@ -1,5 +1,9 @@
 import { randomUUID } from "node:crypto";
-import type { NotificationKind, NotificationLevel } from "@lanbort/contracts";
+import type {
+  NotificationKind,
+  NotificationLevel,
+  NotificationTarget,
+} from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { EmailSendError, type EmailSender } from "@lanbort/email";
 import { writeLog } from "@lanbort/observability";
@@ -8,6 +12,7 @@ import {
   defaultRetryDelaySeconds,
   type OutboxWorkerOptions,
 } from "../outbox/worker";
+import { stillConcerns } from "./concerns";
 import { composeNotificationEmail } from "./email";
 import { sendsEmail } from "./model";
 import { notificationEmailProcess } from "./policies";
@@ -57,6 +62,7 @@ interface CurrentDelivery extends ClaimedDelivery {
   recipientId: string;
   kind: NotificationKind;
   level: NotificationLevel;
+  target: NotificationTarget;
   readAt: Date | null;
   notifiedAt: Date;
   address: string | null;
@@ -134,6 +140,8 @@ async function lockCurrent(
       "notification.recipient_id",
       "notification.kind",
       "notification.level",
+      "notification.target_type",
+      "notification.target_id",
       "notification.read_at",
       "notification.created_at",
       "contact.address",
@@ -147,6 +155,10 @@ async function lockCurrent(
     recipientId: notification.recipient_id,
     kind: notification.kind as NotificationKind,
     level: notification.level as NotificationLevel,
+    target: {
+      type: notification.target_type,
+      id: notification.target_id,
+    } as NotificationTarget,
     readAt: notification.read_at,
     notifiedAt: notification.created_at,
     address: notification.address,
@@ -184,14 +196,23 @@ async function settle(
     .execute();
 }
 
+/** What the job reads again, under the lock, right before it sends. */
+interface StillWanted {
+  /** The recipient still wants e-mail for this kind. */
+  readonly emailChosen: boolean;
+  /** The notification still concerns the recipient (`stillConcerns`). */
+  readonly concerns: boolean;
+}
+
 /**
  * Why a delivery is no longer worth sending, if it is not: too old, already
  * read in the app (the e-mail is only a reserve), e-mail turned off since,
- * or no verified address any more.
+ * no verified address any more, or the recipient no longer has access to
+ * what it is about (a subscription or question, WP-63).
  */
 function skipReason(
   delivery: CurrentDelivery,
-  emailStillChosen: boolean,
+  still: StillWanted,
   now: Date,
 ): string | null {
   if (
@@ -205,8 +226,12 @@ function skipReason(
     return "read";
   }
 
-  if (!emailStillChosen) {
+  if (!still.emailChosen) {
     return "turned_off";
+  }
+
+  if (!still.concerns) {
+    return "no_access";
   }
 
   return delivery.address === null ? "no_address" : null;
@@ -251,13 +276,19 @@ export async function deliverNotificationEmails(
         return null;
       }
 
+      const now = clock();
       const chosen = (await loadPreferences(tx, [current.recipientId])).get(
         current.recipientId,
       );
       const settled = await attempt(
         current,
-        chosen !== undefined && sendsEmail(current.kind, chosen),
-        clock(),
+        {
+          emailChosen: chosen !== undefined && sendsEmail(current.kind, chosen),
+          // Holds what access rests on until the outcome is stored, so a
+          // subscription ended or access lost meanwhile waits for this send.
+          concerns: await stillConcerns(tx, current, now),
+        },
+        now,
         services,
         settings,
       );
@@ -281,12 +312,12 @@ export async function deliverNotificationEmails(
 
 async function attempt(
   delivery: CurrentDelivery,
-  emailStillChosen: boolean,
+  still: StillWanted,
   now: Date,
   services: NotificationEmailServices,
   settings: Required<OutboxWorkerOptions>,
 ): Promise<Outcome> {
-  const skip = skipReason(delivery, emailStillChosen, now);
+  const skip = skipReason(delivery, still, now);
 
   if (skip !== null || delivery.address === null) {
     return { status: "skipped", code: skip ?? "no_address" };
