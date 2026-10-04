@@ -1,6 +1,6 @@
-import type { ApiErrorCode } from "@lanbort/contracts";
+import type { ApiFailureCode } from "./api-client";
 
-const messages: Partial<Record<ApiErrorCode | "network", string>> = {
+const messages: Partial<Record<ApiFailureCode, string>> = {
   invalid_code:
     "Koden er feil eller utløpt. Sjekk e-posten eller be om en ny kode.",
   account_inactive:
@@ -15,6 +15,6 @@ const messages: Partial<Record<ApiErrorCode | "network", string>> = {
     "Fikk ikke kontakt med Lånbort. Det du har fylt ut er beholdt. Prøv igjen.",
 };
 
-export function errorMessage(code: ApiErrorCode | "network"): string {
+export function errorMessage(code: ApiFailureCode): string {
   return messages[code] ?? "Noe gikk galt. Prøv igjen.";
 }

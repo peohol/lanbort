@@ -2,8 +2,16 @@
 
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { postJson } from "./api-client";
+import { type ApiFailureCode, postJson } from "./api-client";
+import { BusyButton } from "./busy-button";
 import { errorMessage } from "./error-messages";
+import { ErrorText, fieldErrorProps } from "./error-text";
+
+/** The conflict here means something new binds the account. */
+const deletionMessage = (code: ApiFailureCode) =>
+  code === "conflict"
+    ? "Kontoen kan ikke slettes ennå. Last siden på nytt for å se hva som må avsluttes først."
+    : errorMessage(code);
 
 type Step = "start" | "code";
 
@@ -19,7 +27,7 @@ export function AccountDeletion() {
   const [step, setStep] = useState<Step>("start");
   const [code, setCode] = useState("");
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ApiFailureCode | null>(null);
   const codeInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -33,7 +41,7 @@ export function AccountDeletion() {
     setPending(false);
 
     if (!result.ok) {
-      setError(errorMessage(result.code));
+      setError(result.code);
       return;
     }
 
@@ -51,11 +59,7 @@ export function AccountDeletion() {
 
     if (!deleted.ok) {
       setPending(false);
-      setError(
-        deleted.code === "conflict"
-          ? "Kontoen kan ikke slettes ennå. Last siden på nytt for å se hva som må avsluttes først."
-          : errorMessage(deleted.code),
-      );
+      setError(deleted.code);
       return;
     }
 
@@ -65,14 +69,10 @@ export function AccountDeletion() {
 
   return step === "start" ? (
     <>
-      <button type="button" onClick={() => void sendCode()} disabled={pending}>
+      <BusyButton type="button" onClick={() => void sendCode()} busy={pending}>
         Slett kontoen
-      </button>
-      {error && (
-        <p role="alert" className="error">
-          {error}
-        </p>
-      )}
+      </BusyButton>
+      <ErrorText>{error && deletionMessage(error)}</ErrorText>
     </>
   ) : (
     <form onSubmit={(event) => void confirm(event)} aria-busy={pending}>
@@ -89,37 +89,36 @@ export function AccountDeletion() {
         autoComplete="one-time-code"
         pattern="[0-9]*"
         required
+        {...fieldErrorProps(error, "deletion-error")}
         value={code}
         onChange={(event) => setCode(event.target.value.trim())}
       />
-      <button type="submit" disabled={pending}>
+      <BusyButton type="submit" busy={pending}>
         Slett kontoen for godt
-      </button>
+      </BusyButton>
       <div className="secondary-actions">
-        <button
+        <BusyButton
           type="button"
           onClick={() => void sendCode()}
-          disabled={pending}
+          busy={pending}
         >
           Send ny kode
-        </button>
-        <button
+        </BusyButton>
+        <BusyButton
           type="button"
           onClick={() => {
             setStep("start");
             setCode("");
             setError(null);
           }}
-          disabled={pending}
+          busy={pending}
         >
           Avbryt
-        </button>
+        </BusyButton>
       </div>
-      {error && (
-        <p role="alert" className="error">
-          {error}
-        </p>
-      )}
+      <ErrorText id="deletion-error">
+        {error && deletionMessage(error)}
+      </ErrorText>
     </form>
   );
 }

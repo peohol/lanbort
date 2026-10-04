@@ -2,8 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
-import { postJson } from "./api-client";
+import { type ApiFailureCode, postJson } from "./api-client";
+import { BusyButton } from "./busy-button";
 import { errorMessage } from "./error-messages";
+import { ErrorText, fieldErrorProps } from "./error-text";
 
 /** UX-JRN-001 step 3: real name and 18+ confirmation. */
 export function RegistrationForm() {
@@ -11,7 +13,7 @@ export function RegistrationForm() {
   const [realName, setRealName] = useState("");
   const [adultConfirmed, setAdultConfirmed] = useState(false);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ApiFailureCode | null>(null);
   // One key per form: a retry after a network error cannot register twice.
   const [idempotencyKey] = useState(() => crypto.randomUUID());
 
@@ -27,7 +29,7 @@ export function RegistrationForm() {
 
     if (!result.ok) {
       setPending(false);
-      setError(errorMessage(result.code));
+      setError(result.code);
       return;
     }
 
@@ -45,7 +47,7 @@ export function RegistrationForm() {
         id="real-name"
         name="realName"
         autoComplete="name"
-        aria-describedby="real-name-help"
+        {...fieldErrorProps(error, "registration-error", "real-name-help")}
         required
         maxLength={100}
         value={realName}
@@ -62,14 +64,12 @@ export function RegistrationForm() {
         />
         <label htmlFor="adult">Jeg bekrefter at jeg er 18 år eller eldre</label>
       </div>
-      <button type="submit" disabled={pending}>
+      <BusyButton type="submit" busy={pending}>
         Fullfør
-      </button>
-      {error && (
-        <p role="alert" className="error">
-          {error}
-        </p>
-      )}
+      </BusyButton>
+      <ErrorText id="registration-error">
+        {error && errorMessage(error)}
+      </ErrorText>
     </form>
   );
 }

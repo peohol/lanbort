@@ -2,6 +2,8 @@
 
 import { coarseCoordinate } from "@lanbort/contracts";
 import { type MouseEvent, useState, useSyncExternalStore } from "react";
+import { BusyButton } from "./busy-button";
+import { ErrorText } from "./error-text";
 
 const unchanging = () => () => {};
 
@@ -60,14 +62,19 @@ export function NearMeButton() {
 
   return (
     <>
-      <button type="button" onClick={locate} disabled={state === "locating"}>
-        {state === "locating" ? "Finner posisjonen …" : "Bruk der jeg er"}
-      </button>
-      {state === "failed" && (
-        <p className="error" role="alert">
-          Fikk ikke vite hvor du er. Skriv inn et sted i stedet.
-        </p>
-      )}
+      <BusyButton
+        type="button"
+        onClick={locate}
+        busy={state === "locating"}
+        busyNote="finner posisjonen …"
+      >
+        Bruk der jeg er
+      </BusyButton>
+      <ErrorText>
+        {state === "failed"
+          ? "Fikk ikke vite hvor du er. Skriv inn et sted i stedet."
+          : null}
+      </ErrorText>
     </>
   );
 }

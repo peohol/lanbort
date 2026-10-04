@@ -94,7 +94,7 @@ export default async function NotificationsPage({
         </ul>
       )}
       {nextCursor !== null && (
-        <p>
+        <p className="link-row">
           <a href={morePagesHref("/varsler", params, pagesKey, listId)}>
             Vis eldre varsler
           </a>

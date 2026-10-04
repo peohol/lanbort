@@ -9,6 +9,7 @@ import {
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { AreaMap } from "@/components/area-map";
+import { ErrorText } from "@/components/error-text";
 import { NearMeButton } from "@/components/near-me-button";
 import {
   defaultDistanceKm,
@@ -329,7 +330,7 @@ function LocationNote({
       {location.alternatives.length > 0 && (
         <nav aria-label="Andre steder med samme navn">
           <p className="quiet">Mente du et annet sted?</p>
-          <ul className={styles.alternatives}>
+          <ul className={`${styles.alternatives} link-row`}>
             {location.alternatives.map((choice) => (
               <li key={choice.point}>
                 <a
@@ -376,11 +377,7 @@ function Results({
   }
 
   if ("problem" in prepared) {
-    return (
-      <p className="error" role="alert">
-        {prepared.problem}
-      </p>
-    );
+    return <ErrorText>{prepared.problem}</ErrorText>;
   }
 
   return (
