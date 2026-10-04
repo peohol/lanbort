@@ -57,6 +57,7 @@ const notFound = { code: "not_found" };
 const forbidden = { code: "forbidden" };
 const conflict = { code: "conflict" };
 const oneSecond = 1000;
+const oneDay = 24 * 60 * 60 * oneSecond;
 const undoBuffer = 30 * oneSecond;
 
 const say = (
@@ -162,7 +163,7 @@ async function activeLoan(from = 0, to = 2) {
 /** An active loan for days 0–2 whose return day is over. */
 async function overdueLoan() {
   const loan = await activeLoan(0, 2);
-  kit.advanceDays(3);
+  kit.advance(3 * oneDay);
   return loan;
 }
 
@@ -282,7 +283,7 @@ describe("the return (PS-LOAN-014–015)", () => {
 
   it("lets the lender confirm the receipt alone, on time, without the borrower", async () => {
     const { owner, objectId, loanId } = await activeLoan(0, 2);
-    kit.advanceDays(2);
+    kit.advance(2 * oneDay);
 
     expect((await sayNow(owner, loanId, "received")).status).toBe("ended");
     expect((await eventsFor("loan", loanId)).at(-1)).toEqual({
@@ -297,7 +298,7 @@ describe("the return (PS-LOAN-014–015)", () => {
     const requestId = await openRequest(setup, dated(4, 5));
 
     expect((await loanOf(borrower, loanId)).status).toBe("active");
-    kit.advanceDays(3);
+    kit.advance(3 * oneDay);
 
     // Silence and the date alone never make it late (PS-LOAN-014).
     expect(await loanOf(borrower, loanId)).toMatchObject({
@@ -342,7 +343,7 @@ describe("the return (PS-LOAN-014–015)", () => {
       });
     }
 
-    kit.advanceDays(3);
+    kit.advance(3 * oneDay);
     expect((await sayNow(borrower, loanId, "still_has")).status).toBe("late");
     expect(await loanOf(owner, loanId)).toMatchObject({
       status: "late",
@@ -445,7 +446,7 @@ describe("an agreed extension (PS-LOAN-010, PS-LOAN-014)", () => {
   it("may not grow into a loan already approved", async () => {
     const setup = await activeLoan(0, 2);
     const kari = await laterLoan(setup, 5, 6);
-    kit.advanceDays(3);
+    kit.advance(3 * oneDay);
 
     await expect(
       propose(setup.borrower, setup.loanId, -3, 2),
@@ -546,7 +547,7 @@ describe("the undo buffer (PS-LOAN-016)", () => {
     await say(owner, loanId, "received");
     const effectiveAt = new Date(kit.now().getTime() + undoBuffer);
     // The job only comes by after the loan's last day.
-    kit.advanceDays(3);
+    kit.advance(3 * oneDay);
     await conclude();
 
     expect(await loanOf(borrower, loanId)).toMatchObject({
@@ -628,7 +629,7 @@ describe("early return (PS-LOAN-020, scenario 27)", () => {
       period: { start: day(6), end: day(7) },
     });
     const per = await laterLoan(setup, 12, 14);
-    kit.advanceDays(2);
+    kit.advance(2 * oneDay);
 
     expect((await sayNow(owner, loanId, "received")).status).toBe("ended");
     const endedAt = kit.now().toISOString();
@@ -810,7 +811,7 @@ describe("the parties keep what the return needs (PS-LOAN-002, PS-LOAN-021, scen
     const { owner, borrower, environmentId, loanId } = await activeLoan(0, 2);
 
     await run(leaveEnvironment, borrower, { environmentId });
-    kit.advanceDays(3);
+    kit.advance(3 * oneDay);
 
     expect((await sayNow(borrower, loanId, "still_has")).status).toBe("late");
     expect((await loanOf(borrower, loanId)).status).toBe("late");
