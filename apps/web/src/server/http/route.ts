@@ -13,7 +13,9 @@ import { writeLog } from "@lanbort/observability";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import { runtime as defaultRuntime, type Runtime } from "../runtime";
+import { clientAddress } from "./client-address";
 import { errorResponse, toErrorResponse } from "./errors";
+import { withCodeLimits } from "./limited-auth";
 
 /**
  * Every Route Handler is created through this module (ADR-0002, WP-11).
@@ -192,9 +194,13 @@ export function createRouteFactory(runtime: Runtime) {
     const cookieStore = await requestCookies();
     const domain = once(() => runtime.domain());
     const auth = once(() =>
-      runtime.auth(cookieStore, {
-        secureCookies: request.nextUrl.protocol === "https:",
-      }),
+      withCodeLimits(
+        runtime.auth(cookieStore, {
+          secureCookies: request.nextUrl.protocol === "https:",
+        }),
+        domain,
+        clientAddress(request),
+      ),
     );
     const user = once(async () => {
       const identity = await auth().currentIdentity();

@@ -45,6 +45,7 @@ import {
   loadDerivedAvailability,
   termsDiffer,
 } from "./store";
+import { rateLimits } from "../abuse/rate-limits";
 
 function conflict(message: string, fields: readonly string[] = []): never {
   throw new DomainError("conflict", message, fields);
@@ -98,6 +99,7 @@ export const createLoanRequest = defineCommand({
   input: createLoanRequestSchema,
   output: loanRequestResultSchema,
   policy: createLoanRequestPolicy,
+  rateLimit: rateLimits.contact,
   idempotency: "required",
   load: async ({ tx, actor, input, now }) => {
     // The accounts, then the object; loadTarget locks the rest in order.

@@ -48,6 +48,7 @@ const fieldSanitizers = {
   job: matching(identifierPattern),
   attempt: integerBetween(0, Number.MAX_SAFE_INTEGER),
   count: integerBetween(0, Number.MAX_SAFE_INTEGER),
+  rateLimit: matching(identifierPattern),
 } satisfies Record<string, FieldSanitizer<unknown>>;
 
 type FieldName = keyof typeof fieldSanitizers;

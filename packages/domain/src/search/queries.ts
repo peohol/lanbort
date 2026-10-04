@@ -26,6 +26,7 @@ import {
   selectFound,
 } from "../publications/queries";
 import { searchEnvironmentsPolicy, searchObjectsPolicy } from "./policies";
+import { rateLimits } from "../abuse/rate-limits";
 
 type Db = Kysely<Database>;
 
@@ -120,6 +121,7 @@ export const searchObjects = defineQuery({
   name: "search.objects",
   input: objectSearchQuerySchema,
   policy: searchObjectsPolicy,
+  rateLimit: rateLimits.lookups,
   load: ({ db, actor, input, now }) =>
     inSnapshot(db, async (tx) => {
       if (actor.kind !== "user") {
@@ -256,6 +258,7 @@ export const searchEnvironments = defineQuery({
   name: "search.environments",
   input: environmentSearchQuerySchema,
   policy: searchEnvironmentsPolicy,
+  rateLimit: rateLimits.lookups,
   load: async ({ db, actor, input }) => {
     if (actor.kind !== "user") {
       return null;

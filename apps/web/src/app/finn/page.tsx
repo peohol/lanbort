@@ -2,6 +2,7 @@ import type { ObjectCategory } from "@lanbort/contracts";
 import {
   calendarDate,
   listObjectCategories,
+  RateLimitedError,
   searchEnvironments,
   searchObjects,
   takesNewActivity,
@@ -9,6 +10,7 @@ import {
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { AreaMap } from "@/components/area-map";
+import { errorMessage } from "@/components/error-messages";
 import { ErrorText } from "@/components/error-text";
 import { NearMeButton } from "@/components/near-me-button";
 import {
@@ -29,7 +31,7 @@ import {
   prepareObjectSearch,
   readFinnForm,
 } from "@/presentation/search";
-import { placeSearch } from "@/server/places";
+import { placeSearchFor } from "@/server/places";
 import { pageQuery, requirePageAccount } from "@/server/session";
 import styles from "./finn.module.css";
 
@@ -83,40 +85,72 @@ export default async function FindPage({
         ))}
       </nav>
       {form.tab === "objects" ? (
-        <ObjectSearch form={form} />
+        <ObjectSearch form={form} userId={account.userId} />
       ) : (
-        <EnvironmentSearch form={form} />
+        <EnvironmentSearch form={form} userId={account.userId} />
       )}
     </main>
   );
 }
 
-/** The place a search is near, or the problem with it, before anything else. */
-async function located<I>(
-  form: FinnForm,
-  prepare: (near: Location["near"] | undefined) => Prepared<I>,
-): Promise<{ prepared: Prepared<I>; location: Location | undefined }> {
-  const place = await locate(form, placeSearch());
-
-  if (place && "problem" in place) {
-    return { prepared: place, location: undefined };
-  }
-
-  return {
-    prepared: prepare(place?.location.near),
-    location: place?.location,
-  };
+interface Searched<I, O> {
+  readonly prepared: Prepared<I>;
+  readonly location: Location | undefined;
+  readonly result: O | null;
 }
 
-async function ObjectSearch({ form }: { form: FinnForm }) {
-  const { location, prepared } = await located(form, (near) =>
-    prepareObjectSearch(form, near),
-  );
-  const [categories, result] = await Promise.all([
+/**
+ * The place a search is near, or the problem with it, before anything else;
+ * then the search itself. Too many searches in a row (WP-73) is a problem
+ * to show like any other, with nothing found.
+ */
+async function searched<I, O>(
+  form: FinnForm,
+  userId: string,
+  prepare: (near: Location["near"] | undefined) => Prepared<I>,
+  search: (input: I) => Promise<O | null>,
+): Promise<Searched<I, O>> {
+  try {
+    const place = await locate(form, placeSearchFor(userId));
+
+    if (place && "problem" in place) {
+      return { prepared: place, location: undefined, result: null };
+    }
+
+    const prepared = prepare(place?.location.near);
+
+    return {
+      prepared,
+      location: place?.location,
+      result:
+        prepared && "input" in prepared ? await search(prepared.input) : null,
+    };
+  } catch (error) {
+    if (!(error instanceof RateLimitedError)) throw error;
+
+    return {
+      prepared: { problem: errorMessage("rate_limited") },
+      location: undefined,
+      result: null,
+    };
+  }
+}
+
+async function ObjectSearch({
+  form,
+  userId,
+}: {
+  form: FinnForm;
+  userId: string;
+}) {
+  const [categories, { location, prepared, result }] = await Promise.all([
     pageQuery(listObjectCategories, {}),
-    prepared && "input" in prepared
-      ? pageQuery(searchObjects, prepared.input)
-      : null,
+    searched(
+      form,
+      userId,
+      (near) => prepareObjectSearch(form, near),
+      (input) => pageQuery(searchObjects, input),
+    ),
   ]);
   const labels = new Map(
     (categories?.categories ?? []).map((category) => [
@@ -198,14 +232,19 @@ async function ObjectSearch({ form }: { form: FinnForm }) {
   );
 }
 
-async function EnvironmentSearch({ form }: { form: FinnForm }) {
-  const { location, prepared } = await located(form, (near) =>
-    prepareEnvironmentSearch(form, near),
+async function EnvironmentSearch({
+  form,
+  userId,
+}: {
+  form: FinnForm;
+  userId: string;
+}) {
+  const { location, prepared, result } = await searched(
+    form,
+    userId,
+    (near) => prepareEnvironmentSearch(form, near),
+    (input) => pageQuery(searchEnvironments, input),
   );
-  const result =
-    prepared && "input" in prepared
-      ? await pageQuery(searchEnvironments, prepared.input)
-      : null;
 
   return (
     <>

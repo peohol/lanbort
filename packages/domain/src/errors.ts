@@ -24,7 +24,8 @@ export type DomainErrorCode =
   | "invalid_input"
   | "idempotency_key_required"
   | "idempotency_key_reused"
-  | "conflict";
+  | "conflict"
+  | "rate_limited";
 
 /**
  * Expected, user-facing failure of a domain operation. The message is for

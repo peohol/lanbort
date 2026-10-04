@@ -24,6 +24,7 @@ import {
   loadScoreTallies,
   type ProfileReviewRow,
 } from "./store";
+import { rateLimits } from "../abuse/rate-limits";
 
 /** What the profile shows: null for callers the policy turns away. */
 interface TrustProfileResource extends ProfileAccessResource {
@@ -72,6 +73,7 @@ export const readTrustProfile = defineQuery({
   name: "trust_profile.read",
   input: trustProfileQuerySchema,
   policy: readTrustProfilePolicy,
+  rateLimit: rateLimits.lookups,
   load: ({ db, actor, input, now }) =>
     inSnapshot(
       db,

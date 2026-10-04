@@ -1,5 +1,9 @@
 import type { AuthGateway } from "@lanbort/auth";
-import { AuthorizationError, ConsumerRegistry } from "@lanbort/domain";
+import {
+  AuthorizationError,
+  ConsumerRegistry,
+  RateLimitedError,
+} from "@lanbort/domain";
 import { NextRequest } from "next/server";
 import { describe, expect, it, vi } from "vitest";
 import type { Runtime } from "../runtime";
@@ -104,6 +108,18 @@ describe("route boundary: actors and errors", () => {
 
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: { code: "not_found" } });
+  });
+
+  it("says when to try again after a rate limit, and nothing else", async () => {
+    const response = await call(
+      factory().public(async () => {
+        throw new RateLimitedError("contact", 42);
+      }),
+    );
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("retry-after")).toBe("42");
+    expect(await response.json()).toEqual({ error: { code: "rate_limited" } });
   });
 
   it("hides unexpected errors behind a generic 500", async () => {

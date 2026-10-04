@@ -12,12 +12,14 @@ import {
   authorizeActor,
   type Policy,
 } from "../authorization/policy";
+import { consumeActorRateLimit, type RateLimit } from "../abuse/rate-limits";
 import { AuthorizationError, DomainError } from "../errors";
 import { EventRecorder, writeEvents } from "../events/recorder";
 import type { ConsumerRegistry } from "../outbox/consumer";
 import {
   findCompleted,
   type IdempotencyClaim,
+  isCompleted,
   idempotencyKeyPattern,
   requestHash,
   storeCompleted,
@@ -52,6 +54,11 @@ export interface CommandDefinition<I, R, C, O> {
    * is harmless.
    */
   readonly idempotency: "required" | "none";
+  /**
+   * The signed-in caller's budget for this command (WP-73), counted before
+   * anything else is read, so refused and failed attempts count as well.
+   */
+  readonly rateLimit?: RateLimit;
   /**
    * How the command holds the signed-in actor's own account row, which it
    * locks first (account rows come before everything else) and re-reads, so
@@ -238,7 +245,46 @@ async function runTransaction<T>(
 }
 
 /**
- * Runs a command as one transaction:
+ * Parses the request and spends the caller's rate limit (WP-73). Invalid
+ * requests count too; a retry of a request that already completed does not,
+ * so it still gets its stored result however much budget is left.
+ */
+async function spendRateLimit<I, R, C, O>(
+  domain: DomainContext,
+  command: CommandDefinition<I, R, C, O>,
+  request: CommandRequest,
+): Promise<{ input: I; claim: IdempotencyClaim | undefined }> {
+  const spend = () =>
+    consumeActorRateLimit(domain, command.rateLimit, request.actor);
+  let parsed: { input: I; claim: IdempotencyClaim | undefined };
+
+  try {
+    const input = parseInput(command.input, request.input);
+    parsed = {
+      input,
+      claim: idempotencyClaim(
+        command as CommandDefinition<unknown, unknown, unknown, unknown>,
+        request,
+        input,
+      ),
+    };
+  } catch (error) {
+    await spend();
+    throw error;
+  }
+
+  if (
+    command.rateLimit &&
+    !(parsed.claim && (await isCompleted(domain.db, parsed.claim)))
+  ) {
+    await spend();
+  }
+
+  return parsed;
+}
+
+/**
+ * Runs a command as one transaction, after its rate limit:
  * actor rules → lock and re-read the actor's account → idempotency lookup →
  * actor rules again → load current state → resource rules → execute →
  * append events and outbox messages → store idempotent result.
@@ -256,13 +302,7 @@ export async function executeCommand<I, R, C, O>(
     actor: request.actor,
     now,
   });
-
-  const input = parseInput(command.input, request.input);
-  const claim = idempotencyClaim(
-    command as CommandDefinition<unknown, unknown, unknown, unknown>,
-    request,
-    input,
-  );
+  const { input, claim } = await spendRateLimit(domain, command, request);
 
   return runTransaction(domain.db, async (tx) => {
     const actor = await lockActorAccount(

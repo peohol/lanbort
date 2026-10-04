@@ -74,7 +74,7 @@ Bevisst utsatt:
 - hvem som kan utnevne plattformforvaltere i appen er ikke bestemt, så det skjer foreløpig bare via driftskommandoen
 - mekanisme for sterkere autentisering for plattformforvaltere venter på OD-0010, som kan stå åpen etter Fase 1 men må avklares før slike handlinger tas i reell bruk (Port D); til da avvises de
 - endring av e-postadresse og synlighet per profilfelt (Fase 2)
-- egen databaserolle med minste privilegium for appen, og verifisering av Supabase Auths rate limits når innlogging går via serveren, før pilot (Port D)
+- egen databaserolle med minste privilegium for appen, og innstilling av hostet Supabase Auths egne grenser per IP når innlogging går via serveren (appens egne grenser per klient kom i WP-73), før pilot (Port D)
 - oppbevaringstid for audit-hendelser venter på OD-0002
 
 ### Fase 2 — Sosial modell, miljøer og objekter

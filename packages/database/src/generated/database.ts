@@ -750,6 +750,17 @@ export interface AppProfiles {
   version: Generated<number>;
 }
 
+export interface AppRateLimitKey {
+  secret: Generated<Buffer>;
+  singleton: Generated<boolean>;
+}
+
+export interface AppRateLimits {
+  available_at: Timestamp;
+  rule: string;
+  subject_hash: Buffer;
+}
+
 export interface AppReviewDimensions {
   code: string;
   endings: string[];
@@ -874,6 +885,8 @@ export interface DB {
   "app.outbox_messages": AppOutboxMessages;
   "app.platform_role_grants": AppPlatformRoleGrants;
   "app.profiles": AppProfiles;
+  "app.rate_limit_key": AppRateLimitKey;
+  "app.rate_limits": AppRateLimits;
   "app.review_dimensions": AppReviewDimensions;
   "app.search_environment_sources": AppSearchEnvironmentSources;
   "app.search_environments": AppSearchEnvironments;

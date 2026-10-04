@@ -56,6 +56,7 @@ import {
   readPublishedImagePolicy,
 } from "./policies";
 import { ownerHasAccess } from "./store";
+import { rateLimits } from "../abuse/rate-limits";
 
 type Db = Kysely<Database>;
 
@@ -471,6 +472,7 @@ export const listEnvironmentObjects = defineQuery({
   name: "environment_object.list",
   input: environmentObjectsQuerySchema,
   policy: listEnvironmentObjectsPolicy,
+  rateLimit: rateLimits.lookups,
   load: ({ db, actor, input, now }) =>
     inSnapshot(db, async (tx) => {
       const access = await loadEnvironmentAccess(

@@ -95,6 +95,25 @@ export async function findCompleted(
 }
 
 /**
+ * Whether the same request already completed, without waiting for one in
+ * progress: a cheap look before the command, which still replays under lock.
+ */
+export async function isCompleted(
+  db: Kysely<Database>,
+  claim: IdempotencyClaim,
+): Promise<boolean> {
+  const existing = await db
+    .selectFrom("app.idempotency_records")
+    .select("request_hash")
+    .where("scope", "=", claim.scope)
+    .where("command", "=", claim.command)
+    .where("idempotency_key", "=", claim.key)
+    .executeTakeFirst();
+
+  return existing?.request_hash === claim.hash;
+}
+
+/**
  * Stores the result in the command's own transaction. The primary key is a
  * second line of defence: a duplicate insert aborts the whole transaction.
  */

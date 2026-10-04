@@ -8,3 +8,13 @@
   border-radius: 0.375rem;
   overflow: hidden;
 }
+
+/*
+ * The attribution toggle is a summary, so it gets the shared 44 px target
+ * (UX-A11Y-003). MapLibre places it from the top of its compact box, so the
+ * box must be as tall as the toggle; otherwise the toggle reaches below the
+ * map, where the caption covers it, and more so with larger text.
+ */
+.map :global(.maplibregl-ctrl-attrib.maplibregl-compact) {
+  min-height: 2.75rem;
+}

@@ -43,6 +43,7 @@ import {
   loadObjectState,
   type ObjectState,
 } from "./state";
+import { rateLimits } from "../abuse/rate-limits";
 
 const notFound = () => new DomainError("not_found", "No such invitation");
 
@@ -58,6 +59,7 @@ export const inviteCoOwner = defineCommand({
   input: coOwnerInvitationInputSchema,
   output: coOwnerInvitationResultSchema,
   policy: inviteCoOwnerPolicy,
+  rateLimit: rateLimits.invitations,
   idempotency: "required",
   load: ({ tx, input }) => loadLockedObject(tx, input.objectId),
   execute: async ({ tx, actor, input, resource, events, now }) => {
