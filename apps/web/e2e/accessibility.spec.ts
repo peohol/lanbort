@@ -351,8 +351,8 @@ for (const [device, viewport] of Object.entries(viewports)) {
 
 /**
  * UX-A11Y-007: with text twice as large, everything is still there: nothing
- * scrolls sideways, and the end of the page is not hidden behind the
- * navigation.
+ * scrolls sideways, the end of the page is not hidden behind the
+ * navigation, and neither is what has focus when the navigation has grown.
  */
 for (const { name, path } of pages) {
   test(`${name} keeps working with twice as large text`, async ({
@@ -377,6 +377,8 @@ for (const { name, path } of pages) {
         : 0;
     });
     expect(covered).toBe(0);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    expect(await keyboardProblems(page)).toEqual([]);
     await page.context().close();
   });
 }

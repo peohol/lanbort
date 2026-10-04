@@ -137,8 +137,8 @@ button:disabled,
   --nav-width: 13rem;
   --surface: Canvas;
   --muted-border: color-mix(in srgb, CanvasText 25%, transparent);
-  scroll-padding: calc(var(--header-height) + 0.5rem) 0
-    calc(var(--nav-height) + 1rem);
+  scroll-padding: calc(var(--header-covers, var(--header-height)) + 0.5rem) 0
+    calc(var(--nav-covers, var(--nav-height)) + 1rem);
 }
 
 .app-shell {
@@ -323,10 +323,10 @@ button:disabled,
 
   .main-navigation {
     grid-area: navigation;
-    top: var(--header-height);
+    top: var(--header-covers, var(--header-height));
     bottom: auto;
     align-self: start;
-    max-height: calc(100dvh - var(--header-height));
+    max-height: calc(100dvh - var(--header-covers, var(--header-height)));
     overflow-y: auto;
     border-top: 0;
     border-right: 1px solid var(--muted-border);

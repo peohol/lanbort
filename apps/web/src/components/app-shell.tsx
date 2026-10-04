@@ -5,6 +5,7 @@ import { minimumAccessText } from "@/presentation/account";
 import { FocusKeeper } from "./focus-keeper";
 import { MainNavigation } from "./main-navigation";
 import { NotificationIndicator } from "./notification-indicator";
+import { StickyBars } from "./sticky-bars";
 
 /** The initials of a name, for the account button. */
 export function initialsOf(name: string): string {
@@ -58,6 +59,7 @@ export function AppShell({
       </header>
       <MainNavigation />
       <FocusKeeper />
+      <StickyBars />
       <div id="innhold" className="app-content" tabIndex={-1}>
         {notice && (
           <div className="account-notice" role="status">
