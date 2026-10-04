@@ -220,11 +220,7 @@ export async function loadConversation(
       eb
         .selectFrom("app.loan_logistics_channels as channel")
         .select("channel.loan_id")
-        .whereRef(
-          "channel.id",
-          "=",
-          "conversation.loan_logistics_channel_id",
-        )
+        .whereRef("channel.id", "=", "conversation.loan_logistics_channel_id")
         .as("loan_id"),
     ])
     .where("conversation.id", "=", conversationId);

@@ -386,11 +386,7 @@ describe("messages (ADR-0010, WP-43)", () => {
     run(submitChatCommit, by, {
       conversationId,
       generation: 1,
-      commit: encodePrivateMessage(
-        groupIdOf(conversationId, 1),
-        0,
-        "commit",
-      ),
+      commit: encodePrivateMessage(groupIdOf(conversationId, 1), 0, "commit"),
       welcome: encodeWelcome(),
       addedDeviceIds: [otherDeviceId],
       removedDeviceIds: [],
@@ -556,9 +552,9 @@ describe("messages (ADR-0010, WP-43)", () => {
     expect(await conversationOf(borrower, conversationId)).toMatchObject({
       open: false,
     });
-    await expect(
-      conversationOf(coOwner, conversationId),
-    ).rejects.toMatchObject(notFound);
+    await expect(conversationOf(coOwner, conversationId)).rejects.toMatchObject(
+      notFound,
+    );
   });
 });
 
