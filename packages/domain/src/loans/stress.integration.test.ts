@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { ReturnOutcome } from "@lanbort/contracts";
 import { sql } from "kysely";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import type { UserActor } from "../actor";
 import {
   type CommandDefinition,
@@ -37,6 +37,8 @@ import { reportReturn, undoReturn } from "./return";
  */
 const db = connectTestDatabase();
 afterAll(() => db.destroy());
+// Each test runs several bursts, alongside every other integration file.
+vi.setConfig({ testTimeout: 30_000 });
 
 // Starts beyond where the files that run the scheduled jobs move their
 // clocks, so those jobs never act on these loans mid-burst. This file runs
