@@ -517,6 +517,15 @@ export const listCoOwnerLoansPolicy = definePolicy<unknown, void>({
 });
 
 /**
+ * The caller's own loans. Like reading one, it needs only the standing that
+ * keeps what an existing loan needs (PS-LOAN-021).
+ */
+export const listLoansPolicy = definePolicy<unknown, void>({
+  action: "loan.list",
+  actor: [requireLoanStanding],
+});
+
+/**
  * A party asks the environment's administrators to mediate a disagreement
  * about the loan's handover or return (vision 05). Like clarifying the loan
  * itself, it needs only the party's standing (`requireLoanStanding`).
@@ -610,6 +619,7 @@ export const loanRequestPolicies = [
   declineResponsibilityTransferPolicy,
   withdrawResponsibilityTransferPolicy,
   listCoOwnerLoansPolicy,
+  listLoansPolicy,
   requestLoanMediationPolicy,
   endLoanUnresolvedPolicy,
   confirmLoanControlPolicy,

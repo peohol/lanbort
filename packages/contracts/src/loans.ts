@@ -152,6 +152,8 @@ export const loanRequestPageSize = 50;
 
 export const loanRequestListQuerySchema = z.strictObject({
   role: loanRequestRoleSchema,
+  /** `open`: only requests that still wait for a decision or the borrower. */
+  state: z.enum(["open"]).optional(),
   cursor: loanRequestIdSchema.optional(),
 });
 
@@ -664,6 +666,25 @@ export const loanSchema = z.strictObject({
   approvedAt: z.iso.datetime(),
 });
 
+/** Lists come newest first, a page at a time. */
+export const loanPageSize = 50;
+
+/**
+ * The caller's own loans (UX-IA-006): those that have not ended, or those
+ * that have; on one side only, or both.
+ */
+export const loanListQuerySchema = z.strictObject({
+  state: z.enum(["current", "ended"]),
+  role: loanRequestRoleSchema.optional(),
+  cursor: loanIdSchema.optional(),
+});
+
+export const loanListSchema = z.strictObject({
+  loans: z.array(loanSchema),
+  /** Pass as `cursor` for the next page; null on the last one. */
+  nextCursor: loanIdSchema.nullable(),
+});
+
 /**
  * A loan as a co-owner who is not its party sees it, only while there is
  * something for them to do (PS-LOAN-009, PS-LOAN-015): an offer of the
@@ -714,6 +735,8 @@ export type LoanControlResult = z.infer<typeof loanControlResultSchema>;
 export type LoanUnresolvedResult = z.infer<typeof loanUnresolvedResultSchema>;
 export type LoanEndReason = z.infer<typeof loanEndReasonSchema>;
 export type Loan = z.infer<typeof loanSchema>;
+export type LoanListQuery = z.infer<typeof loanListQuerySchema>;
+export type LoanList = z.infer<typeof loanListSchema>;
 export type LoanCancellationResult = z.infer<
   typeof loanCancellationResultSchema
 >;
