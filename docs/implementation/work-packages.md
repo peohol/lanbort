@@ -197,5 +197,7 @@ Kontaktspam, scraping, invitasjoner, rapportering og auth-angrep.
 ### WP-74 — Pilotinnhold og policy
 Avklar OD-0006 og en konservativ pilotgrense for OD-0001 før reelle objekter åpnes for deling.
 
+**Status:** Kategoriene (PS-OBJ-018) og pilotgrensen (PS-OBJ-019) er besluttet og bygget. Plattformforvalteres sperre av et objekt overalt er stengt til OD-0010 er avgjort; til da kan bare miljøets administratorer stoppe et objekt, og bare i sitt miljø.
+
 ### WP-75 — Pilot release gate
 Kjør [kvalitetsportene](quality-gates.md), dokumenter kjente begrensninger og åpne kun for definert pilotgruppe.

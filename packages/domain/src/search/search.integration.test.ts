@@ -329,7 +329,7 @@ describe("Finn: objects (WP-61, ADR-0005)", () => {
     const category = `test_${word()}`;
     await db
       .insertInto("app.object_categories")
-      .values({ id: category, parent_id: "annet", label: "Testkategori" })
+      .values({ id: category, parent_id: "annet", label: category })
       .execute();
     const name = word();
     const inside = await create(owner, { title: name, categoryId: category });

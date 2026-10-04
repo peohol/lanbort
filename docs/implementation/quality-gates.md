@@ -43,9 +43,9 @@ Må være oppfylt:
 - rate limiting og misbruksvern er aktivert
 - produksjonshemmeligheter er skilt fra utvikling
 - OD-0002 har minst en eksplisitt pilot-retentionpolicy
-- OD-0006 er avgjort
+- OD-0006 er avgjort ([PS-OBJ-018](../product-spec/03-utlansobjekter.md))
 - OD-0010 er avgjort og mekanismen implementert før privilegerte plattformforvalterhandlinger aktiveres; til da er de avvist
-- en konservativ pilotpolicy begrenser risikofylte objekter
+- en konservativ pilotpolicy begrenser risikofylte objekter ([PS-OBJ-019](../product-spec/03-utlansobjekter.md))
 - kjente mangler er dokumentert og vurdert
 
 ## Port E — Før bred/offentlig lansering
