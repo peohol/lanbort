@@ -55,7 +55,7 @@ SQL-filene i `supabase/migrations/` er den autoritative skjemahistorikken. Den l
 
 - **Lokalt og i CI:** `pnpm db:reset` sletter den lokale databasen og bygger den på nytt fra migrasjonene. Dette er den normale måten å komme tilbake til en kjent tilstand på.
 - **Migrasjoner endres ikke etter at de er pushet.** En feil rettes med en ny migrasjon som reverserer eller korrigerer endringen, slik at historikken alltid kan spilles av fra tom database.
-- **Hostede miljøer:** Gjenoppretting fra backup følger [backup og gjenoppretting](backup-restore.md).
+- **Hostede miljøer:** De ligger på Supabase Free uten automatisk backup. Gjenoppbygging fra migrasjonene og gjenoppretting fra manuelle dumps følger [backup og gjenoppretting](backup-restore.md).
 
 ### Testdatabase
 

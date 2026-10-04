@@ -189,7 +189,7 @@ Prøv eksplisitt skjulte miljøer, historisk tilgang, medeiergrenser, inhabilite
 Parallelle godkjenninger, retry, dobbelttrykk, avtaleendring og gjenåpnet retur.
 
 ### WP-72 — Backup/restore-øvelse
-Verifiser RPO/RTO-mål, rebuild av indeks og at slettet/begrenset data ikke blir aktivt igjen.
+Verifiser RPO/RTO-mål, rebuild av indeks og at slettet/begrenset data ikke blir aktivt igjen. I utviklingsfasen er strategien gjenoppbygging fra migrasjonene og manuelle dumps på Supabase Free ([ADR-0009](../architecture/decisions/ADR-0009-backup-i-utviklingsfasen.md)).
 
 ### WP-73 — Misbruks- og rate-limit-hardening
 Kontaktspam, scraping, invitasjoner, rapportering og auth-angrep.
