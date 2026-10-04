@@ -1,4 +1,6 @@
 import { inspect } from "node:util";
+import { chatLimits } from "@lanbort/contracts";
+import { decodeMlsMessage } from "ts-mls";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
   type AccountKey,
@@ -166,6 +168,27 @@ describe("private chat over MLS (ADR-0010)", () => {
       expect(serverSaw.some((b) => containsBytes(b, utf8(text)))).toBe(false);
     }
     expect(short.length).toBe(longer.length);
+  });
+
+  it("pads a short message to exactly one block, the most a loan logistics message may take", async () => {
+    // The server sees only the encrypted content's length: one padding
+    // block and the AEAD tag (ADR-0010, WP-44).
+    const contentBytes = (message: Uint8Array) => {
+      const [decoded] = decodeMlsMessage(message, 0) ?? [];
+      if (decoded?.wireformat !== "mls_private_message") {
+        throw new Error("expected a private message");
+      }
+      return decoded.privateMessage.ciphertext.length - 16;
+    };
+    const short = await send(bob1, "Jeg kommer kl. 18 med drillen.");
+    const long = await send(bob1, "Jeg kommer kl. 18. ".repeat(80));
+    for (const reader of [alice1, alice2, bob2]) {
+      await conversationOf(reader).receive(short);
+      await conversationOf(reader).receive(long);
+    }
+
+    expect(contentBytes(short)).toBe(chatLimits.paddedMessageBytes);
+    expect(contentBytes(long)).toBeGreaterThan(chatLimits.paddedMessageBytes);
   });
 
   it("rejects a message that was altered on the way", async () => {

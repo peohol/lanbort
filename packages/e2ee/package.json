@@ -13,6 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@lanbort/contracts": "workspace:*",
     "ts-mls": "1.6.4",
     "zod": "4.6.5"
   }

@@ -10,6 +10,7 @@ import {
   type ChatConversationResource,
   type ChatSessionResource,
   type ChatStartResource,
+  type LoanLogisticsChatResource,
   chatRetentionProcess,
   claimChatKeyPackagesPolicy,
   finishChatLinkPolicy,
@@ -31,6 +32,7 @@ import {
   revokeChatDevicePolicy,
   sendChatMessagePolicy,
   startChatConversationPolicy,
+  startLoanLogisticsChatPolicy,
   submitChatCommitPolicy,
 } from "./policies";
 
@@ -240,6 +242,38 @@ export const chatMatrices = [
       "anonymous caller",
       anonymousActor,
       person({ friends: true }),
+      "unauthenticated",
+    ],
+  ]),
+  cases<LoanLogisticsChatResource>(startLoanLogisticsChatPolicy, [
+    [
+      "a party of an open channel",
+      user,
+      { party: true, startable: true },
+      "allow",
+    ],
+    [
+      "a party of a closed channel without a conversation",
+      user,
+      { party: true, startable: false },
+      "forbidden",
+    ],
+    [
+      "someone else, or no channel",
+      user,
+      { party: false, startable: true },
+      "not_found",
+    ],
+    [
+      "a deactivated party",
+      deactivated,
+      { party: true, startable: true },
+      "account_inactive",
+    ],
+    [
+      "anonymous caller",
+      anonymousActor,
+      { party: true, startable: true },
       "unauthenticated",
     ],
   ]),

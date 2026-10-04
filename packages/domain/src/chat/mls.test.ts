@@ -1,3 +1,4 @@
+import { chatLimits } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import {
   encodeKeyPackage,
@@ -12,15 +13,18 @@ const refused = { name: "DomainError", code: "invalid_input" };
 
 describe("MLS headers the delivery service reads (ADR-0010 §9)", () => {
   it("reads real commits and application messages from the client library", () => {
+    // Both fit in one padding block, so their content is exactly one long.
     expect(readPrivateMessage(bytes(fx.commit))).toEqual({
       groupId: fx.groupId,
       epoch: 0n,
       contentType: "commit",
+      contentBytes: chatLimits.paddedMessageBytes,
     });
     expect(readPrivateMessage(bytes(fx.message))).toEqual({
       groupId: fx.groupId,
       epoch: 1n,
       contentType: "application",
+      contentBytes: chatLimits.paddedMessageBytes,
     });
   });
 
@@ -39,7 +43,12 @@ describe("MLS headers the delivery service reads (ADR-0010 §9)", () => {
   it("reads the test doubles the same way", () => {
     expect(
       readPrivateMessage(bytes(encodePrivateMessage("g:2", 2 ** 40, "commit"))),
-    ).toEqual({ groupId: "g:2", epoch: 2n ** 40n, contentType: "commit" });
+    ).toEqual({
+      groupId: "g:2",
+      epoch: 2n ** 40n,
+      contentType: "commit",
+      contentBytes: 64 - 16,
+    });
     expect(() => readWelcome(bytes(encodeWelcome()))).not.toThrow();
     expect(
       readKeyPackage(
@@ -83,6 +92,14 @@ describe("MLS headers the delivery service reads (ADR-0010 §9)", () => {
     expect(() => readWelcome(Uint8Array.from([...welcome, 0]))).toThrow(
       expect.objectContaining(refused),
     );
+  });
+
+  it("refuses a ciphertext too short to hold its tag", () => {
+    expect(() =>
+      readPrivateMessage(
+        bytes(encodePrivateMessage("g:1", 0, "application", 15)),
+      ),
+    ).toThrow(expect.objectContaining(refused));
   });
 
   it("refuses group ids that are not text", () => {

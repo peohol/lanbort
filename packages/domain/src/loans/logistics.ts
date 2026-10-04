@@ -32,8 +32,9 @@ import { findLoan } from "./reservations";
  * in progress, its parties get a narrow channel of their own for short
  * practical messages about the handover, the return, times, places and the
  * object. The database opens and closes it with the block and the loan; the
- * domain reads it, closes it early as a safety measure, and tells the
- * private chat's delivery service (WP-43) whether it accepts anything.
+ * domain reads it and closes it early as a safety measure. Its messages are
+ * end-to-end encrypted in a chat conversation of its own kind
+ * (`chat/loan-logistics.ts`), which takes them only while it is open.
  */
 
 type Db = Kysely<Database>;

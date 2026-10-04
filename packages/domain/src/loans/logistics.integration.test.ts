@@ -1,10 +1,26 @@
-import type { ReturnOutcome } from "@lanbort/contracts";
+import { chatLimits, type ReturnOutcome } from "@lanbort/contracts";
 import { sql } from "kysely";
 import { afterAll, describe, expect, it } from "vitest";
 import { systemActor, type UserActor } from "../actor";
+import {
+  listChatConversations,
+  readChatConversation,
+  sendChatMessage,
+  startChatConversation,
+  submitChatCommit,
+} from "../chat/conversations";
+import { registerChatAccount } from "../chat/devices";
+import { startLoanLogisticsChat } from "../chat/loan-logistics";
+import { groupIdOf } from "../chat/model";
 import { executeQuery } from "../commands/query";
 import { blockUser, liftUserBlock } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
+import {
+  encodePrivateMessage,
+  encodeWelcome,
+  testChatAccount,
+  testChatDevice,
+} from "../testing/chat";
 import { commitWhileRacing } from "../testing/races";
 import { loanTestKit } from "../testing/loans";
 import { approveLoanRequest } from "./approval";
@@ -92,7 +108,7 @@ const channelsOf = (loanId: string) =>
     .orderBy("id")
     .execute();
 
-const open = { closedAt: null, closeReason: null };
+const open = { closedAt: null, closeReason: null, conversationId: null };
 
 /**
  * An object owned by `owner` and `coOwner` and published in an environment;
@@ -332,6 +348,217 @@ describe("closing as a safety measure (PS-COM-007, OD-0020)", () => {
     await expect(closeForSafety(crypto.randomUUID())).rejects.toMatchObject(
       notFound,
     );
+  });
+});
+
+describe("messages (ADR-0010, WP-43)", () => {
+  const invalid = { code: "invalid_input" };
+  /** One padding block, and the AEAD tag the server sees on top of it. */
+  const oneBlock = chatLimits.paddedMessageBytes + 16;
+
+  /** Registers a chat device for `actor`'s session; returns its id. */
+  async function chatDevice(actor: UserActor) {
+    const account = testChatAccount(actor.userId);
+    const device = testChatDevice(account);
+    await run(registerChatAccount, actor, {
+      accountKey: account.accountKey,
+      certificate: device.certificate,
+    });
+
+    return device.deviceId;
+  }
+
+  const startChat = (actor: UserActor, channelId: string) =>
+    run(startLoanLogisticsChat, actor, { channelId });
+
+  const conversationOf = (actor: UserActor, conversationId: string) =>
+    executeQuery(tick(), readChatConversation, {
+      actor,
+      input: { conversationId },
+    });
+
+  /** `by` starts the group and adds `other`'s device. */
+  const startGroup = (
+    by: UserActor,
+    conversationId: string,
+    otherDeviceId: string,
+  ) =>
+    run(submitChatCommit, by, {
+      conversationId,
+      generation: 1,
+      commit: encodePrivateMessage(
+        groupIdOf(conversationId, 1),
+        0,
+        "commit",
+      ),
+      welcome: encodeWelcome(),
+      addedDeviceIds: [otherDeviceId],
+      removedDeviceIds: [],
+    });
+
+  const say = (by: UserActor, conversationId: string, ciphertextBytes = 64) =>
+    run(sendChatMessage, by, {
+      conversationId,
+      generation: 1,
+      ciphertext: encodePrivateMessage(
+        groupIdOf(conversationId, 1),
+        1,
+        "application",
+        ciphertextBytes,
+      ),
+    });
+
+  /** A loan whose parties are blocked, each with a chat device. */
+  async function blockedLoan(make: () => ReturnType<typeof reservedLoan>) {
+    const loan = await make();
+    await block(loan.borrower, loan.owner);
+
+    return {
+      ...loan,
+      lenderDevice: await chatDevice(loan.owner),
+      borrowerDevice: await chatDevice(loan.borrower),
+      channelId: await channelId(loan.owner, loan.loanId),
+    };
+  }
+
+  /** The blocked loan's conversation, with both devices in its group. */
+  async function chattingLoan(make = () => reservedLoan()) {
+    const loan = await blockedLoan(make);
+    const { conversationId } = await startChat(loan.owner, loan.channelId);
+    await startGroup(loan.owner, conversationId, loan.borrowerDevice);
+
+    return { ...loan, conversationId };
+  }
+
+  it("gives the channel's two people one conversation of its own, open despite the block", async () => {
+    const { owner, borrower, coOwner, loanId, channelId } = await blockedLoan(
+      () => reservedLoan(),
+    );
+
+    const { conversationId } = await startChat(borrower, channelId);
+    expect(await startChat(owner, channelId)).toEqual({ conversationId });
+    expect(await logistics(owner, loanId)).toEqual([
+      expect.objectContaining({ id: channelId, conversationId }),
+    ]);
+
+    for (const party of [owner, borrower]) {
+      expect(await conversationOf(party, conversationId)).toMatchObject({
+        kind: "loan_logistics",
+        loanId,
+        open: true,
+      });
+      const { conversations } = await executeQuery(
+        tick(),
+        listChatConversations,
+        { actor: party, input: {} },
+      );
+      expect(conversations.map((c) => c.conversationId)).toContain(
+        conversationId,
+      );
+    }
+
+    // Ordinary chat between them stays closed.
+    await expect(
+      run(startChatConversation, owner, { userId: borrower.userId }),
+    ).rejects.toMatchObject(notFound);
+
+    // Nobody else gets in, or learns there is anything to get into.
+    for (const outsider of [coOwner, await user()]) {
+      await expect(startChat(outsider, channelId)).rejects.toMatchObject(
+        notFound,
+      );
+      await expect(
+        conversationOf(outsider, conversationId),
+      ).rejects.toMatchObject(notFound);
+    }
+    await expect(startChat(owner, crypto.randomUUID())).rejects.toMatchObject(
+      notFound,
+    );
+  });
+
+  it("takes short messages only: one padding block", async () => {
+    const { owner, borrower, conversationId } = await chattingLoan();
+
+    expect(await say(borrower, conversationId, oneBlock)).toMatchObject({
+      position: expect.any(String),
+    });
+    await expect(
+      say(owner, conversationId, oneBlock + 1),
+    ).rejects.toMatchObject(invalid);
+  });
+
+  it("takes nothing more once the loan ends, and stays the parties' to read", async () => {
+    const { owner, borrower, loanId, channelId, conversationId } =
+      await chattingLoan();
+
+    await run(cancelLoan, borrower, { loanId });
+
+    expect(await conversationOf(borrower, conversationId)).toMatchObject({
+      open: false,
+    });
+    await expect(say(owner, conversationId)).rejects.toMatchObject(forbidden);
+    // Asking for it again gives it back, but it stays closed.
+    expect(await startChat(borrower, channelId)).toEqual({ conversationId });
+  });
+
+  it("takes nothing more after a safety closure", async () => {
+    const { borrower, channelId, conversationId } = await chattingLoan();
+
+    await closeForSafety(channelId);
+
+    await expect(say(borrower, conversationId)).rejects.toMatchObject(
+      forbidden,
+    );
+  });
+
+  it("accepts nothing after the loan ends while a message is on its way", async () => {
+    const { owner, borrower, loanId, conversationId } = await chattingLoan();
+    const at = kit.now();
+
+    // The loan ends in a transaction still open when the message comes:
+    // the message waits for the channel and then finds it closed.
+    const { value } = await commitWhileRacing(
+      db,
+      async (tx) => {
+        await sql`
+          update app.loans set status = 'ended', status_changed_at = ${at},
+            end_reason = 'cancelled', ended_at = ${at},
+            ended_by_user_id = ${borrower.userId}
+          where id = ${loanId}
+        `.execute(tx);
+        await sql`delete from app.loan_reservations where loan_id = ${loanId}`.execute(
+          tx,
+        );
+      },
+      () => say(owner, conversationId).catch((error: unknown) => error),
+    );
+
+    expect(value).toMatchObject(forbidden);
+  });
+
+  it("cannot be started once the channel has closed without one", async () => {
+    const { owner, channelId } = await blockedLoan(() => reservedLoan());
+    await closeForSafety(channelId);
+
+    await expect(startChat(owner, channelId)).rejects.toMatchObject(forbidden);
+  });
+
+  it("closes when the responsible lender changes, and leaves the new lender out", async () => {
+    const { owner, borrower, coOwner, loanId, conversationId } =
+      await chattingLoan(activeLoan);
+
+    const { transferId } = await run(offerResponsibility, owner, {
+      loanId,
+      toUserId: coOwner.userId,
+    });
+    await run(acceptResponsibilityTransfer, coOwner, { loanId, transferId });
+
+    expect(await conversationOf(borrower, conversationId)).toMatchObject({
+      open: false,
+    });
+    await expect(
+      conversationOf(coOwner, conversationId),
+    ).rejects.toMatchObject(notFound);
   });
 });
 

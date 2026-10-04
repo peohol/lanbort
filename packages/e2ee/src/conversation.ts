@@ -1,3 +1,4 @@
+import { chatLimits } from "@lanbort/contracts";
 import {
   type AuthenticationService,
   type ClientConfig,
@@ -56,8 +57,11 @@ export const KEY_PACKAGE_LIFETIME_SECONDS = 28 * 24 * 60 * 60;
 /** Tolerated clock difference between the device that makes a key package and the one that adds it. */
 const CLOCK_SKEW_SECONDS = 60 * 60;
 
-/** Shorter messages are padded to this length so their size is not revealed. */
-const PADDED_LENGTH = 1024;
+/**
+ * Shorter messages are padded to this length so their size is not revealed.
+ * The server checks a loan logistics message against the same constant.
+ */
+const PADDED_LENGTH = chatLimits.paddedMessageBytes;
 
 /** Only these proposals are accepted; anything else in a commit is rejected. */
 const permittedProposals = new Set<Proposal["proposalType"]>([

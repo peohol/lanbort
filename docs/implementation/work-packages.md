@@ -124,7 +124,7 @@ Ciphertext-lagring, klientkryptering, ingen lesebekreftelser og kontrollert før
 **Krav:** PS-COM-007  
 Egen lånebundet samtaletype med servervalidert åpning/stenging.
 
-**Status:** Kanalens livsløp er bygget: databasen åpner den ved blokkering mellom partene i et pågående lån og stenger den når lånet avsluttes eller partene byttes (se [servergrensen](server-boundary.md#lånelogistikk-ved-blokkering-wp-44)). Hvem som kan stenge den tidlig som sikkerhetstiltak, er ikke besluttet (OD-0020). Meldingene selv kobles på privat chats leveringstjeneste når WP-43 er på plass.
+**Status:** Serversiden er bygget: databasen åpner kanalen ved blokkering mellom partene i et pågående lån og stenger den når lånet avsluttes eller partene byttes, og meldingene går i en egen kryptert samtaletype på privat chats leveringstjeneste, med korte meldinger og ingen levering etter stenging (se [servergrensen](server-boundary.md#lånelogistikk-ved-blokkering-wp-44)). Hvem som kan stenge kanalen tidlig som sikkerhetstiltak, er ikke besluttet (OD-0020). Merkingen i chatsidene kommer sammen med WP-43 del 2.
 
 ### WP-45 — Administrative saker og kø
 **Krav:** PS-COM-010–015  

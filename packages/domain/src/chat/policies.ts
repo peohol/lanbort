@@ -46,6 +46,14 @@ export interface ChatStartResource {
   readonly invitedByContext: boolean;
 }
 
+/** A loan logistics channel's conversation, as the caller relates to it. */
+export interface LoanLogisticsChatResource {
+  /** One of the two people the channel joins. */
+  readonly party: boolean;
+  /** The channel is open, or it has a conversation already. */
+  readonly startable: boolean;
+}
+
 /**
  * Chat runs through the session's device. Without one the caller first
  * registers or links this device; the answer says nothing about any
@@ -167,6 +175,25 @@ export const startChatConversationPolicy = definePolicy<
   resource: [reachablePerson, legitimateContact],
 });
 
+/**
+ * WP-44 (PS-COM-007): either of a loan logistics channel's two people starts
+ * its conversation while the channel is open; anyone else gets the same
+ * answer as for no channel. Once started, asking again gives it back, also
+ * after the channel closed. A block is what the channel is for, so it does
+ * not count here.
+ */
+export const startLoanLogisticsChatPolicy = definePolicy<
+  LoanLogisticsChatResource,
+  void
+>({
+  action: "chat.start_loan_logistics",
+  actor: [requireActiveAccount],
+  resource: [
+    ({ resource }) => (resource.party ? allow : deny("not_found")),
+    ({ resource }) => (resource.startable ? allow : deny("forbidden")),
+  ],
+});
+
 /** Seeing one's conversations and their keys, also after deactivation. */
 const conversationReadPolicy = <
   R extends ChatConversationResource = ChatConversationResource,
@@ -248,6 +275,7 @@ export const chatPolicies = [
   readOwnChatDevicesPolicy,
   publishChatKeyPackagesPolicy,
   startChatConversationPolicy,
+  startLoanLogisticsChatPolicy,
   readChatConversationPolicy,
   readChatDirectoryPolicy,
   hideChatConversationPolicy,

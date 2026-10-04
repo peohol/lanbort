@@ -10,6 +10,8 @@ import { DomainError } from "../errors";
 
 /** RFC 9420's mandatory suite, the only one Lånbort uses (ADR-0010 §1). */
 const ciphersuite = 0x0001;
+/** The suite's AEAD (AES-128-GCM) adds this tag to every ciphertext. */
+const aeadTagBytes = 16;
 const mls10 = 0x0001;
 
 const wireformats = {
@@ -84,6 +86,12 @@ export interface PrivateMessageHeader {
   readonly groupId: string;
   readonly epoch: bigint;
   readonly contentType: "application" | "commit";
+  /**
+   * How long the encrypted content is once decrypted, padding included: a
+   * message that fits in one padding block is exactly one block long. The
+   * server learns no more than the ciphertext's length already shows.
+   */
+  readonly contentBytes: number;
 }
 
 /**
@@ -97,10 +105,10 @@ export function readPrivateMessage(bytes: Uint8Array): PrivateMessageHeader {
   const contentType = contentTypes.get(reader.uint8());
   reader.vector(); // authenticated data
   reader.vector(); // encrypted sender data
-  reader.vector(); // ciphertext
+  const contentBytes = reader.vector().length - aeadTagBytes;
   reader.done();
 
-  if (!contentType) invalid();
+  if (!contentType || contentBytes < 0) invalid();
 
   let group: string;
   try {
@@ -109,7 +117,7 @@ export function readPrivateMessage(bytes: Uint8Array): PrivateMessageHeader {
     invalid();
   }
 
-  return { groupId: group, epoch, contentType };
+  return { groupId: group, epoch, contentType, contentBytes };
 }
 
 /** An MLS welcome in Lånbort's ciphersuite. Its content is all ciphertext. */

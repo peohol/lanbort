@@ -322,6 +322,9 @@ importers:
 
   packages/e2ee:
     dependencies:
+      '@lanbort/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       ts-mls:
         specifier: 1.6.4
         version: 1.6.4(@noble/ciphers@2.1.1)
