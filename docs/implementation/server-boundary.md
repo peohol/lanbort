@@ -264,6 +264,19 @@ Route Handler (route.user / route.public / route.scheduler)
 - Tellerne ligger i `app.rate_limits` (`app.consume_rate_limit`), delt av alle serverinstanser. Hvem det gjelder, lagres bare som en nøklet hash med en nøkkel som aldri forlater databasen, og en rad slettes når hele budsjettet er tilbake. Avslag logges som `security.rate_limited` med bare regelens navn.
 - Når hostet Supabase settes opp, må Auths egne grenser per IP (`[auth.rate_limit]`) settes høyt nok til at de ikke stopper alle brukere samlet, siden alle kall kommer fra serveren. Grensene over er de som skiller klientene.
 
+## Privat chat (WP-43)
+
+Serveren er bare leveringstjenesten for ende-til-ende-kryptert chat ([ADR-0010](../architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md)). Den lagrer offentlige nøkler, signaturer, MLS-chiffertekst og leveringsdata, aldri noe som kan dekryptere en melding. Domenekoden importerer aldri `@lanbort/e2ee` eller ts-mls; serveren leser bare de få klartekstfeltene i MLS-hodet den må bestemme over (`chat/mls.ts`), og testes mot ekte meldinger laget av klientbiblioteket (`mls.fixtures.ts`).
+
+- En konto har én kontonøkkel som sertifiserer kontoens enheter. En enhet er bundet til innloggingsøkten den ble laget i (`chat_devices.session_id`), så en ny innlogging er en ny enhet som en eksisterende enhet må koble til (`chat.request_link`/`chat.approve_link`). Uten enhet i økten svarer chat `forbidden`, uten å si noe om samtaler. Serveren sjekker sertifikater og tilbakekallinger som et ekstra lag; klientene stoler bare på kontonøkkelen de selv har festet.
+- Tilbakekalling (`chat.revoke_device`) stenger enheten ute med en gang og avslutter innloggingsøkten dens etter commit (`chat.end_device_sessions`, `app.end_auth_sessions`). Tilbakestilling (`chat.reset_account`) krever ny innlogging, bytter kontonøkkel og stenger ute alle enheter under den gamle.
+- Første kontakt (PS-COM-006): venner kan starte en samtale. Ellers kan bare mottakeren av en strukturert kontakt åpne en samtale fra den: utlåneren som ser en låneforespørsel (med låntakeren), og eieren som ser et objektspørsmål (med den som spurte). Det finnes én privat samtale per par. En blokkert, slettet eller inaktiv person ser ut som ingen (`not_found`), og en samtale er stengt for nye meldinger og endringer så lenge noen av partene er inaktiv eller det finnes en blokkering.
+- Rekkefølgen: serveren godtar nøyaktig én commit per epoke (låst rad, `conflict` til den som tapte) og leverer commits, velkomstmeldinger og meldinger bare til gruppens enheter. Når ingen levende enhet er igjen i gruppen, starter en enhet neste generasjon (ny MLS-gruppe, `groupIdOf`).
+- Innboksen: enheten henter det som venter (`chat.read_inbox`) og kvitterer for nøyaktig det den har håndtert (`chat.acknowledge`). Da slettes det ingen annen enhet venter på. Ingen får vite om eller når noe ble hentet eller lest (PS-COM-004). Det som aldri hentes, slettes av den planlagte jobben `/api/internal/chat-retention` (`chatRetention`; må tilpasses når OD-0002 avgjøres). Jobben bør kjøres jevnlig (for eksempel hver time) når hostede miljøer settes opp.
+- «Fjern fra mine samtaler» (PS-COM-009) skjuler samtalen bare for den som ber om det, til neste melding.
+- Fartsgrenser: `chatMessages` for meldinger og commits, `chatKeys` for nøkler og enheter, `chatResets` for tilbakestilling, og `contact` for å starte en samtale.
+- Nye samtaletyper (WP-44) legges til i `conversationKinds` med egne regler. Tilbakekalling og tilbakestilling gjøres på nytt etter gjenoppretting, og alle samtaler starter ny generasjon (`chat.restart_groups`).
+
 ## Vennskap og blokkering
 
 - Sosiale kommandoer navngir bare den andre brukeren. Den som kaller er alltid den ene parten, så ingen input kan nå andres relasjoner. Alle endringer for samme par låses mot hverandre i databasen.

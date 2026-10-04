@@ -1,5 +1,11 @@
-import { randomBytes, randomUUID } from "node:crypto";
+import {
+  generateKeyPairSync,
+  randomBytes,
+  randomUUID,
+  sign,
+} from "node:crypto";
 import { readEmailCode } from "@lanbort/auth/testing";
+import { chatSignatureLabel, deviceCertificateBody } from "@lanbort/contracts";
 import { type APIRequestContext, expect, type Page } from "@playwright/test";
 
 /** Shared steps for the browser tests, against the local Supabase stack. */
@@ -116,3 +122,40 @@ export const blankMapTile = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
   "base64",
 );
+
+const ed25519Key = () => {
+  const { publicKey, privateKey } = generateKeyPairSync("ed25519");
+  return {
+    publicKey: publicKey
+      .export({ format: "der", type: "spki" })
+      .subarray(12)
+      .toString("base64"),
+    privateKey,
+  };
+};
+
+/**
+ * A chat account key and one device it certified, as a client makes them
+ * (ADR-0010 §3), for registering chat over the API.
+ */
+export function chatAccount(userId: string) {
+  const account = ed25519Key();
+  const certify = (deviceId = randomUUID()) => {
+    const body = {
+      accountId: userId,
+      deviceId,
+      deviceKey: ed25519Key().publicKey,
+      accountKey: account.publicKey,
+    };
+    const signature = sign(
+      null,
+      Buffer.from(
+        chatSignatureLabel("device-certificate") + deviceCertificateBody(body),
+      ),
+      account.privateKey,
+    ).toString("base64");
+    return { v: 1 as const, ...body, signature };
+  };
+
+  return { accountKey: account.publicKey, certify };
+}

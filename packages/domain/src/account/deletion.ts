@@ -33,6 +33,7 @@ import { deleteObject } from "../objects/deletion";
 import { loadObjectState } from "../objects/state";
 import { defineConsumer, OutboxDeliveryError } from "../outbox/consumer";
 import { platformRoleRevoked } from "../platform/events";
+import { chatAccountDeletionStep } from "../chat/maintenance";
 import { reviewRightsStep } from "../reviews/account-deletion";
 import { friendshipEndedByAccountDeletion } from "../social/events";
 import { subscriptionsStep } from "../subscriptions/account-deletion";
@@ -288,6 +289,7 @@ export const accountDeletionSteps: readonly AccountDeletionStep[] = [
   platformRolesStep,
   reviewRightsStep,
   subscriptionsStep,
+  chatAccountDeletionStep,
   personalDataStep,
 ];
 

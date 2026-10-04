@@ -18,3 +18,4 @@ export * from "./cases";
 export * from "./trust";
 export * from "./moderation";
 export * from "./search";
+export * from "./chat";

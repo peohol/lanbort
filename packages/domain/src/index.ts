@@ -27,6 +27,7 @@ export * from "./home";
 export * from "./cases";
 export * from "./subscriptions";
 export * from "./questions";
+export * from "./chat";
 export * from "./moderation";
 export * from "./search";
 export * from "./outbox/policy";
