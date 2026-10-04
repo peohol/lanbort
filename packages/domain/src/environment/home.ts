@@ -4,6 +4,7 @@ import type {
   HomeItem,
   ReviewedPublication,
 } from "@lanbort/contracts";
+import { collectPages } from "../commands/pages";
 import { type HomeReader, type HomeSource, homeItem } from "../home/source";
 import { listOwnObjects } from "../objects/queries";
 import { listEnvironmentPublications } from "../publications/queries";
@@ -126,21 +127,18 @@ export function administrationHomeItems(
 async function pendingPublications(
   { ifAllowed }: HomeReader,
   environmentId: string,
-): Promise<ReviewedPublication[]> {
-  const publications: ReviewedPublication[] = [];
-  let cursor: string | undefined;
+): Promise<readonly ReviewedPublication[]> {
+  const { items } = await collectPages(
+    (cursor) =>
+      ifAllowed(listEnvironmentPublications, {
+        environmentId,
+        status: "pending",
+        cursor,
+      }),
+    ({ publications }) => publications,
+  );
 
-  do {
-    const page = await ifAllowed(listEnvironmentPublications, {
-      environmentId,
-      status: "pending",
-      cursor,
-    });
-    publications.push(...(page?.publications ?? []));
-    cursor = page?.nextCursor ?? undefined;
-  } while (cursor);
-
-  return publications;
+  return items;
 }
 
 /**

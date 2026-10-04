@@ -1,4 +1,9 @@
-import type { HomeItem, HomeItemKind } from "@lanbort/contracts";
+import {
+  type HomeItem,
+  type HomeItemKind,
+  loanPageSize,
+  loanRequestPageSize,
+} from "@lanbort/contracts";
 import { afterAll, describe, expect, it } from "vitest";
 import type { UserActor } from "../actor";
 import { executeQuery } from "../commands/query";
@@ -9,6 +14,7 @@ import {
 } from "../environment/membership-commands";
 import { inviteAdministrator } from "../environment/role-commands";
 import { proposeLoanAmendment } from "../loans/amendments";
+import { approveLoanRequest } from "../loans/approval";
 import { reportHandover } from "../loans/handover";
 import { listLoans } from "../loans/queries";
 import { reportReturn } from "../loans/return";
@@ -384,5 +390,50 @@ describe("the order of Home", () => {
         )
         .map(({ kind }) => kind),
     ).toEqual(["loan_request.answer", "loan_request.answer"]);
+  });
+});
+
+describe("Home beyond the first page", () => {
+  it("keeps the oldest requests and loans once newer ones fill a page", async () => {
+    const { owner, borrower, objectId, environmentId } = await published();
+    const count = Math.max(loanPageSize, loanRequestPageSize) + 1;
+    const requestIds: string[] = [];
+
+    // One-day requests on separate days, oldest first, so all can be approved.
+    for (let index = 0; index < count; index += 1) {
+      const { requestId } = await ask(
+        borrower,
+        objectId,
+        environmentOrigin(environmentId),
+        dated(2 * index + 2, 2 * index + 2),
+      );
+      requestIds.push(requestId);
+    }
+
+    const kinds = async (actor: UserActor, ids: readonly string[]) => {
+      const { sections } = await home(actor);
+
+      return sections
+        .flatMap(({ items }) => items)
+        .filter(({ target }) => ids.includes(target.id))
+        .map(({ kind }) => kind);
+    };
+
+    expect(await kinds(owner, requestIds)).toEqual(
+      Array(count).fill("loan_request.answer"),
+    );
+
+    const loanIds: string[] = [];
+
+    for (const requestId of requestIds) {
+      const { loanId } = await run(approveLoanRequest, owner, { requestId });
+      loanIds.push(loanId);
+    }
+
+    for (const party of [owner, borrower]) {
+      expect(await kinds(party, loanIds)).toEqual(
+        Array(count).fill("loan.handover"),
+      );
+    }
   });
 });

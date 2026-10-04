@@ -1,12 +1,22 @@
 import type { LoanRequestRole } from "@lanbort/contracts";
 import {
+  collectPages,
   listLoanRequests,
   listLoans,
   loanHomeItem,
   loanRequestHomeItem,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
-import { LoanList, type LoanListEntry } from "@/components/loan-list";
+import {
+  LoanList,
+  type LoanListEntry,
+  loanListId,
+} from "@/components/loan-list";
+import {
+  morePagesHref,
+  pagesShown,
+  type SearchParams,
+} from "@/navigation/list-pages";
 import { anchorFor } from "@/navigation/targets";
 import { formatPeriod } from "@/presentation/dates";
 import { describeHomeItem } from "@/presentation/home-items";
@@ -36,26 +46,59 @@ function sideOf(value: string | string[] | undefined) {
 const waiting = (item: Parameters<typeof describeHomeItem>[0] | null) =>
   item ? describeHomeItem(item).text : null;
 
+/** The three lists, each with its own page count in the address. */
+const lists = {
+  requests: { heading: "Forespørsler", key: "foresporsler" },
+  current: { heading: "Pågående lån", key: "pagaende" },
+  ended: { heading: "Avsluttede lån", key: "avsluttede" },
+} as const;
+
 export default async function LoansPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<SearchParams>;
 }) {
   await requirePageAccount();
-  const side = sideOf((await searchParams).side);
+  const params = await searchParams;
+  const side = sideOf(params.side);
   const roles: readonly LoanRequestRole[] = side
     ? [side]
     : ["borrower", "lender"];
+  const loanPages = (state: "current" | "ended") =>
+    collectPages(
+      (cursor) => pageQuery(listLoans, { state, role: side, cursor }),
+      ({ loans }) => loans,
+      pagesShown(params, lists[state].key),
+    );
   const [requestLists, current, ended] = await Promise.all([
     Promise.all(
-      roles.map((role) => pageQuery(listLoanRequests, { role, state: "open" })),
+      roles.map((role) =>
+        collectPages(
+          (cursor) =>
+            pageQuery(listLoanRequests, { role, state: "open", cursor }),
+          ({ requests }) => requests,
+          pagesShown(params, lists.requests.key),
+        ),
+      ),
     ),
-    pageQuery(listLoans, { state: "current", role: side }),
-    pageQuery(listLoans, { state: "ended", role: side }),
+    loanPages("current"),
+    loanPages("ended"),
   ]);
+  const more = (
+    list: keyof typeof lists,
+    ...pages: { nextCursor: unknown }[]
+  ) =>
+    pages.every(({ nextCursor }) => nextCursor === null)
+      ? null
+      : morePagesHref(
+          "/lan",
+          params,
+          lists[list].key,
+          loanListId(lists[list].heading),
+        );
 
   const requests: LoanListEntry[] = requestLists
-    .flatMap((list) => list?.requests ?? [])
+    .flatMap((list) => list.items)
     .map((request) => ({
       id: anchorFor("loan_request", request.id),
       title: request.object?.title ?? "Objektet finnes ikke lenger",
@@ -65,7 +108,7 @@ export default async function LoansPage({
       waiting: waiting(loanRequestHomeItem(request)),
     }));
   const loans = (list: typeof current): LoanListEntry[] =>
-    (list?.loans ?? []).map((loan) => ({
+    list.items.map((loan) => ({
       id: anchorFor("loan", loan.id),
       title: loan.agreement.title,
       role: loanRoleLabels[loan.role],
@@ -91,19 +134,22 @@ export default async function LoansPage({
         ))}
       </nav>
       <LoanList
-        heading="Forespørsler"
+        heading={lists.requests.heading}
         empty="Ingen åpne forespørsler."
         entries={requests}
+        more={more("requests", ...requestLists)}
       />
       <LoanList
-        heading="Pågående lån"
+        heading={lists.current.heading}
         empty="Ingen pågående lån."
         entries={loans(current)}
+        more={more("current", current)}
       />
       <LoanList
-        heading="Avsluttede lån"
+        heading={lists.ended.heading}
         empty="Ingen avsluttede lån."
         entries={loans(ended)}
+        more={more("ended", ended)}
       />
     </main>
   );

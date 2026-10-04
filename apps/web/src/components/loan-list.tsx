@@ -10,20 +10,27 @@ export interface LoanListEntry {
   readonly waiting: string | null;
 }
 
+/** The id of the list headed `heading`, for links back to it. */
+export const loanListId = (heading: string) =>
+  `liste-${heading.toLowerCase().replace(/\W+/g, "-")}`;
+
 /**
  * A list in the Lån area: the current status and what is next first
- * (UX-IA-008); details and history belong to the loan itself.
+ * (UX-IA-008); details and history belong to the loan itself. `more` leads
+ * to the same list with its next page, while there is one.
  */
 export function LoanList({
   heading,
   empty,
   entries,
+  more,
 }: {
   heading: string;
   empty: string;
   entries: readonly LoanListEntry[];
+  more: string | null;
 }) {
-  const headingId = `liste-${heading.toLowerCase().replace(/\W+/g, "-")}`;
+  const headingId = loanListId(heading);
 
   return (
     <section aria-labelledby={headingId}>
@@ -45,6 +52,11 @@ export function LoanList({
             </li>
           ))}
         </ul>
+      )}
+      {more && (
+        <p>
+          <a href={more}>Vis flere {heading.toLowerCase()}</a>
+        </p>
       )}
     </section>
   );

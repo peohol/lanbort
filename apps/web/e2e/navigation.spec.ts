@@ -6,6 +6,7 @@ import {
   type Page,
   test,
 } from "@playwright/test";
+import { loanRequestPageSize } from "@lanbort/contracts";
 import { collectBrowserProblems, registerThroughApi } from "./helpers";
 
 /**
@@ -144,6 +145,63 @@ test("the indicator counts unread notifications until they are read", async ({
   await expect(
     page.getByRole("link", { name: "Varsler, ingen uleste" }),
   ).toBeVisible();
+});
+
+test("Lån shows further pages of a list in place", async ({
+  page,
+  playwright,
+  baseURL,
+}) => {
+  const bo = await otherUser(playwright, baseURL!);
+  await befriended(page, bo);
+  const boId = await accountId(bo);
+  await page.request.post("/api/social/friend-requests/accept", {
+    data: { userId: boId },
+    headers: { "Idempotency-Key": randomUUID() },
+  });
+  const { objectId } = await (
+    await bo.post("/api/objects", {
+      data: {
+        title: "Tilhenger",
+        categoryId: "annet",
+        description: "Skapbil-tilhenger, 750 kg.",
+        availability: [{ start: "2030-06-01", end: null }],
+      },
+      headers: { "Idempotency-Key": randomUUID() },
+    })
+  ).json();
+  const preview = await (
+    await page.request.get(`/api/loan-requests/preview?objectId=${objectId}`)
+  ).json();
+
+  for (let index = 0; index <= loanRequestPageSize; index += 1) {
+    const response = await page.request.post("/api/loan-requests", {
+      data: {
+        objectId,
+        origin: { kind: "direct" },
+        start: { kind: "date", date: "2030-06-10" },
+        end: { kind: "duration", days: 1 },
+        message: "Kan jeg låne den?",
+        termsVersion: preview.termsVersion,
+        responsibilityDeclarationVersion:
+          preview.responsibilityDeclarationVersion,
+      },
+      headers: { "Idempotency-Key": randomUUID() },
+    });
+    expect(response.ok(), await response.text()).toBe(true);
+  }
+
+  await page.goto("/lan?side=borrower");
+  const requests = page.getByRole("region", { name: "Forespørsler" });
+  await expect(requests.getByRole("listitem")).toHaveCount(loanRequestPageSize);
+  await requests.getByRole("link", { name: "Vis flere forespørsler" }).click();
+  await expect(page).toHaveURL(/side=borrower&foresporsler=2#/);
+  await expect(requests.getByRole("listitem")).toHaveCount(
+    loanRequestPageSize + 1,
+  );
+  await expect(
+    requests.getByRole("link", { name: "Vis flere forespørsler" }),
+  ).toHaveCount(0);
 });
 
 test("on a phone the areas sit at the bottom, without sideways scrolling", async ({

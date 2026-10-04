@@ -4,6 +4,7 @@ import type {
   Loan,
   LoanRequest,
 } from "@lanbort/contracts";
+import { collectPages } from "../commands/pages";
 import { type HomeSource, homeItem } from "../home/source";
 import { listLoanRequests, listLoans } from "./queries";
 import { listCoOwnerLoans } from "./responsibility";
@@ -140,15 +141,18 @@ const present = <T>(items: readonly T[], item: (from: T) => HomeItem | null) =>
   items.flatMap((from) => item(from) ?? []);
 
 /**
- * The caller's current loans. Only the first page: Home is about what
- * needs attention, and Lån has the rest.
+ * Every current loan of the caller, page by page: one that asks something
+ * of them must not drop off Home because newer loans fill the first page.
  */
 export const loanHomeSource: HomeSource = {
   name: "loans",
   async items({ query }) {
-    const { loans } = await query(listLoans, { state: "current" });
+    const { items } = await collectPages(
+      (cursor) => query(listLoans, { state: "current", cursor }),
+      ({ loans }) => loans,
+    );
 
-    return present(loans, loanHomeItem);
+    return present(items, loanHomeItem);
   },
 };
 
@@ -157,13 +161,14 @@ export const loanRequestHomeSource: HomeSource = {
   async items({ query }) {
     const lists = await Promise.all(
       (["lender", "borrower"] as const).map((role) =>
-        query(listLoanRequests, { role, state: "open" }),
+        collectPages(
+          (cursor) => query(listLoanRequests, { role, state: "open", cursor }),
+          ({ requests }) => requests,
+        ),
       ),
     );
 
-    return lists.flatMap(({ requests }) =>
-      present(requests, loanRequestHomeItem),
-    );
+    return lists.flatMap(({ items }) => present(items, loanRequestHomeItem));
   },
 };
 
