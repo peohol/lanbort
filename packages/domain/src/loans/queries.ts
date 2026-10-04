@@ -1,5 +1,6 @@
 import {
   type Loan,
+  type LoanActions,
   type LoanList,
   loanListQuerySchema,
   loanPageSize,
@@ -16,6 +17,7 @@ import {
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
+import { realNames } from "../account/store";
 import type { Actor } from "../actor";
 import { defineQuery } from "../commands/query";
 import { canSeeEnvironment } from "../environment/policies";
@@ -23,9 +25,11 @@ import { findEnvironment, loadEnvironmentAccess } from "../environment/store";
 import { calendarDate, toApiInterval } from "../objects/availability";
 import { inSnapshot, loadObjectState } from "../objects/state";
 import { assessOrigin } from "./access";
-import { findOpenAmendment } from "./amendment-store";
+import { findOpenAmendment, type LoanAmendmentRecord } from "./amendment-store";
+import { loanActions } from "./next-steps";
 import { loadHandoverReading } from "./handover-store";
 import {
+  amendmentFits,
   type HandoverReading,
   latestReturnStatement,
   isOpen,
@@ -33,6 +37,7 @@ import {
   openLoanRequestStatuses,
   openStanding,
   presentedLoanStatus,
+  periodChangeable,
   presentedStatus,
   type StoredLoanStatus,
   toApiPeriod,
@@ -47,7 +52,11 @@ import {
   readLoanRequestPolicy,
   roleOf,
 } from "./policies";
-import { findControlConfirmation, findLoan } from "./reservations";
+import {
+  findControlConfirmation,
+  findLoan,
+  type LoanRecord,
+} from "./reservations";
 import { afterCursor, loadRequest, loadTarget, originOf } from "./resources";
 import { presentTransfer } from "./responsibility";
 import { findTransfer } from "./responsibility-store";
@@ -401,7 +410,7 @@ function answerDue(
 /** A loan with everything its parties see of it now. */
 type LoanDetail = NonNullable<Awaited<ReturnType<typeof loadLoanDetail>>>;
 
-async function loadLoanDetail(db: Db, loanId: string) {
+async function loadLoanDetail(db: Db, loanId: string, now: Date) {
   const loan = await findLoan(db, { loanId });
 
   if (!loan) {
@@ -409,6 +418,9 @@ async function loadLoanDetail(db: Db, loanId: string) {
   }
 
   const amendment = await findOpenAmendment(db, loan.id);
+  const amendmentAcceptable =
+    amendment !== null &&
+    (await amendmentAcceptableNow(db, loan, amendment, calendarDate(now)));
   const handover = await loadHandoverReading(db, loan.id);
   const returns = await loadReturnStatements(
     db,
@@ -422,17 +434,91 @@ async function loadLoanDetail(db: Db, loanId: string) {
     loan.ending?.reason === "unresolved"
       ? { confirmedAt: await findControlConfirmation(db, loan.id) }
       : null;
+  const names = await realNames(db, [
+    loan.borrowerUserId,
+    loan.responsibleLenderId,
+  ]);
+  const awaitingControl = control !== null && control.confirmedAt === null;
+  const lenderOwns =
+    awaitingControl &&
+    loan.objectId !== null &&
+    (await db
+      .selectFrom("app.object_owners")
+      .select("user_id")
+      .where("object_id", "=", loan.objectId)
+      .where("user_id", "=", loan.responsibleLenderId)
+      .executeTakeFirst()) !== undefined;
 
   return {
     ...loan,
     amendment,
+    amendmentAcceptable,
     handover,
     returns,
     pending,
     transfer,
     control,
+    names,
+    awaitingControl,
+    lenderOwns,
   };
 }
+
+/**
+ * Whether accepting the open proposal would succeed now, by the checks the
+ * acceptance makes (PS-LOAN-010, scenario 26): on the current agreement, a
+ * loan that can still change, and every day it adds still open. A proposal
+ * reserves nothing, so another loan may have taken those days since.
+ */
+async function amendmentAcceptableNow(
+  db: Db,
+  loan: LoanRecord,
+  amendment: LoanAmendmentRecord,
+  today: string,
+): Promise<boolean> {
+  if (
+    amendment.baseVersion !== loan.agreement.version ||
+    !periodChangeable(loan.status) ||
+    loan.objectId === null
+  ) {
+    return false;
+  }
+
+  const object = await loadObjectState(db, loan.objectId);
+
+  if (!object) {
+    return false;
+  }
+
+  const { open } = await loadDerivedAvailability(
+    db,
+    loan.objectId,
+    today,
+    object.status,
+    { exceptLoanId: loan.id },
+  );
+
+  return amendmentFits(
+    loan.status,
+    loan.agreement.period,
+    amendment.period,
+    open,
+    today,
+  );
+}
+
+const personOf = (names: ReadonlyMap<string, string>, userId: string) => ({
+  realName: names.get(userId) ?? null,
+});
+
+const noActions: LoanActions = {
+  handover: [],
+  return: [],
+  undoReturn: false,
+  amendment: [],
+  responsibility: [],
+  confirmControl: false,
+};
 
 /** The loan as the caller, one of its parties, sees it as of `now`. */
 function presentLoan(actor: Actor, resource: LoanDetail, now: Date): Loan {
@@ -502,6 +588,33 @@ function presentLoan(actor: Actor, resource: LoanDetail, now: Date): Loan {
       confirmedAt: resource.control.confirmedAt?.toISOString() ?? null,
     },
     approvedAt: resource.approvedAt.toISOString(),
+    parties: {
+      borrower: personOf(resource.names, resource.borrowerUserId),
+      lender: personOf(resource.names, resource.responsibleLenderId),
+    },
+    actions:
+      actor.kind === "user" && role
+        ? loanActions(
+            actor,
+            role,
+            {
+              status: resource.status,
+              endReason: ending?.reason ?? null,
+              period: resource.agreement.period,
+              handover,
+              returns,
+              pending: resource.pending,
+              amendment: resource.amendment && {
+                proposerRole: resource.amendment.proposerRole,
+                acceptable: resource.amendmentAcceptable,
+              },
+              transfer: resource.transfer,
+              awaitingControl: resource.awaitingControl,
+              lenderOwns: resource.lenderOwns,
+            },
+            now,
+          )
+        : noActions,
   };
 }
 
@@ -519,9 +632,9 @@ export const readLoan = defineQuery({
   name: "loan.read",
   input: loanReadQuerySchema,
   policy: readLoanPolicy,
-  load: ({ db, input }) =>
+  load: ({ db, input, now }) =>
     inSnapshot(db, async (tx) => {
-      const loan = await loadLoanDetail(tx, input.loanId);
+      const loan = await loadLoanDetail(tx, input.loanId, now);
 
       return loan && { resource: loan, context: undefined };
     }),
@@ -539,7 +652,7 @@ export const listLoans = defineQuery({
   name: "loan.list",
   input: loanListQuerySchema,
   policy: listLoansPolicy,
-  load: ({ db, actor, input }) =>
+  load: ({ db, actor, input, now }) =>
     inSnapshot(db, async (tx) => {
       if (actor.kind !== "user") {
         return null;
@@ -581,7 +694,7 @@ export const listLoans = defineQuery({
 
       // One connection serves the snapshot, so these run one after another.
       for (const { id } of page) {
-        const loan = await loadLoanDetail(tx, id);
+        const loan = await loadLoanDetail(tx, id, now);
 
         if (loan) {
           loans.push(loan);

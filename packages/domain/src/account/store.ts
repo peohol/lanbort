@@ -67,3 +67,26 @@ export async function deletedAccounts(
       .map(([id]) => id),
   );
 }
+
+/**
+ * The real names of the accounts that still have a profile. A deleted
+ * account has none (PS-ADM-006), so it is left out and shown as a former
+ * user (UX-PRIV-010). Whether the caller may see a name is the query's
+ * decision, not this one's.
+ */
+export async function realNames(
+  db: Db,
+  userIds: readonly string[],
+): Promise<Map<string, string>> {
+  if (userIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await db
+    .selectFrom("app.profiles")
+    .select(["user_id", "real_name"])
+    .where("user_id", "in", [...new Set(userIds)])
+    .execute();
+
+  return new Map(rows.map((row) => [row.user_id, row.real_name]));
+}

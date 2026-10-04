@@ -5,6 +5,8 @@ export * from "./access";
 export * from "./commands";
 export * from "./approval";
 export * from "./queries";
+export * from "./history";
+export { loanActions } from "./next-steps";
 export * from "./cancellation";
 export * from "./amendments";
 export * from "./handover";

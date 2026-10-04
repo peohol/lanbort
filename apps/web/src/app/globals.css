@@ -320,6 +320,29 @@ button:disabled {
   border-width: 3px;
 }
 
+/* Facts about one thing, such as a loan's agreement: label, then value. */
+.facts {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+  gap: 0.5rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.facts dt {
+  font-weight: 600;
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+details > summary {
+  cursor: pointer;
+  padding: 0.625rem 0;
+  font-weight: 600;
+}
+
 fieldset {
   display: grid;
   gap: 0.5rem;
