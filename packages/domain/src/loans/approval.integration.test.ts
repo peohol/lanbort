@@ -781,9 +781,13 @@ describe("concurrent approvals (PS-NFR-004, Port B)", () => {
     expect(
       results.filter((result) => result.status === "fulfilled"),
     ).toHaveLength(1);
+    // Two inserts checking the exclusion constraint against each other may
+    // also be refused as a deadlock; either way the database refuses one.
     expect(results.find((result) => result.status === "rejected")).toEqual(
       expect.objectContaining({
-        reason: expect.objectContaining({ code: "23P01" }),
+        reason: expect.objectContaining({
+          code: expect.stringMatching(/^(23P01|40P01)$/),
+        }),
       }),
     );
     expect(await reservations(objectId)).toHaveLength(1);
