@@ -13,7 +13,9 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/(.*)",
+        // Chat pages get stricter headers with a nonce from the proxy
+        // (`src/proxy.ts`, ADR-0010 §13).
+        source: "/((?!samtaler(?:/|$)).*)",
         headers: getSecurityHeaders({
           development: process.env.NODE_ENV === "development",
         }),

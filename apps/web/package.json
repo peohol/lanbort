@@ -16,6 +16,7 @@
     "@lanbort/contracts": "workspace:*",
     "@lanbort/database": "workspace:*",
     "@lanbort/domain": "workspace:*",
+    "@lanbort/e2ee": "workspace:*",
     "@lanbort/email": "workspace:*",
     "@lanbort/observability": "workspace:*",
     "@lanbort/places": "workspace:*",
@@ -24,6 +25,7 @@
     "next": "16.3.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "uqr": "0.1.3",
     "zod": "4.6.5"
   },
   "devDependencies": {

@@ -21,7 +21,8 @@ export function loadSuite(): Promise<CiphersuiteImpl> {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder("utf-8", { fatal: true });
 
-export const utf8 = (text: string): Uint8Array => encoder.encode(text);
+export const utf8 = (text: string): Uint8Array<ArrayBuffer> =>
+  encoder.encode(text);
 export const fromUtf8 = (bytes: Uint8Array): string => decoder.decode(bytes);
 
 export function toBase64(bytes: Uint8Array): string {

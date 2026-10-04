@@ -14,12 +14,14 @@ import {
   createApplicationMessage,
   createCommit,
   createGroup,
+  decodeGroupState,
   decodeMlsMessage,
   defaultCapabilities,
   defaultKeyPackageEqualityConfig,
   defaultKeyRetentionConfig,
   defaultLifetimeConfig,
   emptyPskIndex,
+  encodeGroupState,
   encodeMlsMessage,
   generateKeyPackageWithKey,
   joinGroup,
@@ -28,6 +30,7 @@ import {
 // ts-mls 1.x does not report who sent an application message; 2.x does
 // (`senderLeafIndex`). Until Lånbort moves to 2.x, the sender is read with
 // the library's own decryption step. See `senderOf`.
+import { makeKeyPackageRef } from "ts-mls/keyPackage.js";
 import { unprotectPrivateMessage } from "ts-mls/messageProtection.js";
 import {
   type Device,
@@ -38,7 +41,7 @@ import {
   verifyDeviceCertificate,
 } from "./identity";
 import { Secret, wipe } from "./secret";
-import { bytesEqual, loadSuite, utf8 } from "./suite";
+import { bytesEqual, fromUtf8, loadSuite, utf8 } from "./suite";
 import type { TrustStore } from "./trust";
 
 /**
@@ -104,7 +107,7 @@ const certificateOf = (credential: Credential) =>
  * device has not been revoked. A member may be removed only once this is no
  * longer true, so no participant can remove another's device at will.
  */
-const currentlyTrusted = (
+export const currentlyTrusted = (
   policy: ConversationPolicy,
   certificate: DeviceCertificate,
 ) => {
@@ -303,6 +306,57 @@ export class Conversation {
     );
   }
 
+  /**
+   * Finds which of the device's unused key packages a welcome is for, so
+   * the device can join with it and then discard it.
+   */
+  static async keyPackageFor(
+    welcome: Uint8Array,
+    bundles: readonly KeyPackageBundle[],
+  ): Promise<KeyPackageBundle | undefined> {
+    const refs = decode(welcome, "mls_welcome").welcome.secrets.map(
+      (secret) => secret.newMember,
+    );
+    const { hash } = await loadSuite();
+    for (const bundle of bundles) {
+      const ref = await makeKeyPackageRef(
+        bundle.secret.reveal().publicPackage,
+        hash,
+      );
+      if (refs.some((candidate) => bytesEqual(candidate, ref))) return bundle;
+    }
+    return undefined;
+  }
+
+  /**
+   * The group state for the device's encrypted storage (ADR-0010 §10). Only
+   * a settled state is exported; a commit still waiting for the server is
+   * not part of it, and is made again after a restart.
+   */
+  async export(): Promise<Secret<Uint8Array>> {
+    return this.#serially(
+      async () => new Secret(encodeGroupState(this.#state)),
+    );
+  }
+
+  /**
+   * A conversation from its stored state, under today's policy. The state is
+   * decoded from a copy, so the caller may wipe `stored` afterwards.
+   */
+  static restore(stored: Uint8Array, policy: ConversationPolicy): Conversation {
+    const [state] = decodeGroupState(stored.slice(), 0) ?? [];
+    if (!state) throw new Error("invalid group state");
+    return new Conversation(
+      { ...state, clientConfig: clientConfig(policy) },
+      policy,
+    );
+  }
+
+  /** The MLS group id: the conversation and its generation. */
+  get groupId(): string {
+    return fromUtf8(this.#state.groupContext.groupId);
+  }
+
   get epoch(): bigint {
     return this.#state.groupContext.epoch;
   }
@@ -317,6 +371,18 @@ export class Conversation {
         ? [{ ref: refOf(this.#state, index / 2), leafIndex: index / 2 }]
         : [],
     );
+  }
+
+  /**
+   * The members this device no longer trusts (revoked, under a replaced
+   * account key, or no longer a participant): the ones it may remove.
+   */
+  untrustedMembers(): DeviceRef[] {
+    return this.#leaves()
+      .filter(({ leafIndex }) =>
+        mayBeRemoved(this.#state, this.#policy, leafIndex),
+      )
+      .map(({ ref }) => ref);
   }
 
   /** Adds devices from their published key packages. */

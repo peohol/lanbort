@@ -12,6 +12,7 @@ export {
   KEY_PACKAGE_LIFETIME_SECONDS,
   conversationAuthenticator,
   createKeyPackage,
+  currentlyTrusted,
 } from "./conversation";
 export {
   type AccountKey,
@@ -32,10 +33,31 @@ export {
   verifyDeviceCertificate,
   verifyDeviceRevocation,
 } from "./identity";
+export {
+  type LinkRequestKeys,
+  type PendingLink,
+  approveLink,
+  linkCode,
+  matchLinkRequest,
+  normalizeLinkCode,
+  readLinkQr,
+  startLink,
+} from "./linking";
+export {
+  exportAccountKey,
+  exportDevice,
+  exportKeyPackage,
+  importAccountKey,
+  importDevice,
+  importKeyPackage,
+} from "./persist";
+export { type AccountIdentity, securityCode } from "./safety";
 export { Secret, wipe } from "./secret";
 export { CIPHERSUITE } from "./suite";
 export {
   type AccountKeyObservation,
+  type MemoryTrustStore,
+  type TrustSnapshot,
   type TrustStore,
   acceptChangedAccountKey,
   applyRevocation,

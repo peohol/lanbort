@@ -287,6 +287,8 @@ Serveren er bare leveringstjenesten for ende-til-ende-kryptert chat ([ADR-0010](
 - «Fjern fra mine samtaler» (PS-COM-009) skjuler samtalen bare for den som ber om det, til neste melding.
 - Fartsgrenser: `chatMessages` for meldinger og commits, `chatKeys` for nøkler og enheter, `chatResets` for tilbakestilling, og `contact` for å starte en samtale.
 - Nye samtaletyper (WP-44) legges til i `conversationKinds` med egne regler. Tilbakekalling og tilbakestilling gjøres på nytt etter gjenoppretting, og alle samtaler starter ny generasjon (`chat.restart_groups`).
+- **Av til Port C:** `/api/chat` svarer `not_found` og Samtaler sier at chat ikke er tilgjengelig, med mindre `CHAT_ENABLED=true` (`chatOnly`, `chatEnabled`). Den er satt lokalt og i CI, aldri i et miljø med ekte brukere før Port C er oppfylt.
+- **Klienten** (`apps/web/src/chat`): bare filer som starter med `"use client"` importerer `@lanbort/e2ee`. Alt enheten vet, ligger i IndexedDB, kryptert med en AES-GCM-nøkkel som ikke kan eksporteres. `ChatEngine` gjør én tilstandsendring om gangen og lagrer ny gruppetilstand før chifferteksten sendes, så ingen nøkkel brukes to ganger. Én fane per nettleser kjører chatten (Web Locks). Chatsidene får egne sikkerhetshoder fra `proxy.ts`: CSP med nonce og uten `'unsafe-inline'` for skript, og kamera bare på godkjenningssiden. En side nådd ved navigasjon inne i appen lastes på nytt, fordi den ellers kjører under den første sidens hoder.
 
 ## Vennskap og blokkering
 

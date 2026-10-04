@@ -1,7 +1,7 @@
-import AxeBuilder from "@axe-core/playwright";
 import { type BrowserContext, expect, type Page, test } from "@playwright/test";
 import {
   accountId,
+  axeViolations,
   blankMapTile,
   collectBrowserProblems,
   newEmail,
@@ -23,12 +23,6 @@ const viewports = {
   phone: { width: 320, height: 640 },
   desktop: { width: 1280, height: 800 },
 } as const;
-
-/**
- * WCAG 2.2 level A and AA as the automated bar. The legal target is set
- * before public launch (PS-NFR-010, Port E); this is the floor until then.
- */
-const wcagTags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 interface World {
   readonly loanId: string;
@@ -188,26 +182,6 @@ async function open(
   await page.goto(path);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   return { page, problems };
-}
-
-/**
- * The WCAG rules that fail, by rule and element, for a readable diff. The
- * sticky header and navigation cover a different strip of the page at every
- * scroll position, so for this they lie in the flow; that they never cover
- * what has focus is what `keyboardProblems` checks.
- */
-async function axeViolations(page: Page) {
-  const unstuck = await page.addStyleTag({
-    content: ".app-header, .main-navigation { position: static !important }",
-  });
-  const { violations } = await new AxeBuilder({ page })
-    .withTags(wcagTags)
-    .analyze();
-  await unstuck.evaluate((style) => (style as Element).remove());
-
-  return violations.flatMap(({ id, nodes }) =>
-    nodes.map(({ target }) => `${id}: ${target.join(" ")}`),
-  );
 }
 
 /** UX-A11Y-001, WCAG 1.4.10: nothing needs scrolling sideways. */

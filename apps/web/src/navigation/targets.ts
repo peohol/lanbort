@@ -3,6 +3,7 @@ import type {
   NotificationTargetType,
 } from "@lanbort/contracts";
 import { accountHref } from "./areas";
+import { chatDevicesHref } from "./chat";
 
 interface Place {
   /** The page that shows the target. */
@@ -35,7 +36,7 @@ const targetPages: Record<NotificationTargetType, Place | null> = {
   case: null,
   object_question: null,
   object_subscription: null,
-  chat_device: null,
+  chat_device: entryOn(chatDevicesHref, (id) => `enhet-${id}`),
 };
 
 export function hrefFor(target: NotificationTarget): string | null {
