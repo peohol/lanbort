@@ -53,7 +53,9 @@ export function SignInForm() {
     }
 
     router.replace(
-      result.data.accountStatus === "active" ? "/" : "/registrering",
+      result.data.accountStatus === "pending_registration"
+        ? "/registrering"
+        : "/",
     );
     router.refresh();
   }

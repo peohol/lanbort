@@ -1,4 +1,8 @@
-import { listCoOwnerInvitations, listOwnObjects } from "@lanbort/domain";
+import {
+  listCoOwnerInvitations,
+  listOwnObjects,
+  takesNewActivity,
+} from "@lanbort/domain";
 import type { Metadata } from "next";
 import { ActionButton } from "@/components/action-button";
 import { anchorFor } from "@/navigation/targets";
@@ -8,7 +12,7 @@ export const metadata: Metadata = { title: "Mine ting – Lånbort" };
 
 /** Mine ting (UX-IA-001): the objects the user owns or co-owns. */
 export default async function ThingsPage() {
-  await requirePageAccount();
+  const account = await requirePageAccount();
   const [owned, invited] = await Promise.all([
     pageQuery(listOwnObjects, {}),
     pageQuery(listCoOwnerInvitations, {}),
@@ -35,11 +39,14 @@ export default async function ThingsPage() {
                   Du er invitert til å bli medeier
                 </span>
                 <div className="actions">
-                  <ActionButton
-                    label="Bli medeier"
-                    path="/api/object-invitations/accept"
-                    body={{ invitationId: invitation.id }}
-                  />
+                  {/* Becoming an owner is new; declining is not (PS-ADM-002). */}
+                  {takesNewActivity(account.status) && (
+                    <ActionButton
+                      label="Bli medeier"
+                      path="/api/object-invitations/accept"
+                      body={{ invitationId: invitation.id }}
+                    />
+                  )}
                   <ActionButton
                     label="Avslå"
                     path="/api/object-invitations/decline"

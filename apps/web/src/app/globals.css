@@ -221,6 +221,18 @@ button:disabled {
   padding: 1.5rem 0;
 }
 
+/* Why the account is not active, above every page (PS-ADM-002). */
+.account-notice {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--muted-border);
+  border-radius: 0.5rem;
+}
+
+.account-notice p {
+  margin: 0 0 0.5rem;
+}
+
 @media (min-width: 48rem) {
   .main-navigation {
     inset: 3.75rem auto 0 0;

@@ -1,6 +1,12 @@
 import { randomUUID } from "node:crypto";
+import { readEmailCode } from "@lanbort/auth/testing";
 import { expect, test } from "@playwright/test";
-import { newEmail, registerThroughApi, signInThroughApi } from "./helpers";
+import {
+  collectBrowserProblems,
+  newEmail,
+  registerThroughApi,
+  signInThroughApi,
+} from "./helpers";
 
 /** WP-53 end to end: deactivation, reactivation and deletion of the own account. */
 const key = () => ({ "Idempotency-Key": randomUUID() });
@@ -86,5 +92,69 @@ test.describe("account lifecycle API", () => {
       realName: null,
       email,
     });
+  });
+});
+
+test.describe("the own account in the browser", () => {
+  test("an account at rest keeps its pages, says why, and comes back", async ({
+    page,
+  }) => {
+    const problems = collectBrowserProblems(page);
+    await registerThroughApi(page.request, newEmail(), "Hvile Konto");
+    const notice = page.locator(".account-notice");
+
+    await page.goto("/konto");
+    await expect(page.getByText("Kontoen din er aktiv.")).toBeVisible();
+    await page.getByRole("button", { name: "Deaktiver kontoen" }).click();
+    await expect(notice).toContainText("Kontoen din er deaktivert.");
+
+    // Home stays, with what it still has; Finn finds nothing new for it.
+    await page.goto("/");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Hei, Hvile Konto",
+    );
+    await expect(notice).toBeVisible();
+    await page.goto("/finn");
+    await expect(
+      page.getByText("Du kan ikke finne nye ting mens kontoen ikke er aktiv."),
+    ).toBeVisible();
+
+    await notice.getByRole("link", { name: "Se hva du kan gjøre" }).click();
+    await page.getByRole("button", { name: "Ta kontoen i bruk igjen" }).click();
+    await expect(page.getByText("Kontoen din er aktiv.")).toBeVisible();
+    await expect(notice).toHaveCount(0);
+    expect(problems).toEqual([]);
+  });
+
+  test("deleting the account shows what goes and what stays, and asks for a new code", async ({
+    page,
+  }) => {
+    const email = await registerThroughApi(
+      page.request,
+      newEmail(),
+      "Slett Meg",
+    );
+
+    await page.goto("/konto");
+    await expect(page.getByText("Dette forsvinner:")).toBeVisible();
+    await expect(
+      page.getByText("Dette består, uten navnet ditt:"),
+    ).toBeVisible();
+
+    // Local Auth allows one code per address per second (max_frequency).
+    await page.waitForTimeout(1100);
+    const since = new Date();
+    await page
+      .getByRole("button", { name: "Slett kontoen", exact: true })
+      .click();
+    await page
+      .getByLabel("Kode fra e-posten")
+      .fill(await readEmailCode(email, { since }));
+    await page.getByRole("button", { name: "Slett kontoen for godt" }).click();
+
+    await expect(
+      page.getByRole("link", { name: "Logg inn eller opprett konto" }),
+    ).toBeVisible();
+    expect((await page.request.get("/api/account")).status()).toBe(401);
   });
 });
