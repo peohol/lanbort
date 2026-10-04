@@ -1,6 +1,6 @@
 import type { ReturnOutcome } from "@lanbort/contracts";
 import { afterAll, describe, expect, it } from "vitest";
-import { systemActor, type UserActor } from "../actor";
+import type { UserActor } from "../actor";
 import { executeQuery } from "../commands/query";
 import { leaveEnvironment } from "../environment/membership-commands";
 import { leaveObject } from "../objects/co-owners";
@@ -11,7 +11,6 @@ import { proposeLoanAmendment, withdrawLoanAmendment } from "./amendments";
 import { approveLoanRequest } from "./approval";
 import { cancelLoan } from "./cancellation";
 import { reportHandover } from "./handover";
-import { returnProcess } from "./policies";
 import { readLoan } from "./queries";
 import {
   acceptResponsibilityTransfer,
@@ -22,7 +21,7 @@ import {
   withdrawResponsibilityTransfer,
 } from "./responsibility";
 import { recordLenderUnavailability } from "./responsibility-store";
-import { concludeReturns, reportReturn, undoReturn } from "./return";
+import { reportReturn, undoReturn } from "./return";
 
 /**
  * WP-35: the transfer of the responsible lender (PS-LOAN-009), a co-owner's
@@ -35,7 +34,11 @@ import { concludeReturns, reportReturn, undoReturn } from "./return";
 const db = connectTestDatabase();
 afterAll(() => db.destroy());
 
-const kit = loanTestKit(db);
+// Other files move their clocks days ahead and run the scheduled return
+// job, which makes every confirmation that is due, so this file's clock
+// starts a year ahead: what waits here waits until these tests say. This
+// file runs no global job itself, so it never reaches into theirs.
+const kit = loanTestKit(db, { startInDays: 365 });
 const {
   run,
   tick,
@@ -83,6 +86,18 @@ const say = (
 
 const sayNow = (actor: UserActor, loanId: string, outcome: ReturnOutcome) =>
   say(actor, loanId, outcome, true);
+
+/**
+ * Makes the loan's due confirmations, as the scheduled job would, but for
+ * this loan only: every loan command does that first, and the lender
+ * repeating that it was handed over changes nothing else.
+ */
+const settle = (lender: UserActor, loanId: string) =>
+  run(reportHandover, lender, {
+    loanId,
+    agreementVersion: 1,
+    outcome: "handed_over",
+  });
 
 const loanOf = (actor: UserActor, loanId: string) =>
   executeQuery(tick(), readLoan, { actor, input: { loanId } });
@@ -478,7 +493,7 @@ describe("voluntary transfer (PS-LOAN-009)", () => {
     const { transferId } = await offer(owner, loanId, coOwner);
     await accept(coOwner, loanId, transferId);
     kit.advance(undoBuffer);
-    await run(concludeReturns, systemActor(returnProcess), {});
+    await settle(coOwner, loanId);
 
     expect((await stored(loanId)).status).toBe("active");
     expect(
@@ -677,7 +692,7 @@ describe("a co-owner's narrow receipt (PS-LOAN-015)", () => {
     await say(coOwner, loanId, "received");
     await run(leaveObject, coOwner, { objectId });
     kit.advance(undoBuffer);
-    await run(concludeReturns, systemActor(returnProcess), {});
+    await settle(owner, loanId);
 
     expect((await stored(loanId)).status).toBe("active");
     expect(
