@@ -26,7 +26,8 @@ export interface Runtime {
 
 /**
  * Side effects run from the outbox (ADR-0004, ADR-0008): image file cleanup
- * and the in-app notifications (WP-40). E-mail delivery arrives with WP-41.
+ * and the in-app notifications (WP-40). Notification e-mails have their own
+ * queue and job (`notification-emails.ts`).
  */
 export const outboxConsumers = new ConsumerRegistry([
   objectImageFileCleanup({

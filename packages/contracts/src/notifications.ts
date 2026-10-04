@@ -17,7 +17,7 @@ export const notificationLevelSchema = z.enum(notificationLevels);
 
 /**
  * Where a user can be told. In-app is the notification centre; e-mail is the
- * pilot's external reserve channel (WP-41). Web push is not decided (OD-0004).
+ * pilot's external reserve channel. Web push is not decided (OD-0004).
  */
 export const notificationChannels = ["in_app", "email"] as const;
 export const notificationChannelSchema = z.enum(notificationChannels);
@@ -75,6 +75,27 @@ export const notificationKinds = {
 } as const satisfies Record<string, NotificationLevel>;
 
 export type NotificationKind = keyof typeof notificationKinds;
+
+/**
+ * The kinds that always go out by verified e-mail as the pilot's reserve
+ * channel («Kanalstandard for pilot»): time-critical events in an approved
+ * loan, each one of the examples vision 06 gives under «Påkrevde varsler».
+ * Kansellering and forslag til endring; kommende and passert returtid; behov
+ * for returavklaring (and its handover counterpart, with the 72-hour
+ * deadline); konflikthendelser og vesentlige avvik. This is a rule per kind,
+ * not a channel choice. Other required kinds stay in the app only, until
+ * OD-0004 settles the channels per kind and level.
+ */
+export const emailReserveKinds = [
+  "loan.cancelled",
+  "loan.amendment_proposed",
+  "loan.handover_day_passed",
+  "loan.handover_reported",
+  "loan.return_due",
+  "loan.return_day_passed",
+  "loan.return_reported",
+  "loan.possession_uncertain",
+] as const satisfies readonly NotificationKind[];
 
 export const notificationKindSchema = z.enum(
   Object.keys(notificationKinds) as [NotificationKind, ...NotificationKind[]],
@@ -162,11 +183,11 @@ interface ChannelRule {
 /**
  * PS-COM-003 and the pilot's channel standard: required and action
  * notifications are always in the app, information can be turned off
- * entirely, and the external channel can be turned off for action and
- * information. E-mail is the reserve channel for security and time-critical
- * loan events only, so it starts off for the other two levels. How e-mail
- * applies to required notifications is the external delivery's (WP-41);
- * final defaults per channel are OD-0004.
+ * entirely, and the external channel can be chosen for action and
+ * information and starts off. The level is about the app only: whether a
+ * required notification goes out by e-mail follows from its kind
+ * ({@link emailReserveKinds}), not from a channel choice. Final defaults per
+ * channel are OD-0004.
  */
 export const notificationChannelRules = {
   required: { in_app: { configurable: false, default: true } },

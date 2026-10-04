@@ -26,13 +26,15 @@ export interface OutboxBatchResult {
   dead: number;
 }
 
+/** 30 s, 1 min, 2 min, … capped at 1 h. */
+export const defaultRetryDelaySeconds = (attempt: number) =>
+  Math.min(30 * 2 ** (attempt - 1), 3600);
+
 const defaults = {
   batchSize: 20,
   leaseSeconds: 120,
   maxAttempts: 10,
-  // 30 s, 1 min, 2 min, … capped at 1 h.
-  retryDelaySeconds: (attempt: number) =>
-    Math.min(30 * 2 ** (attempt - 1), 3600),
+  retryDelaySeconds: defaultRetryDelaySeconds,
 } satisfies Required<OutboxWorkerOptions>;
 
 interface ClaimedMessage {

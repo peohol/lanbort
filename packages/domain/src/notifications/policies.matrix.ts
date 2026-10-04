@@ -4,12 +4,14 @@ import { type PolicyCase, policyMatrix } from "../authorization/policy-matrix";
 import type { DenialReason } from "../errors";
 import { testUserActor } from "../testing/actors";
 import {
+  deliverNotificationEmailsPolicy,
   listNotificationsPolicy,
   markAllNotificationsReadPolicy,
   markNotificationsReadPolicy,
   type NotificationsResource,
   notificationCaseQueueProcess,
   notificationDeadlineProcess,
+  notificationEmailProcess,
   notifyCaseQueueReturnsPolicy,
   notifyLoanDeadlinesPolicy,
   readNotificationPreferencesPolicy,
@@ -112,4 +114,5 @@ export const notificationMatrices = [
   notificationsMatrix(markAllNotificationsReadPolicy),
   jobMatrix(notifyLoanDeadlinesPolicy, notificationDeadlineProcess),
   jobMatrix(notifyCaseQueueReturnsPolicy, notificationCaseQueueProcess),
+  jobMatrix(deliverNotificationEmailsPolicy, notificationEmailProcess),
 ];
