@@ -89,10 +89,23 @@ export async function findChannel(
   channelId: string,
   options: { lock?: "share" | "update" } = {},
 ): Promise<LoanLogisticsChannelRecord | null> {
+  if (
+    options.lock &&
+    !(await db
+      .selectFrom("app.loan_logistics_channels")
+      .select("id")
+      .where("id", "=", channelId)
+      .$if(options.lock === "share", (query) => query.forShare())
+      .$if(options.lock === "update", (query) => query.forUpdate())
+      .executeTakeFirst())
+  ) {
+    return null;
+  }
+
+  // Read in a statement of its own once the channel is held: one that
+  // waited for the lock would still see its conversation as it was before.
   const row = await channels(db)
     .where("channel.id", "=", channelId)
-    .$if(options.lock === "share", (query) => query.forShare())
-    .$if(options.lock === "update", (query) => query.forUpdate())
     .executeTakeFirst();
 
   return row ? toChannel(row) : null;
@@ -103,13 +116,15 @@ export async function findOpenChannel(
   db: Db,
   loanId: string,
 ): Promise<LoanLogisticsChannelRecord | null> {
-  const row = await channels(db)
-    .where("channel.loan_id", "=", loanId)
-    .where("channel.closed_at", "is", null)
+  const open = await db
+    .selectFrom("app.loan_logistics_channels")
+    .select("id")
+    .where("loan_id", "=", loanId)
+    .where("closed_at", "is", null)
     .forUpdate()
     .executeTakeFirst();
 
-  return row ? toChannel(row) : null;
+  return open ? findChannel(db, open.id) : null;
 }
 
 /**

@@ -532,6 +532,38 @@ describe("messages (ADR-0010, WP-43)", () => {
     expect(value).toMatchObject(forbidden);
   });
 
+  it("gives both parties the same conversation when they start it at once", async () => {
+    const { owner, borrower, channelId } = await blockedLoan(() =>
+      reservedLoan(),
+    );
+    let started = "";
+
+    // The borrower's start holds the channel and is still open when the
+    // owner's comes: the owner's waits and then finds the conversation.
+    const { value } = await commitWhileRacing(
+      db,
+      async (tx) => {
+        await sql`select id from app.loan_logistics_channels where id = ${channelId} for update`.execute(
+          tx,
+        );
+        const { rows } = await sql<{ id: string }>`
+          insert into app.chat_conversations (
+            kind, loan_logistics_channel_id, opened_via, created_by_user_id
+          ) values ('loan_logistics', ${channelId}, 'loan_logistics', ${borrower.userId})
+          returning id
+        `.execute(tx);
+        started = rows[0]!.id;
+        await sql`
+          insert into app.chat_participants (conversation_id, user_id)
+          values (${started}, ${borrower.userId}), (${started}, ${owner.userId})
+        `.execute(tx);
+      },
+      () => startChat(owner, channelId),
+    );
+
+    expect(value).toEqual({ conversationId: started });
+  });
+
   it("cannot be started once the channel has closed without one", async () => {
     const { owner, channelId } = await blockedLoan(() => reservedLoan());
     await closeForSafety(channelId);
