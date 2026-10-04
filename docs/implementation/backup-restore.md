@@ -14,7 +14,7 @@ Hostede miljøer ligger på Supabase Free, som ikke har automatisk backup ([ADR-
 
 Pilotmålene i [arkitektur 09](../architecture/09-datalivssyklus-backup-og-gjenoppretting.md) (RPO ≤ 24 timer, RTO ≤ 8 timer) gjelder fra piloten, ikke nå. Etterarbeidet (`pnpm ops:restore finish`) tok rundt to sekunder i øvelsen, så RTO avhenger i praksis av hvor lang tid selve gjenopprettingen tar.
 
-Verken en dump eller en Supabase-backup inneholder filene i Supabase Storage (objektbilder), bare databasen. En fil lastet opp etter dumpen blir foreldreløs og slettes av etterarbeidet. En fil som er slettet, kommer aldri tilbake.
+Verken en dump eller en Supabase-backup inneholder filene i Supabase Storage (objektbilder), bare databasen. Ved gjenoppretting i samme prosjekt blir en fil lastet opp etter backupen foreldreløs og slettes av etterarbeidet. Ved gjenoppretting til et nytt prosjekt blir filene liggende i det gamle prosjektet, som derfor avvikles (steg 8 i fremgangsmåten). En fil som er slettet, kommer aldri tilbake.
 
 ## Manuell dump ved milepæler
 
@@ -62,6 +62,7 @@ Fremgangsmåten er den samme om backupen er en manuell dump eller, senere, en ba
    Kommandoen kan kjøres flere ganger; det som er gjort, gjøres ikke igjen. Svarer den `Ready to open`, er databasen klar.
 6. **Åpne appen** ved å oppheve pausen. Outbox-arbeideren sletter da innloggingsidentitetene til slettede kontoer og foreldreløse bildefiler.
 7. **Fortell brukerne** hvilket tidsrom som gikk tapt, så de kan gjøre det de gjorde da, på nytt.
+8. **Avvikle det gamle prosjektet** når det nye er åpnet og fungerer, hvis gjenopprettingen gikk til et nytt prosjekt. Det gamle inneholder fortsatt slettede data og bildefiler som det nye ikke kjenner til, og som etterarbeidet derfor ikke kan slette. Kopier først over bilder som fortsatt hører til objekter i den gjenopprettede databasen, og slett deretter prosjektet. Sletting kan ikke angres og gjøres bare etter klarsignal fra produkteier.
 
 `pnpm ops:restore verify` kjører bare migrasjonssjekken og sjekkene, for eksempel etter en vanlig vedlikeholdsjobb.
 

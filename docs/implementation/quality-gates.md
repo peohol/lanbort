@@ -40,7 +40,7 @@ Må være oppfylt:
 - autorisasjons-/personverntest WP-70 er grønn
 - samtidighets-/idempotensstresstest WP-71 er grønn
 - backup/restore WP-72 er gjennomført, også én gjenoppretting mot et hostet miljø
-- backupnivået for piloten er besluttet av produkteier (ADR-0009); før dette er betalt backup ingen forutsetning for noen port
+- backupnivået for piloten er besluttet av produkteier (ADR-0009), satt opp i produksjon og verifisert med en gjenoppretting; før denne beslutningen er betalt backup ingen forutsetning for noen port
 - rate limiting og misbruksvern er aktivert
 - produksjonshemmeligheter er skilt fra utvikling
 - OD-0002 har minst en eksplisitt pilot-retentionpolicy
