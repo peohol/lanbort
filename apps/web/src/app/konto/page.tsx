@@ -44,8 +44,17 @@ function People({
       <ul className="entries">
         {people.map((person) => (
           <li key={person.userId} className="entry">
-            <strong>{person.realName ?? "Ukjent navn"}</strong>
-            <div className="actions">{actions(person)}</div>
+            <strong id={`person-${person.userId}`}>
+              {person.realName ?? "Ukjent navn"}
+            </strong>
+            {/* The buttons are named with the person they are about. */}
+            <div
+              className="actions"
+              role="group"
+              aria-labelledby={`person-${person.userId}`}
+            >
+              {actions(person)}
+            </div>
           </li>
         ))}
       </ul>

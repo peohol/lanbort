@@ -67,7 +67,7 @@ CI starter en isolert lokal Supabase-database, bygger den fra alle migrasjoner, 
 | --- | --- |
 | `quality` | Lint, typecheck, enhetstester, Prettier og produksjonsbygg (`pnpm check`) |
 | `database` | Migrasjoner fra tom database, pgTAP, typekontroll mot skjema og integrasjonstester mot databasen (`pnpm test:integration`) |
-| `e2e` | Playwright mot produksjonsbygget og lokal Supabase: røyktest (CSP, sikkerhetshoder, helse), registrering og innlogging med e-postkode, utlogging, ny innlogging og negative API-tester |
+| `e2e` | Playwright mot produksjonsbygget og lokal Supabase: røyktest (CSP, sikkerhetshoder, helse), registrering og innlogging med e-postkode, utlogging, ny innlogging og negative API-tester. `accessibility.spec.ts` går gjennom alle kjernesidene på mobil og desktop (WP-65): WCAG 2.2 A/AA med axe, ingen sidelengs scrolling, berøringsmål på minst 44 px, tastaturrekkefølge med synlig og udekket fokus, dobbel tekststørrelse, redusert bevegelse og tekstlig nettstatus. En ny side trenger bare en linje i `pages` der |
 | `security` | `pnpm audit` for produksjonsavhengigheter, selvtest av Gitleaks og skanning av hele git-historikken |
 
 CI har bare lesetilgang til repoet (`permissions: contents: read`), og avhengigheter installeres med `--frozen-lockfile`.
@@ -79,6 +79,8 @@ CI har bare lesetilgang til repoet (`permissions: contents: read`), og avhengigh
 Se [servergrense og autorisasjon](server-boundary.md) for hvordan nye API-er, policyer og kommandoer skal bygges.
 
 ## Kjente begrensninger i grunnlaget
+
+- Den automatiske tilgjengelighetsgjennomgangen erstatter ikke manuell testing med skjermleser og forstørrelse på ekte enheter. Den hører til tilgjengelighetsgjennomgangen i Port E, sammen med det endelige WCAG-målet (PS-NFR-010).
 
 - CSP tillater `'unsafe-inline'` for skript fordi Next.js trenger det uten nonce-basert CSP. Innstramming vurderes før Port C (privat chat). `next dev` får i tillegg `'unsafe-eval'`, aldri produksjonsbygget.
 - Det finnes ennå ikke hostet staging- eller produksjonsmiljø på Vercel/Supabase. Når det etableres, trenger serveren `SUPABASE_SECRET_KEY` i plattformens hemmelighetslager for objektbilder; uten den svarer bilde-API-ene `unavailable`. E-postvarsler trenger `RESEND_API_KEY` (hemmelig), `NOTIFICATION_EMAIL_FROM` (avsender på et verifisert domene) og `APP_URL` (appens offentlige adresse); uten dem venter e-postkøen. Lokalt og i CI sendes ingen varslings-e-post.

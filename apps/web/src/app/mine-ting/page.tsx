@@ -34,11 +34,17 @@ export default async function ThingsPage() {
                 className="entry"
                 tabIndex={-1}
               >
-                <strong>{invitation.object.title}</strong>
+                <strong id={`tittel-${invitation.id}`}>
+                  {invitation.object.title}
+                </strong>
                 <span className="entry-detail">
                   Du er invitert til å bli medeier
                 </span>
-                <div className="actions">
+                <div
+                  className="actions"
+                  role="group"
+                  aria-labelledby={`tittel-${invitation.id}`}
+                >
                   {/* Becoming an owner is new; declining is not (PS-ADM-002). */}
                   {takesNewActivity(account.status) && (
                     <ActionButton

@@ -125,7 +125,7 @@ function History({
         ))}
       </ol>
       {more && (
-        <p>
+        <p className="link-row">
           <a href={more}>Vis eldre hendelser</a>
         </p>
       )}
@@ -156,7 +156,7 @@ export default async function LoanPage({
 
   return (
     <main>
-      <p>
+      <p className="link-row">
         <Link href="/lan">Alle lån</Link>
       </p>
       <h1>{loan.agreement.title}</h1>

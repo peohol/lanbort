@@ -12,14 +12,19 @@ body {
   min-height: 100vh;
 }
 
+/* A long word breaks rather than push the page sideways (UX-A11Y-007). */
 main {
   width: min(42rem, calc(100% - 2rem));
   margin: 0 auto;
   padding: 4rem 0;
+  overflow-wrap: anywhere;
 }
 
+/* One column that never grows wider than the screen, even when large text
+   makes a field's natural width wider than that (UX-A11Y-007). */
 form {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
   max-width: 28rem;
 }
@@ -54,20 +59,31 @@ button[type="submit"] {
   font-weight: 600;
 }
 
-button:disabled {
+button:disabled,
+[aria-disabled="true"] {
   cursor: progress;
-  opacity: 0.6;
+  opacity: 0.75;
 }
 
-:focus-visible {
+/* A field shows its focus however it got it; a date field's parts too. */
+:focus-visible,
+:is(input, select, textarea):is(:focus, :focus-within) {
   outline: 3px solid Highlight;
   outline-offset: 2px;
 }
 
+/* The box and its label make one target a finger can hit (UX-A11Y-006). */
 .checkbox {
   display: flex;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0 0.5rem;
   align-items: center;
+}
+
+.checkbox label {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
 }
 
 .checkbox input {
@@ -89,14 +105,47 @@ button:disabled {
   font-weight: 600;
 }
 
+/* Said to assistive technology, not shown. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* UX-A11Y-009: without a network, in words at the top of every page. */
+.network-status {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  border-bottom: 3px solid currentColor;
+}
+
 /* App shell (UX-IA-001–003): header, five areas, content. Mobile first:
    the areas sit at the bottom of a narrow screen and at the side of a wide
-   one, the same list in the same order (UX-A11Y-001). */
+   one, the same list in the same order (UX-A11Y-001). The navigation takes
+   its own place in the layout instead of a fixed one over the content, so
+   larger text makes it taller without hiding the end of the page
+   (UX-A11Y-007), and what gets focus is scrolled clear of the header and
+   the navigation (WCAG 2.4.11). */
 :root {
+  --header-height: 3.75rem;
   --nav-height: 4rem;
   --nav-width: 13rem;
   --surface: Canvas;
   --muted-border: color-mix(in srgb, CanvasText 25%, transparent);
+  scroll-padding: calc(var(--header-covers, var(--header-height)) + 0.5rem) 0
+    calc(var(--nav-covers, var(--nav-height)) + 1rem);
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .skip-link {
@@ -119,9 +168,11 @@ button:disabled {
   top: 0;
   z-index: 5;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.5rem 1rem;
+  min-height: var(--header-height);
   padding: 0.5rem 1rem;
   background: var(--surface);
   border-bottom: 1px solid var(--muted-border);
@@ -138,6 +189,14 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-left: auto;
+}
+
+/* Icons grow with the text next to them. */
+.header-actions svg,
+.main-navigation svg {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .notification-indicator,
@@ -174,19 +233,28 @@ button:disabled {
 }
 
 .main-navigation {
-  position: fixed;
-  inset: auto 0 0 0;
+  position: sticky;
+  bottom: 0;
+  order: 1;
   z-index: 5;
   background: var(--surface);
   border-top: 1px solid var(--muted-border);
 }
 
+/* Each area is as wide as its label needs and shares what is left; when
+   large text leaves too little room, the areas wrap to a second row instead
+   of breaking words (UX-A11Y-007). */
 .main-navigation ul {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.main-navigation li {
+  flex: 1 0 auto;
+  max-width: 100%;
 }
 
 .main-navigation a {
@@ -199,6 +267,7 @@ button:disabled {
   padding: 0.25rem;
   font-size: 0.8rem;
   text-align: center;
+  overflow-wrap: anywhere;
   color: inherit;
   text-decoration: none;
 }
@@ -210,7 +279,9 @@ button:disabled {
 }
 
 .app-content {
-  padding-bottom: calc(var(--nav-height) + 1rem);
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 1rem;
 }
 
 .app-content:focus {
@@ -234,16 +305,41 @@ button:disabled {
 }
 
 @media (min-width: 48rem) {
+  :root {
+    scroll-padding-bottom: 0;
+  }
+
+  .app-shell {
+    display: grid;
+    grid-template:
+      "header header" auto
+      "navigation content" 1fr
+      / var(--nav-width) minmax(0, 1fr);
+  }
+
+  .app-header {
+    grid-area: header;
+  }
+
   .main-navigation {
-    inset: 3.75rem auto 0 0;
-    width: var(--nav-width);
+    grid-area: navigation;
+    top: var(--header-covers, var(--header-height));
+    bottom: auto;
+    align-self: start;
+    max-height: calc(100dvh - var(--header-covers, var(--header-height)));
+    overflow-y: auto;
     border-top: 0;
     border-right: 1px solid var(--muted-border);
   }
 
   .main-navigation ul {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    flex-wrap: nowrap;
     padding: 0.5rem;
+  }
+
+  .main-navigation li {
+    flex: none;
   }
 
   .main-navigation a {
@@ -256,7 +352,7 @@ button:disabled {
   }
 
   .app-content {
-    margin-left: var(--nav-width);
+    grid-area: content;
     padding-bottom: 2rem;
   }
 }
@@ -280,6 +376,20 @@ button:disabled {
 
 .entry:target {
   outline: 3px solid Highlight;
+}
+
+/* Links that stand on their own, not in running text, are targets a finger
+   aims at (UX-A11Y-006). */
+.entry a,
+.link-row a {
+  display: inline-flex;
+  align-items: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
+.link-row {
+  margin: 0.5rem 0;
 }
 
 .entry-detail,
@@ -338,21 +448,31 @@ button:disabled {
 }
 
 details > summary {
+  min-height: 2.75rem;
   cursor: pointer;
-  padding: 0.625rem 0;
+  padding: 0.75rem 0;
   font-weight: 600;
 }
 
+/* Like the form around it: never wider than the screen. */
 fieldset {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 0.5rem;
   margin: 0 0 1rem;
   border: 1px solid var(--muted-border);
   border-radius: 0.375rem;
 }
 
+/* UX-A11Y-008: nothing moves by itself when less motion is asked for. */
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
 }

@@ -64,7 +64,7 @@ export function LoanList({
         </ul>
       )}
       {more && (
-        <p>
+        <p className="link-row">
           <a href={more}>Vis flere {heading.toLowerCase()}</a>
         </p>
       )}

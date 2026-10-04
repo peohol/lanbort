@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { countUnreadNotifications } from "@lanbort/domain";
+import { Announcer } from "@/components/announcer";
 import { AppShell } from "@/components/app-shell";
+import { NetworkStatus } from "@/components/network-status";
 import { restingNotice } from "@/presentation/account";
 import { getPageAccount, pageQuery } from "@/server/session";
 import "./globals.css";
@@ -26,6 +28,7 @@ export default async function RootLayout({
   return (
     <html lang="nb">
       <body>
+        <NetworkStatus />
         {signedIn ? (
           <AppShell
             realName={account.realName ?? ""}
@@ -37,6 +40,7 @@ export default async function RootLayout({
         ) : (
           children
         )}
+        <Announcer />
       </body>
     </html>
   );

@@ -3,7 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { postJson } from "./api-client";
+import { BusyButton } from "./busy-button";
 import { errorMessage } from "./error-messages";
+import { ErrorText } from "./error-text";
 
 export function SignOutButton() {
   const router = useRouter();
@@ -26,14 +28,10 @@ export function SignOutButton() {
 
   return (
     <>
-      <button type="button" onClick={() => void signOut()} disabled={pending}>
+      <BusyButton type="button" onClick={() => void signOut()} busy={pending}>
         Logg ut
-      </button>
-      {error && (
-        <p role="alert" className="error">
-          {error}
-        </p>
-      )}
+      </BusyButton>
+      <ErrorText>{error}</ErrorText>
     </>
   );
 }

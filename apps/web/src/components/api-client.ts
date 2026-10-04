@@ -9,8 +9,11 @@ function nonJsonErrorCode(status: number): ApiErrorCode {
   return status >= 500 ? "unavailable" : "internal_error";
 }
 
+/** Why a call failed: the API's own code, or no answer at all. */
+export type ApiFailureCode = ApiErrorCode | "network";
+
 export type ApiResult<T> =
-  { ok: true; data: T } | { ok: false; code: ApiErrorCode | "network" };
+  { ok: true; data: T } | { ok: false; code: ApiFailureCode };
 
 /**
  * Same-origin JSON calls to Lånbort's API. Session cookies are HttpOnly and
