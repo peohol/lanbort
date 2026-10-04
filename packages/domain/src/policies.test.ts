@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { accountMatrices } from "./account/policies.matrix";
+import { caseMatrices } from "./cases/policies.matrix";
 import { environmentMatrices } from "./environment/policies.matrix";
 import { loanMatrices } from "./loans/policies.matrix";
 import { notificationMatrices } from "./notifications/policies.matrix";
@@ -15,6 +16,7 @@ import { allPolicies } from "./policies";
 import { publicationMatrices } from "./publications/policies.matrix";
 import { reviewMatrices } from "./reviews/policies.matrix";
 import { socialMatrices } from "./social/policies.matrix";
+import { trustMatrices } from "./trust/policies.matrix";
 
 /**
  * Port A: authorization has both positive and negative automated tests.
@@ -31,6 +33,8 @@ const matrices: readonly PolicyMatrix<never, never>[] = [
   ...reviewMatrices,
   ...socialMatrices,
   ...notificationMatrices,
+  ...caseMatrices,
+  ...trustMatrices,
 ] as never;
 
 describe("policy coverage", () => {

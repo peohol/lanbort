@@ -50,6 +50,16 @@ export const notificationEmailSubjects = {
   "environment.requirements_changed":
     "Kravene i et miljø du er med i er endret",
   "object.co_owner_invited": "Du er invitert til å bli medeier av et objekt",
+  "loan.ended_unresolved":
+    "Et lån er avsluttet som uavklart, og kontroll over objektet må bekreftes",
+  "case.opened": "En sak du er part i er åpnet",
+  "case.waiting": "En sak venter på behandling",
+  "case.assigned": "En sak du er med i har fått en behandler",
+  "case.assigned_to_you": "En sak er gitt videre til deg",
+  "case.your_turn": "Det er din tur til å skrive i en sak",
+  "case.entry_added": "Det er skrevet noe nytt i en sak",
+  "case.statements_shared": "Innleggene i en sak er delt",
+  "case.closed": "En sak du er med i er lukket",
 } as const satisfies Record<NotificationKind, string>;
 
 /** Why the recipient gets the e-mail at all (PS-COM-003). */

@@ -54,6 +54,11 @@ const nonUserRoutes: Record<
     reason:
       "decides proposed type changes at their deadline, authenticated with the cron secret",
   },
+  "GET /api/internal/case-queue-returns": {
+    access: "scheduler",
+    reason:
+      "tells handlers about cases returned to the queue, authenticated with the cron secret",
+  },
   "GET /api/internal/loan-handovers": {
     access: "scheduler",
     reason:

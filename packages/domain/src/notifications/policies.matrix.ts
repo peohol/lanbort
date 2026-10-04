@@ -9,8 +9,10 @@ import {
   markAllNotificationsReadPolicy,
   markNotificationsReadPolicy,
   type NotificationsResource,
+  notificationCaseQueueProcess,
   notificationDeadlineProcess,
   notificationEmailProcess,
+  notifyCaseQueueReturnsPolicy,
   notifyLoanDeadlinesPolicy,
   readNotificationPreferencesPolicy,
   setNotificationPreferencePolicy,
@@ -90,19 +92,10 @@ const notificationsMatrix = (policy: Policy<NotificationsResource, void>) =>
     ),
   ]);
 
-export const notificationMatrices = [
-  ownMatrix(listNotificationsPolicy),
-  ownMatrix(readNotificationPreferencesPolicy),
-  ownMatrix(setNotificationPreferencePolicy),
-  notificationsMatrix(markNotificationsReadPolicy),
-  notificationsMatrix(markAllNotificationsReadPolicy),
-  policyMatrix(notifyLoanDeadlinesPolicy, [
-    expectCase(
-      "the deadline job",
-      systemActor(notificationDeadlineProcess),
-      undefined,
-      "allow",
-    ),
+/** Only its own scheduled job may run it. */
+const jobMatrix = (policy: Policy<void, void>, process: string) =>
+  policyMatrix(policy, [
+    expectCase("the job", systemActor(process), undefined, "allow"),
     expectCase(
       "another system process",
       systemActor("loan.returns"),
@@ -111,21 +104,15 @@ export const notificationMatrices = [
     ),
     expectCase("a signed-in user", me, undefined, "forbidden"),
     expectCase("anonymous caller", anonymousActor, undefined, "forbidden"),
-  ]),
-  policyMatrix(deliverNotificationEmailsPolicy, [
-    expectCase(
-      "the e-mail job",
-      systemActor(notificationEmailProcess),
-      undefined,
-      "allow",
-    ),
-    expectCase(
-      "the deadline job",
-      systemActor(notificationDeadlineProcess),
-      undefined,
-      "forbidden",
-    ),
-    expectCase("a signed-in user", me, undefined, "forbidden"),
-    expectCase("anonymous caller", anonymousActor, undefined, "forbidden"),
-  ]),
+  ]);
+
+export const notificationMatrices = [
+  ownMatrix(listNotificationsPolicy),
+  ownMatrix(readNotificationPreferencesPolicy),
+  ownMatrix(setNotificationPreferencePolicy),
+  notificationsMatrix(markNotificationsReadPolicy),
+  notificationsMatrix(markAllNotificationsReadPolicy),
+  jobMatrix(notifyLoanDeadlinesPolicy, notificationDeadlineProcess),
+  jobMatrix(notifyCaseQueueReturnsPolicy, notificationCaseQueueProcess),
+  jobMatrix(deliverNotificationEmailsPolicy, notificationEmailProcess),
 ];

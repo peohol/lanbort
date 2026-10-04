@@ -1,6 +1,7 @@
 import type { ResponsibilityTransferKind } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
+import { awaitingControl } from "./reservations";
 
 /**
  * Database access for the transfer of the responsible lender and the narrow
@@ -341,9 +342,10 @@ export async function completeTransfer(
 
 /**
  * The loans a co-owner who is not their party may act on now: an open
- * transfer to them, or a responsible lender established as unavailable
- * while they could step in. Only candidates: each is decided with the
- * same rules as the commands.
+ * transfer to them, a responsible lender established as unavailable while
+ * they could step in, or a loan that ended unresolved while nobody has
+ * confirmed having the object back (PS-LOAN-019). Only candidates: each is
+ * decided with the same rules as the commands.
  */
 export async function coOwnerLoanIds(
   db: Db,
@@ -358,20 +360,25 @@ export async function coOwnerLoanIds(
     )
     .select("loan.id")
     .where("owner.user_id", "=", userId)
-    .where("loan.status", "<>", "ended")
     .where("loan.responsible_lender_id", "<>", userId)
     .where("loan.borrower_user_id", "<>", userId)
     .where((eb) =>
       eb.or([
-        eb.exists(
-          eb
-            .selectFrom("app.loan_lender_transfers as transfer")
-            .select("transfer.id")
-            .whereRef("transfer.loan_id", "=", "loan.id")
-            .where("transfer.to_user_id", "=", userId)
-            .where("transfer.status", "=", "proposed"),
-        ),
-        sql<boolean>`app.loan_lender_unavailable(loan)`,
+        eb.and([
+          eb("loan.status", "<>", "ended"),
+          eb.or([
+            eb.exists(
+              eb
+                .selectFrom("app.loan_lender_transfers as transfer")
+                .select("transfer.id")
+                .whereRef("transfer.loan_id", "=", "loan.id")
+                .where("transfer.to_user_id", "=", userId)
+                .where("transfer.status", "=", "proposed"),
+            ),
+            sql<boolean>`app.loan_lender_unavailable(loan)`,
+          ]),
+        ]),
+        awaitingControl,
       ]),
     )
     .orderBy("loan.approved_at")

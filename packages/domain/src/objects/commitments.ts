@@ -25,7 +25,7 @@ export interface ObjectCommitmentSource {
   ): Promise<readonly ObjectCommitment[]>;
 }
 
-/** Reserved loans (WP-31); later loan statuses join through the same source. */
+/** Loans that hold the object, or ended unresolved and await control. */
 export const objectCommitmentSources: readonly ObjectCommitmentSource[] = [
   loanCommitments,
 ];

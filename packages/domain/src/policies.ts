@@ -1,5 +1,6 @@
 import type { Policy } from "./authorization/policy";
 import { accountPolicies } from "./account/policies";
+import { casePolicies } from "./cases/policies";
 import { environmentPolicies } from "./environment/policies";
 import { loanRequestPolicies } from "./loans/policies";
 import { notificationPolicies } from "./notifications/policies";
@@ -9,6 +10,7 @@ import { platformPolicies } from "./platform/policies";
 import { publicationPolicies } from "./publications/policies";
 import { reviewPolicies } from "./reviews/policies";
 import { socialPolicies } from "./social/policies";
+import { trustPolicies } from "./trust/policies";
 
 /**
  * Every policy in the system. `policies.test.ts` requires each one to have a
@@ -24,5 +26,7 @@ export const allPolicies: readonly Policy<never, never>[] = [
   ...reviewPolicies,
   ...socialPolicies,
   ...notificationPolicies,
+  ...casePolicies,
+  ...trustPolicies,
   processOutboxPolicy,
 ];

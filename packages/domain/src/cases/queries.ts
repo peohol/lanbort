@@ -1,0 +1,253 @@
+import {
+  type Case,
+  type CaseList,
+  caseListQuerySchema,
+  casePageSize,
+  caseReferenceSchema,
+  type CaseSummary,
+  environmentCaseQueueQuerySchema,
+  platformCaseQueueQuerySchema,
+} from "@lanbort/contracts";
+import { defineQuery } from "../commands/query";
+import { loadEnvironmentAccess } from "../environment/store";
+import { actingUserId, inSnapshot } from "../objects/state";
+import { loadCase } from "./commands";
+import {
+  type CaseRecord,
+  handlingOf,
+  sharedUpTo,
+  sharedWithParties,
+  visibleToParticipant,
+} from "./model";
+import {
+  listEnvironmentCaseQueuePolicy,
+  listOwnCasesPolicy,
+  listPlatformCaseQueuePolicy,
+  readCasePolicy,
+} from "./policies";
+import {
+  handledBy,
+  listCases,
+  loadActions,
+  loadEntries,
+  loadHandlingState,
+  loadParticipants,
+} from "./store";
+
+/**
+ * A case as the caller sees it. A participant sees their own entries, what
+ * was written to them, and whether someone handles it; a handler's entries
+ * come from the function, not the person. A handler sees all of it, with its
+ * history. A case holds only what was written in it: never private chat
+ * (PS-COM-013).
+ */
+export const readCase = defineQuery({
+  name: "case.read",
+  input: caseReferenceSchema,
+  policy: readCasePolicy,
+  load: ({ db, actor, input, now }) =>
+    inSnapshot(db, async (tx) => {
+      const loaded = await loadCase(tx, actor, input.caseId, now);
+
+      if (!loaded) {
+        return null;
+      }
+
+      // Nothing more is read for callers the policy will turn away.
+      const { participant, standing } = loaded.resource;
+      const reads =
+        participant !== null || (standing.holdsRole && !standing.involved);
+
+      return {
+        resource: {
+          ...loaded.resource,
+          participants: reads ? await loadParticipants(tx, input.caseId) : [],
+          entries: reads ? await loadEntries(tx, input.caseId) : [],
+          actions: reads ? await loadActions(tx, input.caseId) : [],
+          handling: await loadHandlingState(tx, input.caseId, now),
+        },
+        context: undefined,
+      };
+    }),
+  present: ({ actor, resource }): Case => {
+    const c = resource.case;
+    const userId = actingUserId(actor);
+    const asParty = resource.participant !== null;
+    const shared = sharedUpTo(resource.actions);
+    const { assigneeUserId, handlerAvailable } = resource.handling;
+    const open = c.status === "open";
+
+    return {
+      id: c.id,
+      kind: c.kind,
+      status: c.status,
+      viewer: asParty ? "party" : "handler",
+      environmentId: c.environmentId,
+      loanId: c.loanId,
+      subjectUserId: c.subjectUserId,
+      openedAt: c.openedAt.toISOString(),
+      closedAt: c.closedAt?.toISOString() ?? null,
+      handling: handlingOf(assigneeUserId, handlerAvailable),
+      assigneeUserId: asParty ? null : assigneeUserId,
+      mayWrite: asParty
+        ? open && (resource.participant?.mayWrite ?? false)
+        : open && (assigneeUserId === null || assigneeUserId === userId),
+      participants: resource.participants.map((participant) => ({
+        userId: participant.userId,
+        role: participant.role,
+        mayWrite: open && participant.mayWrite,
+      })),
+      entries: resource.entries
+        .filter(
+          (entry) =>
+            !asParty || visibleToParticipant(entry, userId, c.kind, shared),
+        )
+        .map((entry) => ({
+          id: entry.id,
+          capacity: entry.capacity,
+          authorUserId:
+            asParty && entry.capacity === "handler" ? null : entry.authorUserId,
+          audience: entry.audience,
+          toUserId: entry.audienceUserId,
+          shared: sharedWithParties(entry, c.kind, shared),
+          body: entry.body,
+          correctsEntryId: entry.correctsEntryId,
+          createdAt: entry.createdAt.toISOString(),
+        })),
+      history: asParty
+        ? []
+        : resource.actions.map((action) => ({
+            kind: action.kind,
+            actorUserId: action.actorUserId,
+            targetUserId: action.targetUserId,
+            reason: action.reason,
+            at: action.at.toISOString(),
+          })),
+    };
+  },
+});
+
+function summary(
+  item: {
+    readonly record: CaseRecord;
+    readonly assigneeUserId: string | null;
+    readonly handlerAvailable: boolean;
+  },
+  asHandler: boolean,
+): CaseSummary {
+  const { record } = item;
+
+  return {
+    id: record.id,
+    kind: record.kind,
+    status: record.status,
+    environmentId: record.environmentId,
+    loanId: record.loanId,
+    openedAt: record.openedAt.toISOString(),
+    closedAt: record.closedAt?.toISOString() ?? null,
+    handling: handlingOf(item.assigneeUserId, item.handlerAvailable),
+    assigneeUserId: asHandler ? item.assigneeUserId : null,
+  };
+}
+
+const toList = (
+  page: Awaited<ReturnType<typeof listCases>>,
+  asHandler: boolean,
+): CaseList => ({
+  items: page.items.map((item) => summary(item, asHandler)),
+  nextCursor: page.nextCursor,
+});
+
+/** The caller's own cases as a participant, newest first (UX-IA-007). */
+export const listOwnCases = defineQuery({
+  name: "case.list_own",
+  input: caseListQuerySchema,
+  policy: listOwnCasesPolicy,
+  load: ({ db, actor, input, now }) =>
+    inSnapshot(db, async (tx) => {
+      const userId = actingUserId(actor);
+      const page = await listCases(
+        tx,
+        (query) =>
+          query.where((eb) =>
+            eb.exists(
+              eb
+                .selectFrom("app.case_participants as participant")
+                .select("participant.user_id")
+                .whereRef("participant.case_id", "=", "c.id")
+                .where("participant.user_id", "=", userId),
+            ),
+          ),
+        { cursor: input.cursor, pageSize: casePageSize, now },
+      );
+
+      return { resource: toList(page, false), context: undefined };
+    }),
+  present: ({ resource }) => resource,
+});
+
+/**
+ * The environment's cases its administrator may handle (UX-IA-007): not
+ * those they are involved in (UX-JRN-012).
+ */
+export const listEnvironmentCaseQueue = defineQuery({
+  name: "case.list_environment_queue",
+  input: environmentCaseQueueQuerySchema,
+  policy: listEnvironmentCaseQueuePolicy,
+  load: ({ db, actor, input, now }) =>
+    inSnapshot(db, async (tx) => {
+      const access = await loadEnvironmentAccess(
+        tx,
+        input.environmentId,
+        actor,
+        now,
+      );
+
+      if (!access) {
+        return null;
+      }
+
+      // Nothing more is read for callers the policy will turn away.
+      const page =
+        actor.kind === "user" && access.viewer.roles.includes("administrator")
+          ? await listCases(
+              tx,
+              (query) =>
+                query
+                  .where("c.environment_id", "=", input.environmentId)
+                  .where("c.status", "=", input.status)
+                  .where(handledBy(actor.userId, now)),
+              { cursor: input.cursor, pageSize: casePageSize, now },
+            )
+          : { items: [], nextCursor: null };
+
+      return {
+        resource: { ...access, list: toList(page, true) },
+        context: undefined,
+      };
+    }),
+  present: ({ resource }) => resource.list,
+});
+
+/** The unavailability reports a platform steward may handle. */
+export const listPlatformCaseQueue = defineQuery({
+  name: "case.list_platform_queue",
+  input: platformCaseQueueQuerySchema,
+  policy: listPlatformCaseQueuePolicy,
+  load: ({ db, actor, input, now }) =>
+    inSnapshot(db, async (tx) => {
+      const userId = actingUserId(actor);
+      const page = await listCases(
+        tx,
+        (query) =>
+          query
+            .where("c.kind", "=", "unavailability_report")
+            .where("c.status", "=", input.status)
+            .where(handledBy(userId, now)),
+        { cursor: input.cursor, pageSize: casePageSize, now },
+      );
+
+      return { resource: toList(page, true), context: undefined };
+    }),
+  present: ({ resource }) => resource,
+});
