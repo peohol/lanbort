@@ -3,7 +3,7 @@ import type {
   NotificationLevel,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import type { Kysely } from "kysely";
+import { type Kysely, sql } from "kysely";
 import { accountStatuses } from "../account/store";
 import {
   distinctDrafts,
@@ -11,6 +11,7 @@ import {
   levelOf,
   type NotificationDraft,
   type PreferenceChoice,
+  sendsEmail,
   shownInApp,
 } from "./model";
 
@@ -43,6 +44,10 @@ export async function loadPreferences(db: Db, userIds: readonly string[]) {
   );
 }
 
+/** What made a notification; unique per recipient. */
+const sourceKeyOf = (source: string, draft: NotificationDraft) =>
+  `${source}/${draft.kind}/${draft.target.id}`;
+
 /**
  * Puts the drafts of one source (an event, or a deadline) in the recipients'
  * notification centres, as of `occurredAt`. A draft whose level the
@@ -50,8 +55,10 @@ export async function loadPreferences(db: Db, userIds: readonly string[]) {
  * notification is keyed by its source, kind and target, so making the same
  * source again (a redelivered event, a repeated job run) changes nothing.
  * A deleted account is told nothing any more (PS-ADM-006). This is the one
- * way notifications are made; external delivery (WP-41) starts from what it
- * inserts.
+ * way notifications are made. Those that also go out by e-mail
+ * ({@link sendsEmail}) are queued for delivery here too; queueing looks the
+ * notifications up by their keys, so a repeated run also queues what an
+ * interrupted one did not.
  */
 export async function recordNotifications(
   db: Db,
@@ -63,14 +70,16 @@ export async function recordNotifications(
   const recipients = [...new Set(distinct.map((draft) => draft.recipientId))];
   const preferences = await loadPreferences(db, recipients);
   const statuses = await accountStatuses(db, recipients);
+  const chosen = (draft: NotificationDraft) =>
+    preferences.get(draft.recipientId);
   const shown = distinct.filter((draft) => {
-    const chosen = preferences.get(draft.recipientId);
+    const choices = chosen(draft);
     const status = statuses.get(draft.recipientId);
     return (
-      chosen !== undefined &&
+      choices !== undefined &&
       status !== undefined &&
       status !== "deleted" &&
-      shownInApp(levelOf(draft.kind), chosen)
+      shownInApp(levelOf(draft.kind), choices)
     );
   });
 
@@ -88,7 +97,7 @@ export async function recordNotifications(
         detail: draft.detail ?? null,
         target_type: draft.target.type,
         target_id: draft.target.id,
-        source_key: `${source}/${draft.kind}/${draft.target.id}`,
+        source_key: sourceKeyOf(source, draft),
         occurred_at: occurredAt,
       })),
     )
@@ -98,7 +107,47 @@ export async function recordNotifications(
     .returning("id")
     .execute();
 
+  await queueEmails(
+    db,
+    source,
+    shown.filter((draft) => sendsEmail(draft.kind, chosen(draft)!)),
+  );
+
   return inserted.length;
+}
+
+/** Queues one e-mail per notification made from these drafts, once. */
+async function queueEmails(
+  db: Db,
+  source: string,
+  drafts: readonly NotificationDraft[],
+): Promise<void> {
+  if (drafts.length === 0) {
+    return;
+  }
+
+  await db
+    .insertInto("app.notification_deliveries")
+    .columns(["notification_id", "channel"])
+    .expression((eb) =>
+      eb
+        .selectFrom("app.notifications")
+        .select(["id", sql.lit("email").as("channel")])
+        .where((where) =>
+          where.or(
+            drafts.map((draft) =>
+              where.and([
+                where("recipient_id", "=", draft.recipientId),
+                where("source_key", "=", sourceKeyOf(source, draft)),
+              ]),
+            ),
+          ),
+        ),
+    )
+    .onConflict((conflict) =>
+      conflict.columns(["notification_id", "channel"]).doNothing(),
+    )
+    .execute();
 }
 
 export async function countUnread(db: Db, userId: string): Promise<number> {

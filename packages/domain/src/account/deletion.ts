@@ -237,7 +237,8 @@ const platformRolesStep: AccountDeletionStep = {
 
 /**
  * PS-ADM-006: the profile, verified contact addresses, stored command
- * results, and the account's own notifications and preferences go. What remains of the account is its internal id, its state and
+ * results, and the account's own notifications, their waiting e-mails and its
+ * preferences go. What remains of the account is its internal id, its state and
  * the records of its changes, so shared history (loans, requests, events)
  * keeps its references but shows no name. How long the remaining history is
  * kept is not decided (OD-0002), so nothing here removes it.
@@ -253,6 +254,18 @@ const personalDataStep: AccountDeletionStep = {
     await db
       .deleteFrom("app.idempotency_records")
       .where("scope", "=", userScope(userId))
+      .execute();
+    // E-mails still waiting go with their notifications, so nothing is sent
+    // afterwards (WP-41). A send under way holds its delivery; this waits
+    // for it, and a send that has not started finds nothing to send.
+    await db
+      .deleteFrom("app.notification_deliveries")
+      .where("notification_id", "in", (eb) =>
+        eb
+          .selectFrom("app.notifications")
+          .select("id")
+          .where("recipient_id", "=", userId),
+      )
       .execute();
     await db
       .deleteFrom("app.notifications")

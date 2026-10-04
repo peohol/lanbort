@@ -53,7 +53,8 @@ function identityAdmin(): IdentityProviderAdmin | undefined {
 /**
  * Side effects run from the outbox (ADR-0004, ADR-0008): image file cleanup,
  * the in-app notifications (WP-40) and removing a deleted account's sign-in
- * identity (WP-53). E-mail delivery arrives with WP-41.
+ * identity (WP-53). Notification e-mails have their own queue and job
+ * (`notification-emails.ts`).
  */
 export const outboxConsumers = new ConsumerRegistry([
   objectImageFileCleanup({

@@ -294,19 +294,27 @@ describe("deleting an account (PS-ADM-005–006)", () => {
       kind: "direct",
     });
 
-    // Its own notification and notification preference.
-    await db
-      .insertInto("app.notifications")
-      .values({
-        recipient_id: leaving.userId,
-        kind: "loan.request_received",
-        level: "action",
-        target_type: "loan_request",
-        target_id: requestId,
-        source_key: `test:${requestId}`,
-        occurred_at: kit.now(),
-      })
-      .execute();
+    // Its own notification, the e-mail waiting to tell of it (WP-41), and a
+    // notification preference.
+    await recordNotifications(db, "test", kit.now(), [
+      {
+        recipientId: leaving.userId,
+        kind: "loan_request.received",
+        target: { type: "loan_request", id: requestId },
+      },
+    ]);
+    const deliveries = () =>
+      db
+        .selectFrom("app.notification_deliveries as delivery")
+        .innerJoin(
+          "app.notifications as notification",
+          "notification.id",
+          "delivery.notification_id",
+        )
+        .select("delivery.status")
+        .where("notification.recipient_id", "=", leaving.userId)
+        .execute();
+    expect(await deliveries()).toEqual([{ status: "pending" }]);
     await db
       .insertInto("app.notification_preferences")
       .values({
@@ -327,6 +335,8 @@ describe("deleting an account (PS-ADM-005–006)", () => {
         .where("recipient_id", "=", leaving.userId)
         .execute(),
     ).toEqual([]);
+    // Its waiting e-mail went with it: nothing is sent afterwards.
+    expect(await deliveries()).toEqual([]);
     expect(
       await db
         .selectFrom("app.notification_preferences")
