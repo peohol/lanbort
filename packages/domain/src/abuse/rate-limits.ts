@@ -32,6 +32,11 @@ export const rateLimits = {
   contact: rule("contact", 60, hours),
   /** Invitations to environments, roles and co-ownership. */
   invitations: rule("invitations", 60, hours),
+  /**
+   * Writing in cases, where a participant may submit copies of private
+   * messages with what they write (WP-46).
+   */
+  caseEntries: rule("case_entries", 60, hours),
   /** Reports to administrators and platform stewards. */
   reports: rule("reports", 20, hours),
   /** Finding and looking up others: search, profiles, environments, relations. */

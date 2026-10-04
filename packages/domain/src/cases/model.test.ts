@@ -22,6 +22,7 @@ const entry = (
   audience: "parties",
   audienceUserId: null,
   body: "Forklaring",
+  privateMessages: [],
   correctsEntryId: null,
   createdAt: new Date("2026-10-20T12:00:00Z"),
   position: BigInt(position),

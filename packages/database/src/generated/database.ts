@@ -123,6 +123,16 @@ export interface AppCaseEntries {
   position: Generated<Int8>;
 }
 
+export interface AppCaseEntryPrivateMessages {
+  body: string;
+  conversation_id: string;
+  entry_id: string;
+  message_id: string;
+  ordinal: number;
+  sender_user_id: string;
+  sent_at: Timestamp;
+}
+
 export interface AppCaseParticipants {
   case_id: string;
   joined_at: Timestamp;
@@ -841,6 +851,7 @@ export interface DB {
   "app.case_action_notices": AppCaseActionNotices;
   "app.case_actions": AppCaseActions;
   "app.case_entries": AppCaseEntries;
+  "app.case_entry_private_messages": AppCaseEntryPrivateMessages;
   "app.case_participants": AppCaseParticipants;
   "app.cases": AppCases;
   "app.environment_access_restrictions": AppEnvironmentAccessRestrictions;

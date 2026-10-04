@@ -98,22 +98,62 @@ export const caseEntryBodySchema = z
   .max(4000)
   .regex(multilineText);
 
+/** The most private messages one entry carries a copy of. */
+export const privateMessageCopyLimit = 50;
+
+/** The most private messages one participant submits to one case. */
+export const privateMessagesPerCaseLimit = 200;
+
+/**
+ * PS-COM-013 (WP-46, ADR-0010): a readable copy of one private message the
+ * party chose in their own history on their device, where it was decrypted.
+ * The case gets only what was sent in, never the conversation or a key. The
+ * party vouches for it: Lånbort cannot prove that the text, the sender or
+ * the time is as it was in the chat.
+ */
+export const privateMessageCopySchema = z.strictObject({
+  conversationId: z.uuid(),
+  messageId: z.uuid(),
+  senderUserId: z.uuid(),
+  sentAt: z.iso.datetime(),
+  body: caseEntryBodySchema,
+});
+
+export const privateMessageCopiesSchema = z
+  .array(privateMessageCopySchema)
+  .min(1)
+  .max(privateMessageCopyLimit)
+  .refine(
+    (copies) =>
+      new Set(copies.map((copy) => copy.messageId)).size === copies.length,
+    { message: "Each message once" },
+  );
+
+/**
+ * What a participant writes: their text, and the private messages they
+ * explicitly chose to submit with it.
+ */
+export const partyStatement = {
+  body: caseEntryBodySchema,
+  privateMessages: privateMessageCopiesSchema.optional(),
+};
+
 /** PS-COM-010: a member writes to the environment's administrators. */
 export const openEnvironmentContactSchema = z.strictObject({
   environmentId: z.uuid(),
-  body: caseEntryBodySchema,
+  ...partyStatement,
 });
 
 /** A party asks for mediation of the loan, with their first statement. */
 export const openLoanMediationSchema = z.strictObject({
   loanId: loanIdSchema,
-  body: caseEntryBodySchema,
+  ...partyStatement,
 });
 
 /** PS-COM-015: a report about `userId`, with what the reporter knows. */
 export const reportUnavailabilitySchema = z.strictObject({
   userId: z.uuid(),
-  body: caseEntryBodySchema,
+  ...partyStatement,
 });
 
 /**
@@ -128,13 +168,14 @@ export const caseOpenedResultSchema = z.strictObject({
 
 /**
  * Something written in a case. A participant writes to the case and gives
- * no audience. A handler names the audience, and `toUserId` with `party`.
- * `correctsEntryId` names the caller's own earlier entry this corrects; the
- * original stays as it was (PS-COM-014).
+ * no audience, and may submit private messages with it. A handler names the
+ * audience, and `toUserId` with `party`. `correctsEntryId` names the
+ * caller's own earlier entry this corrects; the original stays as it was
+ * (PS-COM-014).
  */
 export const writeCaseEntrySchema = z.strictObject({
   caseId: caseIdSchema,
-  body: caseEntryBodySchema,
+  ...partyStatement,
   audience: caseAudienceSchema.optional(),
   toUserId: z.uuid().optional(),
   correctsEntryId: caseEntryIdSchema.optional(),
@@ -177,6 +218,8 @@ export const caseEntrySchema = z.strictObject({
   /** Whether every participant sees it. */
   shared: z.boolean(),
   body: z.string(),
+  /** Private messages the participant who wrote it submitted, by time sent. */
+  privateMessages: z.array(privateMessageCopySchema),
   correctsEntryId: caseEntryIdSchema.nullable(),
   createdAt: z.iso.datetime(),
 });
@@ -281,6 +324,11 @@ export type CaseCapacity = z.infer<typeof caseCapacitySchema>;
 export type CaseHandling = z.infer<typeof caseHandlingSchema>;
 export type CaseActionKind = z.infer<typeof caseActionKindSchema>;
 export type CaseQueueReturnReason = z.infer<typeof caseQueueReturnReasonSchema>;
+export type PrivateMessageCopy = z.infer<typeof privateMessageCopySchema>;
+export type PartyStatement = {
+  readonly body: string;
+  readonly privateMessages?: readonly PrivateMessageCopy[] | undefined;
+};
 export type WriteCaseEntry = z.infer<typeof writeCaseEntrySchema>;
 export type CaseOpenedResult = z.infer<typeof caseOpenedResultSchema>;
 export type CaseEntryResult = z.infer<typeof caseEntryResultSchema>;

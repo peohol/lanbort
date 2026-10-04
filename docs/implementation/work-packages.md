@@ -132,6 +132,8 @@ Sakstyper, partstilgang, tildeling, habilitet og separate forklaringsrunder.
 **Krav:** PS-COM-013  
 Lokal dekryptering og eksplisitt innsendt kopi uten bakdør til privat chat.
 
+**Status:** Serversiden er ferdig: en deltaker kan sende inn en lesbar kopi av valgte private meldinger sammen med det hen skriver i en sak, og kopien blir saksdata (se [servergrensen](server-boundary.md)). Selve valget i samtalen, der meldingene dekrypteres på enheten, bygges i chatvisningen i WP-43. Vedlegg kan ikke sendes inn ennå, fordi verken privat chat eller saker har vedlegg.
+
 ## Fase 5
 
 ### WP-50 — Anmeldelsesrett og dobbelblind publisering

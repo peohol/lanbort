@@ -43,6 +43,15 @@ export interface ParticipantRecord {
   readonly mayWrite: boolean;
 }
 
+/** A private message a participant submitted with an entry (WP-46). */
+export interface PrivateMessageCopyRecord {
+  readonly conversationId: string;
+  readonly messageId: string;
+  readonly senderUserId: string;
+  readonly sentAt: Date;
+  readonly body: string;
+}
+
 /** Entries and actions share one order (`position`). */
 export interface EntryRecord {
   readonly id: string;
@@ -51,6 +60,8 @@ export interface EntryRecord {
   readonly audience: CaseAudience;
   readonly audienceUserId: string | null;
   readonly body: string;
+  /** By time sent; only a participant's entry has any. */
+  readonly privateMessages: readonly PrivateMessageCopyRecord[];
   readonly correctsEntryId: string | null;
   readonly createdAt: Date;
   readonly position: bigint;
