@@ -110,7 +110,7 @@ Mål: brukerne får nødvendig kommunikasjon uten å blande privat chat med syst
 Leveranser:
 - varslingssenter og leveringsworker
 - e-post for pilotkritiske hendelser
-- E2EE privat chat etter avklaring av OD-0005
+- E2EE privat chat etter ADR-0010
 - smal lånelogistikk ved blokkering
 - administrative samtaler og saksmodell
 - eksplisitt innsending av privat meldingsinnhold som saksdokumentasjon

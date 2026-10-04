@@ -26,7 +26,8 @@ Må være oppfylt:
 ## Port C — Før privat chat aktiveres
 
 Må være oppfylt:
-- OD-0005 er avgjort og dokumentert
+- OD-0005 er avgjort og dokumentert ([ADR-0010](../architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md))
+- chatsidene har CSP uten `unsafe-inline` for skript og ingen tredjepartsskript
 - uavhengig kryptografisk designreview av protokollbruken
 - server/database kan ikke lese privat meldingsklartekst under normal drift
 - nøkkel-/enhetstap har definert UX

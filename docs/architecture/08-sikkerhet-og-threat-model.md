@@ -67,7 +67,7 @@
 ### Kompromittert webklient / klientleveranse
 **Risiko:** E2EE beskytter ikke mot kode som kjører inne i selve endepunktet. En kompromittert distribusjon, XSS eller ondsinnet klientkode kan lese klartekst/nøkler før kryptering eller etter dekryptering.
 
-**Tiltak:** streng CSP, minimal tredjepartskode, dependency-/supply-chain-kontroll, sikre deploy-prosesser og eksplisitt sikkerhetsreview av nøkkelhåndtering. Produktet skal ikke beskrive nettleser-E2EE som beskyttelse mot en kompromittert klient. Dersom det senere kreves sterkere beskyttelse mot kompromittert webdistribusjon, må signert/native klient eller tilsvarende vurderes særskilt.
+**Tiltak:** streng CSP, minimal tredjepartskode, dependency-/supply-chain-kontroll, sikre deploy-prosesser og eksplisitt sikkerhetsreview av nøkkelhåndtering. Produktet skal ikke beskrive nettleser-E2EE som beskyttelse mot en kompromittert klient; hva den beskytter mot og ikke, står i [ADR-0010](decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md). Dersom det senere kreves sterkere beskyttelse mot kompromittert webdistribusjon, må signert/native klient eller tilsvarende vurderes særskilt.
 
 ### E2EE-misbruk
 Serveren kan ikke moderere klartekst i privat chat proaktivt. Produktkontroller må derfor være blokkering, rate limits, lokal rapport-/innsendingsfunksjon og metadata-minimerte sikkerhetssignaler. E2EE skal ikke svekkes for å gi generell administratorinnsyn.

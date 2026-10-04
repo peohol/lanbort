@@ -31,4 +31,4 @@ Tekniske utredninger som grunnlag for åpne beslutninger ligger i [`utredninger/
 
 Arkitekturen er konkret nok til å brytes ned i implementeringsarbeid uten å låse leverandørvalg som ikke påvirker domenemodellen. PostgreSQL er valgt som referanse og planlagt transaksjonell kjerne. Fem strukturelle beslutninger er dokumentert som ADR-er.
 
-Åpne spørsmål som må løses før den relevante funksjonen eller bred lansering finnes i [`../open-decisions.md`](../open-decisions.md), særlig E2EE-nøkkelstyring, retention, regulerte objekter og juridisk lanseringsgjennomgang.
+Åpne spørsmål som må løses før den relevante funksjonen eller bred lansering finnes i [`../open-decisions.md`](../open-decisions.md), særlig retention, regulerte objekter og juridisk lanseringsgjennomgang.

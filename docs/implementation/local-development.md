@@ -36,6 +36,7 @@ Innlogging bruker engangskode på e-post. Lokalt havner e-postene i Mailpit på 
 | `packages/email` | Eneste adapter mot e-postleverandøren (Resend) for varslings-e-post. Kun for serverkode |
 | `packages/places` | Eneste adapter mot stedsnavntjenesten (Kartverket) for søk nær et sted. Kun for serverkode |
 | `packages/observability` | Strukturert logging med tillatelsesliste for felt |
+| `packages/e2ee` | Ende-til-ende-kryptering for privat chat (MLS, ADR-0010). Kun for klientkode; serveren importerer den aldri |
 | `supabase/` | Lokal Supabase-konfigurasjon, SQL-migrasjoner og pgTAP-tester |
 
 ## Database og migrasjoner

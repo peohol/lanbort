@@ -112,8 +112,10 @@ E-postlevering via adapter og minimal sensitiv payload. OD-0004 kan ferdigstille
 **Avhenger av:** OD-0005  
 Dokumenter nøkkel-, multi-device- og recovery-modell før meldingsimplementasjon.
 
+**Status:** Ferdig. OD-0005 er avgjort i [ADR-0010](../architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md), med kryptogrunnlaget og testene i `packages/e2ee`. ADR-en beskriver hva WP-43, WP-44 og WP-46 bygger videre på.
+
 ### WP-43 — Privat E2EE-chat
-**Krav:** PS-COM-004–006, PS-NFR-007; ADR-0003  
+**Krav:** PS-COM-004–006, PS-NFR-007; ADR-0003, ADR-0010  
 Ciphertext-lagring, klientkryptering, ingen lesebekreftelser og kontrollert første kontakt.
 
 ### WP-44 — Lånelogistikk ved blokkering

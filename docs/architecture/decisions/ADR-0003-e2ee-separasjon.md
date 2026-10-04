@@ -13,4 +13,4 @@ Lånbort må kunne håndheve avtaler og status uten å ha tilgang til privat sam
 
 ## Sikkerhetsgrense
 
-Beslutningen gir konfidensialitet mot ordinær serverlagring og administrativ tilgang til meldingsinnhold, men kan ikke alene beskytte mot kompromittert kode som kjører i brukerens klient. Webklientens integritet, supply chain og nøkkelhåndtering inngår derfor i trusselmodellen og OD-0005.
+Beslutningen gir konfidensialitet mot ordinær serverlagring og administrativ tilgang til meldingsinnhold, men kan ikke alene beskytte mot kompromittert kode som kjører i brukerens klient. Webklientens integritet, supply chain og nøkkelhåndtering inngår derfor i trusselmodellen og [ADR-0010](ADR-0010-e2ee-protokoll-enheter-og-recovery.md).
