@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { caseEntryBodySchema, caseIdSchema } from "./cases";
+import { caseEntryBodySchema, caseIdSchema, partyStatement } from "./cases";
 import { objectIdSchema } from "./objects";
 import { loanReviewIdSchema, reviewDimensionSchema } from "./reviews";
 
@@ -21,7 +21,7 @@ export const reportInEnvironmentSchema = z.strictObject({
     z.strictObject({ kind: z.literal("user"), userId: z.uuid() }),
     z.strictObject({ kind: z.literal("object"), objectId: objectIdSchema }),
   ]),
-  body: caseEntryBodySchema,
+  ...partyStatement,
 });
 
 /** A user reports a user, an object, a review or a response to the platform. */
@@ -38,7 +38,7 @@ export const reportToPlatformSchema = z.strictObject({
       reviewId: loanReviewIdSchema,
     }),
   ]),
-  body: caseEntryBodySchema,
+  ...partyStatement,
 });
 
 /**

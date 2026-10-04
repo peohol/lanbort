@@ -5,6 +5,7 @@ import {
   caseEntryResultSchema,
   type CaseOpenedResult,
   caseOpenedResultSchema,
+  type PartyStatement,
   caseReferenceSchema,
   openCaseRoundSchema,
   openEnvironmentContactSchema,
@@ -42,7 +43,12 @@ import {
   caseRoundOpened,
   caseStatementsShared,
 } from "./events";
-import { type CaseRecord, caseKinds, type ParticipantRecord } from "./model";
+import {
+  type CaseRecord,
+  caseKinds,
+  type ParticipantRecord,
+  type PrivateMessageCopyRecord,
+} from "./model";
 import {
   type CaseResource,
   claimCasePolicy,
@@ -62,6 +68,7 @@ import {
   findOpenCase,
   insertCase,
   insertEntry,
+  insertPrivateMessages,
   isCaseHandler,
   loadHandlerStanding,
   loadParticipants,
@@ -70,6 +77,7 @@ import {
   related,
   setMayWrite,
   settleAssignment,
+  usersExist,
 } from "./store";
 import { rateLimits } from "../abuse/rate-limits";
 
@@ -186,6 +194,37 @@ async function requireCorrectable(
 }
 
 /**
+ * PS-COM-013 (WP-46): the private messages a participant chose to submit,
+ * in the order they were sent. They come from the participant's own device,
+ * where they were decrypted; the server has no way into the conversation
+ * and checks only that the copy can be what it claims to be.
+ */
+async function privateMessageCopies(
+  db: Db,
+  copies: PartyStatement["privateMessages"],
+  now: Date,
+): Promise<PrivateMessageCopyRecord[]> {
+  const records = (copies ?? [])
+    .map((copy) => ({ ...copy, sentAt: new Date(copy.sentAt) }))
+    .sort((a, b) => a.sentAt.getTime() - b.sentAt.getTime());
+
+  if (records.some((copy) => copy.sentAt > now)) {
+    invalid("privateMessages", "A message cannot be sent after now");
+  }
+
+  if (
+    !(await usersExist(
+      db,
+      records.map((copy) => copy.senderUserId),
+    ))
+  ) {
+    invalid("privateMessages", "Every sender has an account");
+  }
+
+  return records;
+}
+
+/**
  * A participant writes to the case while it is open and it is their turn.
  * In a case with turns, that is one entry; then they wait until a handler
  * opens a new round.
@@ -195,7 +234,7 @@ async function writeAsParticipant(
   events: EventRecorder,
   c: CaseRecord,
   participant: ParticipantRecord,
-  input: Pick<WriteCaseEntry, "body" | "correctsEntryId">,
+  input: PartyStatement & Pick<WriteCaseEntry, "correctsEntryId">,
   now: Date,
 ): Promise<string> {
   if (c.status !== "open") {
@@ -218,6 +257,7 @@ async function writeAsParticipant(
     input.correctsEntryId,
     own,
   );
+  const copies = await privateMessageCopies(tx, input.privateMessages, now);
   const id = await insertEntry(tx, {
     caseId: c.id,
     ...own,
@@ -225,6 +265,8 @@ async function writeAsParticipant(
     correctsEntryId,
     now,
   });
+
+  await insertPrivateMessages(tx, id, copies);
 
   if (caseKinds[c.kind].turns) {
     await setMayWrite(tx, c.id, false, participant.userId);
@@ -249,6 +291,10 @@ async function writeAsHandler(
   now: Date,
 ): Promise<string> {
   const { audience } = input;
+
+  if (input.privateMessages !== undefined) {
+    invalid("privateMessages", "Only a participant submits private messages");
+  }
 
   if (audience === undefined) {
     invalid("audience", "A handler names the audience");
@@ -400,7 +446,7 @@ export async function openOrContinue(
   events: EventRecorder,
   userId: string,
   opening: CaseOpening,
-  body: string,
+  statement: PartyStatement,
   now: Date,
 ): Promise<CaseOpenedResult> {
   const existing = await findOpenCase(tx, opening.key);
@@ -421,7 +467,7 @@ export async function openOrContinue(
         events,
         existing,
         participant,
-        { body },
+        statement,
         now,
       ),
       created: false,
@@ -459,7 +505,7 @@ export async function openOrContinue(
       events,
       opened,
       { ...participant, mayWrite: true },
-      { body },
+      statement,
       now,
     ),
     created: true,
@@ -507,7 +553,7 @@ export const openEnvironmentContact = defineCommand({
         subjectUserId: null,
         participants: [{ userId, role: "requester" }],
       },
-      input.body,
+      input,
       now,
     );
   },
@@ -567,7 +613,7 @@ export const requestLoanMediation = defineCommand({
           { userId: loan.responsibleLenderId, role: "lender" },
         ],
       },
-      input.body,
+      input,
       now,
     );
   },
@@ -626,7 +672,7 @@ export const reportUnavailability = defineCommand({
         subjectUserId: input.userId,
         participants: [{ userId, role: "reporter" }],
       },
-      input.body,
+      input,
       now,
     );
   },
