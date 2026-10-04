@@ -123,11 +123,13 @@ function oneAnswer<O>(
 
 /** Small deterministic generator, so a failing round can be replayed. */
 function seeded(seed: number) {
-  let state = seed;
+  let state = seed >>> 0;
 
+  // Exact 32-bit arithmetic; the low bits of such a generator barely vary,
+  // so the answer comes from the high ones.
   return (below: number) => {
-    state = (state * 1103515245 + 12345) % 2 ** 31;
-    return state % below;
+    state = (Math.imul(state, 1103515245) + 12345) >>> 0;
+    return (state >>> 16) % below;
   };
 }
 
