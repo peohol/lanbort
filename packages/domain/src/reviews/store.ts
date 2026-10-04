@@ -1,6 +1,6 @@
 import type { LoanEndReason, LoanRequestRole } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import { type Kysely, sql } from "kysely";
+import { type Expression, type Kysely, type RawBuilder, sql } from "kysely";
 import type {
   ReviewDimension,
   ReviewScore,
@@ -145,24 +145,10 @@ export async function findReviews(
   }
 
   const rows = await query.execute();
-  const scores =
-    rows.length === 0
-      ? []
-      : await db
-          .selectFrom("app.loan_review_scores as score")
-          .innerJoin("app.review_dimensions as dimension", (join) =>
-            join
-              .onRef("dimension.reviewer_role", "=", "score.reviewer_role")
-              .onRef("dimension.code", "=", "score.dimension"),
-          )
-          .select(["score.review_id", "score.dimension", "score.score"])
-          .where(
-            "score.review_id",
-            "in",
-            rows.map((row) => row.id),
-          )
-          .orderBy("dimension.position")
-          .execute();
+  const scores = await loadReviewScores(
+    db,
+    rows.map((row) => row.id),
+  );
 
   return rows.map((row) => ({
     id: row.id,
@@ -176,9 +162,10 @@ export async function findReviews(
     updatedAt: row.updated_at,
     status: row.status as ReviewRecord["status"],
     publishedAt: row.published_at,
-    scores: scores
-      .filter((score) => score.review_id === row.id)
-      .map((score) => ({ dimension: score.dimension, score: score.score })),
+    scores: (scores.get(row.id) ?? []).map(({ dimension, score }) => ({
+      dimension,
+      score,
+    })),
     response:
       row.response_body === null || row.responded_at === null
         ? null
@@ -331,21 +318,76 @@ export async function lockDueReviewWindows(
   return rows.map(toWindow);
 }
 
+/** A score with whether its dimension rests on the return. */
+export interface StoredScore extends ReviewScore {
+  readonly restsOnReturn: boolean;
+}
+
+/** The scores of the reviews, by review, each in the dimensions' order. */
+export async function loadReviewScores(
+  db: Db,
+  reviewIds: readonly string[],
+): Promise<Map<string, StoredScore[]>> {
+  const scores = new Map<string, StoredScore[]>();
+
+  if (reviewIds.length === 0) {
+    return scores;
+  }
+
+  const rows = await db
+    .selectFrom("app.loan_review_scores as score")
+    .innerJoin("app.review_dimensions as dimension", (join) =>
+      join
+        .onRef("dimension.reviewer_role", "=", "score.reviewer_role")
+        .onRef("dimension.code", "=", "score.dimension"),
+    )
+    .select([
+      "score.review_id",
+      "score.dimension",
+      "score.score",
+      "dimension.rests_on_return",
+    ])
+    .where("score.review_id", "in", [...reviewIds])
+    .orderBy("dimension.position")
+    .execute();
+
+  for (const row of rows) {
+    const review = scores.get(row.review_id) ?? [];
+    review.push({
+      dimension: row.dimension,
+      score: row.score,
+      restsOnReturn: row.rests_on_return,
+    });
+    scores.set(row.review_id, review);
+  }
+
+  return scores;
+}
+
 /**
- * PS-TRUST-008: when a confirmed return of the loan was first contradicted
- * after `since` (a reopening), or null if it was not.
+ * SQL, PS-TRUST-008: when a confirmed return of the loan was first
+ * contradicted after `since` (a reopening), or null if it was not.
  */
+export function reopenedAfter(
+  loanId: Expression<string>,
+  since: Expression<Date | null>,
+): RawBuilder<Date | null> {
+  return sql<Date | null>`(
+    select min(report.reported_at)
+    from app.loan_return_reports as report
+    where report.loan_id = ${loanId}
+      and report.outcome in ('still_has', 'not_received')
+      and report.reported_at > ${since}
+  )`;
+}
+
 export async function reopenedSince(
   db: Db,
   loanId: string,
   since: Date,
 ): Promise<Date | null> {
   const row = await db
-    .selectFrom("app.loan_return_reports")
-    .select((eb) => eb.fn.min("reported_at").as("at"))
-    .where("loan_id", "=", loanId)
-    .where("outcome", "in", ["still_has", "not_received"])
-    .where("reported_at", ">", since)
+    .selectNoFrom(reopenedAfter(sql.val(loanId), sql.val(since)).as("at"))
     .executeTakeFirst();
 
   return row?.at ?? null;

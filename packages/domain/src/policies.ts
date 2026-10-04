@@ -9,6 +9,7 @@ import { platformPolicies } from "./platform/policies";
 import { publicationPolicies } from "./publications/policies";
 import { reviewPolicies } from "./reviews/policies";
 import { socialPolicies } from "./social/policies";
+import { trustPolicies } from "./trust/policies";
 
 /**
  * Every policy in the system. `policies.test.ts` requires each one to have a
@@ -24,5 +25,6 @@ export const allPolicies: readonly Policy<never, never>[] = [
   ...reviewPolicies,
   ...socialPolicies,
   ...notificationPolicies,
+  ...trustPolicies,
   processOutboxPolicy,
 ];

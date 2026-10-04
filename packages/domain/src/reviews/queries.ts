@@ -13,6 +13,7 @@ import {
   otherSide,
   presentedWindowStatus,
   type ReviewDimension,
+  scoreContested,
   type ReviewWindowRecord,
   windowOver,
 } from "./model";
@@ -66,10 +67,8 @@ function present(
   now: Date,
 ): LoanReview {
   const published = publishedAt(review, window, now);
-  const restsOnReturn = new Set(
-    dimensions
-      .filter((dimension) => dimension.restsOnReturn)
-      .map(({ code }) => code),
+  const byCode = new Map(
+    dimensions.map((dimension) => [dimension.code, dimension]),
   );
 
   return {
@@ -80,7 +79,10 @@ function present(
     scores: review.scores.map(({ dimension, score }) => ({
       dimension,
       score,
-      contested: review.reopenedAt !== null && restsOnReturn.has(dimension),
+      contested: scoreContested(
+        byCode.get(dimension) ?? { restsOnReturn: false },
+        review.reopenedAt !== null,
+      ),
     })),
     text: review.text,
     submittedAt: review.submittedAt.toISOString(),

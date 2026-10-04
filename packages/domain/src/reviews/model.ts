@@ -97,6 +97,16 @@ export interface ReviewDimension {
   readonly restsOnReturn: boolean;
 }
 
+/**
+ * PS-TRUST-008: a published score is contested once its loan reopened after
+ * publication, when it rests on the return that was contradicted. It stays
+ * as given, marked, and leaves the aggregates (WP-51).
+ */
+export const scoreContested = (
+  dimension: Pick<ReviewDimension, "restsOnReturn">,
+  reopened: boolean,
+) => reopened && dimension.restsOnReturn;
+
 export interface ReviewScore {
   readonly dimension: string;
   readonly score: number;
