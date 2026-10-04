@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { afterAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { UserActor } from "../actor";
 import {
   acceptRoleInvitation,
@@ -21,13 +21,17 @@ import {
   publishObject,
   reportHandover,
   reportToPlatform,
+  registerChatAccount,
   reportUnavailability,
+  requestChatLink,
   requestLoanMediation,
   resolveUserActor,
   setObjectRestriction,
+  startChatConversation,
   transferCase,
   uploadObjectImage,
 } from "../index";
+import { testChatAccount, testChatDevice } from "../testing/chat";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
 import { loanTestKit } from "../testing/loans";
@@ -85,12 +89,15 @@ const resourceKeys = new Set([
   "questionId",
   "notificationIds",
   "through",
+  "conversationId",
+  "linkRequestId",
 ]);
 
 /**
  * A hidden environment with everything that can live in it: members, an
  * object with a co-owner, its publication, a loan with an amendment and a
- * responsibility offer waiting, pending invitations, a case and a question.
+ * responsibility offer waiting, pending invitations, a case, a question,
+ * the lender's chat with the borrower and a pending chat device link.
  */
 async function hiddenWorld() {
   // A name no other test uses, to look for in everything an outsider reads.
@@ -186,6 +193,29 @@ async function hiddenWorld() {
     body: "Passer den til en liten bil?",
   });
 
+  const chatAccount = testChatAccount(lender.userId);
+  await run(registerChatAccount, lender, {
+    accountKey: chatAccount.accountKey,
+    certificate: testChatDevice(chatAccount).certificate,
+  });
+  const { conversationId } = await run(startChatConversation, lender, {
+    userId: borrower.userId,
+    context: { kind: "loan_request", requestId },
+  });
+  const linking = testChatDevice(chatAccount);
+  const { linkRequestId } = await run(
+    requestChatLink,
+    {
+      ...lender,
+      authentication: { ...lender.authentication, sessionId: randomUUID() },
+    },
+    {
+      deviceId: linking.deviceId,
+      deviceKey: linking.deviceKey,
+      linkKey: linking.deviceKey,
+    },
+  );
+
   return {
     name,
     actors: { admin, lender, borrower, coOwner, other, invitee },
@@ -206,6 +236,8 @@ async function hiddenWorld() {
       imageId,
       caseId,
       questionId,
+      conversationId,
+      linkRequestId,
       notificationId: randomUUID(),
       userId: other.userId,
     },
@@ -235,6 +267,17 @@ const nowhere = (ids: WorldIds): WorldIds =>
   ) as WorldIds;
 
 const text = "Dette er en melding.";
+
+/**
+ * Someone outside every world, whom a chat probe names as the other
+ * person, and a device certificate of theirs to approve a link with.
+ */
+let bystander: UserActor;
+const bystanderAccount = testChatAccount(randomUUID());
+const bystanderDevice = testChatDevice(bystanderAccount);
+beforeAll(async () => {
+  bystander = await user();
+});
 
 /**
  * A valid input for every operation that names a resource, built from the
@@ -589,6 +632,38 @@ const probes: Record<string, (ids: WorldIds) => object> = {
   }),
   "moderation.list_measures": (ids) => ({ caseId: ids.caseId }),
 
+  // Chat (ADR-0010)
+  "chat.start_conversation": (ids) => ({
+    userId: bystander.userId,
+    context: { kind: "loan_request", requestId: ids.requestId },
+  }),
+  "chat.read_conversation": (ids) => ({ conversationId: ids.conversationId }),
+  "chat.read_directory": (ids) => ({ conversationId: ids.conversationId }),
+  "chat.hide_conversation": (ids) => ({ conversationId: ids.conversationId }),
+  "chat.claim_key_packages": (ids) => ({
+    conversationId: ids.conversationId,
+  }),
+  "chat.submit_commit": (ids) => ({
+    conversationId: ids.conversationId,
+    generation: 1,
+    commit: "AAECAw==",
+    welcome: null,
+    addedDeviceIds: [],
+    removedDeviceIds: [],
+  }),
+  "chat.send_message": (ids) => ({
+    conversationId: ids.conversationId,
+    generation: 1,
+    ciphertext: "AAECAw==",
+  }),
+  "chat.read_link_status": (ids) => ({ linkRequestId: ids.linkRequestId }),
+  "chat.finish_link": (ids) => ({ linkRequestId: ids.linkRequestId }),
+  "chat.approve_link": (ids) => ({
+    linkRequestId: ids.linkRequestId,
+    certificate: bystanderDevice.certificate,
+    package: "AAECAw==",
+  }),
+
   // Notifications
   "notification.mark_read": (ids) => ({
     notificationIds: [ids.notificationId],
@@ -596,10 +671,18 @@ const probes: Record<string, (ids: WorldIds) => object> = {
   "notification.mark_all_read": (ids) => ({ through: ids.notificationId }),
 };
 
+/**
+ * A private message copied into a case (WP-46) quotes its conversation's id
+ * as evidence the party vouches for; it addresses no conversation.
+ */
+const namesResource = (operation: Operation, key: string) =>
+  resourceKeys.has(key) &&
+  !(key === "conversationId" && operation.inputKeys.has("privateMessages"));
+
 const probed = allOperations.filter(
   (operation) =>
     reachableByUsers(operation) &&
-    [...operation.inputKeys].some((key) => resourceKeys.has(key)),
+    [...operation.inputKeys].some((key) => namesResource(operation, key)),
 );
 
 /** Reads only: probing as someone with some access must not change the world. */
@@ -830,6 +913,9 @@ async function everythingRead(world: World, actor: UserActor) {
   return answers.join("\n");
 }
 
+/** The lender's chat with the borrower is theirs, wherever either is now. */
+const chatReads = ["chat.read_conversation", "chat.read_directory"];
+
 const loanReads = [
   "loan_request.read",
   "loan_review.read",
@@ -846,9 +932,10 @@ describe("historical access", () => {
 
     // The loan goes on (docs/architecture/04, «Eksisterende lån»), without
     // reopening the environment, its objects or its people.
-    expect(await reachable(world, world.actors.borrower, reads)).toEqual(
-      loanReads,
-    );
+    expect(await reachable(world, world.actors.borrower, reads)).toEqual([
+      ...chatReads,
+      ...loanReads,
+    ]);
     const seen = await everythingRead(world, world.actors.borrower);
     expect(seen).toContain(world.ids.loanId);
     expect(seen).not.toContain(world.ids.environmentId);

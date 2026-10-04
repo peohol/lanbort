@@ -57,6 +57,7 @@ Fremgangsmåten er den samme om backupen er en manuell dump eller, senere, en ba
    - stopper med en gang hvis databasen ikke har akkurat migrasjonene i repoet (kjør da migrasjonene først),
    - gjør slettinger og begrensninger fra journalen på nytt med domenets egne kommandoer, som systemprosessen `ops.restore`,
    - bygger søkeindeksen på nytt fra domenetabellene,
+   - gir hver chatsamtale en ny gruppegenerasjon og sletter ventende chiffertekst og engangsnøkler fra før, siden enhetene kan være lenger fremme enn den gjenopprettede serveren (ADR-0010 §9); historikken på enhetene består,
    - sjekker at slettede kontoer ikke har data igjen og at søkeindeksen stemmer.
 
    Kommandoen kan kjøres flere ganger; det som er gjort, gjøres ikke igjen. Svarer den `Ready to open`, er databasen klar.
@@ -68,7 +69,7 @@ Fremgangsmåten er den samme om backupen er en manuell dump eller, senere, en ba
 
 ## Hva som gjøres på nytt, og hva som går tapt
 
-Alt som skjedde etter backupen, går tapt (RPO), bortsett fra det som ville gjort slettet eller begrenset data synlig igjen. Det gjøres på nytt: slettede kontoer og objekter, fjernede bilder, blokkeringer, avsluttede vennskap, kontostans, suspensjon og kontrollert avslutning, avsluttede eller passive medlemskap, utestengelser, fjernede administratorroller, strengere miljøtype, medeieres sperrer mot nye lån, arkiverte objekter, tilbaketrukne, avviste, blokkerte eller pausede publiseringer og fjernede plattformroller.
+Alt som skjedde etter backupen, går tapt (RPO), bortsett fra det som ville gjort slettet eller begrenset data synlig igjen. Det gjøres på nytt: slettede kontoer og objekter, fjernede bilder, blokkeringer, avsluttede vennskap, kontostans, suspensjon og kontrollert avslutning, avsluttede eller passive medlemskap, utestengelser, fjernede administratorroller, strengere miljøtype, medeieres sperrer mot nye lån, arkiverte objekter, tilbaketrukne, avviste, blokkerte eller pausede publiseringer, fjernede plattformroller og tilbakekalte eller tilbakestilte chatenheter.
 
 Det som går tapt, er nytt innhold og nye relasjoner, redigeringer, lån og saker i tidsrommet. En redigering som fjernet tekst fra et objekt, går også tapt, slik at den tidligere teksten er tilbake. Det samme gjelder opphevede begrensninger: de forblir på, og brukeren kan oppheve dem igjen.
 

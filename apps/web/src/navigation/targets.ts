@@ -35,6 +35,7 @@ const targetPages: Record<NotificationTargetType, Place | null> = {
   case: null,
   object_question: null,
   object_subscription: null,
+  chat_device: null,
 };
 
 export function hrefFor(target: NotificationTarget): string | null {

@@ -118,6 +118,8 @@ Dokumenter nøkkel-, multi-device- og recovery-modell før meldingsimplementasjo
 **Krav:** PS-COM-004–006, PS-NFR-007; ADR-0003, ADR-0010  
 Ciphertext-lagring, klientkryptering, ingen lesebekreftelser og kontrollert første kontakt.
 
+**Status:** Del 1, serverens leveringstjeneste, er ferdig (se [servergrensen](server-boundary.md#privat-chat-wp-43)). Del 2, klientkrypteringen, enhetskoblingen og chatsidene, gjenstår. Chat åpnes ikke for ekte brukere før Port C.
+
 ### WP-44 — Lånelogistikk ved blokkering
 **Krav:** PS-COM-007  
 Egen lånebundet samtaletype med servervalidert åpning/stenging.
@@ -187,7 +189,7 @@ Systematisk gjennomgang av alle kjerneflyter på mobil, desktop, tastatur og hje
 ## Fase 7
 
 ### WP-70 — Autorisasjons- og personvernsikkerhetstest
-Prøv eksplisitt skjulte miljøer, historisk tilgang, medeiergrenser, inhabilitet og representanttilgang. Så lenge OD-0003 er åpen, er det pilotmodellen som testes: representanttilgang skal ikke kunne oppnås. Privilegerte plattformforvalterhandlinger skal være avvist uansett hva innloggingstjenesten rapporterer, så lenge OD-0010 er åpen. Privat chat (WP-43) finnes ikke ennå; sikkerhetstestene for den legges til når den bygges. Responstid som sidekanal testes ikke automatisk, fordi slike målinger blir ustabile i delt CI; den hører til den uavhengige sikkerhetsgjennomgangen i Port E.
+Prøv eksplisitt skjulte miljøer, historisk tilgang, medeiergrenser, inhabilitet og representanttilgang. Så lenge OD-0003 er åpen, er det pilotmodellen som testes: representanttilgang skal ikke kunne oppnås. Privilegerte plattformforvalterhandlinger skal være avvist uansett hva innloggingstjenesten rapporterer, så lenge OD-0010 er åpen. Privat chat (WP-43) er med: samtaler og ventende enhetskoblinger finnes i den skjulte verdenen, og bare samtalens deltakere når dem. Responstid som sidekanal testes ikke automatisk, fordi slike målinger blir ustabile i delt CI; den hører til den uavhengige sikkerhetsgjennomgangen i Port E.
 
 ### WP-71 — Samtidighets- og idempotensstresstest
 Parallelle godkjenninger, retry, dobbelttrykk, avtaleendring og gjenåpnet retur.

@@ -46,6 +46,8 @@ const deletedAccountRemnants = [
     "friendships",
     sql`app.friendships where (requester_id = account.id or addressee_id = account.id) and status <> 'ended'`,
   ],
+  ["chat_account_keys", sql`app.chat_account_keys where user_id = account.id`],
+  ["chat_devices", sql`app.chat_devices where user_id = account.id`],
   [
     "platform_roles",
     sql`app.platform_role_grants where user_id = account.id and revoked_at is null`,

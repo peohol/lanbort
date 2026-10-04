@@ -54,6 +54,11 @@ const nonUserRoutes: Record<
     reason:
       "decides proposed type changes at their deadline, authenticated with the cron secret",
   },
+  "GET /api/internal/chat-retention": {
+    access: "scheduler",
+    reason:
+      "deletes chat ciphertext and keys past their retention, authenticated with the cron secret",
+  },
   "GET /api/internal/case-queue-returns": {
     access: "scheduler",
     reason:
