@@ -1,5 +1,6 @@
 export * from "./actor";
 export * from "./errors";
+export * from "./abuse/rate-limits";
 export * from "./authorization/policy";
 export * from "./authorization/rules";
 export * from "./events/catalog";

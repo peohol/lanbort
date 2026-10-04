@@ -248,6 +248,20 @@ Route Handler (route.user / route.public / route.scheduler)
 - Stedsnavn slås opp gjennom `@lanbort/places` (Kartverkets stedsnavn-API). Bare teksten brukeren skrev sendes, aldri hvem som spør. Finn bruker beste treff og tilbyr andre steder med samme navn. «Bruk der jeg er» runder posisjonen i nettleseren før den sendes, og den lagres aldri.
 - Kartet (MapLibre, Kartverkets topografiske kart, `apps/web/src/map/provider.ts`) viser bare områder, aldri punkter. MapLibres worker kopieres fra pakken til `public/maplibre/<versjon>/` før `dev` og `build`, så CSP bare trenger `worker-src 'self'` og kartfliser fra Kartverket.
 
+## Fartsgrenser og misbruksvern (WP-73)
+
+- Alle fartsgrenser står i `rateLimits` i `packages/domain/src/abuse/rate-limits.ts`. En regel er et budsjett (`limit` bruk per `windowSeconds`, med et utbrudd på høyst `limit`), og operasjoner som deler regel, deler budsjett. Grensene ligger langt over det én person gjør for hånd, stopper automatisering og avgjør aldri noe om en person.
+- En kommando eller spørring får grense med `rateLimit: rateLimits.<regel>` i definisjonen. `executeCommand`/`executeQuery` bruker budsjettet for innlogget bruker før input leses og før noe annet skjer, i en egen kort transaksjon, så avviste, ugyldige og `not_found`-forsøk teller også (mot ID-enumerering). Systemprosesser begrenses ikke. Nye måter å kontakte, invitere, rapportere eller slå opp andre på skal ha en regel, og `rate-limits.test.ts` lister hvilke operasjoner som bruker hvilken.
+  - `contact`: venneforespørsel, låneforespørsel, objektspørsmål og svar, henvendelse til miljøets administratorer og innmelding/søknad.
+  - `invitations`: invitasjon til miljø, administratorrolle, eierskap og medeierskap.
+  - `reports`: rapporter til miljøets administratorer og plattformforvalter, og melding om utilgjengelighet.
+  - `lookups`: søk etter ting og miljøer, miljødetaljer og miljøets objektliste, tillitsprofil, sosial relasjon og forhåndsvisning av låneforespørsel.
+  - `place_search`: oppslag i stedsnavntjenesten fra Finn (`placeSearchFor`).
+- Engangskoder for innlogging og ny innlogging begrenses per e-postadresse og per klientadresse før Supabase Auth spørres (`withCodeLimits`, lagt rundt `AuthGateway` i rutegrensen), siden Auth bare ser serveren. Klientadressen er første verdi i `x-forwarded-for`, som Vercel overskriver (`clientAddress`). Uten adresse, eller med loopback (lokalt og i tester), telles bare per e-postadresse.
+- En avvist bruk endrer ingenting og gir `rate_limited` (429) med `Retry-After` i sekunder. Finn viser det som en vanlig feilmelding.
+- Tellerne ligger i `app.rate_limits` (`app.consume_rate_limit`), delt av alle serverinstanser. Hvem det gjelder, lagres bare som en nøklet hash med en nøkkel som aldri forlater databasen, og en rad slettes når hele budsjettet er tilbake. Avslag logges som `security.rate_limited` med bare regelens navn.
+- Når hostet Supabase settes opp, må Auths egne grenser per IP (`[auth.rate_limit]`) settes høyt nok til at de ikke stopper alle brukere samlet, siden alle kall kommer fra serveren. Grensene over er de som skiller klientene.
+
 ## Vennskap og blokkering
 
 - Sosiale kommandoer navngir bare den andre brukeren. Den som kaller er alltid den ene parten, så ingen input kan nå andres relasjoner. Alle endringer for samme par låses mot hverandre i databasen.

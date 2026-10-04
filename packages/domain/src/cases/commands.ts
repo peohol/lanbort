@@ -71,6 +71,7 @@ import {
   setMayWrite,
   settleAssignment,
 } from "./store";
+import { rateLimits } from "../abuse/rate-limits";
 
 /**
  * Administrative cases (WP-45, PS-COM-010–015). Each command locks what it
@@ -475,6 +476,7 @@ export const openEnvironmentContact = defineCommand({
   input: openEnvironmentContactSchema,
   output: caseOpenedResultSchema,
   policy: openEnvironmentContactPolicy,
+  rateLimit: rateLimits.contact,
   idempotency: "required",
   load: async ({ tx, actor, input, now }) => {
     const access = await loadEnvironmentAccess(
@@ -583,6 +585,7 @@ export const reportUnavailability = defineCommand({
   input: reportUnavailabilitySchema,
   output: caseOpenedResultSchema,
   policy: reportUnavailabilityPolicy,
+  rateLimit: rateLimits.reports,
   idempotency: "required",
   load: async ({ tx, actor, input }) => {
     if (actor.kind !== "user") {

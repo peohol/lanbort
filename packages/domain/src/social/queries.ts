@@ -7,6 +7,7 @@ import { z } from "zod";
 import { defineQuery } from "../commands/query";
 import { loadPair, readSnapshot, relationOf } from "./pair";
 import { readSocialOverviewPolicy, readSocialRelationPolicy } from "./policies";
+import { rateLimits } from "../abuse/rate-limits";
 
 /**
  * The caller's relation to one other user, for example to show the right
@@ -17,6 +18,7 @@ export const getSocialRelation = defineQuery({
   name: "social.relation.read",
   input: socialTargetSchema,
   policy: readSocialRelationPolicy,
+  rateLimit: rateLimits.lookups,
   load: async ({ db, actor, input }) => {
     if (actor.kind !== "user") {
       return null;

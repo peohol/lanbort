@@ -74,6 +74,7 @@ import {
   toLoanRequest,
   visibleToLender,
 } from "./store";
+import { rateLimits } from "../abuse/rate-limits";
 
 type Db = Kysely<Database>;
 
@@ -86,6 +87,7 @@ export const previewLoanRequest = defineQuery({
   name: "loan_request.preview",
   input: loanRequestPreviewQuerySchema,
   policy: previewLoanRequestPolicy,
+  rateLimit: rateLimits.lookups,
   load: ({ db, actor, input, now }) =>
     inSnapshot(db, async (tx) => {
       const object = await loadObjectState(tx, input.objectId);

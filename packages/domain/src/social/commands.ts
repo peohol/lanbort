@@ -6,6 +6,7 @@ import {
 import type { Database } from "@lanbort/database";
 import type { Transaction } from "kysely";
 import type { Policy } from "../authorization/policy";
+import { type RateLimit, rateLimits } from "../abuse/rate-limits";
 import { defineCommand } from "../commands/command";
 import { DomainError } from "../errors";
 import type { EventDefinition } from "../events/catalog";
@@ -55,6 +56,7 @@ interface ChangeArgs {
 function pairCommand(definition: {
   name: string;
   policy: Policy<SocialPair, void>;
+  rateLimit?: RateLimit;
   change(args: ChangeArgs): Promise<void>;
 }) {
   return defineCommand({
@@ -62,6 +64,7 @@ function pairCommand(definition: {
     input: socialTargetSchema,
     output: socialRelationSchema,
     policy: definition.policy,
+    ...(definition.rateLimit && { rateLimit: definition.rateLimit }),
     idempotency: "required",
     load: async ({ tx, actor, input }) => {
       if (actor.kind !== "user") {
@@ -130,6 +133,7 @@ async function endFriendship(
 export const sendFriendRequest = pairCommand({
   name: "friendship.request",
   policy: sendFriendRequestPolicy,
+  rateLimit: rateLimits.contact,
   // Any open relation is left as it is. In particular a crossing request
   // leaves the other's pending request in place for the caller to accept:
   // a friendship only ever starts with an acceptance.

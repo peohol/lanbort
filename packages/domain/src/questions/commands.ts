@@ -17,6 +17,7 @@ import {
   publicationFoundBy,
   seesQuestion,
 } from "./store";
+import { rateLimits } from "../abuse/rate-limits";
 
 /**
  * PS-OBJ-015: asks about an object the caller finds in the environment. The
@@ -28,6 +29,7 @@ export const askObjectQuestion = defineCommand({
   input: askObjectQuestionSchema,
   output: objectQuestionPostedSchema,
   policy: askObjectQuestionPolicy,
+  rateLimit: rateLimits.contact,
   idempotency: "required",
   load: async ({ tx, actor, input, now }) => {
     await lockPublication(tx, input);
@@ -82,6 +84,7 @@ export const replyToObjectQuestion = defineCommand({
   input: replyToObjectQuestionSchema,
   output: objectQuestionPostedSchema,
   policy: replyToObjectQuestionPolicy,
+  rateLimit: rateLimits.contact,
   idempotency: "required",
   load: async ({ tx, actor, input, now }) => {
     const question = await loadQuestion(tx, input.questionId);

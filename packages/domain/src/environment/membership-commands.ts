@@ -57,6 +57,7 @@ import {
   settleMembership,
 } from "./store";
 import { toOptionalPosition } from "./privacy";
+import { rateLimits } from "../abuse/rate-limits";
 
 const membershipOutput = z.strictObject({
   membershipId: z.uuid(),
@@ -178,6 +179,7 @@ export const joinEnvironment = defineCommand({
   input: answersInput,
   output: membershipOutput,
   policy: joinEnvironmentPolicy,
+  rateLimit: rateLimits.contact,
   idempotency: "required",
   load: loadLockedAccess,
   execute: async ({ tx, actor, input, resource, events, now }) => {
@@ -472,6 +474,7 @@ export const inviteMember = defineCommand({
   input: z.strictObject({ ...inviteMemberSchema.shape, ...environmentIdInput }),
   output: membershipOutput,
   policy: inviteMemberPolicy,
+  rateLimit: rateLimits.invitations,
   idempotency: "required",
   load: loadLockedAccess,
   execute: async ({ tx, actor, input, resource, events, now }) => {

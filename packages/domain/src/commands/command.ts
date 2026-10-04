@@ -12,6 +12,7 @@ import {
   authorizeActor,
   type Policy,
 } from "../authorization/policy";
+import { consumeActorRateLimit, type RateLimit } from "../abuse/rate-limits";
 import { AuthorizationError, DomainError } from "../errors";
 import { EventRecorder, writeEvents } from "../events/recorder";
 import type { ConsumerRegistry } from "../outbox/consumer";
@@ -52,6 +53,11 @@ export interface CommandDefinition<I, R, C, O> {
    * is harmless.
    */
   readonly idempotency: "required" | "none";
+  /**
+   * The signed-in caller's budget for this command (WP-73), counted before
+   * anything else is read, so refused and failed attempts count as well.
+   */
+  readonly rateLimit?: RateLimit;
   /**
    * How the command holds the signed-in actor's own account row, which it
    * locks first (account rows come before everything else) and re-reads, so
@@ -238,7 +244,7 @@ async function runTransaction<T>(
 }
 
 /**
- * Runs a command as one transaction:
+ * Runs a command as one transaction, after its rate limit:
  * actor rules → lock and re-read the actor's account → idempotency lookup →
  * actor rules again → load current state → resource rules → execute →
  * append events and outbox messages → store idempotent result.
@@ -256,6 +262,7 @@ export async function executeCommand<I, R, C, O>(
     actor: request.actor,
     now,
   });
+  await consumeActorRateLimit(domain, command.rateLimit, request.actor);
 
   const input = parseInput(command.input, request.input);
   const claim = idempotencyClaim(

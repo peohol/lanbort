@@ -37,6 +37,7 @@ import {
   withdrawRoleInvitationPolicy,
 } from "./policies";
 import { findActiveRoles, findCurrentMembership } from "./store";
+import { rateLimits } from "../abuse/rate-limits";
 
 /**
  * Roles (WP-22, PS-ENV-003). Every command locks the environment row through
@@ -128,6 +129,7 @@ export const inviteAdministrator = defineCommand({
   input: targetUserInput,
   output: invitationOutput,
   policy: inviteAdministratorPolicy,
+  rateLimit: rateLimits.invitations,
   idempotency: "required",
   load: loadLockedAccess,
   execute: async ({ tx, actor, input, resource, events, now }) => {
@@ -175,6 +177,7 @@ export const offerOwnership = defineCommand({
   input: targetUserInput,
   output: invitationOutput,
   policy: offerOwnershipPolicy,
+  rateLimit: rateLimits.invitations,
   idempotency: "required",
   load: loadLockedAccess,
   execute: async ({ tx, actor, input, resource, events, now }) => {
