@@ -340,13 +340,16 @@ describe("concurrency (docs/architecture/05)", () => {
     const { owner, borrower, loanId } = await reservedLoan();
 
     // The loan ends in a transaction that is still open when the block
-    // comes: the block waits for it and then sees the loan has ended.
+    // comes: the block waits for it and then sees the loan has ended. It
+    // ends on this file's clock, so the review window it opens is not due
+    // for other files' publication jobs.
+    const at = kit.now();
     await commitWhileRacing(
       db,
       async (tx) => {
         await sql`
-          update app.loans set status = 'ended', status_changed_at = now(),
-            end_reason = 'cancelled', ended_at = now(),
+          update app.loans set status = 'ended', status_changed_at = ${at},
+            end_reason = 'cancelled', ended_at = ${at},
             ended_by_user_id = ${borrower.userId}
           where id = ${loanId}
         `.execute(tx);
