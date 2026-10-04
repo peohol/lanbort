@@ -624,7 +624,7 @@ export async function whereUserFinds(
 }
 
 /** Authorizes reading an image through a publication. */
-const publishedImageFile = defineQuery({
+export const publishedImageFile = defineQuery({
   name: "environment_object.read_image",
   input: publishedObjectImageSchema,
   policy: readPublishedImagePolicy,
