@@ -245,6 +245,16 @@ export const readLoanPolicy = loanPartyPolicy<LoanResource>(
 );
 
 /**
+ * UX-INT-008: the loan's timeline, for its parties now, like the loan
+ * itself; a former party and other co-owners do not see it.
+ */
+export const readLoanHistoryPolicy = loanPartyPolicy<LoanResource>(
+  "loan.read_history",
+  bothSides,
+  requireLoanStanding,
+);
+
+/**
  * PS-LOAN-011: either party cancels on their own. Owning the object is not
  * enough: other co-owners are not parties of the loan.
  */
@@ -617,6 +627,7 @@ export const loanRequestPolicies = [
   acceptResponsibilityPolicy,
   listLoanRequestsPolicy,
   readLoanPolicy,
+  readLoanHistoryPolicy,
   cancelLoanPolicy,
   proposeLoanAmendmentPolicy,
   acceptLoanAmendmentPolicy,

@@ -17,7 +17,7 @@ import {
   pagesShown,
   type SearchParams,
 } from "@/navigation/list-pages";
-import { anchorFor } from "@/navigation/targets";
+import { anchorFor, loanHref } from "@/navigation/targets";
 import { formatPeriod } from "@/presentation/dates";
 import { describeHomeItem } from "@/presentation/home-items";
 import {
@@ -101,6 +101,7 @@ export default async function LoansPage({
     .flatMap((list) => list.items)
     .map((request) => ({
       id: anchorFor("loan_request", request.id),
+      href: null,
       title: request.object?.title ?? "Objektet finnes ikke lenger",
       role: loanRoleLabels[request.role],
       status: loanRequestStatusLabels[request.status],
@@ -110,6 +111,7 @@ export default async function LoansPage({
   const loans = (list: typeof current): LoanListEntry[] =>
     list.items.map((loan) => ({
       id: anchorFor("loan", loan.id),
+      href: loanHref(loan.id),
       title: loan.agreement.title,
       role: loanRoleLabels[loan.role],
       status: loan.ending

@@ -587,6 +587,40 @@ export const loanUnresolvedResultSchema = z.strictObject({
 });
 
 /**
+ * A person in a loan as its parties see them (UX-INT-004): by their real
+ * name, or null once the account is deleted («Tidligere bruker»,
+ * UX-PRIV-010). Never a link to a profile (UX-PRIV-007).
+ */
+export const loanPersonSchema = z.strictObject({
+  realName: z.string().nullable(),
+});
+
+const answerSchema = z.enum(["accept", "decline"]);
+
+/**
+ * What the caller may do about the loan now, as the domain's own rules
+ * decide it (UX-INT-001): only steps that would be accepted are offered.
+ * The commands still decide again when they run.
+ */
+export const loanActionsSchema = z.strictObject({
+  /** The handover statements the caller may make (`loan.report_handover`). */
+  handover: z.array(handoverOutcomeSchema),
+  /** The return statements of the caller's side (`loan.report_return`). */
+  return: z.array(returnOutcomeSchema),
+  /** The caller's waiting return confirmation can be undone. */
+  undoReturn: z.boolean(),
+  /**
+   * The caller's answers to the other side's proposal: an account that is
+   * not active may only decline (PS-ADM-002).
+   */
+  amendment: z.array(answerSchema),
+  /** The borrower's answers to a later co-owner taking over (PS-LOAN-009). */
+  responsibility: z.array(answerSchema),
+  /** The caller may confirm having the object back (PS-LOAN-019). */
+  confirmControl: z.boolean(),
+});
+
+/**
  * A loan as its borrower or responsible lender sees it. The agreement is
  * what was approved, as it was then: later changes to the object never
  * change it.
@@ -668,6 +702,12 @@ export const loanSchema = z.strictObject({
    */
   control: loanControlSchema.nullable(),
   approvedAt: z.iso.datetime(),
+  /** The borrower and the responsible lender, by name (UX-INT-004). */
+  parties: z.strictObject({
+    borrower: loanPersonSchema,
+    lender: loanPersonSchema,
+  }),
+  actions: loanActionsSchema,
 });
 
 /** Lists come newest first, a page at a time. */
@@ -687,6 +727,102 @@ export const loanListSchema = z.strictObject({
   loans: z.array(loanSchema),
   /** Pass as `cursor` for the next page; null on the last one. */
   nextCursor: loanIdSchema.nullable(),
+});
+
+/** Timeline entries per page, newest first. */
+export const loanHistoryPageSize = 50;
+
+/**
+ * UX-IA-008, UX-INT-008: a loan's course as its parties may see it, a page
+ * at a time; `cursor` is the oldest entry of the page before.
+ */
+export const loanHistoryQuerySchema = z.strictObject({
+  loanId: loanIdSchema,
+  cursor: z.uuid().optional(),
+});
+
+/**
+ * The events of a loan's course that its parties see, from its request on.
+ * Administrative and technical events are never part of it.
+ */
+export const loanHistoryEventSchema = z.enum([
+  "requested",
+  "terms_confirmed",
+  "responsibility_accepted",
+  "reserved",
+  "cancelled",
+  "stopped",
+  "amendment_proposed",
+  "amendment_accepted",
+  "amendment_declined",
+  "amendment_withdrawn",
+  "handover_reported",
+  "handed_over",
+  "handover_disputed",
+  "not_completed",
+  "return_reported",
+  "returned",
+  "return_disputed",
+  "responsibility_proposed",
+  "responsibility_answered",
+  "responsibility_transferred",
+  "responsibility_declined",
+  "responsibility_withdrawn",
+  "ended_unresolved",
+  "control_confirmed",
+]);
+
+/**
+ * Someone in a loan's timeline: the caller (`you`), its borrower, a
+ * responsible lender it has had, or another co-owner of the object. Only the
+ * borrower and lenders are named, and nobody whose account is deleted.
+ */
+export const loanHistoryPersonSchema = z.strictObject({
+  you: z.boolean(),
+  role: z.enum(["borrower", "lender", "co_owner"]),
+  realName: z.string().nullable(),
+});
+
+/**
+ * One thing that happened, with who did it (null: Lånbort itself, such as
+ * a deadline that passed) and when. The other fields say only what the
+ * event needs to be understood, never other loans or administrative work.
+ */
+export const loanHistoryEntrySchema = z.strictObject({
+  id: z.uuid(),
+  at: z.iso.datetime(),
+  event: loanHistoryEventSchema,
+  actor: loanHistoryPersonSchema.nullable(),
+  /** The side whose statement, acceptance or cancellation it was. */
+  side: loanRequestRoleSchema.optional(),
+  /** What a handover or return statement said. */
+  outcome: z.union([handoverOutcomeSchema, returnOutcomeSchema]).optional(),
+  /** A co-owner confirmed the receipt for the lender's side (PS-LOAN-015). */
+  byCoOwner: z.boolean().optional(),
+  /** Not completed because both said so, or one did and the other was silent. */
+  basis: z.enum(["agreed", "unanswered"]).optional(),
+  /** Returned before the agreed last day (PS-LOAN-020). */
+  early: z.boolean().optional(),
+  /** A confirmed return was contradicted later (PS-LOAN-017). */
+  reopened: z.boolean().optional(),
+  /** The period proposed or agreed by an amendment (PS-LOAN-010). */
+  period: loanPeriodSchema.optional(),
+  /** A change of the responsible lender (PS-LOAN-009). */
+  transfer: z
+    .strictObject({
+      kind: responsibilityTransferKindSchema,
+      from: loanHistoryPersonSchema.nullable(),
+      to: loanHistoryPersonSchema,
+    })
+    .optional(),
+  /** Who answered a proposed transfer: its recipient or the borrower. */
+  answeredAs: z.enum(["recipient", "borrower"]).optional(),
+});
+
+export const loanHistorySchema = z.strictObject({
+  entries: z.array(loanHistoryEntrySchema),
+  /** Pass as `cursor` for older entries; null on the last page. */
+  nextCursor: z.uuid().nullable(),
 });
 
 /**
@@ -741,6 +877,13 @@ export type LoanEndReason = z.infer<typeof loanEndReasonSchema>;
 export type Loan = z.infer<typeof loanSchema>;
 export type LoanListQuery = z.infer<typeof loanListQuerySchema>;
 export type LoanList = z.infer<typeof loanListSchema>;
+export type LoanPerson = z.infer<typeof loanPersonSchema>;
+export type LoanActions = z.infer<typeof loanActionsSchema>;
+export type LoanHistoryQuery = z.infer<typeof loanHistoryQuerySchema>;
+export type LoanHistoryEvent = z.infer<typeof loanHistoryEventSchema>;
+export type LoanHistoryPerson = z.infer<typeof loanHistoryPersonSchema>;
+export type LoanHistoryEntry = z.infer<typeof loanHistoryEntrySchema>;
+export type LoanHistory = z.infer<typeof loanHistorySchema>;
 export type LoanCancellationResult = z.infer<
   typeof loanCancellationResultSchema
 >;

@@ -27,7 +27,7 @@ describe("the five areas (UX-IA-001)", () => {
 
 describe("where notifications and Home lead (UX-IA-002)", () => {
   it("leads to the entry in its context", () => {
-    expect(hrefFor({ type: "loan", id })).toBe(`/lan#lan-${id}`);
+    expect(hrefFor({ type: "loan", id })).toBe(`/lan/${id}`);
     expect(hrefFor({ type: "loan_request", id })).toBe(
       `/lan#foresporsel-${id}`,
     );
