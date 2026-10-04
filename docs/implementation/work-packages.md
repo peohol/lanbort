@@ -148,7 +148,7 @@ Kontotilstander, bindingkontroll, pseudonymisering og avledet datasletting.
 
 ### WP-54 — Død/varig utilgjengelighet og representant
 **Krav:** PS-ADM-007–008  
-Start først når OD-0003 er avklart.
+Utsatt til OD-0003 er avklart; ikke en del av piloten. Det som finnes nå er fail-closed: en melding (PS-ADM-007) blir en fortrolig verifikasjonssak for plattformforvaltere (WP-45) som ikke endrer konto, lån eller tilganger, og det finnes ingen representantrolle, -tilgang eller særskilt kontoavslutning. Tester i domenet og databasen viser at ingen (melder, medeier eller plattformforvalter) får tilgang til eller handler for brukeren, og at en ny rolle, policy eller databaseregel for representanter ikke kan legges til uten at testene endres bevisst.
 
 ### WP-55 — Duplikat/falsk identitet
 **Krav:** PS-ADM-009–010  
@@ -183,7 +183,7 @@ Systematisk gjennomgang av alle kjerneflyter på mobil, desktop, tastatur og hje
 ## Fase 7
 
 ### WP-70 — Autorisasjons- og personvernsikkerhetstest
-Prøv eksplisitt skjulte miljøer, historisk tilgang, medeiergrenser, inhabilitet og representanttilgang.
+Prøv eksplisitt skjulte miljøer, historisk tilgang, medeiergrenser, inhabilitet og representanttilgang. Så lenge OD-0003 er åpen, er det pilotmodellen som testes: representanttilgang skal ikke kunne oppnås.
 
 ### WP-71 — Samtidighets- og idempotensstresstest
 Parallelle godkjenninger, retry, dobbelttrykk, avtaleendring og gjenåpnet retur.

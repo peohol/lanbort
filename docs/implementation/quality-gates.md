@@ -46,6 +46,7 @@ Må være oppfylt:
 - OD-0006 er avgjort
 - OD-0010 er avgjort og mekanismen implementert før privilegerte plattformforvalterhandlinger aktiveres; til da er de avvist
 - en konservativ pilotpolicy begrenser risikofylte objekter
+- representanttilgang ved død eller varig utilgjengelighet er deaktivert og testet utilgjengelig, så lenge OD-0003 ikke er avgjort
 - kjente mangler er dokumentert og vurdert
 
 ## Port E — Før bred/offentlig lansering

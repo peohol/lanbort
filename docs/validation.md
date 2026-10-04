@@ -43,7 +43,7 @@ E2EE hindrer ordinær server-/administratorlesing av lagret privat meldingsinnho
 | 35 – miljø uten administrator | behandling settes på vent | viser manglende behandlingsevne | sak krever autorisert aktiv rolle | Konsistent |
 | 49 – privat melding brukes som dokumentasjon | bare uttrykkelig innsendt kopi blir saksdata | bruker velger konkret innhold | lokal dekryptering → ny serverlesbar saksdata | Konsistent |
 | 58 – retur bestrides etter nytt lån | nytt gyldig lån består, ytterligere lån sperres | gammel sak gjenåpnes; ny part varsles | append-only hendelse + ny global sperre, ingen rollback | Konsistent |
-| 62/75 – død eller varig utilgjengelighet | verifikasjon + snever representant | egen representantflate, ikke konto-overtakelse | ressursbundet representative grant + audit | Konsistent |
+| 62/75 – død eller varig utilgjengelighet | verifikasjon + snever representant | egen representantflate, ikke konto-overtakelse | ressursbundet representative grant + audit | Konsistent; i piloten bare verifikasjonssak, representant utsatt til OD-0003 |
 | 65 – miljø blir mindre privat | samtykke/avstemning + passiv status | konsekvens og personlig valg vises | medlems-/typeendringsprosess, historisk tilgang bevares | Konsistent |
 | 73 – plattformforvalter inhabil | kan ikke behandle egen sak | behandlingshandling utilgjengelig | policy avviser inhabil aktør + audit | Konsistent |
 | 81 – blokkering under lån | fysisk forpliktelse kan avsluttes | ordinær chat stenges, smal logistikk består | egen samtaletype bundet til kvalifisert lån | Konsistent |
@@ -57,7 +57,7 @@ E2EE hindrer ordinær server-/administratorlesing av lagret privat meldingsinnho
 
 ### Må avgjøres før den berørte funksjonen anses ferdig
 - OD-0005: konkret E2EE-nøkkel-, multi-device- og recoverymodell
-- OD-0003: verifikasjonskrav for død/varig utilgjengelighet dersom denne særprosessen skal aktiveres
+- OD-0003: verifikasjonskrav for død/varig utilgjengelighet dersom denne særprosessen skal aktiveres (deaktivert og utenfor piloten til da)
 
 ### Må avgjøres før reell/bred drift i relevant omfang
 - OD-0001: policy for regulerte/risikofylte objekter
