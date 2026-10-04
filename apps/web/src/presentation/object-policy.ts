@@ -23,7 +23,7 @@ export const pilotObjectPolicy: readonly ObjectPolicyGroup[] = [
   {
     heading: "Venter til senere",
     items: [
-      "Kjøretøy med registrerings- eller forsikringsplikt, som bil, motorsykkel, moped, ATV, snøscooter, elsparkesykkel og registrert tilhenger. Vanlige sykler, også elsykler, sykkelvogner og trillevogner går fint.",
+      "Motorkjøretøy og andre kjøretøy med registrerings- eller forsikringsplikt, som bil, motorsykkel, moped, ATV, snøscooter, elsparkesykkel og registrert tilhenger. Vanlige sykler, også elsykler, sykkelvogner og trillevogner går fint.",
       "Båter med motor og vannscootere.",
       "Droner.",
       "Medisinsk utstyr og hjelpemidler, som rullestol, rullator, krykker og måleapparater.",
