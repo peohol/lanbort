@@ -60,6 +60,9 @@ export const notificationEmailSubjects = {
   "case.entry_added": "Det er skrevet noe nytt i en sak",
   "case.statements_shared": "Innleggene i en sak er delt",
   "case.closed": "En sak du er med i er lukket",
+  "object.question_asked": "Det er stilt et spørsmål om et objekt du eier",
+  "object.question_replied": "Det er kommet et nytt innlegg i en spørsmålstråd",
+  "object.available": "Et objekt du abonnerer på er tilgjengelig igjen",
 } as const satisfies Record<NotificationKind, string>;
 
 /** Why the recipient gets the e-mail at all (PS-COM-003). */
