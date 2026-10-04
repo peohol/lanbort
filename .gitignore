@@ -13,3 +13,6 @@ test-results/
 .supabase/
 supabase/.temp/
 supabase/.branches/
+
+# Copied from maplibre-gl before dev and build (scripts/copy-map-worker.mjs).
+apps/web/public/maplibre/

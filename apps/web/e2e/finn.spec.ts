@@ -113,6 +113,67 @@ test("Finn finds environments to join, and then the things in them", async ({
   expect(problems).toEqual([]);
 });
 
+/** A centre nobody else's test uses, about a kilometre precise. */
+const somewhere = () => ({
+  latitude: Math.round((Math.random() * 120 - 60) * 100) / 100,
+  longitude: Math.round((Math.random() * 340 - 170) * 100) / 100,
+});
+
+/** A blank map tile, so the test never depends on the map provider. */
+const blankTile = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+  "base64",
+);
+
+test("Finn finds environments near a place and shows their areas (WP-62)", async ({
+  page,
+  playwright,
+  baseURL,
+}) => {
+  const problems = collectBrowserProblems(page);
+  await page.route("https://cache.kartverket.no/**", (route) =>
+    route.fulfill({ contentType: "image/png", body: blankTile }),
+  );
+  const name = word();
+  const centre = somewhere();
+  const owner = await playwright.request.newContext({
+    baseURL: baseURL!,
+    extraHTTPHeaders: { origin: baseURL! },
+  });
+  await registerThroughApi(owner, undefined, "Eva Eier");
+  await post(owner, "/api/environments", {
+    name: `Nær ${name}`,
+    type: "open",
+    area: { ...centre, radiusKm: 2 },
+  });
+  await post(owner, "/api/environments", {
+    name: `Fjern ${name}`,
+    type: "open",
+    area: { ...centre, latitude: centre.latitude + 0.5, radiusKm: 2 },
+  });
+  await untilIndexed(owner, name);
+
+  await registerThroughApi(page.request);
+  const point = `${centre.latitude},${centre.longitude}`;
+  await page.goto(
+    `/finn?vis=miljoer&sted=Torget&avstand=5&punkt=${point}&punktsted=Torget`,
+  );
+  await expect(page.getByLabel("Sted", { exact: true })).toHaveValue("Torget");
+  await expect(page.getByLabel("Avstand")).toHaveValue("5");
+  const results = page.getByRole("region", { name: "Treff" });
+  await expect(results).toContainText("Nær Torget, innen 5 km.");
+  await expect(results.getByRole("listitem")).toContainText([`Nær ${name}`]);
+  await expect(results).not.toContainText(`Fjern ${name}`);
+
+  // A new place typed in is looked up afresh, not the point chosen before.
+  await page.getByLabel("Sted", { exact: true }).fill("");
+  await page.getByLabel("Navn, sted eller hva miljøet handler om").fill(name);
+  await page.getByRole("button", { name: "Søk" }).click();
+  await expect(results.getByRole("listitem")).toHaveCount(2);
+  await expect(results).not.toContainText("Nær Torget");
+  expect(problems).toEqual([]);
+});
+
 test("Finn explains what to change instead of searching", async ({ page }) => {
   await registerThroughApi(page.request);
   await page.goto("/finn?q=d");
@@ -123,6 +184,12 @@ test("Finn explains what to change instead of searching", async ({ page }) => {
 
   await page.goto("/finn?q=drill&fra=2030-06-02&til=2030-06-01");
   await expect(page.getByText(/første og siste dag/)).toHaveAttribute(
+    "role",
+    "alert",
+  );
+
+  await page.goto("/finn?vis=miljoer&punkt=91,10&punktsted=");
+  await expect(page.getByText("Velg stedet på nytt.")).toHaveAttribute(
     "role",
     "alert",
   );

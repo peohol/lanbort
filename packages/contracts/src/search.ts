@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { membershipStateSchema } from "./environment";
+import { completeNearSearch, geoAreaSchema, nearSearchShape } from "./geo";
 import {
   calendarDateSchema,
   objectCategoryIdSchema,
@@ -28,6 +29,8 @@ export const searchResultLimit = 30;
  * category (with the categories below it), within one of their environments,
  * and only those actually available the whole period from `availableFrom`
  * through `availableTo` (both inclusive). Text or category is required.
+ * Near an area (WP-62), only in the caller's environments whose own
+ * approximate area overlaps it: objects have no place of their own.
  */
 export const objectSearchQuerySchema = z
   .strictObject({
@@ -36,10 +39,12 @@ export const objectSearchQuerySchema = z
     environmentId: z.uuid().optional(),
     availableFrom: calendarDateSchema.optional(),
     availableTo: calendarDateSchema.optional(),
+    ...nearSearchShape,
   })
   .refine(({ q, categoryId }) => q !== undefined || categoryId !== undefined, {
     message: "Search by text or category",
   })
+  .refine(completeNearSearch, { message: "An area needs a centre and a size" })
   .refine(
     ({ availableFrom, availableTo }) =>
       (availableFrom === undefined) === (availableTo === undefined) &&
@@ -74,11 +79,20 @@ export const objectSearchResultSchema = z.strictObject({
   more: z.boolean(),
 });
 
-/** Open and closed environments that take new members (PS-ENV-001). */
-export const environmentSearchQuerySchema = z.strictObject({
-  q: searchTextSchema,
-  type: z.enum(["open", "closed"]).optional(),
-});
+/**
+ * Open and closed environments that take new members (PS-ENV-001), by text,
+ * by an area their own approximate area overlaps (WP-62), or both.
+ */
+export const environmentSearchQuerySchema = z
+  .strictObject({
+    q: searchTextSchema.optional(),
+    type: z.enum(["open", "closed"]).optional(),
+    ...nearSearchShape,
+  })
+  .refine(completeNearSearch, { message: "An area needs a centre and a size" })
+  .refine(({ q, latitude }) => q !== undefined || latitude !== undefined, {
+    message: "Search by text or area",
+  });
 
 /**
  * An environment as Finn shows it: what anyone signed in may read of it.
@@ -90,6 +104,7 @@ export const foundEnvironmentSchema = z.strictObject({
   name: z.string(),
   description: z.string().nullable(),
   location: z.string().nullable(),
+  area: geoAreaSchema.nullable(),
   /** The caller's own membership, if they have one. */
   membershipState: membershipStateSchema.exclude(["ended"]).nullable(),
 });

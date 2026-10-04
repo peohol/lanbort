@@ -2,6 +2,7 @@ import type {
   EnvironmentRole,
   EnvironmentState,
   EnvironmentType,
+  GeoArea,
   MembershipOrigin,
   MembershipPassiveReason,
   MembershipReviewStage,
@@ -28,10 +29,29 @@ export interface EnvironmentRecord {
   readonly audience: string | null;
   readonly objectFocus: string | null;
   readonly location: string | null;
+  /** Approximate area (WP-62), already coarse as stored. */
+  readonly area: GeoArea | null;
   readonly version: number;
   readonly requirementsRevision: number;
   /** PS-ENV-011: objects need an administrator's approval (WP-25). */
   readonly requiresObjectApproval: boolean;
+}
+
+/** An approximate area as stored: all three columns, or none (WP-62). */
+export function toArea(row: {
+  area_latitude: string | null;
+  area_longitude: string | null;
+  area_radius_km: number | null;
+}): GeoArea | null {
+  return row.area_latitude === null ||
+    row.area_longitude === null ||
+    row.area_radius_km === null
+    ? null
+    : {
+        latitude: Number(row.area_latitude),
+        longitude: Number(row.area_longitude),
+        radiusKm: row.area_radius_km as GeoArea["radiusKm"],
+      };
 }
 
 export interface RequirementRecord {
