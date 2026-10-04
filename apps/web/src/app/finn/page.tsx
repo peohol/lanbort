@@ -8,17 +8,27 @@ import {
 } from "@lanbort/domain";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { AreaMap } from "@/components/area-map";
+import { NearMeButton } from "@/components/near-me-button";
+import {
+  defaultDistanceKm,
+  distanceOptions,
+  type Location,
+  locate,
+} from "@/presentation/places";
 import {
   describeAvailability,
   describeFoundIn,
   environmentTypeLabels,
   type FinnForm,
+  finnHref,
   membershipLabels,
   type Prepared,
   prepareEnvironmentSearch,
   prepareObjectSearch,
   readFinnForm,
 } from "@/presentation/search";
+import { placeSearch } from "@/server/places";
 import { pageQuery, requirePageAccount } from "@/server/session";
 import styles from "./finn.module.css";
 
@@ -33,7 +43,7 @@ const tabs = [
  * Finn (UX-IA-001, UX-P20): targeted search for things in the user's own
  * environments and for environments to join. Nothing is listed until the
  * user asks for something, and the search itself decides what each user may
- * find (WP-61, ADR-0005).
+ * find (WP-61, ADR-0005). Both can be near a place (WP-62).
  */
 export default async function FindPage({
   searchParams,
@@ -80,8 +90,27 @@ export default async function FindPage({
   );
 }
 
+/** The place a search is near, or the problem with it, before anything else. */
+async function located<I>(
+  form: FinnForm,
+  prepare: (near: Location["near"] | undefined) => Prepared<I>,
+): Promise<{ prepared: Prepared<I>; location: Location | undefined }> {
+  const place = await locate(form, placeSearch());
+
+  if (place && "problem" in place) {
+    return { prepared: place, location: undefined };
+  }
+
+  return {
+    prepared: prepare(place?.location.near),
+    location: place?.location,
+  };
+}
+
 async function ObjectSearch({ form }: { form: FinnForm }) {
-  const prepared = prepareObjectSearch(form);
+  const { location, prepared } = await located(form, (near) =>
+    prepareObjectSearch(form, near),
+  );
   const [categories, result] = await Promise.all([
     pageQuery(listObjectCategories, {}),
     prepared && "input" in prepared
@@ -136,10 +165,13 @@ async function ObjectSearch({ form }: { form: FinnForm }) {
           <label htmlFor="finn-til">Siste dag</label>
           <input id="finn-til" name="til" type="date" defaultValue={form.to} />
         </fieldset>
+        <PlaceFields form={form} legend="I miljøer nær et sted (valgfritt)" />
         <button type="submit">Søk</button>
       </form>
       <Results
         prepared={prepared}
+        location={location}
+        form={form}
         count={result?.objects.length ?? 0}
         more={result?.more ?? false}
         empty="Ingen ting i miljøene dine passer med søket."
@@ -166,7 +198,9 @@ async function ObjectSearch({ form }: { form: FinnForm }) {
 }
 
 async function EnvironmentSearch({ form }: { form: FinnForm }) {
-  const prepared = prepareEnvironmentSearch(form);
+  const { location, prepared } = await located(form, (near) =>
+    prepareEnvironmentSearch(form, near),
+  );
   const result =
     prepared && "input" in prepared
       ? await pageQuery(searchEnvironments, prepared.input)
@@ -196,14 +230,27 @@ async function EnvironmentSearch({ form }: { form: FinnForm }) {
           <option value="open">Åpne</option>
           <option value="closed">Lukkede</option>
         </select>
+        <PlaceFields form={form} legend="Nær et sted (valgfritt)" />
         <button type="submit">Søk</button>
       </form>
       <Results
         prepared={prepared}
+        location={location}
+        form={form}
         count={result?.environments.length ?? 0}
         more={result?.more ?? false}
         empty="Ingen miljøer passer med søket."
-        hint="Finn åpne og lukkede miljøer du kan bli med i."
+        hint="Finn åpne og lukkede miljøer du kan bli med i, etter navn, tema eller sted."
+        map={
+          result && (
+            <AreaMap
+              areas={result.environments.flatMap(({ id, name, area }) =>
+                area ? [{ id, name, area }] : [],
+              )}
+              searched={location?.near ?? null}
+            />
+          )
+        }
       >
         {result?.environments.map((environment) => (
           <li key={environment.id} className="entry">
@@ -226,20 +273,102 @@ async function EnvironmentSearch({ form }: { form: FinnForm }) {
   );
 }
 
+/**
+ * Where to search near (WP-62): a place in words, or where the user is,
+ * and how far around it. A place already chosen stays chosen while its
+ * name is unchanged.
+ */
+function PlaceFields({ form, legend }: { form: FinnForm; legend: string }) {
+  return (
+    <fieldset>
+      <legend>{legend}</legend>
+      <label htmlFor="finn-sted">Sted</label>
+      <input
+        id="finn-sted"
+        name="sted"
+        type="search"
+        defaultValue={form.place}
+        maxLength={100}
+        autoComplete="off"
+      />
+      <label htmlFor="finn-avstand">Avstand</label>
+      <select
+        id="finn-avstand"
+        name="avstand"
+        defaultValue={form.distance || String(defaultDistanceKm)}
+        className={styles.select}
+      >
+        {distanceOptions.map((km) => (
+          <option key={km} value={km}>
+            {`Innen ${km} km`}
+          </option>
+        ))}
+      </select>
+      {form.point && (
+        <>
+          <input type="hidden" name="punkt" value={form.point} />
+          <input type="hidden" name="punktsted" value={form.place} />
+        </>
+      )}
+      <NearMeButton />
+    </fieldset>
+  );
+}
+
+/** Which place the search was near, and the others with that name. */
+function LocationNote({
+  form,
+  location,
+}: {
+  form: FinnForm;
+  location: Location;
+}) {
+  return (
+    <>
+      <p>{`Nær ${location.label}, innen ${location.near.radiusKm} km.`}</p>
+      {location.alternatives.length > 0 && (
+        <nav aria-label="Andre steder med samme navn">
+          <p className="quiet">Mente du et annet sted?</p>
+          <ul className={styles.alternatives}>
+            {location.alternatives.map((choice) => (
+              <li key={choice.point}>
+                <a
+                  href={finnHref(form, {
+                    place: choice.name,
+                    point: choice.point,
+                  })}
+                >
+                  {choice.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+    </>
+  );
+}
+
 /** The answer to a search, or why there is none (UX-P21). */
 function Results({
   prepared,
+  location,
+  form,
   count,
   more,
   empty,
   hint,
+  map,
   children,
 }: {
   prepared: Prepared<unknown>;
+  location: Location | undefined;
+  form: FinnForm;
   count: number;
   more: boolean;
   empty: string;
   hint: string;
+  map?: ReactNode;
   children: ReactNode;
 }) {
   if (!prepared) {
@@ -257,6 +386,7 @@ function Results({
   return (
     <section aria-labelledby="treff" className={styles.results}>
       <h2 id="treff">Treff</h2>
+      {location && <LocationNote form={form} location={location} />}
       {count === 0 ? (
         <p className="quiet">{empty}</p>
       ) : (
@@ -267,6 +397,7 @@ function Results({
           Viser de beste treffene. Gjør søket mer presist for å finne flere.
         </p>
       )}
+      {map}
     </section>
   );
 }

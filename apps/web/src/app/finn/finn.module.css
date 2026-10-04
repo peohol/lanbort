@@ -12,3 +12,11 @@
 .results {
   margin-top: 2rem;
 }
+
+.alternatives {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0;
+  list-style: none;
+}

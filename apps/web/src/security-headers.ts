@@ -1,3 +1,5 @@
+import { mapProvider } from "./map/provider";
+
 export interface SecurityHeaderOptions {
   /** `next dev` needs `eval` for React's development tooling; never in production. */
   development?: boolean;
@@ -12,11 +14,14 @@ const buildContentSecurityPolicy = ({
     "form-action 'self'",
     "frame-ancestors 'none'",
     "object-src 'none'",
-    "img-src 'self' blob: data:",
+    `img-src 'self' blob: data: ${mapProvider.origin}`,
     "font-src 'self'",
     "style-src 'self' 'unsafe-inline'",
     `script-src 'self' 'unsafe-inline'${development ? " 'unsafe-eval'" : ""}`,
-    "connect-src 'self'",
+    // The map's worker is served by the app itself (WP-62).
+    "worker-src 'self'",
+    // Map tiles are fetched from the map provider only (ADR-0008).
+    `connect-src 'self' ${mapProvider.origin}`,
   ].join("; ");
 
 export function getSecurityHeaders(
@@ -32,7 +37,8 @@ export function getSecurityHeaders(
     { key: "X-Frame-Options", value: "DENY" },
     {
       key: "Permissions-Policy",
-      value: "camera=(), microphone=(), geolocation=()",
+      // «Bruk der jeg er» in Finn asks once, on this site only (WP-62).
+      value: "camera=(), microphone=(), geolocation=(self)",
     },
     {
       key: "Strict-Transport-Security",

@@ -178,6 +178,7 @@ export const getEnvironment = defineQuery({
       audience: environment.audience,
       objectFocus: environment.objectFocus,
       location: environment.location,
+      area: environment.area,
       version: environment.version,
       requirementsRevision: environment.requirementsRevision,
       requiresObjectApproval: environment.requiresObjectApproval,

@@ -23,6 +23,8 @@ export type JsonPrimitive = boolean | number | string | null;
 
 export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
+export type Numeric = ColumnType<string, number | string, number | string>;
+
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export interface AppAccountIdentityFindings {
@@ -256,6 +258,12 @@ export interface AppEnvironmentRoleInvitations {
 }
 
 export interface AppEnvironments {
+  /**
+   * Centre of the approximate area (PS-NFR-008), rounded to hundredths of a degree.
+   */
+  area_latitude: Numeric | null;
+  area_longitude: Numeric | null;
+  area_radius_km: number | null;
   audience: string | null;
   created_at: Generated<Timestamp>;
   created_by_user_id: string;
@@ -751,12 +759,18 @@ export interface AppReviewDimensions {
 }
 
 export interface AppSearchEnvironments {
+  area_latitude: Numeric | null;
+  area_longitude: Numeric | null;
+  area_radius_km: number | null;
   document: string;
   environment_id: string;
   indexed_at: Generated<Timestamp>;
 }
 
 export interface AppSearchEnvironmentSources {
+  area_latitude: Numeric | null;
+  area_longitude: Numeric | null;
+  area_radius_km: number | null;
   document: string | null;
   environment_id: string | null;
 }

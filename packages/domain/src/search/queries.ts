@@ -1,7 +1,9 @@
 import {
   type EnvironmentSearchResult,
   environmentSearchQuerySchema,
+  type GeoArea,
   type MembershipState,
+  nearOf,
   type ObjectSearchQuery,
   type ObjectSearchResult,
   objectSearchQuerySchema,
@@ -10,7 +12,7 @@ import {
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
 import { defineQuery } from "../commands/query";
-import { effectiveState } from "../environment/model";
+import { effectiveState, toArea } from "../environment/model";
 import { loadEnvironmentAccess } from "../environment/store";
 import { withinAvailability } from "../loans/model";
 import { addDays } from "../objects/availability";
@@ -55,21 +57,46 @@ interface Candidate extends Ranked {
   }[];
 }
 
-/** The environments in which the user is an active member, as stored. */
+/**
+ * WP-62: whether the approximate area in `<table>.area_*` overlaps the one
+ * searched. An environment without an area is never near anything.
+ */
+const overlaps = (table: "entry" | "environment", near: GeoArea) =>
+  sql<boolean>`app.geo_areas_overlap(
+    ${sql.ref(`${table}.area_latitude`)},
+    ${sql.ref(`${table}.area_longitude`)},
+    ${sql.ref(`${table}.area_radius_km`)},
+    ${near.latitude}, ${near.longitude}, ${near.radiusKm}
+  )`;
+
+/**
+ * The environments in which the user is an active member, as stored; near
+ * an area, only those whose own area overlaps it.
+ */
 async function activeEnvironmentsOf(
   db: Db,
   userId: string,
   only: string | undefined,
+  near: GeoArea | undefined,
 ): Promise<string[]> {
   const rows = await db
-    .selectFrom("app.environment_memberships")
-    .select("environment_id")
-    .where("user_id", "=", userId)
-    .where("state", "=", "active")
+    .selectFrom("app.environment_memberships as membership")
+    .select("membership.environment_id")
+    .where("membership.user_id", "=", userId)
+    .where("membership.state", "=", "active")
     .$if(only !== undefined, (query) =>
-      query.where("environment_id", "=", only as string),
+      query.where("membership.environment_id", "=", only as string),
     )
-    .orderBy("environment_id")
+    .$if(near !== undefined, (query) =>
+      query
+        .innerJoin(
+          "app.environments as environment",
+          "environment.id",
+          "membership.environment_id",
+        )
+        .where(overlaps("environment", near as GeoArea)),
+    )
+    .orderBy("membership.environment_id")
     .execute();
 
   return rows.map((row) => row.environment_id);
@@ -107,6 +134,7 @@ export const searchObjects = defineQuery({
         tx,
         actor.userId,
         input.environmentId,
+        nearOf(input),
       )) {
         const access = await loadEnvironmentAccess(
           tx,
@@ -221,7 +249,8 @@ function availableThroughout(
  * index never holds a hidden environment, and the environment's current
  * type and state are checked in the same query, so neither a hidden nor a
  * winding-down environment is ever found (PS-NFR-002), however stale the
- * index is.
+ * index is. Near an area (WP-62), the indexed approximate areas that
+ * overlap it, closest first among equally relevant ones.
  */
 export const searchEnvironments = defineQuery({
   name: "search.environments",
@@ -232,6 +261,7 @@ export const searchEnvironments = defineQuery({
       return null;
     }
 
+    const near = nearOf(input);
     const rows = await db
       .selectFrom("app.search_environments as entry")
       .innerJoin(
@@ -251,11 +281,19 @@ export const searchEnvironments = defineQuery({
         "environment.name",
         "environment.description",
         "environment.location",
+        "environment.area_latitude",
+        "environment.area_longitude",
+        "environment.area_radius_km",
         "membership.state",
         "membership.transition_deadline as transitionDeadline",
-        sql<number>`ts_rank(entry.document, app.search_query(${input.q}))`.as(
-          "rank",
-        ),
+        rankBy(input.q).as("rank"),
+        (near === undefined
+          ? sql<number>`0`
+          : sql<number>`app.geo_distance_km(
+              entry.area_latitude, entry.area_longitude,
+              ${near.latitude}, ${near.longitude}
+            )`
+        ).as("distance"),
       ])
       .where(
         "environment.type",
@@ -276,8 +314,16 @@ export const searchEnvironments = defineQuery({
           ),
         ),
       )
-      .where(sql<boolean>`entry.document @@ app.search_query(${input.q})`)
+      .$if(input.q !== undefined, (query) =>
+        query.where(
+          sql<boolean>`entry.document @@ app.search_query(${input.q})`,
+        ),
+      )
+      .$if(near !== undefined, (query) =>
+        query.where(overlaps("entry", near as GeoArea)),
+      )
       .orderBy("rank", "desc")
+      .orderBy("distance")
       .orderBy("environment.name")
       .orderBy("environment.id")
       .limit(searchResultLimit + 1)
@@ -292,6 +338,7 @@ export const searchEnvironments = defineQuery({
       name: row.name,
       description: row.description,
       location: row.location,
+      area: toArea(row),
       membershipState:
         row.state === null
           ? null

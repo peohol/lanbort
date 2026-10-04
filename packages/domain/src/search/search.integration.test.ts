@@ -21,6 +21,7 @@ import {
   leaveEnvironment,
   rejectMembership,
 } from "../environment/membership-commands";
+import { getEnvironment } from "../environment/queries";
 import { changeEnvironmentType } from "../environment/type-change-commands";
 import { addDays, calendarDate } from "../objects/availability";
 import { archiveObject, createObject, updateObject } from "../objects/commands";
@@ -432,6 +433,7 @@ describe("Finn: environments (WP-61, PS-ENV-001)", () => {
         name: "Verkstedet",
         description: `Felles verktøy for ${name}`,
         location: "Grünerløkka",
+        area: null,
         membershipState: null,
       },
     ]);
@@ -530,6 +532,233 @@ describe("Finn: environments (WP-61, PS-ENV-001)", () => {
     expect(await environmentsFound(viewer, { q: after })).toEqual([
       environmentId,
     ]);
+  });
+});
+
+/**
+ * A centre nobody else's test uses: the shared database keeps every area,
+ * and one of a kilometre or two never reaches another random one.
+ */
+const somewhere = () => ({
+  latitude: Math.round((Math.random() * 120 - 60) * 100) / 100,
+  longitude: Math.round((Math.random() * 340 - 170) * 100) / 100,
+});
+
+/** About `km` north of a centre (a degree of latitude is about 111 km). */
+const north = (
+  centre: { latitude: number; longitude: number },
+  km: number,
+) => ({
+  ...centre,
+  latitude: Math.round((centre.latitude + km / 111.2) * 100) / 100,
+});
+
+describe("Finn: near an area (WP-62, PS-NFR-008)", () => {
+  it("keeps an environment's area no more precise than about a kilometre", async () => {
+    const admin = await user();
+    const environmentId = await environment(admin, {
+      area: { latitude: 59.920113, longitude: 10.757381, radiusKm: 2 },
+    });
+
+    const read = await executeQuery(domain, getEnvironment, {
+      actor: admin,
+      input: { environmentId },
+    });
+    expect(read.area).toEqual({
+      latitude: 59.92,
+      longitude: 10.76,
+      radiusKm: 2,
+    });
+
+    for (const area of [
+      { latitude: 59.92, longitude: 10.76, radiusKm: 3 },
+      { latitude: 91, longitude: 10.76, radiusKm: 2 },
+      { latitude: 59.92, radiusKm: 2 },
+    ]) {
+      await expect(
+        run(updateEnvironmentDetails, admin, {
+          environmentId,
+          name: "Borettslaget",
+          area,
+          expectedVersion: 1,
+        }),
+      ).rejects.toMatchObject({ code: "invalid_input" });
+    }
+  });
+
+  it("finds environments whose area overlaps the one searched, closest first", async () => {
+    const admin = await user();
+    const centre = somewhere();
+    const near = await environment(admin, {
+      name: "Nærmest",
+      area: { ...centre, radiusKm: 1 },
+    });
+    const further = await environment(admin, {
+      name: "Litt lenger unna",
+      type: "closed",
+      area: { ...north(centre, 6), radiusKm: 2 },
+    });
+    const far = await environment(admin, {
+      name: "Langt unna",
+      area: { ...north(centre, 30), radiusKm: 2 },
+    });
+    await indexed();
+    const viewer = await user();
+    const search = (radiusKm: number, input: object = {}) =>
+      environmentsFound(viewer, { ...centre, radiusKm, ...input });
+
+    expect(await search(1)).toEqual([near]);
+    expect(await search(5), "closest first").toEqual([near, further]);
+    expect(await search(5, { type: "closed" })).toEqual([further]);
+    expect(await search(50)).toEqual([near, further, far]);
+    expect(
+      await environmentsFound(viewer, {
+        latitude: String(centre.latitude),
+        longitude: String(centre.longitude),
+        radiusKm: "5",
+      }),
+      "as parameters of an address",
+    ).toEqual([near, further]);
+
+    const { environments } = await executeQuery(domain, searchEnvironments, {
+      actor: viewer,
+      input: { q: "nærmest", ...centre, radiusKm: 10 },
+    });
+    expect(environments, "text and area together").toEqual([
+      expect.objectContaining({ id: near, area: { ...centre, radiusKm: 1 } }),
+    ]);
+  });
+
+  it("never finds a hidden or barring environment by its area", async () => {
+    const admin = await user();
+    const centre = somewhere();
+    const area = { ...centre, radiusKm: 1 as const };
+    const hidden = await environment(admin, { type: "hidden", area });
+    const closed = await environment(admin, { type: "closed", area });
+    await indexed();
+    const applicant = await user();
+    const { membershipId } = await run(joinEnvironment, applicant, {
+      environmentId: closed,
+      answers: [],
+    });
+    await run(rejectMembership, admin, {
+      environmentId: closed,
+      membershipId,
+      restrict: true,
+    });
+    const near = { ...centre, radiusKm: 10 };
+
+    expect(await indexedEnvironment(hidden)).toBe(false);
+    expect(
+      await environmentsFound(admin, near),
+      "not even its members",
+    ).toEqual([closed]);
+    expect(await environmentsFound(applicant, near)).toEqual([]);
+
+    await run(changeEnvironmentType, admin, {
+      environmentId: closed,
+      expectedType: "closed",
+      type: "hidden",
+    });
+    expect(
+      await environmentsFound(await user(), near),
+      "before the index catches up",
+    ).toEqual([]);
+  });
+
+  it("follows a moved or removed area", async () => {
+    const admin = await user();
+    const before = somewhere();
+    const after = somewhere();
+    const environmentId = await environment(admin, {
+      area: { ...before, radiusKm: 1 },
+    });
+    await indexed();
+    const viewer = await user();
+
+    await run(updateEnvironmentDetails, admin, {
+      environmentId,
+      name: "Borettslaget",
+      area: { ...after, radiusKm: 1 },
+      expectedVersion: 1,
+    });
+    await indexed();
+    expect(await environmentsFound(viewer, { ...before, radiusKm: 1 })).toEqual(
+      [],
+    );
+    expect(await environmentsFound(viewer, { ...after, radiusKm: 1 })).toEqual([
+      environmentId,
+    ]);
+
+    await run(updateEnvironmentDetails, admin, {
+      environmentId,
+      name: "Borettslaget",
+      expectedVersion: 2,
+    });
+    await indexed();
+    expect(await environmentsFound(viewer, { ...after, radiusKm: 1 })).toEqual(
+      [],
+    );
+  });
+
+  it("finds things only in the viewer's environments near the area", async () => {
+    const centre = somewhere();
+    const { environmentId, owner, viewer, admin } = await setting({
+      name: "Nabolaget",
+      area: { ...centre, radiusKm: 2 },
+    });
+    const elsewhere = await environment(admin, {
+      name: "Andre siden",
+      area: { ...north(centre, 40), radiusKm: 2 },
+    });
+    const nowhere = await environment(admin, { name: "Uten sted" });
+    await join(elsewhere, admin, owner);
+    await join(elsewhere, admin, viewer);
+    await join(nowhere, admin, owner);
+    await join(nowhere, admin, viewer);
+    const name = word();
+    const objectId = await create(owner, { title: name });
+    for (const place of [environmentId, elsewhere, nowhere]) {
+      await publish(owner, objectId, place);
+    }
+    await indexed();
+
+    const near = await searchFor(viewer, { q: name, ...centre, radiusKm: 5 });
+    expect(near.objects.map((object) => object.foundIn)).toEqual([
+      [
+        expect.objectContaining({
+          environmentId,
+          environmentName: "Nabolaget",
+        }),
+      ],
+    ]);
+    expect(
+      await found(viewer, { q: name, ...north(centre, 80), radiusKm: 1 }),
+    ).toEqual([]);
+    expect(
+      (await searchFor(viewer, { q: name })).objects[0]?.foundIn,
+      "without an area, everywhere",
+    ).toHaveLength(3);
+  });
+
+  it("refuses an area that is incomplete, or a search by area alone for things", async () => {
+    const viewer = await user();
+    const centre = somewhere();
+
+    for (const input of [
+      { q: "stige", latitude: centre.latitude },
+      { q: "stige", ...centre, radiusKm: 3 },
+      { ...centre, radiusKm: 5 },
+    ]) {
+      await expect(searchFor(viewer, input)).rejects.toMatchObject({
+        code: "invalid_input",
+      });
+    }
+    for (const input of [{}, { ...centre }, { type: "open" }]) {
+      await expect(
+        executeQuery(domain, searchEnvironments, { actor: viewer, input }),
+      ).rejects.toMatchObject({ code: "invalid_input" });
+    }
   });
 });
 

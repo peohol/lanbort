@@ -34,6 +34,7 @@ Innlogging bruker engangskode på e-post. Lokalt havner e-postene i Mailpit på 
 | `packages/auth` | Eneste adapter mot Supabase Auth. Gir leverandørnøytral, verifisert identitet. Kun for serverkode |
 | `packages/storage` | Eneste adapter mot Supabase Storage, og bildebehandling som fjerner metadata. Kun for serverkode |
 | `packages/email` | Eneste adapter mot e-postleverandøren (Resend) for varslings-e-post. Kun for serverkode |
+| `packages/places` | Eneste adapter mot stedsnavntjenesten (Kartverket) for søk nær et sted. Kun for serverkode |
 | `packages/observability` | Strukturert logging med tillatelsesliste for felt |
 | `supabase/` | Lokal Supabase-konfigurasjon, SQL-migrasjoner og pgTAP-tester |
 

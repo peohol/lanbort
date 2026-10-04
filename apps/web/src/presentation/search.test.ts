@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   describeAvailability,
   describeFoundIn,
+  finnHref,
   prepareEnvironmentSearch,
   prepareObjectSearch,
   readFinnForm,
@@ -30,6 +31,9 @@ describe("Finn's form", () => {
       from: "2026-10-05",
       to: "",
       type: "",
+      place: "",
+      point: "",
+      distance: "",
     });
     expect(readFinnForm({ vis: "miljoer", q: ["sykkel", "x"] })).toMatchObject({
       tab: "environments",
@@ -120,5 +124,48 @@ describe("found things in the user's words", () => {
     expect(
       describeFoundIn(found({ foundIn: [place("Gata"), place("Hytta")] })),
     ).toBe("I Gata, Hytta");
+  });
+});
+
+describe("Finn near a place (WP-62)", () => {
+  const near = { latitude: 59.92, longitude: 10.76, radiusKm: 10 } as const;
+
+  it("keeps a chosen point only while the place is the one it was chosen for", () => {
+    expect(
+      readFinnForm({
+        sted: "Bergen",
+        punkt: "60.39,5.32",
+        punktsted: "Bergen",
+      }),
+    ).toMatchObject({ place: "Bergen", point: "60.39,5.32" });
+    expect(
+      readFinnForm({ sted: "Moss", punkt: "60.39,5.32", punktsted: "Bergen" })
+        .point,
+      "a newly typed place is looked up afresh",
+    ).toBe("");
+    expect(readFinnForm({ punkt: "59.92,10.76", punktsted: "" }).point).toBe(
+      "59.92,10.76",
+    );
+  });
+
+  it("writes the address the form would submit, with the point's place", () => {
+    const form = readFinnForm({ vis: "miljoer", q: "hage", avstand: "5" });
+
+    expect(finnHref(form, { place: "Bergen", point: "60.39,5.32" })).toBe(
+      "/finn?vis=miljoer&q=hage&sted=Bergen&avstand=5&punkt=60.39%2C5.32&punktsted=Bergen",
+    );
+    expect(finnHref(readFinnForm({}))).toBe("/finn?");
+  });
+
+  it("finds environments by place alone, but things only by text or category", () => {
+    expect(prepareEnvironmentSearch(readFinnForm({}), near)).toEqual({
+      input: { latitude: 59.92, longitude: 10.76, radiusKm: 10 },
+    });
+    expect(prepareObjectSearch(readFinnForm({ q: "drill" }), near)).toEqual({
+      input: { q: "drill", latitude: 59.92, longitude: 10.76, radiusKm: 10 },
+    });
+    expect(prepareObjectSearch(readFinnForm({}), near)).toEqual({
+      problem: "Skriv hva du leter etter, eller velg en kategori.",
+    });
   });
 });

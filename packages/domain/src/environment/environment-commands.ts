@@ -1,5 +1,6 @@
 import {
   createEnvironmentSchema,
+  type GeoArea,
   updateEnvironmentDetailsSchema,
   updateRequirementsSchema,
 } from "@lanbort/contracts";
@@ -79,6 +80,7 @@ function details(input: {
   audience?: string | null | undefined;
   objectFocus?: string | null | undefined;
   location?: string | null | undefined;
+  area?: GeoArea | null | undefined;
 }) {
   return {
     name: input.name,
@@ -86,6 +88,10 @@ function details(input: {
     audience: input.audience ?? null,
     object_focus: input.objectFocus ?? null,
     location: input.location ?? null,
+    // Already coarse from the contract; the columns round the same way.
+    area_latitude: input.area?.latitude ?? null,
+    area_longitude: input.area?.longitude ?? null,
+    area_radius_km: input.area?.radiusKm ?? null,
   };
 }
 
