@@ -21,6 +21,7 @@ import {
 import { idempotencyKeyPattern } from "../commands/idempotency";
 import { defineQuery, executeQuery } from "../commands/query";
 import { DomainError } from "../errors";
+import type { EventRecorder } from "../events/recorder";
 import { defineConsumer, OutboxDeliveryError } from "../outbox/consumer";
 import {
   objectImageAdded,
@@ -32,7 +33,12 @@ import {
   readObjectPolicy,
   removeObjectImagePolicy,
 } from "./policies";
-import { actingUserId, bumpVersion, loadObjectState } from "./state";
+import {
+  actingUserId,
+  bumpVersion,
+  loadObjectState,
+  type ObjectState,
+} from "./state";
 
 /**
  * Object images (PS-OBJ-002) are stored by a storage adapter behind these
@@ -323,31 +329,54 @@ export const removeObjectImage = defineCommand({
         }
       : null;
   },
-  execute: async ({ tx, actor, input, resource, events, now }) => {
-    await tx
-      .deleteFrom("app.object_images")
-      .where("id", "=", input.imageId)
-      .execute();
-    // Keep positions contiguous, so the order and the five slots stay intact.
-    await tx
-      .updateTable("app.object_images")
-      .set((eb) => ({ position: eb("position", "-", 1) }))
-      .where("object_id", "=", resource.objectId)
-      .where("position", ">", resource.imagePosition)
-      .execute();
-
-    const version = await bumpVersion(tx, resource, now, {
-      actorUserId: actingUserId(actor),
-      change: "image_removed",
-    });
-    events.record(objectImageRemoved, {
-      resourceId: resource.objectId,
-      payload: { version, imageId: input.imageId },
-    });
-
-    return { objectId: resource.objectId, version };
-  },
+  execute: async ({ tx, actor, input, resource, events, now }) => ({
+    objectId: resource.objectId,
+    version: await removeImage(
+      tx,
+      resource,
+      { imageId: input.imageId, position: resource.imagePosition },
+      actingUserId(actor),
+      events,
+      now,
+    ),
+  }),
 });
+
+/**
+ * Removes one image of the locked object as a new version by `actorUserId`.
+ * The file goes after commit ({@link objectImageFileCleanup}).
+ */
+export async function removeImage(
+  tx: Kysely<Database>,
+  object: ObjectState,
+  image: { readonly imageId: string; readonly position: number },
+  actorUserId: string,
+  events: EventRecorder,
+  now: Date,
+): Promise<number> {
+  await tx
+    .deleteFrom("app.object_images")
+    .where("id", "=", image.imageId)
+    .execute();
+  // Keep positions contiguous, so the order and the five slots stay intact.
+  await tx
+    .updateTable("app.object_images")
+    .set((eb) => ({ position: eb("position", "-", 1) }))
+    .where("object_id", "=", object.objectId)
+    .where("position", ">", image.position)
+    .execute();
+
+  const version = await bumpVersion(tx, object, now, {
+    actorUserId,
+    change: "image_removed",
+  });
+  events.record(objectImageRemoved, {
+    resourceId: object.objectId,
+    payload: { version, imageId: image.imageId },
+  });
+
+  return version;
+}
 
 /** Authorizes reading one image of an object; its file comes from the store. */
 const objectImageFile = defineQuery({

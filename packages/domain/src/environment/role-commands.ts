@@ -14,7 +14,9 @@ import {
   administrators,
   closeRoleInvitations,
   grantRole,
+  type ChangedBy,
   lapseInvitationsOf,
+  type RoleRevokeReason,
   pendingRoleInvitations,
   revokeRoles,
   findPendingRoleInvitation,
@@ -345,12 +347,12 @@ export const withdrawRoleInvitation = defineCommand({
  * Ends a user's administrator role and what depended on it: invitations to
  * the user (such as a pending handover) and a registered ownership claim.
  */
-async function endAdministration(
+export async function endAdministration(
   tx: Tx,
   environmentId: string,
   userId: string,
-  reason: "resigned" | "removed",
-  by: string,
+  reason: RoleRevokeReason,
+  by: ChangedBy,
   now: Date,
   events: EventRecorder,
 ): Promise<void> {
@@ -360,7 +362,7 @@ async function endAdministration(
     userId,
     ["administrator"],
     reason,
-    { userId: by },
+    by,
     now,
     events,
   );
@@ -400,7 +402,7 @@ export const removeAdministrator = defineCommand({
       environmentId,
       input.userId,
       "removed",
-      owner,
+      { userId: owner },
       now,
       events,
     );
@@ -441,7 +443,7 @@ export const resignAdministrator = defineCommand({
       environmentId,
       userId,
       "resigned",
-      userId,
+      { userId },
       now,
       events,
     );

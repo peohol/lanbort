@@ -418,7 +418,7 @@ export const leaveEnvironment = defineCommand({
           ? ("invitation_declined" as const)
           : ("application_withdrawn" as const);
 
-    await end(tx, membership, reason, now);
+    await endMembership(tx, membership, reason, now);
     events.record(membershipEnded, {
       resourceId: membership.id,
       payload: { ...eventPayload(membership), reason },
@@ -437,15 +437,15 @@ export const leaveEnvironment = defineCommand({
   },
 });
 
-async function end(
+/** Why a membership ended, as the database records it. */
+export type MembershipEndReason =
+  z.infer<typeof membershipEnded.payload>["reason"] | "application_rejected";
+
+/** Ends the locked membership; the caller records why. */
+export async function endMembership(
   tx: Tx,
   membership: MembershipRecord,
-  reason:
-    | "left"
-    | "application_withdrawn"
-    | "application_rejected"
-    | "invitation_declined"
-    | "invitation_withdrawn",
+  reason: MembershipEndReason,
   now: Date,
 ): Promise<void> {
   await tx
@@ -656,7 +656,7 @@ export const rejectMembership = defineCommand({
         .where("id", "=", membership.id)
         .execute();
     } else {
-      await end(tx, membership, "application_rejected", now);
+      await endMembership(tx, membership, "application_rejected", now);
     }
 
     events.record(membershipRejected, {
@@ -744,7 +744,7 @@ export const withdrawInvitation = defineCommand({
       conflict("No pending invitation");
     }
 
-    await end(tx, membership, "invitation_withdrawn", now);
+    await endMembership(tx, membership, "invitation_withdrawn", now);
     events.record(membershipEnded, {
       resourceId: membership.id,
       payload: { ...eventPayload(membership), reason: "invitation_withdrawn" },

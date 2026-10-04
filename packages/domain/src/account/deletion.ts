@@ -323,6 +323,27 @@ async function deleteAccount(
   return result;
 }
 
+/**
+ * Deletes the locked account with the product's own steps and bindings, as
+ * {@link deleteOwnAccount} and {@link completeAccountClosure} do. A restore
+ * re-applies a deletion made after its backup through this (WP-72).
+ */
+export function deleteAccountAs(
+  db: Db,
+  change: Omit<AccountStatusChange, "to">,
+  events: EventRecorder,
+  now: Date,
+): Promise<AccountLifecycleResult> {
+  return deleteAccount(
+    db,
+    change,
+    accountDeletionSteps,
+    accountBindingSources,
+    events,
+    now,
+  );
+}
+
 export function defineAccountDeletion(
   steps: readonly AccountDeletionStep[],
   sources: readonly AccountBindingSource[],
