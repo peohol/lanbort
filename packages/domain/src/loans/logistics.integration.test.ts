@@ -1,9 +1,11 @@
 import type { ReturnOutcome } from "@lanbort/contracts";
+import { sql } from "kysely";
 import { afterAll, describe, expect, it } from "vitest";
 import { systemActor, type UserActor } from "../actor";
 import { executeQuery } from "../commands/query";
 import { blockUser, liftUserBlock } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
+import { commitWhileRacing } from "../testing/races";
 import { loanTestKit } from "../testing/loans";
 import { approveLoanRequest } from "./approval";
 import { cancelLoan } from "./cancellation";
@@ -330,5 +332,31 @@ describe("closing as a safety measure (PS-COM-007, OD-0020)", () => {
     await expect(closeForSafety(crypto.randomUUID())).rejects.toMatchObject(
       notFound,
     );
+  });
+});
+
+describe("concurrency (docs/architecture/05)", () => {
+  it("leaves no open channel when a block races the loan's end", async () => {
+    const { owner, borrower, loanId } = await reservedLoan();
+
+    // The loan ends in a transaction that is still open when the block
+    // comes: the block waits for it and then sees the loan has ended.
+    await commitWhileRacing(
+      db,
+      async (tx) => {
+        await sql`
+          update app.loans set status = 'ended', status_changed_at = now(),
+            end_reason = 'cancelled', ended_at = now(),
+            ended_by_user_id = ${borrower.userId}
+          where id = ${loanId}
+        `.execute(tx);
+        await sql`delete from app.loan_reservations where loan_id = ${loanId}`.execute(
+          tx,
+        );
+      },
+      () => block(borrower, owner),
+    );
+
+    expect(await channelsOf(loanId)).toEqual([]);
   });
 });

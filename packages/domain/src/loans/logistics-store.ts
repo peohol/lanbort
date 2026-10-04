@@ -150,3 +150,52 @@ export async function closeChannel(
     .where("closed_at", "is", null)
     .execute();
 }
+
+/**
+ * Whether a channel on the loan between these two people was closed as a
+ * safety measure, which keeps them from getting another.
+ */
+export async function hasSafetyClosure(
+  db: Db,
+  loanId: string,
+  parties: { readonly borrowerUserId: string; readonly lenderUserId: string },
+): Promise<boolean> {
+  const row = await db
+    .selectFrom("app.loan_logistics_channels")
+    .select("id")
+    .where("loan_id", "=", loanId)
+    .where("borrower_user_id", "=", parties.borrowerUserId)
+    .where("lender_user_id", "=", parties.lenderUserId)
+    .where("close_reason", "=", "safety")
+    .executeTakeFirst();
+
+  return row !== undefined;
+}
+
+/**
+ * Records a safety closure between people who were the loan's parties when
+ * there is no channel to close: a restore re-applies the measure this way
+ * (WP-72), so a later block cannot open another. The database allows no
+ * other closed channel to be added.
+ */
+export async function insertSafetyClosure(
+  db: Db,
+  loanId: string,
+  parties: { readonly borrowerUserId: string; readonly lenderUserId: string },
+  at: Date,
+): Promise<string> {
+  const { id } = await db
+    .insertInto("app.loan_logistics_channels")
+    .values({
+      loan_id: loanId,
+      borrower_user_id: parties.borrowerUserId,
+      lender_user_id: parties.lenderUserId,
+      opened_at: at,
+      closed_at: at,
+      close_reason: "safety",
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+
+  return id;
+}

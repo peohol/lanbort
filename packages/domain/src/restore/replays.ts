@@ -47,7 +47,12 @@ import { DomainError } from "../errors";
 import type { EventDefinition } from "../events/catalog";
 import type { EventRecorder } from "../events/recorder";
 import { loanLogisticsClosedForSafety } from "../loans/events";
-import { closeChannel, findOpenChannel } from "../loans/logistics-store";
+import {
+  closeChannel,
+  findOpenChannel,
+  hasSafetyClosure,
+  insertSafetyClosure,
+} from "../loans/logistics-store";
 import { moderationMeasureTaken } from "../moderation/events";
 import { archiveLockedObject } from "../objects/commands";
 import { removeOwner } from "../objects/co-owners";
@@ -952,9 +957,11 @@ const moderationReplay: RestoreReplay = {
 };
 
 /**
- * PS-COM-007: a logistics channel closed for safety stays closed. The block
- * replay opens a new channel where the restored copy had none, so the loan's
- * open channel between the same parties is the one to close.
+ * PS-COM-007: a logistics channel closed for safety stays closed, and its
+ * parties get no new one. The block replay opens a new channel where the
+ * restored copy had none, so the loan's open channel between the same
+ * people is the one to close; with none to close (the block was lifted
+ * again, or the loan has moved on), the closure is recorded on its own.
  */
 const logisticsSafetyReplay: RestoreReplay = {
   name: "loan_logistics_safety_closure",
@@ -973,26 +980,45 @@ const logisticsSafetyReplay: RestoreReplay = {
         }
       : null;
   },
-  replay: async (args) => {
-    const { loanId } = payloadOf(loanLogisticsClosedForSafety, args.entry);
-    const { captured } = args.entry;
+  replay: async ({ tx, entry, events, now }) => {
+    const { loanId } = payloadOf(loanLogisticsClosedForSafety, entry);
+    const borrowerUserId = entry.captured?.borrowerUserId;
+    const lenderUserId = entry.captured?.lenderUserId;
 
-    if (!captured?.borrowerUserId || !captured.lenderUserId) {
+    if (!borrowerUserId || !lenderUserId) {
       needsHandling("The journal does not say whom the channel joined");
     }
 
-    const open = await findOpenChannel(args.tx, loanId);
+    // A loan made after the backup is lost with the window, and its
+    // channel with it.
+    const loan = await tx
+      .selectFrom("app.loans")
+      .select("id")
+      .where("id", "=", loanId)
+      .executeTakeFirst();
 
-    if (
-      open?.borrowerUserId !== captured.borrowerUserId ||
-      open.lenderUserId !== captured.lenderUserId
-    ) {
+    if (!loan) {
       return "unchanged";
     }
 
-    await closeChannel(args.tx, open.id, "safety", args.now);
-    args.events.record(loanLogisticsClosedForSafety, {
-      resourceId: open.id,
+    const parties = { borrowerUserId, lenderUserId };
+    const open = await findOpenChannel(tx, loanId);
+    let channelId: string;
+
+    if (
+      open?.borrowerUserId === borrowerUserId &&
+      open.lenderUserId === lenderUserId
+    ) {
+      await closeChannel(tx, open.id, "safety", now);
+      channelId = open.id;
+    } else if (await hasSafetyClosure(tx, loanId, parties)) {
+      return "unchanged";
+    } else {
+      channelId = await insertSafetyClosure(tx, loanId, parties, now);
+    }
+
+    events.record(loanLogisticsClosedForSafety, {
+      resourceId: channelId,
       payload: { loanId },
     });
 

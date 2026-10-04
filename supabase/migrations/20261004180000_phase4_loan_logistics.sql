@@ -75,7 +75,10 @@ $$;
 revoke execute on function app.loan_logistics_qualifies(app.loans) from public;
 
 -- A new channel joins the loan's current parties, while the loan qualifies
--- and has no open channel.
+-- and has no open channel. The one closed channel that may be added is a
+-- safety closure a restore re-applies (WP-72) when the copy has no channel
+-- left to close: it keeps the loan from opening another between people who
+-- were its parties.
 create function app.guard_new_loan_logistics_channel()
 returns trigger
 language plpgsql
@@ -86,16 +89,34 @@ declare
 begin
   select * into loan from app.loans where id = new.loan_id;
 
-  if new.closed_at is not null
-    or loan.borrower_user_id is distinct from new.borrower_user_id
-    or loan.responsible_lender_id is distinct from new.lender_user_id
-    or not app.loan_logistics_qualifies(loan)
+  if new.closed_at is not null then
+    if new.close_reason = 'safety'
+      and loan.borrower_user_id = new.borrower_user_id
+      and (new.lender_user_id = loan.responsible_lender_id or exists (
+        select 1 from app.loan_lender_transfers
+        where loan_id = loan.id
+          and status = 'completed'
+          and new.lender_user_id in (from_user_id, to_user_id)
+      ))
+      and not exists (
+        select 1 from app.loan_logistics_channels
+        where loan_id = loan.id
+          and borrower_user_id = new.borrower_user_id
+          and lender_user_id = new.lender_user_id
+          and close_reason = 'safety'
+      )
+    then
+      return new;
+    end if;
+  elsif loan.borrower_user_id = new.borrower_user_id
+    and loan.responsible_lender_id = new.lender_user_id
+    and app.loan_logistics_qualifies(loan)
   then
-    raise exception 'loan % cannot have a logistics channel now', new.loan_id
-      using errcode = 'restrict_violation';
+    return new;
   end if;
 
-  return new;
+  raise exception 'loan % cannot have such a logistics channel', new.loan_id
+    using errcode = 'restrict_violation';
 end;
 $$;
 
@@ -146,11 +167,17 @@ create trigger loan_logistics_channels_no_delete
   for each row execute function app.reject_append_only_mutation();
 
 -- Opens a channel on each of the loans that qualifies and has none open.
+-- The loans are locked first, so a concurrent end or change of lender
+-- either commits before (and the loan is read as it is then) or waits until
+-- the channel exists and then closes it.
 create function app.open_loan_logistics(loan_ids uuid[], at timestamptz)
 returns void
-language sql
+language plpgsql
 set search_path = ''
 as $$
+begin
+  perform 1 from app.loans where id = any(loan_ids) order by id for share;
+
   insert into app.loan_logistics_channels (loan_id, borrower_user_id, lender_user_id, opened_at)
   select loan.id, loan.borrower_user_id, loan.responsible_lender_id, at
   from app.loans as loan
@@ -160,6 +187,7 @@ as $$
       select 1 from app.loan_logistics_channels
       where loan_id = loan.id and closed_at is null
     );
+end;
 $$;
 
 revoke execute on function app.open_loan_logistics(uuid[], timestamptz) from public;
