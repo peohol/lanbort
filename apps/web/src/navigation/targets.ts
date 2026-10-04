@@ -20,6 +20,8 @@ const targetPages: Record<
   user: { page: accountHref, anchor: () => "venner" },
   environment: null,
   case: null,
+  object_question: null,
+  object_subscription: null,
 };
 
 export function hrefFor(target: NotificationTarget): string | null {
