@@ -192,7 +192,7 @@ describe("bindings (PS-ADM-004)", () => {
     expect(await statusOf(owner.userId)).toBe("deleted");
   });
 
-  it("keeps the parties of an open mediation until it is closed", async () => {
+  it("keeps the parties of an open mediation until it is closed, also one at rest", async () => {
     const { owner, borrower, admin, loanId } = await reservedLoan(1, 3);
     kit.advance(2 * 24 * 60 * 60 * 1000);
     for (const [actor, outcome] of [
@@ -205,6 +205,9 @@ describe("bindings (PS-ADM-004)", () => {
         outcome,
       });
     }
+    // Asking for mediation finishes the loan, so an account at rest may
+    // (PS-ADM-002).
+    await run(deactivateAccount, borrower, {});
     const { caseId } = await run(requestLoanMediation, borrower, {
       loanId,
       body: "Jeg fikk den aldri.",
