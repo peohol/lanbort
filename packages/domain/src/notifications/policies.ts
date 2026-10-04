@@ -65,6 +65,17 @@ export const notifyLoanDeadlinesPolicy = definePolicy({
   actor: [requireSystemProcess(notificationDeadlineProcess)],
 });
 
+/**
+ * Name of the scheduled job that tells handlers about cases the database
+ * returned to the queue by itself (WP-45).
+ */
+export const notificationCaseQueueProcess = "notifications.case_queue";
+
+export const notifyCaseQueueReturnsPolicy = definePolicy({
+  action: "notification.notify_case_queue_returns",
+  actor: [requireSystemProcess(notificationCaseQueueProcess)],
+});
+
 export const notificationPolicies = [
   listNotificationsPolicy,
   readNotificationPreferencesPolicy,
@@ -72,4 +83,5 @@ export const notificationPolicies = [
   markNotificationsReadPolicy,
   markAllNotificationsReadPolicy,
   notifyLoanDeadlinesPolicy,
+  notifyCaseQueueReturnsPolicy,
 ];

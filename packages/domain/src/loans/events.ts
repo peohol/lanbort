@@ -236,3 +236,20 @@ export const loanResponsibilityWithdrawn = loanEvent(
   "responsibility_withdrawn",
   { transferId },
 );
+
+/**
+ * PS-LOAN-018: the loan ended as administratively unresolved, by no party.
+ * It says nothing about what happened or whose fault anything was. The
+ * object stays blocked for new loans until an owner confirms having it back
+ * (PS-LOAN-019); loans of it already approved stay, and their parties may
+ * need to know (`otherLoanIds`).
+ */
+export const loanEndedUnresolved = loanEvent("ended_unresolved", {
+  otherLoanIds: z.array(z.uuid()),
+});
+
+/**
+ * PS-LOAN-019: an owner (the actor) confirmed having the object back after
+ * its loan ended unresolved, so it may take new loans again.
+ */
+export const loanControlConfirmed = loanEvent("control_confirmed", {});

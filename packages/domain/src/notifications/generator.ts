@@ -2,6 +2,7 @@ import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
 import { defineConsumer } from "../outbox/consumer";
 import type { NotificationRule } from "./rule";
+import { caseRules } from "./rules/cases";
 import { loanRules } from "./rules/loans";
 import { relationRules } from "./rules/relations";
 import { recordNotifications } from "./store";
@@ -10,6 +11,7 @@ import { recordNotifications } from "./store";
 export const notificationRules: readonly NotificationRule[] = [
   ...loanRules,
   ...relationRules,
+  ...caseRules,
 ];
 
 export function rulesByEventType(rules: readonly NotificationRule[]) {

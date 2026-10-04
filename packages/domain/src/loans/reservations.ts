@@ -42,6 +42,32 @@ export const possessionUncertainStatuses: readonly StoredLoanStatus[] = [
   "return_disputed",
 ];
 
+/**
+ * SQL: the loan (aliased `loan`) ended unresolved, and no owner has
+ * confirmed having the object back yet (PS-LOAN-019).
+ */
+export const awaitingControl = sql<boolean>`(
+  loan.status = 'ended'
+  and loan.end_reason = 'unresolved'
+  and not exists (
+    select 1 from app.loan_control_confirmations where loan_id = loan.id
+  )
+)`;
+
+/** When an owner confirmed having the loan's object back, if anyone has. */
+export async function findControlConfirmation(
+  db: Db,
+  loanId: string,
+): Promise<Date | null> {
+  const row = await db
+    .selectFrom("app.loan_control_confirmations")
+    .select("confirmed_at")
+    .where("loan_id", "=", loanId)
+    .executeTakeFirst();
+
+  return row?.confirmed_at ?? null;
+}
+
 /** The database form of a period. */
 export const rangeOf = (period: LoanPeriodInterval) =>
   sql<string>`daterange(${period.from}::date, ${period.until}::date, '[)')`;
@@ -87,7 +113,9 @@ export const loanReservationBlocks: AvailabilityBlockSource = {
  * approved for later keep their reservations (scenarios 58 and 61); this
  * only limits new ones, as the database does (`app.possession_uncertain`).
  * A reopened loan holds no reservation, so the days come from its
- * agreement.
+ * agreement, as do those of a loan that ended unresolved: it keeps the
+ * object blocked the same way until an owner confirms having it back
+ * (PS-LOAN-019).
  */
 export const loanPossessionBlocks: AvailabilityBlockSource = {
   name: "loan_possession",
@@ -110,7 +138,12 @@ export const loanPossessionBlocks: AvailabilityBlockSource = {
         ),
       ])
       .where("loan.object_id", "in", objectIds)
-      .where("loan.status", "in", [...possessionUncertainStatuses, "active"])
+      .where((eb) =>
+        eb.or([
+          eb("loan.status", "in", [...possessionUncertainStatuses, "active"]),
+          awaitingControl,
+        ]),
+      )
       .execute();
 
     return rows.flatMap((row) =>
@@ -135,17 +168,25 @@ export const loanPossessionBlocks: AvailabilityBlockSource = {
 };
 
 /**
- * PS-OBJ-010/011: a reserved loan is a commitment of its responsible lender,
- * so they cannot leave the object, and nobody can delete it, while it lasts.
+ * PS-OBJ-010/011: a loan that holds the object is a commitment of its
+ * responsible lender, so they cannot leave the object, and nobody can
+ * delete it, while it lasts. A loan that ended unresolved still needs
+ * following up until an owner confirms having the object back
+ * (PS-LOAN-019), so it counts too.
  */
 export const loanCommitments: ObjectCommitmentSource = {
   name: "loans",
   load: async (db, objectId) => {
     const rows = await db
-      .selectFrom("app.loans")
-      .select("responsible_lender_id")
-      .where("object_id", "=", objectId)
-      .where("status", "in", [...committedLoanStatuses])
+      .selectFrom("app.loans as loan")
+      .select("loan.responsible_lender_id")
+      .where("loan.object_id", "=", objectId)
+      .where((eb) =>
+        eb.or([
+          eb("loan.status", "in", [...committedLoanStatuses]),
+          awaitingControl,
+        ]),
+      )
       .execute();
 
     return rows.map((row) => ({
@@ -235,6 +276,8 @@ export interface LoanRecord {
   readonly borrowerUserId: string;
   readonly responsibleLenderId: string;
   readonly status: StoredLoanStatus;
+  /** When the stored status last changed. */
+  readonly statusChangedAt: Date;
   readonly approvedAt: Date;
   readonly ending: {
     readonly reason: LoanEndReason;
@@ -294,6 +337,7 @@ export async function findLoan(
       "loan.borrower_user_id",
       "loan.responsible_lender_id",
       "loan.status",
+      "loan.status_changed_at",
       "loan.approved_at",
       "loan.end_reason",
       "loan.ended_at",
@@ -322,6 +366,7 @@ export async function findLoan(
         borrowerUserId: row.borrower_user_id,
         responsibleLenderId: row.responsible_lender_id,
         status: row.status as StoredLoanStatus,
+        statusChangedAt: row.status_changed_at,
         approvedAt: row.approved_at,
         ending:
           row.end_reason === null || row.ended_at === null

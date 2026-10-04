@@ -20,5 +20,6 @@ export * from "./reviews";
 export * from "./trust";
 export * from "./social";
 export * from "./notifications";
+export * from "./cases";
 export * from "./outbox/policy";
 export * from "./policies";
