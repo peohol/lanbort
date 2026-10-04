@@ -224,6 +224,9 @@ importers:
       '@lanbort/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@lanbort/email':
+        specifier: workspace:*
+        version: link:../../packages/email
       '@lanbort/observability':
         specifier: workspace:*
         version: link:../../packages/observability
@@ -292,6 +295,9 @@ importers:
       '@lanbort/database':
         specifier: workspace:*
         version: link:../database
+      '@lanbort/email':
+        specifier: workspace:*
+        version: link:../email
       '@lanbort/observability':
         specifier: workspace:*
         version: link:../observability
@@ -301,6 +307,8 @@ importers:
       zod:
         specifier: 4.6.5
         version: 4.6.5
+
+  packages/email: {}
 
   packages/observability: {}
 

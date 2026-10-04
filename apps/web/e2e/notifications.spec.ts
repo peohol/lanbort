@@ -126,3 +126,15 @@ test("the loan deadline job only runs for the scheduler", async ({
   expect(run.status()).toBe(200);
   expect(await run.json()).toEqual({ notified: expect.any(Number) });
 });
+
+test("the notification e-mail job only runs for the scheduler, and waits without an e-mail provider", async ({
+  request,
+}) => {
+  const path = "/api/internal/notification-emails";
+
+  expect((await request.get(path)).status()).toBe(401);
+  // CI has no e-mail provider: the queue waits and nothing else is affected.
+  const run = await request.get(path, { headers: cron });
+  expect(run.status()).toBe(503);
+  expect(await run.json()).toEqual({ error: { code: "unavailable" } });
+});

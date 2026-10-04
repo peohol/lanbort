@@ -65,6 +65,14 @@ export const notifyLoanDeadlinesPolicy = definePolicy({
   actor: [requireSystemProcess(notificationDeadlineProcess)],
 });
 
+/** Name of the scheduled job that sends notification e-mails (WP-41). */
+export const notificationEmailProcess = "notifications.email";
+
+export const deliverNotificationEmailsPolicy = definePolicy({
+  action: "notification.deliver_emails",
+  actor: [requireSystemProcess(notificationEmailProcess)],
+});
+
 /**
  * Name of the scheduled job that tells handlers about cases the database
  * returned to the queue by itself (WP-45).
@@ -83,5 +91,6 @@ export const notificationPolicies = [
   markNotificationsReadPolicy,
   markAllNotificationsReadPolicy,
   notifyLoanDeadlinesPolicy,
+  deliverNotificationEmailsPolicy,
   notifyCaseQueueReturnsPolicy,
 ];

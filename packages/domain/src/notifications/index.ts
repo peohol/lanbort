@@ -5,4 +5,6 @@ export * from "./commands";
 export * from "./deadlines";
 export * from "./case-queue";
 export * from "./generator";
+export * from "./email";
+export * from "./delivery";
 export { recordNotifications } from "./store";

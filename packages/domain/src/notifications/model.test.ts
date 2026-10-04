@@ -41,6 +41,7 @@ describe("preferences (PS-COM-002–003)", () => {
       { level: "action", channel: "email", enabled: true },
       // Not configurable: ignored even if it were ever stored.
       { level: "required", channel: "in_app", enabled: false },
+      { level: "required", channel: "email", enabled: false },
       { level: "action", channel: "in_app", enabled: false },
     ]);
 

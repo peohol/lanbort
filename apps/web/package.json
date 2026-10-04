@@ -16,6 +16,7 @@
     "@lanbort/contracts": "workspace:*",
     "@lanbort/database": "workspace:*",
     "@lanbort/domain": "workspace:*",
+    "@lanbort/email": "workspace:*",
     "@lanbort/observability": "workspace:*",
     "@lanbort/storage": "workspace:*",
     "next": "16.3.6",

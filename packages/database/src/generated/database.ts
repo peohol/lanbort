@@ -482,6 +482,19 @@ export interface AppLoans {
   status_changed_at: Generated<Timestamp>;
 }
 
+export interface AppNotificationDeliveries {
+  attempts: Generated<number>;
+  available_at: Generated<Timestamp>;
+  channel: string;
+  code: string | null;
+  created_at: Generated<Timestamp>;
+  finished_at: Timestamp | null;
+  id: Generated<string>;
+  lease_token: string | null;
+  notification_id: string;
+  status: Generated<string>;
+}
+
 export interface AppNotificationPreferences {
   channel: string;
   enabled: boolean;
@@ -707,6 +720,7 @@ export interface DB {
   "app.loan_review_scores": AppLoanReviewScores;
   "app.loan_reviews": AppLoanReviews;
   "app.loans": AppLoans;
+  "app.notification_deliveries": AppNotificationDeliveries;
   "app.notification_preferences": AppNotificationPreferences;
   "app.notifications": AppNotifications;
   "app.object_availability_intervals": AppObjectAvailabilityIntervals;
