@@ -435,5 +435,7 @@ describe("Home beyond the first page", () => {
         Array(count).fill("loan.handover"),
       );
     }
-  });
+    // Over a hundred commands one after another, alongside every other
+    // integration file.
+  }, 30_000);
 });

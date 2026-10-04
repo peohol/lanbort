@@ -1,6 +1,10 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { type APIRequestContext, expect, test } from "@playwright/test";
-import { collectBrowserProblems, registerThroughApi } from "./helpers";
+import {
+  collectBrowserProblems,
+  registerThroughApi,
+  untilOutboxSettles,
+} from "./helpers";
 
 /** WP-61 in a browser: Finn searches things and environments to join. */
 
@@ -99,6 +103,14 @@ test("Finn finds environments to join, and then the things in them", async ({
   });
   await page.reload();
   await expect(found).toContainText("Du er medlem");
+  // The thing's own index entry may come later in the outbox than the
+  // environment's.
+  await untilOutboxSettles(
+    page.request,
+    async () =>
+      (await (await page.request.get(`/api/search/objects?q=${thing}`)).json())
+        .objects.length > 0,
+  );
 
   await tabs.getByRole("link", { name: "Ting" }).click();
   await page.getByLabel("Hva leter du etter?").fill(thing);

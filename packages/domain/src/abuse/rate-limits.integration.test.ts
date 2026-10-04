@@ -24,7 +24,10 @@ import {
 const db = connectTestDatabase();
 afterAll(() => db.destroy());
 
-const start = new Date("2026-10-04T12:00:00Z");
+// Every use removes the rows whose budget is back by its own clock, and the
+// loan test files run their clocks up to a few years ahead. Starting far
+// beyond them keeps their uses from emptying the budgets counted here.
+const start = new Date(Date.UTC(new Date().getUTCFullYear() + 100, 0, 1, 12));
 let now = start;
 const domain: DomainContext = {
   db,
