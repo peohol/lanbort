@@ -13,6 +13,7 @@ import {
   acceptResponsibilityTransfer,
   offerResponsibility,
 } from "./responsibility";
+import { approveLoanRequest } from "./approval";
 import { reportReturn } from "./return";
 
 /**
@@ -29,7 +30,19 @@ afterAll(() => db.destroy());
 // Waiting return confirmations must stay waiting while other files run
 // their scheduled jobs, so this file's clock starts far from theirs.
 const kit = loanTestKit(db, { startInDays: 730 });
-const { run, tick, user, addCoOwner, reservedLoan, advanceDays } = kit;
+const {
+  run,
+  tick,
+  user,
+  member,
+  addCoOwner,
+  ask,
+  environmentOrigin,
+  dated,
+  reservedLoan,
+  advance,
+  advanceDays,
+} = kit;
 
 const notFound = { code: "not_found" };
 
@@ -295,5 +308,66 @@ describe("next steps (UX-INT-001)", () => {
     expect(await events(borrower, loanId)).toEqual(
       expect.arrayContaining(["return_reported", "returned"]),
     );
+  });
+});
+
+describe("after time has passed (Codex review of #34)", () => {
+  it("credits a confirmation that took effect late to whoever made it", async () => {
+    const { owner, borrower, loanId } = await reservedLoan(0, 2);
+    await handOver(owner, loanId);
+    await run(reportReturn, borrower, {
+      loanId,
+      agreementVersion: 1,
+      outcome: "returned",
+    });
+    advance(31_000);
+
+    // Its undo time is over: it counts as made, so it is not offered.
+    const due = await loanOf(borrower, loanId);
+    expect(due.actions.undoReturn).toBe(false);
+
+    // The lender's statement records the borrower's due confirmation first.
+    await run(reportReturn, owner, {
+      loanId,
+      agreementVersion: 1,
+      outcome: "received",
+      immediately: true,
+    });
+    const reports = (await historyOf(borrower, loanId)).entries.filter(
+      ({ event }) => event === "return_reported",
+    );
+    expect(
+      reports.map(({ outcome, actor }) => [outcome, actor?.role, actor?.you]),
+    ).toEqual([
+      ["received", "lender", false],
+      ["returned", "borrower", true],
+    ]);
+  });
+
+  it("offers only to decline a proposal whose days another loan has taken", async () => {
+    const setup = await reservedLoan(2, 4);
+    const { owner, borrower, loanId, objectId, environmentId, admin } = setup;
+    await run(proposeLoanAmendment, owner, {
+      loanId,
+      agreementVersion: 1,
+      period: { start: kit.day(2), end: kit.day(6) },
+    });
+    expect((await loanOf(borrower, loanId)).actions.amendment).toEqual([
+      "accept",
+      "decline",
+    ]);
+
+    const other = await member(environmentId, admin);
+    const { requestId } = await ask(
+      other,
+      objectId,
+      environmentOrigin(environmentId),
+      dated(6, 7),
+    );
+    await run(approveLoanRequest, owner, { requestId });
+
+    expect((await loanOf(borrower, loanId)).actions.amendment).toEqual([
+      "decline",
+    ]);
   });
 });

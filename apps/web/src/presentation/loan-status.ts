@@ -95,7 +95,11 @@ export function describeLoanStatus(loan: Loan): LoanStatusText {
         loan.return.pending.outcome === "received"
           ? `Du har bekreftet at du har fått tilbake ${title}`
           : "Du har bekreftet returen",
-      when: `Du kan angre til ${formatTime(loan.return.pending.effectiveAt)}`,
+      // Only while the server still offers to undo it: once its time is
+      // over it counts as made.
+      when: loan.actions.undoReturn
+        ? `Du kan angre til ${formatTime(loan.return.pending.effectiveAt)}`
+        : null,
     };
   }
 

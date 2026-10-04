@@ -214,6 +214,43 @@ async function loadLenders(db: Db, loan: { id: string }) {
   };
 }
 
+/**
+ * Who made each return statement, by its event. A confirmation whose undo
+ * time ran out is recorded by whichever command or job comes next, so the
+ * event's own actor may be someone else; the statement row keeps who made
+ * it. Each statement is recorded with exactly one event, in the same order
+ * (`makeStatement`), so the two lists pair up. If they ever did not, no
+ * statement is attributed to anyone rather than to the wrong person.
+ */
+async function loadReturnReporters(
+  db: Db,
+  loanId: string,
+): Promise<ReadonlyMap<string, string>> {
+  const events = await db
+    .selectFrom("app.audit_events")
+    .select("id")
+    .where("resource_type", "=", "loan")
+    .where("resource_id", "=", loanId)
+    .where("event_type", "=", loanReturnReported.type)
+    .orderBy("position")
+    .execute();
+  const statements = await db
+    .selectFrom("app.loan_return_reports")
+    .select("reported_by_user_id")
+    .where("loan_id", "=", loanId)
+    .orderBy("position")
+    .execute();
+
+  return events.length === statements.length
+    ? new Map(
+        events.map((event, index) => [
+          event.id,
+          statements[index]!.reported_by_user_id,
+        ]),
+      )
+    : new Map();
+}
+
 async function loadHistory(db: Db, loanId: string, cursor: string | undefined) {
   const loan = await findLoan(db, { loanId });
 
@@ -249,12 +286,14 @@ async function loadHistory(db: Db, loanId: string, cursor: string | undefined) {
     .select(["id", ...periodColumns])
     .where("loan_id", "=", loan.id)
     .execute();
+  const reporters = await loadReturnReporters(db, loan.id);
   const names = await realNames(db, [loan.borrowerUserId, ...lenderIds]);
 
   return {
     ...loan,
     rows,
     lenderIds,
+    reporters,
     names,
     agreementPeriods,
     amendmentPeriods: new Map(
@@ -287,6 +326,20 @@ function personFor(actor: Actor, resource: HistoryResource) {
   };
 }
 
+/** Who did it: for a return statement, whoever made the statement. */
+function actorOf(
+  row: HistoryResource["rows"][number],
+  resource: HistoryResource,
+  context: HistoryContext,
+): LoanHistoryPerson | null {
+  const userId =
+    row.event_type === loanReturnReported.type
+      ? (resource.reporters.get(row.id) ?? null)
+      : row.actor_user_id;
+
+  return userId ? context.person(userId) : null;
+}
+
 function presentHistory(actor: Actor, resource: HistoryResource): LoanHistory {
   const context: HistoryContext = {
     person: personFor(actor, resource),
@@ -312,7 +365,7 @@ function presentHistory(actor: Actor, resource: HistoryResource): LoanHistory {
         id: row.id,
         at: row.occurred_at.toISOString(),
         event: timeline.event,
-        actor: row.actor_user_id ? context.person(row.actor_user_id) : null,
+        actor: actorOf(row, resource, context),
         ...timeline.details(payload.data, context),
       },
     ];

@@ -6,6 +6,7 @@ import {
 } from "@lanbort/contracts";
 import { takesNewActivity } from "../account/model";
 import type { UserActor } from "../actor";
+import { calendarDate } from "../objects/availability";
 import {
   type HandoverReading,
   handoverRefusal,
@@ -34,8 +35,13 @@ export interface LoanSteps {
   readonly pending: readonly {
     readonly userId: string;
     readonly role: LoanRequestRole;
+    readonly effectiveAt: Date;
   }[];
-  readonly amendment: { readonly proposerRole: LoanRequestRole } | null;
+  /** The open proposal, and whether accepting it would succeed now. */
+  readonly amendment: {
+    readonly proposerRole: LoanRequestRole;
+    readonly acceptable: boolean;
+  } | null;
   readonly transfer: {
     readonly needsBorrowerConsent: boolean;
     readonly borrowerConsentedAt: Date | null;
@@ -46,8 +52,12 @@ export interface LoanSteps {
   readonly lenderOwns: boolean;
 }
 
-const answers = (actor: UserActor) =>
-  takesNewActivity(actor.accountStatus)
+/**
+ * The answers the caller may give: an account that is not active may only
+ * say no (PS-ADM-002), and nobody is offered an acceptance that would fail.
+ */
+const answers = (actor: UserActor, acceptable = true) =>
+  takesNewActivity(actor.accountStatus) && acceptable
     ? (["accept", "decline"] as const)
     : (["decline"] as const);
 
@@ -62,9 +72,14 @@ export function loanActions(
   actor: UserActor,
   role: LoanRequestRole,
   loan: LoanSteps,
-  today: string,
+  now: Date,
 ): LoanActions {
-  const ownPending = loan.pending.some(({ userId }) => userId === actor.userId);
+  const today = calendarDate(now);
+  // A confirmation whose undo time is over counts as made, even before a
+  // job or the next command has recorded it, so it can no longer be undone.
+  const ownPending = loan.pending.some(
+    ({ userId, effectiveAt }) => userId === actor.userId && effectiveAt > now,
+  );
   // One confirmation per side waits at a time, whoever on it made it.
   const sidePending = loan.pending.some((pending) => pending.role === role);
   const transfer = loan.transfer;
@@ -92,7 +107,7 @@ export function loanActions(
     undoReturn: ownPending,
     amendment:
       loan.amendment && loan.amendment.proposerRole !== role
-        ? [...answers(actor)]
+        ? [...answers(actor, loan.amendment.acceptable)]
         : [],
     responsibility:
       role === "borrower" &&

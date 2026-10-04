@@ -92,21 +92,27 @@ describe("the loan's status (UX-INT-004)", () => {
     );
   });
 
-  it("says a waiting confirmation can still be undone", () => {
+  it("says a waiting confirmation can still be undone, while it can", () => {
+    const waiting = {
+      status: "active" as const,
+      return: {
+        borrower: null,
+        lender: null,
+        pending: { outcome: "returned" as const, effectiveAt: at },
+      },
+    };
+
     expect(
       describeLoanStatus(
-        loan({
-          status: "active",
-          return: {
-            borrower: null,
-            lender: null,
-            pending: { outcome: "returned", effectiveAt: at },
-          },
-        }),
+        loan({ ...waiting, actions: { ...noActions, undoReturn: true } }),
       ),
     ).toEqual({
       text: "Du har bekreftet returen",
       when: expect.stringMatching(/^Du kan angre til /),
+    });
+    expect(describeLoanStatus(loan(waiting))).toEqual({
+      text: "Du har bekreftet returen",
+      when: null,
     });
   });
 
