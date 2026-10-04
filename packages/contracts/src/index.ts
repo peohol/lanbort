@@ -11,3 +11,4 @@ export * from "./loans";
 export * from "./reviews";
 export * from "./notifications";
 export * from "./home";
+export * from "./trust";
