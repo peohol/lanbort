@@ -10,6 +10,7 @@ import {
   notificationGenerator,
   objectAvailabilityWatcher,
   objectImageFileCleanup,
+  searchIndexer,
 } from "@lanbort/domain";
 import { serverEnv } from "./env";
 import { objectImageServices } from "./object-images";
@@ -27,9 +28,9 @@ export interface Runtime {
 
 /**
  * Side effects run from the outbox (ADR-0004, ADR-0008): image file cleanup,
- * the in-app notifications (WP-40) and telling object subscribers when an
- * object has become available (WP-63). Notification e-mails have their own
- * queue and job (`notification-emails.ts`).
+ * the in-app notifications (WP-40), telling object subscribers when an
+ * object has become available (WP-63) and the derived search index (WP-61).
+ * Notification e-mails have their own queue and job (`notification-emails.ts`).
  */
 export const outboxConsumers = new ConsumerRegistry([
   objectImageFileCleanup({
@@ -38,6 +39,7 @@ export const outboxConsumers = new ConsumerRegistry([
   }),
   notificationGenerator({ db: () => runtime.domain().db }),
   objectAvailabilityWatcher({ db: () => runtime.domain().db }),
+  searchIndexer({ db: () => runtime.domain().db }),
 ]);
 
 let domain: DomainContext | undefined;

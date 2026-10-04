@@ -707,6 +707,28 @@ export interface AppReviewDimensions {
   reviewer_role: string;
 }
 
+export interface AppSearchEnvironments {
+  document: string;
+  environment_id: string;
+  indexed_at: Generated<Timestamp>;
+}
+
+export interface AppSearchEnvironmentSources {
+  document: string | null;
+  environment_id: string | null;
+}
+
+export interface AppSearchObjects {
+  document: string;
+  indexed_at: Generated<Timestamp>;
+  object_id: string;
+}
+
+export interface AppSearchObjectSources {
+  document: string | null;
+  object_id: string | null;
+}
+
 export interface AppUserBlocks {
   blocked_id: string;
   blocker_id: string;
@@ -790,6 +812,10 @@ export interface DB {
   "app.platform_role_grants": AppPlatformRoleGrants;
   "app.profiles": AppProfiles;
   "app.review_dimensions": AppReviewDimensions;
+  "app.search_environment_sources": AppSearchEnvironmentSources;
+  "app.search_environments": AppSearchEnvironments;
+  "app.search_object_sources": AppSearchObjectSources;
+  "app.search_objects": AppSearchObjects;
   "app.user_blocks": AppUserBlocks;
   "app.users": AppUsers;
   "app.verified_contacts": AppVerifiedContacts;
