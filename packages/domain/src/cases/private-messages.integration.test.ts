@@ -1,5 +1,9 @@
 import { randomUUID } from "node:crypto";
-import type { PrivateMessageCopy } from "@lanbort/contracts";
+import {
+  type PrivateMessageCopy,
+  privateMessageCopyLimit,
+  privateMessagesPerCaseLimit,
+} from "@lanbort/contracts";
 import { sql } from "kysely";
 import { afterAll, describe, expect, it } from "vitest";
 import type { UserActor } from "../actor";
@@ -11,6 +15,7 @@ import { loanTestKit } from "../testing/loans";
 import {
   claimCase,
   openCaseRound,
+  openEnvironmentContact,
   requestLoanMediation,
   shareCaseStatements,
   writeCaseEntry,
@@ -177,6 +182,38 @@ describe("private messages as case documentation (PS-COM-013)", () => {
     // Nothing was written, so the party still has their first statement.
     const { caseId } = await attempt([message(owner, "Hei", 10)]);
     expect(await copiesIn(borrower, caseId)).toHaveLength(1);
+  });
+
+  it("are bounded per participant and case", async () => {
+    const { environmentId, owner, borrower } = await published();
+    const batch = () =>
+      Array.from({ length: privateMessageCopyLimit }, (_, index) =>
+        message(owner, `Melding ${index}`, 60),
+      );
+    const { caseId } = await run(openEnvironmentContact, borrower, {
+      environmentId,
+      body: "Se meldingene.",
+      privateMessages: batch(),
+    });
+    const rounds = privateMessagesPerCaseLimit / privateMessageCopyLimit - 1;
+
+    for (let round = 0; round < rounds; round += 1) {
+      await run(writeCaseEntry, borrower, {
+        caseId,
+        body: "Flere meldinger.",
+        privateMessages: batch(),
+      });
+    }
+
+    await expect(
+      run(writeCaseEntry, borrower, {
+        caseId,
+        body: "Og en til.",
+        privateMessages: [message(owner, "Hei", 10)],
+      }),
+    ).rejects.toMatchObject(invalidCopy);
+    // Writing without a copy goes on as before.
+    await run(writeCaseEntry, borrower, { caseId, body: "Takk." });
   });
 
   it("go with a report, and stay behind when an administrator escalates it", async () => {

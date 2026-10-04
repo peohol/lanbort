@@ -6,6 +6,7 @@ import {
   type CaseOpenedResult,
   caseOpenedResultSchema,
   type PartyStatement,
+  privateMessagesPerCaseLimit,
   caseReferenceSchema,
   openCaseRoundSchema,
   openEnvironmentContactSchema,
@@ -67,6 +68,7 @@ import {
   findEntry,
   findOpenCase,
   insertCase,
+  countPrivateMessages,
   insertEntry,
   insertPrivateMessages,
   isCaseHandler,
@@ -201,6 +203,8 @@ async function requireCorrectable(
  */
 async function privateMessageCopies(
   db: Db,
+  c: CaseRecord,
+  userId: string,
   copies: PartyStatement["privateMessages"],
   now: Date,
 ): Promise<PrivateMessageCopyRecord[]> {
@@ -219,6 +223,14 @@ async function privateMessageCopies(
     ))
   ) {
     invalid("privateMessages", "Every sender has an account");
+  }
+
+  if (
+    records.length > 0 &&
+    (await countPrivateMessages(db, c.id, userId)) + records.length >
+      privateMessagesPerCaseLimit
+  ) {
+    invalid("privateMessages", "The case holds no more of the caller's copies");
   }
 
   return records;
@@ -257,7 +269,13 @@ async function writeAsParticipant(
     input.correctsEntryId,
     own,
   );
-  const copies = await privateMessageCopies(tx, input.privateMessages, now);
+  const copies = await privateMessageCopies(
+    tx,
+    c,
+    participant.userId,
+    input.privateMessages,
+    now,
+  );
   const id = await insertEntry(tx, {
     caseId: c.id,
     ...own,
@@ -373,6 +391,7 @@ export const writeCaseEntry = defineCommand({
   input: writeCaseEntrySchema,
   output: caseEntryResultSchema,
   policy: writeCaseEntryPolicy,
+  rateLimit: rateLimits.caseEntries,
   idempotency: "required",
   load: ({ tx, actor, input, now }) =>
     loadCase(tx, actor, input.caseId, now, { lock: true }),
@@ -573,6 +592,7 @@ export const requestLoanMediation = defineCommand({
   input: openLoanMediationSchema,
   output: caseOpenedResultSchema,
   policy: requestLoanMediationPolicy,
+  rateLimit: rateLimits.caseEntries,
   idempotency: "required",
   load: ({ tx, input }) => loadLockedLoan(tx, input.loanId),
   execute: async ({ tx, actor, input, resource, events, now }) => {

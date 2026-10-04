@@ -484,6 +484,23 @@ export async function insertPrivateMessages(
     .execute();
 }
 
+/** How many private messages the user has submitted to the case. */
+export async function countPrivateMessages(
+  db: Db,
+  caseId: string,
+  userId: string,
+): Promise<number> {
+  const { count } = await db
+    .selectFrom("app.case_entry_private_messages as copy")
+    .innerJoin("app.case_entries as entry", "entry.id", "copy.entry_id")
+    .select((eb) => eb.fn.countAll<string>().as("count"))
+    .where("entry.case_id", "=", caseId)
+    .where("entry.author_user_id", "=", userId)
+    .executeTakeFirstOrThrow();
+
+  return Number(count);
+}
+
 /** Whether every one of the users has an account. */
 export async function usersExist(
   db: Db,

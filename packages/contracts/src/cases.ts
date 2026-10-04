@@ -101,6 +101,9 @@ export const caseEntryBodySchema = z
 /** The most private messages one entry carries a copy of. */
 export const privateMessageCopyLimit = 50;
 
+/** The most private messages one participant submits to one case. */
+export const privateMessagesPerCaseLimit = 200;
+
 /**
  * PS-COM-013 (WP-46, ADR-0010): a readable copy of one private message the
  * party chose in their own history on their device, where it was decrypted.
