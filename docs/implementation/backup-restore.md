@@ -1,25 +1,58 @@
 # Backup og gjenoppretting
 
-> **Status:** Gjeldende fra WP-72. Forankret i [datalivssyklus, backup og gjenoppretting](../architecture/09-datalivssyklus-backup-og-gjenoppretting.md), [threat model](../architecture/08-sikkerhet-og-threat-model.md) («Backup-/restore-lekkasje») og PS-NFR-014. Kort sagt: en gjenoppretting skal få tjenesten tilbake uten at noe som var slettet eller begrenset, blir synlig igjen.
+> **Status:** Gjeldende fra WP-72, tilpasset gratisplanen i utviklingsfasen (ADR-0009). Forankret i [datalivssyklus, backup og gjenoppretting](../architecture/09-datalivssyklus-backup-og-gjenoppretting.md), [threat model](../architecture/08-sikkerhet-og-threat-model.md) («Backup-/restore-lekkasje») og PS-NFR-014. Kort sagt: en gjenoppretting skal få tjenesten tilbake uten at noe som var slettet eller begrenset, blir synlig igjen.
 
-## Mål og hvordan de nås
+## Strategi i utviklingsfasen
 
-| Mål (pilot) | Hvordan |
+Hostede miljøer ligger på Supabase Free, som ikke har automatisk backup ([ADR-0009](../architecture/decisions/ADR-0009-backup-i-utviklingsfasen.md)). Det er akseptert i denne fasen. Betalt backup er ingen forutsetning for noen arbeidspakke eller kvalitetsport før produkteier har vurdert backupnivået på nytt før et eksternt brukerpanel (Port D).
+
+| Situasjon | Hva som gjøres |
 | --- | --- |
-| RPO ≤ 24 timer | Supabase tar daglig backup av databasen på Pro-planen og oppover (Pro beholder 7 dager). Gratisplanen har ingen automatisk backup, så produksjon må ligge på minst Pro før pilot. Point-in-Time Recovery er et tillegg som gir RPO på omtrent to minutter; arkitekturen anbefaler det når kostnad og pilotnivå tillater det. |
-| RTO ≤ 8 timer | Gjenopprettingen i Supabase tar tid etter databasens størrelse og er liten i pilot. Etterarbeidet (`pnpm ops:restore finish`) tok rundt to sekunder i øvelsen. Den første målingen i et hostet miljø gjøres i øvelsen under «Gjenstår». |
-| Isolert restore-test | Øvelsen i CI gjenoppretter til egne, isolerte databaser. Hostet gjøres det til et nytt prosjekt, aldri over aktiv produksjon. |
+| Databasen er tapt eller ødelagt, og det finnes ingen dump | Bygg den opp igjen fra migrasjonene i repoet (`pnpm exec supabase db push --db-url "$DB_URL"` mot et tomt prosjekt). Skjema, regler og lagringsbøtter kommer tilbake; innholdet er tapt. |
+| Det finnes en manuell dump | Gjenopprett dumpen etter [fremgangsmåten](#fremgangsmåte) under. Alt etter dumpen går tapt, bortsett fra slettinger og begrensninger som journalen gjør på nytt. |
+| Avledede data (søkeindeks) er feil | `pnpm ops:restore finish` eller den planlagte jobben bygger dem på nytt fra domenetabellene. |
 
-Supabase-backupen inneholder ikke filene i Supabase Storage (objektbilder), bare databasen. En fil lastet opp etter backupen blir foreldreløs og slettes av etterarbeidet. En fil som er slettet, kommer aldri tilbake.
+Pilotmålene i [arkitektur 09](../architecture/09-datalivssyklus-backup-og-gjenoppretting.md) (RPO ≤ 24 timer, RTO ≤ 8 timer) gjelder fra piloten, ikke nå. Etterarbeidet (`pnpm ops:restore finish`) tok rundt to sekunder i øvelsen, så RTO avhenger i praksis av hvor lang tid selve gjenopprettingen tar.
+
+Verken en dump eller en Supabase-backup inneholder filene i Supabase Storage (objektbilder), bare databasen. En fil lastet opp etter dumpen blir foreldreløs og slettes av etterarbeidet. En fil som er slettet, kommer aldri tilbake.
+
+## Manuell dump ved milepæler
+
+Ta en dump før en risikabel endring på et hostet miljø med data som er verdt å beholde, for eksempel før en stor migrasjon. Supabase CLI (som følger med repoet) virker mot gratisplanen. Bruk tilkoblingsstrengen fra **Connect** i prosjektet (Session pooler hvis nettverket bare har IPv4):
+
+```sh
+pnpm exec supabase db dump --db-url "$DB_URL" -f roles.sql --role-only
+pnpm exec supabase db dump --db-url "$DB_URL" -f schema.sql
+pnpm exec supabase db dump --db-url "$DB_URL" -f data.sql --use-copy --data-only
+pnpm exec supabase db dump --db-url "$DB_URL" -f history_schema.sql --schema supabase_migrations
+pnpm exec supabase db dump --db-url "$DB_URL" -f history_data.sql --use-copy --data-only --schema supabase_migrations
+```
+
+De to siste filene er migrasjonshistorikken, som `pnpm ops:restore finish` sjekker mot repoet. Noter tidspunktet dumpen ble tatt.
+
+Dumpen inneholder personopplysninger og alt som var slettet frem til da. Den skal derfor krypteres, lagres utenfor repoet og utenfor Supabase-prosjektet, og eldre dumps slettes når en ny er tatt.
 
 ## Fremgangsmåte
 
-1. **Velg tidspunkt.** Bruk siste backup før hendelsen. Noter backupens tidspunkt.
+Fremgangsmåten er den samme om backupen er en manuell dump eller, senere, en backup Supabase har tatt. Bare steg 4 er forskjellig.
+
+1. **Velg backup.** Bruk siste dump eller backup før hendelsen. Noter tidspunktet.
 2. **Steng appen.** Sett Vercel-prosjektet på pause, så verken brukere eller planlagte jobber skriver til databasen mens den gjenopprettes og før den er sjekket.
 3. **Ta ut journalen fra databasen som erstattes**, hvis den fortsatt kan leses:
    `pnpm ops:restore journal --since <backupens tidspunkt minus én time> --out <fil>`
-   med `DATABASE_URL` mot den. Journalen inneholder bare ID-er og koder for det som ble slettet eller begrenset etter backupen, aldri navn, kontaktopplysninger eller fritekst. Filen overskrives aldri. Den må tas ut **før** en gjenoppretting på samme prosjekt, fordi den overskriver databasen.
-4. **Gjenopprett i Supabase** (Database → Backups). Prosjektet er utilgjengelig mens det pågår.
+   med `DATABASE_URL` mot den. Journalen inneholder bare ID-er og koder for det som ble slettet eller begrenset etter backupen, aldri navn, kontaktopplysninger eller fritekst. Filen overskrives aldri. Den må tas ut **før** en gjenoppretting i samme prosjekt, fordi den overskriver databasen.
+4. **Gjenopprett**, helst til et nytt prosjekt, aldri over en database som er i bruk:
+   - **Manuell dump:** i et nytt, tomt prosjekt med `DB_URL` mot det:
+     ```sh
+     psql --single-transaction --variable ON_ERROR_STOP=1 \
+       --file roles.sql --file schema.sql \
+       --command 'SET session_replication_role = replica' --file data.sql \
+       --dbname "$DB_URL"
+     psql --single-transaction --variable ON_ERROR_STOP=1 \
+       --file history_schema.sql --file history_data.sql --dbname "$DB_URL"
+     ```
+     Sett deretter appens miljøvariabler til det nye prosjektet.
+   - **Backup tatt av Supabase** (bare på betalt plan): Database → Backups. Prosjektet er utilgjengelig mens det pågår.
 5. **Fullfør:** `pnpm ops:restore finish --journal <fil>` med `DATABASE_URL` mot den gjenopprettede databasen. Kommandoen
    - stopper med en gang hvis databasen ikke har akkurat migrasjonene i repoet (kjør da migrasjonene først),
    - gjør slettinger og begrensninger fra journalen på nytt med domenets egne kommandoer, som systemprosessen `ops.restore`,
@@ -28,7 +61,7 @@ Supabase-backupen inneholder ikke filene i Supabase Storage (objektbilder), bare
 
    Kommandoen kan kjøres flere ganger; det som er gjort, gjøres ikke igjen. Svarer den `Ready to open`, er databasen klar.
 6. **Åpne appen** ved å oppheve pausen. Outbox-arbeideren sletter da innloggingsidentitetene til slettede kontoer og foreldreløse bildefiler.
-7. **Fortell pilotbrukerne** hvilket tidsrom som gikk tapt, så de kan gjøre det de gjorde da, på nytt.
+7. **Fortell brukerne** hvilket tidsrom som gikk tapt, så de kan gjøre det de gjorde da, på nytt.
 
 `pnpm ops:restore verify` kjører bare migrasjonssjekken og sjekkene, for eksempel etter en vanlig vedlikeholdsjobb.
 
@@ -46,15 +79,16 @@ Kan en journalpost ikke gjøres trygt på nytt, sier kommandoen `Needs handling`
 
 ## Kjente begrensninger
 
-- **Databasen som erstattes, kan ikke leses.** Da finnes ingen journal, og det som ble slettet etter backupen, kommer tilbake. Point-in-Time Recovery gjør tidsrommet kort. Uten det må slettinger brukerne ba om i tidsrommet, gjøres på nytt for hånd.
-- **Bildefiler** har ingen egen backup. Separat sikkerhetskopi av mediefiler (arkitektur 09) avhenger av oppbevaringstidene i OD-0002.
+- **Ingen automatisk backup i utviklingsfasen.** Alt etter siste manuelle dump kan gå tapt, og uten dump er alt innhold tapt (ADR-0009).
+- **Databasen som erstattes, kan ikke leses.** Da finnes ingen journal, og det som ble slettet etter backupen, kommer tilbake. Slettinger brukerne ba om i tidsrommet, må da gjøres på nytt for hånd. Jo nyere backupen er, desto kortere er tidsrommet.
+- **Bildefiler** har ingen egen backup. Gjenopprettes databasen til et nytt prosjekt, følger bildene ikke med og må kopieres fra det gamle prosjektet hvis det fortsatt finnes. Separat sikkerhetskopi av mediefiler (arkitektur 09) avhenger av oppbevaringstidene i OD-0002.
 - **E-postvarsler** som var sendt etter backupen, kan sendes én gang til.
 
 ## Øvelsen
 
 `packages/domain/src/restore/restore.integration.test.ts` kjører i CI-jobben `database`. Den tar en ekte backup (`pg_dump`) av en isolert database, gjør slettinger og begrensninger etter backupen, tar ut journalen, gjenoppretter backupen (`pg_restore`) til en ny isolert database og fullfører. Deretter sjekker den at ingenting slettet eller begrenset er tilbake, at Finn bare finner det som fortsatt er tilbudt, at sjekkene består, at tiden er innenfor RTO, og at en ny kjøring ikke gjør noe to ganger.
 
-### Gjenstår når hostet miljø finnes
+### Gjenstår
 
-- Sett produksjon på minst Pro-planen og vurder Point-in-Time Recovery.
-- Gjør øvelsen én gang mot hostet staging: gjenopprett en backup til et nytt prosjekt, kjør `finish` med en journal, og noter faktisk tid mot RTO.
+- **Når et hostet miljø med data finnes:** ta den første manuelle dumpen og gjenopprett den én gang til et isolert prosjekt etter fremgangsmåten over, med `finish` og en journal, og noter faktisk tid mot RTO. Kommandoene for dump og gjenoppretting følger Supabases egen veiledning, men er ennå ikke øvd mot et hostet prosjekt.
+- **Før et eksternt brukerpanel (Port D):** produkteier beslutter backupnivået for piloten på nytt (ADR-0009), for eksempel betalt plan med daglig backup, planlagte krypterte dumps på gratisplanen eller lengre RPO for en liten pilot.

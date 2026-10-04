@@ -62,7 +62,7 @@
 ### Backup-/restore-lekkasje
 **Risiko:** slettede eller tidligere begrensede data kommer tilbake som aktive.
 
-**Tiltak:** krypterte backups, kontrollert restore, etterkjøring av slettings-/tombstone-logikk og tilgangsvalidering før tjenesten åpnes.
+**Tiltak:** krypterte backups og manuelle dumps lagret utenfor repoet (ADR-0009), kontrollert restore, etterkjøring av slettings-/tombstone-logikk og tilgangsvalidering før tjenesten åpnes.
 
 ### Kompromittert webklient / klientleveranse
 **Risiko:** E2EE beskytter ikke mot kode som kjører inne i selve endepunktet. En kompromittert distribusjon, XSS eller ondsinnet klientkode kan lese klartekst/nøkler før kryptering eller etter dekryptering.
