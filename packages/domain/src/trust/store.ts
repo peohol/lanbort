@@ -78,9 +78,9 @@ const publishedAt = sql<Date>`coalesce(review.published_at, period.due_at)`;
  * The reviews that stand as published reviews as of `now`: published, or
  * hidden in a window whose deadline has passed before the job recorded it
  * (PS-TRUST-003, as `loan_review.read` shows them). Hidden, paused and lapsed
- * reviews never count (PS-TRUST-003/008). Every read of a person's trust goes
- * through here, so WP-52 takes moderated reviews out in one place
- * (PS-TRUST-014).
+ * reviews never count (PS-TRUST-003/008), nor does a review moderation
+ * removed (status `removed`, WP-52); a score moderation removed is gone from
+ * the scores (PS-TRUST-014). Every read of a person's trust goes through here.
  */
 function publishedReviews(db: Db, subjectUserId: string, now: Date) {
   return db

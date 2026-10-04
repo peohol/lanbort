@@ -15,6 +15,7 @@ import { loadCase } from "./commands";
 import {
   type CaseRecord,
   handlingOf,
+  platformCaseKinds,
   sharedUpTo,
   sharedWithParties,
   visibleToParticipant,
@@ -85,6 +86,10 @@ export const readCase = defineQuery({
       environmentId: c.environmentId,
       loanId: c.loanId,
       subjectUserId: c.subjectUserId,
+      reportTarget: c.reportTarget,
+      objectId: c.objectId,
+      reviewId: c.reviewId,
+      escalatedFromCaseId: c.escalatedFromCaseId,
       openedAt: c.openedAt.toISOString(),
       closedAt: c.closedAt?.toISOString() ?? null,
       handling: handlingOf(assigneeUserId, handlerAvailable),
@@ -229,7 +234,7 @@ export const listEnvironmentCaseQueue = defineQuery({
   present: ({ resource }) => resource.list,
 });
 
-/** The unavailability reports a platform steward may handle. */
+/** The platform's cases (reports) a platform steward may handle. */
 export const listPlatformCaseQueue = defineQuery({
   name: "case.list_platform_queue",
   input: platformCaseQueueQuerySchema,
@@ -241,7 +246,7 @@ export const listPlatformCaseQueue = defineQuery({
         tx,
         (query) =>
           query
-            .where("c.kind", "=", "unavailability_report")
+            .where("c.kind", "in", platformCaseKinds)
             .where("c.status", "=", input.status)
             .where(handledBy(userId, now)),
         { cursor: input.cursor, pageSize: casePageSize, now },

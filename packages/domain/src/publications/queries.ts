@@ -66,12 +66,12 @@ function viewerIdOf(actor: Actor): string | null {
 /**
  * The publications an active member finds in the environment (PS-OBJ-006,
  * PS-OBJ-009, PS-USR-006). Only active publications of active, unfrozen
- * objects that an owner still has active access behind and that an owner's
- * active account can lend (PS-ADM-002), and never an object
- * whose owner and the viewer have blocked each other. A viewer whose account
- * is not active finds nothing: finding leads to new activity (a request, a
- * subscription, a question), which such an account no longer starts and is
- * not told about (PS-ADM-002). Nor one published
+ * objects that an owner still has active access behind, that an owner's
+ * active account can lend (PS-ADM-002) and that no steward has blocked
+ * (WP-52), and never an object whose owner and the viewer have blocked each
+ * other. A viewer whose account is not active finds nothing: finding leads
+ * to new activity (a request, a subscription, a question), which such an
+ * account no longer starts and is not told about (PS-ADM-002). Nor one published
  * under a stricter type than the environment has had since, unless the
  * viewer was already active then (PS-ENV-009, `concealed`). This is the one
  * place discovery is decided.
@@ -92,6 +92,7 @@ function discoverablePublications(
     .where("object.status", "=", "active")
     .where(sql<boolean>`app.account_accepts_new_activity(${viewerId}::uuid)`)
     .where(sql<boolean>`app.object_has_active_owner(publication.object_id)`)
+    .where(sql<boolean>`not app.object_platform_blocked(publication.object_id)`)
     .where(
       ownerHasAccess(
         sql.ref("publication.object_id"),

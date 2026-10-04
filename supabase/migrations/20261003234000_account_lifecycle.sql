@@ -425,6 +425,122 @@ create trigger case_handler_entries_active_accounts
   for each row when (new.capacity = 'handler')
   execute function app.require_active_accounts('author_user_id');
 
+-- A measure on a report (WP-52) is a handler's decision.
+create trigger moderation_actions_active_accounts
+  before insert on app.moderation_actions
+  for each row execute function app.require_active_accounts('decided_by_user_id');
+
+-- As in WP-52, and a party whose account is at rest may still ask for a
+-- mediation of their loan: it is part of finishing it (PS-ADM-002). Every
+-- other kind needs an active account, as before.
+create or replace function app.guard_new_case()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  source app.cases;
+begin
+  select * into source from app.cases where id = new.escalated_from_case_id;
+
+  if new.status <> 'open'
+    or new.assignee_user_id is not null
+    or not exists (
+      select 1 from app.users
+      where id = new.opened_by_user_id
+        and (status = 'active'
+          or (new.kind = 'loan_mediation' and status not in ('pending_registration', 'deleted')))
+    )
+    or not coalesce(case new.kind
+      when 'environment_contact' then exists (
+        select 1 from app.environment_memberships
+        where environment_id = new.environment_id
+          and user_id = new.opened_by_user_id
+          and state = 'active'
+          and (transition_deadline is null or transition_deadline > new.opened_at)
+      )
+      when 'loan_mediation' then exists (
+        select 1
+        from app.loans as loan
+        join app.loan_requests as request on request.id = loan.request_id
+        where loan.id = new.loan_id
+          and request.origin = 'environment'
+          and request.environment_id = new.environment_id
+          and new.opened_by_user_id in (loan.borrower_user_id, loan.responsible_lender_id)
+          and app.loan_mediable(loan.status)
+      )
+      when 'unavailability_report' then
+        exists (select 1 from app.users where id = new.subject_user_id)
+        and not app.users_blocked(new.opened_by_user_id, new.subject_user_id)
+      when 'environment_report' then
+        exists (
+          select 1 from app.environment_memberships
+          where environment_id = new.environment_id
+            and user_id = new.opened_by_user_id
+            and state = 'active'
+            and (transition_deadline is null or transition_deadline > new.opened_at)
+        )
+        and case new.report_target
+          when 'user' then exists (
+            select 1 from app.environment_memberships
+            where environment_id = new.environment_id
+              and user_id = new.subject_user_id
+              and state in ('active', 'passive')
+          )
+          else exists (
+            select 1 from app.environment_publications
+            where environment_id = new.environment_id
+              and object_id = new.object_id
+              and status = 'active'
+          )
+          and not exists (
+            select 1 from app.object_owners
+            where object_id = new.object_id and user_id = new.opened_by_user_id
+          )
+        end
+      when 'platform_report' then
+        case
+          when new.escalated_from_case_id is not null then
+            source.kind = 'environment_report'
+            and source.status = 'open'
+            and app.case_handler_acts(source, new.opened_by_user_id, new.opened_at)
+            and (source.report_target, source.subject_user_id, source.object_id)
+              is not distinct from (new.report_target, new.subject_user_id, new.object_id)
+          else case new.report_target
+            when 'user' then app.users_report_context(new.opened_by_user_id, new.subject_user_id)
+            when 'object' then app.object_met_by(new.object_id, new.opened_by_user_id)
+              and not exists (
+                select 1 from app.object_owners
+                where object_id = new.object_id and user_id = new.opened_by_user_id
+              )
+            when 'review' then exists (
+              select 1 from app.loan_reviews
+              where id = new.review_id
+                and status = 'published'
+                and subject_user_id = new.opened_by_user_id
+                and author_user_id = new.subject_user_id
+            )
+            when 'review_response' then exists (
+              select 1
+              from app.loan_reviews as review
+              join app.loan_review_responses as response on response.review_id = review.id
+              where review.id = new.review_id
+                and review.status = 'published'
+                and review.author_user_id = new.opened_by_user_id
+                and response.author_user_id = new.subject_user_id
+                and response.body is not null
+            )
+          end
+        end
+    end, false)
+  then
+    raise exception 'case cannot open like that' using errcode = 'restrict_violation';
+  end if;
+
+  return new;
+end;
+$$;
+
 -- Object subscriptions and questions (WP-63): subscribing, asking and
 -- posting are new activity of whoever does it. They also need an owner who
 -- can lend the object, since without one nobody finds it any more; the

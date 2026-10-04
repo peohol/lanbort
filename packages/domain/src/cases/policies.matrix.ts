@@ -4,7 +4,7 @@ import { type PolicyCase, policyMatrix } from "../authorization/policy-matrix";
 import type { EnvironmentAccess } from "../environment/model";
 import type { DenialReason } from "../errors";
 import { testUserActor } from "../testing/actors";
-import type { CaseRecord } from "./model";
+import { type CaseRecord, caseKinds } from "./model";
 import {
   type CaseResource,
   claimCasePolicy,
@@ -47,7 +47,7 @@ const weakSteward = steward("aal1");
 const deactivated = (actor: Actor): Actor =>
   actor.kind === "user" ? { ...actor, accountStatus: "deactivated" } : actor;
 
-function expectCase<R>(
+export function expectCase<R>(
   name: string,
   actor: Actor,
   resource: R,
@@ -56,7 +56,7 @@ function expectCase<R>(
   return { name, actor, resource, context: undefined, expected };
 }
 
-const callerCases = <R>(resource: R): PolicyCase<R, void>[] => [
+export const callerCases = <R>(resource: R): PolicyCase<R, void>[] => [
   expectCase("anonymous caller", anonymousActor, resource, "unauthenticated"),
   expectCase(
     "an account that has not completed registration",
@@ -72,17 +72,26 @@ const callerCases = <R>(resource: R): PolicyCase<R, void>[] => [
   ),
 ];
 
+/** A case reported by `reporter` about `subject`. */
+const isReport = (kind: CaseRecord["kind"]) =>
+  kind === "unavailability_report" ||
+  kind === "environment_report" ||
+  kind === "platform_report";
+
 const record = (kind: CaseRecord["kind"]): CaseRecord => ({
   id: "00000000-0000-4000-8000-0000000000c1",
   kind,
-  environmentId:
-    kind === "unavailability_report"
-      ? null
-      : "00000000-0000-4000-8000-0000000000e1",
+  environmentId: caseKinds[kind].platform
+    ? null
+    : "00000000-0000-4000-8000-0000000000e1",
   loanId: null,
-  subjectUserId: kind === "unavailability_report" ? subject.userId : null,
-  openedByUserId:
-    kind === "unavailability_report" ? reporter.userId : member.userId,
+  subjectUserId: isReport(kind) ? subject.userId : null,
+  reportTarget:
+    kind === "environment_report" || kind === "platform_report" ? "user" : null,
+  objectId: null,
+  reviewId: null,
+  escalatedFromCaseId: null,
+  openedByUserId: isReport(kind) ? reporter.userId : member.userId,
   openedAt: new Date(),
   status: "open",
   assigneeUserId: null,
@@ -96,7 +105,8 @@ const standing = (
   { holdsRole = false, involved = false } = {},
 ): CaseResource => {
   const userId = actor.kind === "user" ? actor.userId : null;
-  const opener = kind === "unavailability_report" ? reporter : member;
+  const opener = isReport(kind) ? reporter : member;
+  const reported = isReport(kind) && userId === subject.userId;
 
   return {
     case: record(kind),
@@ -104,11 +114,15 @@ const standing = (
       userId === opener.userId
         ? {
             userId,
-            role: kind === "unavailability_report" ? "reporter" : "requester",
+            role: isReport(kind) ? "reporter" : "requester",
             mayWrite: true,
           }
         : null,
-    standing: { holdsRole, involved: involved || userId === opener.userId },
+    standing: {
+      holdsRole,
+      involved: involved || reported || userId === opener.userId,
+      reported,
+    },
   };
 };
 
@@ -126,9 +140,9 @@ interface Situation {
 }
 
 const situations = (kind: CaseRecord["kind"]): Situation[] => {
-  const report = kind === "unavailability_report";
-  const handler = report ? strongSteward : administrator;
-  const opener = report ? reporter : member;
+  const platform = caseKinds[kind].platform;
+  const handler = platform ? strongSteward : administrator;
+  const opener = isReport(kind) ? reporter : member;
 
   return [
     {
@@ -140,7 +154,7 @@ const situations = (kind: CaseRecord["kind"]): Situation[] => {
     },
     {
       name: "its participant who also holds the handler's role",
-      actor: report ? steward("aal2", opener.userId) : opener,
+      actor: platform ? steward("aal2", opener.userId) : opener,
       resource: standing(kind, opener, { holdsRole: true }),
       party: "allow",
       handler: "conflict_of_interest",
@@ -180,7 +194,7 @@ const situations = (kind: CaseRecord["kind"]): Situation[] => {
       party: "not_found",
       handler: "not_found",
     },
-    ...((report
+    ...((platform
       ? [
           {
             name: "a steward without stronger authentication (OD-0010)",
@@ -189,13 +203,14 @@ const situations = (kind: CaseRecord["kind"]): Situation[] => {
             party: "stronger_authentication_required",
             handler: "stronger_authentication_required",
           },
+        ]
+      : []) satisfies Situation[]),
+    ...((isReport(kind)
+      ? [
           {
             name: "the user the report is about never sees it",
-            actor: subject,
-            resource: standing(kind, subject, {
-              holdsRole: true,
-              involved: true,
-            }),
+            actor: platform ? steward("aal2", subject.userId) : subject,
+            resource: standing(kind, subject, { holdsRole: true }),
             party: "not_found",
             handler: "not_found",
           },
@@ -204,21 +219,27 @@ const situations = (kind: CaseRecord["kind"]): Situation[] => {
   ];
 };
 
-const caseMatrix = (
+export const caseMatrix = (
   policy: Policy<CaseResource, void>,
   side: "party" | "handler",
 ) =>
   policyMatrix(policy, [
-    ...(["environment_contact", "unavailability_report"] as const).flatMap(
-      (kind) =>
-        situations(kind).map((situation) =>
-          expectCase(
-            `${kind}: ${situation.name}`,
-            situation.actor,
-            situation.resource,
-            situation[side],
-          ),
+    ...(
+      [
+        "environment_contact",
+        "unavailability_report",
+        "environment_report",
+        "platform_report",
+      ] as const
+    ).flatMap((kind) =>
+      situations(kind).map((situation) =>
+        expectCase(
+          `${kind}: ${situation.name}`,
+          situation.actor,
+          situation.resource,
+          situation[side],
         ),
+      ),
     ),
     ...callerCases(standing("environment_contact", member)),
   ]);
@@ -233,18 +254,20 @@ const environment = (
     viewer,
   }) as unknown as EnvironmentAccess;
 
-const activeMember = (roles: EnvironmentAccess["viewer"]["roles"] = []) =>
+export const activeMember = (
+  roles: EnvironmentAccess["viewer"]["roles"] = [],
+) =>
   environment({
     membership: { id: "m", state: "active" },
     roles,
     restricted: false,
   });
-const passiveMember = environment({
+export const passiveMember = environment({
   membership: { id: "m", state: "passive" },
   roles: ["administrator"],
   restricted: false,
 });
-const outsider = (type: EnvironmentAccess["environment"]["type"]) =>
+export const outsider = (type: EnvironmentAccess["environment"]["type"]) =>
   environment({ membership: null, roles: [], restricted: false }, type);
 
 const reportTarget = (overrides: Partial<ReportTarget> = {}): ReportTarget => ({

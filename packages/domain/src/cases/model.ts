@@ -7,6 +7,7 @@ import type {
   CaseParticipantRole,
   CaseQueueReturnReason,
   CaseStatus,
+  ReportTargetKind,
 } from "@lanbort/contracts";
 
 /**
@@ -19,8 +20,16 @@ export interface CaseRecord {
   readonly kind: CaseKind;
   readonly environmentId: string | null;
   readonly loanId: string | null;
-  /** The user an unavailability report is about. */
+  /**
+   * The user a report is about; for a reported review or response, its
+   * author.
+   */
   readonly subjectUserId: string | null;
+  /** What a moderation report is about (WP-52), and its object or review. */
+  readonly reportTarget: ReportTargetKind | null;
+  readonly objectId: string | null;
+  readonly reviewId: string | null;
+  readonly escalatedFromCaseId: string | null;
   readonly openedByUserId: string;
   readonly openedAt: Date;
   readonly status: CaseStatus;
@@ -66,12 +75,36 @@ export interface ActionRecord {
  */
 export const caseKinds: Record<
   CaseKind,
-  { readonly turns: boolean; readonly separateStatements: boolean }
+  {
+    readonly turns: boolean;
+    readonly separateStatements: boolean;
+    /** Handled by the platform stewards, not an environment's administrators. */
+    readonly platform: boolean;
+  }
 > = {
-  environment_contact: { turns: false, separateStatements: false },
-  loan_mediation: { turns: true, separateStatements: true },
-  unavailability_report: { turns: true, separateStatements: false },
+  environment_contact: {
+    turns: false,
+    separateStatements: false,
+    platform: false,
+  },
+  loan_mediation: { turns: true, separateStatements: true, platform: false },
+  unavailability_report: {
+    turns: true,
+    separateStatements: false,
+    platform: true,
+  },
+  environment_report: {
+    turns: true,
+    separateStatements: false,
+    platform: false,
+  },
+  platform_report: { turns: true, separateStatements: false, platform: true },
 };
+
+/** The kinds the platform stewards handle (`app.case_platform_kind`). */
+export const platformCaseKinds = (Object.keys(caseKinds) as CaseKind[]).filter(
+  (kind) => caseKinds[kind].platform,
+);
 
 /** Where the latest sharing of the statements stands, if they were shared. */
 export function sharedUpTo(actions: readonly ActionRecord[]): bigint | null {

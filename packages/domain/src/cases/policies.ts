@@ -16,7 +16,7 @@ import type { EnvironmentAccess } from "../environment/model";
 import { canSeeEnvironment, isAdministrator } from "../environment/policies";
 import { platformStewardAccess } from "../platform/policies";
 import type { SocialPair } from "../social/pair";
-import type { CaseRecord, ParticipantRecord } from "./model";
+import { type CaseRecord, caseKinds, type ParticipantRecord } from "./model";
 import type { HandlerStanding } from "./store";
 
 /**
@@ -29,12 +29,13 @@ export interface CaseResource {
   readonly standing: HandlerStanding;
 }
 
-/** The user a report is about never learns of it (PS-COM-015). */
-const hiddenFromSubject: ResourceRule<CaseResource, void> = ({
-  actor,
-  resource,
-}) =>
-  actor.kind === "user" && actor.userId === resource.case.subjectUserId
+/**
+ * Whoever a report is about never learns of it through the case: the user
+ * (PS-COM-015), the author of a reported review or response, or an owner of
+ * a reported object (WP-52).
+ */
+const hiddenFromSubject: ResourceRule<CaseResource, void> = ({ resource }) =>
+  resource.standing.reported && !resource.participant
     ? deny("not_found")
     : allow;
 
@@ -50,7 +51,7 @@ const notInvolved = requireNotInvolved<CaseResource, void>(
  * participant is told they may not; anyone else does not see the case.
  * Handling is new activity: only an active account handles (PS-ADM-001).
  */
-const asHandler: ResourceRule<CaseResource, void> = (input) => {
+export const asHandler: ResourceRule<CaseResource, void> = (input) => {
   const { actor, resource } = input;
 
   if (!resource.standing.holdsRole) {
@@ -61,8 +62,9 @@ const asHandler: ResourceRule<CaseResource, void> = (input) => {
     return deny("account_inactive");
   }
 
-  const rules =
-    resource.case.kind === "unavailability_report" ? platformStewardAccess : [];
+  const rules = caseKinds[resource.case.kind].platform
+    ? platformStewardAccess
+    : [];
 
   for (const rule of [...rules, notInvolved]) {
     const decision: Decision = rule(input as PolicyInput<CaseResource, void>);
@@ -84,7 +86,10 @@ const asParticipantOrHandler: ResourceRule<CaseResource, void> = (input) =>
  * access, also while their account is deactivated, dormant, suspended or
  * closing; handling it takes an active account (`asHandler`).
  */
-function casePolicy(action: string, rule: ResourceRule<CaseResource, void>) {
+export function casePolicy(
+  action: string,
+  rule: ResourceRule<CaseResource, void>,
+) {
   return definePolicy<CaseResource>({
     action,
     actor: [requireMinimumAccess],
@@ -161,7 +166,7 @@ export const listEnvironmentCaseQueuePolicy = definePolicy<EnvironmentAccess>({
   resource: [canSeeEnvironment, isAdministrator],
 });
 
-/** The unavailability reports, for the platform stewards. */
+/** The platform's cases, for the platform stewards. */
 export const listPlatformCaseQueuePolicy = definePolicy<unknown, void>({
   action: "case.list_platform_queue",
   actor: [...platformStewardAccess],
