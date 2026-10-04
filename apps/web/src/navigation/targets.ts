@@ -19,6 +19,7 @@ const targetPages: Record<
   object_invitation: { page: "/mine-ting", anchor: (id) => `invitasjon-${id}` },
   user: { page: accountHref, anchor: () => "venner" },
   environment: null,
+  case: null,
 };
 
 export function hrefFor(target: NotificationTarget): string | null {

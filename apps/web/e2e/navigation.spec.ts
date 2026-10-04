@@ -140,7 +140,7 @@ test("the indicator counts unread notifications until they are read", async ({
   await page.goto("/");
 
   await page.getByRole("link", { name: "Varsler, 1 uleste" }).click();
-  await expect(page.getByText("Noen vil bli venn med deg")).toBeVisible();
+  await expect(page.getByText("Du har fått en venneforespørsel")).toBeVisible();
   await page.getByRole("button", { name: "Merk alle som lest" }).click();
   await expect(
     page.getByRole("link", { name: "Varsler, ingen uleste" }),
