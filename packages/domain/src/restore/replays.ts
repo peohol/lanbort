@@ -16,6 +16,8 @@ import {
   loadAccountForChange,
 } from "../account/lifecycle";
 import { transitionAllowed } from "../account/model";
+import { chatAccountKeyReset, chatDeviceRevoked } from "../chat/events";
+import { loadDevice, shutOut } from "../chat/store";
 import { lapseInvitationsOf } from "../environment/continuity-store";
 import {
   environmentOwnershipVacated,
@@ -413,6 +415,73 @@ const platformRoleReplay: RestoreReplay = {
     }
 
     recordAgain(platformRoleRevoked, args);
+
+    return "applied";
+  },
+};
+
+/**
+ * ADR-0010 §7: a revoked chat device stays shut out. The journal holds no
+ * signature, so it is revoked by the server alone; it gets nothing more.
+ */
+const chatDeviceRevocationReplay: RestoreReplay = {
+  name: "chat_device_revocation",
+  events: [chatDeviceRevoked],
+  replay: async (args) => {
+    const { tx, entry, now } = args;
+    const device = await loadDevice(tx, entry.resourceId, { lock: true });
+
+    if (!device || device.revokedAt !== null) {
+      return "unchanged";
+    }
+
+    await shutOut(tx, [device.id], now);
+    recordAgain(chatDeviceRevoked, args);
+
+    return "applied";
+  },
+};
+
+/**
+ * ADR-0010 §8: after a reset, nothing under the replaced account key comes
+ * back. The new key was made after the backup, so the account is left with
+ * none and sets up chat again, which its contacts see as a changed key.
+ */
+const chatAccountKeyResetReplay: RestoreReplay = {
+  name: "chat_account_key_reset",
+  events: [chatAccountKeyReset],
+  replay: async (args) => {
+    const { tx, entry, now } = args;
+    const { previousAccountKeyId } = payloadOf(chatAccountKeyReset, entry);
+    const key = await tx
+      .selectFrom("app.chat_account_keys")
+      .select("id")
+      .where("id", "=", previousAccountKeyId)
+      .where("replaced_at", "is", null)
+      .forUpdate()
+      .executeTakeFirst();
+
+    if (!key) {
+      return "unchanged";
+    }
+
+    const live = await tx
+      .selectFrom("app.chat_devices")
+      .select("id")
+      .where("account_key_id", "=", key.id)
+      .where("revoked_at", "is", null)
+      .execute();
+    await shutOut(
+      tx,
+      live.map((device) => device.id),
+      now,
+    );
+    await tx
+      .updateTable("app.chat_account_keys")
+      .set({ replaced_at: now })
+      .where("id", "=", key.id)
+      .execute();
+    recordAgain(chatAccountKeyReset, args);
 
     return "applied";
   },
@@ -1064,4 +1133,6 @@ export const restoreReplays: readonly RestoreReplay[] = [
   windDownReplay,
   moderationReplay,
   logisticsSafetyReplay,
+  chatDeviceRevocationReplay,
+  chatAccountKeyResetReplay,
 ];

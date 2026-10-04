@@ -158,6 +158,90 @@ export interface AppCases {
   subject_user_id: string | null;
 }
 
+export interface AppChatAccountKeys {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  public_key: Buffer;
+  replaced_at: Timestamp | null;
+  user_id: string;
+}
+
+export interface AppChatConversations {
+  created_at: Generated<Timestamp>;
+  created_by_user_id: string;
+  epoch: Generated<Int8>;
+  generation: Generated<number>;
+  id: Generated<string>;
+  kind: string;
+  last_activity_at: Generated<Timestamp>;
+  opened_via: string;
+  user_high_id: string | null;
+  user_low_id: string | null;
+}
+
+export interface AppChatDeliveries {
+  device_id: string;
+  message_id: Int8;
+}
+
+export interface AppChatDevices {
+  account_key_id: string;
+  certificate_signature: Buffer;
+  created_at: Generated<Timestamp>;
+  device_key: Buffer;
+  id: string;
+  revocation_signature: Buffer | null;
+  revoked_at: Timestamp | null;
+  session_id: string;
+  user_id: string;
+}
+
+export interface AppChatGroupMembers {
+  added_at: Generated<Timestamp>;
+  conversation_id: string;
+  device_id: string;
+  generation: number;
+}
+
+export interface AppChatKeyPackages {
+  created_at: Generated<Timestamp>;
+  device_id: string;
+  expires_at: Timestamp;
+  id: Generated<string>;
+  key_package: Buffer;
+  last_resort: Generated<boolean>;
+}
+
+export interface AppChatLinkRequests {
+  approved_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  device_id: string;
+  device_key: Buffer;
+  expires_at: Timestamp;
+  id: Generated<string>;
+  link_key: Buffer;
+  package: Buffer | null;
+  session_id: string;
+  user_id: string;
+}
+
+export interface AppChatMessages {
+  ciphertext: Buffer;
+  content_type: string;
+  conversation_id: string;
+  created_at: Generated<Timestamp>;
+  epoch: Int8;
+  generation: number;
+  id: Generated<Int8>;
+}
+
+export interface AppChatParticipants {
+  conversation_id: string;
+  hidden_at: Timestamp | null;
+  joined_at: Generated<Timestamp>;
+  user_id: string;
+}
+
 export interface AppEnvironmentAccessRestrictions {
   environment_id: string;
   id: Generated<string>;
@@ -854,6 +938,15 @@ export interface DB {
   "app.case_entry_private_messages": AppCaseEntryPrivateMessages;
   "app.case_participants": AppCaseParticipants;
   "app.cases": AppCases;
+  "app.chat_account_keys": AppChatAccountKeys;
+  "app.chat_conversations": AppChatConversations;
+  "app.chat_deliveries": AppChatDeliveries;
+  "app.chat_devices": AppChatDevices;
+  "app.chat_group_members": AppChatGroupMembers;
+  "app.chat_key_packages": AppChatKeyPackages;
+  "app.chat_link_requests": AppChatLinkRequests;
+  "app.chat_messages": AppChatMessages;
+  "app.chat_participants": AppChatParticipants;
   "app.environment_access_restrictions": AppEnvironmentAccessRestrictions;
   "app.environment_membership_answers": AppEnvironmentMembershipAnswers;
   "app.environment_memberships": AppEnvironmentMemberships;

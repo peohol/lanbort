@@ -4,7 +4,14 @@ import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type APIResponse, expect, test } from "@playwright/test";
 import sharp from "sharp";
-import { accountId, postCommand, registerThroughApi, today } from "./helpers";
+import {
+  accountId,
+  chatAccount,
+  postCommand,
+  registerThroughApi,
+  signInThroughApi,
+  today,
+} from "./helpers";
 
 /**
  * WP-70 over HTTP: a stranger asks every read route of the API about what
@@ -41,6 +48,8 @@ interface Ids {
   loanId: string;
   caseId: string;
   questionId: string;
+  conversationId: string;
+  linkRequestId: string;
   userId: string;
 }
 
@@ -49,6 +58,9 @@ const probes: Record<string, (ids: Ids) => Record<string, string>> = {
   "cases/[caseId]": () => ({}),
   "cases/[caseId]/measures": () => ({}),
   "cases/queue/environment": (ids) => ({ environmentId: ids.environmentId }),
+  "chat/conversations/[conversationId]": () => ({}),
+  "chat/conversations/[conversationId]/directory": () => ({}),
+  "chat/links/[linkRequestId]": () => ({}),
   "environments/details": (ids) => ({ environmentId: ids.environmentId }),
   "environments/memberships": (ids) => ({ environmentId: ids.environmentId }),
   "environments/roles": (ids) => ({ environmentId: ids.environmentId }),
@@ -91,6 +103,10 @@ const namesNoResource = new Set([
   "account/deletion",
   "cases",
   "cases/queue/platform",
+  "chat/conversations",
+  "chat/devices",
+  "chat/inbox",
+  "chat/links",
   "environments",
   "health",
   "home",
@@ -139,13 +155,15 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
   playwright,
   baseURL,
 }) => {
-  const person = async () => {
-    const context = await playwright.request.newContext({
+  const newContext = () =>
+    playwright.request.newContext({
       baseURL: baseURL!,
       extraHTTPHeaders: { origin: baseURL! },
     });
-    await registerThroughApi(context);
-    return { context, userId: await accountId(context) };
+  const person = async () => {
+    const context = await newContext();
+    const email = await registerThroughApi(context);
+    return { context, email, userId: await accountId(context) };
   };
 
   // An administrator, a lender, a borrower and a member of a hidden
@@ -226,6 +244,30 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
     })
   ).json();
 
+  // The lender's chat with the borrower, and a device of the lender's that
+  // waits to be linked from a second sign-in.
+  const chat = chatAccount(lender.userId);
+  await postCommand(lender.context, "/api/chat/account", {
+    accountKey: chat.accountKey,
+    certificate: chat.certify(),
+  });
+  const { conversationId } = await (
+    await postCommand(lender.context, "/api/chat/conversations", {
+      userId: borrower.userId,
+      context: { kind: "loan_request", requestId },
+    })
+  ).json();
+  const laptop = await newContext();
+  await signInThroughApi(laptop, lender.email);
+  const linking = chat.certify();
+  const { linkRequestId } = await (
+    await postCommand(laptop, "/api/chat/links", {
+      deviceId: linking.deviceId,
+      deviceKey: linking.deviceKey,
+      linkKey: linking.deviceKey,
+    })
+  ).json();
+
   const real: Ids = {
     environmentId,
     objectId,
@@ -234,6 +276,8 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
     loanId,
     caseId,
     questionId,
+    conversationId,
+    linkRequestId,
     userId: lender.userId,
   };
   const nowhere: Ids = {

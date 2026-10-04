@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { platformRoles } from "./actor";
 import { accountMatrices } from "./account/policies.matrix";
 import { caseMatrices } from "./cases/policies.matrix";
+import { chatMatrices } from "./chat/policies.matrix";
 import { environmentMatrices } from "./environment/policies.matrix";
 import { homeMatrices } from "./home/policies.matrix";
 import { loanMatrices } from "./loans/policies.matrix";
@@ -49,6 +50,7 @@ const matrices: readonly PolicyMatrix<never, never>[] = [
   ...moderationMatrices,
   ...searchMatrices,
   ...restoreMatrices,
+  ...chatMatrices,
 ] as never;
 
 describe("policy coverage", () => {
