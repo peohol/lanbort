@@ -605,6 +605,76 @@ const probed = allOperations.filter(
 /** Reads only: probing as someone with some access must not change the world. */
 const reads = probed.filter((operation) => operation.kind === "query");
 
+/** An account no probe names as its target. */
+const elsewhere = randomUUID();
+
+/**
+ * A valid input for every operation whose only resource is a person, aimed
+ * at `userId`. The coverage test below fails when one is missing.
+ */
+const personProbes: Record<string, (userId: string) => object> = {
+  "account.complete_closure": (userId) => ({ userId, basis: text }),
+  "account.link_same_person": (userId) => ({
+    userId,
+    linkedUserId: elsewhere,
+    basis: text,
+  }),
+  "account.read_identity_record": (userId) => ({ userId }),
+  "account.record_false_identity": (userId) => ({ userId, basis: text }),
+  "account.reinstate": (userId) => ({ userId, basis: text }),
+  "account.retire_duplicate": (userId) => ({
+    userId,
+    continuedUserId: elsewhere,
+    basis: text,
+  }),
+  "account.start_closure": (userId) => ({ userId, basis: text }),
+  "account.suspend": (userId) => ({ userId, basis: text }),
+  "case.report_unavailability": (userId) => ({ userId, body: text }),
+  // A request first, so the ones after it act on something.
+  "friendship.request": (userId) => ({ userId }),
+  "friendship.accept": (userId) => ({ userId }),
+  "friendship.decline": (userId) => ({ userId }),
+  "friendship.withdraw": (userId) => ({ userId }),
+  "friendship.remove": (userId) => ({ userId }),
+  "social.relation.read": (userId) => ({ userId }),
+  "trust_profile.read": (userId) => ({ userId }),
+  "user_block.create": (userId) => ({ userId }),
+  "user_block.lift": (userId) => ({ userId }),
+};
+
+const personal = allOperations.filter(
+  (operation) =>
+    reachableByUsers(operation) &&
+    operation.inputKeys.has("userId") &&
+    !probed.includes(operation),
+);
+
+/**
+ * What `actor` gets from every operation aimed at the person `userId`, in
+ * the order of the probes, as the client gets it. Ids the answers mint (a
+ * new case) differ between any two people, so they are set aside too.
+ */
+async function aimedAt(actor: UserActor, userId: string) {
+  const answers: string[] = [];
+
+  for (const [name, probe] of Object.entries(personProbes)) {
+    const operation = personal.find((candidate) => candidate.name === name)!;
+    const input = probe(userId);
+    const outcome = await attempt(kit.tick(), operation, actor, input);
+    expect(outcome, `probe for ${name}`).not.toMatchObject({
+      refused: "invalid_input",
+    });
+    answers.push(
+      withoutEcho(outcome, input).replace(
+        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g,
+        "<minted>",
+      ),
+    );
+  }
+
+  return answers;
+}
+
 /**
  * Probes the operations as `actor`, with the world's ids and again with ids
  * that name nothing, and returns the operations whose answers differ: what
@@ -652,6 +722,12 @@ describe("every operation that names a resource is probed", () => {
       ),
     ).toEqual([]);
   });
+
+  it("has a probe for each operation aimed at a person", () => {
+    expect(personal.map(({ name }) => name).sort()).toEqual(
+      Object.keys(personProbes).sort(),
+    );
+  });
 });
 
 describe("hidden environments (PS-NFR-002)", () => {
@@ -681,6 +757,21 @@ describe("hidden environments (PS-NFR-002)", () => {
       environmentId: world.ids.environmentId,
     });
     expect(await reachable(world, former)).toEqual([]);
+  });
+
+  // Accounts are not hidden, but being in a hidden environment is: aimed at
+  // any of its people, every operation answers a stranger the way it does
+  // for someone who has only just signed up.
+  it("tells a stranger nothing about its people", async () => {
+    const world = await hiddenWorld();
+
+    for (const [role, person] of Object.entries(world.actors)) {
+      const stranger = await user();
+      const newcomer = await user();
+      expect(await aimedAt(stranger, person.userId), role).toEqual(
+        await aimedAt(stranger, newcomer.userId),
+      );
+    }
   });
 });
 

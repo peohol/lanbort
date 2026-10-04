@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type APIResponse, expect, test } from "@playwright/test";
+import sharp from "sharp";
 import { accountId, postCommand, registerThroughApi, today } from "./helpers";
 
 /**
@@ -10,8 +11,10 @@ import { accountId, postCommand, registerThroughApi, today } from "./helpers";
  * lives in a hidden environment, and again about ids that name nothing. The
  * answers must be the same down to status, headers and body, so the API
  * itself tells nobody the environment, its objects, loans or cases exist
- * (PS-NFR-002). The domain suite (`security/pilot-access`) does the same for
- * every command and query; this checks what reaches the client.
+ * (PS-NFR-002). Accounts are not hidden, so the routes about a person are
+ * asked about one of its members and about someone who has just signed up.
+ * The domain suite (`security/pilot-access`) does the same for every
+ * command and query; this checks what reaches the client.
  */
 
 const apiRoot = fileURLToPath(new URL("../src/app/api", import.meta.url));
@@ -38,6 +41,7 @@ interface Ids {
   loanId: string;
   caseId: string;
   questionId: string;
+  userId: string;
 }
 
 /** The query each read route that names a resource gets, from the ids. */
@@ -76,6 +80,8 @@ const probes: Record<string, (ids: Ids) => Record<string, string>> = {
     environmentId: ids.environmentId,
     categoryId: "annet",
   }),
+  "social/relation": (ids) => ({ userId: ids.userId }),
+  trust: (ids) => ({ userId: ids.userId }),
 };
 
 /** Read routes over the caller's own things, or not for users at all. */
@@ -99,8 +105,6 @@ const namesNoResource = new Set([
   "object-subscriptions",
   "search/environments",
   "social",
-  "social/relation",
-  "trust",
 ]);
 
 test("every read route that names a resource is probed", () => {
@@ -179,6 +183,16 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
   await postCommand(lender.context, `/api/objects/${objectId}/publications`, {
     environmentId,
   });
+  const upload = await lender.context.post(`/api/objects/${objectId}/images`, {
+    data: await sharp({
+      create: { width: 40, height: 30, channels: 3, background: "#4a7" },
+    })
+      .jpeg()
+      .toBuffer(),
+    headers: { "content-type": "image/jpeg", "Idempotency-Key": randomUUID() },
+  });
+  expect(upload.ok(), await upload.text()).toBe(true);
+  const { imageId } = await upload.json();
   const { termsVersion } = await (
     await borrower.context.get(
       `/api/loan-requests/preview?objectId=${objectId}&environmentId=${environmentId}`,
@@ -214,15 +228,19 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
   const real: Ids = {
     environmentId,
     objectId,
-    imageId: randomUUID(),
+    imageId,
     requestId,
     loanId,
     caseId,
     questionId,
+    userId: lender.userId,
   };
-  const nowhere = Object.fromEntries(
-    Object.keys(real).map((key) => [key, randomUUID()]),
-  ) as unknown as Ids;
+  const nowhere: Ids = {
+    ...(Object.fromEntries(
+      Object.keys(real).map((key) => [key, randomUUID()]),
+    ) as unknown as Ids),
+    userId: (await person()).userId,
+  };
 
   const stranger = await person();
   const ask = (route: string, ids: Ids) => {
