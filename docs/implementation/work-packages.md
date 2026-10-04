@@ -183,7 +183,7 @@ Systematisk gjennomgang av alle kjerneflyter på mobil, desktop, tastatur og hje
 ## Fase 7
 
 ### WP-70 — Autorisasjons- og personvernsikkerhetstest
-Prøv eksplisitt skjulte miljøer, historisk tilgang, medeiergrenser, inhabilitet og representanttilgang. Så lenge OD-0003 er åpen, er det pilotmodellen som testes: representanttilgang skal ikke kunne oppnås.
+Prøv eksplisitt skjulte miljøer, historisk tilgang, medeiergrenser, inhabilitet og representanttilgang. Så lenge OD-0003 er åpen, er det pilotmodellen som testes: representanttilgang skal ikke kunne oppnås. Privilegerte plattformforvalterhandlinger skal være avvist uansett hva innloggingstjenesten rapporterer, så lenge OD-0010 er åpen. Privat chat (WP-43) finnes ikke ennå; sikkerhetstestene for den legges til når den bygges. Responstid som sidekanal testes ikke automatisk, fordi slike målinger blir ustabile i delt CI; den hører til den uavhengige sikkerhetsgjennomgangen i Port E.
 
 ### WP-71 — Samtidighets- og idempotensstresstest
 Parallelle godkjenninger, retry, dobbelttrykk, avtaleendring og gjenåpnet retur.
