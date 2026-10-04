@@ -1,4 +1,4 @@
-import type { ChatConversationKind } from "@lanbort/contracts";
+import { type ChatConversationKind, chatLimits } from "@lanbort/contracts";
 
 const minutes = 60 * 1000;
 const days = 24 * 60 * minutes;
@@ -24,18 +24,29 @@ export const keyPackagesPerDevice = 100;
 
 /**
  * What each kind of conversation allows (ADR-0010, «Hva de neste
- * arbeidspakkene trenger»). WP-44 adds the loan logistics channel here with
- * its own size limit and rules for when it is open.
+ * arbeidspakkene trenger»). When each kind is open is `conversationOpen`.
  */
 export interface ConversationKindRules {
   /** Largest application message the server accepts (ciphertext bytes). */
   readonly maxMessageBytes: number;
+  /**
+   * Largest decrypted content, padding included, or null for no limit
+   * beyond `maxMessageBytes`. The server checks it on the ciphertext's
+   * length alone and never reads the message.
+   */
+  readonly maxContentBytes: number | null;
 }
 
 export const conversationKinds: Readonly<
   Record<ChatConversationKind, ConversationKindRules>
 > = {
-  private: { maxMessageBytes: 64 * 1024 },
+  private: { maxMessageBytes: 64 * 1024, maxContentBytes: null },
+  // «Korte meldinger» (PS-COM-007): one padding block. The channel takes no
+  // attachments either; an attachment route must refuse this kind.
+  loan_logistics: {
+    maxMessageBytes: 64 * 1024,
+    maxContentBytes: chatLimits.paddedMessageBytes,
+  },
 };
 
 /**

@@ -8,6 +8,7 @@ import { announce } from "@/components/announcer";
 import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
 import { chatHref } from "@/navigation/chat";
+import { loanHref } from "@/navigation/targets";
 import { chatApi } from "./api";
 import { useEngineVersion } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";
@@ -15,6 +16,7 @@ import {
   type ChatEngine,
   type ConversationProblem,
   chatTuning,
+  fitsShortMessage,
   type HistoryEntry,
 } from "./engine";
 import { chatErrorMessage } from "./messages";
@@ -164,7 +166,7 @@ function Conversation({ engine, id }: { engine: ChatEngine; id: string }) {
   async function send(event: FormEvent) {
     event.preventDefault();
     const message = text.trim();
-    if (!message) return;
+    if (!message || tooLong) return;
     setBusy(true);
     setError(null);
     setText("");
@@ -192,6 +194,8 @@ function Conversation({ engine, id }: { engine: ChatEngine; id: string }) {
 
   const others = info?.others ?? [];
   const canWrite = info?.open === true && status?.joined === true;
+  const tooLong =
+    info?.kind === "loan_logistics" && !fitsShortMessage(text.trim());
 
   return (
     <>
@@ -201,6 +205,13 @@ function Conversation({ engine, id }: { engine: ChatEngine; id: string }) {
       <p className="link-row">
         <Link href={chatHref}>Alle samtaler</Link>
       </p>
+      {info?.loanId && (
+        <p className="help">
+          Denne samtalen er kun for den praktiske avslutningen av{" "}
+          <Link href={loanHref(info.loanId)}>lånet</Link>: overlevering, retur,
+          tid, sted og selve gjenstanden. Den stenges når lånet er avsluttet.
+        </p>
+      )}
       {info && !info.open && (
         <p className="quiet">
           Samtalen er stengt. Ingen av dere kan sende nye meldinger her.
@@ -249,7 +260,14 @@ function Conversation({ engine, id }: { engine: ChatEngine; id: string }) {
             required
             value={text}
             onChange={(event) => setText(event.target.value)}
+            aria-describedby={tooLong ? "for-lang" : undefined}
           />
+          {tooLong && (
+            <p id="for-lang" role="alert">
+              Meldingen er for lang. Her kan du bare sende korte meldinger om
+              lånet.
+            </p>
+          )}
           <BusyButton type="submit" busy={busy}>
             Send
           </BusyButton>

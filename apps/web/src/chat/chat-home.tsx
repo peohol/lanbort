@@ -116,8 +116,11 @@ function ConversationList({
     })();
   }, [conversations, engine]);
 
+  // A loan's own conversation is not a private one to start again from.
   const talkingTo = new Set(
-    (conversations ?? []).flatMap((c) => c.others.map((o) => o.userId)),
+    (conversations ?? [])
+      .filter((c) => c.kind === "private")
+      .flatMap((c) => c.others.map((o) => o.userId)),
   );
   const newFriends = friends.filter((f) => !talkingTo.has(f.userId));
 
@@ -155,6 +158,7 @@ function ConversationList({
                 {nameOf(conversation.others)}
               </Link>
               <span className="entry-detail">
+                {conversation.loanId ? "Om lånet · " : ""}
                 {conversation.open ? "" : "Stengt · "}
                 Sist aktiv {time(conversation.lastActivityAt)}
               </span>

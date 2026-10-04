@@ -174,6 +174,7 @@ export interface AppChatConversations {
   id: Generated<string>;
   kind: string;
   last_activity_at: Generated<Timestamp>;
+  loan_logistics_channel_id: string | null;
   opened_via: string;
   user_high_id: string | null;
   user_low_id: string | null;

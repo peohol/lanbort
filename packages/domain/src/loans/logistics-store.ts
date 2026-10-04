@@ -22,27 +22,32 @@ export interface LoanLogisticsChannelRecord {
   readonly openedAt: Date;
   readonly closedAt: Date | null;
   readonly closeReason: LoanLogisticsCloseReason | null;
+  /** Its encrypted conversation, once a party started it (WP-43). */
+  readonly conversationId: string | null;
 }
 
-const channelColumns = [
-  "id",
-  "loan_id",
-  "borrower_user_id",
-  "lender_user_id",
-  "opened_at",
-  "closed_at",
-  "close_reason",
-] as const;
+/** The channels, each with its conversation if it has one. */
+const channels = (db: Db) =>
+  db
+    .selectFrom("app.loan_logistics_channels as channel")
+    .select((eb) => [
+      "channel.id",
+      "channel.loan_id",
+      "channel.borrower_user_id",
+      "channel.lender_user_id",
+      "channel.opened_at",
+      "channel.closed_at",
+      "channel.close_reason",
+      eb
+        .selectFrom("app.chat_conversations as conversation")
+        .select("conversation.id")
+        .whereRef("conversation.loan_logistics_channel_id", "=", "channel.id")
+        .as("conversation_id"),
+    ]);
 
-interface ChannelRow {
-  readonly id: string;
-  readonly loan_id: string;
-  readonly borrower_user_id: string;
-  readonly lender_user_id: string;
-  readonly opened_at: Date;
-  readonly closed_at: Date | null;
-  readonly close_reason: string | null;
-}
+type ChannelRow = Awaited<
+  ReturnType<ReturnType<typeof channels>["executeTakeFirstOrThrow"]>
+>;
 
 function toChannel(row: ChannelRow): LoanLogisticsChannelRecord {
   return {
@@ -53,6 +58,7 @@ function toChannel(row: ChannelRow): LoanLogisticsChannelRecord {
     openedAt: row.opened_at,
     closedAt: row.closed_at,
     closeReason: row.close_reason as LoanLogisticsCloseReason | null,
+    conversationId: row.conversation_id,
   };
 }
 
@@ -69,6 +75,7 @@ export function presentChannel(
     openedAt: channel.openedAt.toISOString(),
     closedAt: channel.closedAt?.toISOString() ?? null,
     closeReason: channel.closeReason,
+    conversationId: channel.conversationId,
   };
 }
 
@@ -82,12 +89,23 @@ export async function findChannel(
   channelId: string,
   options: { lock?: "share" | "update" } = {},
 ): Promise<LoanLogisticsChannelRecord | null> {
-  const row = await db
-    .selectFrom("app.loan_logistics_channels")
-    .select(channelColumns)
-    .where("id", "=", channelId)
-    .$if(options.lock === "share", (query) => query.forShare())
-    .$if(options.lock === "update", (query) => query.forUpdate())
+  if (
+    options.lock &&
+    !(await db
+      .selectFrom("app.loan_logistics_channels")
+      .select("id")
+      .where("id", "=", channelId)
+      .$if(options.lock === "share", (query) => query.forShare())
+      .$if(options.lock === "update", (query) => query.forUpdate())
+      .executeTakeFirst())
+  ) {
+    return null;
+  }
+
+  // Read in a statement of its own once the channel is held: one that
+  // waited for the lock would still see its conversation as it was before.
+  const row = await channels(db)
+    .where("channel.id", "=", channelId)
     .executeTakeFirst();
 
   return row ? toChannel(row) : null;
@@ -98,15 +116,15 @@ export async function findOpenChannel(
   db: Db,
   loanId: string,
 ): Promise<LoanLogisticsChannelRecord | null> {
-  const row = await db
+  const open = await db
     .selectFrom("app.loan_logistics_channels")
-    .select(channelColumns)
+    .select("id")
     .where("loan_id", "=", loanId)
     .where("closed_at", "is", null)
     .forUpdate()
     .executeTakeFirst();
 
-  return row ? toChannel(row) : null;
+  return open ? findChannel(db, open.id) : null;
 }
 
 /**
@@ -119,18 +137,16 @@ export async function findChannelsOf(
   loanId: string,
   userId: string,
 ): Promise<LoanLogisticsChannelRecord[]> {
-  const rows = await db
-    .selectFrom("app.loan_logistics_channels")
-    .select(channelColumns)
-    .where("loan_id", "=", loanId)
+  const rows = await channels(db)
+    .where("channel.loan_id", "=", loanId)
     .where((eb) =>
       eb.or([
-        eb("borrower_user_id", "=", userId),
-        eb("lender_user_id", "=", userId),
+        eb("channel.borrower_user_id", "=", userId),
+        eb("channel.lender_user_id", "=", userId),
       ]),
     )
-    .orderBy("opened_at", "desc")
-    .orderBy("id", "desc")
+    .orderBy("channel.opened_at", "desc")
+    .orderBy("channel.id", "desc")
     .execute();
 
   return rows.map(toChannel);

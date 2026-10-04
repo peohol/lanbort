@@ -46,13 +46,22 @@ export const chatDeviceRevoked = defineEvent({
   payload: z.strictObject({}),
 });
 
-/** A private conversation was started, and on what grounds (PS-COM-006). */
+/**
+ * A conversation was started, and on what grounds: a private one from a
+ * friendship or a structured contact (PS-COM-006), or a loan logistics
+ * channel's own (WP-44, PS-COM-007).
+ */
 export const chatConversationStarted = defineEvent({
   type: "chat.conversation_started",
   version: 1,
   kind: "domain",
   resourceType: "chat_conversation",
   payload: z.strictObject({
-    openedVia: z.enum(["friendship", "loan_request", "object_question"]),
+    openedVia: z.enum([
+      "friendship",
+      "loan_request",
+      "object_question",
+      "loan_logistics",
+    ]),
   }),
 });

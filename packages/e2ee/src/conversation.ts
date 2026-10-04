@@ -1,3 +1,4 @@
+import { chatLimits } from "@lanbort/contracts";
 import {
   type AuthenticationService,
   type ClientConfig,
@@ -59,8 +60,18 @@ export const KEY_PACKAGE_LIFETIME_SECONDS = 28 * 24 * 60 * 60;
 /** Tolerated clock difference between the device that makes a key package and the one that adds it. */
 const CLOCK_SKEW_SECONDS = 60 * 60;
 
-/** Shorter messages are padded to this length so their size is not revealed. */
-const PADDED_LENGTH = 1024;
+/**
+ * Shorter messages are padded to this length so their size is not revealed.
+ * The server checks a loan logistics message against the same constant.
+ */
+const PADDED_LENGTH = chatLimits.paddedMessageBytes;
+
+/**
+ * The longest application message (plaintext bytes) that still fits in one
+ * padding block: MLS frames it inside the padding with its length and the
+ * sender's Ed25519 signature. A loan logistics message must fit (WP-44).
+ */
+export const SHORT_MESSAGE_BYTES = PADDED_LENGTH - 68;
 
 /** Only these proposals are accepted; anything else in a commit is rejected. */
 const permittedProposals = new Set<Proposal["proposalType"]>([

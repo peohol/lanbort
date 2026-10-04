@@ -96,6 +96,13 @@ export const chatApi = {
       | { kind: "loan_request"; requestId: string }
       | { kind: "object_question"; questionId: string };
   }) => post<{ conversationId: string }>("/api/chat/conversations", body),
+  /** A loan logistics channel's own conversation (WP-44); the same one again. */
+  startLoanLogistics: (channelId: string, idempotencyKey: string) =>
+    post<{ conversationId: string }>(
+      `/api/chat/loan-logistics/${channelId}`,
+      {},
+      { idempotencyKey },
+    ),
   conversation: (id: string) => get<ChatConversation>(conversation(id)),
   directory: (id: string) =>
     get<ChatDirectory>(`${conversation(id)}/directory`),

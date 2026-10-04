@@ -9,6 +9,7 @@ import { type Kysely, sql } from "kysely";
 import { takesNewActivity } from "../account/model";
 import { accountStatuses } from "../account/store";
 import type { Actor } from "../actor";
+import { findChannel } from "../loans/logistics-store";
 import { blockedWithAny } from "../social/pair";
 import { toBase64 } from "./signatures";
 
@@ -190,6 +191,11 @@ export interface ConversationRecord {
   readonly epoch: bigint;
   readonly participantIds: readonly string[];
   readonly lastActivityAt: Date;
+  /** A `loan_logistics` conversation's channel and loan (WP-44). */
+  readonly loanLogistics: {
+    readonly channelId: string;
+    readonly loanId: string;
+  } | null;
 }
 
 /**
@@ -203,9 +209,21 @@ export async function loadConversation(
   options: { lock?: boolean } = {},
 ): Promise<ConversationRecord | null> {
   let query = db
-    .selectFrom("app.chat_conversations")
-    .select(["id", "kind", "generation", "epoch", "last_activity_at"])
-    .where("id", "=", conversationId);
+    .selectFrom("app.chat_conversations as conversation")
+    .select((eb) => [
+      "conversation.id",
+      "conversation.kind",
+      "conversation.generation",
+      "conversation.epoch",
+      "conversation.last_activity_at",
+      "conversation.loan_logistics_channel_id",
+      eb
+        .selectFrom("app.loan_logistics_channels as channel")
+        .select("channel.loan_id")
+        .whereRef("channel.id", "=", "conversation.loan_logistics_channel_id")
+        .as("loan_id"),
+    ])
+    .where("conversation.id", "=", conversationId);
 
   if (options.lock) {
     query = query.forUpdate();
@@ -231,18 +249,26 @@ export async function loadConversation(
     epoch: BigInt(row.epoch),
     participantIds: participants.map((p) => p.user_id),
     lastActivityAt: row.last_activity_at,
+    loanLogistics:
+      row.loan_logistics_channel_id && row.loan_id
+        ? { channelId: row.loan_logistics_channel_id, loanId: row.loan_id }
+        : null,
   };
 }
 
 /**
- * Whether the conversation takes messages now: every participant's account
- * takes new activity (PS-ADM-001) and no two of them have blocked each
- * other (PS-USR-006, PS-COM-007). A lifted block opens it again. WP-44's
- * logistics channel adds its own condition here, per kind.
+ * Whether the conversation takes messages now. Every participant's account
+ * must take new activity (PS-ADM-001), and then:
+ * - private chat: no two of them have blocked each other (PS-USR-006,
+ *   PS-COM-007); a lifted block opens it again;
+ * - loan logistics: its channel is open (WP-44). A block is what the channel
+ *   is for, so it does not close it. With `lock` the channel is held for
+ *   share, so a closing waits until what this accepts is in.
  */
 export async function conversationOpen(
   db: Db,
   conversation: ConversationRecord,
+  options: { lock?: boolean } = {},
 ): Promise<boolean> {
   const statuses = await accountStatuses(db, conversation.participantIds);
 
@@ -252,6 +278,16 @@ export async function conversationOpen(
     )
   ) {
     return false;
+  }
+
+  if (conversation.loanLogistics) {
+    const channel = await findChannel(
+      db,
+      conversation.loanLogistics.channelId,
+      options.lock ? { lock: "share" } : {},
+    );
+
+    return channel?.closedAt === null;
   }
 
   const [first, ...rest] = conversation.participantIds;

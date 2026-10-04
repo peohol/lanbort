@@ -81,10 +81,13 @@ export const chatDeviceIdSchema = lowerUuid;
 
 /**
  * The kinds of conversation. Each has its own rules for who may start it and
- * when it is open (`conversationKinds` on the server). WP-44 adds the loan
- * logistics channel here.
+ * when it is open (`conversationKinds` on the server):
+ * - `private`: ordinary private chat (PS-COM-004–006);
+ * - `loan_logistics`: the narrow channel between a loan's parties while they
+ *   are blocked (WP-44, PS-COM-007), only for short practical messages about
+ *   that loan, open only while the server keeps its channel open.
  */
-export const chatConversationKinds = ["private"] as const;
+export const chatConversationKinds = ["private", "loan_logistics"] as const;
 export const chatConversationKindSchema = z.enum(chatConversationKinds);
 
 /** Upper bounds for what the delivery service stores (bytes). */
@@ -97,6 +100,12 @@ export const chatLimits = {
   removalsPerCommit: 50,
   linkPackageBytes: 16 * 1024,
   inboxPageSize: 100,
+  /**
+   * Shorter messages are padded to this length before encryption, so their
+   * size is not revealed (ADR-0010 §4). A loan logistics message must fit
+   * in one such block (ADR-0010, WP-44).
+   */
+  paddedMessageBytes: 1024,
 } as const;
 
 /** A position in a device's inbox: the server's message order. */
@@ -233,7 +242,16 @@ export const chatConversationSchema = z.strictObject({
   epoch: z.number().int().nonnegative(),
   /** Everyone in it but the caller. */
   others: z.array(chatParticipantSchema),
-  /** Messages are accepted; closed by a block or an inactive account. */
+  /**
+   * The loan a `loan_logistics` conversation is about, so it can be shown
+   * as only for wrapping up that loan; null for private chat.
+   */
+  loanId: z.uuid().nullable(),
+  /**
+   * Messages are accepted. Private chat closes on a block or an inactive
+   * account; loan logistics when its channel closes or an account is
+   * inactive.
+   */
   open: z.boolean(),
   /** This session's device is in the current group. */
   joined: z.boolean(),

@@ -41,6 +41,7 @@ import {
   matchLinkRequest,
   observeAccountKey,
   revokeDevice,
+  SHORT_MESSAGE_BYTES,
   securityCode,
   startLink,
   wipe,
@@ -134,6 +135,16 @@ interface MessageBody {
   id: string;
   text: string;
 }
+
+const encodeBody = (id: string, text: string) =>
+  utf8(JSON.stringify({ v: 1, id, text } satisfies MessageBody));
+
+/**
+ * Whether `text` fits in one padding block once encrypted: a loan logistics
+ * conversation takes nothing longer (WP-44), and the server refuses it.
+ */
+export const fitsShortMessage = (text: string) =>
+  encodeBody(crypto.randomUUID(), text).length <= SHORT_MESSAGE_BYTES;
 
 function readBody(plaintext: Uint8Array): MessageBody | undefined {
   try {
@@ -1001,8 +1012,9 @@ export class ChatEngine {
       if (!group.members().some((m) => m.accountId !== this.userId)) {
         return false;
       }
-      const body: MessageBody = { v: 1, id: entry.id, text: entry.text ?? "" };
-      const ciphertext = await group.encrypt(utf8(JSON.stringify(body)));
+      const ciphertext = await group.encrypt(
+        encodeBody(entry.id, entry.text ?? ""),
+      );
       await this.#saveGroup(id, group);
       try {
         const { position, sentAt } = await chatApi.send(id, {

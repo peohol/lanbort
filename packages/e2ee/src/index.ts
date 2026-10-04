@@ -10,6 +10,7 @@ export {
   type Received,
   Conversation,
   KEY_PACKAGE_LIFETIME_SECONDS,
+  SHORT_MESSAGE_BYTES,
   conversationAuthenticator,
   createKeyPackage,
   currentlyTrusted,

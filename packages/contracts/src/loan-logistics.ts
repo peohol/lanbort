@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { chatConversationIdSchema } from "./chat";
 import { loanIdSchema } from "./loans";
 
 /**
@@ -32,6 +33,8 @@ export const loanLogisticsChannelSchema = z.strictObject({
   /** Null while the channel is open. */
   closedAt: z.iso.datetime().nullable(),
   closeReason: loanLogisticsCloseReasonSchema.nullable(),
+  /** Its encrypted conversation, once one of the parties has started it. */
+  conversationId: chatConversationIdSchema.nullable(),
 });
 
 /** The logistics channels of a loan, for its parties now. */
@@ -53,6 +56,14 @@ export const closeLoanLogisticsSchema = z.strictObject({
   channelId: loanLogisticsChannelIdSchema,
 });
 
+/**
+ * The channel's encrypted conversation (ADR-0010, WP-43): started by either
+ * party while the channel is open, and the same one whoever asks again.
+ */
+export const startLoanLogisticsChatSchema = z.strictObject({
+  channelId: loanLogisticsChannelIdSchema,
+});
+
 export type LoanLogisticsCloseReason = z.infer<
   typeof loanLogisticsCloseReasonSchema
 >;
@@ -60,3 +71,6 @@ export type LoanLogisticsChannel = z.infer<typeof loanLogisticsChannelSchema>;
 export type LoanLogisticsQuery = z.infer<typeof loanLogisticsQuerySchema>;
 export type LoanLogistics = z.infer<typeof loanLogisticsSchema>;
 export type CloseLoanLogistics = z.infer<typeof closeLoanLogisticsSchema>;
+export type StartLoanLogisticsChat = z.infer<
+  typeof startLoanLogisticsChatSchema
+>;

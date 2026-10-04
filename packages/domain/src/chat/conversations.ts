@@ -268,7 +268,7 @@ async function loadAccess(
   return {
     participant,
     hasDevice: device !== null,
-    open: participant && (await conversationOpen(db, conversation!)),
+    open: participant && (await conversationOpen(db, conversation!, options)),
     conversation: conversation!,
     device,
   };
@@ -330,6 +330,7 @@ async function presentConversation(
       userId,
       realName: names.get(userId) ?? null,
     })),
+    loanId: conversation.loanLogistics?.loanId ?? null,
     open,
     joined: device !== null && members.includes(device.id),
     waiting: waiting !== undefined,
@@ -769,11 +770,14 @@ export const sendChatMessage = defineCommand({
 
     const ciphertext = fromBase64(input.ciphertext);
     const header = readPrivateMessage(ciphertext);
+    const rules = conversationKinds[conversation.kind];
 
     if (
       header.contentType !== "application" ||
       header.groupId !== groupIdOf(conversation.id, conversation.generation) ||
-      ciphertext.length > conversationKinds[conversation.kind].maxMessageBytes
+      ciphertext.length > rules.maxMessageBytes ||
+      (rules.maxContentBytes !== null &&
+        header.contentBytes > rules.maxContentBytes)
     ) {
       invalid("ciphertext");
     }

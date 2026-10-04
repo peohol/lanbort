@@ -5,6 +5,7 @@ import {
   acceptRoleInvitation,
   approveLoanRequest,
   askObjectQuestion,
+  blockUser,
   claimCase,
   evaluateActor,
   executeQuery,
@@ -27,6 +28,7 @@ import {
   requestLoanMediation,
   resolveUserActor,
   setObjectRestriction,
+  readLoanLogistics,
   startChatConversation,
   transferCase,
   uploadObjectImage,
@@ -91,13 +93,15 @@ const resourceKeys = new Set([
   "through",
   "conversationId",
   "linkRequestId",
+  "channelId",
 ]);
 
 /**
  * A hidden environment with everything that can live in it: members, an
  * object with a co-owner, its publication, a loan with an amendment and a
  * responsibility offer waiting, pending invitations, a case, a question,
- * the lender's chat with the borrower and a pending chat device link.
+ * the lender's chat with the borrower, a pending chat device link, and the
+ * loan's logistics channel once the borrower has blocked the lender.
  */
 async function hiddenWorld() {
   // A name no other test uses, to look for in everything an outsider reads.
@@ -216,6 +220,13 @@ async function hiddenWorld() {
     },
   );
 
+  await run(blockUser, borrower, { userId: lender.userId });
+  const { channels } = await executeQuery(kit.tick(), readLoanLogistics, {
+    actor: lender,
+    input: { loanId },
+  });
+  const channelId = channels[0]!.id;
+
   return {
     name,
     actors: { admin, lender, borrower, coOwner, other, invitee },
@@ -238,6 +249,7 @@ async function hiddenWorld() {
       questionId,
       conversationId,
       linkRequestId,
+      channelId,
       notificationId: randomUUID(),
       userId: other.userId,
     },
@@ -657,6 +669,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     generation: 1,
     ciphertext: "AAECAw==",
   }),
+  "chat.start_loan_logistics": (ids) => ({ channelId: ids.channelId }),
   "chat.read_link_status": (ids) => ({ linkRequestId: ids.linkRequestId }),
   "chat.finish_link": (ids) => ({ linkRequestId: ids.linkRequestId }),
   "chat.approve_link": (ids) => ({
