@@ -25,6 +25,36 @@ export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
+export interface AppAccountIdentityFindings {
+  basis: string;
+  finding: string;
+  id: Generated<string>;
+  recorded_at: Timestamp;
+  recorded_by_user_id: string;
+  user_id: string;
+}
+
+export interface AppAccountLinks {
+  basis: string;
+  id: Generated<string>;
+  kind: string;
+  linked_user_id: string;
+  recorded_at: Timestamp;
+  recorded_by_user_id: string;
+  user_id: string;
+}
+
+export interface AppAccountObjectTransfers {
+  basis: string;
+  from_user_id: string;
+  id: Generated<string>;
+  link_id: string;
+  moved_at: Timestamp;
+  moved_by_user_id: string;
+  object_id: string;
+  to_user_id: string;
+}
+
 export interface AppAccountStatusChanges {
   basis: string | null;
   changed_at: Timestamp;
@@ -767,6 +797,9 @@ export interface AppVerifiedContacts {
 }
 
 export interface DB {
+  "app.account_identity_findings": AppAccountIdentityFindings;
+  "app.account_links": AppAccountLinks;
+  "app.account_object_transfers": AppAccountObjectTransfers;
   "app.account_status_changes": AppAccountStatusChanges;
   "app.audit_events": AppAuditEvents;
   "app.auth_identities": AppAuthIdentities;

@@ -7,3 +7,4 @@ export * from "./model";
 export * from "./bindings";
 export * from "./lifecycle";
 export * from "./deletion";
+export * from "./duplicates";

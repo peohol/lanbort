@@ -90,6 +90,14 @@ export const accountDeletionCheckSchema = z.strictObject({
   bindings: z.array(accountBindingSchema),
 });
 
+/** Why the platform intervened, as the steward wrote it (PS-ADM-014). */
+const basisSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(2000)
+  .regex(/^[^\p{Cc}]*$/u);
+
 /**
  * PS-ADM-014: a platform steward's intervention on an account, always with
  * its basis. The basis is stored with the change only, never in events or
@@ -97,12 +105,94 @@ export const accountDeletionCheckSchema = z.strictObject({
  */
 export const accountInterventionSchema = z.strictObject({
   userId: z.uuid(),
-  basis: z
-    .string()
-    .trim()
-    .min(1)
-    .max(2000)
-    .regex(/^[^\p{Cc}]*$/u),
+  basis: basisSchema,
+});
+
+/**
+ * PS-ADM-009: a steward retires `userId` as a verified duplicate of
+ * `continuedUserId`, which continues as the person's account.
+ */
+export const retireDuplicateAccountSchema = z
+  .strictObject({
+    userId: z.uuid(),
+    continuedUserId: z.uuid(),
+    basis: basisSchema,
+  })
+  .refine((input) => input.userId !== input.continuedUserId, {
+    path: ["continuedUserId"],
+  });
+
+/**
+ * PS-ADM-010: a steward links two accounts of the same person, for security
+ * work only (a false identity, a way around a suspension).
+ */
+export const linkSamePersonSchema = z
+  .strictObject({
+    userId: z.uuid(),
+    linkedUserId: z.uuid(),
+    basis: basisSchema,
+  })
+  .refine((input) => input.userId !== input.linkedUserId, {
+    path: ["linkedUserId"],
+  });
+
+/**
+ * PS-ADM-009: a steward moves an object of a retired duplicate to the
+ * account that continues, with the basis for the transfer (PS-ADM-014).
+ */
+export const moveDuplicateObjectSchema = z.strictObject({
+  objectId: z.uuid(),
+  basis: basisSchema,
+});
+
+export const moveDuplicateObjectResultSchema = z.strictObject({
+  objectId: z.uuid(),
+  /**
+   * Whether the retired account left the object now. It stays a co-owner
+   * while it is still responsible for a loan of the object, until the loan
+   * is handed over or ends.
+   */
+  formerOwnerLeft: z.boolean(),
+});
+
+/**
+ * Internal links between accounts (PS-ADM-009–010): `duplicate` (one was
+ * retired as a duplicate of the other, which continues) or `same_person`
+ * (for security work only).
+ */
+export const accountLinkKindSchema = z.enum(["duplicate", "same_person"]);
+
+/** PS-ADM-010: an internal security finding about an account. */
+export const accountIdentityFindingSchema = z.enum(["false_identity"]);
+
+export const accountRecordResultSchema = z.strictObject({ id: z.uuid() });
+
+/**
+ * What the platform holds internally about an account's identity, for a
+ * steward only. `role` says which side of a link the account is on.
+ */
+export const accountIdentityRecordSchema = z.strictObject({
+  userId: z.uuid(),
+  findings: z.array(
+    z.strictObject({
+      id: z.uuid(),
+      finding: accountIdentityFindingSchema,
+      basis: z.string(),
+      recordedByUserId: z.uuid(),
+      recordedAt: z.iso.datetime(),
+    }),
+  ),
+  links: z.array(
+    z.strictObject({
+      id: z.uuid(),
+      kind: accountLinkKindSchema,
+      role: z.enum(["retired", "continued", "same_person"]),
+      otherUserId: z.uuid(),
+      basis: z.string(),
+      recordedByUserId: z.uuid(),
+      recordedAt: z.iso.datetime(),
+    }),
+  ),
 });
 
 export type AccountStatus = z.infer<typeof accountStatusSchema>;
@@ -116,3 +206,11 @@ export type AccountBindingKind = z.infer<typeof accountBindingKindSchema>;
 export type AccountBinding = z.infer<typeof accountBindingSchema>;
 export type AccountDeletionCheck = z.infer<typeof accountDeletionCheckSchema>;
 export type AccountIntervention = z.infer<typeof accountInterventionSchema>;
+export type MoveDuplicateObjectResult = z.infer<
+  typeof moveDuplicateObjectResultSchema
+>;
+export type AccountLinkKind = z.infer<typeof accountLinkKindSchema>;
+export type AccountIdentityFinding = z.infer<
+  typeof accountIdentityFindingSchema
+>;
+export type AccountIdentityRecord = z.infer<typeof accountIdentityRecordSchema>;

@@ -50,6 +50,7 @@ const kit = loanTestKit(db);
 const {
   run,
   user,
+  steward,
   create,
   addCoOwner,
   friends,
@@ -104,31 +105,6 @@ const loanStatus = (loanId: string) =>
     .select(["status", "end_reason", "ended_by_user_id"])
     .where("id", "=", loanId)
     .executeTakeFirstOrThrow();
-
-/**
- * A steward whose session has the stronger authentication the role needs.
- * No real session gets it until OD-0010 is decided (see the last test);
- * these tests show what the interventions do once one can.
- */
-async function steward(): Promise<UserActor> {
-  const actor = await user();
-  await db
-    .insertInto("app.platform_role_grants")
-    .values({
-      user_id: actor.userId,
-      role: "platform_steward",
-      granted_at: new Date(),
-      granted_by_process: "ops.platform_roles",
-      grant_reason: "Test",
-    })
-    .execute();
-
-  return {
-    ...actor,
-    platformRoles: ["platform_steward"],
-    authentication: { ...actor.authentication, assurance: "aal2" },
-  };
-}
 
 const deactivate = (actor: UserActor) => run(deactivateAccount, actor, {});
 
