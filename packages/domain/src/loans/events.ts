@@ -259,3 +259,17 @@ export const loanEndedUnresolved = loanEvent("ended_unresolved", {
  * its loan ended unresolved, so it may take new loans again.
  */
 export const loanControlConfirmed = loanEvent("control_confirmed", {});
+
+/**
+ * PS-COM-007: the loan's logistics channel was closed early, for good, as a
+ * safety measure (OD-0020). It says nothing about who or what it concerned.
+ * Openings and the closings that follow the loan are the database's, kept
+ * on the channel itself.
+ */
+export const loanLogisticsClosedForSafety = defineEvent({
+  type: "loan_logistics.closed_for_safety",
+  version: 1,
+  kind: "domain",
+  resourceType: "loan_logistics_channel",
+  payload: z.strictObject({ loanId: z.uuid() }),
+});

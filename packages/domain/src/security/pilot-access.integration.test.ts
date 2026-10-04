@@ -500,6 +500,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
   }),
   "loan.read": (ids) => ({ loanId: ids.loanId }),
   "loan.read_history": (ids) => ({ loanId: ids.loanId }),
+  "loan.read_logistics": (ids) => ({ loanId: ids.loanId }),
   "loan.cancel": (ids) => ({ loanId: ids.loanId }),
   "loan.propose_amendment": (ids) => ({
     loanId: ids.loanId,
@@ -835,6 +836,7 @@ const loanReads = [
   "loan_review.read",
   "loan.read",
   "loan.read_history",
+  "loan.read_logistics",
 ];
 
 describe("historical access", () => {

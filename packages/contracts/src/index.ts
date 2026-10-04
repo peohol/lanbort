@@ -11,6 +11,7 @@ export * from "./publications";
 export * from "./object-subscriptions";
 export * from "./object-questions";
 export * from "./loans";
+export * from "./loan-logistics";
 export * from "./reviews";
 export * from "./notifications";
 export * from "./home";

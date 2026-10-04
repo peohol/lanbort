@@ -18,6 +18,10 @@ import {
   rejectMembership,
 } from "../environment/membership-commands";
 import { membershipRejected } from "../environment/events";
+import { approveLoanRequest } from "../loans/approval";
+import { createLoanRequest } from "../loans/commands";
+import { closeLoanLogisticsForSafety } from "../loans/logistics";
+import { logisticsSafetyProcess } from "../loans/policies";
 import { addDays, calendarDate } from "../objects/availability";
 import { acceptCoOwnerInvitation, inviteCoOwner } from "../objects/co-owners";
 import { archiveObject, createObject } from "../objects/commands";
@@ -151,7 +155,9 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
     | "applicant"
     | "steward"
     | "blockedBefore"
-    | "coOwner",
+    | "coOwner"
+    | "lender"
+    | "borrower",
     UserActor
   >;
   const objects = {} as Record<
@@ -169,6 +175,7 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
   let restoreMs: number;
   let checksBefore: RestoreCheckResult[];
   let vetoedObjectId: string;
+  let loanId: string;
   let veto: { start: string; end: string };
 
   beforeAll(async () => {
@@ -186,6 +193,8 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
       steward: 0,
       blockedBefore: 0,
       coOwner: 0,
+      lender: 0,
+      borrower: 0,
     }) as (keyof typeof people)[]) {
       people[name] = await user();
     }
@@ -242,6 +251,33 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
     });
     await run(live, acceptCoOwnerInvitation, people.coOwner, { invitationId });
 
+    // A loan in progress in an environment of its own.
+    const { lender, borrower } = people;
+    const { environmentId: loanEnvironmentId } = await run(
+      live,
+      createEnvironment,
+      lender,
+      { name: "Låneringen", type: "open" },
+    );
+    await run(live, joinEnvironment, borrower, {
+      environmentId: loanEnvironmentId,
+      answers: [],
+    });
+    const lentObjectId = await object(lender, "lånt");
+    await run(live, publishObject, lender, {
+      objectId: lentObjectId,
+      environmentId: loanEnvironmentId,
+    });
+    const { requestId } = await run(live, createLoanRequest, borrower, {
+      objectId: lentObjectId,
+      origin: { kind: "environment", environmentId: loanEnvironmentId },
+      start: { kind: "asap" },
+      end: { kind: "duration", days: 3 },
+      message: "Kan jeg låne den?",
+      termsVersion: 1,
+    });
+    ({ loanId } = await run(live, approveLoanRequest, lender, { requestId }));
+
     // Already in the backup: the journal's margin reaches back to it.
     await run(live, blockUser, people.blocker, {
       userId: people.blockedBefore.userId,
@@ -280,6 +316,22 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
     await run(live, blockUser, people.blocker, {
       userId: people.blocked.userId,
     });
+    // A block opens the loan's logistics channel, and it is closed as a
+    // safety measure (PS-COM-007).
+    await run(live, blockUser, people.borrower, {
+      userId: people.lender.userId,
+    });
+    const { id: channelId } = await live.db
+      .selectFrom("app.loan_logistics_channels")
+      .select("id")
+      .where("loan_id", "=", loanId)
+      .executeTakeFirstOrThrow();
+    await run(
+      live,
+      closeLoanLogisticsForSafety,
+      systemActor(logisticsSafetyProcess),
+      { channelId },
+    );
     await run(live, removeFriend, people.friend, {
       userId: people.unfriended.userId,
     });
@@ -370,6 +422,8 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
         "object.deleted",
         "platform_role.revoked",
         "user_block.created",
+        "user_block.created",
+        "loan_logistics.closed_for_safety",
       ].sort(),
     );
   });
@@ -454,6 +508,18 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
     expect(roles).toEqual([{ revoked_by_process: "ops.restore" }]);
   });
 
+  it("keeps a logistics channel closed for safety closed", async () => {
+    const channels = await restored.db
+      .selectFrom("app.loan_logistics_channels")
+      .select("close_reason")
+      .where("loan_id", "=", loanId)
+      .execute();
+
+    // The block came after the backup, so its replay opened the channel
+    // again, and the closure's replay closed it.
+    expect(channels).toEqual([{ close_reason: "safety" }]);
+  });
+
   it("keeps a co-owner's veto, but not one withdrawn again", async () => {
     expect(
       results.filter(
@@ -502,7 +568,7 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
         .where("actor_process", "=", "ops.restore")
         .where("event_type", "=", "user_block.created")
         .executeTakeFirstOrThrow(),
-    ).toEqual({ count: "1" });
+    ).toEqual({ count: "2" });
   });
 });
 

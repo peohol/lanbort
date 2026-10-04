@@ -172,6 +172,13 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Hvilke hendelser skal et objektabonnement varsle om som standard, hvilke kan brukeren velge selv, og hvor ofte kan samme person varsles om et objekt (visjonen nevner omtrent hver andre time for hyppige redigeringer)? Gjelder det for eksempel endret tittel, beskrivelse, vilkår eller bilder? Inntil dette er besluttet, varsler et abonnement bare at objektet er blitt tilgjengelig for nye lån igjen, som visjonen fremhever; endringer i innholdet varsler ingen abonnenter. Nye regler legges inn ved siden av den regelen og samme tilgangskontroll.
 - **Avhenger av:** Produktvurdering og varslingspreferanser (OD-0004).
 
+### OD-0020 — Hvem kan stenge lånelogistikk-kanalen tidlig
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-COM-007, PS-USR-007, VP-11
+- **Spørsmål:** Hvem kan stenge logistikk-kanalen for et lån før lånet er avsluttet, ved trakassering eller særskilt sikkerhetsrisiko: hver av partene selv, plattformforvalter etter en rapport, eller begge? Kravet sier at kanalen kan stenges tidligere, men ikke av hvem. Inntil dette er besluttet, stenges kanalen bare når lånet avsluttes eller partene byttes. Selve stengingen er bygget og testet (endelig, også ved ny blokkering), men bare prosessen `loan_logistics.safety_closures` kan utføre den, og ingenting i produktet kjører den. Beslutningen legger sin vei inn der.
+- **Avhenger av:** Produktvurdering av trakassering, sikkerhet og hva den andre parten mister.
+
 ## Avklart
 
 ### OD-0005 — Kryptografisk modell for ende-til-ende-kryptert chat
