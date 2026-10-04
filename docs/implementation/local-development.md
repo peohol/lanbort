@@ -27,7 +27,7 @@ Innlogging bruker engangskode på e-post. Lokalt havner e-postene i Mailpit på 
 | Mappe | Ansvar |
 | --- | --- |
 | `apps/web` | Next.js-app med UI og Route Handlers som HTTP/API-grense |
-| `apps/ops` | Revisjonsloggede driftskommandoer, foreløpig `pnpm ops:platform-role` |
+| `apps/ops` | Revisjonsloggede driftskommandoer: `pnpm ops:platform-role` og `pnpm ops:restore` |
 | `packages/contracts` | Delte API-kontrakter (Zod). Inneholder aldri serverens autorisasjonslogikk |
 | `packages/database` | Kysely/Postgres-adapter og genererte databasetyper. Kun for serverkode |
 | `packages/domain` | Serverens domenekjerne: aktørmodell, policy-/autorisasjons-API, hendelser, transactional outbox, idempotente kommandoer, konto og plattformroller. Kun for serverkode |
@@ -55,7 +55,7 @@ SQL-filene i `supabase/migrations/` er den autoritative skjemahistorikken. Den l
 
 - **Lokalt og i CI:** `pnpm db:reset` sletter den lokale databasen og bygger den på nytt fra migrasjonene. Dette er den normale måten å komme tilbake til en kjent tilstand på.
 - **Migrasjoner endres ikke etter at de er pushet.** En feil rettes med en ny migrasjon som reverserer eller korrigerer endringen, slik at historikken alltid kan spilles av fra tom database.
-- **Hostede miljøer:** Gjenoppretting av staging/produksjon fra backup er ikke etablert ennå. Det hører til backup/restore-øvelsen i WP-72 før pilot.
+- **Hostede miljøer:** Gjenoppretting fra backup følger [backup og gjenoppretting](backup-restore.md).
 
 ### Testdatabase
 
@@ -66,7 +66,7 @@ CI starter en isolert lokal Supabase-database, bygger den fra alle migrasjoner, 
 | Jobb | Hva den beviser |
 | --- | --- |
 | `quality` | Lint, typecheck, enhetstester, Prettier og produksjonsbygg (`pnpm check`) |
-| `database` | Migrasjoner fra tom database, pgTAP, typekontroll mot skjema og integrasjonstester mot databasen (`pnpm test:integration`) |
+| `database` | Migrasjoner fra tom database, pgTAP, typekontroll mot skjema og integrasjonstester mot databasen (`pnpm test:integration`), blant dem backup/restore-øvelsen (WP-72) |
 | `e2e` | Playwright mot produksjonsbygget og lokal Supabase: røyktest (CSP, sikkerhetshoder, helse), registrering og innlogging med e-postkode, utlogging, ny innlogging og negative API-tester. `accessibility.spec.ts` går gjennom alle kjernesidene på mobil og desktop (WP-65): WCAG 2.2 A/AA med axe, ingen sidelengs scrolling, berøringsmål på minst 44 px, tastaturrekkefølge med synlig og udekket fokus, dobbel tekststørrelse, redusert bevegelse og tekstlig nettstatus. En ny side trenger bare en linje i `pages` der |
 | `security` | `pnpm audit` for produksjonsavhengigheter, selvtest av Gitleaks og skanning av hele git-historikken |
 

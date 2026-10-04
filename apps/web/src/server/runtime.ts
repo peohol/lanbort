@@ -7,14 +7,9 @@ import {
 } from "@lanbort/auth";
 import { createDatabase } from "@lanbort/database";
 import {
-  accountIdentityRemoval,
-  ConsumerRegistry,
   type DomainContext,
   type IdentityProviderAdmin,
-  notificationGenerator,
-  objectAvailabilityWatcher,
-  objectImageFileCleanup,
-  searchIndexer,
+  outboxConsumers,
 } from "@lanbort/domain";
 import { serverEnv } from "./env";
 import { objectImageServices } from "./object-images";
@@ -52,26 +47,12 @@ function identityAdmin(): IdentityProviderAdmin | undefined {
   return { deleteIdentity: (subject) => admin.deleteUser(subject) };
 }
 
-/**
- * Side effects run from the outbox (ADR-0004, ADR-0008): image file cleanup,
- * the in-app notifications (WP-40), telling object subscribers when an object
- * has become available (WP-63), the derived search index (WP-61) and
- * removing a deleted account's sign-in identity (WP-53). Notification
- * e-mails have their own queue and job (`notification-emails.ts`).
- */
-export const outboxConsumers = new ConsumerRegistry([
-  objectImageFileCleanup({
-    store: () => objectImageServices()?.store,
-    db: () => runtime.domain().db,
-  }),
-  notificationGenerator({ db: () => runtime.domain().db }),
-  objectAvailabilityWatcher({ db: () => runtime.domain().db }),
-  searchIndexer({ db: () => runtime.domain().db }),
-  accountIdentityRemoval({
-    identities: identityAdmin,
-    domain: () => runtime.domain(),
-  }),
-]);
+/** The outbox consumers, wired to this runtime (`outboxConsumers`). */
+const consumers = outboxConsumers({
+  domain: () => runtime.domain(),
+  imageStore: () => objectImageServices()?.store,
+  identities: identityAdmin,
+});
 
 let domain: DomainContext | undefined;
 
@@ -83,7 +64,7 @@ export const runtime: Runtime = {
         connectionString: serverEnv().DATABASE_URL,
         maxConnections: 5,
       }),
-      consumers: outboxConsumers,
+      consumers,
     };
 
     return domain;

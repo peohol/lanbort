@@ -205,6 +205,9 @@ importers:
       '@lanbort/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      kysely:
+        specifier: 0.29.6
+        version: 0.29.6
     devDependencies:
       tsx:
         specifier: 4.23.15

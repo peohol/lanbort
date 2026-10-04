@@ -9,11 +9,13 @@
     "typecheck": "tsc6 --noEmit",
     "test": "vitest run --exclude \"**/*.integration.test.ts\"",
     "test:integration": "vitest run .integration.test.ts",
-    "platform-role": "tsx src/platform-role.ts"
+    "platform-role": "tsx src/platform-role.ts",
+    "restore": "tsx src/restore.ts"
   },
   "dependencies": {
     "@lanbort/database": "workspace:*",
-    "@lanbort/domain": "workspace:*"
+    "@lanbort/domain": "workspace:*",
+    "kysely": "0.29.6"
   },
   "devDependencies": {
     "tsx": "4.23.15"

@@ -38,7 +38,7 @@ import {
   withdrawFriendRequestPolicy,
 } from "./policies";
 
-interface ChangeArgs {
+export interface ChangeArgs {
   readonly tx: Transaction<Database>;
   readonly pair: SocialPair;
   readonly events: EventRecorder;
@@ -109,7 +109,7 @@ async function transition(
   }
 }
 
-async function endFriendship(
+export async function endFriendship(
   { tx, pair, events, now }: ChangeArgs,
   friendshipId: string,
   reason: "declined" | "withdrawn" | "removed" | "blocked",
@@ -204,35 +204,37 @@ export const removeFriend = pairCommand({
  * between the two happen together. Nothing else is touched, so established
  * loans, cases and earned review rights stay as they are (PS-USR-007).
  */
+export async function placeBlock(args: ChangeArgs): Promise<void> {
+  if (args.pair.blockedByActor) {
+    return;
+  }
+
+  const { id } = await args.tx
+    .insertInto("app.user_blocks")
+    .values({
+      blocker_id: args.pair.actorId,
+      blocked_id: args.pair.otherUserId,
+      created_at: args.now,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+
+  args.events.record(userBlocked, { resourceId: id, payload: {} });
+
+  if (args.pair.openFriendship) {
+    await endFriendship(
+      args,
+      args.pair.openFriendship.id,
+      "blocked",
+      friendshipClosedByBlock,
+    );
+  }
+}
+
 export const blockUser = pairCommand({
   name: "user_block.create",
   policy: blockUserPolicy,
-  change: async (args) => {
-    if (args.pair.blockedByActor) {
-      return;
-    }
-
-    const { id } = await args.tx
-      .insertInto("app.user_blocks")
-      .values({
-        blocker_id: args.pair.actorId,
-        blocked_id: args.pair.otherUserId,
-        created_at: args.now,
-      })
-      .returning("id")
-      .executeTakeFirstOrThrow();
-
-    args.events.record(userBlocked, { resourceId: id, payload: {} });
-
-    if (args.pair.openFriendship) {
-      await endFriendship(
-        args,
-        args.pair.openFriendship.id,
-        "blocked",
-        friendshipClosedByBlock,
-      );
-    }
-  },
+  change: placeBlock,
 });
 
 /** Lifting a block restores nothing: earlier relations stay ended. */
