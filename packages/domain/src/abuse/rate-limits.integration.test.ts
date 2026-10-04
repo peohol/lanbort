@@ -188,6 +188,53 @@ describe("limited commands and queries", () => {
     ).rejects.toMatchObject({ code: "not_found" });
   });
 
+  it("replays a completed request however much budget is left", async () => {
+    const note = defineCommand({
+      name: "test.note_something",
+      input: z.strictObject({}),
+      output: z.strictObject({ noted: z.number() }),
+      policy: definePolicy<void, void>({
+        action: "test.note_something",
+        actor: [requireUser],
+        resource: [() => allow],
+      }),
+      idempotency: "required",
+      rateLimit: testRule(1, 3600),
+      load: async () => ({ resource: undefined, context: undefined }),
+      execute: async () => {
+        executions += 1;
+        return { noted: executions };
+      },
+    });
+    const actor = await createTestUser(db);
+    const idempotencyKey = randomUUID();
+    now = start;
+    executions = 0;
+
+    const first = await executeCommand(domain, note, {
+      actor,
+      input: {},
+      idempotencyKey,
+    });
+    const retry = await executeCommand(domain, note, {
+      actor,
+      input: {},
+      idempotencyKey,
+    });
+
+    expect(retry).toEqual({ output: first.output, replayed: true });
+    expect(
+      await outcome(
+        executeCommand(domain, note, {
+          actor,
+          input: {},
+          idempotencyKey: randomUUID(),
+        }),
+      ),
+    ).toBe("wait 3600");
+    expect(executions).toBe(1);
+  });
+
   it("leaves scheduled jobs unlimited", async () => {
     now = start;
     const job = systemActor("test.rate_limits");
