@@ -264,6 +264,18 @@ export const searchEnvironments = defineQuery({
       )
       // `acceptsNewActivity`: only an active environment takes new members.
       .where("environment.state", "=", "active")
+      // PS-ENV-004: an environment that bars the caller is not theirs to find.
+      .where(({ not, exists, selectFrom }) =>
+        not(
+          exists(
+            selectFrom("app.environment_access_restrictions as restriction")
+              .select("restriction.id")
+              .whereRef("restriction.environment_id", "=", "environment.id")
+              .where("restriction.user_id", "=", actor.userId)
+              .where("restriction.lifted_at", "is", null),
+          ),
+        ),
+      )
       .where(sql<boolean>`entry.document @@ app.search_query(${input.q})`)
       .orderBy("rank", "desc")
       .orderBy("environment.name")

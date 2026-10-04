@@ -11,6 +11,7 @@ import { executeQuery } from "../commands/query";
 import { startEnvironmentWindDown } from "../environment/continuity-commands";
 import {
   createEnvironment,
+  liftRestriction,
   updateEnvironmentDetails,
 } from "../environment/environment-commands";
 import {
@@ -18,6 +19,7 @@ import {
   inviteMember,
   joinEnvironment,
   leaveEnvironment,
+  rejectMembership,
 } from "../environment/membership-commands";
 import { changeEnvironmentType } from "../environment/type-change-commands";
 import { addDays, calendarDate } from "../objects/availability";
@@ -452,6 +454,37 @@ describe("Finn: environments (WP-61, PS-ENV-001)", () => {
     expect(await indexedEnvironment(hidden)).toBe(false);
     expect(await environmentsFound(admin, { q: name })).toEqual([]);
     expect(await environmentsFound(await user(), { q: name })).toEqual([]);
+  });
+
+  it("hides an environment from the one user it bars, until the bar is lifted", async () => {
+    const admin = await user();
+    const name = word();
+    const closed = await environment(admin, { name, type: "closed" });
+    const other = await environment(admin, { name: `${name} åpent` });
+    await indexed();
+    const applicant = await user();
+    const { membershipId } = await run(joinEnvironment, applicant, {
+      environmentId: closed,
+      answers: [],
+    });
+    await run(rejectMembership, admin, {
+      environmentId: closed,
+      membershipId,
+      restrict: true,
+    });
+
+    expect(await environmentsFound(applicant, { q: name })).toEqual([other]);
+    expect((await environmentsFound(await user(), { q: name })).sort()).toEqual(
+      [closed, other].sort(),
+    );
+
+    await run(liftRestriction, admin, {
+      environmentId: closed,
+      userId: applicant.userId,
+    });
+    expect((await environmentsFound(applicant, { q: name })).sort()).toEqual(
+      [closed, other].sort(),
+    );
   });
 
   it("drops an environment that becomes hidden or winds down, even before the index catches up", async () => {
