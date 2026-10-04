@@ -70,6 +70,7 @@ Når spørsmålet er avgjort:
 - **Berører:** PS-ADM-007, PS-ADM-008
 - **Spørsmål:** Hvilket bevisnivå kreves for å verifisere forholdet og en legitim representant?
 - **Avhenger av:** Misbruksrisiko og juridisk vurdering.
+- **Inntil besluttet (Peder, 4. oktober 2026):** Særprosessen er utsatt og inngår ikke i piloten. Ingen representant kan få tilgang før en senere, eksplisitt policy tillater det, og ingen del av produktet er bygget for å gi slik tilgang. En melding om mulig dødsfall eller varig utilgjengelighet (PS-COM-015) åpner bare en fortrolig verifikasjonssak og endrer verken konto, lån eller tilganger, heller ikke når saken er behandlet og lukket. Automatiske tester holder dette fast i både domene og database (WP-54), og må endres bevisst sammen med denne beslutningen.
 
 ### OD-0004 — Endelige eksterne varslingskanaler og standardvalg
 - **Lag:** UX

@@ -124,7 +124,7 @@ Leveranser:
 - aggregater som tåler moderering/gjenåpning
 - rapporter og lokale/globale modereringstiltak
 - suspensjon/deaktivering/kontrollert sletting
-- representantmodell og særskilt kontoavslutning når OD-0003 er avklart
+- representantmodell og særskilt kontoavslutning når OD-0003 er avklart (utsatt; ikke en del av piloten, og deaktivert inntil da)
 
 ### Fase 6 — Oppdagelse, finpuss og full UX-integrasjon
 Mål: alle kjernefunksjoner presenteres gjennom den vedtatte informasjonsarkitekturen.

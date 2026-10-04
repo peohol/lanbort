@@ -577,8 +577,10 @@ export const requestLoanMediation = defineCommand({
  * PS-COM-015: a confidential report that a user may have died or be
  * permanently unavailable. It only starts a verification by the platform
  * stewards: no account, loan or access changes, and the reporter gets no
- * access to the user's account or private information. The pair is locked,
- * so a block and a report between them run one after another.
+ * access to the user's account or private information. Nobody acts for the
+ * user either: representative access (PS-ADM-008) is off until OD-0003 is
+ * decided. The pair is locked, so a block and a report between them run one
+ * after another.
  */
 export const reportUnavailability = defineCommand({
   name: "case.report_unavailability",
