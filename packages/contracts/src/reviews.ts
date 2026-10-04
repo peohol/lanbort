@@ -66,9 +66,15 @@ export const submitLoanReviewSchema = z.strictObject({
 
 /**
  * - `hidden`: only its author sees it, until the window closes.
- * - `published`: both parties see it, and it never changes.
+ * - `published`: both parties see it; only moderation changes it.
+ * - `removed`: moderation removed it as a whole (WP-52, PS-TRUST-014); its
+ *   scores and text are no longer shown and it counts nowhere.
  */
-export const loanReviewStatusSchema = z.enum(["hidden", "published"]);
+export const loanReviewStatusSchema = z.enum([
+  "hidden",
+  "published",
+  "removed",
+]);
 
 export const loanReviewResultSchema = z.strictObject({
   loanId: loanIdSchema,
@@ -124,13 +130,26 @@ export const loanReviewSchema = z.strictObject({
     }),
   ),
   text: z.string().nullable(),
+  /**
+   * What moderation took out of the published review (PS-TRUST-015): its
+   * text, and scores by dimension. The rest stands.
+   */
+  moderated: z.strictObject({
+    textRemoved: z.boolean(),
+    removedDimensions: z.array(reviewDimensionSchema),
+  }),
   submittedAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
   publishedAt: z.iso.datetime().nullable(),
   /** When the loan reopened after the review was published, if it did. */
   loanReopenedAt: z.iso.datetime().nullable(),
+  /** The one response; its text is null once moderation removed it. */
   response: z
-    .strictObject({ text: z.string(), respondedAt: z.iso.datetime() })
+    .strictObject({
+      text: z.string().nullable(),
+      removed: z.boolean(),
+      respondedAt: z.iso.datetime(),
+    })
     .nullable(),
 });
 

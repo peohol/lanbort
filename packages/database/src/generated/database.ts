@@ -90,11 +90,15 @@ export interface AppCases {
   assignee_user_id: string | null;
   closed_at: Timestamp | null;
   environment_id: string | null;
+  escalated_from_case_id: string | null;
   id: Generated<string>;
   kind: string;
   loan_id: string | null;
+  object_id: string | null;
   opened_at: Timestamp;
   opened_by_user_id: string;
+  report_target: string | null;
+  review_id: string | null;
   status: Generated<string>;
   subject_user_id: string | null;
 }
@@ -441,7 +445,7 @@ export interface AppLoanReviewPeriods {
 
 export interface AppLoanReviewResponses {
   author_user_id: string;
-  body: string;
+  body: string | null;
   responded_at: Timestamp;
   review_id: string;
 }
@@ -480,6 +484,23 @@ export interface AppLoans {
   responsible_lender_id: string;
   status: Generated<string>;
   status_changed_at: Generated<Timestamp>;
+}
+
+export interface AppModerationActions {
+  case_id: string;
+  decided_at: Timestamp;
+  decided_by_user_id: string;
+  dimension: string | null;
+  environment_id: string | null;
+  id: Generated<string>;
+  kind: string;
+  object_id: string | null;
+  position: Generated<Int8>;
+  reason: string;
+  removed_score: number | null;
+  removed_text: string | null;
+  review_id: string | null;
+  scope: string;
 }
 
 export interface AppNotificationDeliveries {
@@ -748,6 +769,7 @@ export interface DB {
   "app.loan_review_scores": AppLoanReviewScores;
   "app.loan_reviews": AppLoanReviews;
   "app.loans": AppLoans;
+  "app.moderation_actions": AppModerationActions;
   "app.notification_deliveries": AppNotificationDeliveries;
   "app.notification_preferences": AppNotificationPreferences;
   "app.notifications": AppNotifications;

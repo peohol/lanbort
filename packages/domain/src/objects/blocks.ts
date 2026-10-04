@@ -4,6 +4,7 @@ import {
   loanPossessionBlocks,
   loanReservationBlocks,
 } from "../loans/reservations";
+import { platformModerationBlocks } from "../moderation/blocks";
 import type { AvailabilityBlock } from "./availability";
 import {
   coOwnerFreezeBlocks,
@@ -29,6 +30,7 @@ export const availabilityBlockSources: readonly AvailabilityBlockSource[] = [
   coOwnerFreezeBlocks,
   loanReservationBlocks,
   loanPossessionBlocks,
+  platformModerationBlocks,
 ];
 
 /** All blocks per object, from every source. */

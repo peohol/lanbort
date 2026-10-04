@@ -6,6 +6,7 @@ import type {
   CaseParticipantRole,
   CaseQueueReturnReason,
   CaseStatus,
+  ReportTargetKind,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
@@ -32,6 +33,10 @@ const caseColumns = [
   "c.environment_id",
   "c.loan_id",
   "c.subject_user_id",
+  "c.report_target",
+  "c.object_id",
+  "c.review_id",
+  "c.escalated_from_case_id",
   "c.opened_by_user_id",
   "c.opened_at",
   "c.status",
@@ -54,6 +59,10 @@ export function toCaseRecord(row: CaseRow): CaseRecord {
     environmentId: row.environment_id,
     loanId: row.loan_id,
     subjectUserId: row.subject_user_id,
+    reportTarget: row.report_target as ReportTargetKind | null,
+    objectId: row.object_id,
+    reviewId: row.review_id,
+    escalatedFromCaseId: row.escalated_from_case_id,
     openedByUserId: row.opened_by_user_id,
     openedAt: row.opened_at,
     status: row.status as CaseStatus,
@@ -88,6 +97,15 @@ export type OpenCaseKey =
       readonly kind: "unavailability_report";
       readonly userId: string;
       readonly subjectUserId: string;
+    }
+  | {
+      readonly kind: "environment_report" | "platform_report";
+      readonly userId: string;
+      readonly environmentId: string | null;
+      readonly target: ReportTargetKind;
+      readonly subjectUserId: string | null;
+      readonly objectId: string | null;
+      readonly reviewId: string | null;
     };
 
 /** The open case of the key, locked, if there is one. */
@@ -112,6 +130,16 @@ export async function findOpenCase(
       query = query
         .where("c.opened_by_user_id", "=", key.userId)
         .where("c.subject_user_id", "=", key.subjectUserId);
+      break;
+    default:
+      query = query
+        .where("c.opened_by_user_id", "=", key.userId)
+        .where("c.report_target", "=", key.target)
+        .where(
+          sql<boolean>`(c.environment_id, c.subject_user_id, c.object_id, c.review_id)
+            is not distinct from (${key.environmentId}::uuid, ${key.subjectUserId}::uuid,
+              ${key.objectId}::uuid, ${key.reviewId}::uuid)`,
+        );
       break;
   }
 
@@ -207,6 +235,8 @@ export interface HandlerStanding {
   readonly holdsRole: boolean;
   /** Is involved in it, and so can never handle it (PS-USR-009). */
   readonly involved: boolean;
+  /** Is what a report is about, and so never learns of it (WP-52). */
+  readonly reported: boolean;
 }
 
 export async function loadHandlerStanding(
@@ -215,15 +245,21 @@ export async function loadHandlerStanding(
   userId: string,
   now: Date,
 ): Promise<HandlerStanding> {
-  const { rows } = await sql<{ holds_role: boolean; involved: boolean }>`
+  const { rows } = await sql<{
+    holds_role: boolean;
+    involved: boolean;
+    reported: boolean;
+  }>`
     select
       app.case_handler_role(${caseRow(caseId)}, ${userId}, ${now}) as holds_role,
-      app.case_involved(${caseRow(caseId)}, ${userId}) as involved
+      app.case_involved(${caseRow(caseId)}, ${userId}) as involved,
+      app.case_reported(${caseRow(caseId)}, ${userId}) as reported
   `.execute(db);
 
   return {
     holdsRole: rows[0]?.holds_role ?? false,
     involved: rows[0]?.involved ?? false,
+    reported: rows[0]?.reported ?? false,
   };
 }
 
@@ -292,6 +328,12 @@ export async function insertCase(
     readonly environmentId: string | null;
     readonly loanId: string | null;
     readonly subjectUserId: string | null;
+    readonly report?: {
+      readonly target: ReportTargetKind;
+      readonly objectId: string | null;
+      readonly reviewId: string | null;
+      readonly escalatedFromCaseId: string | null;
+    };
     readonly openedByUserId: string;
     readonly now: Date;
     readonly participants: readonly {
@@ -307,6 +349,10 @@ export async function insertCase(
       environment_id: values.environmentId,
       loan_id: values.loanId,
       subject_user_id: values.subjectUserId,
+      report_target: values.report?.target ?? null,
+      object_id: values.report?.objectId ?? null,
+      review_id: values.report?.reviewId ?? null,
+      escalated_from_case_id: values.report?.escalatedFromCaseId ?? null,
       opened_by_user_id: values.openedByUserId,
       opened_at: values.now,
     })
@@ -479,7 +525,7 @@ export const handledBy = (userId: string, now: Date) =>
  * Whether `userId` has a concrete relation to `otherUserId` to report from
  * (vision 06, «Melding om mulig dødsfall»): they are friends, a loan was
  * between them, they own an object together, or both are active members of
- * the same environment.
+ * the same environment (`app.users_related`).
  */
 export async function related(
   db: Db,
@@ -487,38 +533,7 @@ export async function related(
   otherUserId: string,
 ): Promise<boolean> {
   const { rows } = await sql<{ related: boolean }>`
-    select
-      exists (
-        select 1 from app.friendships
-        where status = 'active'
-          and user_low_id = least(${userId}::uuid, ${otherUserId}::uuid)
-          and user_high_id = greatest(${userId}::uuid, ${otherUserId}::uuid)
-      )
-      or exists (
-        select 1 from app.loans
-        where (borrower_user_id = ${userId} and (
-            responsible_lender_id = ${otherUserId} or ${otherUserId} = any(owner_ids_at_approval)
-          ))
-          or (borrower_user_id = ${otherUserId} and (
-            responsible_lender_id = ${userId} or ${userId} = any(owner_ids_at_approval)
-          ))
-      )
-      or exists (
-        select 1
-        from app.object_owners as own
-        join app.object_owners as other on other.object_id = own.object_id
-        where own.user_id = ${userId} and other.user_id = ${otherUserId}
-      )
-      or exists (
-        select 1
-        from app.environment_memberships as own
-        join app.environment_memberships as other
-          on other.environment_id = own.environment_id
-        where own.user_id = ${userId}
-          and other.user_id = ${otherUserId}
-          and own.state = 'active'
-          and other.state = 'active'
-      ) as related
+    select app.users_related(${userId}, ${otherUserId}) as related
   `.execute(db);
 
   return rows[0]?.related ?? false;

@@ -588,10 +588,12 @@ describe("the one response (PS-TRUST-005)", () => {
     // The author sees it with their review and cannot answer it.
     expect((await reviewsOf(owner, loanId)).own?.response).toEqual({
       text: "Jeg var bortreist.",
+      removed: false,
       respondedAt: answer.respondedAt,
     });
     expect((await reviewsOf(borrower, loanId)).received?.response).toEqual({
       text: "Jeg var bortreist.",
+      removed: false,
       respondedAt: answer.respondedAt,
     });
     // The lender responds to the borrower's review, not to their own.
