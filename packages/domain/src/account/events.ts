@@ -55,3 +55,45 @@ export const accountClosureStarted = lifecycleEvent("closure_started");
  * auth provider after commit (outbox), and only then is the link to it.
  */
 export const accountDeleted = lifecycleEvent("deleted");
+
+/**
+ * PS-ADM-009: a steward retired the account as a verified duplicate of the
+ * account that continues. Ids only; the basis stays on the link.
+ */
+export const accountRetiredAsDuplicate = defineEvent({
+  type: "account.retired_as_duplicate",
+  version: 1,
+  kind: "audit",
+  resourceType: "user",
+  payload: z.strictObject({ continuedUserId: z.uuid() }),
+});
+
+/** PS-ADM-010: a steward linked two accounts of the same person. */
+export const accountsLinkedAsSamePerson = defineEvent({
+  type: "account.linked_as_same_person",
+  version: 1,
+  kind: "audit",
+  resourceType: "user",
+  payload: z.strictObject({ linkedUserId: z.uuid() }),
+});
+
+/** PS-ADM-010: a steward recorded that the account's identity is false. */
+export const accountFalseIdentityRecorded = defineEvent({
+  type: "account.false_identity_recorded",
+  version: 1,
+  kind: "audit",
+  resourceType: "user",
+  payload: z.strictObject({}),
+});
+
+/**
+ * PS-ADM-009: a steward moved the object from a retired duplicate to the
+ * account that continues.
+ */
+export const objectMovedFromDuplicate = defineEvent({
+  type: "object.moved_from_duplicate",
+  version: 1,
+  kind: "audit",
+  resourceType: "object",
+  payload: z.strictObject({ fromUserId: z.uuid(), toUserId: z.uuid() }),
+});

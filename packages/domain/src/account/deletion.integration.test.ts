@@ -48,6 +48,7 @@ const kit = loanTestKit(db);
 const {
   run,
   user,
+  steward,
   create,
   addCoOwner,
   friends,
@@ -109,30 +110,6 @@ const rowsOf = (
     .select("user_id")
     .where("user_id", "=", userId)
     .execute();
-
-/**
- * A steward whose session has the stronger authentication the role needs;
- * no real session gets it until OD-0010 is decided.
- */
-async function steward(): Promise<UserActor> {
-  const actor = await user();
-  await db
-    .insertInto("app.platform_role_grants")
-    .values({
-      user_id: actor.userId,
-      role: "platform_steward",
-      granted_at: new Date(),
-      granted_by_process: "ops.platform_roles",
-      grant_reason: "Test",
-    })
-    .execute();
-
-  return {
-    ...actor,
-    platformRoles: ["platform_steward"],
-    authentication: { ...actor.authentication, assurance: "aal2" },
-  };
-}
 
 describe("bindings (PS-ADM-004)", () => {
   it("refuses deletion while a loan or an environment needs the account", async () => {

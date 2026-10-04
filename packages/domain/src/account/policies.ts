@@ -16,7 +16,7 @@ import {
   requireUser,
 } from "../authorization/rules";
 import { platformStewardAccess } from "../platform/policies";
-import { statesBefore } from "./model";
+import { statesBefore, takesNewActivity } from "./model";
 
 export interface AccountResource {
   readonly userId: string;
@@ -188,6 +188,144 @@ export const completeAccountClosurePolicy = interventionPolicy(
   "deleted",
 );
 
+/**
+ * PS-ADM-009: the two accounts a duplicate retirement decides on, as the
+ * command locked them.
+ */
+export interface DuplicateRetirementResource {
+  readonly retired: AccountResource;
+  readonly continued: AccountResource;
+}
+
+/**
+ * The states a duplicate is retired from: those a controlled closure starts
+ * from, and a closure already under way. Never a suspension: a second
+ * account beside a suspended one is a way around the suspension, not a
+ * duplicate (vision 08, «Duplikatkonto med historikk på begge kontoer»).
+ */
+const retirableStates: readonly AccountStatus[] = [
+  ...statesBefore("closing", "platform").filter(
+    (status) => status !== "suspended",
+  ),
+  "closing",
+];
+
+/**
+ * PS-ADM-009, PS-ADM-014: a steward who has verified that two accounts
+ * belong to the same person retires one of them; the other, which is
+ * active, continues. Closed until OD-0010, like every intervention.
+ */
+export const retireDuplicateAccountPolicy = definePolicy<
+  DuplicateRetirementResource,
+  void
+>({
+  action: "account.retire_duplicate",
+  actor: [...platformStewardAccess],
+  resource: [
+    requireNotInvolved(({ resource }) => [
+      resource.retired.userId,
+      resource.continued.userId,
+    ]),
+    ({ resource }) =>
+      retirableStates.includes(resource.retired.status) &&
+      takesNewActivity(resource.continued.status)
+        ? allow
+        : deny("forbidden"),
+  ],
+});
+
+/** Accounts a steward links or reads about, with everyone they involve. */
+export interface AccountRecordResource {
+  readonly userId: string;
+  readonly status: AccountStatus;
+  /** The accounts the action concerns, the target included. */
+  readonly involvedUserIds: readonly string[];
+}
+
+const notInvolvedInRecord = requireNotInvolved<AccountRecordResource, void>(
+  ({ resource }) => resource.involvedUserIds,
+);
+
+/**
+ * PS-ADM-010: a steward links two accounts of the same person, for security
+ * work only.
+ */
+export const linkSamePersonPolicy = definePolicy<AccountRecordResource, void>({
+  action: "account.link_same_person",
+  actor: [...platformStewardAccess],
+  resource: [notInvolvedInRecord],
+});
+
+/**
+ * PS-ADM-010: a steward records that an account was created or used under
+ * a false identity. An account that never completed registration has
+ * claimed no identity.
+ */
+export const recordFalseIdentityPolicy = definePolicy<
+  AccountRecordResource,
+  void
+>({
+  action: "account.record_false_identity",
+  actor: [...platformStewardAccess],
+  resource: [
+    notInvolvedInRecord,
+    ({ resource }) =>
+      resource.status === "pending_registration" ? deny("forbidden") : allow,
+  ],
+});
+
+/** What the platform holds about an account's identity, for a steward. */
+export const readAccountIdentityRecordPolicy = definePolicy<
+  AccountRecordResource,
+  void
+>({
+  action: "account.read_identity_record",
+  actor: [...platformStewardAccess],
+  resource: [notInvolvedInRecord],
+});
+
+/**
+ * PS-ADM-009: an object and the duplicate link of the owner retired as a
+ * duplicate, with both accounts' states as locked by the command.
+ */
+export interface DuplicateObjectResource {
+  readonly objectId: string;
+  readonly ownerIds: readonly string[];
+  readonly link: {
+    readonly id: string;
+    readonly retired: AccountResource;
+    readonly continued: AccountResource;
+  } | null;
+}
+
+/**
+ * PS-ADM-009: a steward moves an object of a duplicate under closure to the
+ * account that continues. Only one the duplicate owns alone (or with the
+ * continuing account): other owners decide themselves who joins them.
+ */
+export const moveDuplicateObjectPolicy = definePolicy<
+  DuplicateObjectResource,
+  void
+>({
+  action: "account.move_duplicate_object",
+  actor: [...platformStewardAccess],
+  resource: [
+    requireNotInvolved(({ resource }) => [
+      ...resource.ownerIds,
+      ...(resource.link ? [resource.link.continued.userId] : []),
+    ]),
+    ({ resource: { link, ownerIds } }) =>
+      link !== null &&
+      link.retired.status === "closing" &&
+      takesNewActivity(link.continued.status) &&
+      ownerIds.every(
+        (id) => id === link.retired.userId || id === link.continued.userId,
+      )
+        ? allow
+        : deny("forbidden"),
+  ],
+});
+
 export const accountPolicies = [
   readOwnAccount,
   completeRegistrationPolicy,
@@ -202,4 +340,9 @@ export const accountPolicies = [
   reinstateAccountPolicy,
   startAccountClosurePolicy,
   completeAccountClosurePolicy,
+  retireDuplicateAccountPolicy,
+  linkSamePersonPolicy,
+  recordFalseIdentityPolicy,
+  readAccountIdentityRecordPolicy,
+  moveDuplicateObjectPolicy,
 ];

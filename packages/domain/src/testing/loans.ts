@@ -86,6 +86,31 @@ export function loanTestKit(
 
   const user = async () => (await registerTestUser(domain)).actor;
 
+  /**
+   * A platform steward whose session has the stronger authentication the
+   * role needs. No real session gets it until OD-0010 is decided; tests use
+   * it to show what steward actions do once one can.
+   */
+  async function steward(): Promise<UserActor> {
+    const actor = await user();
+    await db
+      .insertInto("app.platform_role_grants")
+      .values({
+        user_id: actor.userId,
+        role: "platform_steward",
+        granted_at: new Date(),
+        granted_by_process: "ops.platform_roles",
+        grant_reason: "Test",
+      })
+      .execute();
+
+    return {
+      ...actor,
+      platformRoles: ["platform_steward"],
+      authentication: { ...actor.authentication, assurance: "aal2" },
+    };
+  }
+
   async function environment(
     owner: UserActor,
     input: Partial<CreateEnvironment> = {},
@@ -290,6 +315,7 @@ export function loanTestKit(
     },
     run,
     user,
+    steward,
     environment,
     join,
     member,

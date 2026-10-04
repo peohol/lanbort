@@ -7,6 +7,11 @@ import {
   completeAccountClosurePolicy,
   completeRegistrationPolicy,
   deactivateAccountPolicy,
+  linkSamePersonPolicy,
+  moveDuplicateObjectPolicy,
+  readAccountIdentityRecordPolicy,
+  recordFalseIdentityPolicy,
+  retireDuplicateAccountPolicy,
   deleteOwnAccountPolicy,
   makeAccountDormantPolicy,
   reactivateAccountPolicy,
@@ -114,6 +119,75 @@ function interventionCases(from: AccountStatus, refused: AccountStatus) {
     },
   ];
 }
+
+/** The cases every steward record shares (PS-USR-009, OD-0010). */
+function stewardCases<R>(
+  resource: R,
+  ownResource: R,
+): {
+  name: string;
+  actor: typeof steward;
+  resource: R;
+  context: undefined;
+  expected:
+    "conflict_of_interest" | "stronger_authentication_required" | "forbidden";
+}[] {
+  return [
+    {
+      name: "never where the steward's own account is concerned",
+      actor: steward,
+      resource: ownResource,
+      context: undefined,
+      expected: "conflict_of_interest",
+    },
+    {
+      name: "not without stronger authentication",
+      actor: stewardWithoutStrongAuth,
+      resource,
+      context: undefined,
+      expected: "stronger_authentication_required",
+    },
+    {
+      name: "an ordinary user cannot",
+      actor: active,
+      resource,
+      context: undefined,
+      expected: "forbidden",
+    },
+  ];
+}
+
+const pair = (retired: AccountStatus, continued: AccountStatus) => ({
+  retired: account(retired),
+  continued: account(continued),
+});
+
+const record = (status: AccountStatus = "active", ...others: string[]) => {
+  const target = account(status);
+
+  return {
+    ...target,
+    involvedUserIds: [target.userId, ...others],
+  };
+};
+
+const duplicateObject = (
+  retiredStatus: AccountStatus,
+  continuedStatus: AccountStatus,
+  extraOwners: readonly string[] = [],
+) => {
+  const retired = account(retiredStatus);
+
+  return {
+    objectId: testUserActor().userId,
+    ownerIds: [retired.userId, ...extraOwners],
+    link: {
+      id: testUserActor().userId,
+      retired,
+      continued: account(continuedStatus),
+    },
+  };
+};
 
 export const accountMatrices = [
   policyMatrix(readOwnAccount, [
@@ -418,6 +492,162 @@ export const accountMatrices = [
     completeAccountClosurePolicy,
     interventionCases("closing", "active"),
   ),
+  policyMatrix(retireDuplicateAccountPolicy, [
+    {
+      name: "steward retires an active duplicate of an active account",
+      actor: steward,
+      resource: pair("active", "active"),
+      context: undefined,
+      expected: "allow",
+    },
+    {
+      name: "a deactivated or dormant duplicate too",
+      actor: steward,
+      resource: pair("dormant", "active"),
+      context: undefined,
+      expected: "allow",
+    },
+    {
+      name: "one already under closure is linked",
+      actor: steward,
+      resource: pair("closing", "active"),
+      context: undefined,
+      expected: "allow",
+    },
+    {
+      name: "never a suspended account: that is a way around the suspension",
+      actor: steward,
+      resource: pair("suspended", "active"),
+      context: undefined,
+      expected: "forbidden",
+    },
+    {
+      name: "the account that continues must be active",
+      actor: steward,
+      resource: pair("active", "suspended"),
+      context: undefined,
+      expected: "forbidden",
+    },
+    {
+      name: "not a deleted account",
+      actor: steward,
+      resource: pair("deleted", "active"),
+      context: undefined,
+      expected: "forbidden",
+    },
+    ...stewardCases(pair("active", "active"), {
+      retired: account("active"),
+      continued: own(steward, "active"),
+    }),
+  ]),
+  policyMatrix(linkSamePersonPolicy, [
+    {
+      name: "steward links two accounts of the same person",
+      actor: steward,
+      resource: record("active", testUserActor().userId),
+      context: undefined,
+      expected: "allow",
+    },
+    {
+      name: "a deleted account can still be linked for security",
+      actor: steward,
+      resource: record("deleted", testUserActor().userId),
+      context: undefined,
+      expected: "allow",
+    },
+    ...stewardCases(
+      record("active", testUserActor().userId),
+      record("active", steward.userId),
+    ),
+  ]),
+  policyMatrix(recordFalseIdentityPolicy, [
+    {
+      name: "steward records a false identity",
+      actor: steward,
+      resource: record("active"),
+      context: undefined,
+      expected: "allow",
+    },
+    {
+      name: "also on a suspended account",
+      actor: steward,
+      resource: record("suspended"),
+      context: undefined,
+      expected: "allow",
+    },
+    {
+      name: "an unregistered account has claimed no identity",
+      actor: steward,
+      resource: record("pending_registration"),
+      context: undefined,
+      expected: "forbidden",
+    },
+    ...stewardCases(record("active"), {
+      ...own(steward),
+      involvedUserIds: [steward.userId],
+    }),
+  ]),
+  policyMatrix(readAccountIdentityRecordPolicy, [
+    {
+      name: "steward reads what the platform holds about an account",
+      actor: steward,
+      resource: record("closing", testUserActor().userId),
+      context: undefined,
+      expected: "allow",
+    },
+    {
+      name: "not a record the steward's own account is linked in",
+      actor: steward,
+      resource: record("active", steward.userId),
+      context: undefined,
+      expected: "conflict_of_interest",
+    },
+    ...stewardCases(record("active"), {
+      ...own(steward),
+      involvedUserIds: [steward.userId],
+    }),
+  ]),
+  policyMatrix(moveDuplicateObjectPolicy, [
+    {
+      name: "steward moves a closing duplicate's own object",
+      actor: steward,
+      resource: duplicateObject("closing", "active"),
+      context: undefined,
+      expected: "allow",
+    },
+    {
+      name: "not before the duplicate is under closure",
+      actor: steward,
+      resource: duplicateObject("active", "active"),
+      context: undefined,
+      expected: "forbidden",
+    },
+    {
+      name: "not to an account that is no longer active",
+      actor: steward,
+      resource: duplicateObject("closing", "deactivated"),
+      context: undefined,
+      expected: "forbidden",
+    },
+    {
+      name: "not an object other people own too",
+      actor: steward,
+      resource: duplicateObject("closing", "active", [testUserActor().userId]),
+      context: undefined,
+      expected: "forbidden",
+    },
+    {
+      name: "not an object of an account that is no duplicate",
+      actor: steward,
+      resource: { ...duplicateObject("closing", "active"), link: null },
+      context: undefined,
+      expected: "forbidden",
+    },
+    ...stewardCases(
+      duplicateObject("closing", "active"),
+      duplicateObject("closing", "active", [steward.userId]),
+    ),
+  ]),
   policyMatrix(reauthenticatePolicy, [
     {
       name: "a signed-in user confirms their identity again",
