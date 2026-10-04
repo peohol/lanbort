@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(15);
 
 select ok(
   not has_function_privilege(role_name, function_name, 'EXECUTE'),
@@ -54,6 +54,16 @@ select throws_ok(
   '23514',
   null,
   'the smallest area is a kilometre across the centre'
+);
+
+select throws_ok(
+  $$
+    update app.environments set area_radius_km = 3
+    where id = '00000000-0000-4000-8000-0000000000e1'
+  $$,
+  '23514',
+  null,
+  'an area has one of the given sizes'
 );
 
 select throws_ok(

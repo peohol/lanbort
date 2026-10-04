@@ -16,8 +16,9 @@ alter table app.environments
     check (area_latitude between -90 and 90),
   add column area_longitude numeric(5, 2)
     check (area_longitude between -180 and 180),
+  -- The sizes in `areaRadiusKmOptions` (packages/contracts/src/geo.ts).
   add column area_radius_km smallint
-    check (area_radius_km between 1 and 100),
+    check (area_radius_km in (1, 2, 5, 10, 25, 50, 100)),
   add constraint environments_area_complete
     check (num_nulls(area_latitude, area_longitude, area_radius_km) in (0, 3));
 
