@@ -25,6 +25,9 @@ const time = (iso: string) =>
     timeStyle: "short",
   });
 
+const waitingForRecipient =
+  "Meldingen sendes når den du skriver med, har slått på privat chat.";
+
 const problems: Record<ConversationProblem, string> = {
   no_key_package:
     "Denne enheten kunne ikke bli med i samtalen. Be den du skriver med om å åpne samtalen, så prøver vi igjen.",
@@ -127,6 +130,7 @@ function Conversation({ engine, id }: { engine: ChatEngine; id: string }) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [status, setStatus] = useState<{
     joined: boolean;
+    alone: boolean;
     problem: ConversationProblem | null;
   }>();
   const [text, setText] = useState("");
@@ -165,8 +169,11 @@ function Conversation({ engine, id }: { engine: ChatEngine; id: string }) {
     setError(null);
     setText("");
     try {
-      await engine.send(id, message);
-      announce("Meldingen er sendt.");
+      announce(
+        (await engine.send(id, message))
+          ? "Meldingen er sendt."
+          : waitingForRecipient,
+      );
     } catch (problem) {
       setError(chatErrorMessage(problem));
     } finally {
@@ -206,6 +213,10 @@ function Conversation({ engine, id }: { engine: ChatEngine; id: string }) {
           når den du skriver med, eller en annen av dine enheter, er innom
           chatten.
         </p>
+      )}
+
+      {status?.alone && info?.open && (
+        <p role="status">{waitingForRecipient}</p>
       )}
 
       {others.map((person) => (

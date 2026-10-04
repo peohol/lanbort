@@ -158,6 +158,48 @@ test("two friends chat end to end, and a new device is linked with its code", as
   }
 });
 
+test("a message waits until the friend has turned chat on", async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const anna = await person(browser, "Dag Fjeld");
+  const bo = await person(browser, "Eli Gran");
+  await postCommand(anna.context.request, "/api/social/friend-requests", {
+    userId: bo.id,
+  });
+  await postCommand(bo.context.request, "/api/social/friend-requests/accept", {
+    userId: anna.id,
+  });
+
+  await turnOnChat(anna.page);
+  await anna.page.reload();
+  await anna.page.getByRole("button", { name: "Start samtale" }).click();
+  await anna.page.getByLabel("Ny melding").fill("Er du der?");
+  await anna.page.getByRole("button", { name: "Send" }).click();
+  await expect(
+    anna.page
+      .getByRole("status")
+      .filter({ hasText: "har slått på privat chat" }),
+  ).toBeVisible();
+  await expect(anna.page.getByText("ikke sendt ennå")).toBeVisible();
+
+  // Once Eli turns chat on, Dag's device adds Eli's and sends the message.
+  await turnOnChat(bo.page);
+  await anna.page.reload();
+  await expect(anna.page.getByText("ikke sendt ennå")).toHaveCount(0, {
+    timeout: 30_000,
+  });
+  await bo.page.goto("/samtaler");
+  await bo.page.getByRole("link", { name: "Dag Fjeld" }).click();
+  await expect(bo.page).toHaveURL(/\/samtaler\/[0-9a-f-]+$/);
+  await expectMessage(bo.page, "Er du der?");
+
+  for (const someone of [anna, bo]) {
+    expect(someone.problems).toEqual([]);
+    await someone.context.close();
+  }
+});
+
 test("chat pages get a strict script policy, and only the approval page may use the camera", async ({
   browser,
 }) => {

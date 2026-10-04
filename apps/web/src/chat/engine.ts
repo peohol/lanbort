@@ -463,7 +463,11 @@ export class ChatEngine {
     return this.#keyChanges.has(userId);
   }
 
-  /** Only after the user has seen that the security code changed. */
+  /**
+   * Only after the user has seen that the security code changed. The
+   * conversations with the contact are brought in line at once: their old
+   * devices out, the ones under the new key in.
+   */
   acceptKeyChange(userId: string): Promise<void> {
     return this.#exclusive(async () => {
       const key = this.#keyChanges.get(userId);
@@ -471,6 +475,15 @@ export class ChatEngine {
       acceptChangedAccountKey(this.trust, userId, key);
       this.#keyChanges.delete(userId);
       await this.#saveTrust();
+
+      const prefix = records.conversation("");
+      for (const name of await this.store.names(prefix)) {
+        const id = name.slice(prefix.length);
+        if ((await this.#record(id)).participants.includes(userId)) {
+          // Another try comes with the next visit to the conversation.
+          await this.#maintain(id).catch(() => undefined);
+        }
+      }
     });
   }
 
@@ -535,11 +548,17 @@ export class ChatEngine {
   /** What this device knows of a conversation, for its page. */
   async status(id: string): Promise<{
     joined: boolean;
+    /** No one else's device is in the group yet: nothing can reach them. */
+    alone: boolean;
     problem: ConversationProblem | null;
   }> {
     const record = await this.#record(id);
+    const group = await this.#group(id);
     return {
-      joined: (await this.#group(id)) !== undefined,
+      joined: group !== undefined,
+      alone:
+        group !== undefined &&
+        !group.members().some((m) => m.accountId !== this.userId),
       problem: record.problem,
     };
   }
@@ -953,7 +972,12 @@ export class ChatEngine {
    * not get through stays in the history as unsent and is tried again on
    * the next sync; the receiver keeps one copy of it.
    */
-  async send(id: string, text: string): Promise<void> {
+  /**
+   * Whether the message left: it waits, unsent, while no one else's device
+   * is in the group (the other person has not turned chat on yet), since a
+   * device added later can never read it.
+   */
+  async send(id: string, text: string): Promise<boolean> {
     const entry: HistoryEntry = {
       id: crypto.randomUUID(),
       senderUserId: this.userId,
@@ -963,10 +987,10 @@ export class ChatEngine {
       unsent: true,
     };
     await this.#exclusive(() => this.#remember(id, entry));
-    await this.#exclusive(() => this.#deliver(id, entry));
+    return this.#exclusive(() => this.#deliver(id, entry));
   }
 
-  async #deliver(id: string, entry: HistoryEntry) {
+  async #deliver(id: string, entry: HistoryEntry): Promise<boolean> {
     for (let attempt = 1; ; attempt++) {
       let group = await this.#group(id);
       if (!group) {
@@ -974,16 +998,21 @@ export class ChatEngine {
         group = await this.#group(id);
         if (!group) throw new ChatApiError("conflict");
       }
+      if (!group.members().some((m) => m.accountId !== this.userId)) {
+        return false;
+      }
       const body: MessageBody = { v: 1, id: entry.id, text: entry.text ?? "" };
       const ciphertext = await group.encrypt(utf8(JSON.stringify(body)));
       await this.#saveGroup(id, group);
       try {
-        const { sentAt } = await chatApi.send(id, {
+        const { position, sentAt } = await chatApi.send(id, {
           generation: (await this.#record(id)).generation,
           ciphertext: toBase64(ciphertext),
         });
+        // No device took it: sent again later, read once by the receiver.
+        if (position === null) return false;
         await this.#remember(id, { ...entry, sentAt, unsent: false });
-        return;
+        return true;
       } catch (error) {
         if (!isConflict(error) || attempt >= chatTuning.conflictRetries) {
           throw error;
