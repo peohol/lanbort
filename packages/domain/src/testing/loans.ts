@@ -31,6 +31,16 @@ const oneHour = 60 * 60 * 1000;
 const oneDay = 24 * oneHour;
 
 /**
+ * Midday in Norway, `days` from today. The clock starts there whenever the
+ * tests run, so moving it whole days ahead (a daylight saving change
+ * included) never crosses midnight and the calendar days the tests count
+ * on are the ones they get.
+ */
+function middayIn(days: number): Date {
+  return new Date(`${addDays(calendarDate(new Date()), days)}T10:00:00Z`);
+}
+
+/**
  * Shared steps for the loan integration tests (WP-30–WP-32): users,
  * environments, objects, co-owners, friendships and requests, made through
  * the real commands against the test database. Each command moves the clock
@@ -38,9 +48,18 @@ const oneDay = 24 * oneHour;
  */
 export function loanTestKit(
   db: Kysely<Database>,
-  options: { consumers?: ConsumerRegistry } = {},
+  options: {
+    consumers?: ConsumerRegistry;
+    /**
+     * How many days from today the clock starts. Test files share one
+     * database and run at once, and the scheduled jobs act on every loan
+     * that is due; a file whose waiting confirmations must stay waiting
+     * starts its clock beyond where the other files move theirs.
+     */
+    startInDays?: number;
+  } = {},
 ) {
-  let clock = new Date();
+  let clock = middayIn(options.startInDays ?? 0);
   const domain: DomainContext = {
     db,
     consumers: options.consumers ?? new ConsumerRegistry(),
