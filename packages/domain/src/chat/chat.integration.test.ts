@@ -5,6 +5,7 @@ import { deleteOwnAccount } from "../account/deletion";
 import { systemActor, type UserActor } from "../actor";
 import { executeCommand } from "../commands/command";
 import { executeQuery } from "../commands/query";
+import { notificationGenerator } from "../notifications/generator";
 import { ConsumerRegistry } from "../outbox/consumer";
 import { restoreActor } from "../restore/replays";
 import { blockUser, liftUserBlock } from "../social/commands";
@@ -65,7 +66,10 @@ import { chatRetentionProcess } from "./policies";
 const db = connectTestDatabase();
 afterAll(() => db.destroy());
 
-const consumers = new ConsumerRegistry([chatSessionEnding({ db: () => db })]);
+const consumers = new ConsumerRegistry([
+  chatSessionEnding({ db: () => db }),
+  notificationGenerator({ db: () => db }),
+]);
 const kit = loanTestKit(db, { startInDays: 2000, consumers });
 const { run, tick, user, friends } = kit;
 
@@ -684,6 +688,45 @@ describe("revoking and resetting (ADR-0010 §7–8)", () => {
     });
     await deliverAll(db, consumers);
     expect(await sessionLives(phone)).toBe(true);
+
+    // The account is told, by the app and by e-mail (ADR-0010 §8).
+    const told = await db
+      .selectFrom("app.notifications")
+      .select(["kind", "level"])
+      .where("recipient_id", "=", phone.userId)
+      .execute();
+    expect(told).toEqual([
+      { kind: "chat.account_key_reset", level: "required" },
+    ]);
+  });
+
+  it("signs a revoked device's session out even if it resets first", async () => {
+    const phone = await providerSession(await user());
+    const alice = await chatUser(phone);
+    const stolen = await providerSession(phone);
+    const stolenDevice = testChatDevice(alice.account);
+    const { linkRequestId } = await run(requestChatLink, stolen, {
+      deviceId: stolenDevice.deviceId,
+      deviceKey: stolenDevice.deviceKey,
+      linkKey: stolenDevice.deviceKey,
+    });
+    await run(approveChatLink, phone, {
+      linkRequestId,
+      certificate: stolenDevice.certificate,
+      package: "c2VhbGVk",
+    });
+    await run(revokeChatDevice, phone, {
+      revocation: alice.account.revoke(stolenDevice.deviceId),
+    });
+
+    // Before the session is ended, the stolen session resets the account.
+    const account = testChatAccount(phone.userId);
+    await run(resetChatAccount, stolen, {
+      accountKey: account.accountKey,
+      certificate: testChatDevice(account).certificate,
+    });
+    await deliverAll(db, consumers);
+    expect(await sessionLives(stolen)).toBe(false);
   });
 
   it("replaces the account key, shuts out every device, and lets the group restart", async () => {

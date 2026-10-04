@@ -75,6 +75,7 @@ export const notificationKinds = {
   "object.question_asked": "action",
   "object.question_replied": "information",
   "object.available": "information",
+  "chat.account_key_reset": "required",
 } as const satisfies Record<string, NotificationLevel>;
 
 export type NotificationKind = keyof typeof notificationKinds;
@@ -86,8 +87,9 @@ export type NotificationKind = keyof typeof notificationKinds;
  * Kansellering and forslag til endring; kommende and passert returtid; behov
  * for returavklaring (and its handover counterpart, with the 72-hour
  * deadline); konflikthendelser og vesentlige avvik. This is a rule per kind,
- * not a channel choice. Other required kinds stay in the app only, until
- * OD-0004 settles the channels per kind and level.
+ * not a channel choice. A reset of the account's private chat goes out the
+ * same way, as ADR-0010 §8 requires. Other required kinds stay in the app
+ * only, until OD-0004 settles the channels per kind and level.
  */
 export const emailReserveKinds = [
   "loan.cancelled",
@@ -98,6 +100,7 @@ export const emailReserveKinds = [
   "loan.return_day_passed",
   "loan.return_reported",
   "loan.possession_uncertain",
+  "chat.account_key_reset",
 ] as const satisfies readonly NotificationKind[];
 
 export const notificationKindSchema = z.enum(
@@ -109,6 +112,7 @@ export const notificationKindSchema = z.enum(
  * `case` is an administrative case (WP-45), which only its participants and
  * handlers can open. An `object_subscription` target is the recipient's own
  * subscription, so opening it checks again that they still find the object.
+ * A `chat_device` is one of the recipient's own chat devices.
  */
 export const notificationTargetTypes = [
   "loan",
@@ -119,6 +123,7 @@ export const notificationTargetTypes = [
   "case",
   "object_question",
   "object_subscription",
+  "chat_device",
 ] as const;
 export const notificationTargetTypeSchema = z.enum(notificationTargetTypes);
 

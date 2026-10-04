@@ -10,13 +10,21 @@ import { z } from "zod";
 
 const lowerUuid = z.uuid().transform((id) => id.toLowerCase());
 
-/** Standard base64 of at most `maxBytes` bytes. */
+/** How many bytes a padded base64 string decodes to. */
+const decodedLength = (value: string) =>
+  (value.length / 4) * 3 -
+  (value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0);
+
+/** Standard base64 of `minBytes` to `maxBytes` bytes. */
 export function base64Bytes(maxBytes: number, minBytes = 1) {
   return z
     .string()
-    .min(Math.ceil(minBytes / 3) * 4)
     .max(Math.ceil(maxBytes / 3) * 4)
-    .regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/);
+    .regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/)
+    .refine((value) => {
+      const length = decodedLength(value);
+      return length >= minBytes && length <= maxBytes;
+    }, `must be ${minBytes}–${maxBytes} bytes`);
 }
 
 /** An Ed25519 or X25519 public key. */

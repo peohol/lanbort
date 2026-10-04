@@ -472,7 +472,7 @@ export const hideChatConversation = defineCommand({
   input: chatConversationTargetSchema,
   output: chatDoneSchema,
   policy: hideChatConversationPolicy,
-  idempotency: "none",
+  idempotency: "required",
   load: conversationLoad(),
   execute: async ({ tx, actor, input, now }) => {
     await tx

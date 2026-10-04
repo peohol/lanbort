@@ -43,6 +43,17 @@ describe("notification e-mails (WP-41)", () => {
     ).toContain("slå det av i varslingsvalgene");
   });
 
+  it("say why a security notice came", () => {
+    expect(
+      composeNotificationEmail({
+        kind: "chat.account_key_reset",
+        level: "required",
+        notificationId,
+        appUrl: "https://lanbort.example",
+      }).text,
+    ).toContain("sikkerhetsvarsler om kontoen din alltid sendes på e-post");
+  });
+
   it("escape what goes into the markup", () => {
     const { html } = composeNotificationEmail({
       kind: "loan.cancelled",

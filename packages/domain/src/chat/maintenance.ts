@@ -135,8 +135,9 @@ export const chatAccountDeletionStep: AccountDeletionStep = {
 
 /**
  * Ends the sign-in sessions of revoked devices (ADR-0010 §7), after commit:
- * a lost device is signed out as well as shut out of chat. A session that
- * already has a new live device (a reset from the same session) stays.
+ * a lost device is signed out as well as shut out of chat, even if its
+ * session has since made a new device. After a reset, a session that
+ * already has a new live device (the reset's own) stays.
  */
 export function chatSessionEnding({ db }: { db: () => Db }) {
   return defineConsumer({
@@ -146,26 +147,27 @@ export function chatSessionEnding({ db }: { db: () => Db }) {
       const revoked = db()
         .selectFrom("app.chat_devices as device")
         .select("device.session_id")
-        .where("device.revoked_at", "is not", null)
-        .where(({ not, exists, selectFrom }) =>
-          not(
-            exists(
-              selectFrom("app.chat_devices as live")
-                .select("live.id")
-                .whereRef("live.session_id", "=", "device.session_id")
-                .where("live.revoked_at", "is", null),
-            ),
-          ),
-        );
+        .where("device.revoked_at", "is not", null);
       const rows = await (
         event.type === chatDeviceRevoked.type
           ? revoked.where("device.id", "=", event.resourceId)
-          : revoked.where(
-              "device.account_key_id",
-              "=",
-              chatAccountKeyReset.payload.parse(event.payload)
-                .previousAccountKeyId,
-            )
+          : revoked
+              .where(
+                "device.account_key_id",
+                "=",
+                chatAccountKeyReset.payload.parse(event.payload)
+                  .previousAccountKeyId,
+              )
+              .where(({ not, exists, selectFrom }) =>
+                not(
+                  exists(
+                    selectFrom("app.chat_devices as live")
+                      .select("live.id")
+                      .whereRef("live.session_id", "=", "device.session_id")
+                      .where("live.revoked_at", "is", null),
+                  ),
+                ),
+              )
       ).execute();
 
       if (rows.length > 0) {
