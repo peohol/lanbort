@@ -1,0 +1,19 @@
+{
+  "name": "@lanbort/e2ee",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc6 --noEmit",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc6 --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "ts-mls": "1.6.4",
+    "zod": "4.6.5"
+  }
+}

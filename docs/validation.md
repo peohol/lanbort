@@ -31,7 +31,7 @@ Objektet er globalt, men medeierrollen gir ikke automatisk adgang til låntakeri
 Append-only hendelser betyr ikke at alle personopplysninger lagres permanent. Hendelser skal inneholde minst mulig identitet; sletting/pseudonymisering kan redusere persondata uten å omskrive nødvendig faktahistorikk.
 
 ### E2EE i nettleser
-E2EE hindrer ordinær server-/administratorlesing av lagret privat meldingsinnhold, men beskytter ikke mot kompromittert kode som faktisk kjører i endepunktet. Webklientintegritet er derfor del av trusselmodellen, og den konkrete nøkkel-/klientmodellen er fortsatt OD-0005.
+E2EE hindrer ordinær server-/administratorlesing av lagret privat meldingsinnhold, men beskytter ikke mot kompromittert kode som faktisk kjører i endepunktet. Webklientintegritet er derfor del av trusselmodellen. Nøkkel- og klientmodellen, og hva nettleseren realistisk kan love, står i [ADR-0010](architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md).
 
 ## Scenarioer gjennom alle tre lag
 
@@ -56,7 +56,6 @@ E2EE hindrer ordinær server-/administratorlesing av lagret privat meldingsinnho
 - OD-0009: konkret rammeverk og leverandører
 
 ### Må avgjøres før den berørte funksjonen anses ferdig
-- OD-0005: konkret E2EE-nøkkel-, multi-device- og recoverymodell
 - OD-0003: verifikasjonskrav for død/varig utilgjengelighet dersom denne særprosessen skal aktiveres (deaktivert og utenfor piloten til da)
 
 ### Må avgjøres før reell/bred drift i relevant omfang

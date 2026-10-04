@@ -79,13 +79,6 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Hvilke kombinasjoner av web push, e-post og eventuell senere mobilpush skal være standard for hvert varslingsnivå?
 - **Avhenger av:** Pilotdata og teknisk støtte.
 
-### OD-0005 — Kryptografisk modell for ende-til-ende-kryptert chat
-- **Lag:** Arkitektur
-- **Status:** Åpen
-- **Berører:** PS-COM-005, PS-NFR-007
-- **Spørsmål:** Hvordan skal nøkkelstyring, flere enheter, nøkkelbytte, backup og tap av enhet håndteres uten servertilgang til klartekst?
-- **Avhenger av:** Sikkerhetsarkitektur og konkret klientmodell, inkludert multi-device, nøkkelbackup/recovery og hvilket sikkerhetsnivå nettleserklienten realistisk kan love.
-
 ### OD-0006 — Endelig kategoritaksonomi for objekter
 - **Lag:** Produktspesifikasjon
 - **Status:** Åpen
@@ -148,8 +141,8 @@ Når spørsmålet er avgjort:
 - **Lag:** Produktspesifikasjon / Arkitektur
 - **Status:** Åpen
 - **Berører:** PS-LOAN-004, PS-COM-005, PS-COM-006, PS-NFR-007, OD-0005
-- **Spørsmål:** Er meldingen i en låneforespørsel privat fritekst som skal ende-til-ende-krypteres (PS-COM-005), eller del av den strukturerte henvendelsen (PS-COM-006)? Inntil dette er besluttet, lagres den på forespørselen, vises bare for partene og kopieres aldri til hendelser eller logger. Kommer den inn under kryptering, flyttes den til chatten når OD-0005 er besluttet.
-- **Avhenger av:** OD-0005 og produktvurdering.
+- **Spørsmål:** Er meldingen i en låneforespørsel privat fritekst som skal ende-til-ende-krypteres (PS-COM-005), eller del av den strukturerte henvendelsen (PS-COM-006)? Inntil dette er besluttet, lagres den på forespørselen, vises bare for partene og kopieres aldri til hendelser eller logger. Kommer den inn under kryptering, flyttes den til chatten (WP-43).
+- **Avhenger av:** Produktvurdering. Krypteringsmodellen er avgjort i [ADR-0010](architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md).
 
 ### OD-0016 — Når ansvarlig utlåner regnes som reelt utilgjengelig
 - **Lag:** Produktspesifikasjon
@@ -180,6 +173,11 @@ Når spørsmålet er avgjort:
 - **Avhenger av:** Produktvurdering og varslingspreferanser (OD-0004).
 
 ## Avklart
+
+### OD-0005 — Kryptografisk modell for ende-til-ende-kryptert chat
+- **Lag:** Arkitektur
+- **Status:** Avklart
+- **Beslutning:** Se [ADR-0010](architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md).
 
 ### OD-0009 — Konkret implementeringsstack og driftsleverandører
 - **Lag:** Arkitektur
