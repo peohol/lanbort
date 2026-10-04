@@ -34,4 +34,25 @@ describe("security headers", () => {
 
     expect(csp).toContain("'unsafe-eval'");
   });
+
+  it("lets chat pages run only the request's own scripts", () => {
+    const headers = (camera: boolean) =>
+      new Map(
+        getSecurityHeaders({ chat: { nonce: "abc123", camera } }).map(
+          ({ key, value }) => [key, value],
+        ),
+      );
+    const csp = headers(false).get("Content-Security-Policy")!;
+    const scripts = csp.split("; ").find((d) => d.startsWith("script-src"));
+
+    expect(scripts).toBe("script-src 'self' 'nonce-abc123' 'strict-dynamic'");
+    expect(csp).not.toContain("kartverket");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(headers(false).get("Permissions-Policy")).toBe(
+      "camera=(), microphone=(), geolocation=()",
+    );
+    expect(headers(true).get("Permissions-Policy")).toBe(
+      "camera=(self), microphone=(), geolocation=()",
+    );
+  });
 });

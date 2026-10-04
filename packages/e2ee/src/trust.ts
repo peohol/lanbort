@@ -3,7 +3,7 @@ import {
   type DeviceRevocation,
   verifyDeviceRevocation,
 } from "./identity";
-import { bytesEqual } from "./suite";
+import { bytesEqual, fromBase64, toBase64 } from "./suite";
 
 /**
  * What one device believes about other accounts (ADR-0010): the account key
@@ -21,9 +21,27 @@ export interface TrustStore {
 const deviceKey = ({ accountId, deviceId }: DeviceRef) =>
   JSON.stringify([accountId, deviceId]);
 
-export function createMemoryTrustStore(): TrustStore {
-  const accountKeys = new Map<string, Uint8Array>();
-  const revoked = new Set<string>();
+/** What a memory trust store holds, for the device's storage. */
+export interface TrustSnapshot {
+  accountKeys: Record<string, string>;
+  revoked: string[];
+}
+
+/** A trust store in memory that can be saved and restored as a snapshot. */
+export interface MemoryTrustStore extends TrustStore {
+  snapshot(): TrustSnapshot;
+}
+
+export function createMemoryTrustStore(
+  initial: TrustSnapshot = { accountKeys: {}, revoked: [] },
+): MemoryTrustStore {
+  const accountKeys = new Map<string, Uint8Array>(
+    Object.entries(initial.accountKeys).map(([id, key]) => [
+      id,
+      fromBase64(key),
+    ]),
+  );
+  const revoked = new Set<string>(initial.revoked);
   return {
     accountKey: (accountId) => accountKeys.get(accountId),
     setAccountKey: (accountId, key) => {
@@ -33,6 +51,12 @@ export function createMemoryTrustStore(): TrustStore {
     addRevocation: (device) => {
       revoked.add(deviceKey(device));
     },
+    snapshot: () => ({
+      accountKeys: Object.fromEntries(
+        [...accountKeys].map(([id, key]) => [id, toBase64(key)]),
+      ),
+      revoked: [...revoked],
+    }),
   };
 }
 
