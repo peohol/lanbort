@@ -170,7 +170,10 @@ export const restoreLosses: readonly EventDefinition<unknown>[] = [
   moderationReportEscalated,
   // Loans, cases, reviews and questions are the parties' own course; a
   // review right that lapsed with a deleted account lapses again with it.
-  ...eventDefinitionsIn(loanEvents),
+  // A logistics channel closed for safety is a restriction, replayed.
+  ...eventDefinitionsIn(loanEvents).filter(
+    (event) => event !== loanEvents.loanLogisticsClosedForSafety,
+  ),
   ...eventDefinitionsIn(caseEvents),
   ...eventDefinitionsIn(reviewEvents),
   ...eventDefinitionsIn(questionEvents),

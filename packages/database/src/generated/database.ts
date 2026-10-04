@@ -512,6 +512,16 @@ export interface AppLoanLenderUnavailability {
   loan_id: string;
 }
 
+export interface AppLoanLogisticsChannels {
+  borrower_user_id: string;
+  close_reason: string | null;
+  closed_at: Timestamp | null;
+  id: Generated<string>;
+  lender_user_id: string;
+  loan_id: string;
+  opened_at: Generated<Timestamp>;
+}
+
 export interface AppLoanRequestResponsibilityAcceptances {
   accepted_at: Generated<Timestamp>;
   declaration_version: number;
@@ -959,6 +969,7 @@ export interface DB {
   "app.loan_handover_reports": AppLoanHandoverReports;
   "app.loan_lender_transfers": AppLoanLenderTransfers;
   "app.loan_lender_unavailability": AppLoanLenderUnavailability;
+  "app.loan_logistics_channels": AppLoanLogisticsChannels;
   "app.loan_request_responsibility_acceptances": AppLoanRequestResponsibilityAcceptances;
   "app.loan_requests": AppLoanRequests;
   "app.loan_reservations": AppLoanReservations;
