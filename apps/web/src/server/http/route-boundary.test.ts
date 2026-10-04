@@ -84,6 +84,11 @@ const nonUserRoutes: Record<
     reason:
       "sends queued notification e-mails, authenticated with the cron secret",
   },
+  "GET /api/internal/object-subscriptions": {
+    access: "scheduler",
+    reason:
+      "tells subscribers when an object has become available, authenticated with the cron secret",
+  },
 };
 
 const httpMethods = [

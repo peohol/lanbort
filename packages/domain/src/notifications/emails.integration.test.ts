@@ -1,15 +1,23 @@
 import { randomUUID } from "node:crypto";
 import type { NotificationKind } from "@lanbort/contracts";
 import { EmailSendError, MemoryEmailSender } from "@lanbort/email/testing";
-import { sql } from "kysely";
+import type { Database } from "@lanbort/database";
+import { type Kysely, sql } from "kysely";
 import { afterAll, describe, expect, it } from "vitest";
 import type { UserActor } from "../actor";
+import { leaveEnvironment } from "../environment/membership-commands";
 import { cancelLoan } from "../loans/cancellation";
 import { ConsumerRegistry, defineConsumer } from "../outbox/consumer";
+import { askObjectQuestion } from "../questions/commands";
 import { processOutboxBatch } from "../outbox/worker";
 import { sendFriendRequest } from "../social/commands";
+import {
+  subscribeToObject,
+  unsubscribeFromObject,
+} from "../subscriptions/commands";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
+import { commitWhileRacing, endMembership } from "../testing/races";
 import { markNotificationsRead, setNotificationPreference } from "./commands";
 import {
   deliverNotificationEmails,
@@ -591,4 +599,167 @@ describe("changes while the e-mail job runs (WP-41)", () => {
     await Promise.all([job, changing]);
     expect(sender.attemptsTo(oldAddress)).toHaveLength(1);
   });
+});
+
+/**
+ * WP-63: a notification about a subscription or a question is seen only
+ * through an environment (PS-OBJ-014–015). Once the subscription has ended
+ * or the recipient no longer finds the object there, no e-mail goes out on
+ * it (`stillConcerns`), and a change made while one is being sent waits for
+ * it, as the WP-41 changes above do.
+ */
+const contexts = [
+  {
+    name: "a subscription",
+    kind: "object.available",
+    async target(setup: Awaited<ReturnType<typeof kit.published>>) {
+      await run(subscribeToObject, setup.borrower, {
+        objectId: setup.objectId,
+      });
+      const { id } = await db
+        .selectFrom("app.object_subscriptions")
+        .select("id")
+        .where("user_id", "=", setup.borrower.userId)
+        .where("object_id", "=", setup.objectId)
+        .executeTakeFirstOrThrow();
+
+      return { type: "object_subscription" as const, id };
+    },
+  },
+  {
+    name: "a question",
+    kind: "object.question_replied",
+    async target(setup: Awaited<ReturnType<typeof kit.published>>) {
+      const { questionId } = await run(askObjectQuestion, setup.borrower, {
+        environmentId: setup.environmentId,
+        objectId: setup.objectId,
+        body: "Er den lang nok til taket?",
+      });
+
+      return { type: "object_question" as const, id: questionId };
+    },
+  },
+] as const;
+
+type Setup = Awaited<ReturnType<typeof kit.published>>;
+
+const accessChanges = [
+  {
+    name: "unsubscribing",
+    contexts: ["a subscription"],
+    change: (setup: Setup) =>
+      run(unsubscribeFromObject, setup.borrower, { objectId: setup.objectId }),
+    uncommitted: (setup: Setup) => (tx: Kysely<Database>) =>
+      tx
+        .deleteFrom("app.object_subscriptions")
+        .where("user_id", "=", setup.borrower.userId)
+        .where("object_id", "=", setup.objectId)
+        .execute(),
+  },
+  {
+    name: "leaving the environment",
+    contexts: ["a subscription", "a question"],
+    change: (setup: Setup) =>
+      run(leaveEnvironment, setup.borrower, {
+        environmentId: setup.environmentId,
+      }),
+    uncommitted: (setup: Setup) =>
+      endMembership(setup.environmentId, setup.borrower.userId, kit.now()),
+  },
+] as const;
+
+/**
+ * The borrower, who chose e-mail for information, is told about `context`
+ * in an environment they are a member of; the e-mail is queued.
+ */
+async function toldAbout(context: (typeof contexts)[number]) {
+  const setup = await kit.published();
+  await run(setNotificationPreference, setup.borrower, {
+    level: "information",
+    channel: "email",
+    enabled: true,
+  });
+  await recordNotifications(db, `test:${randomUUID()}`, kit.now(), [
+    {
+      recipientId: setup.borrower.userId,
+      kind: context.kind,
+      target: await context.target(setup),
+    },
+  ]);
+
+  return { setup, address: await addressOf(setup.borrower) };
+}
+
+/** The e-mail job at the test clock, at which access is decided. */
+const runJobNow = (sender: MemoryEmailSender) =>
+  sendEmails(sender, { batchSize: 1000, clock: () => kit.now() });
+
+describe("e-mails about what is seen through an environment (WP-63)", () => {
+  for (const context of contexts) {
+    it(`sends one about ${context.name} while the recipient still has access`, async () => {
+      const sender = new MemoryEmailSender();
+      const { setup, address } = await toldAbout(context);
+
+      await runJobNow(sender);
+      expect(await deliveriesOf(setup.borrower)).toEqual([
+        expect.objectContaining({ kind: context.kind, status: "sent" }),
+      ]);
+      expect(sender.to(address)).toHaveLength(1);
+    });
+  }
+
+  for (const {
+    name,
+    contexts: affected,
+    change,
+    uncommitted,
+  } of accessChanges) {
+    for (const context of contexts.filter((c) =>
+      (affected as readonly string[]).includes(c.name),
+    )) {
+      it(`sends none about ${context.name} after ${name}`, async () => {
+        const sender = new MemoryEmailSender();
+        const { setup, address } = await toldAbout(context);
+
+        await change(setup);
+        await runJobNow(sender);
+        expect(await deliveriesOf(setup.borrower)).toEqual([
+          expect.objectContaining({ status: "skipped", code: "no_access" }),
+        ]);
+        expect(sender.attemptsTo(address)).toEqual([]);
+      });
+
+      it(`lets an e-mail about ${context.name} being sent finish before ${name} returns`, async () => {
+        const sender = new MemoryEmailSender();
+        const { setup, address } = await toldAbout(context);
+        const held = sender.hold(address);
+
+        const job = runJobNow(sender);
+        await held.reached;
+        const changing = change(setup);
+        expect(await stillWaiting(changing)).toBe(true);
+
+        held.release();
+        await Promise.all([job, changing]);
+        // It was on its way before the change; nothing goes out after it.
+        expect(sender.attemptsTo(address)).toHaveLength(1);
+        expect(await deliveriesOf(setup.borrower)).toEqual([
+          expect.objectContaining({ status: "sent" }),
+        ]);
+      });
+
+      it(`holds the job while ${name} is not yet committed, and then sends none about ${context.name}`, async () => {
+        const sender = new MemoryEmailSender();
+        const { setup, address } = await toldAbout(context);
+
+        await commitWhileRacing(db, uncommitted(setup), () =>
+          runJobNow(sender),
+        );
+        expect(await deliveriesOf(setup.borrower)).toEqual([
+          expect.objectContaining({ status: "skipped", code: "no_access" }),
+        ]);
+        expect(sender.attemptsTo(address)).toEqual([]);
+      });
+    }
+  }
 });

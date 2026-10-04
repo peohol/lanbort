@@ -163,6 +163,13 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Hvem kan avslutte et lån som administrativt uavklart (miljøets administrator som mekler, plattformforvalter, en frist uten avklaring, eller partene selv), og etter hvilken prosess? Visjonen sier at dette fastsettes senere, og at administratoren i et miljølån er mekler, ikke dommer. Inntil dette er besluttet, kan bare en egen prosess avslutte et lån slik, og ingenting i produktet kjører den. Selve avslutningen, sperren av objektet og eiers bekreftelse av kontroll før nye lån er ferdig bygget og testet. Gjelder det også direkte vennelån, som ikke har noen administrator?
 - **Avhenger av:** Produktvurdering, eventuelt OD-0010 for plattformforvalter.
 
+### OD-0019 — Hvilke abonnementshendelser som varsles, og hvor ofte
+- **Lag:** Produktspesifikasjon / UX
+- **Status:** Åpen
+- **Berører:** PS-OBJ-014, PS-COM-003, [visjon 04](vision/04-utlansobjekter.md) («Abonnement», «Vesentlige endringer»)
+- **Spørsmål:** Hvilke hendelser skal et objektabonnement varsle om som standard, hvilke kan brukeren velge selv, og hvor ofte kan samme person varsles om et objekt (visjonen nevner omtrent hver andre time for hyppige redigeringer)? Gjelder det for eksempel endret tittel, beskrivelse, vilkår eller bilder? Inntil dette er besluttet, varsler et abonnement bare at objektet er blitt tilgjengelig for nye lån igjen, som visjonen fremhever; endringer i innholdet varsler ingen abonnenter. Nye regler legges inn ved siden av den regelen og samme tilgangskontroll.
+- **Avhenger av:** Produktvurdering og varslingspreferanser (OD-0004).
+
 ## Avklart
 
 ### OD-0009 — Konkret implementeringsstack og driftsleverandører

@@ -15,8 +15,10 @@ import { outboxMatrices } from "./outbox/policy.matrix";
 import { platformMatrices } from "./platform/policies.matrix";
 import { allPolicies } from "./policies";
 import { publicationMatrices } from "./publications/policies.matrix";
+import { questionMatrices } from "./questions/policies.matrix";
 import { reviewMatrices } from "./reviews/policies.matrix";
 import { socialMatrices } from "./social/policies.matrix";
+import { subscriptionMatrices } from "./subscriptions/policies.matrix";
 import { trustMatrices } from "./trust/policies.matrix";
 
 /**
@@ -37,6 +39,8 @@ const matrices: readonly PolicyMatrix<never, never>[] = [
   ...homeMatrices,
   ...caseMatrices,
   ...trustMatrices,
+  ...subscriptionMatrices,
+  ...questionMatrices,
 ] as never;
 
 describe("policy coverage", () => {

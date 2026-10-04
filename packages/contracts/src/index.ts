@@ -7,6 +7,8 @@ export * from "./security";
 export * from "./objects";
 export * from "./social";
 export * from "./publications";
+export * from "./object-subscriptions";
+export * from "./object-questions";
 export * from "./loans";
 export * from "./reviews";
 export * from "./notifications";

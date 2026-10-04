@@ -575,6 +575,25 @@ export interface AppObjectOwners {
   user_id: string;
 }
 
+export interface AppObjectQuestionPosts {
+  author_user_id: string;
+  body: string;
+  by_owner: boolean;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  position: Generated<Int8>;
+  question_id: string;
+}
+
+export interface AppObjectQuestions {
+  asked_by_user_id: string;
+  created_at: Generated<Timestamp>;
+  environment_id: string;
+  id: Generated<string>;
+  object_id: string;
+  publication_id: string;
+}
+
 export interface AppObjectRestrictions {
   created_at: Generated<Timestamp>;
   id: Generated<string>;
@@ -613,6 +632,15 @@ export interface AppObjects {
   title: string;
   updated_at: Generated<Timestamp>;
   version: Generated<number>;
+}
+
+export interface AppObjectSubscriptions {
+  available: boolean;
+  available_checked_at: Generated<Timestamp>;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  object_id: string;
+  user_id: string;
 }
 
 export interface AppOutboxMessages {
@@ -730,8 +758,11 @@ export interface DB {
   "app.object_freezes": AppObjectFreezes;
   "app.object_images": AppObjectImages;
   "app.object_owners": AppObjectOwners;
+  "app.object_question_posts": AppObjectQuestionPosts;
+  "app.object_questions": AppObjectQuestions;
   "app.object_restrictions": AppObjectRestrictions;
   "app.object_revisions": AppObjectRevisions;
+  "app.object_subscriptions": AppObjectSubscriptions;
   "app.objects": AppObjects;
   "app.outbox_messages": AppOutboxMessages;
   "app.platform_role_grants": AppPlatformRoleGrants;

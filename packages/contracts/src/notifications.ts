@@ -72,6 +72,9 @@ export const notificationKinds = {
   "case.entry_added": "action",
   "case.statements_shared": "information",
   "case.closed": "information",
+  "object.question_asked": "action",
+  "object.question_replied": "information",
+  "object.available": "information",
 } as const satisfies Record<string, NotificationLevel>;
 
 export type NotificationKind = keyof typeof notificationKinds;
@@ -104,7 +107,8 @@ export const notificationKindSchema = z.enum(
 /**
  * What a notification leads to. A `user` target is the other person; a
  * `case` is an administrative case (WP-45), which only its participants and
- * handlers can open.
+ * handlers can open. An `object_subscription` target is the recipient's own
+ * subscription, so opening it checks again that they still find the object.
  */
 export const notificationTargetTypes = [
   "loan",
@@ -113,6 +117,8 @@ export const notificationTargetTypes = [
   "environment",
   "object_invitation",
   "case",
+  "object_question",
+  "object_subscription",
 ] as const;
 export const notificationTargetTypeSchema = z.enum(notificationTargetTypes);
 
