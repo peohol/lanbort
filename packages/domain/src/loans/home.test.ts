@@ -31,6 +31,7 @@ function loan(changes: Partial<Loan> = {}): Loan {
     handover: { borrower: null, lender: null, answerDueAt: null },
     return: { borrower: null, lender: null, pending: null },
     responsibilityTransfer: null,
+    control: null,
     approvedAt: at,
     ...changes,
   } as Loan;
@@ -201,6 +202,7 @@ function coOwnerLoan(changes: Partial<CoOwnerLoan> = {}): CoOwnerLoan {
     transfer: null,
     mayTakeOver: false,
     mayConfirmReceipt: false,
+    mayConfirmControl: false,
     pending: null,
     ...changes,
   };

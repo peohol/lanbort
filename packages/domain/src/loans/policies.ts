@@ -525,6 +525,73 @@ export const listLoansPolicy = definePolicy<unknown, void>({
   actor: [requireLoanStanding],
 });
 
+/**
+ * A party asks the environment's administrators to mediate a disagreement
+ * about the loan's handover or return (vision 05). Like clarifying the loan
+ * itself, it needs only the party's standing (`requireLoanStanding`).
+ */
+export const requestLoanMediationPolicy = loanPartyPolicy<LoanResource>(
+  "loan.request_mediation",
+  bothSides,
+  requireLoanStanding,
+);
+
+/**
+ * The process that ends a loan as administratively unresolved
+ * (PS-LOAN-018). Who may start it, and after what clarification, is not
+ * decided (OD-0017), so nothing in the product runs it yet: no route and no
+ * schedule. The decision adds its caller here instead of a new mechanism.
+ */
+export const unresolvedEndingProcess = "loan.unresolved_endings";
+
+export const endLoanUnresolvedPolicy = definePolicy<LoanResource>({
+  action: "loan.end_unresolved",
+  actor: [requireSystemProcess(unresolvedEndingProcess)],
+});
+
+/**
+ * A loan whose object's owners may have to confirm having it back
+ * (PS-LOAN-019): its parties, the object's current owners, and whether it
+ * ended unresolved.
+ */
+export interface LoanControlResource extends LoanResource {
+  readonly ownerIds: readonly string[];
+  readonly endedUnresolved: boolean;
+}
+
+/**
+ * PS-LOAN-019: after a loan ended unresolved, any current owner of the
+ * object confirms having it back in their control; the borrower never does.
+ * The responsible lender always learns how it stands; another co-owner
+ * learns of the loan only when there is something to confirm.
+ */
+const mayConfirmControl: ResourceRule<LoanControlResource, void> = ({
+  actor,
+  resource,
+}) => {
+  const role = loanRoleOf(actor, resource);
+
+  if (role === "borrower") {
+    return deny("forbidden");
+  }
+
+  if (actor.kind !== "user" || !resource.ownerIds.includes(actor.userId)) {
+    return role === "lender" ? deny("forbidden") : deny("not_found");
+  }
+
+  return role === "lender" || resource.endedUnresolved
+    ? allow
+    : deny("not_found");
+};
+
+export const confirmLoanControlPolicy = definePolicy<LoanControlResource, void>(
+  {
+    action: "loan.confirm_control",
+    actor: [requireActiveAccount],
+    resource: [mayConfirmControl],
+  },
+);
+
 export const loanRequestPolicies = [
   createLoanRequestPolicy,
   previewLoanRequestPolicy,
@@ -553,4 +620,7 @@ export const loanRequestPolicies = [
   withdrawResponsibilityTransferPolicy,
   listCoOwnerLoansPolicy,
   listLoansPolicy,
+  requestLoanMediationPolicy,
+  endLoanUnresolvedPolicy,
+  confirmLoanControlPolicy,
 ];

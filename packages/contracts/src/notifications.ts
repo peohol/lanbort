@@ -50,6 +50,7 @@ export const notificationKinds = {
   "loan.return_day_passed": "required",
   "loan.return_reported": "required",
   "loan.possession_uncertain": "required",
+  "loan.ended_unresolved": "required",
   "loan.responsibility_offered": "action",
   "loan.responsibility_consent_requested": "required",
   "loan.responsibility_transferred": "required",
@@ -63,6 +64,14 @@ export const notificationKinds = {
   "environment.type_change_proposed": "action",
   "environment.requirements_changed": "action",
   "object.co_owner_invited": "action",
+  "case.opened": "action",
+  "case.waiting": "action",
+  "case.assigned": "information",
+  "case.assigned_to_you": "action",
+  "case.your_turn": "action",
+  "case.entry_added": "action",
+  "case.statements_shared": "information",
+  "case.closed": "information",
 } as const satisfies Record<string, NotificationLevel>;
 
 export type NotificationKind = keyof typeof notificationKinds;
@@ -71,13 +80,18 @@ export const notificationKindSchema = z.enum(
   Object.keys(notificationKinds) as [NotificationKind, ...NotificationKind[]],
 );
 
-/** What a notification leads to. A `user` target is the other person. */
+/**
+ * What a notification leads to. A `user` target is the other person; a
+ * `case` is an administrative case (WP-45), which only its participants and
+ * handlers can open.
+ */
 export const notificationTargetTypes = [
   "loan",
   "loan_request",
   "user",
   "environment",
   "object_invitation",
+  "case",
 ] as const;
 export const notificationTargetTypeSchema = z.enum(notificationTargetTypes);
 

@@ -47,7 +47,7 @@ import {
   readLoanRequestPolicy,
   roleOf,
 } from "./policies";
-import { findLoan } from "./reservations";
+import { findControlConfirmation, findLoan } from "./reservations";
 import { afterCursor, loadRequest, loadTarget, originOf } from "./resources";
 import { presentTransfer } from "./responsibility";
 import { findTransfer } from "./responsibility-store";
@@ -418,8 +418,20 @@ async function loadLoanDetail(db: Db, loanId: string) {
   const pending = await findPendingReturns(db, loan.id);
   const open = await findTransfer(db, loan.id);
   const transfer = open?.possible ? open : null;
+  const control =
+    loan.ending?.reason === "unresolved"
+      ? { confirmedAt: await findControlConfirmation(db, loan.id) }
+      : null;
 
-  return { ...loan, amendment, handover, returns, pending, transfer };
+  return {
+    ...loan,
+    amendment,
+    handover,
+    returns,
+    pending,
+    transfer,
+    control,
+  };
 }
 
 /** The loan as the caller, one of its parties, sees it as of `now`. */
@@ -486,6 +498,9 @@ function presentLoan(actor: Actor, resource: LoanDetail, now: Date): Loan {
     },
     responsibilityTransfer:
       resource.transfer && presentTransfer(resource.transfer),
+    control: resource.control && {
+      confirmedAt: resource.control.confirmedAt?.toISOString() ?? null,
+    },
     approvedAt: resource.approvedAt.toISOString(),
   };
 }

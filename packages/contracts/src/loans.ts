@@ -314,12 +314,15 @@ export const loanStatusSchema = z.enum([
  *   whose fault that was.
  * - `returned`: the responsible lender confirmed receiving the object back
  *   (PS-LOAN-015), possibly before the agreed return day (PS-LOAN-020).
- * Later work packages add the administrative endings.
+ * - `unresolved`: ended administratively when its handover or return could
+ *   not be clarified («avsluttet – administrativt uavklart», PS-LOAN-018).
+ *   It says nothing about what happened or who was right.
  */
 export const loanEndReasonSchema = z.enum([
   "cancelled",
   "not_completed",
   "returned",
+  "unresolved",
 ]);
 
 export const loanReadQuerySchema = z.strictObject({ loanId: loanIdSchema });
@@ -562,6 +565,23 @@ export const responsibilityTransferResultSchema = z.strictObject({
   responsibleLenderId: z.uuid(),
 });
 
+/** PS-LOAN-019: an owner's confirmation of having the object back. */
+export const loanControlSchema = z.strictObject({
+  confirmedAt: z.iso.datetime().nullable(),
+});
+
+/** The loan after its owner confirmed having the object back. */
+export const loanControlResultSchema = z.strictObject({
+  loanId: loanIdSchema,
+  confirmedAt: z.iso.datetime(),
+});
+
+/** The loan after it ended as administratively unresolved (PS-LOAN-018). */
+export const loanUnresolvedResultSchema = z.strictObject({
+  loanId: loanIdSchema,
+  endedAt: z.iso.datetime(),
+});
+
 /**
  * A loan as its borrower or responsible lender sees it. The agreement is
  * what was approved, as it was then: later changes to the object never
@@ -637,6 +657,12 @@ export const loanSchema = z.strictObject({
   }),
   /** The open change of the responsible lender, if any (PS-LOAN-009). */
   responsibilityTransfer: responsibilityTransferSchema.nullable(),
+  /**
+   * After the loan ended unresolved: whether an owner has confirmed having
+   * the object back, and when (PS-LOAN-019). Until then it takes no new
+   * loans. Null for every other loan.
+   */
+  control: loanControlSchema.nullable(),
   approvedAt: z.iso.datetime(),
 });
 
@@ -678,6 +704,11 @@ export const coOwnerLoanSchema = z.strictObject({
   mayTakeOver: z.boolean(),
   /** The caller may confirm the receipt (`loan.report_return`, `received`). */
   mayConfirmReceipt: z.boolean(),
+  /**
+   * The loan ended unresolved and the caller, an owner, may confirm having
+   * the object back (`loan.confirm_control`, PS-LOAN-019).
+   */
+  mayConfirmControl: z.boolean(),
   /** The caller's own receipt while it can be undone. */
   pending: pendingReturnSchema,
 });
@@ -699,6 +730,9 @@ export type LoanRequestList = z.infer<typeof loanRequestListSchema>;
 export type LoanPeriod = z.infer<typeof loanPeriodSchema>;
 export type LoanApprovalResult = z.infer<typeof loanApprovalResultSchema>;
 export type LoanStatus = z.infer<typeof loanStatusSchema>;
+export type LoanControl = z.infer<typeof loanControlSchema>;
+export type LoanControlResult = z.infer<typeof loanControlResultSchema>;
+export type LoanUnresolvedResult = z.infer<typeof loanUnresolvedResultSchema>;
 export type LoanEndReason = z.infer<typeof loanEndReasonSchema>;
 export type Loan = z.infer<typeof loanSchema>;
 export type LoanListQuery = z.infer<typeof loanListQuerySchema>;
