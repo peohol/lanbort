@@ -66,6 +66,13 @@ const CLOCK_SKEW_SECONDS = 60 * 60;
  */
 const PADDED_LENGTH = chatLimits.paddedMessageBytes;
 
+/**
+ * The longest application message (plaintext bytes) that still fits in one
+ * padding block: MLS frames it inside the padding with its length and the
+ * sender's Ed25519 signature. A loan logistics message must fit (WP-44).
+ */
+export const SHORT_MESSAGE_BYTES = PADDED_LENGTH - 68;
+
 /** Only these proposals are accepted; anything else in a commit is rejected. */
 const permittedProposals = new Set<Proposal["proposalType"]>([
   "add",

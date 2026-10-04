@@ -1,6 +1,7 @@
 import { type Browser, expect, type Page, test } from "@playwright/test";
 import {
   accountId,
+  agreeLoan,
   axeViolations,
   collectBrowserProblems,
   postCommand,
@@ -196,6 +197,72 @@ test("a message waits until the friend has turned chat on", async ({
 
   for (const someone of [anna, bo]) {
     expect(someone.problems).toEqual([]);
+    await someone.context.close();
+  }
+});
+
+test("after a block, a loan's parties write about the loan only, in short messages", async ({
+  browser,
+}) => {
+  test.setTimeout(150_000);
+  const anna = await person(browser, "Frida Holm");
+  const bo = await person(browser, "Geir Isak");
+  await postCommand(anna.context.request, "/api/social/friend-requests", {
+    userId: bo.id,
+  });
+  await postCommand(bo.context.request, "/api/social/friend-requests/accept", {
+    userId: anna.id,
+  });
+  const loanId = await agreeLoan(
+    anna.context.request,
+    bo.context.request,
+    "Tilhenger",
+  );
+  await postCommand(bo.context.request, "/api/social/blocks", {
+    userId: anna.id,
+  });
+  await turnOnChat(anna.page);
+  await turnOnChat(bo.page);
+
+  // The loan's page offers the conversation that the block left open.
+  await bo.page.goto(`/lan/${loanId}`);
+  const logistics = bo.page.getByRole("region", { name: "Samtale om lånet" });
+  await expect(logistics).toContainText("kun for å avslutte lånet");
+  await logistics.getByRole("button", { name: "Skriv om lånet" }).click();
+  await expect(
+    bo.page.getByRole("heading", { level: 1, name: "Frida Holm" }),
+  ).toBeVisible();
+  await expect(
+    bo.page.getByText("kun for den praktiske avslutningen"),
+  ).toBeVisible();
+
+  // Only what fits one short message can be sent.
+  const composer = bo.page.getByLabel("Ny melding");
+  await composer.fill("x".repeat(1_000));
+  await expect(
+    bo.page.getByRole("alert").filter({ hasText: "Meldingen er for lang" }),
+  ).toBeVisible();
+  await composer.fill("Jeg leverer tilhengeren kl. 18.");
+  await expect(bo.page.getByText("Meldingen er for lang")).toHaveCount(0);
+  await bo.page.getByRole("button", { name: "Send" }).click();
+  await expect(bo.page.getByText("ikke sendt ennå")).toHaveCount(0, {
+    timeout: 30_000,
+  });
+
+  // Frida finds it marked as about the loan, from her page of the loan.
+  await anna.page.goto(`/lan/${loanId}`);
+  await anna.page
+    .getByRole("region", { name: "Samtale om lånet" })
+    .getByRole("link", { name: "Gå til samtalen om lånet" })
+    .click();
+  await expectMessage(anna.page, "Jeg leverer tilhengeren kl. 18.");
+  await anna.page.goto("/samtaler");
+  await expect(anna.page.getByText("Om lånet ·")).toBeVisible();
+
+  for (const someone of [anna, bo]) {
+    expect(
+      someone.problems.filter((problem) => !problem.includes("409 (Conflict)")),
+    ).toEqual([]);
     await someone.context.close();
   }
 });

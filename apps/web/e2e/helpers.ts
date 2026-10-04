@@ -7,7 +7,12 @@ import {
 import AxeBuilder from "@axe-core/playwright";
 import { readEmailCode } from "@lanbort/auth/testing";
 import { chatSignatureLabel, deviceCertificateBody } from "@lanbort/contracts";
-import { type APIRequestContext, expect, type Page } from "@playwright/test";
+import {
+  type APIRequestContext,
+  type APIResponse,
+  expect,
+  type Page,
+} from "@playwright/test";
 
 /** Shared steps for the browser tests, against the local Supabase stack. */
 export const newEmail = () => `e2e-${randomUUID()}@example.test`;
@@ -95,6 +100,49 @@ export const today = () =>
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
+
+/**
+ * A loan agreed between two signed-in accounts, starting today: the lender
+ * registers the object, the borrower asks, and the lender approves.
+ */
+export async function agreeLoan(
+  lender: APIRequestContext,
+  borrower: APIRequestContext,
+  title: string,
+): Promise<string> {
+  const json = async (response: Promise<APIResponse>) =>
+    (await response).json();
+  const { objectId } = await json(
+    postCommand(lender, "/api/objects", {
+      title,
+      categoryId: "annet",
+      description: `${title} til utlån.`,
+      availability: [{ start: today(), end: null }],
+    }),
+  );
+  const preview = await json(
+    borrower.get(`/api/loan-requests/preview?objectId=${objectId}`),
+  );
+  const { requestId } = await json(
+    postCommand(borrower, "/api/loan-requests", {
+      objectId,
+      origin: { kind: "direct" },
+      start: { kind: "date", date: today() },
+      end: { kind: "duration", days: 2 },
+      message: "Kan jeg låne den?",
+      termsVersion: preview.termsVersion,
+      responsibilityDeclarationVersion:
+        preview.responsibilityDeclarationVersion,
+    }),
+  );
+  await postCommand(lender, `/api/loan-requests/${requestId}/responsibility`, {
+    declarationVersion: preview.responsibilityDeclarationVersion,
+  });
+  const { loanId } = await json(
+    postCommand(lender, `/api/loan-requests/${requestId}/approve`),
+  );
+  return loanId;
+}
 
 /** A word no other test uses, so the shared database cannot interfere. */
 export const uniqueWord = () =>

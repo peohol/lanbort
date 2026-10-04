@@ -10,6 +10,7 @@ import {
   type KeyPackageBundle,
   type TrustStore,
   Conversation,
+  SHORT_MESSAGE_BYTES,
   acceptChangedAccountKey,
   applyRevocation,
   conversationAuthenticator,
@@ -171,7 +172,7 @@ describe("private chat over MLS (ADR-0010)", () => {
     expect(short.length).toBe(longer.length);
   });
 
-  it("pads a short message to exactly one block, the most a loan logistics message may take", async () => {
+  it("fits a short message in exactly one block, the most a loan logistics message may take", async () => {
     // The server sees only the encrypted content's length: one padding
     // block and the AEAD tag (ADR-0010, WP-44).
     const contentBytes = (message: Uint8Array) => {
@@ -181,8 +182,8 @@ describe("private chat over MLS (ADR-0010)", () => {
       }
       return decoded.privateMessage.ciphertext.length - 16;
     };
-    const short = await send(bob1, "Jeg kommer kl. 18 med drillen.");
-    const long = await send(bob1, "Jeg kommer kl. 18. ".repeat(80));
+    const short = await send(bob1, "x".repeat(SHORT_MESSAGE_BYTES));
+    const long = await send(bob1, "x".repeat(SHORT_MESSAGE_BYTES + 1));
     for (const reader of [alice1, alice2, bob2]) {
       await conversationOf(reader).receive(short);
       await conversationOf(reader).receive(long);
