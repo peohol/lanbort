@@ -21,6 +21,10 @@ Arkitekturen peker oppover til krav og UX-regler som den oppfyller. Viktige tekn
 11. [Eksterne integrasjoner](10-eksterne-integrasjoner.md)
 12. [Arkitekturbeslutninger](decisions/README.md)
 
+Tekniske utredninger som grunnlag for åpne beslutninger ligger i [`utredninger/`](utredninger/). De er ikke normative før beslutningen er tatt:
+
+- [Mekanisme for privilegert autentisering (OD-0010)](utredninger/OD-0010-privilegert-autentisering.md)
+
 Åpne tekniske valg som ennå ikke har tilstrekkelig beslutningsgrunnlag, registreres i [det felles beslutningsregisteret](../open-decisions.md). Når et viktig teknisk veivalg faktisk tas, dokumenteres det som ADR der det er relevant.
 
 ## Modenhet
