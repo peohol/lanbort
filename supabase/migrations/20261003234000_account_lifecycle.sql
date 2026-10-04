@@ -425,6 +425,63 @@ create trigger case_handler_entries_active_accounts
   for each row when (new.capacity = 'handler')
   execute function app.require_active_accounts('author_user_id');
 
+-- Object subscriptions and questions (WP-63): subscribing, asking and
+-- posting are new activity of whoever does it. They also need an owner who
+-- can lend the object, since without one nobody finds it any more; the
+-- owners' accounts are held as well, so an owner leaving the active state at
+-- the same time comes first and the post is refused, or waits for it.
+create function app.require_object_with_active_owner()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  object uuid := coalesce(
+    (to_jsonb(new) ->> 'object_id')::uuid,
+    (select question.object_id from app.object_questions as question
+      where question.id = (to_jsonb(new) ->> 'question_id')::uuid)
+  );
+begin
+  perform 1 from app.users
+  where id in (select user_id from app.object_owners where object_id = object)
+  order by id
+  for share;
+
+  if not app.object_has_active_owner(object) then
+    raise exception 'no owner of object % takes new activity', object
+      using errcode = 'restrict_violation', constraint = 'account_takes_new_activity';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke execute on function app.require_object_with_active_owner() from public;
+
+create trigger object_subscriptions_active_accounts
+  before insert on app.object_subscriptions
+  for each row execute function app.require_active_accounts('user_id');
+
+create trigger object_subscriptions_active_owner
+  before insert on app.object_subscriptions
+  for each row execute function app.require_object_with_active_owner();
+
+create trigger object_questions_active_accounts
+  before insert on app.object_questions
+  for each row execute function app.require_active_accounts('asked_by_user_id');
+
+create trigger object_questions_active_owner
+  before insert on app.object_questions
+  for each row execute function app.require_object_with_active_owner();
+
+create trigger object_question_posts_active_accounts
+  before insert on app.object_question_posts
+  for each row execute function app.require_active_accounts('author_user_id');
+
+create trigger object_question_posts_active_owner
+  before insert on app.object_question_posts
+  for each row execute function app.require_object_with_active_owner();
+
 -- An account stops being active: what was waiting for it to start
 -- something new ends neutrally, like any other lost access (PS-LOAN-002):
 -- - its own open requests (`access_lost`);

@@ -10,12 +10,18 @@ import {
 import { listOwnCases, readCase } from "../cases/queries";
 import { executeQuery } from "../commands/query";
 import { approveLoanRequest } from "../loans/approval";
+import { stillConcerns } from "../notifications/concerns";
 import { proposeLoanAmendment } from "../loans/amendments";
 import { EventRecorder } from "../events/recorder";
 import { reportHandover } from "../loans/handover";
 import { readLoan } from "../loans/queries";
 import { acceptCoOwnerInvitation, inviteCoOwner } from "../objects/co-owners";
+import {
+  askObjectQuestion,
+  replyToObjectQuestion,
+} from "../questions/commands";
 import { sendFriendRequest } from "../social/commands";
+import { subscribeToObject } from "../subscriptions/commands";
 import { connectTestDatabase } from "../testing/database";
 import { testIdentity } from "../testing/identities";
 import { loanTestKit } from "../testing/loans";
@@ -348,6 +354,33 @@ describe("deactivation (PS-ADM-002)", () => {
   });
 });
 
+describe("objects an account at rest finds (PS-ADM-002, PS-OBJ-014)", () => {
+  it("finds nothing, so it is told nothing more about the objects it follows", async () => {
+    const { borrower, objectId } = await published();
+    await run(subscribeToObject, borrower, { objectId });
+    const { id } = await db
+      .selectFrom("app.object_subscriptions")
+      .select("id")
+      .where("user_id", "=", borrower.userId)
+      .executeTakeFirstOrThrow();
+    const concerns = () =>
+      stillConcerns(
+        db,
+        {
+          recipientId: borrower.userId,
+          target: { type: "object_subscription", id },
+        },
+        kit.now(),
+      );
+
+    expect(await concerns()).toBe(true);
+    await run(deactivateAccount, borrower, {});
+    expect(await concerns()).toBe(false);
+    await run(reactivateAccount, borrower, {});
+    expect(await concerns()).toBe(true);
+  });
+});
+
 describe("reactivation", () => {
   it("makes the account active again without restoring what ended", async () => {
     const owner = await user();
@@ -596,6 +629,62 @@ describe("races", () => {
       }
     });
 
+    it(`holds subscribing, asking and replying until the account is ${to}, then refuses them`, async () => {
+      const inactive = { code: "account_inactive" };
+      const question = (setup: Awaited<ReturnType<typeof published>>) => ({
+        environmentId: setup.environmentId,
+        objectId: setup.objectId,
+        body: "Er den ledig i helgen?",
+      });
+
+      const subscribing = await published();
+      await expect(
+        duringChange(subscribing.borrower, to, () =>
+          run(subscribeToObject, subscribing.borrower, {
+            objectId: subscribing.objectId,
+          }),
+        ),
+      ).rejects.toMatchObject(inactive);
+      const asking = await published();
+      await expect(
+        duringChange(asking.borrower, to, () =>
+          run(askObjectQuestion, asking.borrower, question(asking)),
+        ),
+      ).rejects.toMatchObject(inactive);
+      const replying = await published();
+      const { questionId } = await run(
+        askObjectQuestion,
+        replying.borrower,
+        question(replying),
+      );
+      await expect(
+        duringChange(replying.owner, to, () =>
+          run(replyToObjectQuestion, replying.owner, {
+            questionId,
+            body: "Ja.",
+          }),
+        ),
+      ).rejects.toMatchObject(inactive);
+
+      expect(
+        await db
+          .selectFrom("app.object_subscriptions")
+          .select("id")
+          .where("user_id", "=", subscribing.borrower.userId)
+          .execute(),
+      ).toEqual([]);
+      expect(
+        await db
+          .selectFrom("app.object_question_posts")
+          .select("author_user_id")
+          .where("author_user_id", "in", [
+            asking.borrower.userId,
+            replying.owner.userId,
+          ])
+          .execute(),
+      ).toEqual([]);
+    });
+
     it(`never binds an account that is ${to} meanwhile to someone else's new activity`, async () => {
       const owner = await user();
       const objectId = await create(owner);
@@ -643,6 +732,43 @@ describe("races", () => {
       ).toEqual([]);
     });
   }
+
+  it("refuses a question or subscription to an object whose only owner deactivated meanwhile", async () => {
+    const conflict = { code: "conflict" };
+    const asking = await published();
+    await expect(
+      duringChange(asking.owner, "deactivated", () =>
+        run(askObjectQuestion, asking.borrower, {
+          environmentId: asking.environmentId,
+          objectId: asking.objectId,
+          body: "Er den ledig i helgen?",
+        }),
+      ),
+    ).rejects.toMatchObject(conflict);
+    const subscribing = await published();
+    await expect(
+      duringChange(subscribing.owner, "deactivated", () =>
+        run(subscribeToObject, subscribing.borrower, {
+          objectId: subscribing.objectId,
+        }),
+      ),
+    ).rejects.toMatchObject(conflict);
+
+    for (const { objectId } of [asking, subscribing]) {
+      for (const table of [
+        "app.object_questions",
+        "app.object_subscriptions",
+      ] as const) {
+        expect(
+          await db
+            .selectFrom(table)
+            .select("id")
+            .where("object_id", "=", objectId)
+            .execute(),
+        ).toEqual([]);
+      }
+    }
+  });
 
   it("never approves a loan for a borrower who deactivated meanwhile", async () => {
     for (let round = 0; round < 5; round++) {

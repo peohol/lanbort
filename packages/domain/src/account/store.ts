@@ -50,3 +50,20 @@ export function lockAccounts(
 ): Promise<Map<string, AccountStatus>> {
   return accountStatuses(db, userIds, { lock: true });
 }
+
+/**
+ * Of the accounts, those that are deleted. Shared history they took part in
+ * stays, but is shown without who they were (PS-ADM-006).
+ */
+export async function deletedAccounts(
+  db: Db,
+  userIds: readonly string[],
+): Promise<ReadonlySet<string>> {
+  const statuses = await accountStatuses(db, userIds);
+
+  return new Set(
+    [...statuses]
+      .filter(([, status]) => status === "deleted")
+      .map(([id]) => id),
+  );
+}

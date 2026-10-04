@@ -225,21 +225,39 @@ export async function loadPosts(
   }));
 }
 
+/** Everyone whose name a question and its posts could show. */
+export function questionPeople(
+  questions: readonly QuestionRecord[],
+  posts: readonly PostRecord[],
+): string[] {
+  return [
+    ...questions.map((question) => question.askedByUserId),
+    ...posts.map((post) => post.authorUserId),
+  ];
+}
+
+/**
+ * The question as the viewer sees it. What a deleted account asked or wrote
+ * stays in the thread, but without who wrote it (PS-ADM-006).
+ */
 export function presentQuestion(
   question: QuestionRecord,
   posts: readonly PostRecord[],
+  deleted: ReadonlySet<string>,
 ): ObjectQuestion {
+  const shown = (userId: string) => (deleted.has(userId) ? null : userId);
+
   return {
     id: question.id,
     publicationId: question.publicationId,
     objectId: question.objectId,
-    askedByUserId: question.askedByUserId,
+    askedByUserId: shown(question.askedByUserId),
     createdAt: question.createdAt.toISOString(),
     posts: posts
       .filter((post) => post.questionId === question.id)
       .map((post) => ({
         id: post.id,
-        authorUserId: post.authorUserId,
+        authorUserId: shown(post.authorUserId),
         byOwner: post.byOwner,
         body: post.body,
         createdAt: post.createdAt.toISOString(),

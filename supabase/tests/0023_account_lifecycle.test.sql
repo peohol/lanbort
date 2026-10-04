@@ -1,6 +1,6 @@
 begin;
 
-select plan(29);
+select plan(31);
 
 select ok(
   not has_table_privilege(role_name, 'app.account_status_changes', 'SELECT'),
@@ -212,6 +212,13 @@ select throws_ok(
   'a deactivated account opens no case'
 );
 
+select throws_ok(
+  $$insert into app.object_subscriptions (user_id, object_id, available)
+    values ('00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-0000000000f1', true)$$,
+  '23001', 'an account of this object_subscriptions does not take new activity',
+  'a deactivated account subscribes to nothing'
+);
+
 select lives_ok(
   $$insert into app.friendships (requester_id, addressee_id)
     values ('00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-0000000000a1')$$,
@@ -273,6 +280,13 @@ select throws_ok(
       '00000000-0000-4000-8000-0000000000c1')$$,
   '23001', null,
   'nobody asks for an object none of whose owners can lend'
+);
+
+select throws_ok(
+  $$insert into app.object_subscriptions (user_id, object_id, available)
+    values ('00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-0000000000f1', false)$$,
+  '23001', 'no owner of object 00000000-0000-4000-8000-0000000000f1 takes new activity',
+  'nobody follows an object none of whose owners can lend'
 );
 
 select ok(

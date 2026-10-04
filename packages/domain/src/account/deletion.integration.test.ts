@@ -12,9 +12,15 @@ import { confirmLoanControl, endLoanUnresolved } from "../loans/unresolved";
 import { recordNotifications } from "../notifications/store";
 import { acceptCoOwnerInvitation, inviteCoOwner } from "../objects/co-owners";
 import type { StoredEvent } from "../outbox/consumer";
+import {
+  askObjectQuestion,
+  replyToObjectQuestion,
+} from "../questions/commands";
+import { readObjectQuestion } from "../questions/queries";
 import { publishDueLoanReviews, submitLoanReview } from "../reviews/commands";
 import { reviewPublicationProcess } from "../reviews/policies";
 import { blockUser, sendFriendRequest } from "../social/commands";
+import { subscribeToObject } from "../subscriptions/commands";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser, testIdentity } from "../testing/identities";
 import { loanTestKit } from "../testing/loans";
@@ -47,6 +53,7 @@ const {
   friends,
   ask,
   environment,
+  published,
   reservedLoan,
   stored,
   eventsFor,
@@ -93,7 +100,8 @@ const rowsOf = (
     | "app.profiles"
     | "app.verified_contacts"
     | "app.auth_identities"
-    | "app.object_owners",
+    | "app.object_owners"
+    | "app.object_subscriptions",
   userId: string,
 ) =>
   db
@@ -294,8 +302,17 @@ describe("deleting an account (PS-ADM-005–006)", () => {
       kind: "direct",
     });
 
-    // Its own notification, the e-mail waiting to tell of it (WP-41), and a
-    // notification preference.
+    // Its notification preference (e-mail for what asks something of it),
+    // its own notification, and the e-mail waiting to tell of it (WP-41).
+    await db
+      .insertInto("app.notification_preferences")
+      .values({
+        user_id: leaving.userId,
+        level: "action",
+        channel: "email",
+        enabled: true,
+      })
+      .execute();
     await recordNotifications(db, "test", kit.now(), [
       {
         recipientId: leaving.userId,
@@ -315,15 +332,6 @@ describe("deleting an account (PS-ADM-005–006)", () => {
         .where("notification.recipient_id", "=", leaving.userId)
         .execute();
     expect(await deliveries()).toEqual([{ status: "pending" }]);
-    await db
-      .insertInto("app.notification_preferences")
-      .values({
-        user_id: leaving.userId,
-        level: "information",
-        channel: "email",
-        enabled: false,
-      })
-      .execute();
 
     await remove(leaving);
 
@@ -658,6 +666,50 @@ describe("review rights (PS-ADM-005, PS-TRUST-003)", () => {
       { author_role: "borrower", status: "published" },
       { author_role: "lender", status: "published" },
     ]);
+  });
+});
+
+describe("object subscriptions and questions (PS-ADM-006, PS-OBJ-014–015)", () => {
+  it("removes the subscriptions, and keeps the questions without who wrote them", async () => {
+    const {
+      owner,
+      borrower: leaving,
+      environmentId,
+      objectId,
+    } = await published();
+    await run(subscribeToObject, leaving, { objectId });
+    const { questionId } = await run(askObjectQuestion, leaving, {
+      environmentId,
+      objectId,
+      body: "Følger det med lys?",
+    });
+    const { postId: answerId } = await run(replyToObjectQuestion, owner, {
+      questionId,
+      body: "Ja, og ledning.",
+    });
+    const { postId: followUpId } = await run(replyToObjectQuestion, leaving, {
+      questionId,
+      body: "Takk!",
+    });
+
+    await remove(leaving);
+
+    expect(await rowsOf("app.object_subscriptions", leaving.userId)).toEqual(
+      [],
+    );
+    expect(
+      await executeQuery(kit.tick(), readObjectQuestion, {
+        actor: owner,
+        input: { questionId },
+      }),
+    ).toMatchObject({
+      askedByUserId: null,
+      posts: [
+        { authorUserId: null, body: "Følger det med lys?" },
+        { id: answerId, authorUserId: owner.userId, byOwner: true },
+        { id: followUpId, authorUserId: null, body: "Takk!" },
+      ],
+    });
   });
 });
 

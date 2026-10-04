@@ -35,6 +35,7 @@ import { defineConsumer, OutboxDeliveryError } from "../outbox/consumer";
 import { platformRoleRevoked } from "../platform/events";
 import { reviewRightsStep } from "../reviews/account-deletion";
 import { friendshipEndedByAccountDeletion } from "../social/events";
+import { subscriptionsStep } from "../subscriptions/account-deletion";
 import {
   type AccountBindingSource,
   accountBindingSources,
@@ -286,6 +287,7 @@ export const accountDeletionSteps: readonly AccountDeletionStep[] = [
   coOwnerInvitationsStep,
   platformRolesStep,
   reviewRightsStep,
+  subscriptionsStep,
   personalDataStep,
 ];
 
