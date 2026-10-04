@@ -9,6 +9,7 @@ import {
   openCaseRoundSchema,
   openEnvironmentContactSchema,
   openLoanMediationSchema,
+  type ReportTargetKind,
   reportUnavailabilitySchema,
   transferCaseSchema,
   type WriteCaseEntry,
@@ -122,7 +123,7 @@ export async function loadCase(
   };
 }
 
-const eventBase = (c: CaseRecord) => ({
+export const eventBase = (c: CaseRecord) => ({
   caseKind: c.kind,
   environmentId: c.environmentId,
 });
@@ -297,7 +298,7 @@ async function writeAsHandler(
 }
 
 /** A handler acts on the case only while nobody else has taken it. */
-function requireActing(c: CaseRecord, userId: string) {
+export function requireActing(c: CaseRecord, userId: string) {
   if (c.assigneeUserId !== null && c.assigneeUserId !== userId) {
     conflict("Another handler has the case");
   }
@@ -373,11 +374,18 @@ export const writeCaseEntry = defineCommand({
 });
 
 /** A new case of its kind: its context and its participants. */
-interface CaseOpening {
+export interface CaseOpening {
   readonly key: OpenCaseKey;
   readonly environmentId: string | null;
   readonly loanId: string | null;
   readonly subjectUserId: string | null;
+  /** What a moderation report is about (WP-52). */
+  readonly report?: {
+    readonly target: ReportTargetKind;
+    readonly objectId: string | null;
+    readonly reviewId: string | null;
+    readonly escalatedFromCaseId: string | null;
+  };
   readonly participants: readonly Pick<ParticipantRecord, "userId" | "role">[];
 }
 
@@ -386,7 +394,7 @@ interface CaseOpening {
  * open case of the same kind and context, so nobody has to start over
  * (vision 06). The caller has locked what makes the case unique.
  */
-async function openOrContinue(
+export async function openOrContinue(
   tx: Tx,
   events: EventRecorder,
   userId: string,
@@ -424,6 +432,7 @@ async function openOrContinue(
     environmentId: opening.environmentId,
     loanId: opening.loanId,
     subjectUserId: opening.subjectUserId,
+    ...(opening.report ? { report: opening.report } : {}),
     openedByUserId: userId,
     participants: opening.participants,
     now,
@@ -619,7 +628,7 @@ export const reportUnavailability = defineCommand({
 });
 
 /** What a handler's action needs: the open case after settling who has it. */
-interface HandlerAction<I> {
+export interface HandlerAction<I> {
   readonly tx: Tx;
   readonly c: CaseRecord;
   readonly userId: string;
@@ -632,16 +641,20 @@ interface HandlerAction<I> {
  * A handler's action on an open case. The case is locked, and returned to
  * the queue first if its handler can no longer handle it.
  */
-function handlerCommand<I extends { readonly caseId: string }>(
+export function handlerCommand<
+  I extends { readonly caseId: string },
+  O = CaseActionResult,
+>(
   name: string,
   input: z.ZodType<I>,
   policy: Policy<CaseResource, undefined>,
-  act: (action: HandlerAction<I>) => Promise<void>,
+  act: (action: HandlerAction<I>) => Promise<O | void>,
+  output: z.ZodType<O> = caseActionResultSchema as unknown as z.ZodType<O>,
 ) {
   return defineCommand({
     name,
     input,
-    output: caseActionResultSchema,
+    output,
     policy,
     idempotency: "required",
     load: ({ tx, actor, input: parsed, now }) =>
@@ -653,14 +666,14 @@ function handlerCommand<I extends { readonly caseId: string }>(
       resource,
       events,
       now,
-    }): Promise<CaseActionResult> => {
+    }): Promise<O> => {
       const c = await settledCase(tx, resource.case.id, now);
 
       if (c.status !== "open") {
         conflict("The case is closed");
       }
 
-      await act({
+      const acted = await act({
         tx,
         c,
         userId: actingUserId(actor),
@@ -669,13 +682,17 @@ function handlerCommand<I extends { readonly caseId: string }>(
         now,
       });
 
+      if (acted !== undefined) {
+        return acted;
+      }
+
       const after = await findCase(tx, c.id);
 
       return {
         caseId: c.id,
         status: after?.status ?? c.status,
         assigneeUserId: after?.assigneeUserId ?? null,
-      };
+      } satisfies CaseActionResult as O;
     },
   });
 }

@@ -134,6 +134,30 @@ async function closeDueWindow(
 }
 
 /**
+ * The loan's review window as of `now`, locked: due return confirmations are
+ * made first, as in every loan command (a receipt that took effect may have
+ * ended the loan and opened its window), and a window whose time is over is
+ * closed, publishing its reviews. The loan is locked by the caller.
+ */
+export async function settleReviewWindow(
+  db: Db,
+  loaded: LoadedLoan,
+  now: Date,
+  events: EventRecorder,
+): Promise<ReviewWindowRecord | null> {
+  await settleDueReturns(db, loaded.loan, now, events);
+  const window = await findReviewWindow(db, loaded.loan.id, { lock: true });
+
+  if (window && windowOver(window, now)) {
+    await closeDueWindow(db, window, events);
+
+    return findReviewWindow(db, window.loanId);
+  }
+
+  return window;
+}
+
+/**
  * Before a review command decides anything: return confirmations that are
  * due are made first, as in every loan command (a receipt that took effect
  * may have ended the loan and opened its window), and a window whose time
@@ -147,16 +171,7 @@ async function settleReviews(
   now: Date,
   events: EventRecorder,
 ): Promise<{ window: ReviewWindowRecord | null; role: "borrower" | "lender" }> {
-  await settleDueReturns(db, target.loaded.loan, now, events);
-  let window = await findReviewWindow(db, target.loaded.loan.id, {
-    lock: true,
-  });
-
-  if (window && windowOver(window, now)) {
-    await closeDueWindow(db, window, events);
-    window = await findReviewWindow(db, window.loanId);
-  }
-
+  const window = await settleReviewWindow(db, target.loaded, now, events);
   const role = reviewRoleOf(actor, reviewParties(target.loaded, window));
 
   if (!role) {

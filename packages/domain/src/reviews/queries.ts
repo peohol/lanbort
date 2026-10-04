@@ -75,26 +75,36 @@ function present(
     dimensions.map((dimension) => [dimension.code, dimension]),
   );
 
+  const removed = review.status === "removed";
+
   return {
     id: review.id,
     authorRole: review.authorRole,
-    status: published ? "published" : "hidden",
+    status: removed ? "removed" : published ? "published" : "hidden",
     version: review.version,
-    scores: review.scores.map(({ dimension, score }) => ({
-      dimension,
-      score,
-      contested: scoreContested(
-        byCode.get(dimension) ?? { restsOnReturn: false },
-        review.reopenedAt !== null,
-      ),
-    })),
-    text: review.text,
+    // A review moderation removed is no longer shown (PS-TRUST-014).
+    scores: removed
+      ? []
+      : review.scores.map(({ dimension, score }) => ({
+          dimension,
+          score,
+          contested: scoreContested(
+            byCode.get(dimension) ?? { restsOnReturn: false },
+            review.reopenedAt !== null,
+          ),
+        })),
+    text: removed ? null : review.text,
+    moderated: {
+      textRemoved: review.moderated.textRemoved,
+      removedDimensions: [...review.moderated.removedDimensions],
+    },
     submittedAt: review.submittedAt.toISOString(),
     updatedAt: review.updatedAt.toISOString(),
     publishedAt: published?.toISOString() ?? null,
     loanReopenedAt: review.reopenedAt?.toISOString() ?? null,
     response: review.response && {
-      text: review.response.text,
+      text: removed ? null : review.response.text,
+      removed: review.response.text === null,
       respondedAt: review.response.at.toISOString(),
     },
   };

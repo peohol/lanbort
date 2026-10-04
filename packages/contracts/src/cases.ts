@@ -20,14 +20,29 @@ export const caseEntryIdSchema = z.uuid();
  * - `unavailability_report`: a confidential report that a user may have died
  *   or be permanently unavailable. Only platform stewards handle it, and it
  *   changes no account, loan or access by itself (PS-COM-015).
+ * - `environment_report` / `platform_report`: a report to the environment's
+ *   administrators or to the platform stewards (WP-52, moderation.ts).
  */
 export const caseKindSchema = z.enum([
   "environment_contact",
   "loan_mediation",
   "unavailability_report",
+  "environment_report",
+  "platform_report",
 ]);
 
 export const caseStatusSchema = z.enum(["open", "closed"]);
+
+/**
+ * What a moderation report is about: a user, an object, a published review
+ * about the reporter, or the response to a review the reporter wrote.
+ */
+export const reportTargetKindSchema = z.enum([
+  "user",
+  "object",
+  "review",
+  "review_response",
+]);
 
 /** Who a participant is in the case. */
 export const caseParticipantRoleSchema = z.enum([
@@ -195,8 +210,17 @@ export const caseSchema = z.strictObject({
   viewer: caseCapacitySchema,
   environmentId: z.uuid().nullable(),
   loanId: loanIdSchema.nullable(),
-  /** The user a report is about, for its reporter and its handlers. */
+  /**
+   * The user a report is about (for a reported review or response, its
+   * author), for its reporter and its handlers.
+   */
   subjectUserId: z.uuid().nullable(),
+  /** What a moderation report is about; null for other kinds. */
+  reportTarget: reportTargetKindSchema.nullable(),
+  objectId: z.uuid().nullable(),
+  reviewId: z.uuid().nullable(),
+  /** The environment report a platform report was escalated from. */
+  escalatedFromCaseId: caseIdSchema.nullable(),
   openedAt: z.iso.datetime(),
   closedAt: z.iso.datetime().nullable(),
   handling: caseHandlingSchema,
@@ -236,7 +260,7 @@ export const environmentCaseQueueQuerySchema = z.strictObject({
   ...casePage,
 });
 
-/** The unavailability reports the caller may handle as a platform steward. */
+/** The platform's cases (reports) the caller may handle as a steward. */
 export const platformCaseQueueQuerySchema = z.strictObject({
   status: caseStatusSchema.default("open"),
   ...casePage,
@@ -250,6 +274,7 @@ export const caseListSchema = z.strictObject({
 
 export type CaseKind = z.infer<typeof caseKindSchema>;
 export type CaseStatus = z.infer<typeof caseStatusSchema>;
+export type ReportTargetKind = z.infer<typeof reportTargetKindSchema>;
 export type CaseParticipantRole = z.infer<typeof caseParticipantRoleSchema>;
 export type CaseAudience = z.infer<typeof caseAudienceSchema>;
 export type CaseCapacity = z.infer<typeof caseCapacitySchema>;

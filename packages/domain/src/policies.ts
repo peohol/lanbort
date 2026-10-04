@@ -4,6 +4,7 @@ import { casePolicies } from "./cases/policies";
 import { environmentPolicies } from "./environment/policies";
 import { homePolicies } from "./home/policies";
 import { loanRequestPolicies } from "./loans/policies";
+import { moderationPolicies } from "./moderation/policies";
 import { notificationPolicies } from "./notifications/policies";
 import { objectPolicies } from "./objects/policies";
 import { processOutboxPolicy } from "./outbox/policy";
@@ -34,5 +35,6 @@ export const allPolicies: readonly Policy<never, never>[] = [
   ...trustPolicies,
   ...subscriptionPolicies,
   ...questionPolicies,
+  ...moderationPolicies,
   processOutboxPolicy,
 ];

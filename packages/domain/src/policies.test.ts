@@ -4,6 +4,7 @@ import { caseMatrices } from "./cases/policies.matrix";
 import { environmentMatrices } from "./environment/policies.matrix";
 import { homeMatrices } from "./home/policies.matrix";
 import { loanMatrices } from "./loans/policies.matrix";
+import { moderationMatrices } from "./moderation/policies.matrix";
 import { notificationMatrices } from "./notifications/policies.matrix";
 import {
   matrixGaps,
@@ -41,6 +42,7 @@ const matrices: readonly PolicyMatrix<never, never>[] = [
   ...trustMatrices,
   ...subscriptionMatrices,
   ...questionMatrices,
+  ...moderationMatrices,
 ] as never;
 
 describe("policy coverage", () => {

@@ -98,11 +98,17 @@ export interface ReviewRecord {
   readonly version: number;
   readonly submittedAt: Date;
   readonly updatedAt: Date;
-  readonly status: "hidden" | "published";
+  readonly status: "hidden" | "published" | "removed";
   readonly publishedAt: Date | null;
   /** In the dimensions' order. */
   readonly scores: readonly ReviewScore[];
-  readonly response: { readonly text: string; readonly at: Date } | null;
+  /** What moderation took out of it (WP-52). */
+  readonly moderated: {
+    readonly textRemoved: boolean;
+    readonly removedDimensions: readonly string[];
+  };
+  /** The one response; its text is null once moderation removed it. */
+  readonly response: { readonly text: string | null; readonly at: Date } | null;
 }
 
 /**
@@ -149,6 +155,20 @@ export async function findReviews(
     db,
     rows.map((row) => row.id),
   );
+  const measures =
+    rows.length === 0
+      ? []
+      : await db
+          .selectFrom("app.moderation_actions")
+          .select(["review_id", "kind", "dimension"])
+          .where(
+            "review_id",
+            "in",
+            rows.map((row) => row.id),
+          )
+          .where("kind", "in", ["review_text_removed", "review_score_removed"])
+          .orderBy("position")
+          .execute();
 
   return rows.map((row) => ({
     id: row.id,
@@ -166,8 +186,20 @@ export async function findReviews(
       dimension,
       score,
     })),
+    moderated: {
+      textRemoved: measures.some(
+        (measure) =>
+          measure.review_id === row.id &&
+          measure.kind === "review_text_removed",
+      ),
+      removedDimensions: measures.flatMap((measure) =>
+        measure.review_id === row.id && measure.dimension !== null
+          ? [measure.dimension]
+          : [],
+      ),
+    },
     response:
-      row.response_body === null || row.responded_at === null
+      row.responded_at === null
         ? null
         : { text: row.response_body, at: row.responded_at },
   }));
