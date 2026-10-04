@@ -14,7 +14,9 @@ import {
   administrators,
   closeRoleInvitations,
   grantRole,
+  type ChangedBy,
   lapseInvitationsOf,
+  type RoleRevokeReason,
   pendingRoleInvitations,
   revokeRoles,
   findPendingRoleInvitation,
@@ -37,6 +39,7 @@ import {
   withdrawRoleInvitationPolicy,
 } from "./policies";
 import { findActiveRoles, findCurrentMembership } from "./store";
+import { rateLimits } from "../abuse/rate-limits";
 
 /**
  * Roles (WP-22, PS-ENV-003). Every command locks the environment row through
@@ -128,6 +131,7 @@ export const inviteAdministrator = defineCommand({
   input: targetUserInput,
   output: invitationOutput,
   policy: inviteAdministratorPolicy,
+  rateLimit: rateLimits.invitations,
   idempotency: "required",
   load: loadLockedAccess,
   execute: async ({ tx, actor, input, resource, events, now }) => {
@@ -175,6 +179,7 @@ export const offerOwnership = defineCommand({
   input: targetUserInput,
   output: invitationOutput,
   policy: offerOwnershipPolicy,
+  rateLimit: rateLimits.invitations,
   idempotency: "required",
   load: loadLockedAccess,
   execute: async ({ tx, actor, input, resource, events, now }) => {
@@ -345,12 +350,12 @@ export const withdrawRoleInvitation = defineCommand({
  * Ends a user's administrator role and what depended on it: invitations to
  * the user (such as a pending handover) and a registered ownership claim.
  */
-async function endAdministration(
+export async function endAdministration(
   tx: Tx,
   environmentId: string,
   userId: string,
-  reason: "resigned" | "removed",
-  by: string,
+  reason: RoleRevokeReason,
+  by: ChangedBy,
   now: Date,
   events: EventRecorder,
 ): Promise<void> {
@@ -360,7 +365,7 @@ async function endAdministration(
     userId,
     ["administrator"],
     reason,
-    { userId: by },
+    by,
     now,
     events,
   );
@@ -400,7 +405,7 @@ export const removeAdministrator = defineCommand({
       environmentId,
       input.userId,
       "removed",
-      owner,
+      { userId: owner },
       now,
       events,
     );
@@ -441,7 +446,7 @@ export const resignAdministrator = defineCommand({
       environmentId,
       userId,
       "resigned",
-      userId,
+      { userId },
       now,
       events,
     );

@@ -56,6 +56,7 @@ import {
   readPublishedImagePolicy,
 } from "./policies";
 import { ownerHasAccess } from "./store";
+import { rateLimits } from "../abuse/rate-limits";
 
 type Db = Kysely<Database>;
 
@@ -66,9 +67,12 @@ function viewerIdOf(actor: Actor): string | null {
 /**
  * The publications an active member finds in the environment (PS-OBJ-006,
  * PS-OBJ-009, PS-USR-006). Only active publications of active, unfrozen
- * objects that an owner still has active access behind and no steward has
- * blocked (WP-52), and never an object whose owner and the viewer have
- * blocked each other. Nor one published
+ * objects that an owner still has active access behind, that an owner's
+ * active account can lend (PS-ADM-002) and that no steward has blocked
+ * (WP-52), and never an object whose owner and the viewer have blocked each
+ * other. A viewer whose account is not active finds nothing: finding leads
+ * to new activity (a request, a subscription, a question), which such an
+ * account no longer starts and is not told about (PS-ADM-002). Nor one published
  * under a stricter type than the environment has had since, unless the
  * viewer was already active then (PS-ENV-009, `concealed`). This is the one
  * place discovery is decided.
@@ -87,6 +91,8 @@ function discoverablePublications(
     .where("publication.status", "=", "active")
     .where(createdOutside(sql.ref("publication.position"), concealed))
     .where("object.status", "=", "active")
+    .where(sql<boolean>`app.account_accepts_new_activity(${viewerId}::uuid)`)
+    .where(sql<boolean>`app.object_has_active_owner(publication.object_id)`)
     .where(sql<boolean>`not app.object_platform_blocked(publication.object_id)`)
     .where(
       ownerHasAccess(
@@ -372,14 +378,101 @@ const discovers = (access: EnvironmentAccess) =>
   acceptsNewActivity(access.environment);
 
 /**
+ * The publications the viewer finds in the environment now, by the same
+ * rule as the list, for a caller to narrow further (Finn, WP-61); null when
+ * they find nothing there.
+ */
+export async function discoverableFor(
+  db: Db,
+  access: EnvironmentAccess,
+  viewerId: string,
+  now: Date,
+) {
+  return discovers(access)
+    ? discoverablePublications(
+        db,
+        access.environment.id,
+        viewerId,
+        await concealedFrom(db, access),
+        now,
+      )
+    : null;
+}
+
+/** What a viewer is shown of each publication they find. */
+export function selectFound(query: DiscoverableQuery, viewerId: string) {
+  return query.select([
+    "publication.id",
+    "publication.object_id",
+    "object.title",
+    "object.category_id",
+    "object.description",
+    "object.loan_terms",
+    sql<boolean>`exists (
+      select 1 from app.object_owners
+      where object_id = publication.object_id and user_id = ${viewerId}
+    )`.as("owned_by_you"),
+  ]);
+}
+
+type DiscoverableQuery = ReturnType<typeof discoverablePublications>;
+
+export interface FoundRow extends ContentRow {
+  readonly id: string;
+  readonly owned_by_you: boolean;
+}
+
+/** The global truth the found objects are shown with. */
+export async function loadFoundDetails(db: Db, objectIds: readonly string[]) {
+  // One connection serves the snapshot, so these run one after another.
+  const images = await loadImages(db, objectIds);
+  const availability = await loadAvailability(db, objectIds);
+  const blocks = await loadAvailabilityBlocks(db, objectIds);
+
+  return { images, availability, blocks };
+}
+
+export type FoundDetails = Awaited<ReturnType<typeof loadFoundDetails>>;
+
+/** A found object's actual availability, derived as for everyone else. */
+export function foundAvailability(
+  objectId: string,
+  details: FoundDetails,
+  now: Date,
+) {
+  return deriveAvailability({
+    status: "active",
+    availability: details.availability.get(objectId) ?? [],
+    blocks: details.blocks.get(objectId) ?? [],
+    today: calendarDate(now),
+  });
+}
+
+/**
+ * A found object as the viewer sees it. The owners are not named, and
+ * actual availability is shown without saying what blocks it (UX-05).
+ */
+export function presentFound(row: FoundRow, details: FoundDetails, now: Date) {
+  const derived = foundAvailability(row.object_id, details, now);
+
+  return {
+    objectId: row.object_id,
+    ...presentContent(row, details.images),
+    effectiveAvailability: derived.effective.map(toApiInterval),
+    availableForNewLoans: derived.availableForNewLoans,
+    ownedByYou: row.owned_by_you,
+  };
+}
+
+/**
  * The objects an active member finds in the environment, newest publication
- * first. The owners are not named, and actual availability is derived from
- * the object's global truth without saying what blocks it (UX-05).
+ * first.
  */
 export const listEnvironmentObjects = defineQuery({
   name: "environment_object.list",
   input: environmentObjectsQuerySchema,
   policy: listEnvironmentObjectsPolicy,
+  rateLimit: rateLimits.lookups,
   load: ({ db, actor, input, now }) =>
     inSnapshot(db, async (tx) => {
       const access = await loadEnvironmentAccess(
@@ -394,27 +487,12 @@ export const listEnvironmentObjects = defineQuery({
         return null;
       }
 
+      const discoverable = viewerId
+        ? await discoverableFor(tx, access, viewerId, now)
+        : null;
       const rows =
-        viewerId && discovers(access)
-          ? await discoverablePublications(
-              tx,
-              access.environment.id,
-              viewerId,
-              await concealedFrom(tx, access),
-              now,
-            )
-              .select([
-                "publication.id",
-                "publication.object_id",
-                "object.title",
-                "object.category_id",
-                "object.description",
-                "object.loan_terms",
-                sql<boolean>`exists (
-                  select 1 from app.object_owners
-                  where object_id = publication.object_id and user_id = ${viewerId}
-                )`.as("owned_by_you"),
-              ])
+        viewerId && discoverable
+          ? await selectFound(discoverable, viewerId)
               .where(afterCursor(input.cursor))
               .orderBy("publication.created_at", "desc")
               .orderBy("publication.id", "desc")
@@ -422,42 +500,21 @@ export const listEnvironmentObjects = defineQuery({
               .execute()
           : [];
       const { items, nextCursor } = page(rows);
-      const ids = items.map((row) => row.object_id);
-      // One connection serves the snapshot, so these run one after another.
-      const images = await loadImages(tx, ids);
-      const availability = await loadAvailability(tx, ids);
-      const blocks = await loadAvailabilityBlocks(tx, ids);
+      const details = await loadFoundDetails(
+        tx,
+        items.map((row) => row.object_id),
+      );
 
       return {
-        resource: {
-          ...access,
-          items,
-          nextCursor,
-          images,
-          availability,
-          blocks,
-        },
+        resource: { ...access, items, nextCursor, details },
         context: undefined,
       };
     }),
   present: ({ resource, now }): EnvironmentObjectList => ({
-    objects: resource.items.map((row) => {
-      const derived = deriveAvailability({
-        status: "active",
-        availability: resource.availability.get(row.object_id) ?? [],
-        blocks: resource.blocks.get(row.object_id) ?? [],
-        today: calendarDate(now),
-      });
-
-      return {
-        publicationId: row.id,
-        objectId: row.object_id,
-        ...presentContent(row, resource.images),
-        effectiveAvailability: derived.effective.map(toApiInterval),
-        availableForNewLoans: derived.availableForNewLoans,
-        ownedByYou: row.owned_by_you,
-      };
-    }),
+    objects: resource.items.map((row) => ({
+      publicationId: row.id,
+      ...presentFound(row, resource.details, now),
+    })),
     nextCursor: resource.nextCursor,
   }),
 });

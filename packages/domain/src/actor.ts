@@ -1,11 +1,15 @@
-import { platformRoleSchema } from "@lanbort/contracts";
+import {
+  type AccountStatus as ContractAccountStatus,
+  platformRoleSchema,
+} from "@lanbort/contracts";
 
 /**
  * The internal actor model. Every authorization decision, event and
  * idempotency record is attributed to one of these, never to an auth
  * provider's identity directly (ADR-0007: identity is normalized first).
  */
-export type AccountStatus = "pending_registration" | "active";
+/** PS-ADM-001: the lifecycle states, see `account/model.ts`. */
+export type AccountStatus = ContractAccountStatus;
 
 /**
  * Authentication assurance level. `aal2` is the stronger authentication that
@@ -78,10 +82,15 @@ export function systemActor(process: string): SystemActor {
 export function actorScope(actor: Actor): string | null {
   switch (actor.kind) {
     case "user":
-      return `user:${actor.userId}`;
+      return userScope(actor.userId);
     case "system":
       return `system:${actor.process}`;
     case "anonymous":
       return null;
   }
+}
+
+/** A user's scope (see {@link actorScope}), also once they cannot act. */
+export function userScope(userId: string): string {
+  return `user:${userId}`;
 }

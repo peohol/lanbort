@@ -23,7 +23,52 @@ export type JsonPrimitive = boolean | number | string | null;
 
 export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
+export type Numeric = ColumnType<string, number | string, number | string>;
+
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
+
+export interface AppAccountIdentityFindings {
+  basis: string;
+  finding: string;
+  id: Generated<string>;
+  recorded_at: Timestamp;
+  recorded_by_user_id: string;
+  user_id: string;
+}
+
+export interface AppAccountLinks {
+  basis: string;
+  id: Generated<string>;
+  kind: string;
+  linked_user_id: string;
+  recorded_at: Timestamp;
+  recorded_by_user_id: string;
+  user_id: string;
+}
+
+export interface AppAccountObjectTransfers {
+  basis: string;
+  from_user_id: string;
+  id: Generated<string>;
+  link_id: string;
+  moved_at: Timestamp;
+  moved_by_user_id: string;
+  object_id: string;
+  to_user_id: string;
+}
+
+export interface AppAccountStatusChanges {
+  basis: string | null;
+  changed_at: Timestamp;
+  changed_by_process: string | null;
+  changed_by_user_id: string | null;
+  from_status: string;
+  id: Generated<string>;
+  position: Generated<Int8>;
+  reason: string;
+  to_status: string;
+  user_id: string;
+}
 
 export interface AppAuditEvents {
   actor_process: string | null;
@@ -213,6 +258,12 @@ export interface AppEnvironmentRoleInvitations {
 }
 
 export interface AppEnvironments {
+  /**
+   * Centre of the approximate area (PS-NFR-008), rounded to hundredths of a degree.
+   */
+  area_latitude: Numeric | null;
+  area_longitude: Numeric | null;
+  area_radius_km: number | null;
   audience: string | null;
   created_at: Generated<Timestamp>;
   created_by_user_id: string;
@@ -699,12 +750,51 @@ export interface AppProfiles {
   version: Generated<number>;
 }
 
+export interface AppRateLimitKey {
+  secret: Generated<Buffer>;
+  singleton: Generated<boolean>;
+}
+
+export interface AppRateLimits {
+  available_at: Timestamp;
+  rule: string;
+  subject_hash: Buffer;
+}
+
 export interface AppReviewDimensions {
   code: string;
   endings: string[];
   position: number;
   rests_on_return: boolean;
   reviewer_role: string;
+}
+
+export interface AppSearchEnvironments {
+  area_latitude: Numeric | null;
+  area_longitude: Numeric | null;
+  area_radius_km: number | null;
+  document: string;
+  environment_id: string;
+  indexed_at: Generated<Timestamp>;
+}
+
+export interface AppSearchEnvironmentSources {
+  area_latitude: Numeric | null;
+  area_longitude: Numeric | null;
+  area_radius_km: number | null;
+  document: string | null;
+  environment_id: string | null;
+}
+
+export interface AppSearchObjects {
+  document: string;
+  indexed_at: Generated<Timestamp>;
+  object_id: string;
+}
+
+export interface AppSearchObjectSources {
+  document: string | null;
+  object_id: string | null;
 }
 
 export interface AppUserBlocks {
@@ -720,6 +810,8 @@ export interface AppUsers {
   created_at: Generated<Timestamp>;
   id: Generated<string>;
   status: Generated<string>;
+  status_changed_at: Timestamp | null;
+  status_reason: string | null;
 }
 
 export interface AppVerifiedContacts {
@@ -730,6 +822,10 @@ export interface AppVerifiedContacts {
 }
 
 export interface DB {
+  "app.account_identity_findings": AppAccountIdentityFindings;
+  "app.account_links": AppAccountLinks;
+  "app.account_object_transfers": AppAccountObjectTransfers;
+  "app.account_status_changes": AppAccountStatusChanges;
   "app.audit_events": AppAuditEvents;
   "app.auth_identities": AppAuthIdentities;
   "app.case_action_notices": AppCaseActionNotices;
@@ -789,7 +885,13 @@ export interface DB {
   "app.outbox_messages": AppOutboxMessages;
   "app.platform_role_grants": AppPlatformRoleGrants;
   "app.profiles": AppProfiles;
+  "app.rate_limit_key": AppRateLimitKey;
+  "app.rate_limits": AppRateLimits;
   "app.review_dimensions": AppReviewDimensions;
+  "app.search_environment_sources": AppSearchEnvironmentSources;
+  "app.search_environments": AppSearchEnvironments;
+  "app.search_object_sources": AppSearchObjectSources;
+  "app.search_objects": AppSearchObjects;
   "app.user_blocks": AppUserBlocks;
   "app.users": AppUsers;
   "app.verified_contacts": AppVerifiedContacts;

@@ -11,7 +11,9 @@ import { processOutboxPolicy } from "./outbox/policy";
 import { platformPolicies } from "./platform/policies";
 import { publicationPolicies } from "./publications/policies";
 import { questionPolicies } from "./questions/policies";
+import { restorePolicies } from "./restore/policies";
 import { reviewPolicies } from "./reviews/policies";
+import { searchPolicies } from "./search/policies";
 import { socialPolicies } from "./social/policies";
 import { subscriptionPolicies } from "./subscriptions/policies";
 import { trustPolicies } from "./trust/policies";
@@ -36,5 +38,7 @@ export const allPolicies: readonly Policy<never, never>[] = [
   ...subscriptionPolicies,
   ...questionPolicies,
   ...moderationPolicies,
+  ...searchPolicies,
+  ...restorePolicies,
   processOutboxPolicy,
 ];

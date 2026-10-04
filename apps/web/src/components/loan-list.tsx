@@ -1,7 +1,11 @@
+import Link from "next/link";
+
 /** One loan or request as the Lån area lists it, already in words. */
 export interface LoanListEntry {
   /** The element id notifications and Home lead to. */
   readonly id: string;
+  /** The page of its own, if it has one. */
+  readonly href: string | null;
   readonly title: string;
   readonly role: string;
   readonly status: string;
@@ -41,7 +45,13 @@ export function LoanList({
         <ul className="entries">
           {entries.map((entry) => (
             <li key={entry.id} id={entry.id} className="entry" tabIndex={-1}>
-              <strong>{entry.title}</strong>
+              <strong>
+                {entry.href ? (
+                  <Link href={entry.href}>{entry.title}</Link>
+                ) : (
+                  entry.title
+                )}
+              </strong>
               <span className="entry-detail">
                 {entry.role} · {entry.period}
               </span>
@@ -54,7 +64,7 @@ export function LoanList({
         </ul>
       )}
       {more && (
-        <p>
+        <p className="link-row">
           <a href={more}>Vis flere {heading.toLowerCase()}</a>
         </p>
       )}

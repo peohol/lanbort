@@ -5,7 +5,7 @@ import {
   type ResourceRule,
 } from "../authorization/policy";
 import {
-  requireActiveAccount,
+  requireMinimumAccess,
   requireSystemProcess,
 } from "../authorization/rules";
 
@@ -28,9 +28,13 @@ const ownNotifications: ResourceRule<NotificationsResource, void> = ({
     ? allow
     : deny("not_found");
 
-/** The caller's own notification centre and preferences. */
+/**
+ * The caller's own notification centre and preferences, also with minimum
+ * access: they lead to the loans and cases an account that is not active
+ * still finishes (PS-ADM-002).
+ */
 const ownPolicy = (action: string) =>
-  definePolicy<unknown, void>({ action, actor: [requireActiveAccount] });
+  definePolicy<unknown, void>({ action, actor: [requireMinimumAccess] });
 
 export const listNotificationsPolicy = ownPolicy("notification.list");
 
@@ -45,7 +49,7 @@ export const setNotificationPreferencePolicy = ownPolicy(
 const notificationsPolicy = (action: string) =>
   definePolicy<NotificationsResource, void>({
     action,
-    actor: [requireActiveAccount],
+    actor: [requireMinimumAccess],
     resource: [ownNotifications],
   });
 

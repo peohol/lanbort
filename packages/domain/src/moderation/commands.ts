@@ -56,6 +56,7 @@ import {
   type ReportedReview,
   reviewEffects,
 } from "./store";
+import { rateLimits } from "../abuse/rate-limits";
 
 /**
  * Moderation (WP-52, PS-TRUST-013–016): reports and the measures taken on
@@ -149,6 +150,7 @@ export const reportInEnvironment = defineCommand({
   input: reportInEnvironmentSchema,
   output: caseOpenedResultSchema,
   policy: reportInEnvironmentPolicy,
+  rateLimit: rateLimits.reports,
   idempotency: "required",
   load: async ({ tx, actor, input, now }) => {
     const access = await loadEnvironmentAccess(
@@ -306,6 +308,7 @@ export const reportToPlatform = defineCommand({
   input: reportToPlatformSchema,
   output: caseOpenedResultSchema,
   policy: reportToPlatformPolicy,
+  rateLimit: rateLimits.reports,
   idempotency: "required",
   load: async ({ tx, actor, input, now }) => {
     if (actor.kind !== "user") {

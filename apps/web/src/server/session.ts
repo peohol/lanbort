@@ -2,12 +2,13 @@ import type { OwnAccount } from "@lanbort/contracts";
 import {
   executeQuery,
   getOwnAccount,
+  isDomainError,
   type QueryDefinition,
   resolveUserActor,
   type UserActor,
 } from "@lanbort/domain";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 import { runtime } from "./runtime";
 
@@ -42,6 +43,35 @@ export async function pageQuery<I, R, C, O>(
   return actor ? executeQuery(runtime.domain(), query, { actor, input }) : null;
 }
 
+/**
+ * A page's query for one thing, for a signed-in user. Something the caller
+ * may not see shows the same «not found» page as something that does not
+ * exist, and so does an address that names nothing (PS-NFR-002).
+ */
+export async function pageQueryOrNotFound<I, R, C, O>(
+  query: QueryDefinition<I, R, C, O>,
+  input: I,
+): Promise<O> {
+  try {
+    const output = await pageQuery(query, input);
+
+    if (output === null) {
+      redirect("/logg-inn");
+    }
+
+    return output;
+  } catch (error) {
+    if (
+      isDomainError(error) &&
+      ["not_found", "forbidden", "invalid_input"].includes(error.code)
+    ) {
+      notFound();
+    }
+
+    throw error;
+  }
+}
+
 /** The signed-in user's account for rendering pages, or null. */
 export const getPageAccount = cache((): Promise<OwnAccount | null> =>
   pageQuery(getOwnAccount, {}),
@@ -49,8 +79,10 @@ export const getPageAccount = cache((): Promise<OwnAccount | null> =>
 
 /**
  * The account of a page that needs a signed-in, registered user; anyone
- * else is sent where they can become one. Data on the page still comes
- * through the queries' own policies.
+ * else is sent where they can become one. An account that is not active is
+ * let in too: it keeps what it is already bound by (PS-ADM-002), and each
+ * page shows what it may still do. Data on the page still comes through the
+ * queries' own policies.
  */
 export async function requirePageAccount(): Promise<OwnAccount> {
   const account = await getPageAccount();
@@ -59,7 +91,7 @@ export async function requirePageAccount(): Promise<OwnAccount> {
     redirect("/logg-inn");
   }
 
-  if (account.status !== "active") {
+  if (account.status === "pending_registration") {
     redirect("/registrering");
   }
 

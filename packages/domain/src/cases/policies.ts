@@ -6,8 +6,10 @@ import {
   type PolicyInput,
   type ResourceRule,
 } from "../authorization/policy";
+import { takesNewActivity } from "../account/model";
 import {
   requireActiveAccount,
+  requireMinimumAccess,
   requireNotInvolved,
 } from "../authorization/rules";
 import type { EnvironmentAccess } from "../environment/model";
@@ -47,12 +49,17 @@ const notInvolved = requireNotInvolved<CaseResource, void>(
  * is not involved in it. A platform steward also needs the steward's own
  * access (`platformStewardAccess`, closed until OD-0010 is decided). A
  * participant is told they may not; anyone else does not see the case.
+ * Handling is new activity: only an active account handles (PS-ADM-001).
  */
 export const asHandler: ResourceRule<CaseResource, void> = (input) => {
-  const { resource } = input;
+  const { actor, resource } = input;
 
   if (!resource.standing.holdsRole) {
     return deny(resource.participant ? "forbidden" : "not_found");
+  }
+
+  if (actor.kind === "user" && !takesNewActivity(actor.accountStatus)) {
+    return deny("account_inactive");
   }
 
   const rules = caseKinds[resource.case.kind].platform
@@ -74,13 +81,18 @@ export const asHandler: ResourceRule<CaseResource, void> = (input) => {
 const asParticipantOrHandler: ResourceRule<CaseResource, void> = (input) =>
   input.resource.participant ? allow : asHandler(input);
 
+/**
+ * PS-ADM-002: a participant keeps taking part in an open case with minimum
+ * access, also while their account is deactivated, dormant, suspended or
+ * closing; handling it takes an active account (`asHandler`).
+ */
 export function casePolicy(
   action: string,
   rule: ResourceRule<CaseResource, void>,
 ) {
   return definePolicy<CaseResource>({
     action,
-    actor: [requireActiveAccount],
+    actor: [requireMinimumAccess],
     resource: [hiddenFromSubject, rule],
   });
 }
@@ -141,10 +153,10 @@ export const reportUnavailabilityPolicy = definePolicy<ReportTarget>({
   ],
 });
 
-/** The caller's own cases, as a participant. */
+/** The caller's own cases, as a participant, also with minimum access. */
 export const listOwnCasesPolicy = definePolicy<unknown, void>({
   action: "case.list_own",
-  actor: [requireActiveAccount],
+  actor: [requireMinimumAccess],
 });
 
 /** The environment's cases, for its administrators (UX-IA-007). */

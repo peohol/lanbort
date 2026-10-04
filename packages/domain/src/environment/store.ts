@@ -21,6 +21,7 @@ import {
   isTransitionExpired,
   type MembershipRecord,
   type RequirementRecord,
+  toArea,
 } from "./model";
 import {
   type HistoryPosition,
@@ -43,6 +44,9 @@ const environmentColumns = [
   "audience",
   "object_focus",
   "location",
+  "area_latitude",
+  "area_longitude",
+  "area_radius_km",
   "version",
   "requirements_revision",
   "requires_object_approval",
@@ -74,6 +78,7 @@ export async function findEnvironment(
         audience: row.audience,
         objectFocus: row.object_focus,
         location: row.location,
+        area: toArea(row),
         version: row.version,
         requirementsRevision: row.requirements_revision,
         requiresObjectApproval: row.requires_object_approval,

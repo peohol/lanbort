@@ -1,15 +1,15 @@
 import {
+  type AuthAdmin,
   type AuthGateway,
   type CookieStore,
+  createAuthAdmin,
   createAuthGateway,
 } from "@lanbort/auth";
 import { createDatabase } from "@lanbort/database";
 import {
-  ConsumerRegistry,
   type DomainContext,
-  notificationGenerator,
-  objectAvailabilityWatcher,
-  objectImageFileCleanup,
+  type IdentityProviderAdmin,
+  outboxConsumers,
 } from "@lanbort/domain";
 import { serverEnv } from "./env";
 import { objectImageServices } from "./object-images";
@@ -25,20 +25,34 @@ export interface Runtime {
   cronSecret(): string | undefined;
 }
 
+let authAdmin: AuthAdmin | undefined;
+
 /**
- * Side effects run from the outbox (ADR-0004, ADR-0008): image file cleanup,
- * the in-app notifications (WP-40) and telling object subscribers when an
- * object has become available (WP-63). Notification e-mails have their own
- * queue and job (`notification-emails.ts`).
+ * The provider's identity administration, or undefined when this environment
+ * has no secret key configured; removing deleted accounts' identities then
+ * waits in the outbox and is retried.
  */
-export const outboxConsumers = new ConsumerRegistry([
-  objectImageFileCleanup({
-    store: () => objectImageServices()?.store,
-    db: () => runtime.domain().db,
-  }),
-  notificationGenerator({ db: () => runtime.domain().db }),
-  objectAvailabilityWatcher({ db: () => runtime.domain().db }),
-]);
+function identityAdmin(): IdentityProviderAdmin | undefined {
+  const env = serverEnv();
+
+  if (!env.SUPABASE_SECRET_KEY) {
+    return undefined;
+  }
+
+  const admin = (authAdmin ??= createAuthAdmin({
+    url: env.SUPABASE_URL,
+    secretKey: env.SUPABASE_SECRET_KEY,
+  }));
+
+  return { deleteIdentity: (subject) => admin.deleteUser(subject) };
+}
+
+/** The outbox consumers, wired to this runtime (`outboxConsumers`). */
+const consumers = outboxConsumers({
+  domain: () => runtime.domain(),
+  imageStore: () => objectImageServices()?.store,
+  identities: identityAdmin,
+});
 
 let domain: DomainContext | undefined;
 
@@ -50,7 +64,7 @@ export const runtime: Runtime = {
         connectionString: serverEnv().DATABASE_URL,
         maxConnections: 5,
       }),
-      consumers: outboxConsumers,
+      consumers,
     };
 
     return domain;

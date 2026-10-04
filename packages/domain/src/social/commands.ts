@@ -6,6 +6,7 @@ import {
 import type { Database } from "@lanbort/database";
 import type { Transaction } from "kysely";
 import type { Policy } from "../authorization/policy";
+import { type RateLimit, rateLimits } from "../abuse/rate-limits";
 import { defineCommand } from "../commands/command";
 import { DomainError } from "../errors";
 import type { EventDefinition } from "../events/catalog";
@@ -37,7 +38,7 @@ import {
   withdrawFriendRequestPolicy,
 } from "./policies";
 
-interface ChangeArgs {
+export interface ChangeArgs {
   readonly tx: Transaction<Database>;
   readonly pair: SocialPair;
   readonly events: EventRecorder;
@@ -55,6 +56,7 @@ interface ChangeArgs {
 function pairCommand(definition: {
   name: string;
   policy: Policy<SocialPair, void>;
+  rateLimit?: RateLimit;
   change(args: ChangeArgs): Promise<void>;
 }) {
   return defineCommand({
@@ -62,6 +64,7 @@ function pairCommand(definition: {
     input: socialTargetSchema,
     output: socialRelationSchema,
     policy: definition.policy,
+    ...(definition.rateLimit && { rateLimit: definition.rateLimit }),
     idempotency: "required",
     load: async ({ tx, actor, input }) => {
       if (actor.kind !== "user") {
@@ -106,7 +109,7 @@ async function transition(
   }
 }
 
-async function endFriendship(
+export async function endFriendship(
   { tx, pair, events, now }: ChangeArgs,
   friendshipId: string,
   reason: "declined" | "withdrawn" | "removed" | "blocked",
@@ -130,6 +133,7 @@ async function endFriendship(
 export const sendFriendRequest = pairCommand({
   name: "friendship.request",
   policy: sendFriendRequestPolicy,
+  rateLimit: rateLimits.contact,
   // Any open relation is left as it is. In particular a crossing request
   // leaves the other's pending request in place for the caller to accept:
   // a friendship only ever starts with an acceptance.
@@ -200,35 +204,37 @@ export const removeFriend = pairCommand({
  * between the two happen together. Nothing else is touched, so established
  * loans, cases and earned review rights stay as they are (PS-USR-007).
  */
+export async function placeBlock(args: ChangeArgs): Promise<void> {
+  if (args.pair.blockedByActor) {
+    return;
+  }
+
+  const { id } = await args.tx
+    .insertInto("app.user_blocks")
+    .values({
+      blocker_id: args.pair.actorId,
+      blocked_id: args.pair.otherUserId,
+      created_at: args.now,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+
+  args.events.record(userBlocked, { resourceId: id, payload: {} });
+
+  if (args.pair.openFriendship) {
+    await endFriendship(
+      args,
+      args.pair.openFriendship.id,
+      "blocked",
+      friendshipClosedByBlock,
+    );
+  }
+}
+
 export const blockUser = pairCommand({
   name: "user_block.create",
   policy: blockUserPolicy,
-  change: async (args) => {
-    if (args.pair.blockedByActor) {
-      return;
-    }
-
-    const { id } = await args.tx
-      .insertInto("app.user_blocks")
-      .values({
-        blocker_id: args.pair.actorId,
-        blocked_id: args.pair.otherUserId,
-        created_at: args.now,
-      })
-      .returning("id")
-      .executeTakeFirstOrThrow();
-
-    args.events.record(userBlocked, { resourceId: id, payload: {} });
-
-    if (args.pair.openFriendship) {
-      await endFriendship(
-        args,
-        args.pair.openFriendship.id,
-        "blocked",
-        friendshipClosedByBlock,
-      );
-    }
-  },
+  change: placeBlock,
 });
 
 /** Lifting a block restores nothing: earlier relations stay ended. */

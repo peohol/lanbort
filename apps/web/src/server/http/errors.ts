@@ -1,11 +1,16 @@
 import { AuthProviderError } from "@lanbort/auth";
 import type { ApiError, ApiErrorCode } from "@lanbort/contracts";
-import { type DomainErrorCode, isDomainError } from "@lanbort/domain";
+import {
+  type DomainErrorCode,
+  isDomainError,
+  RateLimitedError,
+} from "@lanbort/domain";
 
 /** One status per error code, for every route. */
 const statusByCode = {
   unauthenticated: 401,
   registration_required: 403,
+  account_inactive: 403,
   forbidden: 403,
   // Concealed and missing resources are the same response (PS-NFR-002).
   not_found: 404,
@@ -42,6 +47,12 @@ export function errorResponse(
 
 /** Maps expected failures to their public code; anything else is a 500. */
 export function toErrorResponse(error: unknown): Response | undefined {
+  if (error instanceof RateLimitedError) {
+    const response = errorResponse(error.code);
+    response.headers.set("retry-after", String(error.retryAfterSeconds));
+    return response;
+  }
+
   if (isDomainError(error)) {
     return errorResponse(error.code, error.fields);
   }

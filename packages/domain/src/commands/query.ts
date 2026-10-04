@@ -7,6 +7,7 @@ import {
   authorizeActor,
   type Policy,
 } from "../authorization/policy";
+import { consumeActorRateLimit, type RateLimit } from "../abuse/rate-limits";
 import { AuthorizationError } from "../errors";
 import { type DomainContext, type Loaded, parseInput } from "./command";
 
@@ -18,6 +19,8 @@ export interface QueryDefinition<I, R, C, O> {
   readonly name: string;
   readonly input: z.ZodType<I>;
   readonly policy: Policy<R, C>;
+  /** The signed-in caller's budget for this query (WP-73), e.g. against scraping. */
+  readonly rateLimit?: RateLimit;
   load(args: {
     db: Kysely<Database>;
     actor: Actor;
@@ -51,6 +54,7 @@ export async function executeQuery<I, R, C, O>(
     actor: request.actor,
     now,
   });
+  await consumeActorRateLimit(domain, query.rateLimit, request.actor);
 
   const input = parseInput(query.input, request.input);
   const loaded = await query.load({

@@ -9,7 +9,7 @@ export default async function SignInPage() {
   const account = await getPageAccount();
 
   if (account) {
-    redirect(account.status === "active" ? "/" : "/registrering");
+    redirect(account.status === "pending_registration" ? "/registrering" : "/");
   }
 
   return (

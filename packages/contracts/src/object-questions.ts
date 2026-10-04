@@ -38,7 +38,8 @@ export const objectQuestionPostedSchema = z.strictObject({
 
 export const objectQuestionPostSchema = z.strictObject({
   id: z.uuid(),
-  authorUserId: z.uuid(),
+  /** Null once the author's account is deleted (PS-ADM-006). */
+  authorUserId: z.uuid().nullable(),
   /** The author owned the object when posting: an answer from the owner. */
   byOwner: z.boolean(),
   body: z.string(),
@@ -49,7 +50,8 @@ export const objectQuestionSchema = z.strictObject({
   id: objectQuestionIdSchema,
   publicationId: publicationIdSchema,
   objectId: objectIdSchema,
-  askedByUserId: z.uuid(),
+  /** Null once the asker's account is deleted (PS-ADM-006). */
+  askedByUserId: z.uuid().nullable(),
   createdAt: z.iso.datetime(),
   /** Oldest first; the first one is the question. */
   posts: z.array(objectQuestionPostSchema),

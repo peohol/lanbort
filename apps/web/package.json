@@ -4,8 +4,8 @@
   "type": "module",
   "version": "0.0.0",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/copy-map-worker.mjs && next dev",
+    "build": "node scripts/copy-map-worker.mjs && next build",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc6 --noEmit",
     "test": "vitest run",
@@ -18,13 +18,16 @@
     "@lanbort/domain": "workspace:*",
     "@lanbort/email": "workspace:*",
     "@lanbort/observability": "workspace:*",
+    "@lanbort/places": "workspace:*",
     "@lanbort/storage": "workspace:*",
+    "maplibre-gl": "6.11.2",
     "next": "16.3.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@playwright/test": "1.63.0",
     "sharp": "0.35.5"
   }

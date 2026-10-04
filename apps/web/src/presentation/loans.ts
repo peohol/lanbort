@@ -23,6 +23,7 @@ export const loanEndReasonLabels: Record<LoanEndReason, string> = {
   not_completed: "Ikke gjennomført",
   returned: "Levert tilbake",
   unresolved: "Avsluttet uten avklaring",
+  stopped: "Kan ikke gjennomføres på grunn av en plattformbegrensning",
 };
 
 export const loanRequestStatusLabels: Record<LoanRequestStatus, string> = {

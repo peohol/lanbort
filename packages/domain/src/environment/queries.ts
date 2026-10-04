@@ -52,6 +52,7 @@ import {
   findOpenProposal,
   typePeriods,
 } from "./type-change-store";
+import { rateLimits } from "../abuse/rate-limits";
 
 const environmentInput = z.strictObject({ environmentId: z.uuid() });
 
@@ -124,6 +125,7 @@ export const getEnvironment = defineQuery({
   name: "environment.read",
   input: environmentInput,
   policy: readEnvironmentPolicy,
+  rateLimit: rateLimits.lookups,
   load: async ({ db, actor, input, now }) => {
     const access = await loadEnvironmentAccess(
       db,
@@ -178,6 +180,7 @@ export const getEnvironment = defineQuery({
       audience: environment.audience,
       objectFocus: environment.objectFocus,
       location: environment.location,
+      area: environment.area,
       version: environment.version,
       requirementsRevision: environment.requirementsRevision,
       requiresObjectApproval: environment.requiresObjectApproval,

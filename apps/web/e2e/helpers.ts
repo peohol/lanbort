@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { readEmailCode } from "@lanbort/auth/testing";
 import { type APIRequestContext, expect, type Page } from "@playwright/test";
 
@@ -61,3 +61,58 @@ export async function registerThroughApi(
   expect(registration.status()).toBe(200);
   return email;
 }
+
+/** A command over the API, with its own idempotency key; it must succeed. */
+export async function postCommand(
+  request: APIRequestContext,
+  path: string,
+  data?: object,
+) {
+  const response = await request.post(path, {
+    data,
+    headers: { "Idempotency-Key": randomUUID() },
+  });
+  expect(response.ok(), await response.text()).toBe(true);
+  return response;
+}
+
+export async function accountId(request: APIRequestContext): Promise<string> {
+  return (await (await request.get("/api/account")).json()).userId;
+}
+
+/** Today's date in Norway, as the API takes dates. */
+export const today = () =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Oslo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+/** A word no other test uses, so the shared database cannot interfere. */
+export const uniqueWord = () =>
+  Array.from(randomBytes(12), (byte) =>
+    String.fromCharCode(97 + (byte % 26)),
+  ).join("");
+
+/** Runs the outbox job until `settled` says what it waits for is there. */
+export async function untilOutboxSettles(
+  request: APIRequestContext,
+  settled: () => Promise<boolean>,
+) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await request.get("/api/internal/outbox", {
+      headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
+    });
+
+    if (await settled()) return;
+  }
+
+  throw new Error("The outbox never caught up");
+}
+
+/** A blank map tile, so a test never depends on the map provider. */
+export const blankMapTile = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+  "base64",
+);

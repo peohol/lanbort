@@ -57,6 +57,7 @@ import {
   settleMembership,
 } from "./store";
 import { toOptionalPosition } from "./privacy";
+import { rateLimits } from "../abuse/rate-limits";
 
 const membershipOutput = z.strictObject({
   membershipId: z.uuid(),
@@ -178,6 +179,7 @@ export const joinEnvironment = defineCommand({
   input: answersInput,
   output: membershipOutput,
   policy: joinEnvironmentPolicy,
+  rateLimit: rateLimits.contact,
   idempotency: "required",
   load: loadLockedAccess,
   execute: async ({ tx, actor, input, resource, events, now }) => {
@@ -418,7 +420,7 @@ export const leaveEnvironment = defineCommand({
           ? ("invitation_declined" as const)
           : ("application_withdrawn" as const);
 
-    await end(tx, membership, reason, now);
+    await endMembership(tx, membership, reason, now);
     events.record(membershipEnded, {
       resourceId: membership.id,
       payload: { ...eventPayload(membership), reason },
@@ -437,15 +439,15 @@ export const leaveEnvironment = defineCommand({
   },
 });
 
-async function end(
+/** Why a membership ended, as the database records it. */
+export type MembershipEndReason =
+  z.infer<typeof membershipEnded.payload>["reason"] | "application_rejected";
+
+/** Ends the locked membership; the caller records why. */
+export async function endMembership(
   tx: Tx,
   membership: MembershipRecord,
-  reason:
-    | "left"
-    | "application_withdrawn"
-    | "application_rejected"
-    | "invitation_declined"
-    | "invitation_withdrawn",
+  reason: MembershipEndReason,
   now: Date,
 ): Promise<void> {
   await tx
@@ -472,6 +474,7 @@ export const inviteMember = defineCommand({
   input: z.strictObject({ ...inviteMemberSchema.shape, ...environmentIdInput }),
   output: membershipOutput,
   policy: inviteMemberPolicy,
+  rateLimit: rateLimits.invitations,
   idempotency: "required",
   load: loadLockedAccess,
   execute: async ({ tx, actor, input, resource, events, now }) => {
@@ -626,6 +629,19 @@ export const approveMembership = defineCommand({
   },
 });
 
+/** A rejected reactivation request closes; the member stays passive. */
+export async function closeReactivationRequest(
+  tx: Tx,
+  membershipId: string,
+  now: Date,
+): Promise<void> {
+  await tx
+    .updateTable("app.environment_memberships")
+    .set({ review_stage: null, updated_at: now })
+    .where("id", "=", membershipId)
+    .execute();
+}
+
 /**
  * Rejecting an application ends it; rejecting a reactivation leaves the
  * member passive. Either can also bar new attempts (PS-ENV-004).
@@ -650,13 +666,9 @@ export const rejectMembership = defineCommand({
     }
 
     if (reactivation) {
-      await tx
-        .updateTable("app.environment_memberships")
-        .set({ review_stage: null, updated_at: now })
-        .where("id", "=", membership.id)
-        .execute();
+      await closeReactivationRequest(tx, membership.id, now);
     } else {
-      await end(tx, membership, "application_rejected", now);
+      await endMembership(tx, membership, "application_rejected", now);
     }
 
     events.record(membershipRejected, {
@@ -744,7 +756,7 @@ export const withdrawInvitation = defineCommand({
       conflict("No pending invitation");
     }
 
-    await end(tx, membership, "invitation_withdrawn", now);
+    await endMembership(tx, membership, "invitation_withdrawn", now);
     events.record(membershipEnded, {
       resourceId: membership.id,
       payload: { ...eventPayload(membership), reason: "invitation_withdrawn" },

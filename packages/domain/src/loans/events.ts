@@ -95,6 +95,12 @@ export const loanCancelled = loanEvent("cancelled", {
   role: loanRequestRoleSchema,
 });
 
+/**
+ * PS-ADM-003: a suspension of the borrower or the responsible lender stopped
+ * the reserved loan before its handover day. Nobody ended it as a party.
+ */
+export const loanStopped = loanEvent("stopped", {});
+
 const amendmentId = z.uuid();
 
 /** PS-LOAN-010: a party proposed a change on top of `baseVersion`. */

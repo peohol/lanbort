@@ -41,6 +41,7 @@ function access(
       audience: null,
       objectFocus: null,
       location: null,
+      area: null,
       version: 1,
       requirementsRevision: 0,
       requiresObjectApproval: false,

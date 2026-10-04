@@ -36,6 +36,7 @@ function environment(changes: Partial<Environment> = {}): Environment {
     audience: null,
     objectFocus: null,
     location: null,
+    area: null,
     version: 1,
     requirementsRevision: 0,
     requiresObjectApproval: false,

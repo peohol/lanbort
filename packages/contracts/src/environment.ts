@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { geoAreaSchema } from "./geo";
 
 /** PS-ENV-001: the three privacy types of an environment. */
 export const environmentTypeSchema = z.enum(["open", "closed", "hidden"]);
@@ -74,6 +75,8 @@ export const environmentDetailsSchema = z.strictObject({
   audience: optional(multiLine(500)),
   objectFocus: optional(multiLine(500)),
   location: optional(singleLine(200)),
+  /** Where the environment is, approximately (WP-62, PS-NFR-008). */
+  area: geoAreaSchema.nullable().optional(),
 });
 
 export const newRequirementSchema = z.strictObject({
@@ -225,6 +228,7 @@ export const environmentSchema = z.strictObject({
   audience: z.string().nullable(),
   objectFocus: z.string().nullable(),
   location: z.string().nullable(),
+  area: geoAreaSchema.nullable(),
   version: z.int(),
   requirementsRevision: z.int(),
   /** PS-ENV-011: objects need an administrator's approval to be visible. */

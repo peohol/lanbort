@@ -7,6 +7,9 @@ export const denialReasons = [
   "unauthenticated",
   // Signed in, but the account registration (name, 18+) is not completed.
   "registration_required",
+  // Signed in, but the account is not active (deactivated, dormant,
+  // suspended or closing): it keeps only its minimum access (PS-ADM-002).
+  "account_inactive",
   "forbidden",
   "not_found",
   "reauthentication_required",
@@ -21,7 +24,8 @@ export type DomainErrorCode =
   | "invalid_input"
   | "idempotency_key_required"
   | "idempotency_key_reused"
-  | "conflict";
+  | "conflict"
+  | "rate_limited";
 
 /**
  * Expected, user-facing failure of a domain operation. The message is for

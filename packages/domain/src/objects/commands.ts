@@ -11,6 +11,7 @@ import { type Kysely, sql } from "kysely";
 import { z } from "zod";
 import { defineCommand } from "../commands/command";
 import { DomainError } from "../errors";
+import type { EventRecorder } from "../events/recorder";
 import { type DateInterval, normalizeAvailability } from "./availability";
 import {
   objectArchived,
@@ -30,6 +31,7 @@ import {
   bumpVersion,
   loadAvailability,
   loadObjectState,
+  type ObjectState,
   requireSelectableCategory,
 } from "./state";
 
@@ -242,21 +244,41 @@ export const archiveObject = defineCommand({
       throw new DomainError("conflict", "The object is already archived");
     }
 
-    const version = await bumpVersion(
-      tx,
-      resource,
-      now,
-      { actorUserId: actingUserId(actor), change: "archived" },
-      { status: "archived", archived_at: now },
-    );
-    events.record(objectArchived, {
-      resourceId: resource.objectId,
-      payload: { version },
-    });
-
-    return { objectId: resource.objectId, version };
+    return {
+      objectId: resource.objectId,
+      version: await archiveLockedObject(
+        tx,
+        resource,
+        actingUserId(actor),
+        events,
+        now,
+      ),
+    };
   },
 });
+
+/** Archives the locked, active object as a new version by `actorUserId`. */
+export async function archiveLockedObject(
+  tx: Kysely<Database>,
+  object: ObjectState,
+  actorUserId: string,
+  events: EventRecorder,
+  now: Date,
+): Promise<number> {
+  const version = await bumpVersion(
+    tx,
+    object,
+    now,
+    { actorUserId, change: "archived" },
+    { status: "archived", archived_at: now },
+  );
+  events.record(objectArchived, {
+    resourceId: object.objectId,
+    payload: { version },
+  });
+
+  return version;
+}
 
 /** Brings an archived object back, exactly as it was. */
 export const restoreObject = defineCommand({

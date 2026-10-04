@@ -89,6 +89,11 @@ const nonUserRoutes: Record<
     reason:
       "tells subscribers when an object has become available, authenticated with the cron secret",
   },
+  "GET /api/internal/search-index": {
+    access: "scheduler",
+    reason:
+      "rebuilds the derived search index from the domain core, authenticated with the cron secret",
+  },
 };
 
 const httpMethods = [

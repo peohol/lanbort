@@ -3,8 +3,10 @@
 import { type SignedInResponse } from "@lanbort/contracts";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { postJson } from "./api-client";
+import { type ApiFailureCode, postJson } from "./api-client";
+import { BusyButton } from "./busy-button";
 import { errorMessage } from "./error-messages";
+import { ErrorText, fieldErrorProps } from "./error-text";
 
 type Step = "email" | "code";
 
@@ -15,7 +17,7 @@ export function SignInForm() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ApiFailureCode | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const codeInput = useRef<HTMLInputElement>(null);
 
@@ -30,7 +32,7 @@ export function SignInForm() {
     setPending(false);
 
     if (!result.ok) {
-      setError(errorMessage(result.code));
+      setError(result.code);
       return;
     }
 
@@ -48,12 +50,14 @@ export function SignInForm() {
 
     if (!result.ok) {
       setPending(false);
-      setError(errorMessage(result.code));
+      setError(result.code);
       return;
     }
 
     router.replace(
-      result.data.accountStatus === "active" ? "/" : "/registrering",
+      result.data.accountStatus === "pending_registration"
+        ? "/registrering"
+        : "/",
     );
     router.refresh();
   }
@@ -78,12 +82,13 @@ export function SignInForm() {
             type="email"
             autoComplete="email"
             required
+            {...fieldErrorProps(error, "sign-in-error")}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
-          <button type="submit" disabled={pending}>
+          <BusyButton type="submit" busy={pending}>
             Send kode
-          </button>
+          </BusyButton>
         </>
       ) : (
         <>
@@ -97,20 +102,21 @@ export function SignInForm() {
             autoComplete="one-time-code"
             pattern="[0-9]*"
             required
+            {...fieldErrorProps(error, "sign-in-error")}
             value={code}
             onChange={(event) => setCode(event.target.value.trim())}
           />
-          <button type="submit" disabled={pending}>
+          <BusyButton type="submit" busy={pending}>
             Bekreft
-          </button>
+          </BusyButton>
           <div className="secondary-actions">
-            <button
+            <BusyButton
               type="button"
               onClick={() => void sendCode()}
-              disabled={pending}
+              busy={pending}
             >
               Send ny kode
-            </button>
+            </BusyButton>
             <button
               type="button"
               onClick={() => {
@@ -124,11 +130,7 @@ export function SignInForm() {
           </div>
         </>
       )}
-      {error && (
-        <p role="alert" className="error">
-          {error}
-        </p>
-      )}
+      <ErrorText id="sign-in-error">{error && errorMessage(error)}</ErrorText>
     </form>
   );
 }

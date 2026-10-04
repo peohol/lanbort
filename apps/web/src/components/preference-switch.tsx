@@ -6,12 +6,15 @@ import type {
 } from "@lanbort/contracts";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
+import { announce } from "./announcer";
 import { postJson } from "./api-client";
 import { errorMessage } from "./error-messages";
+import { ErrorText } from "./error-text";
 
 /**
  * One configurable channel of one notification level (PS-COM-003). The
- * choice only decides how the user is told, never anything in a loan.
+ * choice only decides how the user is told, never anything in a loan. It
+ * is saved at once, and saying so is announced (UX-A11Y-009).
  */
 export function PreferenceSwitch({
   level,
@@ -47,6 +50,7 @@ export function PreferenceSwitch({
       return;
     }
 
+    announce("Varslingsvalget er lagret.");
     router.refresh();
   }
 
@@ -56,15 +60,14 @@ export function PreferenceSwitch({
         id={id}
         type="checkbox"
         checked={checked}
-        disabled={pending}
-        onChange={(event) => void change(event.target.checked)}
+        // Not disabled: that would drop the keyboard focus (UX-A11Y-003).
+        aria-disabled={pending || undefined}
+        onChange={(event) => {
+          if (!pending) void change(event.target.checked);
+        }}
       />
       <label htmlFor={id}>{label}</label>
-      {error && (
-        <p role="alert" className="error">
-          {error}
-        </p>
-      )}
+      <ErrorText>{error}</ErrorText>
     </div>
   );
 }

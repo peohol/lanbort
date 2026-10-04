@@ -16,6 +16,12 @@ describe("security headers", () => {
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("object-src 'none'");
     expect(csp).not.toContain("unsafe-eval");
+    // The map loads its worker from the app and tiles from Kartverket only.
+    expect(csp).toContain("worker-src 'self'");
+    expect(csp).toContain("connect-src 'self' https://cache.kartverket.no");
+    expect(headers.get("Permissions-Policy")).toBe(
+      "camera=(), microphone=(), geolocation=(self)",
+    );
   });
 
   it("only relaxes eval for the local development server", () => {

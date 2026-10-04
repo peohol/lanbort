@@ -1,8 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { accountHref } from "@/navigation/areas";
+import { minimumAccessText } from "@/presentation/account";
+import { FocusKeeper } from "./focus-keeper";
 import { MainNavigation } from "./main-navigation";
 import { NotificationIndicator } from "./notification-indicator";
+import { StickyBars } from "./sticky-bars";
 
 /** The initials of a name, for the account button. */
 export function initialsOf(name: string): string {
@@ -16,17 +19,22 @@ export function initialsOf(name: string): string {
 
 /**
  * The frame around every page of a signed-in user (UX-IA-001–003): the
- * five areas, the notification indicator, and the account behind the
- * user's own initials. It decides nothing about access; it only shows the
- * way.
+ * five areas, the notification indicator, the account behind the user's
+ * own initials, and, while the account is not active, why. It decides
+ * nothing about access; it only shows the way. The navigation comes first
+ * for the keyboard, after the skip link, while a phone shows it at the
+ * bottom (globals.css).
  */
 export function AppShell({
   realName,
   unread,
+  notice = null,
   children,
 }: {
   realName: string;
   unread: number;
+  /** Why the account is not active, shown on every page (PS-ADM-002). */
+  notice?: string | null;
   children: ReactNode;
 }) {
   return (
@@ -50,7 +58,19 @@ export function AppShell({
         </div>
       </header>
       <MainNavigation />
+      <FocusKeeper />
+      <StickyBars />
       <div id="innhold" className="app-content" tabIndex={-1}>
+        {notice && (
+          <div className="account-notice" role="status">
+            <p>
+              {notice} {minimumAccessText}
+            </p>
+            <p className="link-row">
+              <Link href={`${accountHref}#kontoen`}>Se hva du kan gjøre</Link>
+            </p>
+          </div>
+        )}
         {children}
       </div>
     </div>

@@ -124,10 +124,10 @@ export interface LoadedRequest extends LoanRequestResource {
 
 /**
  * The request with who may act on it, or null if it does not exist. With
- * `lock`, the object is locked first, then (with `assess`) everything the
- * request's access builds on, then the social pair between a lender and the
- * borrower (so a friendship or block cannot change under the decision), then
- * the request itself.
+ * `lock`, the borrower's and owners' accounts and the object are locked
+ * first, then (with `assess`) everything the request's access builds on,
+ * then the social pair between a lender and the borrower (so a friendship or
+ * block cannot change under the decision), then the request itself.
  */
 export async function loadRequest(
   db: Db,
@@ -145,7 +145,10 @@ export async function loadRequest(
   const object =
     found.objectId === null
       ? null
-      : await loadObjectState(db, found.objectId, options);
+      : await loadObjectState(db, found.objectId, {
+          ...options,
+          accounts: [found.borrowerUserId],
+        });
   // An approved or ended request never opens again, so this holds even if
   // it changed before the request's own lock below.
   const assessment =

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { AuthProviderError, createAuthGateway } from "./index";
+import { AuthProviderError, createAuthAdmin, createAuthGateway } from "./index";
 import { MemoryCookieStore, readEmailCode } from "./testing";
 
 const config = {
@@ -107,5 +107,30 @@ describe("Supabase auth adapter (WP-10)", () => {
     expect(
       await createAuthGateway(config, stolenCopy).currentIdentity(),
     ).toBeNull();
+  });
+});
+
+describe("Supabase auth administration (WP-53)", () => {
+  const secretKey = process.env.SUPABASE_SECRET_KEY ?? "";
+  const admin = createAuthAdmin({ url: config.url, secretKey });
+
+  it("deletes an identity, which ends its sessions, and repeats harmlessly", async () => {
+    if (!secretKey) {
+      throw new Error("SUPABASE_SECRET_KEY is required for this test.");
+    }
+
+    const address = email();
+    const { identity, cookies } = await signIn(address);
+
+    await admin.deleteUser(identity.subject);
+    await admin.deleteUser(identity.subject);
+
+    expect(
+      await createAuthGateway(config, cookies).currentIdentity(),
+    ).toBeNull();
+
+    // The address can start over with a new, unrelated identity.
+    const again = await signIn(address);
+    expect(again.identity.subject).not.toBe(identity.subject);
   });
 });
