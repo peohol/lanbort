@@ -118,7 +118,7 @@ Dokumenter nøkkel-, multi-device- og recovery-modell før meldingsimplementasjo
 **Krav:** PS-COM-004–006, PS-NFR-007; ADR-0003, ADR-0010  
 Ciphertext-lagring, klientkryptering, ingen lesebekreftelser og kontrollert første kontakt.
 
-**Status:** Del 1, serverens leveringstjeneste, er ferdig (se [servergrensen](server-boundary.md#privat-chat-wp-43)). Del 2, klientkrypteringen, enhetskoblingen og chatsidene, gjenstår. Chat åpnes ikke for ekte brukere før Port C.
+**Status:** Ferdig bygget, men av for ekte brukere til Port C er oppfylt (se [servergrensen](server-boundary.md#privat-chat-wp-43)). Del 1 er serverens leveringstjeneste. Del 2 er krypteringen i nettleseren, lagringen på enheten, chatsidene, «Mine enheter», kobling med QR-kode eller kode, tilbakestilling og sikkerhetskoden. Kjent og bevisst utsatt: gjenopprettingsnøkkel med sikkerhetskopi, kryptering i en egen Web Worker (ADR-0010 sier «bør»), og reparasjon av en enhet som har kommet i utakt med en gruppe uten å tilbakestille. En ny enhet som venter på godkjenning, må holde siden åpen; lastes den på nytt, må koblingen startes igjen.
 
 ### WP-44 — Lånelogistikk ved blokkering
 **Krav:** PS-COM-007  
@@ -134,7 +134,7 @@ Sakstyper, partstilgang, tildeling, habilitet og separate forklaringsrunder.
 **Krav:** PS-COM-013  
 Lokal dekryptering og eksplisitt innsendt kopi uten bakdør til privat chat.
 
-**Status:** Serversiden er ferdig: en deltaker kan sende inn en lesbar kopi av valgte private meldinger sammen med det hen skriver i en sak, og kopien blir saksdata (se [servergrensen](server-boundary.md)). Selve valget i samtalen, der meldingene dekrypteres på enheten, bygges i chatvisningen i WP-43. Vedlegg kan ikke sendes inn ennå, fordi verken privat chat eller saker har vedlegg.
+**Status:** Serversiden er ferdig: en deltaker kan sende inn en lesbar kopi av valgte private meldinger sammen med det hen skriver i en sak, og kopien blir saksdata (se [servergrensen](server-boundary.md)). Selve valget i samtalen, der meldingene dekrypteres på enheten, bygges når saker får en egen side; chatvisningen fra WP-43 har historikken det trenger. Vedlegg kan ikke sendes inn ennå, fordi verken privat chat eller saker har vedlegg.
 
 ## Fase 5
 

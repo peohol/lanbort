@@ -4,6 +4,7 @@ import {
   randomUUID,
   sign,
 } from "node:crypto";
+import AxeBuilder from "@axe-core/playwright";
 import { readEmailCode } from "@lanbort/auth/testing";
 import { chatSignatureLabel, deviceCertificateBody } from "@lanbort/contracts";
 import { type APIRequestContext, expect, type Page } from "@playwright/test";
@@ -158,4 +159,30 @@ export function chatAccount(userId: string) {
   };
 
   return { accountKey: account.publicKey, certify };
+}
+
+/**
+ * WCAG 2.2 level A and AA as the automated bar. The legal target is set
+ * before public launch (PS-NFR-010, Port E); this is the floor until then.
+ */
+const wcagTags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+
+/**
+ * The WCAG rules that fail, by rule and element, for a readable diff. The
+ * sticky header and navigation cover a different strip of the page at every
+ * scroll position, so for this they lie in the flow; that they never cover
+ * what has focus is what `keyboardProblems` checks.
+ */
+export async function axeViolations(page: Page) {
+  const unstuck = await page.addStyleTag({
+    content: ".app-header, .main-navigation { position: static !important }",
+  });
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(wcagTags)
+    .analyze();
+  await unstuck.evaluate((style) => (style as Element).remove());
+
+  return violations.flatMap(({ id, nodes }) =>
+    nodes.map(({ target }) => `${id}: ${target.join(" ")}`),
+  );
 }

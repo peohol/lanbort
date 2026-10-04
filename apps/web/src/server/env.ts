@@ -20,11 +20,22 @@ const serverEnvSchema = z.object({
   RESEND_API_KEY: z.string().min(1).optional(),
   NOTIFICATION_EMAIL_FROM: z.string().min(3).optional(),
   APP_URL: z.url().optional(),
+  /**
+   * Private chat (WP-43) stays off until Port C (ADR-0010 §2): only the
+   * exact value `true` turns it on, for local development and CI.
+   */
+  CHAT_ENABLED: z.string().optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
 let cached: ServerEnv | undefined;
+
+/**
+ * Whether private chat is on in this environment; off unless set. Read on
+ * its own, so a chat route or page that is off needs no other configuration.
+ */
+export const chatEnabled = () => process.env.CHAT_ENABLED === "true";
 
 /**
  * Server configuration, validated on first use rather than at import time so

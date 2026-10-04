@@ -465,6 +465,30 @@ fieldset {
   border-radius: 0.375rem;
 }
 
+/* Private chat (WP-43): a message keeps its line breaks; a security code
+   and a link code are read in groups. */
+.message-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.security-code,
+.link-code {
+  font-family: ui-monospace, monospace;
+  font-size: 1.125rem;
+  letter-spacing: 0.05em;
+}
+
+.qr-code {
+  width: min(16rem, 100%);
+  height: auto;
+  background: #fff;
+}
+
+.scanner {
+  width: min(20rem, 100%);
+}
+
 /* UX-A11Y-008: nothing moves by itself when less motion is asked for. */
 @media (prefers-reduced-motion: reduce) {
   *,

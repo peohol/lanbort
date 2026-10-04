@@ -37,7 +37,7 @@ Leveranser:
 | WP-02 | Supabase-migrasjoner, privat `app`-skjema, pgTAP-tester, isolert CI-database, reset-rutine og genererte databasetyper kontrollert mot skjema | Ferdig |
 | WP-03 | Lint/typecheck/test, Playwright-røyktest, dependency-audit, Gitleaks med selvtest, CSP/sikkerhetshoder og logging med felt-tillatelsesliste | Ferdig |
 
-Kjente begrensninger som bevisst er utsatt: CSP med `'unsafe-inline'` for skript (vurderes før Port C), og hostet staging/produksjon (etableres når det trengs, senest før pilot).
+Kjente begrensninger som bevisst er utsatt: CSP med `'unsafe-inline'` for skript utenfor chatsidene, og hostet staging/produksjon (etableres når det trengs, senest før pilot).
 
 ### Fase 1 — Identitet, autorisasjon og hendelsesgrunnmur
 Mål: systemet kan vite hvem brukeren er, hva vedkommende får gjøre, og registrere kritiske endringer korrekt.

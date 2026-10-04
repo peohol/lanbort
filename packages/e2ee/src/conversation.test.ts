@@ -15,6 +15,7 @@ import {
   createDevice,
   createKeyPackage,
   createMemoryTrustStore,
+  currentlyTrusted,
   encodeCertificate,
   observeAccountKey,
   revokeDevice,
@@ -224,6 +225,11 @@ describe("private chat over MLS (ADR-0010)", () => {
       expect(await applyRevocation(member.trust, revocation)).toBe(true);
     }
 
+    expect(conversationOf(alice1).untrustedMembers()).toEqual([lost.ref]);
+    expect(currentlyTrusted(alice1.policy, lost.device.certificate)).toBe(
+      false,
+    );
+    expect(currentlyTrusted(alice1.policy, bob1.device.certificate)).toBe(true);
     const pending = await conversationOf(alice1).remove([lost.ref]);
     pending.accept();
     for (const member of remaining.filter((m) => m !== alice1)) {

@@ -83,5 +83,6 @@ Se [servergrense og autorisasjon](server-boundary.md) for hvordan nye API-er, po
 
 - Den automatiske tilgjengelighetsgjennomgangen erstatter ikke manuell testing med skjermleser og forstørrelse på ekte enheter. Den hører til tilgjengelighetsgjennomgangen i Port E, sammen med det endelige WCAG-målet (PS-NFR-010).
 
-- CSP tillater `'unsafe-inline'` for skript fordi Next.js trenger det uten nonce-basert CSP. Innstramming vurderes før Port C (privat chat). `next dev` får i tillegg `'unsafe-eval'`, aldri produksjonsbygget.
+- Utenfor chatsidene tillater CSP `'unsafe-inline'` for skript, fordi Next.js trenger det uten nonce-basert CSP. Chatsidene (`/samtaler`) har nonce-basert CSP uten det. `next dev` får i tillegg `'unsafe-eval'`, aldri produksjonsbygget.
+- Privat chat er bare på der `CHAT_ENABLED=true` (lokalt og i CI, fra `.env.example`). Den skal ikke settes i et hostet miljø med ekte brukere før Port C er oppfylt.
 - Det finnes ennå ikke hostet staging- eller produksjonsmiljø på Vercel/Supabase. Når det etableres, trenger serveren `SUPABASE_SECRET_KEY` i plattformens hemmelighetslager for objektbilder; uten den svarer bilde-API-ene `unavailable`. E-postvarsler trenger `RESEND_API_KEY` (hemmelig), `NOTIFICATION_EMAIL_FROM` (avsender på et verifisert domene) og `APP_URL` (appens offentlige adresse); uten dem venter e-postkøen. Lokalt og i CI sendes ingen varslings-e-post.
