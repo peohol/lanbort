@@ -43,6 +43,9 @@ const steward = (assurance: "aal1" | "aal2", userId?: string) => {
 };
 const strongSteward = steward("aal2");
 const weakSteward = steward("aal1");
+/** The same user, with an account that keeps only its minimum access. */
+const deactivated = (actor: Actor): Actor =>
+  actor.kind === "user" ? { ...actor, accountStatus: "deactivated" } : actor;
 
 export function expectCase<R>(
   name: string,
@@ -162,6 +165,20 @@ const situations = (kind: CaseRecord["kind"]): Situation[] => {
       resource: standing(kind, handler, { holdsRole: true }),
       party: "allow",
       handler: "allow",
+    },
+    {
+      name: "its participant whose account is deactivated (PS-ADM-002)",
+      actor: deactivated(opener),
+      resource: standing(kind, opener),
+      party: "allow",
+      handler: "forbidden",
+    },
+    {
+      name: "a handler whose account is deactivated handles nothing",
+      actor: deactivated(handler),
+      resource: standing(kind, handler, { holdsRole: true }),
+      party: "account_inactive",
+      handler: "account_inactive",
     },
     {
       name: "a handler who is involved",
@@ -300,6 +317,12 @@ export const caseMatrices = [
       outsider("hidden"),
       "not_found",
     ),
+    expectCase(
+      "a deactivated account starts nothing new",
+      deactivated(member),
+      activeMember(),
+      "account_inactive",
+    ),
     ...callerCases(activeMember()),
   ]),
   policyMatrix(reportUnavailabilityPolicy, [
@@ -322,10 +345,22 @@ export const caseMatrices = [
       reportTarget({ blockedByActor: true }),
       "forbidden",
     ),
+    expectCase(
+      "a deactivated account starts nothing new",
+      deactivated(reporter),
+      reportTarget(),
+      "account_inactive",
+    ),
     ...callerCases(reportTarget()),
   ]),
   policyMatrix(listOwnCasesPolicy, [
     expectCase("a signed-in user", member, undefined, "allow"),
+    expectCase(
+      "a deactivated account, with minimum access",
+      deactivated(member),
+      undefined,
+      "allow",
+    ),
     ...callerCases(undefined),
   ]),
   policyMatrix(listEnvironmentCaseQueuePolicy, [

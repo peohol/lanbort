@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { countUnreadNotifications } from "@lanbort/domain";
 import { AppShell } from "@/components/app-shell";
+import { restingNotice } from "@/presentation/account";
 import { getPageAccount, pageQuery } from "@/server/session";
 import "./globals.css";
 
@@ -14,7 +15,10 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   const account = await getPageAccount();
-  const signedIn = account?.status === "active";
+  // An account that is not active keeps the frame: it still has loans,
+  // cases and notifications to see to (PS-ADM-002).
+  const signedIn =
+    account !== null && account.status !== "pending_registration";
   const unread = signedIn
     ? await pageQuery(countUnreadNotifications, {})
     : null;
@@ -26,6 +30,7 @@ export default async function RootLayout({
           <AppShell
             realName={account.realName ?? ""}
             unread={unread?.unreadCount ?? 0}
+            notice={restingNotice(account.status)}
           >
             {children}
           </AppShell>

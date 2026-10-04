@@ -49,8 +49,10 @@ export const getPageAccount = cache((): Promise<OwnAccount | null> =>
 
 /**
  * The account of a page that needs a signed-in, registered user; anyone
- * else is sent where they can become one. Data on the page still comes
- * through the queries' own policies.
+ * else is sent where they can become one. An account that is not active is
+ * let in too: it keeps what it is already bound by (PS-ADM-002), and each
+ * page shows what it may still do. Data on the page still comes through the
+ * queries' own policies.
  */
 export async function requirePageAccount(): Promise<OwnAccount> {
   const account = await getPageAccount();
@@ -59,7 +61,7 @@ export async function requirePageAccount(): Promise<OwnAccount> {
     redirect("/logg-inn");
   }
 
-  if (account.status !== "active") {
+  if (account.status === "pending_registration") {
     redirect("/registrering");
   }
 

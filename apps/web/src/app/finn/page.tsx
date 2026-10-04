@@ -4,6 +4,7 @@ import {
   listObjectCategories,
   searchEnvironments,
   searchObjects,
+  takesNewActivity,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
@@ -39,7 +40,21 @@ export default async function FindPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requirePageAccount();
+  const account = await requirePageAccount();
+
+  if (!takesNewActivity(account.status)) {
+    // Finding leads to something new, which an account at rest does not
+    // start (PS-ADM-002); the server refuses to search for it as well.
+    return (
+      <main>
+        <h1>Finn</h1>
+        <p className="quiet">
+          Du kan ikke finne nye ting mens kontoen ikke er aktiv.
+        </p>
+      </main>
+    );
+  }
+
   const form = readFinnForm(await searchParams);
 
   return (

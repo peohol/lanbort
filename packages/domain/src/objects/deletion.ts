@@ -45,7 +45,7 @@ const objectRowTables = [
  * events keep ids only, and the image files are deleted after commit like
  * removed images (outbox).
  */
-async function deleteObject(
+export async function deleteObject(
   tx: Kysely<Database>,
   object: ObjectState,
   events: EventRecorder,

@@ -41,3 +41,15 @@ export const loanReviewPublished = reviewEvent("published", {
 
 /** PS-TRUST-005: the reviewed party gave their one response. */
 export const loanReviewResponded = reviewEvent("responded", {});
+
+/**
+ * PS-ADM-005: the party's unused review right lapsed because their account
+ * was deleted. The resource is the loan; the other party's right stands.
+ */
+export const loanReviewRightLapsed = defineEvent({
+  type: "loan_review.right_lapsed",
+  version: 1,
+  kind: "domain",
+  resourceType: "loan",
+  payload: z.strictObject({ role: loanRequestRoleSchema }),
+});

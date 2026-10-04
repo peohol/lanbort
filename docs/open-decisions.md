@@ -163,6 +163,13 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Hvem kan avslutte et lån som administrativt uavklart (miljøets administrator som mekler, plattformforvalter, en frist uten avklaring, eller partene selv), og etter hvilken prosess? Visjonen sier at dette fastsettes senere, og at administratoren i et miljølån er mekler, ikke dommer. Inntil dette er besluttet, kan bare en egen prosess avslutte et lån slik, og ingenting i produktet kjører den. Selve avslutningen, sperren av objektet og eiers bekreftelse av kontroll før nye lån er ferdig bygget og testet. Gjelder det også direkte vennelån, som ikke har noen administrator?
 - **Avhenger av:** Produktvurdering, eventuelt OD-0010 for plattformforvalter.
 
+### OD-0018 — Når en konto regnes som inaktiv
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-ADM-001, pilotregel for inaktivitet (docs/product-spec/07)
+- **Spørsmål:** Etter hvor lang tids inaktivitet skal en konto settes i dvale, hva regnes som aktivitet, og hvilket varsel (kanal, frist) skal brukeren få før det skjer? Dvalemekanismen er bygget (`account.make_dormant`, bare for prosessen `account.inactivity`), men ingen jobb kaller den før dette er besluttet.
+- **Avhenger av:** Produktvurdering, varslingskanaler (OD-0004) og eventuelt OD-0002.
+
 ### OD-0019 — Hvilke abonnementshendelser som varsles, og hvor ofte
 - **Lag:** Produktspesifikasjon / UX
 - **Status:** Åpen

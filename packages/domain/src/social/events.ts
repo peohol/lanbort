@@ -31,6 +31,11 @@ export const friendshipClosedByBlock = friendshipEvent(
   "audit",
 );
 
+/** PS-ADM-006: the request or friendship ended with one side's account. */
+export const friendshipEndedByAccountDeletion = friendshipEvent(
+  "ended_by_account_deletion",
+);
+
 /** Blocks are audit events, never shown to the blocked user. */
 function blockEvent(type: string) {
   return defineEvent({

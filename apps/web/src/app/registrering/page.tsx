@@ -12,7 +12,7 @@ export default async function RegistrationPage() {
     redirect("/logg-inn");
   }
 
-  if (account.status === "active") {
+  if (account.status !== "pending_registration") {
     redirect("/");
   }
 

@@ -100,8 +100,11 @@ export const createLoanRequest = defineCommand({
   policy: createLoanRequestPolicy,
   idempotency: "required",
   load: async ({ tx, actor, input, now }) => {
-    // Object first; loadTarget locks the rest in order.
-    const object = await loadObjectState(tx, input.objectId, { lock: true });
+    // The accounts, then the object; loadTarget locks the rest in order.
+    const object = await loadObjectState(tx, input.objectId, {
+      lock: true,
+      accounts: actor.kind === "user" ? [actor.userId] : [],
+    });
     const target =
       object &&
       (await loadTarget(tx, actor, object, input.origin, now, { lock: true }));

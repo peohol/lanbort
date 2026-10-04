@@ -317,12 +317,16 @@ export const loanStatusSchema = z.enum([
  * - `unresolved`: ended administratively when its handover or return could
  *   not be clarified («avsluttet – administrativt uavklart», PS-LOAN-018).
  *   It says nothing about what happened or who was right.
+ * - `stopped`: a platform measure (a party's suspension) stopped it before
+ *   its handover day (PS-ADM-003). It is neither party's cancellation, and
+ *   it says nothing about why (UX-EXC-007).
  */
 export const loanEndReasonSchema = z.enum([
   "cancelled",
   "not_completed",
   "returned",
   "unresolved",
+  "stopped",
 ]);
 
 export const loanReadQuerySchema = z.strictObject({ loanId: loanIdSchema });

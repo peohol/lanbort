@@ -21,6 +21,8 @@ import {
 const me = testUserActor();
 const someoneElse = testUserActor();
 const pendingAccount = testUserActor({ accountStatus: "pending_registration" });
+const deactivated = testUserActor({ accountStatus: "deactivated" });
+const deleted = testUserActor({ accountStatus: "deleted" });
 
 const expectCase = <R>(
   name: string,
@@ -38,6 +40,13 @@ const expectCase = <R>(
 const ownMatrix = (policy: Policy<unknown, void>) =>
   policyMatrix(policy, [
     expectCase("a registered user", me, undefined, "allow"),
+    expectCase(
+      "a deactivated account, with minimum access (PS-ADM-002)",
+      deactivated,
+      undefined,
+      "allow",
+    ),
+    expectCase("a deleted account", deleted, undefined, "account_inactive"),
     expectCase(
       "an unfinished registration",
       pendingAccount,
@@ -78,6 +87,12 @@ const notificationsMatrix = (policy: Policy<NotificationsResource, void>) =>
       "not_found",
     ),
     expectCase("no notification", me, mine(), "not_found"),
+    expectCase(
+      "a deactivated recipient, with minimum access",
+      deactivated,
+      mine(deactivated.userId),
+      "allow",
+    ),
     expectCase(
       "an unfinished registration",
       pendingAccount,

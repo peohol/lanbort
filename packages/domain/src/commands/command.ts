@@ -1,7 +1,12 @@
 import type { Database } from "@lanbort/database";
 import type { Kysely, Transaction } from "kysely";
 import type { z } from "zod";
-import { type Actor, actorScope } from "../actor";
+import {
+  type AccountStatus,
+  type Actor,
+  actorScope,
+  anonymousActor,
+} from "../actor";
 import {
   authorize,
   authorizeActor,
@@ -47,6 +52,16 @@ export interface CommandDefinition<I, R, C, O> {
    * is harmless.
    */
   readonly idempotency: "required" | "none";
+  /**
+   * How the command holds the signed-in actor's own account row, which it
+   * locks first (account rows come before everything else) and re-reads, so
+   * its actor rules decide on the account's state as of the transaction
+   * (PS-ADM-001): `share` (the default) for everything that builds on the
+   * account, `change` for the few commands that change the account row
+   * itself, so two of them on one account wait for each other instead of
+   * deadlocking.
+   */
+  readonly actorAccount?: "share" | "change";
   /**
    * Loads the current state the policy decides on, inside the command's
    * transaction (lock rows here with `forUpdate()` where races matter).
@@ -159,9 +174,74 @@ function idempotencyClaim(
 }
 
 /**
+ * Locks the signed-in actor's account row and returns the actor with the
+ * account's current state. A lifecycle change locks the same row for its
+ * change, so it either commits before the command (which then sees the new
+ * state) or waits until the command has committed. Without the row the
+ * actor is not signed in any more.
+ */
+async function lockActorAccount(
+  tx: Transaction<Database>,
+  actor: Actor,
+  mode: "share" | "change",
+): Promise<Actor> {
+  if (actor.kind !== "user") {
+    return actor;
+  }
+
+  const query = tx
+    .selectFrom("app.users")
+    .select("status")
+    .where("id", "=", actor.userId);
+  const row = await (
+    mode === "change" ? query.forNoKeyUpdate() : query.forShare()
+  ).executeTakeFirst();
+
+  return row
+    ? { ...actor, accountStatus: row.status as AccountStatus }
+    : anonymousActor;
+}
+
+/**
+ * The database refuses new activity for an account that no longer takes it
+ * (`app.require_active_accounts`). The actor's own account is re-read under
+ * lock first, so when the database refuses, it is another account the
+ * command builds on: a conflict with that account's state.
+ */
+function isAccountRefusal(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "23001" &&
+    "constraint" in error &&
+    error.constraint === "account_takes_new_activity"
+  );
+}
+
+async function runTransaction<T>(
+  db: Kysely<Database>,
+  work: (tx: Transaction<Database>) => Promise<T>,
+): Promise<T> {
+  try {
+    return await db.transaction().execute(work);
+  } catch (error) {
+    if (isAccountRefusal(error)) {
+      throw new DomainError(
+        "conflict",
+        "An account the command builds on takes no new activity",
+      );
+    }
+
+    throw error;
+  }
+}
+
+/**
  * Runs a command as one transaction:
- * actor rules → idempotency lookup → load current state → resource rules →
- * execute → append events and outbox messages → store idempotent result.
+ * actor rules → lock and re-read the actor's account → idempotency lookup →
+ * actor rules again → load current state → resource rules → execute →
+ * append events and outbox messages → store idempotent result.
  * Any failure rolls everything back, so there are no partial mutations
  * (PS-NFR-012).
  */
@@ -184,7 +264,13 @@ export async function executeCommand<I, R, C, O>(
     input,
   );
 
-  return domain.db.transaction().execute(async (tx) => {
+  return runTransaction(domain.db, async (tx) => {
+    const actor = await lockActorAccount(
+      tx,
+      request.actor,
+      command.actorAccount ?? "share",
+    );
+
     if (claim) {
       const stored = await findCompleted(tx, claim);
 
@@ -193,9 +279,11 @@ export async function executeCommand<I, R, C, O>(
       }
     }
 
+    authorizeActor(command.policy as Policy<never, never>, { actor, now });
+
     const loaded = await command.load({
       tx,
-      actor: request.actor,
+      actor,
       input,
       now,
     });
@@ -205,7 +293,7 @@ export async function executeCommand<I, R, C, O>(
     }
 
     authorize(command.policy, {
-      actor: request.actor,
+      actor,
       now,
       resource: loaded.resource,
       context: loaded.context,
@@ -215,7 +303,7 @@ export async function executeCommand<I, R, C, O>(
     const output = command.output.parse(
       await command.execute({
         tx,
-        actor: request.actor,
+        actor,
         input,
         resource: loaded.resource,
         context: loaded.context,
@@ -225,7 +313,7 @@ export async function executeCommand<I, R, C, O>(
     );
 
     await writeEvents(tx, events, {
-      actor: request.actor,
+      actor,
       correlationId: request.correlationId ?? null,
       consumers: domain.consumers,
     });

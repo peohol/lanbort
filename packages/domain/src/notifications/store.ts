@@ -4,6 +4,7 @@ import type {
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
+import { accountStatuses } from "../account/store";
 import {
   distinctDrafts,
   effectivePreferences,
@@ -53,10 +54,11 @@ const sourceKeyOf = (source: string, draft: NotificationDraft) =>
  * recipient turned off in the app is left out (PS-COM-003). Each
  * notification is keyed by its source, kind and target, so making the same
  * source again (a redelivered event, a repeated job run) changes nothing.
- * This is the one way notifications are made. Those that also go out by
- * e-mail ({@link sendsEmail}) are queued for delivery here too; queueing
- * looks the notifications up by their keys, so a repeated run also queues
- * what an interrupted one did not.
+ * A deleted account is told nothing any more (PS-ADM-006). This is the one
+ * way notifications are made. Those that also go out by e-mail
+ * ({@link sendsEmail}) are queued for delivery here too; queueing looks the
+ * notifications up by their keys, so a repeated run also queues what an
+ * interrupted one did not.
  */
 export async function recordNotifications(
   db: Db,
@@ -65,14 +67,20 @@ export async function recordNotifications(
   drafts: readonly NotificationDraft[],
 ): Promise<number> {
   const distinct = distinctDrafts(drafts);
-  const preferences = await loadPreferences(db, [
-    ...new Set(distinct.map((draft) => draft.recipientId)),
-  ]);
+  const recipients = [...new Set(distinct.map((draft) => draft.recipientId))];
+  const preferences = await loadPreferences(db, recipients);
+  const statuses = await accountStatuses(db, recipients);
   const chosen = (draft: NotificationDraft) =>
     preferences.get(draft.recipientId);
   const shown = distinct.filter((draft) => {
     const choices = chosen(draft);
-    return choices !== undefined && shownInApp(levelOf(draft.kind), choices);
+    const status = statuses.get(draft.recipientId);
+    return (
+      choices !== undefined &&
+      status !== undefined &&
+      status !== "deleted" &&
+      shownInApp(levelOf(draft.kind), choices)
+    );
   });
 
   if (shown.length === 0) {

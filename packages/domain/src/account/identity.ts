@@ -94,7 +94,10 @@ async function findLinkedUser(
  * created and linked to it; afterwards the link is only read.
  *
  * Returns null for identities without a verified e-mail address: such a
- * session is treated as not signed in (PS-USR-001).
+ * session is treated as not signed in (PS-USR-001). So is a session of a
+ * deleted account, until its identity is removed (PS-ADM-006): a deleted
+ * account is never returned to anybody, and no new one is linked in its
+ * place meanwhile.
  */
 export async function resolveUserActor(
   domain: DomainContext,
@@ -113,7 +116,7 @@ export async function resolveUserActor(
       correlationId,
     ));
 
-  return toActor(row, identity);
+  return row.status === "deleted" ? null : toActor(row, identity);
 }
 
 /** First sight of a verified identity: a new internal account. */

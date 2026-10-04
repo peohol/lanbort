@@ -1,10 +1,14 @@
 import {
+  type ActorRule,
   allow,
   definePolicy,
   deny,
   type ResourceRule,
 } from "../authorization/policy";
-import { requireActiveAccount } from "../authorization/rules";
+import {
+  requireActiveAccount,
+  requireMinimumAccess,
+} from "../authorization/rules";
 
 /** What object policies decide on, loaded inside the command or query. */
 export interface ObjectResource {
@@ -29,11 +33,19 @@ export const isObjectOwner: ResourceRule<ObjectResource, void> = ({
     ? allow
     : deny("not_found");
 
-/** An action only the object's owners may take. */
-function ownerPolicy(action: string) {
+/**
+ * An action only the object's owners may take. Actions that only wind
+ * ownership down (seeing the object, leaving it, deleting or archiving it)
+ * keep the minimum access of an account that is not active (PS-ADM-002,
+ * vision «Deaktivering av medeier»); everything else needs an active one.
+ */
+function ownerPolicy(
+  action: string,
+  standing: ActorRule = requireActiveAccount,
+) {
   return definePolicy<ObjectResource, void>({
     action,
-    actor: [requireActiveAccount],
+    actor: [standing],
     resource: [isObjectOwner],
   });
 }
@@ -47,7 +59,7 @@ export const createObjectPolicy = definePolicy({
 /** The signed-in user's own objects ("Mine ting"). */
 export const listOwnObjectsPolicy = definePolicy<unknown, void>({
   action: "object.list_own",
-  actor: [requireActiveAccount],
+  actor: [requireMinimumAccess],
 });
 
 /** The shared category structure is the same for every registered user. */
@@ -56,9 +68,15 @@ export const listObjectCategoriesPolicy = definePolicy<unknown, void>({
   actor: [requireActiveAccount],
 });
 
-export const readObjectPolicy = ownerPolicy("object.read");
+export const readObjectPolicy = ownerPolicy(
+  "object.read",
+  requireMinimumAccess,
+);
 export const updateObjectPolicy = ownerPolicy("object.update");
-export const archiveObjectPolicy = ownerPolicy("object.archive");
+export const archiveObjectPolicy = ownerPolicy(
+  "object.archive",
+  requireMinimumAccess,
+);
 export const restoreObjectPolicy = ownerPolicy("object.restore");
 export const addObjectImagePolicy = ownerPolicy("object.add_image");
 export const removeObjectImagePolicy = ownerPolicy("object.remove_image");
@@ -68,15 +86,21 @@ export const revertObjectPolicy = ownerPolicy("object.revert");
 export const inviteCoOwnerPolicy = ownerPolicy("object.invite_co_owner");
 export const withdrawCoOwnerInvitationPolicy = ownerPolicy(
   "object.withdraw_co_owner_invitation",
+  requireMinimumAccess,
 );
 /** Only oneself: no owner can remove another (PS-OBJ-010). */
-export const leaveObjectPolicy = ownerPolicy("object.leave");
+export const leaveObjectPolicy = ownerPolicy(
+  "object.leave",
+  requireMinimumAccess,
+);
 export const setObjectRestrictionPolicy = ownerPolicy("object.set_restriction");
 export const consentToObjectDeletionPolicy = ownerPolicy(
   "object.consent_to_deletion",
+  requireMinimumAccess,
 );
 export const withdrawObjectDeletionConsentPolicy = ownerPolicy(
   "object.withdraw_deletion_consent",
+  requireMinimumAccess,
 );
 
 export const ownerPolicies = [
@@ -137,10 +161,13 @@ export const isInvitedUser: ResourceRule<CoOwnerInvitationResource, void> = ({
     ? allow
     : deny("not_found");
 
-function invitedUserPolicy(action: string) {
+function invitedUserPolicy(
+  action: string,
+  standing: ActorRule = requireActiveAccount,
+) {
   return definePolicy<CoOwnerInvitationResource, void>({
     action,
-    actor: [requireActiveAccount],
+    actor: [standing],
     resource: [isInvitedUser],
   });
 }
@@ -149,8 +176,10 @@ function invitedUserPolicy(action: string) {
 export const acceptCoOwnerInvitationPolicy = invitedUserPolicy(
   "object_invitation.accept",
 );
+/** Saying no starts nothing, so an account that is not active may. */
 export const declineCoOwnerInvitationPolicy = invitedUserPolicy(
   "object_invitation.decline",
+  requireMinimumAccess,
 );
 
 export const invitedUserPolicies = [
@@ -161,7 +190,7 @@ export const invitedUserPolicies = [
 /** The invitations the signed-in user has received. */
 export const listCoOwnerInvitationsPolicy = definePolicy<unknown, void>({
   action: "object_invitation.list",
-  actor: [requireActiveAccount],
+  actor: [requireMinimumAccess],
 });
 
 export const objectPolicies = [

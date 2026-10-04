@@ -1,12 +1,16 @@
 import {
+  type AuthAdmin,
   type AuthGateway,
   type CookieStore,
+  createAuthAdmin,
   createAuthGateway,
 } from "@lanbort/auth";
 import { createDatabase } from "@lanbort/database";
 import {
+  accountIdentityRemoval,
   ConsumerRegistry,
   type DomainContext,
+  type IdentityProviderAdmin,
   notificationGenerator,
   objectAvailabilityWatcher,
   objectImageFileCleanup,
@@ -26,11 +30,34 @@ export interface Runtime {
   cronSecret(): string | undefined;
 }
 
+let authAdmin: AuthAdmin | undefined;
+
+/**
+ * The provider's identity administration, or undefined when this environment
+ * has no secret key configured; removing deleted accounts' identities then
+ * waits in the outbox and is retried.
+ */
+function identityAdmin(): IdentityProviderAdmin | undefined {
+  const env = serverEnv();
+
+  if (!env.SUPABASE_SECRET_KEY) {
+    return undefined;
+  }
+
+  const admin = (authAdmin ??= createAuthAdmin({
+    url: env.SUPABASE_URL,
+    secretKey: env.SUPABASE_SECRET_KEY,
+  }));
+
+  return { deleteIdentity: (subject) => admin.deleteUser(subject) };
+}
+
 /**
  * Side effects run from the outbox (ADR-0004, ADR-0008): image file cleanup,
- * the in-app notifications (WP-40), telling object subscribers when an
- * object has become available (WP-63) and the derived search index (WP-61).
- * Notification e-mails have their own queue and job (`notification-emails.ts`).
+ * the in-app notifications (WP-40), telling object subscribers when an object
+ * has become available (WP-63), the derived search index (WP-61) and
+ * removing a deleted account's sign-in identity (WP-53). Notification
+ * e-mails have their own queue and job (`notification-emails.ts`).
  */
 export const outboxConsumers = new ConsumerRegistry([
   objectImageFileCleanup({
@@ -40,6 +67,10 @@ export const outboxConsumers = new ConsumerRegistry([
   notificationGenerator({ db: () => runtime.domain().db }),
   objectAvailabilityWatcher({ db: () => runtime.domain().db }),
   searchIndexer({ db: () => runtime.domain().db }),
+  accountIdentityRemoval({
+    identities: identityAdmin,
+    domain: () => runtime.domain(),
+  }),
 ]);
 
 let domain: DomainContext | undefined;

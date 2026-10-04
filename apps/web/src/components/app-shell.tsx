@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { accountHref } from "@/navigation/areas";
+import { minimumAccessText } from "@/presentation/account";
 import { MainNavigation } from "./main-navigation";
 import { NotificationIndicator } from "./notification-indicator";
 
@@ -16,17 +17,20 @@ export function initialsOf(name: string): string {
 
 /**
  * The frame around every page of a signed-in user (UX-IA-001–003): the
- * five areas, the notification indicator, and the account behind the
- * user's own initials. It decides nothing about access; it only shows the
- * way.
+ * five areas, the notification indicator, the account behind the user's
+ * own initials, and, while the account is not active, why. It decides
+ * nothing about access; it only shows the way.
  */
 export function AppShell({
   realName,
   unread,
+  notice = null,
   children,
 }: {
   realName: string;
   unread: number;
+  /** Why the account is not active, shown on every page (PS-ADM-002). */
+  notice?: string | null;
   children: ReactNode;
 }) {
   return (
@@ -51,6 +55,14 @@ export function AppShell({
       </header>
       <MainNavigation />
       <div id="innhold" className="app-content" tabIndex={-1}>
+        {notice && (
+          <div className="account-notice" role="status">
+            <p>
+              {notice} {minimumAccessText}
+            </p>
+            <Link href={`${accountHref}#kontoen`}>Se hva du kan gjøre</Link>
+          </div>
+        )}
         {children}
       </div>
     </div>

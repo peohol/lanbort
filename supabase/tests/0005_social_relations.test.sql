@@ -13,10 +13,11 @@ select ok(
 from unnest(array['anon', 'authenticated']) as role_name,
   unnest(array['friendships', 'user_blocks']) as table_name;
 
-insert into app.users (id) values
-  ('00000000-0000-4000-8000-0000000000d1'),
-  ('00000000-0000-4000-8000-0000000000d2'),
-  ('00000000-0000-4000-8000-0000000000d3');
+-- Active accounts: only those take new contact (WP-53).
+insert into app.users (id, status, adult_confirmed_at) values
+  ('00000000-0000-4000-8000-0000000000d1', 'active', now()),
+  ('00000000-0000-4000-8000-0000000000d2', 'active', now()),
+  ('00000000-0000-4000-8000-0000000000d3', 'active', now());
 
 insert into app.friendships (id, requester_id, addressee_id)
 values (

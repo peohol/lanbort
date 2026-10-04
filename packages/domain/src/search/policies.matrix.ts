@@ -31,6 +31,13 @@ const finnMatrix = (policy: Policy<unknown, void>) =>
       testUserActor({ accountStatus: "pending_registration" }),
       "registration_required",
     ),
+    // Finding leads to new activity, which an account at rest does not
+    // start (PS-ADM-002).
+    expectCase(
+      "a deactivated account",
+      testUserActor({ accountStatus: "deactivated" }),
+      "account_inactive",
+    ),
     expectCase("anonymous caller", anonymousActor, "unauthenticated"),
     expectCase(
       "a system process",

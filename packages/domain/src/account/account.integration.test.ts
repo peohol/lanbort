@@ -107,6 +107,7 @@ describe("registration (UX-JRN-001, PS-USR-001)", () => {
     ).toEqual({
       userId: actor.userId,
       status: "active",
+      statusReason: null,
       realName: "Kari Nordmann",
       email: verified.email,
     });
@@ -158,6 +159,7 @@ describe("registration (UX-JRN-001, PS-USR-001)", () => {
     ).toEqual({
       userId: actor.userId,
       status: "pending_registration",
+      statusReason: null,
       realName: null,
       email: verified.email,
     });

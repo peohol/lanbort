@@ -5,6 +5,7 @@ import {
   objectQuestionQuerySchema,
   objectQuestionsQuerySchema,
 } from "@lanbort/contracts";
+import { deletedAccounts } from "../account/store";
 import { defineQuery } from "../commands/query";
 import { actingUserId, inSnapshot } from "../objects/state";
 import {
@@ -17,6 +18,7 @@ import {
   loadQuestion,
   presentQuestion,
   publicationFoundBy,
+  questionPeople,
   seesQuestion,
 } from "./store";
 
@@ -55,14 +57,19 @@ export const listObjectQuestions = defineQuery({
         viewerId,
       );
 
+      const deleted = await deletedAccounts(
+        tx,
+        questionPeople(page.questions, posts),
+      );
+
       return {
-        resource: { visible: publicationId !== null, ...page, posts },
+        resource: { visible: publicationId !== null, ...page, posts, deleted },
         context: undefined,
       };
     }),
   present: ({ resource }): ObjectQuestionList => ({
     questions: resource.questions.map((question) =>
-      presentQuestion(question, resource.posts),
+      presentQuestion(question, resource.posts, resource.deleted),
     ),
     nextCursor: resource.more ? (resource.questions.at(-1)?.id ?? null) : null,
   }),
@@ -83,16 +90,18 @@ export const readObjectQuestion = defineQuery({
       }
 
       const visible = await seesQuestion(tx, question, viewerId, now);
+      const posts = visible ? await loadPosts(tx, [question.id], viewerId) : [];
 
       return {
         resource: {
           visible,
           question,
-          posts: visible ? await loadPosts(tx, [question.id], viewerId) : [],
+          posts,
+          deleted: await deletedAccounts(tx, questionPeople([question], posts)),
         },
         context: undefined,
       };
     }),
   present: ({ resource }): ObjectQuestion =>
-    presentQuestion(resource.question, resource.posts),
+    presentQuestion(resource.question, resource.posts, resource.deleted),
 });

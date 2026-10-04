@@ -12,6 +12,7 @@ import { z } from "zod";
 import { defineCommand } from "../commands/command";
 import { defineQuery } from "../commands/query";
 import { DomainError } from "../errors";
+import type { EventRecorder } from "../events/recorder";
 import { blockedWithAny, lockPairsWith } from "../social/pair";
 import {
   loadCommitments,
@@ -377,44 +378,7 @@ export function defineLeaveObject(sources: readonly ObjectCommitmentSource[]) {
         throw new DomainError("conflict", "Responsible for a commitment");
       }
 
-      const lifted = await tx
-        .updateTable("app.object_restrictions")
-        .set({ lifted_at: now, lift_reason: "owner_left" })
-        .where("object_id", "=", objectId)
-        .where("set_by_user_id", "=", userId)
-        .where("lifted_at", "is", null)
-        .returning("id")
-        .execute();
-
-      for (const { id } of lifted) {
-        events.record(objectRestrictionLifted, {
-          resourceId: objectId,
-          payload: { restrictionId: id, reason: "owner_left" },
-        });
-      }
-
-      await tx
-        .deleteFrom("app.object_owners")
-        .where("object_id", "=", objectId)
-        .where("user_id", "=", userId)
-        .execute();
-      events.record(coOwnerLeft, { resourceId: objectId, payload: {} });
-
-      if (resource.ownerIds.length === 2) {
-        const ended = await tx
-          .updateTable("app.object_freezes")
-          .set({ ended_at: now })
-          .where("object_id", "=", objectId)
-          .where("ended_at", "is", null)
-          .executeTakeFirst();
-
-        if (ended.numUpdatedRows > 0n) {
-          events.record(objectFreezeEnded, {
-            resourceId: objectId,
-            payload: {},
-          });
-        }
-      }
+      await removeOwner(tx, resource, userId, events, now);
 
       return { objectId };
     },
@@ -422,3 +386,57 @@ export function defineLeaveObject(sources: readonly ObjectCommitmentSource[]) {
 }
 
 export const leaveObject = defineLeaveObject(objectCommitmentSources);
+
+/**
+ * The owner `userId` leaves the locked object, whose other owners remain:
+ * their restrictions end with them (PS-OBJ-008), and when one owner is
+ * left, a freeze from a block between co-owners ends (PS-OBJ-009). The
+ * caller has checked that they are responsible for no commitment.
+ */
+export async function removeOwner(
+  tx: Kysely<Database>,
+  resource: ObjectState,
+  userId: string,
+  events: EventRecorder,
+  now: Date,
+): Promise<void> {
+  const { objectId } = resource;
+  const lifted = await tx
+    .updateTable("app.object_restrictions")
+    .set({ lifted_at: now, lift_reason: "owner_left" })
+    .where("object_id", "=", objectId)
+    .where("set_by_user_id", "=", userId)
+    .where("lifted_at", "is", null)
+    .returning("id")
+    .execute();
+
+  for (const { id } of lifted) {
+    events.record(objectRestrictionLifted, {
+      resourceId: objectId,
+      payload: { restrictionId: id, reason: "owner_left" },
+    });
+  }
+
+  await tx
+    .deleteFrom("app.object_owners")
+    .where("object_id", "=", objectId)
+    .where("user_id", "=", userId)
+    .execute();
+  events.record(coOwnerLeft, { resourceId: objectId, payload: {} });
+
+  if (resource.ownerIds.length === 2) {
+    const ended = await tx
+      .updateTable("app.object_freezes")
+      .set({ ended_at: now })
+      .where("object_id", "=", objectId)
+      .where("ended_at", "is", null)
+      .executeTakeFirst();
+
+    if (ended.numUpdatedRows > 0n) {
+      events.record(objectFreezeEnded, {
+        resourceId: objectId,
+        payload: {},
+      });
+    }
+  }
+}

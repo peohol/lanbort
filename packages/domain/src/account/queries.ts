@@ -1,4 +1,4 @@
-import type { OwnAccount } from "@lanbort/contracts";
+import type { AccountStatusReason, OwnAccount } from "@lanbort/contracts";
 import { z } from "zod";
 import type { AccountStatus } from "../actor";
 import { defineQuery } from "../commands/query";
@@ -25,6 +25,7 @@ export const getOwnAccount = defineQuery({
       .select([
         "user.id",
         "user.status",
+        "user.status_reason",
         "profile.real_name",
         "contact.address",
       ])
@@ -36,6 +37,7 @@ export const getOwnAccount = defineQuery({
           resource: {
             userId: row.id,
             status: row.status as AccountStatus,
+            statusReason: row.status_reason as AccountStatusReason | null,
             realName: row.real_name,
             email: row.address,
           },
@@ -46,6 +48,7 @@ export const getOwnAccount = defineQuery({
   present: ({ resource }): OwnAccount => ({
     userId: resource.userId,
     status: resource.status,
+    statusReason: resource.statusReason,
     realName: resource.realName,
     email: resource.email,
   }),

@@ -1,5 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
-import { isAuthApiError, isAuthError } from "@supabase/supabase-js";
+import {
+  createClient,
+  isAuthApiError,
+  isAuthError,
+} from "@supabase/supabase-js";
 import { AuthProviderError } from "./errors";
 import { toIdentity, type VerifiedIdentity } from "./identity";
 
@@ -176,6 +180,37 @@ export function createAuthGateway(
 
       // A session the provider no longer knows is already signed out.
       if (error && !isClientError(error)) {
+        throw providerError(error);
+      }
+    },
+  };
+}
+
+export interface AuthAdminConfig {
+  url: string;
+  /** The provider's server-only secret key. */
+  secretKey: string;
+}
+
+/** Server-only administration of identities at the provider. */
+export interface AuthAdmin {
+  /**
+   * Deletes the identity and its sessions (PS-ADM-006). An identity the
+   * provider no longer has counts as deleted, so a retry is harmless.
+   */
+  deleteUser(subject: string): Promise<void>;
+}
+
+export function createAuthAdmin(config: AuthAdminConfig): AuthAdmin {
+  const admin = createClient(config.url, config.secretKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  }).auth.admin;
+
+  return {
+    async deleteUser(subject) {
+      const { error } = await admin.deleteUser(subject);
+
+      if (error && !(isAuthApiError(error) && error.status === 404)) {
         throw providerError(error);
       }
     },

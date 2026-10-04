@@ -4,6 +4,7 @@ import type {
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Expression, type Kysely, type RawBuilder, sql } from "kysely";
+import { lockAccounts } from "../account/store";
 import { toPosition } from "../environment/privacy";
 import type { EventRecorder } from "../events/recorder";
 import { lockPairs } from "../social/pair";
@@ -168,7 +169,9 @@ export interface Finder {
  * and the object's owners or anyone in `pairs`. Whatever takes access away
  * has then either committed before the caller reads it, or waits until the
  * caller has acted on what it read (PS-OBJ-014–015). In the lock order of
- * the module, with the social pairs last as in `assessOrigin`.
+ * the module, with the social pairs last as in `assessOrigin`. The accounts
+ * of the users and the owners come first (account/store.ts): whether they
+ * are active decides it too (PS-ADM-002).
  */
 export async function holdFinding(
   tx: Db,
@@ -181,6 +184,15 @@ export async function holdFinding(
     return;
   }
 
+  const ownersBefore = await tx
+    .selectFrom("app.object_owners")
+    .select("user_id")
+    .where("object_id", "in", objectIds)
+    .execute();
+  await lockAccounts(tx, [
+    ...finders.map((finder) => finder.userId),
+    ...ownersBefore.map((owner) => owner.user_id),
+  ]);
   await tx
     .selectFrom("app.objects")
     .select("id")
