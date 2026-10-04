@@ -1,6 +1,6 @@
 begin;
 
-select plan(28);
+select plan(29);
 
 select ok(
   not has_table_privilege(role_name, 'app.account_status_changes', 'SELECT'),
@@ -202,6 +202,14 @@ select throws_ok(
     values ('open', 'Nytt', '00000000-0000-4000-8000-0000000000b1')$$,
   '23001', null,
   'a deactivated account creates no environment'
+);
+
+select throws_ok(
+  $$insert into app.cases (kind, environment_id, opened_by_user_id, opened_at)
+    values ('environment_contact', '00000000-0000-4000-8000-0000000000e1',
+      '00000000-0000-4000-8000-0000000000b1', now())$$,
+  '23001', 'an account of this cases does not take new activity',
+  'a deactivated account opens no case'
 );
 
 select lives_ok(

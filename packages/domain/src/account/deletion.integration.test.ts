@@ -152,7 +152,7 @@ describe("bindings (PS-ADM-004)", () => {
     expect(await statusOf(borrower.userId)).toBe("deleted");
   });
 
-  it("keeps the lender of a loan that ended unresolved until the object is back", async () => {
+  it("keeps the lender of a loan that ended unresolved until the object is back, also at rest", async () => {
     const { owner, borrower, loanId } = await reservedLoan(1, 3);
     kit.advance(2 * 24 * 60 * 60 * 1000);
     for (const [actor, outcome] of [
@@ -176,8 +176,12 @@ describe("bindings (PS-ADM-004)", () => {
     });
     await expect(remove(owner)).rejects.toMatchObject({ code: "conflict" });
 
+    // Settling it is what an account at rest still may do (PS-ADM-002).
+    await run(deactivateAccount, owner, {});
     await run(confirmLoanControl, owner, { loanId });
     expect(await check(owner)).toEqual({ bindings: [] });
+    await remove(owner);
+    expect(await statusOf(owner.userId)).toBe("deleted");
   });
 
   it("keeps the parties of an open mediation until it is closed", async () => {

@@ -400,6 +400,31 @@ create trigger loan_request_responsibility_acceptances_active_accounts
   before insert on app.loan_request_responsibility_acceptances
   for each row execute function app.require_active_accounts('user_id');
 
+-- Cases (WP-45): opening a contact or a report, and everything a handler
+-- does or writes, is new activity (handling a case needs an active account).
+-- A mediation is part of finishing a loan, and a party writing in an open
+-- case keeps what it has (PS-ADM-002); a case going back to the queue names
+-- the handler who left it.
+create trigger cases_active_accounts
+  before insert on app.cases
+  for each row when (new.kind <> 'loan_mediation')
+  execute function app.require_active_accounts('opened_by_user_id');
+
+create trigger case_actions_active_accounts
+  before insert on app.case_actions
+  for each row when (new.kind <> 'returned_to_queue')
+  execute function app.require_active_accounts('actor_user_id');
+
+create trigger case_assignments_active_accounts
+  before insert on app.case_actions
+  for each row when (new.kind = 'assigned')
+  execute function app.require_active_accounts('target_user_id');
+
+create trigger case_handler_entries_active_accounts
+  before insert on app.case_entries
+  for each row when (new.capacity = 'handler')
+  execute function app.require_active_accounts('author_user_id');
+
 -- An account stops being active: what was waiting for it to start
 -- something new ends neutrally, like any other lost access (PS-LOAN-002):
 -- - its own open requests (`access_lost`);

@@ -481,6 +481,8 @@ const controlMatrix = policyMatrix(confirmLoanControlPolicy, [
     controlLoan(false),
     "not_found",
   ),
+  ...inactiveCases(owner, "responsible lender", controlLoan(true), "allow"),
+  ...inactiveCases(coOwner, "co-owner", controlLoan(true), "allow"),
   ...callerCases(controlLoan(true)),
 ]);
 

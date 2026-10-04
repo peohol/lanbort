@@ -566,7 +566,9 @@ export interface LoanControlResource extends LoanResource {
  * PS-LOAN-019: after a loan ended unresolved, any current owner of the
  * object confirms having it back in their control; the borrower never does.
  * The responsible lender always learns how it stands; another co-owner
- * learns of the loan only when there is something to confirm.
+ * learns of the loan only when there is something to confirm. It settles an
+ * unresolved loan, so an account that is not active keeps it (PS-ADM-002):
+ * until it is confirmed, the loan binds its lender (`loanBindings`).
  */
 const mayConfirmControl: ResourceRule<LoanControlResource, void> = ({
   actor,
@@ -590,7 +592,7 @@ const mayConfirmControl: ResourceRule<LoanControlResource, void> = ({
 export const confirmLoanControlPolicy = definePolicy<LoanControlResource, void>(
   {
     action: "loan.confirm_control",
-    actor: [requireActiveAccount],
+    actor: [requireLoanStanding],
     resource: [mayConfirmControl],
   },
 );
