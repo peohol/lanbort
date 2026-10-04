@@ -312,6 +312,26 @@ export async function loadLenderScope(
 }
 
 /**
+ * SQL: the request (aliased `request`) was made in an environment where the
+ * scope's user is an active member, and not under a stricter type before
+ * they became active (PS-ENV-009).
+ */
+export function madeWithinScope(scope: LenderScope): RawBuilder<boolean> {
+  if (scope.environments.length === 0) {
+    return sql<boolean>`false`;
+  }
+
+  return sql<boolean>`(${sql.join(
+    scope.environments.map(
+      (environment) =>
+        sql`(request.environment_id = ${environment.environmentId}
+          and ${createdOutside(sql.ref("request.position"), environment.concealed)})`,
+    ),
+    sql` or `,
+  )})`;
+}
+
+/**
  * SQL: the request (aliased `request`) is visible to the scope's user as a
  * lender: as an owner of the object, or of the deleted object when it was
  * deleted. Ownership alone is not enough (docs/architecture/04): the owner
@@ -328,18 +348,6 @@ export async function loadLenderScope(
  * not take away what the loan needs (PS-LOAN-002, Port B).
  */
 export function visibleToLender(scope: LenderScope): RawBuilder<boolean> {
-  const environments =
-    scope.environments.length === 0
-      ? sql<boolean>`false`
-      : sql.join(
-          scope.environments.map(
-            (environment) =>
-              sql`(request.environment_id = ${environment.environmentId}
-                and ${createdOutside(sql.ref("request.position"), environment.concealed)})`,
-          ),
-          sql` or `,
-        );
-
   return sql<boolean>`(
     request.borrower_user_id <> ${scope.userId}
     and (
@@ -363,7 +371,7 @@ export function visibleToLender(scope: LenderScope): RawBuilder<boolean> {
         and not app.users_blocked(request.borrower_user_id, ${scope.userId})
         and case request.origin
           when 'direct' then app.users_are_friends(request.borrower_user_id, ${scope.userId})
-          else (${environments})
+          else ${madeWithinScope(scope)}
         end
       )
     )
