@@ -1,0 +1,308 @@
+import {
+  type EnvironmentSearchResult,
+  environmentSearchQuerySchema,
+  type MembershipState,
+  type ObjectSearchQuery,
+  type ObjectSearchResult,
+  objectSearchQuerySchema,
+  searchResultLimit,
+} from "@lanbort/contracts";
+import type { Database } from "@lanbort/database";
+import { type Kysely, sql } from "kysely";
+import { defineQuery } from "../commands/query";
+import { effectiveState } from "../environment/model";
+import { loadEnvironmentAccess } from "../environment/store";
+import { withinAvailability } from "../loans/model";
+import { addDays } from "../objects/availability";
+import { inSnapshot } from "../objects/state";
+import {
+  discoverableFor,
+  type FoundRow,
+  foundAvailability,
+  loadFoundDetails,
+  presentFound,
+  selectFound,
+} from "../publications/queries";
+import { searchEnvironmentsPolicy, searchObjectsPolicy } from "./policies";
+
+type Db = Kysely<Database>;
+
+/**
+ * Matches considered per environment before availability is checked. A
+ * search that reaches it says there may be more (`more`), so the user
+ * narrows it instead of scrolling (UX-P20).
+ */
+const candidatesPerEnvironment = 200;
+
+/** Most relevant first; equally relevant ones by title. */
+const relevance = (a: Ranked, b: Ranked) =>
+  b.rank - a.rank ||
+  a.title.localeCompare(b.title, "nb") ||
+  (a.objectId < b.objectId ? -1 : 1);
+
+interface Ranked {
+  readonly objectId: string;
+  readonly title: string;
+  readonly rank: number;
+}
+
+interface Candidate extends Ranked {
+  readonly row: FoundRow;
+  readonly foundIn: {
+    environmentId: string;
+    environmentName: string;
+    publicationId: string;
+  }[];
+}
+
+/** The environments in which the user is an active member, as stored. */
+async function activeEnvironmentsOf(
+  db: Db,
+  userId: string,
+  only: string | undefined,
+): Promise<string[]> {
+  const rows = await db
+    .selectFrom("app.environment_memberships")
+    .select("environment_id")
+    .where("user_id", "=", userId)
+    .where("state", "=", "active")
+    .$if(only !== undefined, (query) =>
+      query.where("environment_id", "=", only as string),
+    )
+    .orderBy("environment_id")
+    .execute();
+
+  return rows.map((row) => row.environment_id);
+}
+
+/** Text ranks by the derived index; without text every match ranks equal. */
+const rankBy = (q: string | undefined) =>
+  q === undefined
+    ? sql<number>`0`
+    : sql<number>`ts_rank(entry.document, app.search_query(${q}))`;
+
+/**
+ * Objects the caller finds (PS-OBJ-006, ADR-0005). Who finds what is
+ * decided per environment by `discoverableFor`, the same rule as the
+ * environment's own list, including historical privacy and blocking; the
+ * derived index only matches the text. Content and actual availability are
+ * read from the domain core. An object found in several environments is
+ * shown once, with each of them.
+ */
+export const searchObjects = defineQuery({
+  name: "search.objects",
+  input: objectSearchQuerySchema,
+  policy: searchObjectsPolicy,
+  load: ({ db, actor, input, now }) =>
+    inSnapshot(db, async (tx) => {
+      if (actor.kind !== "user") {
+        return null;
+      }
+
+      const candidates = new Map<string, Candidate>();
+      let more = false;
+
+      // One after another: the snapshot has a single connection.
+      for (const environmentId of await activeEnvironmentsOf(
+        tx,
+        actor.userId,
+        input.environmentId,
+      )) {
+        const access = await loadEnvironmentAccess(
+          tx,
+          environmentId,
+          actor,
+          now,
+        );
+        const discoverable =
+          access && (await discoverableFor(tx, access, actor.userId, now));
+
+        if (!access || !discoverable) {
+          continue;
+        }
+
+        const rows = await selectFound(discoverable, actor.userId)
+          .$if(input.q !== undefined, (query) =>
+            query
+              .innerJoin(
+                "app.search_objects as entry",
+                "entry.object_id",
+                "publication.object_id",
+              )
+              .where(
+                sql<boolean>`entry.document @@ app.search_query(${input.q})`,
+              ),
+          )
+          .$if(input.categoryId !== undefined, (query) =>
+            query.where(
+              "object.category_id",
+              "in",
+              sql<string>`(select app.object_category_subtree(${input.categoryId}))`,
+            ),
+          )
+          .select(rankBy(input.q).as("rank"))
+          .orderBy("rank", "desc")
+          .orderBy("object.title")
+          .orderBy("publication.object_id")
+          .limit(candidatesPerEnvironment + 1)
+          .execute();
+
+        more ||= rows.length > candidatesPerEnvironment;
+
+        for (const row of rows.slice(0, candidatesPerEnvironment)) {
+          const place = {
+            environmentId,
+            environmentName: access.environment.name,
+            publicationId: row.id,
+          };
+          const known = candidates.get(row.object_id);
+
+          candidates.set(row.object_id, {
+            objectId: row.object_id,
+            title: row.title,
+            row,
+            rank: Math.max(known?.rank ?? 0, Number(row.rank)),
+            foundIn: [...(known?.foundIn ?? []), place],
+          });
+        }
+      }
+
+      const details = await loadFoundDetails(tx, [...candidates.keys()]);
+      const matching = [...candidates.values()]
+        .filter((candidate) =>
+          availableThroughout(input, candidate.objectId, details, now),
+        )
+        .sort(relevance);
+
+      return {
+        resource: {
+          candidates: matching.slice(0, searchResultLimit),
+          more: more || matching.length > searchResultLimit,
+          details,
+        },
+        context: undefined,
+      };
+    }),
+  present: ({ resource, now }): ObjectSearchResult => ({
+    objects: resource.candidates.map((candidate) => ({
+      ...presentFound(candidate.row, resource.details, now),
+      foundIn: [...candidate.foundIn].sort((a, b) =>
+        a.environmentName.localeCompare(b.environmentName, "nb"),
+      ),
+    })),
+    more: resource.more,
+  }),
+});
+
+/**
+ * Without a period, every found object; with one, only those actually
+ * available every day of it, as a loan for that period would need
+ * (PS-LOAN-004).
+ */
+function availableThroughout(
+  input: ObjectSearchQuery,
+  objectId: string,
+  details: Parameters<typeof foundAvailability>[1],
+  now: Date,
+): boolean {
+  if (input.availableFrom === undefined || input.availableTo === undefined) {
+    return true;
+  }
+
+  return withinAvailability(
+    { from: input.availableFrom, until: addDays(input.availableTo, 1) },
+    foundAvailability(objectId, details, now).effective,
+  );
+}
+
+/**
+ * Open and closed environments that take new members (PS-ENV-001,
+ * UX-JRN-002), with what anyone signed in may read of them. The derived
+ * index never holds a hidden environment, and the environment's current
+ * type and state are checked in the same query, so neither a hidden nor a
+ * winding-down environment is ever found (PS-NFR-002), however stale the
+ * index is.
+ */
+export const searchEnvironments = defineQuery({
+  name: "search.environments",
+  input: environmentSearchQuerySchema,
+  policy: searchEnvironmentsPolicy,
+  load: async ({ db, actor, input }) => {
+    if (actor.kind !== "user") {
+      return null;
+    }
+
+    const rows = await db
+      .selectFrom("app.search_environments as entry")
+      .innerJoin(
+        "app.environments as environment",
+        "environment.id",
+        "entry.environment_id",
+      )
+      .leftJoin("app.environment_memberships as membership", (join) =>
+        join
+          .onRef("membership.environment_id", "=", "environment.id")
+          .on("membership.user_id", "=", actor.userId)
+          .on("membership.state", "<>", "ended"),
+      )
+      .select([
+        "environment.id",
+        "environment.type",
+        "environment.name",
+        "environment.description",
+        "environment.location",
+        "membership.state",
+        "membership.transition_deadline as transitionDeadline",
+        sql<number>`ts_rank(entry.document, app.search_query(${input.q}))`.as(
+          "rank",
+        ),
+      ])
+      .where(
+        "environment.type",
+        "in",
+        input.type ? [input.type] : ["open", "closed"],
+      )
+      // `acceptsNewActivity`: only an active environment takes new members.
+      .where("environment.state", "=", "active")
+      // PS-ENV-004: an environment that bars the caller is not theirs to find.
+      .where(({ not, exists, selectFrom }) =>
+        not(
+          exists(
+            selectFrom("app.environment_access_restrictions as restriction")
+              .select("restriction.id")
+              .whereRef("restriction.environment_id", "=", "environment.id")
+              .where("restriction.user_id", "=", actor.userId)
+              .where("restriction.lifted_at", "is", null),
+          ),
+        ),
+      )
+      .where(sql<boolean>`entry.document @@ app.search_query(${input.q})`)
+      .orderBy("rank", "desc")
+      .orderBy("environment.name")
+      .orderBy("environment.id")
+      .limit(searchResultLimit + 1)
+      .execute();
+
+    return { resource: rows, context: undefined };
+  },
+  present: ({ resource, now }): EnvironmentSearchResult => ({
+    environments: resource.slice(0, searchResultLimit).map((row) => ({
+      id: row.id,
+      type: row.type as "open" | "closed",
+      name: row.name,
+      description: row.description,
+      location: row.location,
+      membershipState:
+        row.state === null
+          ? null
+          : (effectiveState(
+              {
+                state: row.state as MembershipState,
+                transitionDeadline: row.transitionDeadline,
+              },
+              now,
+            ) as Exclude<MembershipState, "ended">),
+    })),
+    more: resource.length > searchResultLimit,
+  }),
+});
