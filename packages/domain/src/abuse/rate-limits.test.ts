@@ -4,6 +4,8 @@ import { previewLoanRequest } from "../loans/queries";
 import {
   openEnvironmentContact,
   reportUnavailability,
+  requestLoanMediation,
+  writeCaseEntry,
 } from "../cases/commands";
 import {
   inviteMember,
@@ -47,6 +49,7 @@ const limited = {
     inviteCoOwner,
   ],
   reports: [reportInEnvironment, reportToPlatform, reportUnavailability],
+  caseEntries: [writeCaseEntry, requestLoanMediation],
   lookups: [
     searchObjects,
     searchEnvironments,
