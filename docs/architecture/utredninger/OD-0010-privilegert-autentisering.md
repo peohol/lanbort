@@ -84,8 +84,9 @@ Dette beskriver hva som bygges _hvis_ anbefalingen godkjennes. Ingenting av det 
 
 **Registrering**
 
-- En forvalter kan bare registrere en autentikator i et kort registreringsvindu som åpnes av driftskommandoen (som allerede tildeler rollen), eller fra en sesjon som allerede er `aal2` via WebAuthn. En e-postinnlogget sesjon alene kan aldri legge til en ny nøkkel; ellers ville e-postovertakelse holde.
-- Hver registrering, fjerning og hvert åpnet vindu blir en revisjonshendelse _før_ nøkkelen godtas (kravet i [serverkontrakten](../../implementation/server-boundary.md)). Hendelsen inneholder aldri nøkkelmateriale, bare at det skjedde, hvem, og autentikatorens navn.
+- En forvalter kan bare registrere en autentikator på to måter: fra en sesjon som allerede er `aal2` via WebAuthn, eller med en **engangs registreringskode** fra driftskommandoen (som allerede tildeler rollen). Koden er kortlivet, gjelder én registrering og én bestemt konto, og lagres bare som hash.
+- Registreringskoden overleveres utenom e-post, for eksempel ansikt til ansikt eller i en telefonsamtale der operatøren kjenner forvalteren. Registreringen krever både innlogget sesjon og koden. En e-postinnlogget sesjon alene kan aldri legge til en ny nøkkel, så den som har overtatt e-postkontoen, kan ikke rekke å registrere sin egen nøkkel først.
+- Hver registrering, fjerning og hver utstedte registreringskode blir en revisjonshendelse _før_ nøkkelen godtas (kravet i [serverkontrakten](../../implementation/server-boundary.md)). Hendelsen inneholder aldri nøkkelmateriale, bare at det skjedde, hvem, og autentikatorens navn.
 - Forvalterrollen virker ikke før minst to autentikatorer er registrert.
 
 **Bruk**
@@ -98,7 +99,7 @@ Dette beskriver hva som bygges _hvis_ anbefalingen godkjennes. Ingenting av det 
 **Tap og recovery**
 
 - Tap av én autentikator: forvalteren bruker den andre til å fjerne den tapte og registrere en ny. Privilegerte handlinger er stengt til forvalteren igjen har to.
-- Tap av alle: en annen forvalter eller driftskommandoen trekker tilbake alle forvalterens faktorer, setter rollen på pause og åpner et nytt registreringsvindu. Det varsles til forvalterens e-post og revisjonslogges. Den som kjører driftskommandoen har allerede tilgang til databasen og står uansett over forvaltermodellen; det er den ærlige tillitsgrensen, og den er ikke ny.
+- Tap av alle: en annen forvalter eller driftskommandoen trekker tilbake alle forvalterens faktorer, setter rollen på pause og lager en ny registreringskode som overleveres utenom e-post, som over. Hendelsen revisjonslogges og varsles i tillegg til forvalterens e-post, men varselet er bare informasjon og gir ingen tilgang. Den som kjører driftskommandoen har allerede tilgang til databasen og står uansett over forvaltermodellen; det er den ærlige tillitsgrensen, og den er ikke ny.
 - Det finnes ingen vei der en e-postkode, en supporthenvendelse eller en kode på papir alene gir forvaltertilgang.
 
 **Tester som trengs ved implementering**
@@ -107,7 +108,7 @@ Dette beskriver hva som bygges _hvis_ anbefalingen godkjennes. Ingenting av det 
 - WebAuthn-steg eldre enn grensen gir `reauthentication_required`.
 - Faktor som ikke er i Lånborts register, gir avslag.
 - Svar signert for et annet domene (RP ID/origin) avvises.
-- E-postinnlogget sesjon kan ikke åpne registrering eller legge til nøkkel.
+- E-postinnlogget sesjon uten gyldig registreringskode kan ikke legge til nøkkel, og en kode virker bare én gang, for én konto og innenfor fristen.
 - Forvalter med bare én autentikator har ikke tilgang.
 - Tilbakekalt rolle virker ikke, uansett sesjonsstyrke.
 - Vanlige brukeres innlogging og handlinger er uendret, og ingen revisjonshendelse eller logg inneholder nøkkelmateriale.
