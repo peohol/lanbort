@@ -48,7 +48,6 @@ import {
   objectImageAdded,
   objectRestored,
   objectRestrictionLifted,
-  objectRestrictionSet,
   objectReverted,
   objectUpdated,
 } from "../objects/events";
@@ -132,8 +131,8 @@ export const restoreLosses: readonly EventDefinition<unknown>[] = [
   membershipTypeChangeResponded,
   membershipTransitionStarted,
   membershipTransitionCompleted,
-  // Objects: new objects, edits and images, co-ownership offers, lending
-  // limits between co-owners, deletion consents.
+  // Objects: new objects, edits and images, co-ownership offers, a
+  // co-owner's withdrawn veto, deletion consents.
   objectCreated,
   objectUpdated,
   objectRestored,
@@ -143,7 +142,6 @@ export const restoreLosses: readonly EventDefinition<unknown>[] = [
   coOwnerInvitationWithdrawn,
   coOwnerInvitationDeclined,
   coOwnerJoined,
-  objectRestrictionSet,
   objectRestrictionLifted,
   objectFreezeEnded,
   objectDeletionConsented,

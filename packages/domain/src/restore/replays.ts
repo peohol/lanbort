@@ -1,6 +1,6 @@
 import type { AccountStatusReason } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import type { Kysely, Transaction } from "kysely";
+import { type Kysely, sql, type Transaction } from "kysely";
 import { type Actor, type AccountStatus, systemActor } from "../actor";
 import { deleteAccountAs } from "../account/deletion";
 import {
@@ -30,7 +30,10 @@ import {
   membershipPassivated,
   membershipRejected,
 } from "../environment/events";
-import { endMembership } from "../environment/membership-commands";
+import {
+  closeReactivationRequest,
+  endMembership,
+} from "../environment/membership-commands";
 import { isStricter } from "../environment/privacy";
 import { endAdministration } from "../environment/role-commands";
 import {
@@ -58,6 +61,8 @@ import {
   objectImageRemoved,
   objectImageUploadStarted,
   objectRestored,
+  objectRestrictionLifted,
+  objectRestrictionSet,
 } from "../objects/events";
 import { removeImage } from "../objects/images";
 import { loadObjectState } from "../objects/state";
@@ -527,6 +532,78 @@ const coOwnerLeftReplay: RestoreReplay = {
   },
 };
 
+/**
+ * PS-OBJ-008: a co-owner's veto on new commitments stays in force until that
+ * co-owner withdraws it or leaves. It keeps its id, so a later lift in the
+ * journal settles it. A co-owner whose joining was lost is not an owner in
+ * the backup, and their veto goes with the co-ownership.
+ */
+const objectRestrictionReplay: RestoreReplay = {
+  name: "object_restriction",
+  events: [objectRestrictionSet],
+  settledBy: [objectRestrictionLifted],
+  subject: (entry) => String(entry.payload.restrictionId),
+  capture: async (db, entry) => {
+    const { restrictionId } = payloadOf(objectRestrictionSet, entry);
+    const restriction = await db
+      .selectFrom("app.object_restrictions")
+      .select([
+        "set_by_user_id",
+        sql<string | null>`lower(period)::text`.as("from"),
+        sql<string | null>`upper(period)::text`.as("until"),
+      ])
+      .where("id", "=", restrictionId)
+      .executeTakeFirst();
+
+    return restriction
+      ? {
+          setBy: restriction.set_by_user_id,
+          ...(restriction.from && { from: restriction.from }),
+          ...(restriction.until && { until: restriction.until }),
+        }
+      : null;
+  },
+  replay: async (args) => {
+    const { tx, entry, now } = args;
+    const { restrictionId } = payloadOf(objectRestrictionSet, entry);
+    const setBy = entry.captured?.setBy;
+
+    if (!setBy) {
+      needsHandling("The journal does not say who set the restriction");
+    }
+
+    const object = await loadObjectState(tx, entry.resourceId, { lock: true });
+
+    if (!object?.ownerIds.includes(setBy)) {
+      return "unchanged";
+    }
+
+    const { from, until } = entry.captured ?? {};
+    const inserted = await tx
+      .insertInto("app.object_restrictions")
+      .values({
+        id: restrictionId,
+        object_id: object.objectId,
+        set_by_user_id: setBy,
+        period: from
+          ? sql<string>`daterange(${from}::date, ${until ?? null}::date, '[)')`
+          : null,
+        created_at: now,
+      })
+      .onConflict((onConflict) => onConflict.column("id").doNothing())
+      .returning("id")
+      .executeTakeFirst();
+
+    if (!inserted) {
+      return "unchanged";
+    }
+
+    recordAgain(objectRestrictionSet, args);
+
+    return "applied";
+  },
+};
+
 /** PS-OBJ-016: an archived object is not offered. */
 const archiveReplay: RestoreReplay = {
   name: "object_archive",
@@ -683,8 +760,8 @@ const membershipEndReplay: RestoreReplay = {
 };
 
 /**
- * A rejected application ends. A rejected reactivation leaves the member
- * passive, as the backup has them already.
+ * A rejected application ends. A rejected reactivation request closes, and
+ * the member stays passive.
  */
 const membershipRejectionReplay: RestoreReplay = {
   name: "membership_rejection",
@@ -701,11 +778,18 @@ const membershipRejectionReplay: RestoreReplay = {
       entry.resourceId,
     );
 
-    if (reactivation || membership?.state !== "pending") {
+    if (reactivation) {
+      if (membership?.state !== "passive" || membership.reviewStage === null) {
+        return "unchanged";
+      }
+
+      await closeReactivationRequest(tx, membership.id, now);
+    } else if (membership?.state === "pending") {
+      await endMembership(tx, membership, "application_rejected", now);
+    } else {
       return "unchanged";
     }
 
-    await endMembership(tx, membership, "application_rejected", now);
     recordAgain(membershipRejected, args);
 
     return "applied";
@@ -880,6 +964,7 @@ export const restoreReplays: readonly RestoreReplay[] = [
   imageRemovalReplay,
   imageUploadReplay,
   coOwnerLeftReplay,
+  objectRestrictionReplay,
   archiveReplay,
   publicationEndReplay,
   publicationStatusReplay(publicationRejected, "rejected", [

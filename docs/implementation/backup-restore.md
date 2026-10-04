@@ -34,7 +34,7 @@ Supabase-backupen inneholder ikke filene i Supabase Storage (objektbilder), bare
 
 ## Hva som gjøres på nytt, og hva som går tapt
 
-Alt som skjedde etter backupen, går tapt (RPO), bortsett fra det som ville gjort slettet eller begrenset data synlig igjen. Det gjøres på nytt: slettede kontoer og objekter, fjernede bilder, blokkeringer, avsluttede vennskap, kontostans, suspensjon og kontrollert avslutning, avsluttede eller passive medlemskap, utestengelser, fjernede administratorroller, strengere miljøtype, arkiverte objekter, tilbaketrukne, avviste, blokkerte eller pausede publiseringer og fjernede plattformroller.
+Alt som skjedde etter backupen, går tapt (RPO), bortsett fra det som ville gjort slettet eller begrenset data synlig igjen. Det gjøres på nytt: slettede kontoer og objekter, fjernede bilder, blokkeringer, avsluttede vennskap, kontostans, suspensjon og kontrollert avslutning, avsluttede eller passive medlemskap, utestengelser, fjernede administratorroller, strengere miljøtype, medeieres sperrer mot nye lån, arkiverte objekter, tilbaketrukne, avviste, blokkerte eller pausede publiseringer og fjernede plattformroller.
 
 Det som går tapt, er nytt innhold og nye relasjoner, redigeringer, lån og saker i tidsrommet. En redigering som fjernet tekst fra et objekt, går også tapt, slik at den tidligere teksten er tilbake. Det samme gjelder opphevede begrensninger: de forblir på, og brukeren kan oppheve dem igjen.
 

@@ -21,10 +21,10 @@ export const restoreJournalEntrySchema = z.strictObject({
   actorUserId: z.uuid().nullable(),
   payload: z.record(z.string(), z.unknown()),
   /**
-   * Ids the event does not carry but its re-application needs, read from
-   * the replaced database at export (for example who blocked whom).
+   * Ids and dates the event does not carry but its re-application needs,
+   * read from the replaced database at export (for example who blocked whom).
    */
-  captured: z.record(z.string(), z.uuid()).nullable(),
+  captured: z.record(z.string(), z.union([z.uuid(), z.iso.date()])).nullable(),
 });
 
 export type RestoreJournalEntry = z.infer<typeof restoreJournalEntrySchema>;

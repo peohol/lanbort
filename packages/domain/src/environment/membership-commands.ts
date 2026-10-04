@@ -626,6 +626,19 @@ export const approveMembership = defineCommand({
   },
 });
 
+/** A rejected reactivation request closes; the member stays passive. */
+export async function closeReactivationRequest(
+  tx: Tx,
+  membershipId: string,
+  now: Date,
+): Promise<void> {
+  await tx
+    .updateTable("app.environment_memberships")
+    .set({ review_stage: null, updated_at: now })
+    .where("id", "=", membershipId)
+    .execute();
+}
+
 /**
  * Rejecting an application ends it; rejecting a reactivation leaves the
  * member passive. Either can also bar new attempts (PS-ENV-004).
@@ -650,11 +663,7 @@ export const rejectMembership = defineCommand({
     }
 
     if (reactivation) {
-      await tx
-        .updateTable("app.environment_memberships")
-        .set({ review_stage: null, updated_at: now })
-        .where("id", "=", membership.id)
-        .execute();
+      await closeReactivationRequest(tx, membership.id, now);
     } else {
       await endMembership(tx, membership, "application_rejected", now);
     }

@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import type { Database } from "@lanbort/database";
-import type { Kysely } from "kysely";
+import { type Kysely, sql } from "kysely";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type Actor, systemActor, type UserActor } from "../actor";
 import { deleteOwnAccount } from "../account/deletion";
@@ -12,14 +12,21 @@ import {
 import { executeQuery } from "../commands/query";
 import { createEnvironment } from "../environment/environment-commands";
 import {
+  approveMembership,
   joinEnvironment,
   leaveEnvironment,
   rejectMembership,
 } from "../environment/membership-commands";
-import { calendarDate } from "../objects/availability";
+import { membershipRejected } from "../environment/events";
+import { addDays, calendarDate } from "../objects/availability";
+import { acceptCoOwnerInvitation, inviteCoOwner } from "../objects/co-owners";
 import { archiveObject, createObject } from "../objects/commands";
 import { consentToObjectDeletion } from "../objects/deletion";
 import { objectImageUploadStarted } from "../objects/events";
+import {
+  liftObjectRestriction,
+  setObjectRestriction,
+} from "../objects/restrictions";
 import { outboxConsumers } from "../outbox/consumers";
 import { grantPlatformRole, revokePlatformRole } from "../platform/commands";
 import { platformRoleOpsProcess } from "../platform/policies";
@@ -143,7 +150,8 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
     | "unfriended"
     | "applicant"
     | "steward"
-    | "blockedBefore",
+    | "blockedBefore"
+    | "coOwner",
     UserActor
   >;
   const objects = {} as Record<
@@ -160,6 +168,8 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
   let results: ReplayResult[];
   let restoreMs: number;
   let checksBefore: RestoreCheckResult[];
+  let vetoedObjectId: string;
+  let veto: { start: string; end: string };
 
   beforeAll(async () => {
     for (const name of Object.keys({
@@ -175,6 +185,7 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
       applicant: 0,
       steward: 0,
       blockedBefore: 0,
+      coOwner: 0,
     }) as (keyof typeof people)[]) {
       people[name] = await user();
     }
@@ -223,6 +234,13 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
       await run(live, sendFriendRequest, a, { userId: b.userId });
       await run(live, acceptFriendRequest, b, { userId: a.userId });
     }
+
+    vetoedObjectId = await object(owner, "veto");
+    const { invitationId } = await run(live, inviteCoOwner, owner, {
+      objectId: vetoedObjectId,
+      userId: people.coOwner.userId,
+    });
+    await run(live, acceptCoOwnerInvitation, people.coOwner, { invitationId });
 
     // Already in the backup: the journal's margin reaches back to it.
     await run(live, blockUser, people.blocker, {
@@ -287,6 +305,22 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
       systemActor(platformRoleOpsProcess),
       roleChange,
     );
+    const today = calendarDate(new Date());
+    veto = { start: addDays(today, 10), end: addDays(today, 12) };
+    await run(live, setObjectRestriction, people.coOwner, {
+      objectId: vetoedObjectId,
+      period: veto,
+    });
+    const { restrictionId: withdrawnVeto } = await run(
+      live,
+      setObjectRestriction,
+      people.coOwner,
+      { objectId: vetoedObjectId, period: null },
+    );
+    await run(live, liftObjectRestriction, people.coOwner, {
+      objectId: vetoedObjectId,
+      restrictionId: withdrawnVeto,
+    });
     // ...and what it loses with the window after the backup (RPO).
     newAfterBackup = await object(owner, "ny");
 
@@ -332,6 +366,7 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
         "environment_publication.withdrawn",
         "friendship.removed",
         "object.archived",
+        "object.restriction_set",
         "object.deleted",
         "platform_role.revoked",
         "user_block.created",
@@ -419,6 +454,27 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
     expect(roles).toEqual([{ revoked_by_process: "ops.restore" }]);
   });
 
+  it("keeps a co-owner's veto, but not one withdrawn again", async () => {
+    expect(
+      results.filter(
+        (r) => r.type === "object.restriction_set" && r.outcome === "settled",
+      ),
+    ).toHaveLength(1);
+    expect(
+      await restored.db
+        .selectFrom("app.object_restrictions")
+        .select(["set_by_user_id", sql<string>`period::text`.as("period")])
+        .where("object_id", "=", vetoedObjectId)
+        .where("lifted_at", "is", null)
+        .execute(),
+    ).toEqual([
+      {
+        set_by_user_id: people.coOwner.userId,
+        period: `[${veto.start},${addDays(veto.end, 1)})`,
+      },
+    ]);
+  });
+
   it("finds only what was still offered, from a rebuilt index", async () => {
     expect(await found(restored, people.viewer)).toEqual([objects.kept]);
 
@@ -477,6 +533,52 @@ describe("journal entries that cannot or need not be re-applied", () => {
     expect(
       (await replayRestoreJournal(live, [lifted, block])).map((r) => r.outcome),
     ).toEqual(["settled", "not_replayed"]);
+  });
+
+  it("closes a reactivation request rejected after the backup", async () => {
+    const [admin, member] = [await user(), await user()];
+    const { environmentId } = await run(live, createEnvironment, admin, {
+      name: "Gjenopptak",
+      type: "closed",
+    });
+    const { membershipId } = await run(live, joinEnvironment, member, {
+      environmentId,
+      answers: [],
+    });
+    await run(live, approveMembership, admin, { environmentId, membershipId });
+    // As the backup has it: passive, with a request to become active again.
+    await live.db
+      .updateTable("app.environment_memberships")
+      .set({
+        state: "passive",
+        passive_reason: "requirements_not_met",
+        passive_since: new Date(),
+        review_stage: "submitted",
+      })
+      .where("id", "=", membershipId)
+      .execute();
+    const rejection = entry({
+      type: membershipRejected.type,
+      resourceType: "environment_membership",
+      resourceId: membershipId,
+      payload: {
+        environmentId,
+        userId: member.userId,
+        reactivation: true,
+        restricted: false,
+      },
+    });
+
+    expect(
+      (await replayRestoreJournal(live, [rejection])).map((r) => r.outcome),
+    ).toEqual(["applied"]);
+    expect(
+      await live.db
+        .selectFrom("app.environment_memberships")
+        .select(["state", "review_stage"])
+        .where("id", "=", membershipId)
+        .executeTakeFirst(),
+    ).toEqual({ state: "passive", review_stage: null });
   });
 
   it("does not open while an entry cannot be re-applied safely", async () => {
