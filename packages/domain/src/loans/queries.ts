@@ -1,5 +1,8 @@
 import {
   type Loan,
+  type LoanList,
+  loanListQuerySchema,
+  loanPageSize,
   type LoanRequest,
   type LoanRequestList,
   type LoanRequestPreview,
@@ -12,7 +15,7 @@ import {
   responsibilityDeclarationVersion,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import type { Kysely } from "kysely";
+import { type Kysely, sql } from "kysely";
 import type { Actor } from "../actor";
 import { defineQuery } from "../commands/query";
 import { canSeeEnvironment } from "../environment/policies";
@@ -27,6 +30,7 @@ import {
   latestReturnStatement,
   isOpen,
   type LoanRequestRecord,
+  openLoanRequestStatuses,
   openStanding,
   presentedLoanStatus,
   presentedStatus,
@@ -35,6 +39,7 @@ import {
 } from "./model";
 import {
   listLoanRequestsPolicy,
+  listLoansPolicy,
   loanRoleOf,
   partyRole,
   previewLoanRequestPolicy,
@@ -326,6 +331,9 @@ export const listLoanRequests = defineQuery({
         .selectFrom("app.loan_requests as request")
         .select(requestSelection)
         .where(afterCursor(input.cursor))
+        .$if(input.state === "open", (open) =>
+          open.where("request.status", "in", openLoanRequestStatuses),
+        )
         .orderBy("request.created_at", "desc")
         .orderBy("request.id", "desc")
         .limit(loanRequestPageSize + 1);
@@ -390,6 +398,113 @@ function answerDue(
   return waiting?.answerDueAt?.toISOString() ?? null;
 }
 
+/** A loan with everything its parties see of it now. */
+type LoanDetail = NonNullable<Awaited<ReturnType<typeof loadLoanDetail>>>;
+
+async function loadLoanDetail(db: Db, loanId: string) {
+  const loan = await findLoan(db, { loanId });
+
+  if (!loan) {
+    return null;
+  }
+
+  const amendment = await findOpenAmendment(db, loan.id);
+  const handover = await loadHandoverReading(db, loan.id);
+  const returns = await loadReturnStatements(
+    db,
+    loan.id,
+    loan.agreement.version,
+  );
+  const pending = await findPendingReturns(db, loan.id);
+  const open = await findTransfer(db, loan.id);
+  const transfer = open?.possible ? open : null;
+  const control =
+    loan.ending?.reason === "unresolved"
+      ? { confirmedAt: await findControlConfirmation(db, loan.id) }
+      : null;
+
+  return {
+    ...loan,
+    amendment,
+    handover,
+    returns,
+    pending,
+    transfer,
+    control,
+  };
+}
+
+/** The loan as the caller, one of its parties, sees it as of `now`. */
+function presentLoan(actor: Actor, resource: LoanDetail, now: Date): Loan {
+  const { ending, handover, returns } = resource;
+  const role = loanRoleOf(actor, resource);
+  const pending = resource.pending.find(
+    (own) => actor.kind === "user" && own.userId === actor.userId,
+  );
+
+  return {
+    id: resource.id,
+    requestId: resource.requestId,
+    objectId: resource.objectId,
+    role: role ?? "lender",
+    borrowerUserId: resource.borrowerUserId,
+    responsibleLenderId: resource.responsibleLenderId,
+    status: presentedLoanStatus(
+      resource.status,
+      resource.agreement.period,
+      calendarDate(now),
+    ),
+    ending: ending && {
+      reason: ending.reason,
+      endedBy: ending.endedByUserId
+        ? partyRole(resource, ending.endedByUserId)
+        : null,
+      endedAt: ending.endedAt.toISOString(),
+    },
+    period: toApiPeriod(resource.agreement.period),
+    agreement: {
+      version: resource.agreement.version,
+      agreedAt: resource.agreement.agreedAt.toISOString(),
+      objectVersion: resource.agreement.objectVersion,
+      title: resource.agreement.title,
+      categoryId: resource.agreement.categoryId,
+      description: resource.agreement.description,
+      loanTerms: resource.agreement.loanTerms,
+      responsibilityDeclarationVersion:
+        resource.agreement.responsibilityDeclarationVersion,
+    },
+    amendment: resource.amendment && {
+      id: resource.amendment.id,
+      period: toApiPeriod(resource.amendment.period),
+      proposedBy: resource.amendment.proposerRole,
+      proposedAt: resource.amendment.proposedAt.toISOString(),
+    },
+    handover: {
+      borrower: presentStatement(handover.borrower),
+      lender: presentStatement(handover.lender),
+      answerDueAt: answerDue(resource.status, handover),
+    },
+    return: {
+      borrower: presentReturnStatement(
+        latestReturnStatement(returns, "borrower"),
+      ),
+      lender: presentReturnStatement(latestReturnStatement(returns, "lender")),
+      pending: pending
+        ? {
+            outcome: pending.outcome,
+            effectiveAt: pending.effectiveAt.toISOString(),
+          }
+        : null,
+    },
+    responsibilityTransfer:
+      resource.transfer && presentTransfer(resource.transfer),
+    control: resource.control && {
+      confirmedAt: resource.control.confirmedAt?.toISOString() ?? null,
+    },
+    approvedAt: resource.approvedAt.toISOString(),
+  };
+}
+
 /**
  * A loan and what was agreed, for its borrower and its responsible lender
  * (PS-LOAN-006/008), also after it ended. The agreement is its current
@@ -406,109 +521,84 @@ export const readLoan = defineQuery({
   policy: readLoanPolicy,
   load: ({ db, input }) =>
     inSnapshot(db, async (tx) => {
-      const loan = await findLoan(tx, { loanId: input.loanId });
+      const loan = await loadLoanDetail(tx, input.loanId);
 
-      if (!loan) {
+      return loan && { resource: loan, context: undefined };
+    }),
+  present: ({ actor, resource, now }): Loan =>
+    presentLoan(actor, resource, now),
+});
+
+/**
+ * The caller's own loans as borrower or responsible lender (UX-IA-006),
+ * most recently approved first, each exactly as `loan.read` shows it. The
+ * loans of objects they only co-own are not theirs to see
+ * (`loan.list_for_co_owner` has what they may act on).
+ */
+export const listLoans = defineQuery({
+  name: "loan.list",
+  input: loanListQuerySchema,
+  policy: listLoansPolicy,
+  load: ({ db, actor, input }) =>
+    inSnapshot(db, async (tx) => {
+      if (actor.kind !== "user") {
         return null;
       }
 
-      const amendment = await findOpenAmendment(tx, loan.id);
-      const handover = await loadHandoverReading(tx, loan.id);
-      const returns = await loadReturnStatements(
-        tx,
-        loan.id,
-        loan.agreement.version,
-      );
-      const pending = await findPendingReturns(tx, loan.id);
-      const open = await findTransfer(tx, loan.id);
-      const transfer = open?.possible ? open : null;
-      const control =
-        loan.ending?.reason === "unresolved"
-          ? { confirmedAt: await findControlConfirmation(tx, loan.id) }
-          : null;
+      const sides = input.role
+        ? [input.role]
+        : (["borrower", "lender"] as const);
+      const rows = await tx
+        .selectFrom("app.loans as loan")
+        .select("loan.id")
+        .where((eb) =>
+          eb.or(
+            sides.map((side) =>
+              eb(
+                side === "borrower"
+                  ? "loan.borrower_user_id"
+                  : "loan.responsible_lender_id",
+                "=",
+                actor.userId,
+              ),
+            ),
+          ),
+        )
+        .where("loan.status", input.state === "ended" ? "=" : "<>", "ended")
+        .where(
+          input.cursor === undefined
+            ? sql<boolean>`true`
+            : sql<boolean>`(loan.approved_at, loan.id) < (
+                select approved_at, id from app.loans where id = ${input.cursor}
+              )`,
+        )
+        .orderBy("loan.approved_at", "desc")
+        .orderBy("loan.id", "desc")
+        .limit(loanPageSize + 1)
+        .execute();
+      const page = rows.slice(0, loanPageSize);
+      const loans: LoanDetail[] = [];
+
+      // One connection serves the snapshot, so these run one after another.
+      for (const { id } of page) {
+        const loan = await loadLoanDetail(tx, id);
+
+        if (loan) {
+          loans.push(loan);
+        }
+      }
 
       return {
         resource: {
-          ...loan,
-          amendment,
-          handover,
-          returns,
-          pending,
-          transfer,
-          control,
+          loans,
+          nextCursor:
+            rows.length > loanPageSize ? (page.at(-1)?.id ?? null) : null,
         },
         context: undefined,
       };
     }),
-  present: ({ actor, resource, now }): Loan => {
-    const { ending, handover, returns } = resource;
-    const role = loanRoleOf(actor, resource);
-    const pending = resource.pending.find(
-      (own) => actor.kind === "user" && own.userId === actor.userId,
-    );
-
-    return {
-      id: resource.id,
-      requestId: resource.requestId,
-      objectId: resource.objectId,
-      role: role ?? "lender",
-      borrowerUserId: resource.borrowerUserId,
-      responsibleLenderId: resource.responsibleLenderId,
-      status: presentedLoanStatus(
-        resource.status,
-        resource.agreement.period,
-        calendarDate(now),
-      ),
-      ending: ending && {
-        reason: ending.reason,
-        endedBy: ending.endedByUserId
-          ? partyRole(resource, ending.endedByUserId)
-          : null,
-        endedAt: ending.endedAt.toISOString(),
-      },
-      period: toApiPeriod(resource.agreement.period),
-      agreement: {
-        version: resource.agreement.version,
-        agreedAt: resource.agreement.agreedAt.toISOString(),
-        objectVersion: resource.agreement.objectVersion,
-        title: resource.agreement.title,
-        categoryId: resource.agreement.categoryId,
-        description: resource.agreement.description,
-        loanTerms: resource.agreement.loanTerms,
-        responsibilityDeclarationVersion:
-          resource.agreement.responsibilityDeclarationVersion,
-      },
-      amendment: resource.amendment && {
-        id: resource.amendment.id,
-        period: toApiPeriod(resource.amendment.period),
-        proposedBy: resource.amendment.proposerRole,
-        proposedAt: resource.amendment.proposedAt.toISOString(),
-      },
-      handover: {
-        borrower: presentStatement(handover.borrower),
-        lender: presentStatement(handover.lender),
-        answerDueAt: answerDue(resource.status, handover),
-      },
-      return: {
-        borrower: presentReturnStatement(
-          latestReturnStatement(returns, "borrower"),
-        ),
-        lender: presentReturnStatement(
-          latestReturnStatement(returns, "lender"),
-        ),
-        pending: pending
-          ? {
-              outcome: pending.outcome,
-              effectiveAt: pending.effectiveAt.toISOString(),
-            }
-          : null,
-      },
-      responsibilityTransfer:
-        resource.transfer && presentTransfer(resource.transfer),
-      control: resource.control && {
-        confirmedAt: resource.control.confirmedAt?.toISOString() ?? null,
-      },
-      approvedAt: resource.approvedAt.toISOString(),
-    };
-  },
+  present: ({ actor, resource, now }): LoanList => ({
+    loans: resource.loans.map((loan) => presentLoan(actor, loan, now)),
+    nextCursor: resource.nextCursor,
+  }),
 });

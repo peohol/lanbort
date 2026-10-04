@@ -1,4 +1,4 @@
-import type { AvailabilityInterval } from "@lanbort/contracts";
+import { type AvailabilityInterval, productTimeZone } from "@lanbort/contracts";
 import { DomainError } from "../errors";
 
 /**
@@ -35,11 +35,7 @@ export interface AvailabilityBlock {
   readonly loanId?: string;
 }
 
-/**
- * Calendar days follow the product's time zone, so "today" is the same date
- * for every user and server.
- */
-export const productTimeZone = "Europe/Oslo";
+export { productTimeZone };
 
 const dateFormat = new Intl.DateTimeFormat("en-CA", {
   timeZone: productTimeZone,

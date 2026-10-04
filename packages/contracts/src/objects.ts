@@ -45,7 +45,13 @@ export const loanTermsSchema = z
   .regex(multilineText)
   .nullable();
 
-/** A calendar date, `YYYY-MM-DD`. */
+/**
+ * Calendar days follow the product's time zone, so "today" is the same date
+ * for every user and server, and times are shown in it.
+ */
+export const productTimeZone = "Europe/Oslo";
+
+/** A calendar date, `YYYY-MM-DD`, in {@link productTimeZone}. */
 export const calendarDateSchema = z.iso
   .date()
   .refine((date) => date >= "2000-01-01" && date <= "2199-12-31");

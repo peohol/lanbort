@@ -253,6 +253,9 @@ export type NotificationTargetType = z.infer<
 export type NotificationTarget = z.infer<typeof notificationTargetSchema>;
 export type Notification = z.infer<typeof notificationSchema>;
 export type NotificationList = z.infer<typeof notificationListSchema>;
+export type NotificationReadResult = z.infer<
+  typeof notificationReadResultSchema
+>;
 export type NotificationPreferences = z.infer<
   typeof notificationPreferencesSchema
 >;

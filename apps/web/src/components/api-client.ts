@@ -21,19 +21,31 @@ export async function postJson<T = unknown>(
   body: unknown,
   options: { idempotencyKey?: string } = {},
 ): Promise<ApiResult<T>> {
+  return request<T>(path, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      ...(options.idempotencyKey
+        ? { [idempotencyKeyHeader]: options.idempotencyKey }
+        : {}),
+    },
+    body: JSON.stringify(body ?? {}),
+  });
+}
+
+/** A same-origin read from Lånbort's API. */
+export function getJson<T = unknown>(path: string): Promise<ApiResult<T>> {
+  return request<T>(path, { method: "GET" });
+}
+
+async function request<T>(
+  path: string,
+  init: RequestInit,
+): Promise<ApiResult<T>> {
   let response: Response;
 
   try {
-    response = await fetch(path, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(options.idempotencyKey
-          ? { [idempotencyKeyHeader]: options.idempotencyKey }
-          : {}),
-      },
-      body: JSON.stringify(body ?? {}),
-    });
+    response = await fetch(path, init);
   } catch {
     return { ok: false, code: "network" };
   }

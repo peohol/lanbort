@@ -5,6 +5,7 @@ import {
   notificationListQuerySchema,
   notificationPageSize,
   type NotificationPreferences,
+  type NotificationReadResult,
   type NotificationTargetType,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
@@ -92,6 +93,23 @@ export const listNotifications = defineQuery({
       context: undefined,
     })),
   present: ({ resource }): NotificationList => resource,
+});
+
+/**
+ * Only the number of the caller's unread notifications, for the indicator
+ * every page shows (UX-IA-002). Part of reading the notification centre.
+ */
+export const countUnreadNotifications = defineQuery({
+  name: "notification.count_unread",
+  input: z.strictObject({}),
+  policy: listNotificationsPolicy,
+  load: async ({ db, actor }) => ({
+    resource: await countUnread(db, actingUserId(actor)),
+    context: undefined,
+  }),
+  present: ({ resource }): NotificationReadResult => ({
+    unreadCount: resource,
+  }),
 });
 
 /** How the caller is told, per level and channel (PS-COM-003). */
