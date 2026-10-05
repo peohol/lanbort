@@ -6,6 +6,7 @@ const identifierPattern = /^[A-Za-z0-9_.:-]{1,128}$/;
 const httpMethodPattern = /^[A-Z]{3,10}$/;
 const routePattern = /^\/[A-Za-z0-9/_.\-[\]]{0,255}$/;
 const eventPattern = /^[a-z0-9][a-z0-9_.-]{0,127}$/;
+const errorTypePattern = /^[A-Za-z0-9][A-Za-z0-9_]{1,63}$/;
 
 const matching =
   (pattern: RegExp): FieldSanitizer<string> =>
@@ -49,12 +50,14 @@ const fieldSanitizers = {
   attempt: integerBetween(0, Number.MAX_SAFE_INTEGER),
   count: integerBetween(0, Number.MAX_SAFE_INTEGER),
   rateLimit: matching(identifierPattern),
+  errorType: matching(errorTypePattern),
 } satisfies Record<string, FieldSanitizer<unknown>>;
 
 type FieldName = keyof typeof fieldSanitizers;
 
 export type SafeLogFields = {
-  [K in FieldName]?: NonNullable<ReturnType<(typeof fieldSanitizers)[K]>>;
+  [K in FieldName]?:
+    NonNullable<ReturnType<(typeof fieldSanitizers)[K]>> | undefined;
 };
 
 function sanitizeFields(fields: SafeLogFields): Partial<SafeLogFields> {
@@ -96,4 +99,26 @@ export function writeLog(
   fields: SafeLogFields = {},
 ): void {
   process.stdout.write(`${serializeLog(level, event, fields)}\n`);
+}
+
+/**
+ * What kind of failure an error is, for the logs: its machine-readable code
+ * (a Node.js system error such as `ENOTFOUND`, or a PostgreSQL SQLSTATE such
+ * as `28P01`) or else its class name. Never its message, which can carry
+ * personal data or secrets.
+ */
+export function errorTypeOf(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null) {
+    return undefined;
+  }
+
+  const { code, name } = error as { code?: unknown; name?: unknown };
+
+  for (const candidate of [code, name]) {
+    if (typeof candidate === "string" && errorTypePattern.test(candidate)) {
+      return candidate;
+    }
+  }
+
+  return undefined;
 }

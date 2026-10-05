@@ -9,7 +9,7 @@ import {
   type UserActor,
   resolveUserActor,
 } from "@lanbort/domain";
-import { writeLog } from "@lanbort/observability";
+import { errorTypeOf, writeLog } from "@lanbort/observability";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import { runtime as defaultRuntime, type Runtime } from "../runtime";
@@ -158,6 +158,7 @@ export function createRouteFactory(runtime: Runtime) {
           requestId,
           route: request.nextUrl.pathname,
           method: request.method,
+          errorType: errorTypeOf(error),
         });
       }
     }

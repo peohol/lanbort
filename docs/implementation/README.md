@@ -37,7 +37,7 @@ Leveranser:
 | WP-02 | Supabase-migrasjoner, privat `app`-skjema, pgTAP-tester, isolert CI-database, reset-rutine og genererte databasetyper kontrollert mot skjema | Ferdig |
 | WP-03 | Lint/typecheck/test, Playwright-røyktest, dependency-audit, Gitleaks med selvtest, CSP/sikkerhetshoder og logging med felt-tillatelsesliste | Ferdig |
 
-Kjente begrensninger som bevisst er utsatt: CSP med `'unsafe-inline'` for skript utenfor chatsidene, og hostet staging/produksjon (etableres når det trengs, senest før pilot).
+Kjente begrensninger som bevisst er utsatt: CSP med `'unsafe-inline'` for skript utenfor chatsidene, og hostet staging (produksjon er etablert, se [hostet produksjon](local-development.md#hostet-produksjon)).
 
 ### Fase 1 — Identitet, autorisasjon og hendelsesgrunnmur
 Mål: systemet kan vite hvem brukeren er, hva vedkommende får gjøre, og registrere kritiske endringer korrekt.
@@ -70,7 +70,7 @@ Leveranser:
 - gjentatt idempotent kommando gir ikke duplikat, også ved samtidige kall
 
 Bevisst utsatt:
-- ekte outbox-consumers (e-post/push) kommer i Fase 4, og Vercel Cron settes opp med hostede miljøer
+- ekte outbox-consumers (e-post/push) kommer i Fase 4, og Vercel Cron for de interne jobbene er ennå ikke satt opp i produksjon
 - hvem som kan utnevne plattformforvaltere i appen er ikke bestemt, så det skjer foreløpig bare via driftskommandoen
 - mekanisme for sterkere autentisering for plattformforvaltere venter på OD-0010, som kan stå åpen etter Fase 1 men må avklares før slike handlinger tas i reell bruk (Port D); til da avvises de
 - endring av e-postadresse og synlighet per profilfelt (Fase 2)

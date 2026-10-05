@@ -1,6 +1,6 @@
 begin;
 
-select plan(5);
+select plan(6);
 
 select has_schema('app', 'private application schema exists');
 
@@ -31,6 +31,16 @@ select is_empty(
       and not c.relrowsecurity
   $$,
   'every table exposed through the Data API has row-level security enabled'
+);
+
+select is_empty(
+  $$
+    select p.oid::regprocedure::text
+    from pg_proc p
+    where p.pronamespace = 'app'::regnamespace
+      and not coalesce('search_path=""' = any (p.proconfig), false)
+  $$,
+  'every app function runs with an empty search_path'
 );
 
 select * from finish();

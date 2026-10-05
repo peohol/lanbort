@@ -20,7 +20,7 @@ pnpm dev
 
 `pnpm db:start` starter lokal database, Supabase Auth, Supabase Storage (private objektbilder) og Mailpit (lokal e-postboks). `pnpm env:local` skriver `.env` fra `.env.example` med verdiene den kjørende lokale stacken har generert, slik at ingen nøkler ligger i repoet. `.env` er ignorert av git, og både Next.js-appen og verktøyene leser den.
 
-Innlogging bruker engangskode på e-post. Lokalt havner e-postene i Mailpit på <http://127.0.0.1:54324>. Malen ligger i `supabase/templates/`, og lokale Auth-innstillinger står under `[auth]` i `supabase/config.toml`. Hostede Supabase-prosjekter må få samme e-postmal og innstillinger når de etableres.
+Innlogging bruker engangskode på e-post. Lokalt havner e-postene i Mailpit på <http://127.0.0.1:54324>. Malen ligger i `supabase/templates/`, og Auth-innstillingene står under `[auth]` i `supabase/config.toml`. Det hostede prosjektet får de samme, med avvikene under `[remotes.production]` (se [hostet produksjon](#hostet-produksjon)).
 
 ## Repo-struktur
 
@@ -58,6 +58,17 @@ SQL-filene i `supabase/migrations/` er den autoritative skjemahistorikken. Den l
 - **Migrasjoner endres ikke etter at de er pushet.** En feil rettes med en ny migrasjon som reverserer eller korrigerer endringen, slik at historikken alltid kan spilles av fra tom database.
 - **Hostede miljøer:** De ligger på Supabase Free uten automatisk backup. Gjenoppbygging fra migrasjonene og gjenoppretting fra manuelle dumps følger [backup og gjenoppretting](backup-restore.md).
 
+### Hostet produksjon
+
+Produksjon er Vercel-prosjektet bak <https://lanbort.vercel.app> og Supabase-prosjektet som står som `project_id` under `[remotes.production]` i `supabase/config.toml`. Skjema og Auth-innstillinger endres bare med Supabase CLI gjennom GitHub-arbeidsflyten **Supabase production** (`.github/workflows/supabase-production.yml`), som startes manuelt fra `main` og trenger repo-hemmeligheten `SUPABASE_ACCESS_TOKEN`:
+
+- `migrate-dry-run`, deretter `migrate`: kjører nye migrasjoner og viser historikken etterpå.
+- `config-diff`, deretter `config-push`: setter Auth-innstillinger og e-postmaler fra `supabase/config.toml`.
+- `status`: viser migrasjonshistorikken lokalt mot hostet.
+- `repair`: bare for å rette en historikk som ikke stemmer med det som faktisk er i databasen, etter at det er kontrollert.
+
+Migrasjoner kjøres aldri mot produksjon på andre måter, for da får historikken versjoner som ikke finnes i repoet.
+
 ### Testdatabase
 
 CI starter en isolert lokal Supabase-database, bygger den fra alle migrasjoner, kjører pgTAP-testene, kontrollerer at genererte typer stemmer med skjemaet og kjører alle `*.integration.test.ts` mot databasen (`pnpm test:integration`, som krever `DATABASE_URL`). Ingen delt eller hostet database brukes i testene.
@@ -85,4 +96,4 @@ Se [servergrense og autorisasjon](server-boundary.md) for hvordan nye API-er, po
 
 - Utenfor chatsidene tillater CSP `'unsafe-inline'` for skript, fordi Next.js trenger det uten nonce-basert CSP. Chatsidene (`/samtaler`) har nonce-basert CSP uten det. `next dev` får i tillegg `'unsafe-eval'`, aldri produksjonsbygget.
 - Privat chat er bare på der `CHAT_ENABLED=true` (lokalt og i CI, fra `.env.example`). Den skal ikke settes i et hostet miljø med ekte brukere før Port C er oppfylt.
-- Det finnes ennå ikke hostet staging- eller produksjonsmiljø på Vercel/Supabase. Når det etableres, trenger serveren `SUPABASE_SECRET_KEY` i plattformens hemmelighetslager for objektbilder; uten den svarer bilde-API-ene `unavailable`. E-postvarsler trenger `RESEND_API_KEY` (hemmelig), `NOTIFICATION_EMAIL_FROM` (avsender på et verifisert domene) og `APP_URL` (appens offentlige adresse); uten dem venter e-postkøen. Lokalt og i CI sendes ingen varslings-e-post.
+- Det finnes et hostet produksjonsmiljø (se [hostet produksjon](#hostet-produksjon)), men ikke noe staging-miljø. Serveren trenger `SUPABASE_SECRET_KEY` i plattformens hemmelighetslager for objektbilder; uten den svarer bilde-API-ene `unavailable`. E-postvarsler trenger `RESEND_API_KEY` (hemmelig), `NOTIFICATION_EMAIL_FROM` (avsender på et verifisert domene) og `APP_URL` (appens offentlige adresse); uten dem venter e-postkøen. Lokalt og i CI sendes ingen varslings-e-post.
