@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { type SafeLogFields, serializeLog, writeLog } from "./index";
+import {
+  errorTypeOf,
+  type SafeLogFields,
+  serializeLog,
+  writeLog,
+} from "./index";
 
 describe("structured logging baseline", () => {
   it("emits only the explicitly permitted operational fields", () => {
@@ -91,5 +96,35 @@ describe("structured logging baseline", () => {
     } finally {
       write.mockRestore();
     }
+  });
+  it("names an error by its code or class, never its message", () => {
+    const network = Object.assign(new Error("connect to 10.0.0.1 failed"), {
+      code: "ENETUNREACH",
+    });
+    const database = Object.assign(new Error("password for user x"), {
+      code: "28P01",
+    });
+    class ProviderError extends Error {
+      override name = "ProviderError";
+    }
+
+    expect(errorTypeOf(network)).toBe("ENETUNREACH");
+    expect(errorTypeOf(database)).toBe("28P01");
+    expect(errorTypeOf(new ProviderError("user@example.com"))).toBe(
+      "ProviderError",
+    );
+    expect(
+      errorTypeOf(Object.assign(new Error(), { code: "has spaces", name: "" })),
+    ).toBeUndefined();
+    expect(errorTypeOf("plain string")).toBeUndefined();
+
+    const record = JSON.parse(
+      serializeLog("error", "http.request_failed", {
+        errorType: errorTypeOf(network),
+      }),
+    ) as Record<string, unknown>;
+
+    expect(record.errorType).toBe("ENETUNREACH");
+    expect(JSON.stringify(record)).not.toContain("10.0.0.1");
   });
 });

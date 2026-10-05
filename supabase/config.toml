@@ -69,7 +69,7 @@ project_id = "abgivjcloxembtnzfnyv"
 
 [remotes.production.auth]
 site_url = "https://lanbort.vercel.app"
-additional_redirect_urls = ["https://lanbort.vercel.app/**"]
+additional_redirect_urls = ["https://lanbort.vercel.app/**", "https://www.xn--lnbort-iua.no/**"]
 
 # Locally a new code can be sent every second for the tests; in production
 # Auth's usual minute between codes to the same address applies.
