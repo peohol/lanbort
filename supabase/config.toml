@@ -25,7 +25,8 @@ enable_anonymous_sign_ins = false
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
 
-# Tests sign in many users; hosted rate limits stay at their stricter defaults.
+# Every Auth call comes from the server, which limits codes per address and
+# per client itself (WP-73), so Auth's own per-IP limits must not bind.
 [auth.rate_limit]
 email_sent = 1000
 sign_in_sign_ups = 1000
@@ -59,3 +60,18 @@ enabled = true
 
 [experimental.pgdelta]
 enabled = true
+
+# Hosted production (https://lanbort.vercel.app). Only what differs from local
+# development is overridden here; .github/workflows/supabase-production.yml
+# deploys migrations and this configuration with the Supabase CLI.
+[remotes.production]
+project_id = "abgivjcloxembtnzfnyv"
+
+[remotes.production.auth]
+site_url = "https://lanbort.vercel.app"
+additional_redirect_urls = ["https://lanbort.vercel.app/**"]
+
+# Locally a new code can be sent every second for the tests; in production
+# Auth's usual minute between codes to the same address applies.
+[remotes.production.auth.email]
+max_frequency = "60s"
