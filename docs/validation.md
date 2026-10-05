@@ -52,14 +52,14 @@ E2EE hindrer ordinær server-/administratorlesing av lagret privat meldingsinnho
 
 ### Kan avgjøres ved implementeringsstart
 - OD-0004: konkrete eksterne varslingskanaler og standarder
-- OD-0006: pilotens kategoritaksonomi
+- OD-0006: pilotens kategoritaksonomi (avklart, PS-OBJ-018)
 - OD-0009: konkret rammeverk og leverandører
 
 ### Må avgjøres før den berørte funksjonen anses ferdig
 - OD-0003: verifikasjonskrav for død/varig utilgjengelighet dersom denne særprosessen skal aktiveres (deaktivert og utenfor piloten til da)
 
 ### Må avgjøres før reell/bred drift i relevant omfang
-- OD-0001: policy for regulerte/risikofylte objekter
+- OD-0001: policy for regulerte/risikofylte objekter (pilotgrense i PS-OBJ-019)
 - OD-0002: konkrete retention-regler
 - OD-0007: juridisk lanseringsgjennomgang
 - OD-0008: uavhengig behandlingsvei når plattformforvaltere er inhabile

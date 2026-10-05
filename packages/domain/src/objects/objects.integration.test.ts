@@ -305,18 +305,24 @@ describe("creating and reading objects (PS-OBJ-001, PS-OBJ-002)", () => {
     ).rejects.toMatchObject({ code: "unauthenticated" });
   });
 
-  it("offers only the decided category until OD-0006 is settled", async () => {
+  it("offers the pilot's main categories, with Annet last (PS-OBJ-018)", async () => {
     const owner = await user();
     const { categories } = await executeQuery(domain, listObjectCategories, {
       actor: owner,
       input: {},
     });
+    // Other test files add subcategories to the shared test database.
+    const main = categories.filter((category) => category.parentId === null);
 
-    expect(categories).toContainEqual({
+    expect(main.length).toBeGreaterThan(1);
+    expect(main.at(-1)).toEqual({
       id: "annet",
       parentId: null,
       label: "Annet",
     });
+    expect(
+      new Set(main.map((category) => category.label.toLowerCase())).size,
+    ).toBe(main.length);
   });
 });
 

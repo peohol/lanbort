@@ -56,6 +56,7 @@ Når spørsmålet er avgjort:
 - **Berører:** VP-17, PS-OBJ-017
 - **Spørsmål:** Hvilke objektkategorier skal forbys, begrenses eller kreve særvilkår?
 - **Avhenger av:** Juridisk og sikkerhetsmessig vurdering før bred lansering.
+- **Pilot:** Piloten har en konservativ grense uten særvilkår ([PS-OBJ-019](product-spec/03-utlansobjekter.md)). Spørsmålet gjelder bred lansering og om noe av det som venter, kan åpnes.
 
 ### OD-0002 — Oppbevaringstider per datatype
 - **Lag:** Tverrgående
@@ -79,12 +80,6 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Hvilke kombinasjoner av web push, e-post og eventuell senere mobilpush skal være standard for hvert varslingsnivå?
 - **Avhenger av:** Pilotdata og teknisk støtte.
 
-### OD-0006 — Endelig kategoritaksonomi for objekter
-- **Lag:** Produktspesifikasjon
-- **Status:** Åpen
-- **Berører:** PS-OBJ-002
-- **Spørsmål:** Hvilke kategorier og underkategorier skal pilotversjonen tilby?
-- **Avhenger av:** Faktisk innhold i pilotmiljøet og OD-0001.
 
 ### OD-0007 — Juridisk lanseringsgjennomgang
 - **Lag:** Tverrgående
@@ -185,6 +180,11 @@ Når spørsmålet er avgjort:
 - **Lag:** Arkitektur
 - **Status:** Avklart
 - **Beslutning:** Se [ADR-0010](architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md).
+
+### OD-0006 — Kategoritaksonomi for objekter
+- **Lag:** Produktspesifikasjon
+- **Status:** Avklart
+- **Beslutning:** Pilotens kategorier, se [PS-OBJ-018](product-spec/03-utlansobjekter.md). Underkategorier legges til som data når pilotinnholdet viser behov.
 
 ### OD-0009 — Konkret implementeringsstack og driftsleverandører
 - **Lag:** Arkitektur

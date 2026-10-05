@@ -97,6 +97,42 @@ Inaktivitet alene medfører aldri permanent sletting.
 
 Avslag eller fjerning i ett miljø påvirker normalt bare denne publiseringen. Mulig ulovlighet eller alvorlig sikkerhetsrisiko kan eskaleres til plattformnivå og få global virkning etter separat vurdering.
 
+### PS-OBJ-018 — Pilotens kategorier
+**Forankring:** PS-OBJ-002; [Påkrevde opplysninger](../vision/04-utlansobjekter.md); avklarer OD-0006 for piloten
+
+Piloten har én flat liste med hovedkategorier og ingen underkategorier:
+
+Verktøy · Hage og uteområde · Friluftsliv og tur · Sport og trening · Sykler og sykkelutstyr · Barn og baby · Kjøkken og husholdning · Elektronikk og foto · Fest og selskap · Hobby og musikk · Bøker, spill og leker · Klær og kostymer · Annet
+
+«Annet» er sikkerhetsventilen for vanlige, ufarlige ting som ikke passer andre steder. Ingen kategori, heller ikke «Annet», dekker det PS-OBJ-019 holder utenfor piloten. Strukturen tillater underkategorier, men de legges bare til når faktisk pilotinnhold viser at en hovedkategori blir for bred. En kategori som tas ut, beholdes for eksisterende objekter, men kan ikke velges for nye.
+
+### PS-OBJ-019 — Pilotgrense for risikofylte objekter
+**Forankring:** VP-17; [Objektsikkerhet og lovlighet](../vision/04-utlansobjekter.md); [Ulovlige og risikofylte objekter](../vision/08-sikkerhet-personvern-jus-og-datalivssyklus.md); konservativ pilotgrense for OD-0001
+
+Piloten skal ikke dekke alt Lånbort en dag kan støtte. Den har ingen særvilkår eller unntaksordninger: det som er problematisk, holdes utenfor.
+
+**Kan ikke lånes ut gjennom Lånbort:**
+
+- våpen, våpendeler og ammunisjon, også luftvåpen, armbrøster og andre gjenstander laget for å skade (kniver til vanlig bruk, som kjøkkenkniver og tollekniver, er vanlige ting)
+- fyrverkeri, sprengstoff og annen pyroteknikk
+- legemidler, rusmidler, dopingmidler, alkohol, tobakk og nikotinprodukter
+- farlige kjemikalier, drivstoff og fylte gassflasker, for eksempel plantevernmidler, løsemidler og propan (en gassgrill uten flaske er en vanlig ting)
+- levende dyr
+- ulovlige, stjålne eller forfalskede gjenstander
+
+**Venter til senere (ikke i piloten):**
+
+- motorkjøretøy og andre kjøretøy med registrerings- eller forsikringsplikt, for eksempel bil, motorsykkel, moped, ATV, snøscooter, elsparkesykkel og registrert tilhenger (vanlige sykler, også elsykler, sykkelvogner og trillevogner er vanlige ting)
+- båter med motor og vannscootere
+- droner
+- medisinsk utstyr og hjelpemidler, for eksempel rullestol, rullator, krykker og måleapparater
+- sikkerhetsutstyr der skjult svikt kan gi alvorlig skade: bilseter, hjelmer, klatreseler og -tau, skredutstyr og redningsvester
+- motorsager, ryddesager, flishuggere og andre maskiner med særlig høy skaderisiko
+
+Grensen vises for eieren der hen forvalter og registrerer ting. Et objekt som bryter den, kan rapporteres. Miljøets administratorer kan avvise eller sperre publiseringen i sitt miljø (PS-OBJ-017), og plattformforvaltere kan sperre objektet for nye lån overalt (PS-TRUST-013).
+
+Grensen er ikke endelig policy for bred lansering. «Venter til senere» kan åpnes, eventuelt med særvilkår, først når OD-0001 er vurdert juridisk og sikkerhetsmessig.
+
 ## Publiseringsstatus per miljø
 
 Minst:

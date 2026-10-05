@@ -6,6 +6,10 @@ import {
 import type { Metadata } from "next";
 import { ActionButton } from "@/components/action-button";
 import { anchorFor } from "@/navigation/targets";
+import {
+  pilotObjectPolicy,
+  pilotObjectPolicySummary,
+} from "@/presentation/object-policy";
 import { pageQuery, requirePageAccount } from "@/server/session";
 
 export const metadata: Metadata = { title: "Mine ting – Lånbort" };
@@ -86,6 +90,21 @@ export default async function ThingsPage() {
             ))}
           </ul>
         )}
+      </section>
+      {/* PS-OBJ-019: the pilot's limit, where things are managed. */}
+      <section aria-labelledby="pilotgrense">
+        <h2 id="pilotgrense">Hva kan lånes ut?</h2>
+        <p className="quiet">{pilotObjectPolicySummary}</p>
+        {pilotObjectPolicy.map((group) => (
+          <details key={group.heading}>
+            <summary>{group.heading}</summary>
+            <ul>
+              {group.items.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </details>
+        ))}
       </section>
     </main>
   );

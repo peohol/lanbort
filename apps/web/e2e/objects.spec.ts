@@ -253,3 +253,20 @@ test("object APIs refuse anonymous callers and bad uploads", async ({
   const object = await (await request.get(`/api/objects/${objectId}`)).json();
   expect(object).toMatchObject({ version: 1, images: [] });
 });
+
+test("Mine ting says what the pilot keeps out (PS-OBJ-018–019)", async ({
+  page,
+}) => {
+  await registerThroughApi(page.request);
+  const { categories } = (await (
+    await page.request.get("/api/object-categories")
+  ).json()) as { categories: { id: string; label: string }[] };
+  expect(categories.map((category) => category.label)).toContain("Verktøy");
+
+  await page.goto("/mine-ting");
+  await expect(page.getByText("Levende dyr.")).toBeHidden();
+  await page.getByText("Kan ikke lånes ut gjennom Lånbort").click();
+  await expect(page.getByText("Levende dyr.")).toBeVisible();
+  await page.getByText("Venter til senere").click();
+  await expect(page.getByText("Droner.")).toBeVisible();
+});
