@@ -3,6 +3,7 @@ import type { Kysely } from "kysely";
 import { defineConsumer } from "../outbox/consumer";
 import type { NotificationRule } from "./rule";
 import { caseRules } from "./rules/cases";
+import { chatRules } from "./rules/chat";
 import { loanRules } from "./rules/loans";
 import { objectRules } from "./rules/objects";
 import { relationRules } from "./rules/relations";
@@ -14,6 +15,7 @@ export const notificationRules: readonly NotificationRule[] = [
   ...relationRules,
   ...caseRules,
   ...objectRules,
+  ...chatRules,
 ];
 
 export function rulesByEventType(rules: readonly NotificationRule[]) {

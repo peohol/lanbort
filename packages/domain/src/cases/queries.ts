@@ -39,7 +39,8 @@ import {
  * A case as the caller sees it. A participant sees their own entries, what
  * was written to them, and whether someone handles it; a handler's entries
  * come from the function, not the person. A handler sees all of it, with its
- * history. A case holds only what was written in it: never private chat
+ * history. A case holds only what was written in it: never private chat,
+ * only the copies of private messages a participant chose to submit
  * (PS-COM-013).
  */
 export const readCase = defineQuery({
@@ -116,6 +117,10 @@ export const readCase = defineQuery({
           toUserId: entry.audienceUserId,
           shared: sharedWithParties(entry, c.kind, shared),
           body: entry.body,
+          privateMessages: entry.privateMessages.map((copy) => ({
+            ...copy,
+            sentAt: copy.sentAt.toISOString(),
+          })),
           correctsEntryId: entry.correctsEntryId,
           createdAt: entry.createdAt.toISOString(),
         })),

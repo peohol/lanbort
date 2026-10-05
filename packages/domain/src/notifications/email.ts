@@ -63,6 +63,8 @@ export const notificationEmailSubjects = {
   "object.question_asked": "Det er stilt et spørsmål om et objekt du eier",
   "object.question_replied": "Det er kommet et nytt innlegg i en spørsmålstråd",
   "object.available": "Et objekt du abonnerer på er tilgjengelig igjen",
+  "chat.account_key_reset":
+    "Privat chat på kontoen din er tilbakestilt, og tidligere enheter er stengt ute",
 } as const satisfies Record<NotificationKind, string>;
 
 /** Why the recipient gets the e-mail at all (PS-COM-003). */
@@ -74,6 +76,12 @@ const reasons = {
   information:
     "Du får denne e-posten fordi du har valgt e-post for informasjonsvarsler. Du kan slå det av i varslingsvalgene i Lånbort.",
 } as const satisfies Record<NotificationLevel, string>;
+
+/** Kinds that always go out by e-mail for another reason than a loan. */
+const kindReasons: Partial<Record<NotificationKind, string>> = {
+  "chat.account_key_reset":
+    "Du får denne e-posten fordi sikkerhetsvarsler om kontoen din alltid sendes på e-post.",
+};
 
 export interface NotificationEmailContent {
   readonly subject: string;
@@ -117,7 +125,7 @@ export function composeNotificationEmail(input: {
   const subject = notificationEmailSubjects[input.kind];
   const link = notificationEmailLink(input.appUrl, input.notificationId);
   const open = "Åpne Lånbort for å se hva det gjelder";
-  const reason = reasons[input.level];
+  const reason = kindReasons[input.kind] ?? reasons[input.level];
 
   return {
     subject,

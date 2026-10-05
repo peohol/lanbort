@@ -1,9 +1,23 @@
 import { describe, expect, it } from "vitest";
+import {
+  approveChatLink,
+  claimChatKeyPackages,
+  publishChatKeyPackages,
+  registerChatAccount,
+  requestChatLink,
+  resetChatAccount,
+  revokeChatDevice,
+  sendChatMessage,
+  startChatConversation,
+  submitChatCommit,
+} from "../chat";
 import { createLoanRequest } from "../loans/commands";
 import { previewLoanRequest } from "../loans/queries";
 import {
   openEnvironmentContact,
   reportUnavailability,
+  requestLoanMediation,
+  writeCaseEntry,
 } from "../cases/commands";
 import {
   inviteMember,
@@ -39,6 +53,7 @@ const limited = {
     replyToObjectQuestion,
     openEnvironmentContact,
     joinEnvironment,
+    startChatConversation,
   ],
   invitations: [
     inviteMember,
@@ -47,6 +62,7 @@ const limited = {
     inviteCoOwner,
   ],
   reports: [reportInEnvironment, reportToPlatform, reportUnavailability],
+  caseEntries: [writeCaseEntry, requestLoanMediation],
   lookups: [
     searchObjects,
     searchEnvironments,
@@ -56,6 +72,16 @@ const limited = {
     getSocialRelation,
     previewLoanRequest,
   ],
+  chatMessages: [sendChatMessage, submitChatCommit],
+  chatKeys: [
+    registerChatAccount,
+    requestChatLink,
+    approveChatLink,
+    revokeChatDevice,
+    publishChatKeyPackages,
+    claimChatKeyPackages,
+  ],
+  chatResets: [resetChatAccount],
 } as const;
 
 describe("rate limits", () => {

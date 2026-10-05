@@ -6,6 +6,7 @@ import {
   type ModerationMeasureResult,
   moderationMeasureResultSchema,
   type ModerationScope,
+  type PartyStatement,
   type ReportTargetKind,
   reportInEnvironmentSchema,
   type ReportToPlatform,
@@ -112,7 +113,7 @@ function openReport(
     readonly subject: ReportSubject;
     readonly escalatedFromCaseId: string | null;
   },
-  body: string,
+  statement: PartyStatement,
   now: Date,
 ) {
   const { subject } = report;
@@ -135,7 +136,7 @@ function openReport(
     participants: [{ userId, role: "reporter" }],
   };
 
-  return openOrContinue(tx, events, userId, opening, body, now);
+  return openOrContinue(tx, events, userId, opening, statement, now);
 }
 
 /**
@@ -216,7 +217,7 @@ export const reportInEnvironment = defineCommand({
         subject,
         escalatedFromCaseId: null,
       },
-      input.body,
+      input,
       now,
     );
   },
@@ -349,7 +350,7 @@ export const reportToPlatform = defineCommand({
         subject: resource.subject,
         escalatedFromCaseId: null,
       },
-      input.body,
+      input,
       now,
     );
   },
@@ -398,7 +399,7 @@ export const escalateReport = handlerCommand(
         subject: subjectOf(c),
         escalatedFromCaseId: c.id,
       },
-      input.body,
+      { body: input.body },
       now,
     );
 

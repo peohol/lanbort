@@ -227,6 +227,9 @@ importers:
       '@lanbort/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@lanbort/e2ee':
+        specifier: workspace:*
+        version: link:../../packages/e2ee
       '@lanbort/email':
         specifier: workspace:*
         version: link:../../packages/email
@@ -251,6 +254,9 @@ importers:
       react-dom:
         specifier: 19.3.0
         version: 19.3.0(react@19.3.0)
+      uqr:
+        specifier: 0.1.3
+        version: 0.1.3
       zod:
         specifier: 4.6.5
         version: 4.6.5
@@ -316,6 +322,18 @@ importers:
       kysely:
         specifier: 0.29.6
         version: 0.29.6
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+
+  packages/e2ee:
+    dependencies:
+      '@lanbort/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      ts-mls:
+        specifier: 1.6.4
+        version: 1.6.4(@noble/ciphers@2.1.1)
       zod:
         specifier: 4.6.5
         version: 4.6.5
@@ -635,6 +653,14 @@ packages:
     resolution: {integrity: sha512-Z5kJ+wU3oA7MMIqVR9tyZRtjYPr4OC004Q4Rw7pgOKUOKkJfZ3O24nz3WYfGRpMDNmcOi3TwQOmgm7B7Tpii0w==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
+  '@hpke/common@1.10.1':
+    resolution: {integrity: sha512-moJwhmtLtuxiUzzNp1jpfBfx8yefKoO9D/RCR9dmwrnc7qjJqId1rEtQz+lSlU5cabX8daToMSx/7HayXOiaFw==}
+    engines: {node: '>=16.0.0'}
+
+  '@hpke/core@1.9.0':
+    resolution: {integrity: sha512-pFxWl1nNJeQCSUFs7+GAblHvXBCjn9EPN65vdKlYQil2aURaRxfGMO6vBKGqm1YHTKwiAxJQNEI70PbSowMP9Q==}
+    engines: {node: '>=16.0.0'}
+
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
     engines: {node: '>=18.18.0'}
@@ -930,6 +956,10 @@ packages:
   '@noble/ciphers@1.3.0':
     resolution: {integrity: sha512-2I0gnIVPtfnMw9ee9h1dJG7tp81+8Ob3OJb3Mv37rx5L40/b0i7djjCVvGOVqc9AEIQyvyu1i6ypKdFw8R8gQw==}
     engines: {node: ^14.21.3 || >=16}
+
+  '@noble/ciphers@2.1.1':
+    resolution: {integrity: sha512-bysYuiVfhxNJuldNXlFEitTVdNnYUc+XNJZd7Qm2a5j1vZHgY+fazadNFWFaMK/2vye0JVlxV3gHmC0WDfAOQw==}
+    engines: {node: '>= 20.19.0'}
 
   '@noble/curves@1.9.7':
     resolution: {integrity: sha512-gbKGcRUYIjA3/zCCNaWDciTMFI0dCkvou3TL8Zmy5Nc7sJ47a0jtOeZoTaMxkuqRo9cRhjOdZJXegxYE5FN/xw==}
@@ -2791,6 +2821,30 @@ packages:
     peerDependencies:
       typescript: '>=4.8.4'
 
+  ts-mls@1.6.4:
+    resolution: {integrity: sha512-BFb9qJ3V1+HIuifC+MtnlROEj3oc6NEzA7Ig1/LAmANDRhNay7UCnwkzijzHH9cav5wf1BoJw8KQ2mXiEhPy1Q==}
+    peerDependencies:
+      '@hpke/chacha20poly1305': 1.8.0
+      '@hpke/dhkem-x448': 1.8.0
+      '@hpke/hybridkem-x-wing': 0.7.0
+      '@hpke/ml-kem': 0.3.0
+      '@noble/ciphers': 2.1.1
+      '@noble/curves': 2.0.1
+      '@noble/post-quantum': 0.5.2
+    peerDependenciesMeta:
+      '@hpke/chacha20poly1305':
+        optional: true
+      '@hpke/dhkem-x448':
+        optional: true
+      '@hpke/hybridkem-x-wing':
+        optional: true
+      '@hpke/ml-kem':
+        optional: true
+      '@noble/curves':
+        optional: true
+      '@noble/post-quantum':
+        optional: true
+
   tsconfig-paths@3.15.0:
     resolution: {integrity: sha512-2Ac2RgzDe/cn48GvOe3M+o82pEFewD3UPbyoUHHdKasHwJKjds4fLXWf/Ux5kATBKN20oaFGu+jbElp1pos0mg==}
 
@@ -2849,6 +2903,9 @@ packages:
     hasBin: true
     peerDependencies:
       browserslist: '>= 4.21.0'
+
+  uqr@0.1.3:
+    resolution: {integrity: sha512-0rjE8iEJe4YmT9TOhwsZtqCMRLc5DXZUI2UEYUUg63ikBkqqE5EYWaI0etFe/5KUcmcYwLih2RND1kq+hrUJXA==}
 
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
@@ -3250,6 +3307,12 @@ snapshots:
       '@eslint/core': 0.15.2
       levn: 0.4.1
 
+  '@hpke/common@1.10.1': {}
+
+  '@hpke/core@1.9.0':
+    dependencies:
+      '@hpke/common': 1.10.1
+
   '@humanfs/core@0.19.2':
     dependencies:
       '@humanfs/types': 0.15.0
@@ -3469,6 +3532,8 @@ snapshots:
     optional: true
 
   '@noble/ciphers@1.3.0': {}
+
+  '@noble/ciphers@2.1.1': {}
 
   '@noble/curves@1.9.7':
     dependencies:
@@ -5463,6 +5528,11 @@ snapshots:
     dependencies:
       typescript: '@typescript/typescript6@6.0.2'
 
+  ts-mls@1.6.4(@noble/ciphers@2.1.1):
+    dependencies:
+      '@hpke/core': 1.9.0
+      '@noble/ciphers': 2.1.1
+
   tsconfig-paths@3.15.0:
     dependencies:
       '@types/json5': 0.0.29
@@ -5568,6 +5638,8 @@ snapshots:
       browserslist: 4.29.3
       escalade: 3.2.0
       picocolors: 1.1.1
+
+  uqr@0.1.3: {}
 
   uri-js@4.4.1:
     dependencies:

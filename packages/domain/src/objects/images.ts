@@ -379,8 +379,8 @@ export async function removeImage(
 }
 
 /** Authorizes reading one image of an object; its file comes from the store. */
-const objectImageFile = defineQuery({
-  name: "object.read",
+export const objectImageFile = defineQuery({
+  name: "object.read_image",
   input: z.strictObject({
     objectId: objectIdSchema,
     imageId: objectImageIdSchema,

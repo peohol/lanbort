@@ -15,6 +15,7 @@ import type {
   CaseRecord,
   EntryRecord,
   ParticipantRecord,
+  PrivateMessageCopyRecord,
 } from "./model";
 
 /**
@@ -188,6 +189,11 @@ export async function loadEntries(
     .orderBy("position")
     .execute();
 
+  const copies = await loadPrivateMessages(
+    db,
+    rows.map((row) => row.id),
+  );
+
   return rows.map((row) => ({
     id: row.id,
     authorUserId: row.author_user_id,
@@ -195,6 +201,7 @@ export async function loadEntries(
     audience: row.audience as CaseAudience,
     audienceUserId: row.audience_user_id,
     body: row.body,
+    privateMessages: copies.get(row.id) ?? [],
     correctsEntryId: row.corrects_entry_id,
     createdAt: row.created_at,
     position: BigInt(row.position),
@@ -404,6 +411,114 @@ export async function insertEntry(
     .executeTakeFirstOrThrow();
 
   return id;
+}
+
+/** The private messages submitted with each of the entries, by time sent. */
+async function loadPrivateMessages(
+  db: Db,
+  entryIds: readonly string[],
+): Promise<Map<string, PrivateMessageCopyRecord[]>> {
+  const copies = new Map<string, PrivateMessageCopyRecord[]>();
+
+  if (entryIds.length === 0) {
+    return copies;
+  }
+
+  const rows = await db
+    .selectFrom("app.case_entry_private_messages")
+    .select([
+      "entry_id",
+      "conversation_id",
+      "message_id",
+      "sender_user_id",
+      "sent_at",
+      "body",
+    ])
+    .where("entry_id", "in", entryIds)
+    .orderBy("entry_id")
+    .orderBy("ordinal")
+    .execute();
+
+  for (const row of rows) {
+    const entry = copies.get(row.entry_id) ?? [];
+
+    entry.push({
+      conversationId: row.conversation_id,
+      messageId: row.message_id,
+      senderUserId: row.sender_user_id,
+      sentAt: row.sent_at,
+      body: row.body,
+    });
+    copies.set(row.entry_id, entry);
+  }
+
+  return copies;
+}
+
+/**
+ * Stores the copies with the entry just written, in the order they were
+ * sent (`app.guard_new_case_entry_private_message`).
+ */
+export async function insertPrivateMessages(
+  db: Db,
+  entryId: string,
+  copies: readonly PrivateMessageCopyRecord[],
+): Promise<void> {
+  if (copies.length === 0) {
+    return;
+  }
+
+  await db
+    .insertInto("app.case_entry_private_messages")
+    .values(
+      copies.map((copy, index) => ({
+        entry_id: entryId,
+        ordinal: index + 1,
+        conversation_id: copy.conversationId,
+        message_id: copy.messageId,
+        sender_user_id: copy.senderUserId,
+        sent_at: copy.sentAt,
+        body: copy.body,
+      })),
+    )
+    .execute();
+}
+
+/** How many private messages the user has submitted to the case. */
+export async function countPrivateMessages(
+  db: Db,
+  caseId: string,
+  userId: string,
+): Promise<number> {
+  const { count } = await db
+    .selectFrom("app.case_entry_private_messages as copy")
+    .innerJoin("app.case_entries as entry", "entry.id", "copy.entry_id")
+    .select((eb) => eb.fn.countAll<string>().as("count"))
+    .where("entry.case_id", "=", caseId)
+    .where("entry.author_user_id", "=", userId)
+    .executeTakeFirstOrThrow();
+
+  return Number(count);
+}
+
+/** Whether every one of the users has an account. */
+export async function usersExist(
+  db: Db,
+  userIds: readonly string[],
+): Promise<boolean> {
+  const unique = [...new Set(userIds)];
+
+  if (unique.length === 0) {
+    return true;
+  }
+
+  const { count } = await db
+    .selectFrom("app.users")
+    .select((eb) => eb.fn.countAll<string>().as("count"))
+    .where("id", "in", unique)
+    .executeTakeFirstOrThrow();
+
+  return Number(count) === unique.length;
 }
 
 export async function findEntry(

@@ -36,6 +36,7 @@ Innlogging bruker engangskode på e-post. Lokalt havner e-postene i Mailpit på 
 | `packages/email` | Eneste adapter mot e-postleverandøren (Resend) for varslings-e-post. Kun for serverkode |
 | `packages/places` | Eneste adapter mot stedsnavntjenesten (Kartverket) for søk nær et sted. Kun for serverkode |
 | `packages/observability` | Strukturert logging med tillatelsesliste for felt |
+| `packages/e2ee` | Ende-til-ende-kryptering for privat chat (MLS, ADR-0010). Kun for klientkode; serveren importerer den aldri |
 | `supabase/` | Lokal Supabase-konfigurasjon, SQL-migrasjoner og pgTAP-tester |
 
 ## Database og migrasjoner
@@ -55,7 +56,7 @@ SQL-filene i `supabase/migrations/` er den autoritative skjemahistorikken. Den l
 
 - **Lokalt og i CI:** `pnpm db:reset` sletter den lokale databasen og bygger den på nytt fra migrasjonene. Dette er den normale måten å komme tilbake til en kjent tilstand på.
 - **Migrasjoner endres ikke etter at de er pushet.** En feil rettes med en ny migrasjon som reverserer eller korrigerer endringen, slik at historikken alltid kan spilles av fra tom database.
-- **Hostede miljøer:** Gjenoppretting fra backup følger [backup og gjenoppretting](backup-restore.md).
+- **Hostede miljøer:** De ligger på Supabase Free uten automatisk backup. Gjenoppbygging fra migrasjonene og gjenoppretting fra manuelle dumps følger [backup og gjenoppretting](backup-restore.md).
 
 ### Testdatabase
 
@@ -66,8 +67,8 @@ CI starter en isolert lokal Supabase-database, bygger den fra alle migrasjoner, 
 | Jobb | Hva den beviser |
 | --- | --- |
 | `quality` | Lint, typecheck, enhetstester, Prettier og produksjonsbygg (`pnpm check`) |
-| `database` | Migrasjoner fra tom database, pgTAP, typekontroll mot skjema og integrasjonstester mot databasen (`pnpm test:integration`), blant dem backup/restore-øvelsen (WP-72). `stress.integration.test.ts` er samtidighets- og idempotensstresstesten for Port D (WP-71): parallelle godkjenninger, samtidige retries med samme nøkkel, dobbelttrykk med nye nøkler, avtaleendringer fra begge sider og gjenåpnet retur, med krav om at dataene blir som om kommandoene kom etter hverandre og at hvert avslag er et forventet domenesvar |
-| `e2e` | Playwright mot produksjonsbygget og lokal Supabase: røyktest (CSP, sikkerhetshoder, helse), registrering og innlogging med e-postkode, utlogging, ny innlogging og negative API-tester. `accessibility.spec.ts` går gjennom alle kjernesidene på mobil og desktop (WP-65): WCAG 2.2 A/AA med axe, ingen sidelengs scrolling, berøringsmål på minst 44 px, tastaturrekkefølge med synlig og udekket fokus, dobbel tekststørrelse, redusert bevegelse og tekstlig nettstatus. En ny side trenger bare en linje i `pages` der. `concurrency.spec.ts` (WP-71) sender samme kommando mange ganger samtidig over HTTP og dobbeltklikker på lånets neste steg i nettleseren: én virkning, samme svar og ingen serverfeil |
+| `database` | Migrasjoner fra tom database, pgTAP, typekontroll mot skjema og integrasjonstester mot databasen (`pnpm test:integration`), blant dem backup/restore-øvelsen (WP-72). `stress.integration.test.ts` er samtidighets- og idempotensstresstesten for Port D (WP-71): parallelle godkjenninger, samtidige retries med samme nøkkel, dobbelttrykk med nye nøkler, avtaleendringer fra begge sider og gjenåpnet retur, med krav om at dataene blir som om kommandoene kom etter hverandre og at hvert avslag er et forventet domenesvar. `security/pilot-access.integration.test.ts` er autorisasjons- og personverntesten for Port D (WP-70): en fremmed og et tidligere medlem prøver hver kommando og spørring som tar en ressurs-ID mot alt som finnes i et skjult miljø, og får samme svar som for ID-er som ikke finnes; den viser også hva en låntaker som har gått ut, en senere og en tidligere medeier, en inhabil administrator, en som melder mulig dødsfall og en plattformforvalter uten godkjent sterkere innlogging (OD-0010) faktisk når |
+| `e2e` | Playwright mot produksjonsbygget og lokal Supabase: røyktest (CSP, sikkerhetshoder, helse), registrering og innlogging med e-postkode, utlogging, ny innlogging og negative API-tester. `accessibility.spec.ts` går gjennom alle kjernesidene på mobil og desktop (WP-65): WCAG 2.2 A/AA med axe, ingen sidelengs scrolling, berøringsmål på minst 44 px, tastaturrekkefølge med synlig og udekket fokus, dobbel tekststørrelse, redusert bevegelse og tekstlig nettstatus. En ny side trenger bare en linje i `pages` der. `concurrency.spec.ts` (WP-71) sender samme kommando mange ganger samtidig over HTTP og dobbeltklikker på lånets neste steg i nettleseren: én virkning, samme svar og ingen serverfeil. `authorization.spec.ts` (WP-70) spør hver lese-rute i API-et om et skjult miljøs innhold og om ID-er som ikke finnes, og krever likt svar ned til status, hoder og innhold |
 | `security` | `pnpm audit` for produksjonsavhengigheter, selvtest av Gitleaks og skanning av hele git-historikken |
 
 CI har bare lesetilgang til repoet (`permissions: contents: read`), og avhengigheter installeres med `--frozen-lockfile`.
@@ -82,5 +83,6 @@ Se [servergrense og autorisasjon](server-boundary.md) for hvordan nye API-er, po
 
 - Den automatiske tilgjengelighetsgjennomgangen erstatter ikke manuell testing med skjermleser og forstørrelse på ekte enheter. Den hører til tilgjengelighetsgjennomgangen i Port E, sammen med det endelige WCAG-målet (PS-NFR-010).
 
-- CSP tillater `'unsafe-inline'` for skript fordi Next.js trenger det uten nonce-basert CSP. Innstramming vurderes før Port C (privat chat). `next dev` får i tillegg `'unsafe-eval'`, aldri produksjonsbygget.
+- Utenfor chatsidene tillater CSP `'unsafe-inline'` for skript, fordi Next.js trenger det uten nonce-basert CSP. Chatsidene (`/samtaler`) har nonce-basert CSP uten det. `next dev` får i tillegg `'unsafe-eval'`, aldri produksjonsbygget.
+- Privat chat er bare på der `CHAT_ENABLED=true` (lokalt og i CI, fra `.env.example`). Den skal ikke settes i et hostet miljø med ekte brukere før Port C er oppfylt.
 - Det finnes ennå ikke hostet staging- eller produksjonsmiljø på Vercel/Supabase. Når det etableres, trenger serveren `SUPABASE_SECRET_KEY` i plattformens hemmelighetslager for objektbilder; uten den svarer bilde-API-ene `unavailable`. E-postvarsler trenger `RESEND_API_KEY` (hemmelig), `NOTIFICATION_EMAIL_FROM` (avsender på et verifisert domene) og `APP_URL` (appens offentlige adresse); uten dem venter e-postkøen. Lokalt og i CI sendes ingen varslings-e-post.

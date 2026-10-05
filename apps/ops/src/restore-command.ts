@@ -10,6 +10,8 @@ import {
   replayRestoreJournal,
   type RestoreCheckResult,
   type RestoreJournalEntry,
+  restartChatGroups,
+  restoreActor,
   restoreJournalEntrySchema,
   runRestoreChecks,
   searchIndexProcess,
@@ -211,6 +213,15 @@ export async function runRestoreCommand(
       input: {},
     });
     lines.push(`Search index: rebuilt, ${output.changed} rows changed.`);
+
+    // Devices may be epochs ahead of the restored server (ADR-0010 §9).
+    const chat = await executeCommand(domain, restartChatGroups, {
+      actor: restoreActor,
+      input: {},
+    });
+    lines.push(
+      `Chat: ${chat.output.conversations} conversations start new groups.`,
+    );
   }
 
   const checks = await runRestoreChecks(domain.db);

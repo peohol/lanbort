@@ -26,7 +26,8 @@ Må være oppfylt:
 ## Port C — Før privat chat aktiveres
 
 Må være oppfylt:
-- OD-0005 er avgjort og dokumentert
+- OD-0005 er avgjort og dokumentert ([ADR-0010](../architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md))
+- chatsidene har CSP uten `unsafe-inline` for skript og ingen tredjepartsskript
 - uavhengig kryptografisk designreview av protokollbruken
 - server/database kan ikke lese privat meldingsklartekst under normal drift
 - nøkkel-/enhetstap har definert UX
@@ -39,13 +40,15 @@ Må være oppfylt:
 - alle fase 1–3-kritiske flyter er ende-til-ende-testet
 - autorisasjons-/personverntest WP-70 er grønn
 - samtidighets-/idempotensstresstest WP-71 er grønn
-- backup/restore WP-72 er gjennomført
+- backup/restore WP-72 er gjennomført, også én gjenoppretting mot et hostet miljø
+- backupnivået for piloten er besluttet av produkteier (ADR-0009), satt opp i produksjon og verifisert med en gjenoppretting; før denne beslutningen er betalt backup ingen forutsetning for noen port
 - rate limiting og misbruksvern er aktivert
 - produksjonshemmeligheter er skilt fra utvikling
 - OD-0002 har minst en eksplisitt pilot-retentionpolicy
 - OD-0006 er avgjort ([PS-OBJ-018](../product-spec/03-utlansobjekter.md))
 - OD-0010 er avgjort og mekanismen implementert før privilegerte plattformforvalterhandlinger aktiveres; til da er de avvist
 - en konservativ pilotpolicy begrenser risikofylte objekter ([PS-OBJ-019](../product-spec/03-utlansobjekter.md))
+- representanttilgang ved død eller varig utilgjengelighet er deaktivert og testet utilgjengelig, så lenge OD-0003 ikke er avgjort
 - kjente mangler er dokumentert og vurdert
 
 ## Port E — Før bred/offentlig lansering

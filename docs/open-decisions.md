@@ -71,6 +71,7 @@ Når spørsmålet er avgjort:
 - **Berører:** PS-ADM-007, PS-ADM-008
 - **Spørsmål:** Hvilket bevisnivå kreves for å verifisere forholdet og en legitim representant?
 - **Avhenger av:** Misbruksrisiko og juridisk vurdering.
+- **Inntil besluttet (Peder, 4. oktober 2026):** Særprosessen er utsatt og inngår ikke i piloten. Ingen representant kan få tilgang før en senere, eksplisitt policy tillater det, og ingen del av produktet er bygget for å gi slik tilgang. En melding om mulig dødsfall eller varig utilgjengelighet (PS-COM-015) åpner bare en fortrolig verifikasjonssak og endrer verken konto, lån eller tilganger, heller ikke når saken er behandlet og lukket. Automatiske tester holder dette fast i både domene og database (WP-54), og må endres bevisst sammen med denne beslutningen.
 
 ### OD-0004 — Endelige eksterne varslingskanaler og standardvalg
 - **Lag:** UX
@@ -79,12 +80,6 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Hvilke kombinasjoner av web push, e-post og eventuell senere mobilpush skal være standard for hvert varslingsnivå?
 - **Avhenger av:** Pilotdata og teknisk støtte.
 
-### OD-0005 — Kryptografisk modell for ende-til-ende-kryptert chat
-- **Lag:** Arkitektur
-- **Status:** Åpen
-- **Berører:** PS-COM-005, PS-NFR-007
-- **Spørsmål:** Hvordan skal nøkkelstyring, flere enheter, nøkkelbytte, backup og tap av enhet håndteres uten servertilgang til klartekst?
-- **Avhenger av:** Sikkerhetsarkitektur og konkret klientmodell, inkludert multi-device, nøkkelbackup/recovery og hvilket sikkerhetsnivå nettleserklienten realistisk kan love.
 
 ### OD-0007 — Juridisk lanseringsgjennomgang
 - **Lag:** Tverrgående
@@ -107,6 +102,7 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Hvilken konkret autentiseringsmekanisme skal gi det ekstra sikkerhetsnivået som kreves for plattformforvaltere og andre særskilt privilegerte handlinger?
 - **Avhenger av:** Sammenligning av sikkerhet, brukeropplevelse, recovery, leverandørmodenhet og kostnad for aktuelle alternativer, blant annet passkeys/WebAuthn, TOTP og leverandørbasert sterk re-autentisering. Vanlige brukere skal ikke gjøres avhengige av MFA som følge av denne beslutningen. Ingen mekanisme er godkjent; passkeys/WebAuthn er et interessant alternativ, men ikke besluttet, og TOTP/autentiseringsapp skal ikke innføres som produktegenskap uten en eksplisitt beslutning her.
 - **Sperre:** Må avklares før privilegerte plattformforvalterhandlinger tas i reell bruk, men ikke før det mekanismenøytrale grunnlaget (WP-12) bygges og integreres. Til da avvises slike handlinger ([autorisasjon og tilgang](architecture/04-autorisasjon-og-tilgang.md)).
+- **Utredning:** [Mekanisme for privilegert autentisering](architecture/utredninger/OD-0010-privilegert-autentisering.md) anbefaler WebAuthn (passkey eller sikkerhetsnøkkel) som andre faktor bare for plattformforvaltere. Anbefalingen er ikke vedtatt.
 
 ### OD-0011 — Framtidig Vipps-innlogging og identitetsgrunnlag
 - **Lag:** Tverrgående
@@ -140,8 +136,8 @@ Når spørsmålet er avgjort:
 - **Lag:** Produktspesifikasjon / Arkitektur
 - **Status:** Åpen
 - **Berører:** PS-LOAN-004, PS-COM-005, PS-COM-006, PS-NFR-007, OD-0005
-- **Spørsmål:** Er meldingen i en låneforespørsel privat fritekst som skal ende-til-ende-krypteres (PS-COM-005), eller del av den strukturerte henvendelsen (PS-COM-006)? Inntil dette er besluttet, lagres den på forespørselen, vises bare for partene og kopieres aldri til hendelser eller logger. Kommer den inn under kryptering, flyttes den til chatten når OD-0005 er besluttet.
-- **Avhenger av:** OD-0005 og produktvurdering.
+- **Spørsmål:** Er meldingen i en låneforespørsel privat fritekst som skal ende-til-ende-krypteres (PS-COM-005), eller del av den strukturerte henvendelsen (PS-COM-006)? Inntil dette er besluttet, lagres den på forespørselen, vises bare for partene og kopieres aldri til hendelser eller logger. Kommer den inn under kryptering, flyttes den til chatten (WP-43).
+- **Avhenger av:** Produktvurdering. Krypteringsmodellen er avgjort i [ADR-0010](architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md).
 
 ### OD-0016 — Når ansvarlig utlåner regnes som reelt utilgjengelig
 - **Lag:** Produktspesifikasjon
@@ -171,7 +167,19 @@ Når spørsmålet er avgjort:
 - **Spørsmål:** Hvilke hendelser skal et objektabonnement varsle om som standard, hvilke kan brukeren velge selv, og hvor ofte kan samme person varsles om et objekt (visjonen nevner omtrent hver andre time for hyppige redigeringer)? Gjelder det for eksempel endret tittel, beskrivelse, vilkår eller bilder? Inntil dette er besluttet, varsler et abonnement bare at objektet er blitt tilgjengelig for nye lån igjen, som visjonen fremhever; endringer i innholdet varsler ingen abonnenter. Nye regler legges inn ved siden av den regelen og samme tilgangskontroll.
 - **Avhenger av:** Produktvurdering og varslingspreferanser (OD-0004).
 
+### OD-0020 — Hvem kan stenge lånelogistikk-kanalen tidlig
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-COM-007, PS-USR-007, VP-11
+- **Spørsmål:** Hvem kan stenge logistikk-kanalen for et lån før lånet er avsluttet, ved trakassering eller særskilt sikkerhetsrisiko: hver av partene selv, plattformforvalter etter en rapport, eller begge? Kravet sier at kanalen kan stenges tidligere, men ikke av hvem. Inntil dette er besluttet, stenges kanalen bare når lånet avsluttes eller partene byttes. Selve stengingen er bygget og testet (endelig, også ved ny blokkering), men bare prosessen `loan_logistics.safety_closures` kan utføre den, og ingenting i produktet kjører den. Beslutningen legger sin vei inn der.
+- **Avhenger av:** Produktvurdering av trakassering, sikkerhet og hva den andre parten mister.
+
 ## Avklart
+
+### OD-0005 — Kryptografisk modell for ende-til-ende-kryptert chat
+- **Lag:** Arkitektur
+- **Status:** Avklart
+- **Beslutning:** Se [ADR-0010](architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md).
 
 ### OD-0006 — Kategoritaksonomi for objekter
 - **Lag:** Produktspesifikasjon

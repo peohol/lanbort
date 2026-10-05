@@ -17,7 +17,7 @@ Målet er å kontrollere at robuste unntak kan håndteres uten å legge permanen
 | 43/44 – profiltilgang endres eller ny relasjon oppstår | Fritekstanmeldelser følger nåværende/historisk legitim kontekst; nye relasjoner åpner ikke automatisk gammel privat kontekst | Dekket |
 | 49 – privat chat som dokumentasjon | Brukeren velger eksplisitt hva som sendes inn; saken viser den innsendte kopien uten å åpne resten av chatten | Dekket |
 | 58 – tidligere retur bestrides etter nytt lån | Første lånedetalj gjenåpnes som uavklart; neste gyldige lån består og varsles; ytterligere lån sperres | Dekket |
-| 62 – eneutlåner dør/utilgjengelig | Melder ser kun verifikasjonssak; eventuell representant får egen snever låneflate, ikke konto-overtakelse | Dekket |
+| 62 – eneutlåner dør/utilgjengelig | Melder ser kun verifikasjonssak; eventuell representant får egen snever låneflate, ikke konto-overtakelse | Dekket; representantflaten er utsatt til OD-0003 og ikke i piloten |
 | 65 – miljø blir mindre privat | Endringsflyt viser konsekvenser og personlig valg; passive medlemmer eksponeres ikke | Dekket |
 | 73 – plattformforvalter er inhabil | Behandle-handlinger skjules/blokkeres; saken viser behov for annen habil behandlingsvei | Dekket |
 | 81 – blokkering under aktivt lån | Vanlig chat stenges; samme låneflate beholder strukturerte handlinger og eventuell smal logistikk-kanal | Dekket |

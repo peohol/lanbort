@@ -18,6 +18,10 @@ import {
   rejectMembership,
 } from "../environment/membership-commands";
 import { membershipRejected } from "../environment/events";
+import { approveLoanRequest } from "../loans/approval";
+import { createLoanRequest } from "../loans/commands";
+import { closeLoanLogisticsForSafety } from "../loans/logistics";
+import { logisticsSafetyProcess } from "../loans/policies";
 import { addDays, calendarDate } from "../objects/availability";
 import { acceptCoOwnerInvitation, inviteCoOwner } from "../objects/co-owners";
 import { archiveObject, createObject } from "../objects/commands";
@@ -37,6 +41,7 @@ import { searchObjects } from "../search/queries";
 import {
   acceptFriendRequest,
   blockUser,
+  liftUserBlock,
   removeFriend,
   sendFriendRequest,
 } from "../social/commands";
@@ -151,7 +156,10 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
     | "applicant"
     | "steward"
     | "blockedBefore"
-    | "coOwner",
+    | "coOwner"
+    | "lender"
+    | "borrower"
+    | "secondBorrower",
     UserActor
   >;
   const objects = {} as Record<
@@ -169,6 +177,8 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
   let restoreMs: number;
   let checksBefore: RestoreCheckResult[];
   let vetoedObjectId: string;
+  let loanId: string;
+  let secondLoanId: string;
   let veto: { start: string; end: string };
 
   beforeAll(async () => {
@@ -186,6 +196,9 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
       steward: 0,
       blockedBefore: 0,
       coOwner: 0,
+      lender: 0,
+      borrower: 0,
+      secondBorrower: 0,
     }) as (keyof typeof people)[]) {
       people[name] = await user();
     }
@@ -242,6 +255,38 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
     });
     await run(live, acceptCoOwnerInvitation, people.coOwner, { invitationId });
 
+    // Loans in progress in an environment of their own.
+    const { lender } = people;
+    const { environmentId: loanEnvironmentId } = await run(
+      live,
+      createEnvironment,
+      lender,
+      { name: "Låneringen", type: "open" },
+    );
+    const lend = async (borrower: UserActor, title: string) => {
+      await run(live, joinEnvironment, borrower, {
+        environmentId: loanEnvironmentId,
+        answers: [],
+      });
+      const objectId = await object(lender, title);
+      await run(live, publishObject, lender, {
+        objectId,
+        environmentId: loanEnvironmentId,
+      });
+      const { requestId } = await run(live, createLoanRequest, borrower, {
+        objectId,
+        origin: { kind: "environment", environmentId: loanEnvironmentId },
+        start: { kind: "asap" },
+        end: { kind: "duration", days: 3 },
+        message: "Kan jeg låne den?",
+        termsVersion: 1,
+      });
+      return (await run(live, approveLoanRequest, lender, { requestId }))
+        .loanId;
+    };
+    loanId = await lend(people.borrower, "lånt");
+    secondLoanId = await lend(people.secondBorrower, "også lånt");
+
     // Already in the backup: the journal's margin reaches back to it.
     await run(live, blockUser, people.blocker, {
       userId: people.blockedBefore.userId,
@@ -279,6 +324,32 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
     await run(live, deleteOwnAccount, people.deleted, {});
     await run(live, blockUser, people.blocker, {
       userId: people.blocked.userId,
+    });
+    // Blocks open the loans' logistics channels, and they are closed as a
+    // safety measure (PS-COM-007); the second block is lifted again.
+    const closeForSafety = async (loan: string) => {
+      const { id: channelId } = await live.db
+        .selectFrom("app.loan_logistics_channels")
+        .select("id")
+        .where("loan_id", "=", loan)
+        .executeTakeFirstOrThrow();
+      await run(
+        live,
+        closeLoanLogisticsForSafety,
+        systemActor(logisticsSafetyProcess),
+        { channelId },
+      );
+    };
+    await run(live, blockUser, people.borrower, {
+      userId: people.lender.userId,
+    });
+    await closeForSafety(loanId);
+    await run(live, blockUser, people.secondBorrower, {
+      userId: people.lender.userId,
+    });
+    await closeForSafety(secondLoanId);
+    await run(live, liftUserBlock, people.secondBorrower, {
+      userId: people.lender.userId,
     });
     await run(live, removeFriend, people.friend, {
       userId: people.unfriended.userId,
@@ -370,6 +441,9 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
         "object.deleted",
         "platform_role.revoked",
         "user_block.created",
+        "user_block.created",
+        "loan_logistics.closed_for_safety",
+        "loan_logistics.closed_for_safety",
       ].sort(),
     );
   });
@@ -454,6 +528,27 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
     expect(roles).toEqual([{ revoked_by_process: "ops.restore" }]);
   });
 
+  it("keeps logistics channels closed for safety closed", async () => {
+    const closures = (loan: string) =>
+      restored.db
+        .selectFrom("app.loan_logistics_channels")
+        .select("close_reason")
+        .where("loan_id", "=", loan)
+        .execute();
+
+    // The first block came after the backup, so its replay opened the
+    // channel again and the closure's replay closed it. The second was
+    // lifted again, so nothing opened; the closure is kept on its own.
+    expect(await closures(loanId)).toEqual([{ close_reason: "safety" }]);
+    expect(await closures(secondLoanId)).toEqual([{ close_reason: "safety" }]);
+
+    // A new block between them opens nothing.
+    await run(restored, blockUser, people.secondBorrower, {
+      userId: people.lender.userId,
+    });
+    expect(await closures(secondLoanId)).toEqual([{ close_reason: "safety" }]);
+  });
+
   it("keeps a co-owner's veto, but not one withdrawn again", async () => {
     expect(
       results.filter(
@@ -502,7 +597,7 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
         .where("actor_process", "=", "ops.restore")
         .where("event_type", "=", "user_block.created")
         .executeTakeFirstOrThrow(),
-    ).toEqual({ count: "1" });
+    ).toEqual({ count: "2" });
   });
 });
 

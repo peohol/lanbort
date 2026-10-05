@@ -112,13 +112,19 @@ E-postlevering via adapter og minimal sensitiv payload. OD-0004 kan ferdigstille
 **Avhenger av:** OD-0005  
 Dokumenter nøkkel-, multi-device- og recovery-modell før meldingsimplementasjon.
 
+**Status:** Ferdig. OD-0005 er avgjort i [ADR-0010](../architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md), med kryptogrunnlaget og testene i `packages/e2ee`. ADR-en beskriver hva WP-43, WP-44 og WP-46 bygger videre på.
+
 ### WP-43 — Privat E2EE-chat
-**Krav:** PS-COM-004–006, PS-NFR-007; ADR-0003  
+**Krav:** PS-COM-004–006, PS-NFR-007; ADR-0003, ADR-0010  
 Ciphertext-lagring, klientkryptering, ingen lesebekreftelser og kontrollert første kontakt.
+
+**Status:** Ferdig bygget, men av for ekte brukere til Port C er oppfylt (se [servergrensen](server-boundary.md#privat-chat-wp-43)). Del 1 er serverens leveringstjeneste. Del 2 er krypteringen i nettleseren, lagringen på enheten, chatsidene, «Mine enheter», kobling med QR-kode eller kode, tilbakestilling og sikkerhetskoden. Kjent og bevisst utsatt: gjenopprettingsnøkkel med sikkerhetskopi, kryptering i en egen Web Worker (ADR-0010 sier «bør»), og reparasjon av en enhet som har kommet i utakt med en gruppe uten å tilbakestille. En ny enhet som venter på godkjenning, må holde siden åpen; lastes den på nytt, må koblingen startes igjen.
 
 ### WP-44 — Lånelogistikk ved blokkering
 **Krav:** PS-COM-007  
 Egen lånebundet samtaletype med servervalidert åpning/stenging.
+
+**Status:** Ferdig: databasen åpner kanalen ved blokkering mellom partene i et pågående lån og stenger den når lånet avsluttes eller partene byttes, og meldingene går i en egen kryptert samtaletype på privat chats leveringstjeneste, med korte meldinger og ingen levering etter stenging (se [servergrensen](server-boundary.md#lånelogistikk-ved-blokkering-wp-44)). Hvem som kan stenge kanalen tidlig som sikkerhetstiltak, er ikke besluttet (OD-0020). I nettleseren tilbyr lånets side samtalen når kanalen er åpen, samtalen er merket som kun for praktisk avslutning av lånet med lenke til det, og skrivefeltet sier fra før en melding blir for lang.
 
 ### WP-45 — Administrative saker og kø
 **Krav:** PS-COM-010–015  
@@ -127,6 +133,8 @@ Sakstyper, partstilgang, tildeling, habilitet og separate forklaringsrunder.
 ### WP-46 — Privat melding som saksdokumentasjon
 **Krav:** PS-COM-013  
 Lokal dekryptering og eksplisitt innsendt kopi uten bakdør til privat chat.
+
+**Status:** Serversiden er ferdig: en deltaker kan sende inn en lesbar kopi av valgte private meldinger sammen med det hen skriver i en sak, og kopien blir saksdata (se [servergrensen](server-boundary.md)). Selve valget i samtalen, der meldingene dekrypteres på enheten, bygges når saker får en egen side; chatvisningen fra WP-43 har historikken det trenger. Vedlegg kan ikke sendes inn ennå, fordi verken privat chat eller saker har vedlegg.
 
 ## Fase 5
 
@@ -148,7 +156,7 @@ Kontotilstander, bindingkontroll, pseudonymisering og avledet datasletting.
 
 ### WP-54 — Død/varig utilgjengelighet og representant
 **Krav:** PS-ADM-007–008  
-Start først når OD-0003 er avklart.
+Utsatt til OD-0003 er avklart; ikke en del av piloten. Det som finnes nå er fail-closed: en melding (PS-ADM-007) blir en fortrolig verifikasjonssak for plattformforvaltere (WP-45) som ikke endrer konto, lån eller tilganger, og det finnes ingen representantrolle, -tilgang eller særskilt kontoavslutning. Tester i domenet og databasen viser at ingen (melder, medeier eller plattformforvalter) får tilgang til eller handler for brukeren, og at en ny rolle, policy eller databaseregel for representanter ikke kan legges til uten at testene endres bevisst.
 
 ### WP-55 — Duplikat/falsk identitet
 **Krav:** PS-ADM-009–010  
@@ -183,13 +191,13 @@ Systematisk gjennomgang av alle kjerneflyter på mobil, desktop, tastatur og hje
 ## Fase 7
 
 ### WP-70 — Autorisasjons- og personvernsikkerhetstest
-Prøv eksplisitt skjulte miljøer, historisk tilgang, medeiergrenser, inhabilitet og representanttilgang.
+Prøv eksplisitt skjulte miljøer, historisk tilgang, medeiergrenser, inhabilitet og representanttilgang. Så lenge OD-0003 er åpen, er det pilotmodellen som testes: representanttilgang skal ikke kunne oppnås. Privilegerte plattformforvalterhandlinger skal være avvist uansett hva innloggingstjenesten rapporterer, så lenge OD-0010 er åpen. Privat chat (WP-43) er med: samtaler og ventende enhetskoblinger finnes i den skjulte verdenen, og bare samtalens deltakere når dem. Responstid som sidekanal testes ikke automatisk, fordi slike målinger blir ustabile i delt CI; den hører til den uavhengige sikkerhetsgjennomgangen i Port E.
 
 ### WP-71 — Samtidighets- og idempotensstresstest
 Parallelle godkjenninger, retry, dobbelttrykk, avtaleendring og gjenåpnet retur.
 
 ### WP-72 — Backup/restore-øvelse
-Verifiser RPO/RTO-mål, rebuild av indeks og at slettet/begrenset data ikke blir aktivt igjen.
+Verifiser RPO/RTO-mål, rebuild av indeks og at slettet/begrenset data ikke blir aktivt igjen. I utviklingsfasen er strategien gjenoppbygging fra migrasjonene og manuelle dumps på Supabase Free ([ADR-0009](../architecture/decisions/ADR-0009-backup-i-utviklingsfasen.md)).
 
 ### WP-73 — Misbruks- og rate-limit-hardening
 Kontaktspam, scraping, invitasjoner, rapportering og auth-angrep.

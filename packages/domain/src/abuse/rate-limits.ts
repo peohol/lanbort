@@ -32,10 +32,21 @@ export const rateLimits = {
   contact: rule("contact", 60, hours),
   /** Invitations to environments, roles and co-ownership. */
   invitations: rule("invitations", 60, hours),
+  /**
+   * Writing in cases, where a participant may submit copies of private
+   * messages with what they write (WP-46).
+   */
+  caseEntries: rule("case_entries", 60, hours),
   /** Reports to administrators and platform stewards. */
   reports: rule("reports", 20, hours),
   /** Finding and looking up others: search, profiles, environments, relations. */
   lookups: rule("lookups", 150, 5 * minutes),
+  /** Private messages and commits from a chat device (ADR-0010 §9). */
+  chatMessages: rule("chat_messages", 600, hours),
+  /** Chat devices, links and key packages: setting up and adding devices. */
+  chatKeys: rule("chat_keys", 120, hours),
+  /** Replacing the account key, which shuts out every device (ADR-0010 §8). */
+  chatResets: rule("chat_resets", 3, 24 * hours),
   /** Place names from the external place search. */
   placeSearch: rule("place_search", 30, 5 * minutes),
   /** E-mail codes sent to one address, for sign-in and re-authentication. */

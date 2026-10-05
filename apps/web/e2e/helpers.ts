@@ -1,6 +1,18 @@
-import { randomBytes, randomUUID } from "node:crypto";
+import {
+  generateKeyPairSync,
+  randomBytes,
+  randomUUID,
+  sign,
+} from "node:crypto";
+import AxeBuilder from "@axe-core/playwright";
 import { readEmailCode } from "@lanbort/auth/testing";
-import { type APIRequestContext, expect, type Page } from "@playwright/test";
+import { chatSignatureLabel, deviceCertificateBody } from "@lanbort/contracts";
+import {
+  type APIRequestContext,
+  type APIResponse,
+  expect,
+  type Page,
+} from "@playwright/test";
 
 /** Shared steps for the browser tests, against the local Supabase stack. */
 export const newEmail = () => `e2e-${randomUUID()}@example.test`;
@@ -89,6 +101,49 @@ export const today = () =>
     day: "2-digit",
   }).format(new Date());
 
+/**
+ * A loan agreed between two signed-in accounts, starting today: the lender
+ * registers the object, the borrower asks, and the lender approves.
+ */
+export async function agreeLoan(
+  lender: APIRequestContext,
+  borrower: APIRequestContext,
+  title: string,
+): Promise<string> {
+  const json = async (response: Promise<APIResponse>) =>
+    (await response).json();
+  const { objectId } = await json(
+    postCommand(lender, "/api/objects", {
+      title,
+      categoryId: "annet",
+      description: `${title} til utlån.`,
+      availability: [{ start: today(), end: null }],
+    }),
+  );
+  const preview = await json(
+    borrower.get(`/api/loan-requests/preview?objectId=${objectId}`),
+  );
+  const { requestId } = await json(
+    postCommand(borrower, "/api/loan-requests", {
+      objectId,
+      origin: { kind: "direct" },
+      start: { kind: "date", date: today() },
+      end: { kind: "duration", days: 2 },
+      message: "Kan jeg låne den?",
+      termsVersion: preview.termsVersion,
+      responsibilityDeclarationVersion:
+        preview.responsibilityDeclarationVersion,
+    }),
+  );
+  await postCommand(lender, `/api/loan-requests/${requestId}/responsibility`, {
+    declarationVersion: preview.responsibilityDeclarationVersion,
+  });
+  const { loanId } = await json(
+    postCommand(lender, `/api/loan-requests/${requestId}/approve`),
+  );
+  return loanId;
+}
+
 /** A word no other test uses, so the shared database cannot interfere. */
 export const uniqueWord = () =>
   Array.from(randomBytes(12), (byte) =>
@@ -116,3 +171,66 @@ export const blankMapTile = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
   "base64",
 );
+
+const ed25519Key = () => {
+  const { publicKey, privateKey } = generateKeyPairSync("ed25519");
+  return {
+    publicKey: publicKey
+      .export({ format: "der", type: "spki" })
+      .subarray(12)
+      .toString("base64"),
+    privateKey,
+  };
+};
+
+/**
+ * A chat account key and one device it certified, as a client makes them
+ * (ADR-0010 §3), for registering chat over the API.
+ */
+export function chatAccount(userId: string) {
+  const account = ed25519Key();
+  const certify = (deviceId = randomUUID()) => {
+    const body = {
+      accountId: userId,
+      deviceId,
+      deviceKey: ed25519Key().publicKey,
+      accountKey: account.publicKey,
+    };
+    const signature = sign(
+      null,
+      Buffer.from(
+        chatSignatureLabel("device-certificate") + deviceCertificateBody(body),
+      ),
+      account.privateKey,
+    ).toString("base64");
+    return { v: 1 as const, ...body, signature };
+  };
+
+  return { accountKey: account.publicKey, certify };
+}
+
+/**
+ * WCAG 2.2 level A and AA as the automated bar. The legal target is set
+ * before public launch (PS-NFR-010, Port E); this is the floor until then.
+ */
+const wcagTags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+
+/**
+ * The WCAG rules that fail, by rule and element, for a readable diff. The
+ * sticky header and navigation cover a different strip of the page at every
+ * scroll position, so for this they lie in the flow; that they never cover
+ * what has focus is what `keyboardProblems` checks.
+ */
+export async function axeViolations(page: Page) {
+  const unstuck = await page.addStyleTag({
+    content: ".app-header, .main-navigation { position: static !important }",
+  });
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(wcagTags)
+    .analyze();
+  await unstuck.evaluate((style) => (style as Element).remove());
+
+  return violations.flatMap(({ id, nodes }) =>
+    nodes.map(({ target }) => `${id}: ${target.join(" ")}`),
+  );
+}

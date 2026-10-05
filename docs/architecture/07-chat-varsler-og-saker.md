@@ -11,7 +11,7 @@
 - private nøkler skal ikke lagres ukryptert på server
 - administrator-/plattformrolle gir ingen dekrypteringsnøkkel
 
-Detaljert multi-device-/nøkkelbackupmodell er fortsatt OD-0005.
+Protokoll, flere enheter, nøkkelbytte, enhetstap og recovery er avgjort i [ADR-0010](decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md): MLS (RFC 9420) med én kontonøkkel per konto og egne nøkler per enhet.
 
 ### Metadata
 Serveren trenger minst samtale-ID, avsenderkonto/-enhet, mottakere, tidspunkt, melding-ID og leveringsstatus. Metadata skal minimeres og ikke brukes til sosial rangering/profilering.

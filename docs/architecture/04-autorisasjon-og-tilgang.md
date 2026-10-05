@@ -42,6 +42,8 @@ Saksbehandlerpolicy må eksplisitt avvise aktør som er part, rapportert eller e
 ### Representant
 Representative grant må være bundet til eksplisitte ressurser og handlinger og ha revokering/utløp.
 
+Inntil OD-0003 er avgjort finnes ingen representative grant, og ingen kodevei gir en annen bruker tilgang til eller handlingsrom for en konto som er meldt død eller varig utilgjengelig. Melderen, en medeier eller plattformforvalteren som behandler meldingen, får ikke mer tilgang enn de hadde fra før.
+
 ## Sesjonssikkerhet
 
 - sikre, HttpOnly-baserte nettlesersesjoner foretrekkes fremfor langlivede tokens eksponert for JavaScript

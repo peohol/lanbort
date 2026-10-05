@@ -37,7 +37,7 @@ Leveranser:
 | WP-02 | Supabase-migrasjoner, privat `app`-skjema, pgTAP-tester, isolert CI-database, reset-rutine og genererte databasetyper kontrollert mot skjema | Ferdig |
 | WP-03 | Lint/typecheck/test, Playwright-røyktest, dependency-audit, Gitleaks med selvtest, CSP/sikkerhetshoder og logging med felt-tillatelsesliste | Ferdig |
 
-Kjente begrensninger som bevisst er utsatt: CSP med `'unsafe-inline'` for skript (vurderes før Port C), og hostet staging/produksjon (etableres når det trengs, senest før pilot).
+Kjente begrensninger som bevisst er utsatt: CSP med `'unsafe-inline'` for skript utenfor chatsidene, og hostet staging/produksjon (etableres når det trengs, senest før pilot).
 
 ### Fase 1 — Identitet, autorisasjon og hendelsesgrunnmur
 Mål: systemet kan vite hvem brukeren er, hva vedkommende får gjøre, og registrere kritiske endringer korrekt.
@@ -110,7 +110,7 @@ Mål: brukerne får nødvendig kommunikasjon uten å blande privat chat med syst
 Leveranser:
 - varslingssenter og leveringsworker
 - e-post for pilotkritiske hendelser
-- E2EE privat chat etter avklaring av OD-0005
+- E2EE privat chat etter ADR-0010
 - smal lånelogistikk ved blokkering
 - administrative samtaler og saksmodell
 - eksplisitt innsending av privat meldingsinnhold som saksdokumentasjon
@@ -124,7 +124,7 @@ Leveranser:
 - aggregater som tåler moderering/gjenåpning
 - rapporter og lokale/globale modereringstiltak
 - suspensjon/deaktivering/kontrollert sletting
-- representantmodell og særskilt kontoavslutning når OD-0003 er avklart
+- representantmodell og særskilt kontoavslutning når OD-0003 er avklart (utsatt; ikke en del av piloten, og deaktivert inntil da)
 
 ### Fase 6 — Oppdagelse, finpuss og full UX-integrasjon
 Mål: alle kjernefunksjoner presenteres gjennom den vedtatte informasjonsarkitekturen.

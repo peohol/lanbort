@@ -1,8 +1,20 @@
-import type { Loan, LoanHistoryEntry } from "@lanbort/contracts";
-import { collectPages, readLoan, readLoanHistory } from "@lanbort/domain";
+import type {
+  Loan,
+  LoanHistoryEntry,
+  LoanLogisticsChannel,
+  LoanLogisticsCloseReason,
+} from "@lanbort/contracts";
+import {
+  collectPages,
+  readLoan,
+  readLoanHistory,
+  readLoanLogistics,
+} from "@lanbort/domain";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { StartLoanLogistics } from "@/chat/start-loan-logistics";
 import { ActionButton } from "@/components/action-button";
+import { chatConversationHref } from "@/navigation/chat";
 import {
   morePagesHref,
   pagesShown,
@@ -17,6 +29,7 @@ import {
   loanSteps,
   personName,
 } from "@/presentation/loan-status";
+import { chatEnabled } from "@/server/env";
 import {
   pageQuery,
   pageQueryOrNotFound,
@@ -65,6 +78,47 @@ function LoanStatus({ loan }: { loan: Loan }) {
             <Steps steps={secondary} />
           </div>
         </details>
+      )}
+    </section>
+  );
+}
+
+const closedBecause: Record<LoanLogisticsCloseReason, string> = {
+  loan_ended: "Samtalen om lånet er stengt fordi lånet er avsluttet.",
+  parties_changed:
+    "Samtalen om lånet er stengt fordi lånet har fått en annen utlåner.",
+  safety:
+    "Samtalen om lånet er stengt av sikkerhetshensyn. Bruk valgene for lånet over videre.",
+};
+
+/**
+ * WP-44 (PS-COM-007, UX-IA): when a block has closed ordinary chat, the
+ * parties may still write short practical messages about this loan, in a
+ * conversation marked as only for that.
+ */
+function Logistics({ channel }: { channel: LoanLogisticsChannel }) {
+  const open = channel.closedAt === null;
+
+  return (
+    <section aria-labelledby="logistikk">
+      <h2 id="logistikk">Samtale om lånet</h2>
+      <p>
+        {open
+          ? "Vanlig chat er stengt mellom dere fordi en av dere har blokkert den andre. Dere kan likevel skrive korte meldinger om overlevering, retur, tid, sted og gjenstanden, kun for å avslutte lånet."
+          : closedBecause[channel.closeReason ?? "loan_ended"]}
+      </p>
+      {channel.conversationId ? (
+        <p className="link-row">
+          <Link href={chatConversationHref(channel.conversationId)}>
+            {open ? "Gå til samtalen om lånet" : "Se samtalen om lånet"}
+          </Link>
+        </p>
+      ) : (
+        open && (
+          <div className="actions">
+            <StartLoanLogistics channelId={channel.id} />
+          </div>
+        )
       )}
     </section>
   );
@@ -153,6 +207,10 @@ export default async function LoanPage({
     ({ entries }) => entries,
     pagesShown(query, historyKey),
   );
+  // Newest first, and at most one open: the one that matters now.
+  const logistics = chatEnabled()
+    ? (await pageQuery(readLoanLogistics, { loanId }))?.channels[0]
+    : undefined;
 
   return (
     <main>
@@ -161,6 +219,7 @@ export default async function LoanPage({
       </p>
       <h1>{loan.agreement.title}</h1>
       <LoanStatus loan={loan} />
+      {logistics && <Logistics channel={logistics} />}
       <Agreement loan={loan} />
       <History
         loan={loan}

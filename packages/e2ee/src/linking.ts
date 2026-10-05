@@ -1,0 +1,204 @@
+import { z } from "zod";
+import {
+  type AccountKey,
+  type Device,
+  type DeviceCertificate,
+  type DeviceKey,
+  certifyDevice,
+  createDeviceKey,
+} from "./identity";
+import { exportAccountKey, importAccountKey } from "./persist";
+import { Secret, wipe } from "./secret";
+import { bytesEqual, fromBase64, loadSuite, toBase64, utf8 } from "./suite";
+
+/**
+ * Linking a new device to an account (ADR-0010 §5). The new device shows
+ * its one-time HPKE key and a checksum of its keys on the screen, as a QR
+ * code or a 26-character code. An existing device compares them with the
+ * request the server passes on, certifies the new device and seals the
+ * account key to the HPKE key. The server only ever sees the sealed package,
+ * and cannot swap a key without the checksum on the screen giving it away.
+ */
+
+/** What the new device sends to the server and shows on its screen. */
+export interface LinkRequestKeys {
+  deviceId: string;
+  deviceKey: Uint8Array;
+  linkKey: Uint8Array;
+}
+
+/** The new device's side of a link while it waits for approval. */
+export interface PendingLink {
+  keys: LinkRequestKeys;
+  /** 26 characters, for typing on the existing device. */
+  code: string;
+  /** The QR code's content. */
+  qr: string;
+  /** Opens the package the existing device sealed, once it is there. */
+  open(sealed: Uint8Array): Promise<{ account: AccountKey; device: Device }>;
+}
+
+const crockford = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+const codeLength = 26;
+const qrPrefix = "LANBORT-LINK:1:";
+const packageInfo = utf8("Lanbort link package v1");
+
+/** 128 bits of SHA-256 over the request's keys, in Crockford base32. */
+export async function linkCode(keys: LinkRequestKeys): Promise<string> {
+  const material = utf8(
+    JSON.stringify([
+      "Lanbort link code v1",
+      keys.deviceId,
+      toBase64(keys.deviceKey),
+      toBase64(keys.linkKey),
+    ]),
+  );
+  const digest = new Uint8Array(
+    await crypto.subtle.digest("SHA-256", material),
+  ).subarray(0, 16);
+  let bits = 0n;
+  for (const byte of digest) bits = (bits << 8n) | BigInt(byte);
+  // 26 characters of 5 bits carry 130 bits; the top two are zero.
+  let code = "";
+  for (let i = codeLength - 1; i >= 0; i--) {
+    code += crockford[Number((bits >> BigInt(i * 5)) & 31n)];
+  }
+  return code;
+}
+
+/** A typed code as the user may enter it: any case, spaces, dashes, O for 0. */
+export function normalizeLinkCode(typed: string): string {
+  return typed
+    .toUpperCase()
+    .replace(/[\s-]/g, "")
+    .replace(/O/g, "0")
+    .replace(/[IL]/g, "1");
+}
+
+const toBase64Url = (bytes: Uint8Array) =>
+  toBase64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const fromBase64Url = (text: string) =>
+  fromBase64(text.replace(/-/g, "+").replace(/_/g, "/"));
+
+/** What a scanned QR code says, or undefined if it is not a link code. */
+export function readLinkQr(
+  content: string,
+): { linkKey: Uint8Array; code: string } | undefined {
+  if (!content.startsWith(qrPrefix)) return undefined;
+  const [key, code] = content.slice(qrPrefix.length).split(":");
+  try {
+    return key && code?.length === codeLength
+      ? { linkKey: fromBase64Url(key), code }
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Which of the account's pending requests the screen shows: the one whose
+ * keys give the code (and, from a QR code, whose link key it is). None if
+ * the server's copy differs from the screen.
+ */
+export async function matchLinkRequest<R extends LinkRequestKeys>(
+  requests: readonly R[],
+  shown: { code: string; linkKey?: Uint8Array },
+): Promise<R | undefined> {
+  const code = normalizeLinkCode(shown.code);
+  for (const request of requests) {
+    if (
+      (await linkCode(request)) === code &&
+      (shown.linkKey === undefined ||
+        bytesEqual(shown.linkKey, request.linkKey))
+    ) {
+      return request;
+    }
+  }
+  return undefined;
+}
+
+/** Run on the new device, signed in but without chat. */
+export async function startLink(
+  deviceId: string = crypto.randomUUID(),
+): Promise<PendingLink> {
+  const { hpke } = await loadSuite();
+  const deviceKey: DeviceKey = await createDeviceKey();
+  const { privateKey, publicKey } = await hpke.generateKeyPair();
+  const keys: LinkRequestKeys = {
+    deviceId,
+    deviceKey: deviceKey.publicKey,
+    linkKey: await hpke.exportPublicKey(publicKey),
+  };
+  const code = await linkCode(keys);
+  const linkSecret = new Secret(privateKey);
+
+  return {
+    keys,
+    code,
+    qr: `${qrPrefix}${toBase64Url(keys.linkKey)}:${code}`,
+    async open(sealed) {
+      const { enc, ct } = sealedSchema.parse(
+        JSON.parse(new TextDecoder().decode(sealed)),
+      );
+      const plain = await hpke.open(
+        linkSecret.reveal(),
+        enc,
+        ct,
+        packageInfo,
+        utf8(deviceId),
+      );
+      try {
+        const account = importAccountKey(plain);
+        return {
+          account,
+          // Ed25519 signatures are deterministic: this is the very
+          // certificate the approving device signed.
+          device: {
+            certificate: await certifyDevice(
+              account,
+              deviceId,
+              deviceKey.publicKey,
+            ),
+            signingKey: deviceKey.signingKey,
+          },
+        };
+      } finally {
+        wipe(plain);
+      }
+    },
+  };
+}
+
+const bytes = z.string().transform((value) => fromBase64(value));
+const sealedSchema = z.strictObject({ enc: bytes, ct: bytes });
+
+/**
+ * Run on an existing device once the user has compared the code: certifies
+ * the new device and seals the account key to it.
+ */
+export async function approveLink(
+  account: AccountKey,
+  request: LinkRequestKeys,
+): Promise<{ certificate: DeviceCertificate; sealed: Uint8Array }> {
+  const { hpke } = await loadSuite();
+  const certificate = await certifyDevice(
+    account,
+    request.deviceId,
+    request.deviceKey,
+  );
+  const plain = exportAccountKey(account).reveal();
+  try {
+    const { enc, ct } = await hpke.seal(
+      await hpke.importPublicKey(request.linkKey),
+      plain,
+      packageInfo,
+      utf8(request.deviceId),
+    );
+    return {
+      certificate,
+      sealed: utf8(JSON.stringify({ enc: toBase64(enc), ct: toBase64(ct) })),
+    };
+  } finally {
+    wipe(plain);
+  }
+}

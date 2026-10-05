@@ -21,10 +21,14 @@ Arkitekturen peker oppover til krav og UX-regler som den oppfyller. Viktige tekn
 11. [Eksterne integrasjoner](10-eksterne-integrasjoner.md)
 12. [Arkitekturbeslutninger](decisions/README.md)
 
+Tekniske utredninger som grunnlag for åpne beslutninger ligger i [`utredninger/`](utredninger/). De er ikke normative før beslutningen er tatt:
+
+- [Mekanisme for privilegert autentisering (OD-0010)](utredninger/OD-0010-privilegert-autentisering.md)
+
 Åpne tekniske valg som ennå ikke har tilstrekkelig beslutningsgrunnlag, registreres i [det felles beslutningsregisteret](../open-decisions.md). Når et viktig teknisk veivalg faktisk tas, dokumenteres det som ADR der det er relevant.
 
 ## Modenhet
 
 Arkitekturen er konkret nok til å brytes ned i implementeringsarbeid uten å låse leverandørvalg som ikke påvirker domenemodellen. PostgreSQL er valgt som referanse og planlagt transaksjonell kjerne. Fem strukturelle beslutninger er dokumentert som ADR-er.
 
-Åpne spørsmål som må løses før den relevante funksjonen eller bred lansering finnes i [`../open-decisions.md`](../open-decisions.md), særlig E2EE-nøkkelstyring, retention, regulerte objekter og juridisk lanseringsgjennomgang.
+Åpne spørsmål som må løses før den relevante funksjonen eller bred lansering finnes i [`../open-decisions.md`](../open-decisions.md), særlig retention, regulerte objekter og juridisk lanseringsgjennomgang.

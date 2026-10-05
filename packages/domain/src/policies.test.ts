@@ -1,6 +1,9 @@
+import { caseParticipantRoleSchema } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
+import { platformRoles } from "./actor";
 import { accountMatrices } from "./account/policies.matrix";
 import { caseMatrices } from "./cases/policies.matrix";
+import { chatMatrices } from "./chat/policies.matrix";
 import { environmentMatrices } from "./environment/policies.matrix";
 import { homeMatrices } from "./home/policies.matrix";
 import { loanMatrices } from "./loans/policies.matrix";
@@ -47,6 +50,7 @@ const matrices: readonly PolicyMatrix<never, never>[] = [
   ...moderationMatrices,
   ...searchMatrices,
   ...restoreMatrices,
+  ...chatMatrices,
 ] as never;
 
 describe("policy coverage", () => {
@@ -60,6 +64,26 @@ describe("policy coverage", () => {
 
   it("covers both allowed and denied outcomes for every policy", () => {
     expect(matrices.flatMap(matrixGaps)).toEqual([]);
+  });
+});
+
+/**
+ * PS-ADM-008, OD-0003: representative access is not part of the pilot. No
+ * policy, global role or case role may give it until OD-0003 is decided and
+ * a policy explicitly allows it; adding one means changing this test on
+ * purpose (pgTAP 0030 holds the same line in the database).
+ */
+describe("representative access while OD-0003 is open", () => {
+  const representative = /represent|deceas|death|on_behalf|impersonat/i;
+
+  it("has no policy, global role or case role", () => {
+    expect(
+      [
+        ...allPolicies.map((policy) => policy.action),
+        ...platformRoles,
+        ...caseParticipantRoleSchema.options,
+      ].filter((name) => representative.test(name)),
+    ).toEqual([]);
   });
 });
 

@@ -139,6 +139,9 @@ describe("ops:restore", () => {
       `Needs handling: user_block.created ${entryId}`,
     );
     expect(outcome.message).toContain("Search index: rebuilt");
+    expect(outcome.message).toMatch(
+      /Chat: \d+ conversations start new groups\./,
+    );
     expect(outcome.message).toMatch(/Not ready to open \(\d+\.\d s\)\.$/);
   });
 });
