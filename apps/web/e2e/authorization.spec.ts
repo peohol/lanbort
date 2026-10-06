@@ -64,6 +64,7 @@ const probes: Record<string, (ids: Ids) => Record<string, string>> = {
   "chat/links/[linkRequestId]": () => ({}),
   "environments/details": (ids) => ({ environmentId: ids.environmentId }),
   "environments/memberships": (ids) => ({ environmentId: ids.environmentId }),
+  "environments/members": (ids) => ({ environmentId: ids.environmentId }),
   "environments/roles": (ids) => ({ environmentId: ids.environmentId }),
   "environments/publications": (ids) => ({ environmentId: ids.environmentId }),
   "environments/objects": (ids) => ({ environmentId: ids.environmentId }),
@@ -127,6 +128,7 @@ const namesNoResource = new Set([
   "objects",
   "object-invitations",
   "object-subscriptions",
+  "places",
   "search/environments",
   "social",
 ]);

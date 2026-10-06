@@ -58,3 +58,23 @@ export function formatShortPeriod(period: {
     ? `${start.getUTCDate()}.–${shortDayFormat.format(end)}`
     : `${shortDayFormat.format(start)}–${shortDayFormat.format(end)}`;
 }
+
+const calendarFormat = new Intl.DateTimeFormat("en-CA", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  timeZone: productTimeZone,
+});
+
+/** The calendar date (`YYYY-MM-DD`) in Norway at `at`, such as today's. */
+export function calendarDay(at: Date = new Date()): string {
+  return calendarFormat.format(at);
+}
+
+/** The calendar date `days` after `date`. */
+export function addDays(date: string, days: number): string {
+  const day = new Date(`${date}T00:00:00Z`);
+  day.setUTCDate(day.getUTCDate() + days);
+
+  return day.toISOString().slice(0, 10);
+}

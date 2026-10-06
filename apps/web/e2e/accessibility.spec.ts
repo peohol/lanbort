@@ -58,6 +58,7 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
     path: ({ ladder, environmentId }) =>
       `/ting/${ladder}?miljo=${environmentId}`,
   },
+  { name: "Miljøet", path: ({ environmentId }) => `/miljoer/${environmentId}` },
   {
     name: "Be om å låne",
     path: ({ ladder, environmentId }) =>
@@ -321,6 +322,8 @@ async function keyboardProblems(page: Page) {
     ].filter(
       (element) =>
         !(element as HTMLButtonElement).disabled &&
+        // What a closed «Flere valg» holds is reached once it is opened.
+        !element.closest("details:not([open]) > :not(summary)") &&
         element.getClientRects().length > 0 &&
         // Also leaves out what waits inside a closed «Flere valg».
         element.checkVisibility({ visibilityProperty: true }),

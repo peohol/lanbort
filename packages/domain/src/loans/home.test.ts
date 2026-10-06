@@ -33,6 +33,7 @@ function loan(changes: Partial<Loan> = {}): Loan {
     responsibilityTransfer: null,
     control: null,
     approvedAt: at,
+    actions: { confirmControl: false },
     ...changes,
   } as Loan;
 }
@@ -140,6 +141,22 @@ describe("what a loan asks of its party", () => {
     expect(kindOf({ status: "late" })).toBe("loan.late");
     expect(kindOf({ status: "disputed" })).toBe("loan.disputed");
     expect(loanHomeItem(loan({ status: "ended" }))).toBeNull();
+  });
+
+  it("asks the lender to confirm having the object back after an unresolved end", () => {
+    const ended = {
+      status: "ended",
+      role: "lender",
+      control: { confirmedAt: null },
+    } as const;
+
+    expect(
+      kindOf({
+        ...ended,
+        actions: { confirmControl: true } as Loan["actions"],
+      }),
+    ).toBe("loan.confirm_control");
+    expect(kindOf(ended)).toBeUndefined();
   });
 });
 

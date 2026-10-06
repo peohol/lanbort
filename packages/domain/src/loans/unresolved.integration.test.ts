@@ -7,6 +7,7 @@ import {
   loadCommitments,
   objectCommitmentSources,
 } from "../objects/commitments";
+import { readHome } from "../home/queries";
 import { consentToObjectDeletion } from "../objects/deletion";
 import { submitLoanReview } from "../reviews/commands";
 import { readLoanReviews } from "../reviews/queries";
@@ -62,6 +63,13 @@ const confirm = (actor: UserActor, loanId: string) =>
 const loanOf = (actor: UserActor, loanId: string) =>
   executeQuery(tick(), readLoan, { actor, input: { loanId } });
 
+/** What Home asks of `actor` about the loan. */
+const homeKinds = async (actor: UserActor, loanId: string) =>
+  (await executeQuery(tick(), readHome, { actor, input: {} })).sections.flatMap(
+    ({ items }) =>
+      items.flatMap(({ kind, target }) => (target.id === loanId ? [kind] : [])),
+  );
+
 const effective = async (objectId: string) =>
   (await loadDerivedAvailability(db, objectId, calendarDate(kit.now())))
     .effective;
@@ -114,8 +122,13 @@ describe("an administratively unresolved loan (PS-LOAN-018–019)", () => {
       payload: { objectId, otherLoanIds: [] },
     });
 
-    // Nothing is free until an owner has it back.
+    // Nothing is free until an owner has it back, and Home asks the
+    // lender to confirm it; the borrower is asked nothing.
     expect(await effective(objectId)).toEqual([]);
+    expect(await homeKinds(owner, loanId)).toContain("loan.confirm_control");
+    expect(await homeKinds(borrower, loanId)).not.toContain(
+      "loan.confirm_control",
+    );
     await expect(request()).rejects.toMatchObject(conflict);
 
     // A co-owner who is not a party sees what they may do, and nothing else.
@@ -144,6 +157,9 @@ describe("an administratively unresolved loan (PS-LOAN-018–019)", () => {
     expect((await loanOf(owner, loanId)).control).toEqual({
       confirmedAt: confirmed.confirmedAt,
     });
+    expect(await homeKinds(owner, loanId)).not.toContain(
+      "loan.confirm_control",
+    );
     expect(
       (
         await executeQuery(tick(), listCoOwnerLoans, {

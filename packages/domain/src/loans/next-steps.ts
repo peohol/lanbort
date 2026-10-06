@@ -8,8 +8,10 @@ import { takesNewActivity } from "../account/model";
 import type { UserActor } from "../actor";
 import { calendarDate } from "../objects/availability";
 import {
+  beforeHandover,
   type HandoverReading,
   handoverRefusal,
+  periodChangeable,
   type LoanPeriodInterval,
   repeatsLastStatement,
   returnRefusal,
@@ -43,6 +45,8 @@ export interface LoanSteps {
     readonly acceptable: boolean;
   } | null;
   readonly transfer: {
+    readonly kind: "voluntary" | "takeover";
+    readonly fromUserId: string;
     readonly needsBorrowerConsent: boolean;
     readonly borrowerConsentedAt: Date | null;
   } | null;
@@ -50,6 +54,18 @@ export interface LoanSteps {
   readonly awaitingControl: boolean;
   /** The responsible lender is a current owner of the object. */
   readonly lenderOwns: boolean;
+  /** The object still exists, so its agreement can change. */
+  readonly hasObject: boolean;
+  /** The object's owners other than the parties, with their names. */
+  readonly coOwners: readonly {
+    readonly userId: string;
+    readonly realName: string;
+  }[];
+  /**
+   * The loan came through an environment and its handover or return is in
+   * question now (`mediationOffered`), and no mediation of it is open.
+   */
+  readonly mediationAvailable: boolean;
 }
 
 /**
@@ -117,5 +133,26 @@ export function loanActions(
         : [],
     confirmControl:
       role === "lender" && loan.awaitingControl && loan.lenderOwns,
+    proposeAmendment:
+      takesNewActivity(actor.accountStatus) &&
+      loan.hasObject &&
+      loan.amendment === null &&
+      periodChangeable(loan.status)
+        ? loan.status === "reserved"
+          ? "period"
+          : "return_day"
+        : null,
+    withdrawAmendment: loan.amendment?.proposerRole === role,
+    cancel:
+      loan.status === "reserved" &&
+      loan.hasObject &&
+      beforeHandover(loan.period, today),
+    offerResponsibility:
+      role === "lender" && loan.status !== "ended" && transfer === null
+        ? [...loan.coOwners]
+        : [],
+    withdrawResponsibility:
+      transfer?.kind === "voluntary" && transfer.fromUserId === actor.userId,
+    requestMediation: loan.mediationAvailable,
   };
 }

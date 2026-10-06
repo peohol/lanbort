@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { geoAreaSchema } from "./geo";
+import { profileIdSchema } from "./social";
 
 /** PS-ENV-001: the three privacy types of an environment. */
 export const environmentTypeSchema = z.enum(["open", "closed", "hidden"]);
@@ -264,6 +265,21 @@ export const environmentMembershipsSchema = z.strictObject({
   restrictedUserIds: z.array(z.uuid()),
 });
 
+/**
+ * Another active member, as active members see each other (vision 03): a
+ * name and any role, nothing given to the membership process (UX-PRIV-009).
+ */
+export const environmentMemberSchema = z.strictObject({
+  userId: z.uuid(),
+  realName: z.string().nullable(),
+  profileId: profileIdSchema,
+  roles: z.array(environmentRoleSchema),
+});
+
+export const environmentMembersSchema = z.strictObject({
+  members: z.array(environmentMemberSchema),
+});
+
 /** Who holds a role, and since when they have been administrator. */
 export const roleHolderSchema = z.strictObject({
   userId: z.uuid(),
@@ -296,6 +312,7 @@ export type MembershipPassiveReason = z.infer<
   typeof membershipPassiveReasonSchema
 >;
 export type RequirementKind = z.infer<typeof requirementKindSchema>;
+export type Requirement = z.infer<typeof requirementSchema>;
 export type EnvironmentRole = z.infer<typeof environmentRoleSchema>;
 export type EnvironmentState = z.infer<typeof environmentStateSchema>;
 export type WindDownReason = z.infer<typeof windDownReasonSchema>;
@@ -315,3 +332,5 @@ export type AdministeredMembership = z.infer<
 export type EnvironmentMemberships = z.infer<
   typeof environmentMembershipsSchema
 >;
+export type EnvironmentMember = z.infer<typeof environmentMemberSchema>;
+export type EnvironmentMembers = z.infer<typeof environmentMembersSchema>;
