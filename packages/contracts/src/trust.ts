@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { loanEndReasonSchema, loanRequestRoleSchema } from "./loans";
+import { profileIdSchema } from "./social";
 import {
   loanReviewIdSchema,
   reviewDimensionSchema,
@@ -66,7 +67,13 @@ export const profileReviewSchema = z.strictObject({
   subjectRole: loanRequestRoleSchema,
   /** How the loan ended, which decided what could be reviewed. */
   basis: loanEndReasonSchema,
-  author: z.strictObject({ userId: z.uuid(), realName: z.string() }).nullable(),
+  author: z
+    .strictObject({
+      userId: z.uuid(),
+      realName: z.string(),
+      profileId: profileIdSchema,
+    })
+    .nullable(),
   environment: z.strictObject({ id: z.uuid(), name: z.string() }).nullable(),
   scores: z.array(
     z.strictObject({

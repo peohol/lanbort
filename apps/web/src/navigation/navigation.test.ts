@@ -34,7 +34,7 @@ describe("where notifications and Home lead (UX-IA-002)", () => {
     expect(hrefFor({ type: "object_invitation", id })).toBe(
       `/mine-ting#invitasjon-${id}`,
     );
-    expect(hrefFor({ type: "user", id })).toBe("/konto#venner");
+    expect(hrefFor({ type: "user", id })).toBe(`/personer/${id}`);
   });
 
   it("leads nowhere while no page shows the target", () => {

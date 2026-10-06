@@ -34,6 +34,7 @@ interface World {
   readonly place: string;
   readonly thing: string;
   readonly cases: { own: string; handled: string; environmentId: string };
+  readonly friendId: string;
 }
 
 /** The signed-in pages, each in the state where it has the most to show. */
@@ -80,6 +81,7 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
     name: "Ny sak",
     path: ({ environmentId }) => `/saker/ny?kontakt=${environmentId}`,
   },
+  { name: "Person", path: ({ friendId }) => `/personer/${friendId}` },
 ];
 
 let world: World;
@@ -236,6 +238,7 @@ test.beforeAll(async ({ browser, playwright }) => {
     place,
     thing,
     cases,
+    friendId: anna.id,
   };
   signedIn = await context.storageState();
   await context.close();

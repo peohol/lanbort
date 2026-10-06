@@ -21,6 +21,7 @@ export * from "./publications";
 export * from "./loans";
 export * from "./reviews";
 export * from "./trust";
+export * from "./people";
 export * from "./social";
 export * from "./notifications";
 export * from "./home";

@@ -4,7 +4,7 @@ import { type Kysely, type RawBuilder, sql } from "kysely";
 import { type LenderScope, madeWithinScope } from "../loans/store";
 import { otherSide } from "../reviews/model";
 import { reopenedAfter } from "../reviews/store";
-import { loadPair } from "../social/pair";
+import { loadPeople, profileAccessOf } from "../people/store";
 import type { ScoreTally } from "./model";
 import type { ProfileAccessResource } from "./policies";
 
@@ -16,59 +16,19 @@ type Db = Kysely<Database>;
 
 /**
  * The viewer's relation to the person whose profile they read, or null when
- * the person does not exist. `scope` is where the viewer is an active member
- * now.
+ * the person does not exist.
  */
 export async function loadProfileAccess(
   db: Db,
   viewerId: string,
   subjectUserId: string,
-  scope: LenderScope,
   now: Date,
 ): Promise<ProfileAccessResource | null> {
-  if (viewerId === subjectUserId) {
-    return {
-      subjectUserId,
-      subjectActive: true,
-      friends: false,
-      shareEnvironment: false,
-      blockedEitherWay: false,
-    };
-  }
-
-  const pair = await loadPair(db, viewerId, subjectUserId);
-
-  if (!pair) {
-    return null;
-  }
-
-  const environmentIds = scope.environments.map(
-    ({ environmentId }) => environmentId,
-  );
-  const shared =
-    environmentIds.length > 0 &&
-    (await db
-      .selectFrom("app.environment_memberships")
-      .select("id")
-      .where("user_id", "=", subjectUserId)
-      .where("environment_id", "in", environmentIds)
-      .where("state", "=", "active")
-      .where((eb) =>
-        eb.or([
-          eb("transition_deadline", "is", null),
-          eb("transition_deadline", ">", now),
-        ]),
-      )
-      .limit(1)
-      .executeTakeFirst()) !== undefined;
-
-  return {
+  const person = (await loadPeople(db, viewerId, [subjectUserId], now)).get(
     subjectUserId,
-    subjectActive: pair.otherActive,
-    friends: pair.openFriendship?.status === "active",
-    shareEnvironment: shared,
-    blockedEitherWay: pair.blockedByActor || pair.blockedByOther,
-  };
+  );
+
+  return person ? profileAccessOf(person) : null;
 }
 
 /** SQL: when the review (aliased `review`, its window `period`) counts as published. */

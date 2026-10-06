@@ -117,6 +117,7 @@ describe("friendship (PS-USR-003)", () => {
       {
         userId: anna.userId,
         realName: "Test Testesen",
+        profileId: anna.userId,
         since: expect.any(String),
       },
     ]);

@@ -7,6 +7,7 @@ import { ActionButton } from "@/components/action-button";
 import { ConfirmAction } from "@/components/confirm-action";
 import { MoreActions } from "@/components/more-actions";
 import { PageHeader } from "@/components/page-header";
+import { PersonName } from "@/components/person-name";
 import { StatusCard } from "@/components/status-card";
 import { ContextTag, Tag } from "@/components/tag";
 import { loansHref } from "@/navigation/areas";
@@ -227,7 +228,9 @@ export default async function LoanRequestPage({
           {lender && (
             <>
               <dt>Fra</dt>
-              <dd>{personName(request.borrower)}</dd>
+              <dd>
+                <PersonName person={request.borrower} />
+              </dd>
             </>
           )}
           <dt>Ønsket tid</dt>
