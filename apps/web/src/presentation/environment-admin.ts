@@ -86,7 +86,7 @@ function typeConsequences(
         ],
         affects: [
           `Medlemmene får ${typeChangeDays.vote} dager til å godta den nye synligheten eller forlate miljøet.`,
-          "Forslaget vedtas bare hvis minst 2 av 3 aktive medlemmer godtar.",
+          "Forslaget vedtas bare hvis minst to tredeler av de aktive medlemmene godtar.",
           "Vedtas det, fjernes de som ikke har godtatt innen fristen.",
         ],
       };
@@ -120,7 +120,7 @@ export function typeChoices(current: EnvironmentType): TypeChoice[] {
 export const proposalWaitsFor: Record<"consent" | "vote", string> = {
   consent:
     "Venter på at medlemmene godtar. Den som ikke godtar innen fristen, blir passiv.",
-  vote: "Venter på medlemmenes svar. Minst 2 av 3 aktive medlemmer må godta, ellers forblir miljøet skjult.",
+  vote: "Venter på medlemmenes svar. Minst to tredeler av de aktive medlemmene må godta, ellers forblir miljøet skjult.",
 };
 
 /** How administrators group the memberships they handle. */

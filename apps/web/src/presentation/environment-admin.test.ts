@@ -5,6 +5,7 @@ import {
   awaitsDecision,
   membershipStatus,
   membershipTask,
+  proposalWaitsFor,
   typeChoices,
 } from "./environment-admin";
 
@@ -48,8 +49,15 @@ describe("type changes an administrator is offered", () => {
     expect(choice).toMatchObject({ type: "closed", kind: "vote" });
     // UX-PRIV-008: the deadline, the 2/3 and the removal are explained.
     expect(choice?.consequences.affects?.join(" ")).toMatch(
-      /7 dager.*2 av 3.*fjernes/,
+      /7 dager.*to tredeler av de aktive medlemmene.*fjernes/,
     );
+    // PS-ENV-008: two thirds of however many are active, never a count.
+    expect(proposalWaitsFor.vote).toMatch(/to tredeler av de aktive/);
+    expect(
+      [...(choice?.consequences.affects ?? []), proposalWaitsFor.vote].join(
+        " ",
+      ),
+    ).not.toMatch(/\d+ av \d+/);
   });
 });
 
