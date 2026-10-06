@@ -60,7 +60,6 @@ const {
   published,
   environmentOrigin,
   ask,
-  dated,
   reservedLoan,
   stored,
   dated,
