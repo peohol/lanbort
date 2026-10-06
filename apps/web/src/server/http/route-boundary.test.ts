@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
@@ -111,6 +111,9 @@ const httpMethods = [
   "OPTIONS",
 ];
 const appDir = fileURLToPath(new URL("../../app", import.meta.url));
+const vercelConfig = JSON.parse(
+  readFileSync(new URL("../../../vercel.json", import.meta.url), "utf8"),
+) as { crons: { path: string; schedule: string }[] };
 
 function routeFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -162,5 +165,15 @@ describe("route boundary", async () => {
     );
 
     expect(actual).toEqual(expected);
+  });
+
+  it("schedules every scheduled job in production, and nothing else", () => {
+    const scheduled = routes
+      .filter((route) => route.access === "scheduler")
+      .map((route) => route.key)
+      .sort();
+    const crons = vercelConfig.crons.map((cron) => `GET ${cron.path}`).sort();
+
+    expect(crons).toEqual(scheduled);
   });
 });
