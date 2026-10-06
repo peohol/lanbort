@@ -70,4 +70,4 @@ Planleggingsfasen er fullført. Neste separate fase er **implementering**, med [
 
 ## Videre plan for UI
 
-Når implementeringsgrunnlaget er klart for konkret grensesnittarbeid, følges [planen for UI-designfasen](ui-design-plan.md). Den beskriver arbeidsdelingen mellom kanonisk dokumentasjon, Claude Design og Claude Code, og rekkefølgen fra skjerm-/flytinventar til visuell retning, kjerneflyt, designsystem og vertikal implementering.
+Når implementeringsgrunnlaget er klart for konkret grensesnittarbeid, følges [planen for UI-designfasen](ui-design-plan.md). Den beskriver arbeidsdelingen mellom kanonisk dokumentasjon, Claude Design og Claude Code, og løpet fra skjerm-/flytinventar til visuell retning, kjerneflyt og designsystem. Vertikal implementering og validering starter med første stabile designbolk i fase 4 og løper parallelt med fase 4–7.
