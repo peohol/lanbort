@@ -12,6 +12,6 @@ export * from "./amendments";
 export * from "./handover";
 export * from "./return";
 export * from "./responsibility";
-export { coOwnerLoanHomeItem, loanHomeItem, loanRequestHomeItem } from "./home";
+export { loanHomeItem, loanRequestHomeItem } from "./home";
 export * from "./unresolved";
 export * from "./logistics";

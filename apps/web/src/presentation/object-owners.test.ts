@@ -1,4 +1,5 @@
 import type {
+  CoOwnerLoan,
   EnvironmentSummary,
   Loan,
   ObjectPublication,
@@ -7,6 +8,7 @@ import type {
 } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import {
+  coOwnerLoanSteps,
   nextLoan,
   ownerStatus,
   personName,
@@ -159,5 +161,68 @@ describe("the owners' view of a thing", () => {
     expect(revertible(revision(2, "Gammel stige"), object)).toBe(true);
     expect(revertible(revision(2, "Stige"), object)).toBe(false);
     expect(revertible(revision(3, "Gammel stige"), object)).toBe(false);
+  });
+
+  it("gives a co-owner who is not a party only the steps they may take", () => {
+    const loan = (details: Partial<CoOwnerLoan>): CoOwnerLoan => ({
+      loanId: "l",
+      objectId: "o",
+      status: "awaiting_return",
+      agreementVersion: 2,
+      title: "Stige",
+      period: { start: "2026-10-01", end: "2026-10-03" },
+      transfer: null,
+      mayTakeOver: false,
+      mayConfirmReceipt: false,
+      mayConfirmControl: false,
+      pending: null,
+      ...details,
+    });
+    const labels = (details: Partial<CoOwnerLoan>) =>
+      coOwnerLoanSteps(loan(details)).map((step) => step.label);
+
+    expect(labels({})).toEqual([]);
+    expect(labels({ mayConfirmControl: true, status: "ended" })).toEqual([
+      "Jeg har Stige igjen",
+    ]);
+    expect(coOwnerLoanSteps(loan({ mayConfirmReceipt: true }))[0]).toEqual({
+      label: "Jeg har fått tilbake Stige",
+      path: "/api/loans/l/return",
+      body: { agreementVersion: 2, outcome: "received" },
+    });
+    expect(
+      labels({
+        mayConfirmReceipt: true,
+        pending: { outcome: "received", effectiveAt: at },
+      }),
+    ).toEqual(["Angre bekreftelsen"]);
+    expect(labels({ mayTakeOver: true })).toEqual([
+      "Overta som ansvarlig utlåner",
+    ]);
+    const transfer = {
+      id: "t",
+      kind: "voluntary" as const,
+      fromUserId: kari,
+      toUserId: me,
+      needsBorrowerConsent: false,
+      recipientAccepted: false,
+      borrowerConsented: false,
+      proposedAt: at,
+    };
+    expect(labels({ transfer })).toEqual([
+      "Bli ansvarlig utlåner",
+      "Ikke bli ansvarlig utlåner",
+    ]);
+    expect(
+      labels({
+        transfer: {
+          ...transfer,
+          kind: "takeover",
+          fromUserId: kari,
+          recipientAccepted: true,
+          needsBorrowerConsent: true,
+        },
+      }),
+    ).toEqual(["Trekk tilbake overtakelsen"]);
   });
 });

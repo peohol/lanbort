@@ -1,4 +1,5 @@
 import type {
+  CoOwnerLoan,
   EnvironmentSummary,
   Loan,
   ObjectPublication,
@@ -10,6 +11,7 @@ import type {
 } from "@lanbort/contracts";
 import type { Tone } from "@/components/tag";
 import { formatPeriod } from "./dates";
+import type { LoanStep } from "./loan-status";
 import { describeAvailability, formatInterval } from "./objects";
 
 /**
@@ -217,4 +219,94 @@ export function revertible(
       JSON.stringify(content.availability) !==
         JSON.stringify(object.availability))
   );
+}
+
+/**
+ * What a co-owner who is not a party may do on a loan of the thing now
+ * (PS-LOAN-009, PS-LOAN-015, PS-LOAN-019), worded as what each step does
+ * (UX-INT-003). They cannot open the loan itself, so the steps are here.
+ */
+export function coOwnerLoanSteps(loan: CoOwnerLoan): LoanStep[] {
+  const api = `/api/loans/${loan.loanId}`;
+  const { transfer, title } = loan;
+  const steps: LoanStep[] = [];
+
+  // The list only has transfers to the caller: an offer to answer, or
+  // their own takeover, which they proposed and may take back.
+  if (transfer?.kind === "voluntary" && !transfer.recipientAccepted) {
+    const answer = `${api}/responsibility/${transfer.id}`;
+    steps.push(
+      { label: "Bli ansvarlig utlåner", path: `${answer}/accept`, body: {} },
+      {
+        label: "Ikke bli ansvarlig utlåner",
+        path: `${answer}/decline`,
+        body: {},
+      },
+    );
+  } else if (transfer?.kind === "takeover") {
+    steps.push({
+      label: "Trekk tilbake overtakelsen",
+      path: `${api}/responsibility/${transfer.id}/withdraw`,
+      body: {},
+    });
+  }
+
+  if (loan.mayTakeOver) {
+    steps.push({
+      label: "Overta som ansvarlig utlåner",
+      path: `${api}/responsibility/take-over`,
+      body: {},
+    });
+  }
+
+  if (loan.pending) {
+    steps.push({
+      label: "Angre bekreftelsen",
+      path: `${api}/return/undo`,
+      body: {},
+    });
+  } else if (loan.mayConfirmReceipt) {
+    steps.push({
+      label: `Jeg har fått tilbake ${title}`,
+      path: `${api}/return`,
+      body: { agreementVersion: loan.agreementVersion, outcome: "received" },
+    });
+  }
+
+  if (loan.mayConfirmControl) {
+    steps.push({
+      label: `Jeg har ${title} igjen`,
+      path: `${api}/control`,
+      body: {},
+    });
+  }
+
+  return steps;
+}
+
+/** Where such a loan stands, as the co-owner needs to know it. */
+export function describeCoOwnerLoan(loan: CoOwnerLoan): string {
+  if (loan.mayConfirmControl) {
+    return "Lånet ble avsluttet uten at det ble avklart om tingen kom tilbake. Den kan ikke lånes ut igjen før en eier bekrefter at dere har den.";
+  }
+
+  const { transfer } = loan;
+
+  if (transfer?.kind === "takeover") {
+    return "Du har bedt om å overta som ansvarlig utlåner. Venter på at låntakeren godtar det.";
+  }
+
+  if (transfer && !transfer.recipientAccepted) {
+    return "Du er spurt om å bli ansvarlig utlåner for lånet.";
+  }
+
+  if (transfer) {
+    return "Du har sagt ja til å bli ansvarlig utlåner. Venter på at låntakeren godtar det.";
+  }
+
+  if (loan.pending) {
+    return "Du har bekreftet at tingen er levert tilbake. Du kan angre en kort stund.";
+  }
+
+  return "Ansvarlig utlåner er ikke tilgjengelig, så du kan ta over eller bekrefte returen.";
 }

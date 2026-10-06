@@ -14,7 +14,6 @@ import {
 } from "@lanbort/contracts";
 import {
   collectPages,
-  coOwnerLoanHomeItem,
   getObjectHistory,
   getSocialOverview,
   listCoOwnerLoans,
@@ -41,8 +40,11 @@ import { editObjectHref, environmentHref, loanHref } from "@/navigation/routes";
 import { anchorFor, hrefFor } from "@/navigation/targets";
 import { formatPeriod, formatTime } from "@/presentation/dates";
 import { describeHomeItem } from "@/presentation/home-items";
+import type { LoanStep } from "@/presentation/loan-status";
 import {
   capitalized,
+  coOwnerLoanSteps,
+  describeCoOwnerLoan,
   describeNextLoan,
   nextLoan,
   ownerStatus,
@@ -248,6 +250,8 @@ interface LoanEntry {
   readonly detail: string;
   /** What it asks of the owner now, if anything (as on Home). */
   readonly waiting: string | null;
+  /** Steps taken here, for a loan the owner cannot open. */
+  readonly steps: readonly LoanStep[];
 }
 
 /** Only what waits on the owner; the status already says the rest. */
@@ -265,6 +269,7 @@ function requestEntry(request: LoanRequest): LoanEntry {
     title: `Forespørsel: ${formatDesiredPeriod(request.start, request.end)}`,
     detail: loanRequestStatusLabels[request.status],
     waiting: waiting(loanRequestHomeItem(request)),
+    steps: [],
   };
 }
 
@@ -275,18 +280,19 @@ function loanEntry(loan: Loan): LoanEntry {
     title: `${loan.parties.borrower.realName ?? "En tidligere bruker"}, ${formatPeriod(loan.period)}`,
     detail: `Du er ansvarlig utlåner · ${loanStatusLabels[loan.status]}`,
     waiting: waiting(loanHomeItem(loan)),
+    steps: [],
   };
 }
 
+/** Another owner's loan, which this owner cannot open but may act on. */
 function coOwnerEntry(loan: CoOwnerLoan): LoanEntry {
-  const target = { type: "loan", id: loan.loanId } as const;
-
   return {
-    id: anchorFor(target.type, loan.loanId),
-    href: hrefFor(target),
+    id: anchorFor("loan", loan.loanId),
+    href: null,
     title: `Lån ${formatPeriod(loan.period)}`,
-    detail: `En annen eier er ansvarlig utlåner · ${loanStatusLabels[loan.status]}`,
-    waiting: waiting(coOwnerLoanHomeItem(loan)),
+    detail: describeCoOwnerLoan(loan),
+    waiting: null,
+    steps: coOwnerLoanSteps(loan),
   };
 }
 
@@ -317,7 +323,7 @@ function Loans({
         <ul className="entries">
           {entries.map((entry) => (
             <li key={entry.id} id={entry.id} className="entry" tabIndex={-1}>
-              <strong>
+              <strong id={`${entry.id}-tittel`}>
                 {entry.href ? (
                   <Link href={entry.href}>{entry.title}</Link>
                 ) : (
@@ -327,6 +333,17 @@ function Loans({
               <span className="entry-detail">{entry.detail}</span>
               {entry.waiting && (
                 <span className="waiting">Venter på deg: {entry.waiting}</span>
+              )}
+              {entry.steps.length > 0 && (
+                <div
+                  className="actions"
+                  role="group"
+                  aria-labelledby={`${entry.id}-tittel`}
+                >
+                  {entry.steps.map((step) => (
+                    <ActionButton key={step.label} {...step} />
+                  ))}
+                </div>
               )}
             </li>
           ))}
