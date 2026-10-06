@@ -1,16 +1,14 @@
 import type {
   HandoverOutcome,
   Loan,
-  LoanPerson,
   LoanRequestRole,
   ReturnOutcome,
 } from "@lanbort/contracts";
 import { formatDay, formatPeriod, formatTime } from "./dates";
 import { loanEndReasonLabels } from "./loans";
+import { personName } from "./people";
 
-/** A person in a loan by name; a deleted account by role (UX-PRIV-010). */
-export const personName = (person: LoanPerson) =>
-  person.realName ?? "Tidligere bruker";
+export { personName };
 
 const otherSide = (role: LoanRequestRole): LoanRequestRole =>
   role === "borrower" ? "lender" : "borrower";

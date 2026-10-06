@@ -8,6 +8,7 @@ import { defineQuery } from "../commands/query";
 import { loadPair, readSnapshot, relationOf } from "./pair";
 import { readSocialOverviewPolicy, readSocialRelationPolicy } from "./policies";
 import { rateLimits } from "../abuse/rate-limits";
+import { personPageIds, profileIdIn } from "../people/queries";
 
 /**
  * The caller's relation to one other user, for example to show the right
@@ -39,10 +40,14 @@ interface ContactRow {
   readonly since: Date;
 }
 
-const contacts = (rows: readonly ContactRow[]): SocialContact[] =>
+const contacts = (
+  rows: readonly ContactRow[],
+  pages: ReadonlySet<string>,
+): SocialContact[] =>
   rows.map((row) => ({
     userId: row.userId,
     realName: row.realName,
+    profileId: profileIdIn(pages, row.userId),
     since: row.since.toISOString(),
   }));
 
@@ -55,79 +60,91 @@ export const getSocialOverview = defineQuery({
   name: "social.overview.read",
   input: z.strictObject({}),
   policy: readSocialOverviewPolicy,
-  load: async ({ db, actor }) => {
+  load: async ({ db, actor, now }) => {
     if (actor.kind !== "user") {
       return null;
     }
 
     const me = actor.userId;
-    const [relations, blocks] = await readSnapshot(
+    const [relations, blocks, pages] = await readSnapshot(
       db,
-      async (snapshot) =>
-        [
-          await snapshot
-            .selectFrom("app.friendships as friendship")
-            .innerJoin("app.profiles as profile", (join) =>
-              join.on((eb) =>
-                eb(
-                  "profile.user_id",
-                  "=",
-                  eb
-                    .case()
-                    .when("friendship.requester_id", "=", me)
-                    .then(eb.ref("friendship.addressee_id"))
-                    .else(eb.ref("friendship.requester_id"))
-                    .end(),
-                ),
+      async (snapshot) => {
+        const relations = await snapshot
+          .selectFrom("app.friendships as friendship")
+          .innerJoin("app.profiles as profile", (join) =>
+            join.on((eb) =>
+              eb(
+                "profile.user_id",
+                "=",
+                eb
+                  .case()
+                  .when("friendship.requester_id", "=", me)
+                  .then(eb.ref("friendship.addressee_id"))
+                  .else(eb.ref("friendship.requester_id"))
+                  .end(),
               ),
-            )
-            .select([
-              "friendship.status",
-              "friendship.requester_id as requesterId",
-              "profile.user_id as userId",
-              "profile.real_name as realName",
-              (eb) =>
-                eb.fn
-                  .coalesce("friendship.accepted_at", "friendship.requested_at")
-                  .as("since"),
-            ])
-            .where((eb) =>
-              eb.or([
-                eb("friendship.requester_id", "=", me),
-                eb("friendship.addressee_id", "=", me),
-              ]),
-            )
-            .where("friendship.status", "<>", "ended")
-            .orderBy("since", "desc")
-            .execute(),
-          await snapshot
-            .selectFrom("app.user_blocks as block")
-            .leftJoin(
-              "app.profiles as profile",
-              "profile.user_id",
-              "block.blocked_id",
-            )
-            .select([
-              "block.blocked_id as userId",
-              "profile.real_name as realName",
-              "block.created_at as since",
-            ])
-            .where("block.blocker_id", "=", me)
-            .where("block.lifted_at", "is", null)
-            .orderBy("block.created_at", "desc")
-            .execute(),
-        ] as const,
+            ),
+          )
+          .select([
+            "friendship.status",
+            "friendship.requester_id as requesterId",
+            "profile.user_id as userId",
+            "profile.real_name as realName",
+            (eb) =>
+              eb.fn
+                .coalesce("friendship.accepted_at", "friendship.requested_at")
+                .as("since"),
+          ])
+          .where((eb) =>
+            eb.or([
+              eb("friendship.requester_id", "=", me),
+              eb("friendship.addressee_id", "=", me),
+            ]),
+          )
+          .where("friendship.status", "<>", "ended")
+          .orderBy("since", "desc")
+          .execute();
+        const blocks = await snapshot
+          .selectFrom("app.user_blocks as block")
+          .leftJoin(
+            "app.profiles as profile",
+            "profile.user_id",
+            "block.blocked_id",
+          )
+          .select([
+            "block.blocked_id as userId",
+            "profile.real_name as realName",
+            "block.created_at as since",
+          ])
+          .where("block.blocker_id", "=", me)
+          .where("block.lifted_at", "is", null)
+          .orderBy("block.created_at", "desc")
+          .execute();
+        const pages = await personPageIds(
+          snapshot,
+          me,
+          [...relations, ...blocks].map((row) => row.userId),
+          now,
+        );
+
+        return [relations, blocks, pages] as const;
+      },
     );
 
     const overview: SocialOverview = {
-      friends: contacts(relations.filter((r) => r.status === "active")),
+      friends: contacts(
+        relations.filter((r) => r.status === "active"),
+        pages,
+      ),
       incomingRequests: contacts(
         relations.filter((r) => r.status === "pending" && r.requesterId !== me),
+        pages,
       ),
       outgoingRequests: contacts(
         relations.filter((r) => r.status === "pending" && r.requesterId === me),
+        pages,
       ),
-      blocked: contacts(blocks),
+      blocked: contacts(blocks, pages),
     };
 
     return { resource: overview, context: undefined };

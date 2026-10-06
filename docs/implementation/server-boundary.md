@@ -306,6 +306,12 @@ Serveren er bare leveringstjenesten for ende-til-ende-kryptert chat ([ADR-0010](
 - En bruker som har blokkert den som spør, skal se ut som en bruker som ikke finnes (`not_found`), både i svar og i lister. Om den andre har blokkert deg, returneres aldri, og blokkerings- og lukkingshendelser er audit-hendelser uten payload.
 - Nye domener som oppretter ny kontakt eller nye forpliktelser (direkte vennelån, chat, medeierskap, oppdagelse), sjekker relasjonen med `socialRelationBetween` i samme transaksjon som beslutningen. Etablerte lån, saker og anmeldelsesretter skal ikke sjekkes mot blokkering på nytt (PS-USR-007).
 
+## Personens side (WP-86)
+
+- `person.read` (`GET /api/people?userId=`) viser en person slik leseren kan se dem: navn, leserens relasjon og om leseren har tilgang til tillitsprofilen. Leseren ser seg selv, personer med profiltilgang (`hasProfileAccess`), personer de selv blokkerer (for å oppheve blokkeringen) og personer med en ventende venneforespørsel mellom dem. Alle andre, slettede kontoer, kontoer som ikke er aktive og personer som blokkerer leseren, gir `not_found` (`personVisible`, UX-PRIV-007, UX-PRIV-010).
+- Lesemodeller som navngir personer, lenker bare til siden mens leseren kan åpne den: `profileId` er personens ID da, ellers `null`. Den regnes ut med `personPageIds` i samme snapshot som navnene. Den finnes nå på lånets parter, venner/forespørsler/blokkerte i `social.overview.read` og forfattere i `trust_profile.read`. Nye flater som viser personer (forespørsler, saker, medlemslister), bruker den samme, og klienten viser navnet med `PersonName`.
+- Hvem som kan se hvem, leses samlet for mange personer om gangen (`loadPeople` i `people/store.ts`), og både personens side og tillitsprofilen avgjøres derfra.
+
 ## Innlogging og sesjon
 
 Supabase Auth brukes bare gjennom `packages/auth`. Nettleseren snakker aldri med Supabase direkte og får ingen token: sesjonen ligger i HttpOnly-cookies, og en `proxy` fornyer utløpte tilgangstokener. Endrende forespørsler må komme fra appens egen origin.

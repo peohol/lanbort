@@ -14,14 +14,22 @@ export function ActionButton({
   body,
   idempotent = true,
   primary = false,
+  next,
 }: {
   label: string;
   path: string;
   body: object;
   idempotent?: boolean;
   primary?: boolean;
+  /** Where to go once done, instead of reading the page again. */
+  next?: string;
 }) {
-  const command = useCommand({ path, done: label, idempotent });
+  const command = useCommand({
+    path,
+    done: label,
+    idempotent,
+    after: next ? () => next : "refresh",
+  });
 
   return (
     <>

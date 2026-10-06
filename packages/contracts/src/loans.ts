@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { environmentTypeSchema } from "./environment";
+import { profileIdSchema } from "./social";
 import {
   availabilityIntervalSchema,
   calendarDateSchema,
@@ -206,10 +207,12 @@ const termsSchema = z.strictObject({
 /**
  * A person in a loan as its parties see them (UX-INT-004): by their real
  * name, or null once the account is deleted («Tidligere bruker»,
- * UX-PRIV-010). Never a link to a profile (UX-PRIV-007).
+ * UX-PRIV-010), and their page only while the reader may open it
+ * (UX-PRIV-007).
  */
 export const loanPersonSchema = z.strictObject({
   realName: z.string().nullable(),
+  profileId: profileIdSchema,
 });
 
 /** A request as its borrower or a lender sees it. */

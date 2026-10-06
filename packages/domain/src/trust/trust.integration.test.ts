@@ -155,7 +155,11 @@ describe("trust per role (PS-TRUST-006/012)", () => {
         id: expect.any(String),
         subjectRole: "borrower",
         basis: "returned",
-        author: { userId: owner.userId, realName: "Test Testesen" },
+        author: {
+          userId: owner.userId,
+          realName: "Test Testesen",
+          profileId: owner.userId,
+        },
         environment: { id: setup.environmentId, name: "Borettslaget" },
         scores: lenderDimensions.map((dimension) => ({
           dimension,
@@ -365,7 +369,11 @@ describe("reviews from a hidden environment (PS-TRUST-007, scenarios 22/54)", ()
     expect(inside.reviews).toEqual([
       expect.objectContaining({
         text: "Greit nok.",
-        author: { userId: setup.owner.userId, realName: "Test Testesen" },
+        author: {
+          userId: setup.owner.userId,
+          realName: "Test Testesen",
+          profileId: setup.owner.userId,
+        },
         environment: { id: setup.environmentId, name: "Hemmelig klubb" },
       }),
     ]);

@@ -90,6 +90,7 @@ const probes: Record<string, (ids: Ids) => Record<string, string>> = {
   "objects/[objectId]/history": () => ({}),
   "objects/[objectId]/images/[imageId]": () => ({}),
   "objects/[objectId]/publications": () => ({}),
+  people: (ids) => ({ userId: ids.userId }),
   "search/objects": (ids) => ({
     environmentId: ids.environmentId,
     categoryId: "annet",

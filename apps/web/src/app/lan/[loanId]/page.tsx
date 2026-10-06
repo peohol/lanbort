@@ -14,6 +14,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { StartLoanLogistics } from "@/chat/start-loan-logistics";
 import { ActionButton } from "@/components/action-button";
+import { PersonName } from "@/components/person-name";
 import { chatConversationHref } from "@/navigation/chat";
 import {
   morePagesHref,
@@ -27,7 +28,6 @@ import {
   describeLoanStatus,
   type LoanStep,
   loanSteps,
-  personName,
 } from "@/presentation/loan-status";
 import { chatEnabled } from "@/server/env";
 import {
@@ -127,14 +127,15 @@ function Logistics({ channel }: { channel: LoanLogisticsChannel }) {
 /** What was agreed, as it is now (PS-LOAN-008, PS-LOAN-010). */
 function Agreement({ loan }: { loan: Loan }) {
   const lender = loan.role === "lender";
-  const other = personName(loan.parties[lender ? "borrower" : "lender"]);
 
   return (
     <section aria-labelledby="avtalen">
       <h2 id="avtalen">Avtalen</h2>
       <dl className="facts">
         <dt>{lender ? "Du låner bort til" : "Du låner av"}</dt>
-        <dd>{other}</dd>
+        <dd>
+          <PersonName person={loan.parties[lender ? "borrower" : "lender"]} />
+        </dd>
         <dt>Periode</dt>
         <dd>{formatPeriod(loan.period)}</dd>
         {loan.agreement.loanTerms && (

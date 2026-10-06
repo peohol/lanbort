@@ -747,6 +747,8 @@ const personProbes: Record<string, (userId: string) => object> = {
   "friendship.withdraw": (userId) => ({ userId }),
   "friendship.remove": (userId) => ({ userId }),
   "friend_object.list": (userId) => ({ userId }),
+  // After the request is withdrawn, so nothing relates the two any more.
+  "person.read": (userId) => ({ userId }),
   "social.relation.read": (userId) => ({ userId }),
   "trust_profile.read": (userId) => ({ userId }),
   "user_block.create": (userId) => ({ userId }),
