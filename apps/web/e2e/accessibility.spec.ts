@@ -47,6 +47,10 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
   { name: "Mine ting", path: () => "/mine-ting" },
   { name: "Egen ting", path: ({ ownThing }) => `/ting/${ownThing}` },
   {
+    name: "Registrer en ting",
+    path: ({ environmentId }) => `/ting/ny?miljo=${environmentId}`,
+  },
+  {
     name: "Ting i et miljø",
     path: ({ ladder, environmentId }) =>
       `/ting/${ladder}?miljo=${environmentId}`,
