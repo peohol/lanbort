@@ -37,7 +37,7 @@ Før mottakeren åpner for fri samtale kan en ikke-venn bare sende den strukture
 ### PS-COM-007 — Blokkert lån kan bruke snever logistikk
 **Forankring:** VP-10, VP-11; [Direktemeldinger mellom brukere](../vision/06-kommunikasjon-varsler-og-saker.md)
 
-Ved blokkering stenges ordinær fri chat. For reservert eller aktivt lån kan strukturerte handlinger og en tydelig avgrenset logistikk-kanal bestå for korte meldinger om overlevering, retur, tid, sted og objekt. Kanalen stenges når behovet opphører og kan stenges tidligere ved trakassering/sikkerhetsrisiko.
+Ved blokkering stenges ordinær fri chat. For reservert eller aktivt lån kan strukturerte handlinger og en tydelig avgrenset logistikk-kanal bestå for korte meldinger om overlevering, retur, tid, sted og objekt. Kanalen avsluttes først når lånet er avsluttet (eller når en av dem ikke lenger er part i lånet), og kan ikke stenges av én part mens lånet pågår. Hver part kan dempe samtalen (ingen varsler) eller arkivere den (fjerne den fra egen samtaleliste, som PS-COM-009); det påvirker ikke den andre parten. Trakassering rapporteres og håndteres med vanlig moderering. (Produkteier, 6. oktober 2026, OD-0020.)
 
 ### PS-COM-008 — Strukturert avtaleinnhold er systemdata
 **Forankring:** VP-15

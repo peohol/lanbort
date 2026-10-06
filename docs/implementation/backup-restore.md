@@ -93,4 +93,4 @@ Kan en journalpost ikke gjøres trygt på nytt, sier kommandoen `Needs handling`
 ### Gjenstår
 
 - **Når et hostet miljø med data finnes:** ta den første manuelle dumpen og gjenopprett den én gang til et isolert prosjekt etter fremgangsmåten over, med `finish` og en journal, og noter faktisk tid mot RTO. Kommandoene for dump og gjenoppretting følger Supabases egen veiledning, men er ennå ikke øvd mot et hostet prosjekt.
-- **Før et eksternt brukerpanel (Port D):** produkteier beslutter backupnivået for piloten på nytt (ADR-0009), for eksempel betalt plan med daglig backup, planlagte krypterte dumps på gratisplanen eller lengre RPO for en liten pilot.
+- **Før et eksternt testpanel (Port D):** produkteier beslutter backupnivået for piloten (ADR-0009; utsatt dit 6. oktober 2026), for eksempel betalt plan med daglig backup, planlagte krypterte dumps på gratisplanen eller lengre RPO for en liten pilot.

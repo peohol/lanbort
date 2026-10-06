@@ -45,7 +45,7 @@ Mål: systemet kan vite hvem brukeren er, hva vedkommende får gjøre, og regist
 Leveranser:
 - konto, e-postverifisering, profil og sesjon
 - policy-/autorisasjonsrammeverk
-- plattformrolle, re-autentisering og mekanismenøytralt grunnlag for sterkere autentisering (mekanismen avklares i OD-0010)
+- plattformrolle, re-autentisering og mekanismenøytralt grunnlag for sterkere autentisering (mekanismen er besluttet i ADR-0011)
 - audit events og transactional outbox
 - idempotensmønster for kommandoer
 
@@ -57,7 +57,7 @@ Leveranser:
 | --- | --- | --- |
 | WP-10 | Supabase Auth bak serveradapter, innlogging/registrering med engangskode på e-post, HttpOnly-sesjon, intern bruker/profil atskilt fra leverandøridentiteten, registrering med ekte navn og 18+ | Ferdig |
 | WP-11 | Policy-API (aktør + handling + ressurs + kontekst + tilstand), standardiserte avslag, felles Route Handler-grense med meta-test og lint, testmatrise med tillatte og avviste tilfeller for hver policy | Ferdig |
-| WP-12 | Plattformforvalterrolle fra egne tildelinger, revisjonslogget og idempotent driftskommando, mekanismenøytrale regler for sterkere autentisering (`aal2`), nylig innlogging og habilitet, og ny innlogging med e-postkode | Ferdig, mekanisme for sterkere autentisering venter på OD-0010 |
+| WP-12 | Plattformforvalterrolle fra egne tildelinger, revisjonslogget og idempotent driftskommando, mekanismenøytrale regler for sterkere autentisering (`aal2`), nylig innlogging og habilitet, og ny innlogging med e-postkode | Ferdig; WebAuthn for plattformforvaltere (ADR-0011) er besluttet, men ikke bygget |
 | WP-13 | Append-only audit-hendelser, transactional outbox i samme transaksjon, idempotent worker med lease, retry og dead-letter | Ferdig |
 | WP-14 | Idempotente kommandoer: ingen dobbel utførelse, konsistent replay, trygt ved samtidige kall og ingen lekkasje mellom aktører | Ferdig |
 
@@ -72,7 +72,7 @@ Leveranser:
 Bevisst utsatt:
 - ekte outbox-consumers (e-post/push) kommer i Fase 4, og Vercel Cron kjører de planlagte jobbene i produksjon etter tidsplanen i `apps/web/vercel.json`
 - hvem som kan utnevne plattformforvaltere i appen er ikke bestemt, så det skjer foreløpig bare via driftskommandoen
-- mekanisme for sterkere autentisering for plattformforvaltere venter på OD-0010, som kan stå åpen etter Fase 1 men må avklares før slike handlinger tas i reell bruk (Port D); til da avvises de
+- WebAuthn som sterkere autentisering for plattformforvaltere (ADR-0011) er besluttet, men må bygges før slike handlinger tas i reell bruk (Port D); til da avvises de
 - endring av e-postadresse og synlighet per profilfelt (Fase 2)
 - egen databaserolle med minste privilegium for appen, og innstilling av hostet Supabase Auths egne grenser per IP når innlogging går via serveren (appens egne grenser per klient kom i WP-73), før pilot (Port D)
 - oppbevaringstid for audit-hendelser venter på OD-0002

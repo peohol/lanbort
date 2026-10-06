@@ -32,7 +32,9 @@ Etabler én konsistent policyvei for ressurs-/kontekstbasert tilgang og en testm
 
 ### WP-12 — Plattformrolle og privilegert autentisering
 **Krav:** PS-USR-008, PS-USR-009  
-Plattformforvalterrolle, habilitetsgrunnlag og et mekanismenøytralt grunnlag for re-autentisering og sterkere privilegert autentisering. Den konkrete mekanismen skal ikke låses til TOTP, autentiseringsapp eller noen annen mekanisme før OD-0010 er avklart. Uten godkjent mekanisme skal plattformforvaltertilgang avvises. Pakken kan regnes som ferdig med OD-0010 åpen; OD-0010 må avklares før privilegerte plattformforvalterhandlinger tas i reell bruk.
+Plattformforvalterrolle, habilitetsgrunnlag og et mekanismenøytralt grunnlag for re-autentisering og sterkere privilegert autentisering. Mekanismen er besluttet i [ADR-0011](../architecture/decisions/ADR-0011-webauthn-for-plattformforvaltere.md): passkey/WebAuthn som andre faktor, bare for plattformforvaltere, der fysisk sikkerhetsnøkkel støttes, men ikke kreves. Til den er bygget, skal plattformforvaltertilgang avvises.
+
+**Status:** Grunnlaget er ferdig. Gjenstår: WebAuthn-mekanismen etter ADR-0011. Registrering, antall autentikatorer og recovery avgjøres i OD-0023 før den bygges; utredningens modell er anbefalt utgangspunkt. Den må være bygget før privilegerte plattformforvalterhandlinger tas i reell bruk (Port D).
 
 ### WP-13 — Audit events og transactional outbox
 **Krav:** PS-DOM-006, PS-NFR-009; ADR-0004  
@@ -59,6 +61,8 @@ Administrator/eier, rolleinvitasjon, eieroverføring, eierløshet og avvikling.
 ### WP-23 — Miljøtypeendringer og historisk personvern
 **Krav:** PS-ENV-007–010  
 Strengere/svakere personvern, passiv status og konto-bundne skjulte invitasjoner.
+
+**Status:** Gjenstår etter OD-0012 (6. oktober 2026): skjult→lukket skal kunne startes med 7 dagers frist, og når den vedtas, skal medlemmer uten ja fjernes (avsluttet medlemskap) i stedet for å bli passive (PS-ENV-008).
 
 ### WP-24 — Objektkjerne
 **Krav:** PS-OBJ-001–005  
@@ -124,7 +128,7 @@ Ciphertext-lagring, klientkryptering, ingen lesebekreftelser og kontrollert før
 **Krav:** PS-COM-007  
 Egen lånebundet samtaletype med servervalidert åpning/stenging.
 
-**Status:** Ferdig: databasen åpner kanalen ved blokkering mellom partene i et pågående lån og stenger den når lånet avsluttes eller partene byttes, og meldingene går i en egen kryptert samtaletype på privat chats leveringstjeneste, med korte meldinger og ingen levering etter stenging (se [servergrensen](server-boundary.md#lånelogistikk-ved-blokkering-wp-44)). Hvem som kan stenge kanalen tidlig som sikkerhetstiltak, er ikke besluttet (OD-0020). I nettleseren tilbyr lånets side samtalen når kanalen er åpen, samtalen er merket som kun for praktisk avslutning av lånet med lenke til det, og skrivefeltet sier fra før en melding blir for lang.
+**Status:** Ferdig: databasen åpner kanalen ved blokkering mellom partene i et pågående lån og stenger den når lånet avsluttes eller partene byttes, og meldingene går i en egen kryptert samtaletype på privat chats leveringstjeneste, med korte meldinger og ingen levering etter stenging (se [servergrensen](server-boundary.md#lånelogistikk-ved-blokkering-wp-44)). OD-0020 er besluttet (6. oktober 2026): samtalen kan ikke stenges av én part mens lånet pågår, og avsluttes først når lånet avsluttes. Gjenstår: personlig demping og arkivering for hver part, og å fjerne den ubrukte veien for tidlig stenging som sikkerhetstiltak. I nettleseren tilbyr lånets side samtalen når kanalen er åpen, samtalen er merket som kun for praktisk avslutning av lånet med lenke til det, og skrivefeltet sier fra før en melding blir for lang.
 
 ### WP-45 — Administrative saker og kø
 **Krav:** PS-COM-010–015  
@@ -191,7 +195,7 @@ Systematisk gjennomgang av alle kjerneflyter på mobil, desktop, tastatur og hje
 ## Fase 7
 
 ### WP-70 — Autorisasjons- og personvernsikkerhetstest
-Prøv eksplisitt skjulte miljøer, historisk tilgang, medeiergrenser, inhabilitet og representanttilgang. Så lenge OD-0003 er åpen, er det pilotmodellen som testes: representanttilgang skal ikke kunne oppnås. Privilegerte plattformforvalterhandlinger skal være avvist uansett hva innloggingstjenesten rapporterer, så lenge OD-0010 er åpen. Privat chat (WP-43) er med: samtaler og ventende enhetskoblinger finnes i den skjulte verdenen, og bare samtalens deltakere når dem. Responstid som sidekanal testes ikke automatisk, fordi slike målinger blir ustabile i delt CI; den hører til den uavhengige sikkerhetsgjennomgangen i Port E.
+Prøv eksplisitt skjulte miljøer, historisk tilgang, medeiergrenser, inhabilitet og representanttilgang. Så lenge OD-0003 er åpen, er det pilotmodellen som testes: representanttilgang skal ikke kunne oppnås. Privilegerte plattformforvalterhandlinger skal være avvist uansett hva innloggingstjenesten rapporterer, så lenge WebAuthn-mekanismen fra ADR-0011 ikke er bygget. Privat chat (WP-43) er med: samtaler og ventende enhetskoblinger finnes i den skjulte verdenen, og bare samtalens deltakere når dem. Responstid som sidekanal testes ikke automatisk, fordi slike målinger blir ustabile i delt CI; den hører til den uavhengige sikkerhetsgjennomgangen i Port E.
 
 ### WP-71 — Samtidighets- og idempotensstresstest
 Parallelle godkjenninger, retry, dobbelttrykk, avtaleendring og gjenåpnet retur.
@@ -199,13 +203,15 @@ Parallelle godkjenninger, retry, dobbelttrykk, avtaleendring og gjenåpnet retur
 ### WP-72 — Backup/restore-øvelse
 Verifiser RPO/RTO-mål, rebuild av indeks og at slettet/begrenset data ikke blir aktivt igjen. I utviklingsfasen er strategien gjenoppbygging fra migrasjonene og manuelle dumps på Supabase Free ([ADR-0009](../architecture/decisions/ADR-0009-backup-i-utviklingsfasen.md)).
 
+**Status:** Øvelsen kjører i CI ([backup og gjenoppretting](backup-restore.md)). Backupnivået er bevisst utsatt (produkteier, 6. oktober 2026): Supabase Free beholdes foreløpig, og backupstrategien avgjøres før appen åpnes for et eksternt testpanel (Port D). Valget står som OD-0022 til da.
+
 ### WP-73 — Misbruks- og rate-limit-hardening
 Kontaktspam, scraping, invitasjoner, rapportering og auth-angrep.
 
 ### WP-74 — Pilotinnhold og policy
 Avklar OD-0006 og en konservativ pilotgrense for OD-0001 før reelle objekter åpnes for deling.
 
-**Status:** Kategoriene (PS-OBJ-018) og pilotgrensen (PS-OBJ-019) er besluttet og bygget. Plattformforvalteres sperre av et objekt overalt er stengt til OD-0010 er avgjort; til da kan bare miljøets administratorer stoppe et objekt, og bare i sitt miljø.
+**Status:** Kategoriene (PS-OBJ-018) og pilotgrensen (PS-OBJ-019) er besluttet og bygget. Plattformforvalteres sperre av et objekt overalt er stengt til WebAuthn-mekanismen fra ADR-0011 er bygget; til da kan bare miljøets administratorer stoppe et objekt, og bare i sitt miljø.
 
 ### WP-75 — Pilot release gate
 Kjør [kvalitetsportene](quality-gates.md), dokumenter kjente begrensninger og åpne kun for definert pilotgruppe.

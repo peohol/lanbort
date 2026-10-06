@@ -221,7 +221,7 @@ Klienten sender ingen «lest»- eller «skriver»-signaler (PS-COM-004). Enheten
 **WP-44 — lånelogistikk ved blokkering**
 
 - Egen samtaletype (`loan_logistics`) med egen MLS-gruppe for de to lånepartene, samme krypto.
-- Serveren åpner og stenger den etter lånets tilstand og sikkerhetstiltak. Stengt betyr at serveren ikke lenger godtar meldinger eller velkomster; klientene viser kanalen som lukket.
+- Serveren åpner og stenger den etter lånets tilstand. Én part kan ikke stenge den mens lånet pågår (OD-0020, PS-COM-007). Stengt betyr at serveren ikke lenger godtar meldinger eller velkomster; klientene viser kanalen som lukket.
 - «Korte meldinger» håndheves uten å lese innholdet: serveren avviser ciphertext over én polstringsstørrelse, og kanalen har ikke vedlegg.
 
 **WP-46 — privat melding som saksdokumentasjon**

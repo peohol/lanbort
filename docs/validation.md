@@ -44,9 +44,9 @@ E2EE hindrer ordinær server-/administratorlesing av lagret privat meldingsinnho
 | 49 – privat melding brukes som dokumentasjon | bare uttrykkelig innsendt kopi blir saksdata | bruker velger konkret innhold | lokal dekryptering → ny serverlesbar saksdata | Konsistent |
 | 58 – retur bestrides etter nytt lån | nytt gyldig lån består, ytterligere lån sperres | gammel sak gjenåpnes; ny part varsles | append-only hendelse + ny global sperre, ingen rollback | Konsistent |
 | 62/75 – død eller varig utilgjengelighet | verifikasjon + snever representant | egen representantflate, ikke konto-overtakelse | ressursbundet representative grant + audit | Konsistent; i piloten bare verifikasjonssak, representant utsatt til OD-0003 |
-| 65 – miljø blir mindre privat | samtykke/avstemning + passiv status | konsekvens og personlig valg vises | medlems-/typeendringsprosess, historisk tilgang bevares | Konsistent |
+| 65 – miljø blir mindre privat | samtykke/avstemning + passiv status (skjult→lukket: fjerning, OD-0012) | konsekvens og personlig valg vises | medlems-/typeendringsprosess, historisk tilgang bevares | Konsistent |
 | 73 – plattformforvalter inhabil | kan ikke behandle egen sak | behandlingshandling utilgjengelig | policy avviser inhabil aktør + audit | Konsistent |
-| 81 – blokkering under lån | fysisk forpliktelse kan avsluttes | ordinær chat stenges, smal logistikk består | egen samtaletype bundet til kvalifisert lån | Konsistent |
+| 81 – blokkering under lån | fysisk forpliktelse kan avsluttes | ordinær chat stenges, smal logistikk består | egen samtaletype bundet til kvalifisert lån; kan ikke stenges av én part (OD-0020) | Konsistent |
 
 ## Detaljer som kan utsettes
 
@@ -63,9 +63,10 @@ E2EE hindrer ordinær server-/administratorlesing av lagret privat meldingsinnho
 - OD-0002: konkrete retention-regler
 - OD-0007: juridisk lanseringsgjennomgang
 - OD-0008: uavhengig behandlingsvei når plattformforvaltere er inhabile
-- OD-0010: mekanisme for sterkere autentisering, før privilegerte plattformforvalterhandlinger tas i reell bruk (det mekanismenøytrale grunnlaget avviser dem til da)
 
 Disse spørsmålene krever ikke at domenemodellen eller hovedarkitekturen holdes åpen.
+
+OD-0010 er senere avgjort i [ADR-0011](architecture/decisions/ADR-0011-webauthn-for-plattformforvaltere.md). Gjennomgangen før UI-arbeidet (6. oktober 2026) og hvert åpent spørsmåls frist står i [`open-decisions.md`](open-decisions.md#status-før-ui-arbeidet).
 
 ## Implementeringsklarhet
 

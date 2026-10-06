@@ -40,7 +40,7 @@ Når tidligere medlemskap/vennskap ikke lenger finnes, kan nødvendig låne- ell
 ### UX-PRIV-008 — Mindre privat miljøtype krever tydelig personlig valg
 **Forankring:** PS-ENV-008
 
-Ved lukket→åpent skal hvert medlem se hva økt oppdagbarhet betyr og kunne akseptere, forlate eller ikke svare. Ved skjult→lukket skal avstemningen forklare både miljøets beslutning og at ikke-støttende/ikke-svarende medlemmer blir passive dersom endringen vedtas.
+Ved lukket→åpent skal hvert medlem se hva økt oppdagbarhet betyr og kunne akseptere, forlate eller ikke svare. Ved skjult→lukket skal hvert medlem se fristen på 7 dager og kunne akseptere den nye synligheten eller forlate miljøet. Flaten skal forklare både miljøets beslutning (2/3 må akseptere) og at den som ikke har akseptert innen fristen, fjernes fra miljøet dersom endringen vedtas.
 
 ### UX-PRIV-009 — Medlemsverifiseringsdata holdes adskilt fra sosial profil
 **Forankring:** PS-NFR-008

@@ -50,10 +50,9 @@ Inntil OD-0003 er avgjort finnes ingen representative grant, og ingen kodevei gi
 - rotasjon/revokering ved sikkerhetshendelser
 - re-autentisering for kontosletting, eierskapsoverføring og andre sensitive handlinger
 - vanlige brukere skal ikke ha et generelt krav om MFA i pilotmodellen; verifisert e-post er den etablerte basisen for konto og innlogging
-- handlinger som plattformforvalter skal kreve et sterkere autentiseringsnivå enn vanlig innlogging; den konkrete mekanismen er ikke besluttet og skal avklares i OD-0010
-- tilgangsgrensen er mekanismenøytral og fail closed: så lenge ingen mekanisme er godkjent og implementert, avvises privilegerte plattformforvalterhandlinger uansett hva identitetsleverandøren rapporterer
-- OD-0010 er en sperre for å ta privilegerte plattformforvalterhandlinger i reell bruk (produksjon eller pilot med reelle brukere), ikke for å bygge og integrere det mekanismenøytrale grunnlaget; den kan derfor stå åpen etter fase 1
-- ingen konkret mekanisme er godkjent: TOTP/autentiseringsapp, passkeys/WebAuthn, Vipps og andre alternativer er mulige tekniske mekanismer, ikke vedtatte produktegenskaper, og skal ikke innføres som standard eller krav uten en eksplisitt beslutning i OD-0010
+- handlinger som plattformforvalter skal kreve et sterkere autentiseringsnivå enn vanlig innlogging; mekanismen er passkey/WebAuthn som andre faktor ([ADR-0011](decisions/ADR-0011-webauthn-for-plattformforvaltere.md)), der fysisk sikkerhetsnøkkel støttes, men ikke kreves
+- tilgangsgrensen er fail closed: så lenge WebAuthn-mekanismen ikke er implementert, avvises privilegerte plattformforvalterhandlinger uansett hva identitetsleverandøren rapporterer, og den må være bygget før slike handlinger tas i reell bruk (produksjon eller pilot med reelle brukere)
+- bare WebAuthn godtas som sterkere: TOTP/autentiseringsapp, SMS/telefon, gjenopprettingskoder, ny e-postkode og Vipps gir ikke sterkere autentisering og skal ikke innføres som standard eller krav uten en ny eksplisitt beslutning
 - støtte for sterkere autentisering hos miljøadministratorer kan vurderes senere, men skal ikke gjøres obligatorisk uten en egen beslutning
 
 En framtidig overgang til eller supplering med en ekstern identitetsleverandør, herunder Vipps Login for norske brukere, er ikke del av pilotens nåværende innloggingsmodell. Muligheten skal utredes separat i OD-0011.

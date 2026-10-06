@@ -51,9 +51,11 @@ Overgang åpent→lukket, lukket→skjult og åpent→skjult kan gjennomføres u
 ### PS-ENV-008 — Svakere personvern krever medlemsmedvirkning
 **Forankring:** VP-08, VP-09; [Endring av miljøtype](../vision/03-miljoer.md)
 
-Lukket→åpent krever individuell aksept for at medlemmet skal forbli aktivt; ikke-svar gir passiv status. Skjult→lukket krever minst 2/3 støtte fra alle aktive medlemmer; bare de som stemmer for fortsetter aktive. Skjult→åpent kan ikke skje direkte.
+Lukket→åpent krever individuell aksept for at medlemmet skal forbli aktivt; ikke-svar gir passiv status. Skjult→lukket krever at minst 2/3 av alle aktive medlemmer aktivt aksepterer den nye synligheten; bare de som aksepterer, fortsetter. Skjult→åpent kan ikke skje direkte.
 
 For lukket→åpent settes svarfristen til **7 dager**, i samsvar med visjonen.
+
+For skjult→lukket får medlemmene også **7 dager** til aktivt å akseptere den nye synligheten eller forlate miljøet. Manglende svar er ikke samtykke. Vedtas endringen, **fjernes** medlemmer som ikke har akseptert, når fristen utløper (medlemskapet blir avsluttet, ikke passivt), etter de vanlige reglene for utmelding. Vedtas den ikke, forblir miljøet skjult og ingen fjernes. (Produkteier, 6. oktober 2026, OD-0012.)
 
 ### PS-ENV-009 — Historisk personvern følger tidligere kontekst
 **Forankring:** VP-09
