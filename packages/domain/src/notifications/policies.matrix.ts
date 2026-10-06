@@ -14,6 +14,7 @@ import {
   notificationEmailProcess,
   notifyCaseQueueReturnsPolicy,
   notifyLoanDeadlinesPolicy,
+  readNotificationPolicy,
   readNotificationPreferencesPolicy,
   setNotificationPreferencePolicy,
 } from "./policies";
@@ -127,6 +128,7 @@ export const notificationMatrices = [
   ownMatrix(setNotificationPreferencePolicy),
   notificationsMatrix(markNotificationsReadPolicy),
   notificationsMatrix(markAllNotificationsReadPolicy),
+  notificationsMatrix(readNotificationPolicy),
   jobMatrix(notifyLoanDeadlinesPolicy, notificationDeadlineProcess),
   jobMatrix(notifyCaseQueueReturnsPolicy, notificationCaseQueueProcess),
   jobMatrix(deliverNotificationEmailsPolicy, notificationEmailProcess),

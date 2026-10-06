@@ -8,7 +8,7 @@ import { announce } from "@/components/announcer";
 import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
 import { chatHref } from "@/navigation/chat";
-import { loanHref } from "@/navigation/targets";
+import { loanHref } from "@/navigation/routes";
 import { chatApi } from "./api";
 import { useEngineVersion } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";

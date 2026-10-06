@@ -17,7 +17,8 @@ import {
   pagesShown,
   type SearchParams,
 } from "@/navigation/list-pages";
-import { anchorFor, loanHref } from "@/navigation/targets";
+import { loanHref } from "@/navigation/routes";
+import { anchorFor } from "@/navigation/targets";
 import { formatPeriod } from "@/presentation/dates";
 import { describeHomeItem } from "@/presentation/home-items";
 import {

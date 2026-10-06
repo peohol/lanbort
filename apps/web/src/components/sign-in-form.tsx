@@ -3,15 +3,19 @@
 import { type SignedInResponse } from "@lanbort/contracts";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { registrationHref } from "@/navigation/routes";
 import { type ApiFailureCode, postJson } from "./api-client";
 import { BusyButton } from "./busy-button";
-import { errorMessage } from "./error-messages";
+import { emailInUseMessages, errorMessage } from "./error-messages";
 import { ErrorText, fieldErrorProps } from "./error-text";
 
 type Step = "email" | "code";
 
-/** UX-JRN-001 steps 1–2: e-mail address, then the one-time code. */
-export function SignInForm() {
+/**
+ * UX-JRN-001 steps 1–2: e-mail address, then the one-time code. `next` is
+ * where the user was going, such as a notification's e-mail link.
+ */
+export function SignInForm({ next }: { next?: string }) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
@@ -56,8 +60,8 @@ export function SignInForm() {
 
     router.replace(
       result.data.accountStatus === "pending_registration"
-        ? "/registrering"
-        : "/",
+        ? registrationHref(next)
+        : (next ?? "/"),
     );
     router.refresh();
   }
@@ -130,7 +134,9 @@ export function SignInForm() {
           </div>
         </>
       )}
-      <ErrorText id="sign-in-error">{error && errorMessage(error)}</ErrorText>
+      <ErrorText id="sign-in-error">
+        {error && errorMessage(error, emailInUseMessages)}
+      </ErrorText>
     </form>
   );
 }

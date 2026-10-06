@@ -15,7 +15,7 @@ Hver pakke bygger skjermer, ikke regler. Domene- og autorisasjonsregler ligger p
 - **Personvern i presentasjonen.** Kontekstmerke der betydningen avhenger av kontekst (UX-PRIV-003), «Tidligere bruker» uten lenke for slettede brukere (UX-PRIV-010), og ingen snarveier som gjenåpner tapt tilgang (UX-PRIV-007, UX-EXC-005).
 - **Varsler leder fram.** Når en kontekst får en egen side, peker varsler og Hjem dit (én linje i `navigation/targets.ts`, UX-INT-010).
 - **Ferdig betyr testet.** Hver ny side får én linje i tilgjengelighetstesten (`e2e/accessibility.spec.ts`) og minst én nettlesertest av hovedflyten. Nye domeneoperasjoner får integrasjonstester med eksplisitte avslag, og nye lese-ruter med ressurs- eller person-ID får en probe i sikkerhetstesten (WP-70).
-- **Åpne beslutninger bygges ikke.** Funksjoner som står avslått til en OD er avgjort (OD-0003, OD-0016, OD-0017, OD-0018, OD-0023), vises ikke i UI-et. OD-0024 (hvem medlemmer ser i et miljø) berører bare medlemslisten i WP-84 og hvordan man finner personer i WP-86; resten av pakkene kan bygges uten den.
+- **Åpne beslutninger bygges ikke.** Funksjoner som står avslått til en OD er avgjort (OD-0003, OD-0016, OD-0017, OD-0018, OD-0023), vises ikke i UI-et. OD-0024 (om eieren vises på tingene i et miljø) berører bare hvordan tingene i et miljø vises; til den er avgjort, vises de uten eier.
 
 ## Oversikt og rekkefølge
 
@@ -25,8 +25,8 @@ Hver pakke bygger skjermer, ikke regler. Domene- og autorisasjonsregler ligger p
 | [WP-81](#wp-81--mine-ting-og-objektskjema) | Mine ting, opprett og rediger objekt | WP-80 | alle andre |
 | [WP-82](#wp-82--objektets-side-for-eiere) | Objektets side for eiere | WP-80 | alle andre |
 | [WP-83](#wp-83--objekt-for-lånere-og-låneforespørsel) | Objekt for lånere, forespørsel og forespørselens side | WP-80 | alle andre |
-| [WP-84](#wp-84--miljøets-side-og-medlemskap) | Miljøets side, innmelding, opprett miljø | WP-80 | alle andre |
-| [WP-85](#wp-85--miljøadministrasjon) | Administrasjon av et miljø | WP-80 | alle andre |
+| [WP-84](#wp-84--miljøets-side-og-medlemskap) | Miljøets side, innmelding, medlemsliste, opprett miljø | WP-80; skjult→lukket også serverdelen av WP-85 | alle andre |
+| [WP-85](#wp-85--miljøadministrasjon) | Administrasjon av et miljø og resten av WP-23 (server) | WP-80 | alle andre |
 | [WP-86](#wp-86--personer-venner-og-tillit) | Personens side, venner, blokkering, tillit | WP-80 | alle andre |
 | [WP-87](#wp-87--lånets-side-og-anmeldelser) | Resten av lånets side og anmeldelser | WP-80 | alle andre |
 | [WP-88](#wp-88--saker-og-arbeidskø) | Sakens side, egne saker og administratorkø | WP-80 | alle andre |
@@ -44,7 +44,7 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 - **App-skall:** toppfelt med merke, varselindikator og konto, og de fem områdene nederst på mobil og ved siden på desktop (finnes, får designsystemet). Sidetopp med tittel, tilbakelenke til området og kontekstmerke for detaljsider.
 - **Komponenter:** sidetopp (`PageHeader`), statuskort (`StatusCard`), merke for status og kontekst (`Tag`, `ContextTag`), tom tilstand (`EmptyState`), «Flere valg» (`MoreActions`), konsekvensdialog (`ConfirmAction`, UX-INT-007), skjemafelt med hjelpetekst og feil (`Field`) og skjema som sender en kommando (`CommandForm`). Kommandoene deler én mekanisme med `ActionButton`: idempotensnøkkel, opptatt-tilstand, feilmelding, annonsering og ny lesing fra serveren.
 - **Ruter:** én modul med adressene til alle sider i planen (`navigation/routes.ts`), så pakkene lenker til hverandre før sidene finnes. `targetPages` peker bare til sider som finnes.
-- **Objektets side som ramme:** `/ting/[id]` velger visning for eiere eller for andre, med en enkel første versjon av hver som WP-82 og WP-83 bygger videre på.
+- **Objektets side som ramme:** `/ting/[id]` velger visning for eiere eller for andre, med en enkel første versjon av hver som WP-82 og WP-83 bygger videre på. Mine ting og treff i Finn lenker dit.
 - **E-postlenken fra varsler:** `/?varsel=<id>` merker varselet lest og sender brukeren videre til konteksten, eller til Varsler når konteksten ikke har en side (UX-INT-010).
 - Eksisterende sider tas over på designsystemet uten å endre hva de gjør.
 
@@ -87,7 +87,7 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 - **Objekt for andre** (visningen for ikke-eiere av `/ting/[id]`, med opprinnelsen i adressen, `?miljo=<id>` eller direkte): innhold, bilder, ledighet, vilkår og opprinnelse som kontekstmerke. Primærhandling «Be om å låne». Miljøets spørsmål og svar og «Følg tingen» hører til her (PS-OBJ-014–015, WP-63).
 - **Forespørsel** (`/ting/[id]/lan`): periode (dato eller «så snart som mulig», sluttdato eller varighet, aldri begge, UX-JRN-004), valgfri melding med forklaringen fra PS-LOAN-004, bekreftelse av vilkårene og ansvarserklæringen ved vennelån (PS-LOAN-003), gjennomgang og send. Etter sending går brukeren til forespørselens side med «Venter på svar fra …».
 - **Forespørselens side** (`/lan/foresporsel/[id]`): status og hva det ventes på; låntaker kan trekke den og bekrefte nye vilkår (PS-LOAN-005); utlåner ser periode, vilkår og kollisjoner og kan godkjenne med en knapp som navngir avtalen («Godkjenn lån 10.–12. oktober»), avslå eller godta ansvarserklæringen. Godkjenning leder til lånets side.
-- Lån-listen og Hjem lenker forespørsler til siden (`targets.ts`), og treff i Finn lenker til objektet.
+- Lån-listen og Hjem lenker forespørsler til siden (`targets.ts`).
 - **Server:** meldingen blir valgfri (PS-LOAN-004, rest fra WP-30): kontrakt, databasekolonne og tester.
 
 **Avhenger av:** WP-80.
@@ -100,13 +100,14 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 
 - **Miljøets side** (`/miljoer/[id]`): navn, type forklart i vanlige ord, område, regler og krav. For ikke-medlemmer bare det typen tillater (PS-ENV-001, UX-PRIV-002). For medlemmer: tingene i miljøet med lenke til objektet, «Registrer en ting her» (til WP-81 med miljøet forhåndsvalgt) og kontakt med administratorene.
 - **Innmelding:** bli med (åpent), søk med svar på krav (lukket), godta invitasjon (skjult), svar på spørsmål om mer informasjon, og følg status (PS-ENV-004–006).
-- **Typeendring for medlemmer:** se hva økt synlighet betyr og akseptere eller forlate innen fristen (UX-PRIV-008, PS-ENV-008).
+- **Typeendring for medlemmer:** se hva økt synlighet betyr og akseptere eller forlate innen fristen (UX-PRIV-008, PS-ENV-008). For skjult→lukket bygger dette på serverleveransen i WP-85.
 - **Forlat miljøet** med konsekvensvisning; passiv status forklart.
-- **Medlemmer og eiere:** om medlemmer ser hverandre og hvem som eier en ting i miljøet, avgjøres i OD-0024. Til da vises verken medlemsliste eller eiere, som i dag.
+- **Medlemsliste** for aktive medlemmer: de andre aktive medlemmene med navn og rolle, hver med lenke til personens side (WP-86), der man kan sende venneforespørsel (visjon 02, «Vennskap»). Passive medlemmer vises ikke, og ikke-medlemmer ser ingen liste (visjon 03). Serverleveranse: en medlemsvendt spørring med samme historiske synlighet som administratorenes medlemsliste (PS-ENV-009), uten svar på medlemskrav (UX-PRIV-009).
+- **Eiere på tingene:** om eieren vises direkte på tingene i miljøet, avgjøres i OD-0024. Til da vises tingene uten eier.
 - **Opprett miljø** (`/miljoer/ny`): navn, type, beskrivelse, område og krav.
 - Hjem lenker «Dine miljøer» og miljøvarsler til siden, og miljøtreff i Finn lenker hit.
 
-**Avhenger av:** WP-80.
+**Avhenger av:** WP-80. Typeendringen skjult→lukket for medlemmer også av serverdelen av WP-85; resten av pakken venter ikke på den.
 
 ## WP-85 — Miljøadministrasjon
 
@@ -120,6 +121,7 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 - Roller: inviter og fjern administrator, tre ut, tilby eierskap; ta over et eierløst miljø (PS-ENV-012–014). Manglende administrator vises som manglende behandlingsevne (UX-EXC-009).
 - Typeendring med konsekvensvisning og status for avstemningen (PS-ENV-007–008), og avvikling med angrefrist (PS-ENV-013).
 - Miljøets sakskø lenkes fra her (WP-88).
+- **Serverleveranse, resten av WP-23** (egen PR først, siden WP-84 bygger på den): skjult→lukket kan startes med 7 dagers frist, og vedtas endringen, avsluttes medlemskapet til dem som ikke har akseptert, i stedet for at de blir passive (PS-ENV-008, OD-0012).
 
 **Avhenger av:** WP-80.
 
@@ -130,7 +132,7 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 **Skjermer og flyter:**
 
 - **Personens side** (`/personer/[id]`): navn, kontekstuell tillitsprofil (anmeldelser og aggregater etter tillitsreglene), handlinger etter relasjon: send, trekk, godta eller avslå venneforespørsel, fjern venn, blokker og opphev blokkering (med konsekvens). Ingen side og ingen lenke for slettede eller blokkerende brukere (UX-PRIV-007, UX-PRIV-010).
-- Personnavn i lån, forespørsler og saker lenker til siden der relasjonen tillater det. Om man også når personer gjennom et felles miljø, avgjøres i OD-0024.
+- Personnavn i lån, forespørsler, saker og miljøets medlemsliste (WP-84) lenker til siden der relasjonen tillater det. Aktive medlemmer av et felles miljø har allerede tilgang til hverandres side på serveren.
 - **Konto** (`/konto`): venner, ventende forespørsler og blokkerte (finnes) får designsystemet og lenker til personens side.
 
 **Avhenger av:** WP-80. Tingene en venn har gjort synlige for venner legges på siden av WP-27.

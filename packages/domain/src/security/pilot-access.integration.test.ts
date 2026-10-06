@@ -89,6 +89,7 @@ const resourceKeys = new Set([
   "caseId",
   "correctsEntryId",
   "questionId",
+  "notificationId",
   "notificationIds",
   "through",
   "conversationId",
@@ -679,6 +680,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
   }),
 
   // Notifications
+  "notification.read": (ids) => ({ notificationId: ids.notificationId }),
   "notification.mark_read": (ids) => ({
     notificationIds: [ids.notificationId],
   }),

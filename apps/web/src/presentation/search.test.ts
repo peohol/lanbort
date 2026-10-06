@@ -1,7 +1,6 @@
 import type { FoundObject } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import {
-  describeAvailability,
   describeFoundIn,
   finnHref,
   prepareEnvironmentSearch,
@@ -94,27 +93,6 @@ describe("Finn's form", () => {
 });
 
 describe("found things in the user's words", () => {
-  it("says when a thing can be borrowed, not what blocks it", () => {
-    expect(describeAvailability(found({}), "2026-10-04")).toBe("Ledig nå");
-    expect(
-      describeAvailability(
-        found({
-          effectiveAvailability: [{ start: "2026-10-10", end: "2026-10-20" }],
-        }),
-        "2026-10-04",
-      ),
-    ).toBe("Ledig fra lørdag 10. oktober");
-    expect(
-      describeAvailability(
-        found({ availableForNewLoans: false }),
-        "2026-10-04",
-      ),
-    ).toBe("Ikke ledig for nye lån nå");
-    expect(
-      describeAvailability(found({ effectiveAvailability: [] }), "2026-10-04"),
-    ).toBe("Ikke ledig for nye lån nå");
-  });
-
   it("names the user's environments it is found in", () => {
     const place = (environmentName: string) => ({
       environmentId: id,

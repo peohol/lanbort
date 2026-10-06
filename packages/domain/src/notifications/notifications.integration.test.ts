@@ -39,7 +39,11 @@ import {
 import { notifyLoanDeadlines } from "./deadlines";
 import { notificationGenerator } from "./generator";
 import { notificationDeadlineProcess } from "./policies";
-import { listNotifications, readNotificationPreferences } from "./queries";
+import {
+  listNotifications,
+  readNotification,
+  readNotificationPreferences,
+} from "./queries";
 
 /**
  * WP-40: the notification centre and preferences (PS-COM-001–003). Events
@@ -188,6 +192,16 @@ describe("the notification centre (PS-COM-001)", () => {
     ).toEqual([oldest.id]);
     const stranger = await user();
     expect((await centre(stranger, middle.id)).notifications).toEqual([]);
+
+    // One notification by id, for its e-mail's link: only the caller's own.
+    const readOne = (actor: UserActor, notificationId: string) =>
+      executeQuery(tick(), readNotification, {
+        actor,
+        input: { notificationId },
+      });
+    expect(await readOne(bo, middle.id)).toEqual(middle);
+    await expect(readOne(stranger, middle.id)).rejects.toMatchObject(notFound);
+    await expect(readOne(bo, randomUUID())).rejects.toMatchObject(notFound);
 
     // Someone else's notification looks like one that does not exist, also
     // mixed in with the caller's own, and nothing is marked.

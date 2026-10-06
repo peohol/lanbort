@@ -4,7 +4,9 @@ import {
   takesNewActivity,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ActionButton } from "@/components/action-button";
+import { objectHref } from "@/navigation/routes";
 import { anchorFor } from "@/navigation/targets";
 import {
   pilotObjectPolicy,
@@ -76,7 +78,9 @@ export default async function ThingsPage() {
           <ul className="entries">
             {objects.map((object) => (
               <li key={object.id} className="entry">
-                <strong>{object.title}</strong>
+                <strong>
+                  <Link href={objectHref(object.id)}>{object.title}</Link>
+                </strong>
                 <span className="entry-detail">
                   {object.status === "archived"
                     ? "Arkivert"

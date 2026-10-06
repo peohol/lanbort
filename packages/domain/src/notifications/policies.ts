@@ -61,6 +61,8 @@ export const markAllNotificationsReadPolicy = notificationsPolicy(
   "notification.mark_all_read",
 );
 
+export const readNotificationPolicy = notificationsPolicy("notification.read");
+
 /** Name of the scheduled job that tells parties about loan deadlines. */
 export const notificationDeadlineProcess = "notifications.deadlines";
 
@@ -94,6 +96,7 @@ export const notificationPolicies = [
   setNotificationPreferencePolicy,
   markNotificationsReadPolicy,
   markAllNotificationsReadPolicy,
+  readNotificationPolicy,
   notifyLoanDeadlinesPolicy,
   deliverNotificationEmailsPolicy,
   notifyCaseQueueReturnsPolicy,

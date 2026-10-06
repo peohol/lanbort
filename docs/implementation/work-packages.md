@@ -62,7 +62,7 @@ Administrator/eier, rolleinvitasjon, eieroverføring, eierløshet og avvikling.
 **Krav:** PS-ENV-007–010  
 Strengere/svakere personvern, passiv status og konto-bundne skjulte invitasjoner.
 
-**Status:** Gjenstår etter OD-0012 (6. oktober 2026): skjult→lukket skal kunne startes med 7 dagers frist, og når den vedtas, skal medlemmer uten ja fjernes (avsluttet medlemskap) i stedet for å bli passive (PS-ENV-008).
+**Status:** Gjenstår etter OD-0012 (6. oktober 2026): skjult→lukket skal kunne startes med 7 dagers frist, og når den vedtas, skal medlemmer uten ja fjernes (avsluttet medlemskap) i stedet for å bli passive (PS-ENV-008). Bygges i WP-85.
 
 ### WP-24 — Objektkjerne
 **Krav:** PS-OBJ-001–005  

@@ -156,6 +156,11 @@ export const notificationSchema = z.strictObject({
 /** Lists come newest first, a page at a time. */
 export const notificationPageSize = 50;
 
+/** One of the caller's own notifications, e.g. from an e-mail's link. */
+export const notificationReadQuerySchema = z.strictObject({
+  notificationId: notificationIdSchema,
+});
+
 export const notificationListQuerySchema = z.strictObject({
   cursor: notificationIdSchema.optional(),
 });
