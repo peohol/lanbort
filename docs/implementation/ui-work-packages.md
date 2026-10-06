@@ -46,7 +46,7 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 - **Ruter:** én modul med adressene til alle sider i planen (`navigation/routes.ts`), så pakkene lenker til hverandre før sidene finnes. `targetPages` peker bare til sider som finnes.
 - **Objektets side som ramme:** `/ting/[id]` velger visning for eiere eller for andre, med en enkel første versjon av hver som WP-82 og WP-83 bygger videre på. Mine ting og treff i Finn lenker dit.
 - **E-postlenken fra varsler:** `/?varsel=<id>` merker varselet lest og sender brukeren videre til konteksten, eller til Varsler når konteksten ikke har en side (UX-INT-010).
-- Eksisterende sider tas over på designsystemet uten å endre hva de gjør.
+- Eksisterende sider tas over på designsystemet uten å endre hva de gjør. Det inkluderer Konto-sidens eksisterende varslingsvalg, kontostatus, deaktivering/reaktivering og kontosletting.
 
 **Skjermer og flyter:** app-skallet og alle eksisterende sider (utseende), objektets side (ramme), varselslenken.
 
@@ -101,6 +101,7 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 - **Miljøets side** (`/miljoer/[id]`): navn, type forklart i vanlige ord, område, regler og krav. For ikke-medlemmer bare det typen tillater (PS-ENV-001, UX-PRIV-002). For medlemmer: tingene i miljøet med lenke til objektet, «Registrer en ting her» (til WP-81 med miljøet forhåndsvalgt) og kontakt med administratorene.
 - **Innmelding:** bli med (åpent), søk med svar på krav (lukket), godta invitasjon (skjult), svar på spørsmål om mer informasjon, og følg status (PS-ENV-004–006).
 - **Typeendring for medlemmer:** se hva økt synlighet betyr og akseptere eller forlate innen fristen (UX-PRIV-008, PS-ENV-008). For skjult→lukket bygger dette på serverleveransen i WP-85.
+- **Egne rolleinvitasjoner:** en aktiv bruker som er invitert til administratorrolle, eller en administrator som tilbys eierskap, ser invitasjonen på miljøets side og kan godta eller avslå. Hjem peker til samme kontekst (PS-ENV-003).
 - **Forlat miljøet** med konsekvensvisning; passiv status forklart.
 - **Medlemsliste** for aktive medlemmer: de andre aktive medlemmene med navn og rolle, hver med lenke til personens side (WP-86), der man kan sende venneforespørsel (visjon 02, «Vennskap»). Passive medlemmer vises ikke, og ikke-medlemmer ser ingen liste (visjon 03). Serverleveranse: en medlemsvendt spørring med samme historiske synlighet som administratorenes medlemsliste (PS-ENV-009), uten svar på medlemskrav (UX-PRIV-009).
 - **Eiere på tingene:** om eieren vises direkte på tingene i miljøet, avgjøres i OD-0024. Til da vises tingene uten eier.
@@ -118,7 +119,7 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 - Innmeldinger: godkjenn, avvis, be om mer informasjon; inviter og trekk invitasjon.
 - Publiseringer: forhåndsgodkjenning av og på, godkjenn, avvis, sperr og opphev sperre (PS-ENV-011, PS-OBJ-017).
 - Innstillinger: navn, beskrivelse, område (fyller hullet etter WP-62) og medlemskrav med overgangsfrist (PS-ENV-005–006).
-- Roller: inviter og fjern administrator, tre ut, tilby eierskap; ta over et eierløst miljø (PS-ENV-012–014). Manglende administrator vises som manglende behandlingsevne (UX-EXC-009).
+- Roller: inviter administrator og trekk rolleinvitasjon, fjern administrator, tre ut, tilby eierskap; ta over et eierløst miljø (PS-ENV-003, PS-ENV-012–014). Mottakerens godta/avslå-flyt ligger på miljøets ordinære side i WP-84. Manglende administrator vises som manglende behandlingsevne (UX-EXC-009).
 - Typeendring med konsekvensvisning og status for avstemningen (PS-ENV-007–008), og avvikling med angrefrist (PS-ENV-013).
 - Miljøets sakskø lenkes fra her (WP-88).
 - **Serverleveranse, resten av WP-23** (egen PR først, siden WP-84 bygger på den): skjult→lukket kan startes med 7 dagers frist, og vedtas endringen, avsluttes medlemskapet til dem som ikke har akseptert, i stedet for at de blir passive (PS-ENV-008, OD-0012).
@@ -170,6 +171,6 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 
 ## Senere
 
-- Demping og arkivering av lånesamtalen (rest fra WP-44) og start av samtale fra personens side. Privat chat er av for ekte brukere til Port C.
+- Åpning av fri samtale fra en mottatt strukturert henvendelse, demping og arkivering av lånesamtalen (rest fra WP-44), og start av samtale fra personens side. Privat chat er av for ekte brukere til Port C.
 - Profilbilde, kort presentasjon og synlighetsvalg per profilfelt (PS-USR-002), når profilfeltene er fastsatt.
-- Flatene [skjerm- og flytinventaret](../ux/08-skjerm-og-flytinventar.md#hull-flater-uten-ui-pakke) viser at ingen pakke bygger ennå: varslingsvalg, sletting av konto, egen kontostatus, melding om mulig dødsfall og administratorenes oversikt over medlemmer og utestengte.
+- Flatene [skjerm- og flytinventaret](../ux/08-skjerm-og-flytinventar.md#hull-flater-uten-ui-pakke) viser at ingen pakke bygger ennå: melding om mulig dødsfall og administratorenes oversikt over medlemmer og utestengte.
