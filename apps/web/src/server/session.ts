@@ -72,6 +72,28 @@ export async function pageQueryOrNotFound<I, R, C, O>(
   }
 }
 
+/**
+ * A page's query for a part it shows only to those who may see it: null
+ * when the caller may not, rather than the whole page failing.
+ */
+export async function pageQueryIfAllowed<I, R, C, O>(
+  query: QueryDefinition<I, R, C, O>,
+  input: I,
+): Promise<O | null> {
+  try {
+    return await pageQuery(query, input);
+  } catch (error) {
+    if (
+      isDomainError(error) &&
+      ["not_found", "forbidden"].includes(error.code)
+    ) {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
 /** The signed-in user's account for rendering pages, or null. */
 export const getPageAccount = cache((): Promise<OwnAccount | null> =>
   pageQuery(getOwnAccount, {}),

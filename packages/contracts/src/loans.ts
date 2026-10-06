@@ -618,6 +618,32 @@ export const loanActionsSchema = z.strictObject({
   responsibility: z.array(answerSchema),
   /** The caller may confirm having the object back (PS-LOAN-019). */
   confirmControl: z.boolean(),
+  /**
+   * What a new period the caller may propose may change (PS-LOAN-010):
+   * `period` before the handover (both days, from today on), `return_day`
+   * once it is handed over (only the last day, after today). Null while
+   * nothing can be proposed: one proposal waits at a time.
+   */
+  proposeAmendment: z.enum(["period", "return_day"]).nullable(),
+  /** The caller's side made the open proposal and may take it back. */
+  withdrawAmendment: z.boolean(),
+  /** The caller may cancel the loan before its handover (PS-LOAN-011). */
+  cancel: z.boolean(),
+  /**
+   * The object's other owners the responsible lender may offer the role to
+   * (PS-LOAN-009). The offer itself decides whether they can take it, and
+   * says no without saying why.
+   */
+  offerResponsibility: z.array(
+    z.strictObject({ userId: z.uuid(), realName: z.string() }),
+  ),
+  /** The caller offered the role and may take the offer back. */
+  withdrawResponsibility: z.boolean(),
+  /**
+   * The caller may ask the administrators of the environment the loan came
+   * through to mediate (`loan.request_mediation`, PS-LOAN-018).
+   */
+  requestMediation: z.boolean(),
 });
 
 /**
@@ -707,6 +733,11 @@ export const loanSchema = z.strictObject({
     borrower: loanPersonSchema,
     lender: loanPersonSchema,
   }),
+  /**
+   * The latest mediation of the loan the caller takes part in, if any
+   * (PS-LOAN-018): its case, and whether it is still open.
+   */
+  mediation: z.strictObject({ caseId: z.uuid(), open: z.boolean() }).nullable(),
   actions: loanActionsSchema,
 });
 
@@ -715,10 +746,12 @@ export const loanPageSize = 50;
 
 /**
  * The caller's own loans (UX-IA-006): those that have not ended, or those
- * that have; on one side only, or both.
+ * that have; on one side only, or both. `awaiting_control`: those that
+ * ended unresolved and whose object no owner has confirmed having back yet
+ * (PS-LOAN-019), so they still ask something of the lender.
  */
 export const loanListQuerySchema = z.strictObject({
-  state: z.enum(["current", "ended"]),
+  state: z.enum(["current", "ended", "awaiting_control"]),
   role: loanRequestRoleSchema.optional(),
   cursor: loanIdSchema.optional(),
 });

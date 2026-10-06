@@ -33,6 +33,7 @@ import {
   type HandoverReading,
   latestReturnStatement,
   isOpen,
+  mediationOffered,
   type LoanRequestRecord,
   openLoanRequestStatuses,
   openStanding,
@@ -53,6 +54,7 @@ import {
   roleOf,
 } from "./policies";
 import {
+  awaitingControl,
   findControlConfirmation,
   findLoan,
   type LoanRecord,
@@ -66,6 +68,7 @@ import {
   type RecordedReturnStatement,
 } from "./return-store";
 import {
+  findLoanRequest,
   loadAcceptances,
   loadDerivedAvailability,
   loadLenderScope,
@@ -441,15 +444,23 @@ async function loadLoanDetail(db: Db, loanId: string, now: Date) {
     loan.responsibleLenderId,
   ]);
   const awaitingControl = control !== null && control.confirmedAt === null;
-  const lenderOwns =
-    awaitingControl &&
-    loan.objectId !== null &&
-    (await db
-      .selectFrom("app.object_owners")
-      .select("user_id")
-      .where("object_id", "=", loan.objectId)
-      .where("user_id", "=", loan.responsibleLenderId)
-      .executeTakeFirst()) !== undefined;
+  const ownerIds =
+    loan.objectId === null
+      ? []
+      : (
+          await db
+            .selectFrom("app.object_owners")
+            .select("user_id")
+            .where("object_id", "=", loan.objectId)
+            .execute()
+        ).map((owner) => owner.user_id);
+  const parties = [loan.borrowerUserId, loan.responsibleLenderId];
+  const coOwnerIds =
+    loan.status === "ended"
+      ? []
+      : ownerIds.filter((userId) => !parties.includes(userId));
+  const coOwnerNames = await realNames(db, coOwnerIds);
+  const mediations = await loadMediations(db, loan.id);
 
   return {
     ...loan,
@@ -462,8 +473,54 @@ async function loadLoanDetail(db: Db, loanId: string, now: Date) {
     control,
     names,
     awaitingControl,
-    lenderOwns,
+    lenderOwns: awaitingControl && ownerIds.includes(loan.responsibleLenderId),
+    coOwners: coOwnerIds.flatMap((userId) => {
+      const realName = coOwnerNames.get(userId);
+
+      return realName ? [{ userId, realName }] : [];
+    }),
+    mediations,
+    mediationAvailable:
+      !mediations.some(({ open }) => open) &&
+      mediationOffered(
+        { ...loan, period: loan.agreement.period },
+        now,
+        calendarDate(now),
+      ) &&
+      (await findLoanRequest(db, loan.requestId))?.origin === "environment",
   };
+}
+
+/**
+ * The loan's mediations (PS-LOAN-018), newest first, with who takes part in
+ * each: a party sees only one they take part in.
+ */
+async function loadMediations(db: Db, loanId: string) {
+  const rows = await db
+    .selectFrom("app.cases as c")
+    .innerJoin("app.case_participants as p", "p.case_id", "c.id")
+    .select(["c.id", "c.status", "p.user_id"])
+    .where("c.kind", "=", "loan_mediation")
+    .where("c.loan_id", "=", loanId)
+    .orderBy("c.opened_at", "desc")
+    .orderBy("c.id", "desc")
+    .execute();
+  const cases = new Map<
+    string,
+    { caseId: string; open: boolean; participantIds: string[] }
+  >();
+
+  for (const row of rows) {
+    const mediation = cases.get(row.id) ?? {
+      caseId: row.id,
+      open: row.status === "open",
+      participantIds: [],
+    };
+    mediation.participantIds.push(row.user_id);
+    cases.set(row.id, mediation);
+  }
+
+  return [...cases.values()];
 }
 
 /**
@@ -520,7 +577,26 @@ const noActions: LoanActions = {
   amendment: [],
   responsibility: [],
   confirmControl: false,
+  proposeAmendment: null,
+  withdrawAmendment: false,
+  cancel: false,
+  offerResponsibility: [],
+  withdrawResponsibility: false,
+  requestMediation: false,
 };
+
+/** The latest mediation the caller takes part in, if any. */
+function ownMediation(
+  actor: Actor,
+  mediations: LoanDetail["mediations"],
+): Loan["mediation"] {
+  const own = mediations.find(
+    ({ participantIds }) =>
+      actor.kind === "user" && participantIds.includes(actor.userId),
+  );
+
+  return own ? { caseId: own.caseId, open: own.open } : null;
+}
 
 /** The loan as the caller, one of its parties, sees it as of `now`. */
 function presentLoan(actor: Actor, resource: LoanDetail, now: Date): Loan {
@@ -594,6 +670,7 @@ function presentLoan(actor: Actor, resource: LoanDetail, now: Date): Loan {
       borrower: personOf(resource.names, resource.borrowerUserId),
       lender: personOf(resource.names, resource.responsibleLenderId),
     },
+    mediation: ownMediation(actor, resource.mediations),
     actions:
       actor.kind === "user" && role
         ? loanActions(
@@ -613,6 +690,9 @@ function presentLoan(actor: Actor, resource: LoanDetail, now: Date): Loan {
               transfer: resource.transfer,
               awaitingControl: resource.awaitingControl,
               lenderOwns: resource.lenderOwns,
+              hasObject: resource.objectId !== null,
+              coOwners: resource.coOwners,
+              mediationAvailable: resource.mediationAvailable,
             },
             now,
           )
@@ -679,7 +759,11 @@ export const listLoans = defineQuery({
             ),
           ),
         )
-        .where("loan.status", input.state === "ended" ? "=" : "<>", "ended")
+        .where(
+          input.state === "awaiting_control"
+            ? awaitingControl
+            : sql<boolean>`(loan.status = 'ended') = ${input.state === "ended"}`,
+        )
         .where(
           input.cursor === undefined
             ? sql<boolean>`true`

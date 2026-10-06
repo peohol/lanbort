@@ -1,6 +1,11 @@
 import type { Loan, LoanActions } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
-import { describeLoanStatus, loanSteps, personName } from "./loan-status";
+import {
+  describeLoanStatus,
+  loanSteps,
+  loanTone,
+  personName,
+} from "./loan-status";
 
 const id = "00000000-0000-4000-8000-000000000001";
 const at = "2026-10-03T12:00:00.000Z";
@@ -12,6 +17,12 @@ const noActions: LoanActions = {
   amendment: [],
   responsibility: [],
   confirmControl: false,
+  proposeAmendment: null,
+  withdrawAmendment: false,
+  cancel: false,
+  offerResponsibility: [],
+  withdrawResponsibility: false,
+  requestMediation: false,
 };
 
 function loan(changes: Partial<Loan> = {}): Loan {
@@ -42,6 +53,7 @@ function loan(changes: Partial<Loan> = {}): Loan {
     control: null,
     approvedAt: at,
     parties: { borrower: { realName: "Ola" }, lender: { realName: "Kari" } },
+    mediation: null,
     actions: noActions,
     ...changes,
   };
@@ -257,10 +269,78 @@ describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
     expect(steps.primary[0]?.label).toBe("Behold avtalt periode");
   });
 
+  it("keeps taking one's own proposal or offer back among the rarer steps", () => {
+    const transferId = "00000000-0000-4000-8000-000000000002";
+    const steps = loanSteps(
+      loan({
+        role: "lender",
+        amendment: {
+          id,
+          period: { start: "2026-10-05", end: "2026-10-09" },
+          proposedBy: "lender",
+          proposedAt: at,
+        },
+        responsibilityTransfer: {
+          id: transferId,
+          kind: "voluntary",
+          fromUserId: id,
+          toUserId: transferId,
+          needsBorrowerConsent: false,
+          recipientAccepted: false,
+          borrowerConsented: false,
+          proposedAt: at,
+        },
+        actions: {
+          ...noActions,
+          withdrawAmendment: true,
+          withdrawResponsibility: true,
+        },
+      }),
+    );
+
+    expect(steps.primary).toEqual([]);
+    expect(steps.secondary).toEqual([
+      {
+        label: "Trekk forslaget om ny periode",
+        path: `/api/loans/${id}/amendments/${id}/withdraw`,
+        body: {},
+      },
+      {
+        label: "Trekk tilbudet om å bli ansvarlig utlåner",
+        path: `/api/loans/${id}/responsibility/${transferId}/withdraw`,
+        body: {},
+      },
+    ]);
+  });
+
   it("offers nothing the domain did not offer", () => {
     expect(loanSteps(loan({ status: "awaiting_return" }))).toEqual({
       primary: [],
       secondary: [],
     });
+  });
+});
+
+describe("the status's tone (UX-A11Y-005)", () => {
+  it("warns only when something is known not to go as agreed", () => {
+    expect(loanTone(loan())).toBe("positive");
+    expect(loanTone(loan({ status: "awaiting_return" }))).toBe("waiting");
+    expect(loanTone(loan({ status: "late" }))).toBe("warning");
+    expect(loanTone(loan({ status: "disputed" }))).toBe("warning");
+  });
+
+  it("is neutral once ended, unless the object is not confirmed back", () => {
+    const ending = {
+      reason: "unresolved",
+      endedBy: null,
+      endedAt: at,
+    } as const;
+
+    expect(loanTone(loan({ status: "ended", ending }))).toBe("neutral");
+    expect(
+      loanTone(
+        loan({ status: "ended", ending, control: { confirmedAt: null } }),
+      ),
+    ).toBe("warning");
   });
 });

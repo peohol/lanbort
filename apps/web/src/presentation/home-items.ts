@@ -35,6 +35,8 @@ const texts: Record<HomeItemKind, (item: HomeItem) => string> = {
     `Fortell om du har levert tilbake ${name(item)}`,
   "loan.confirm_return": (item) =>
     `Bekreft om du har fått tilbake ${name(item)}`,
+  "loan.confirm_control": (item) =>
+    `Bekreft at du har ${name(item)} igjen, så den kan lånes ut på nytt`,
   "loan.write_review": (item) =>
     `Skriv en anmeldelse etter lånet av ${name(item)}`,
   "social.answer_friend_request": (item) =>

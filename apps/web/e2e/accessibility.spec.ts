@@ -252,6 +252,8 @@ async function keyboardProblems(page: Page) {
       (element) =>
         !(element as HTMLButtonElement).disabled &&
         element.getClientRects().length > 0 &&
+        // Also not inside a closed `details`, which keeps its boxes.
+        element.checkVisibility() &&
         getComputedStyle(element).visibility !== "hidden",
     );
     focusable.forEach((element, index) => {

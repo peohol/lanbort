@@ -5,8 +5,12 @@ import type {
   LoanRequestRole,
   ReturnOutcome,
 } from "@lanbort/contracts";
+import type { Tone } from "@/components/tag";
 import { formatDay, formatPeriod, formatTime } from "./dates";
 import { loanEndReasonLabels } from "./loans";
+
+/** Where the loan's commands are in the API. */
+export const loanApi = (loanId: string) => `/api/loans/${loanId}`;
 
 /** A person in a loan by name; a deleted account by role (UX-PRIV-010). */
 export const personName = (person: LoanPerson) =>
@@ -170,6 +174,33 @@ export function describeLoanStatus(loan: Loan): LoanStatusText {
   }
 }
 
+/**
+ * The status's tone, beside its words (UX-A11Y-005): settled, waiting for
+ * someone, or not going as agreed. Neutral words (UX-EXC-002) keep a
+ * neutral tone too; only what is known to be wrong warns.
+ */
+export function loanTone(loan: Loan): Tone {
+  if (loan.ending) {
+    return loan.control?.confirmedAt === null ? "warning" : "neutral";
+  }
+
+  if (loan.status === "late" || loan.status === "disputed") {
+    return "warning";
+  }
+
+  if (
+    loan.amendment ||
+    loan.responsibilityTransfer ||
+    loan.return.pending ||
+    loan.status === "awaiting_handover" ||
+    loan.status === "awaiting_return"
+  ) {
+    return "waiting";
+  }
+
+  return "positive";
+}
+
 /** A step the caller can take, as one API command (UX-INT-001). */
 export interface LoanStep {
   readonly label: string;
@@ -200,7 +231,7 @@ export function loanSteps(loan: Loan): {
   primary: LoanStep[];
   secondary: LoanStep[];
 } {
-  const api = `/api/loans/${loan.id}`;
+  const api = loanApi(loan.id);
   const title = loan.agreement.title;
   const { actions, amendment } = loan;
   const transfer = loan.responsibilityTransfer;
@@ -261,6 +292,27 @@ export function loanSteps(loan: Loan): {
       ]
     : [];
   const ended = loan.status === "ended";
+  // Taking one's own proposal back is rarer than waiting for the answer.
+  const withdrawals = [
+    ...(actions.withdrawAmendment && amendment
+      ? [
+          {
+            label: "Trekk forslaget om ny periode",
+            path: `${api}/amendments/${amendment.id}/withdraw`,
+            body: {},
+          },
+        ]
+      : []),
+    ...(actions.withdrawResponsibility && transfer
+      ? [
+          {
+            label: "Trekk tilbudet om å bli ansvarlig utlåner",
+            path: `${api}/responsibility/${transfer.id}/withdraw`,
+            body: {},
+          },
+        ]
+      : []),
+  ];
 
   return {
     primary: [
@@ -271,6 +323,10 @@ export function loanSteps(loan: Loan): {
       ...(handoverPhase ? handover : []),
       ...(ended ? [] : returns),
     ],
-    secondary: [...(handoverPhase ? [] : handover), ...(ended ? returns : [])],
+    secondary: [
+      ...withdrawals,
+      ...(handoverPhase ? [] : handover),
+      ...(ended ? returns : []),
+    ],
   };
 }
