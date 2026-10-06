@@ -6,11 +6,13 @@ import { DomainError } from "../errors";
 import type { EventRecorder } from "../events/recorder";
 import {
   administrators,
+  type ChangedBy,
   closeVacancy,
   findContinuity,
   grantRole,
   lapseInvitationsOf,
   revokeRoles,
+  type RoleRevokeReason,
   settleWindDown,
   startWindDown,
   vacateOwnership,
@@ -326,13 +328,51 @@ export const settleContinuity = defineCommand({
 });
 
 /**
- * Ends every environment role of a user whose account has gone away
- * (PS-ENV-013), for account lifecycle to call inside its own transaction.
+ * Ends every role a user holds in one locked environment, and what depended
+ * on it, when the user is gone from it without handing over (PS-ENV-013).
  * Where the user was owner, the continuity model starts: a claim period for
  * the remaining administrators, or winding down if there are none. Where the
  * user was the last administrator of an ownerless environment, nobody can
  * take over any more and it winds down at once. Nobody else gains authority,
  * and nothing escalates to platform stewards (PS-ENV-014).
+ */
+export async function releaseRolesIn(
+  tx: Kysely<Database>,
+  environment: { id: string; state: string },
+  userId: string,
+  reason: RoleRevokeReason,
+  by: ChangedBy,
+  now: Date,
+  events: EventRecorder,
+): Promise<void> {
+  const ended = await revokeRoles(
+    tx,
+    environment.id,
+    userId,
+    ["owner", "administrator"],
+    reason,
+    by,
+    now,
+    events,
+  );
+  await lapseInvitationsOf(tx, environment.id, userId, now, events);
+  await withdrawClaims(tx, environment.id, userId, now, events);
+
+  if (ended.includes("owner")) {
+    await vacateOwnership(tx, environment, userId, now, events);
+    return;
+  }
+
+  const { vacancy } = await findContinuity(tx, environment.id);
+  if (vacancy && (await administrators(tx, environment.id, now)).length === 0) {
+    await closeVacancy(tx, environment.id, vacancy.id, null, now, events);
+    await startWindDown(tx, environment.id, "ownerless", null, now, events);
+  }
+}
+
+/**
+ * Ends every environment role of a user whose account has gone away, for
+ * account lifecycle to call inside its own transaction (`releaseRolesIn`).
  *
  * Environments are locked in id order, so concurrent calls cannot deadlock.
  */
@@ -364,32 +404,15 @@ export async function releaseEnvironmentRoles(
       .where("id", "=", environmentId)
       .forUpdate()
       .executeTakeFirstOrThrow();
-    const ended = await revokeRoles(
+    await releaseRolesIn(
       tx,
-      environmentId,
+      environment,
       userId,
-      ["owner", "administrator"],
       "account_departed",
       { process: continuityProcess },
       now,
       events,
     );
-    await lapseInvitationsOf(tx, environmentId, userId, now, events);
-    await withdrawClaims(tx, environmentId, userId, now, events);
-
-    if (ended.includes("owner")) {
-      await vacateOwnership(tx, environment, userId, now, events);
-      continue;
-    }
-
-    const { vacancy } = await findContinuity(tx, environmentId);
-    if (
-      vacancy &&
-      (await administrators(tx, environmentId, now)).length === 0
-    ) {
-      await closeVacancy(tx, environmentId, vacancy.id, null, now, events);
-      await startWindDown(tx, environmentId, "ownerless", null, now, events);
-    }
   }
 
   return rows.length;

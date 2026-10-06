@@ -175,6 +175,18 @@ async function stateOf(actor: UserActor, environmentId: string) {
   return { state: membership?.state, passiveReason: membership?.passiveReason };
 }
 
+/** Why the user's latest membership ended, or null while it lasts. */
+async function endOf(actor: UserActor, environmentId: string) {
+  const row = await db
+    .selectFrom("app.environment_memberships")
+    .select("end_reason")
+    .where("environment_id", "=", environmentId)
+    .where("user_id", "=", actor.userId)
+    .orderBy("created_at", "desc")
+    .executeTakeFirstOrThrow();
+  return row.end_reason;
+}
+
 async function proposalOutcome(proposalId: string) {
   return await db
     .selectFrom("app.environment_type_proposals")
@@ -287,26 +299,28 @@ describe("stricter types (PS-ENV-007)", () => {
     expect(await history(environmentId)).toEqual(["hidden"]);
   });
 
-  it("start no hidden → closed vote while its deadline is undecided (OD-0012)", async () => {
+  it("start a hidden → closed vote with a week to answer (OD-0012)", async () => {
     const owner = await user();
     const environmentId = await environment(owner, "hidden");
-    await member(environmentId, owner);
+    const voter = await member(environmentId, owner);
 
-    await expect(
-      run(changeEnvironmentType, owner, {
-        environmentId,
-        expectedType: "hidden",
-        type: "closed",
-      }),
-    ).rejects.toMatchObject({ code: "conflict" });
-    expect((await read(owner, environmentId)).typeChange).toBeNull();
-    expect(
-      await db
-        .selectFrom("app.environment_type_proposals")
-        .select("id")
-        .where("environment_id", "=", environmentId)
-        .execute(),
-    ).toEqual([]);
+    const { type, proposal } = await changeType(
+      owner,
+      environmentId,
+      "hidden",
+      "closed",
+    );
+    expect(type).toBe("hidden");
+    expect(proposal).toMatchObject({ process: "vote" });
+    expect(new Date(proposal!.deadline).getTime() - clock.getTime()).toBe(
+      typeChangeDays.vote * 86_400_000,
+    );
+    expect((await read(voter, environmentId)).typeChange).toMatchObject({
+      id: proposal!.id,
+      toType: "closed",
+      process: "vote",
+      yourResponse: null,
+    });
     expect(await history(environmentId)).toEqual(["hidden"]);
   });
 
@@ -465,7 +479,7 @@ describe("hidden → closed (PS-ENV-008)", () => {
     }
   });
 
-  it("becomes closed with 2/3; everyone who did not vote for it is passive", async () => {
+  it("becomes closed with 2/3; everyone who did not vote for it is removed", async () => {
     const { owner, environmentId, members, proposalId } =
       await hiddenEnvironment();
     const [a, b, silent] = members;
@@ -488,10 +502,11 @@ describe("hidden → closed (PS-ENV-008)", () => {
       type: "closed",
       membership: null,
     });
-    expect(await stateOf(silent, environmentId)).toEqual({
-      state: "passive",
-      passiveReason: "type_change_not_accepted",
-    });
+    expect(await endOf(silent, environmentId)).toBe("type_change_not_accepted");
+    expect((await read(silent, environmentId)).membership).toBeNull();
+    for (const actor of [owner, a, b]) {
+      expect((await stateOf(actor, environmentId)).state).toBe("active");
+    }
     expect(await typeEvents(environmentId)).toEqual([
       "environment.type_change_closed",
       "environment.type_changed",
@@ -521,10 +536,9 @@ describe("hidden → closed at exactly 2/3", () => {
       eligible_count: 3,
       support_count: 2,
     });
-    expect(await stateOf(latecomer, environmentId)).toEqual({
-      state: "passive",
-      passiveReason: "type_change_not_accepted",
-    });
+    expect(await endOf(latecomer, environmentId)).toBe(
+      "type_change_not_accepted",
+    );
   });
 });
 
@@ -612,7 +626,7 @@ describe("hidden invitations (PS-ENV-010)", () => {
 });
 
 describe("historical privacy (PS-ENV-009)", () => {
-  it("never shows passive members of a stricter context to later members", async () => {
+  it("removes members of a hidden environment who did not accept, roles first", async () => {
     const owner = await user();
     const environmentId = await environment(owner, "hidden");
     const supporter = await member(environmentId, owner);
@@ -623,9 +637,19 @@ describe("historical privacy (PS-ENV-009)", () => {
     await respond(supporter, environmentId, proposalId, true);
     passDays(testVoteDays);
     await conclude();
-    expect((await stateOf(keeper, environmentId)).state).toBe("passive");
 
-    // A new member joins the closed environment and becomes administrator.
+    expect(await endOf(keeper, environmentId)).toBe("type_change_not_accepted");
+    expect(
+      await db
+        .selectFrom("app.environment_role_grants")
+        .select("revoke_reason")
+        .where("environment_id", "=", environmentId)
+        .where("user_id", "=", keeper.userId)
+        .execute(),
+    ).toEqual([{ revoke_reason: "type_change_not_accepted" }]);
+
+    // Nobody lists the removed member, not those who were there before and
+    // not a later member, not even as administrator.
     const newcomer = await user();
     const { membershipId } = await output(joinEnvironment, newcomer, {
       environmentId,
@@ -633,39 +657,39 @@ describe("historical privacy (PS-ENV-009)", () => {
     });
     await output(approveMembership, owner, { environmentId, membershipId });
     await makeAdministrator(environmentId, owner, newcomer);
+    for (const viewer of [owner, newcomer]) {
+      expect(await memberIds(viewer, environmentId)).not.toContain(
+        keeper.userId,
+      );
+      expect(await holderIds(viewer, environmentId)).not.toContain(
+        keeper.userId,
+      );
+    }
 
-    // Those who were there before still see the hidden-era member.
-    expect(await memberIds(owner, environmentId)).toContain(keeper.userId);
-    expect(await holderIds(owner, environmentId)).toContain(keeper.userId);
-    // The newcomer does not, not even as administrator.
-    expect(await memberIds(newcomer, environmentId)).not.toContain(
-      keeper.userId,
-    );
-    expect(await holderIds(newcomer, environmentId)).not.toContain(
-      keeper.userId,
-    );
-    expect(await memberIds(newcomer, environmentId)).toEqual(
-      expect.arrayContaining([owner.userId, supporter.userId, newcomer.userId]),
-    );
-
-    // A pending role invitation does not name the hidden-era member either.
-    const { invitationId } = await output(inviteAdministrator, owner, {
-      environmentId,
-      userId: supporter.userId,
-    });
+    // Like anyone who left, the removed member may apply to the closed
+    // environment.
     expect(
-      (
-        await executeQuery(domain, listRoles, {
-          actor: newcomer,
-          input: { environmentId },
-        })
-      ).invitations.map((invitation) => invitation.id),
-    ).toEqual([invitationId]);
+      await output(joinEnvironment, keeper, { environmentId, answers: [] }),
+    ).toMatchObject({ state: "pending" });
+  });
 
-    // Once the member accepts the new type, the ordinary rules apply.
-    await output(joinEnvironment, keeper, { environmentId, answers: [] });
-    expect(await memberIds(newcomer, environmentId)).toContain(keeper.userId);
-    expect(await holderIds(newcomer, environmentId)).toContain(keeper.userId);
+  it("hands a removed owner's environment to the continuity rules", async () => {
+    const owner = await user();
+    const environmentId = await environment(owner, "hidden");
+    const administrator = await member(environmentId, owner);
+    await makeAdministrator(environmentId, owner, administrator);
+    const voter = await member(environmentId, owner);
+    const proposalId = await proposeVote(owner, environmentId);
+    await respond(administrator, environmentId, proposalId, true);
+    await respond(voter, environmentId, proposalId, true);
+    passDays(testVoteDays);
+    await conclude();
+
+    expect(await endOf(owner, environmentId)).toBe("type_change_not_accepted");
+    expect(await read(administrator, environmentId)).toMatchObject({
+      type: "closed",
+      continuity: { ownershipVacancy: { claimedByYou: false }, windDown: null },
+    });
   });
 
   it("keeps members who did not accept closed → open from members who joined later", async () => {
