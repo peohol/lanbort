@@ -76,11 +76,17 @@ Publiseringsstatus, avpublisering og forhåndsgodkjenning.
 **Krav:** PS-OBJ-007–013  
 Invitasjon/aksept, restriksjoner, blokkfrys, uttreden, sporbar redigering og optimistisk konfliktkontroll.
 
+### WP-27 — Synlighet for venner
+**Krav:** PS-OBJ-020, PS-USR-004  
+Publiseringsvalget «Venner» per objekt (av som standard), vennens visning av eierens synlige objekter, filteret «Venner» i Finn og at direkte forespørsler krever valget. Ikke bygget ennå (OD-0013 avklart 6. oktober 2026).
+
 ## Fase 3
 
 ### WP-30 — Låneforespørsel og opprinnelseskontekst
 **Krav:** PS-LOAN-001–005  
 Miljø-/venneinngang, ansvarserklæring og vilkårsbekreftelse.
+
+**Status:** Ferdig, med to rester etter OD-0013 og OD-0015 (6. oktober 2026): meldingen skal bli valgfri (PS-LOAN-004), og direkte forespørsler skal kreve at objektet er synlig for venner (WP-27).
 
 ### WP-31 — Atomisk godkjenning og reservasjon
 **Krav:** PS-LOAN-006–008; PS-NFR-004  

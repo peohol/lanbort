@@ -51,7 +51,7 @@ Når spørsmålet er avgjort:
 
 ## Status før UI-arbeidet
 
-Gjennomgått 6. oktober 2026. To åpne spørsmål må avgjøres før UI-designet av de berørte flatene: [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) (hvor venner finner hverandres objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering) (meldingen i en låneforespørsel). Alle andre kan utsettes; feltet «Avklares før» sier til når.
+Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet. De to siste som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. De åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
 
 ## Åpne
 
@@ -113,15 +113,6 @@ Gjennomgått 6. oktober 2026. To åpne spørsmål må avgjøres før UI-designet
 - **Avhenger av:** Teknisk og kontraktsmessig utredning av Vipps Login, hvilke verifiserte identitetsopplysninger og sikkerhetsgarantier tjenesten faktisk gir, personvern, recovery og alternativ tilgang for brukere som ikke kan eller ønsker å bruke Vipps. Kostnad og mulig sponsor-/samarbeidsmodell med Vipps kan inngå i vurderingen, men skal ikke være en teknisk forutsetning. Det skal også vurderes særskilt om fersk Vipps-autentisering kan ha en rolle ved privilegert re-autentisering.
 - **Avklares før:** ingen fast frist. Dagens innlogging med e-postkode gjelder.
 
-### OD-0013 — Hvor venner finner hverandres objekter
-- **Lag:** Produktspesifikasjon / UX
-- **Status:** Åpen
-- **Berører:** PS-LOAN-001, PS-USR-004
-- **Spørsmål:** Hvilken flate skal en venn bruke for å se eiernes objekter før en direkte låneforespørsel? Inntil dette er besluttet, finnes ingen liste over venners objekter. Forhåndsvisningen av en direkte forespørsel svarer bare for et objekt-ID den som spør allerede har, og bare når vedkommende er venn med en eier.
-- **Avhenger av:** Produktvurdering og UX for direkte vennelån.
-- **Avklares før:** **UI-design** av Finn, vennens profil og direkte vennelån, fordi den bestemmer hvilken flate som finnes.
-- **Anbefaling:** «Venner» blir et eget publiseringsvalg per objekt, ved siden av miljøene (PS-OBJ-006), og er av som standard. Objekter en venn har gjort synlige for venner, vises på vennens profil og som et filter i Finn, og en direkte låneforespørsel starter derfra.
-
 ### OD-0014 — Vesentlig eller redaksjonell vilkårsendring
 - **Lag:** Produktspesifikasjon
 - **Status:** Åpen
@@ -129,15 +120,6 @@ Gjennomgått 6. oktober 2026. To åpne spørsmål må avgjøres før UI-designet
 - **Spørsmål:** Hvordan skilles en vesentlig vilkårsendring fra en redaksjonell? Vilkårene er fritekst, så systemet kan ikke avgjøre det selv. Inntil dette er besluttet, krever enhver endring i objektets lånevilkår ny bekreftelse fra låntaker. Andre endringer (tittel, beskrivelse, bilder) gjør det ikke. Regelen står ett sted (`app.loan_terms_differ`).
 - **Avhenger av:** Produktvurdering, eventuelt et valg for eier om endringen er vesentlig.
 - **Avklares før:** kan vente. Dagens strenge regel (enhver vilkårsendring krever ny bekreftelse) er trygg å designe etter.
-
-### OD-0015 — Meldingen i en låneforespørsel og ende-til-ende-kryptering
-- **Lag:** Produktspesifikasjon / Arkitektur
-- **Status:** Åpen
-- **Berører:** PS-LOAN-004, PS-COM-005, PS-COM-006, PS-NFR-007, OD-0005
-- **Spørsmål:** Er meldingen i en låneforespørsel privat fritekst som skal ende-til-ende-krypteres (PS-COM-005), eller del av den strukturerte henvendelsen (PS-COM-006)? Inntil dette er besluttet, lagres den på forespørselen, vises bare for partene og kopieres aldri til hendelser eller logger. Kommer den inn under kryptering, flyttes den til chatten (WP-43).
-- **Avhenger av:** Produktvurdering. Krypteringsmodellen er avgjort i [ADR-0010](architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md).
-- **Avklares før:** **UI-design** av låneforespørselen og «Samtaler», fordi den bestemmer om meldingen vises i forespørselen eller i chatten.
-- **Anbefaling:** Behold dagens modell. Meldingen er del av den strukturerte forespørselen (bare synlig for partene, aldri i hendelser eller logger) og krypteres ikke ende-til-ende. Videre samtale skjer i privat chat. Da kan også en ikke-venn sende en forespørsel uten å ha satt opp chat-enheter, slik PS-COM-006 forutsetter.
 
 ### OD-0016 — Når ansvarlig utlåner regnes som reelt utilgjengelig
 - **Lag:** Produktspesifikasjon
@@ -218,6 +200,16 @@ Gjennomgått 6. oktober 2026. To åpne spørsmål må avgjøres før UI-designet
 - **Lag:** Produktspesifikasjon
 - **Status:** Avklart (produkteier, 6. oktober 2026)
 - **Beslutning:** Se [PS-ENV-008](product-spec/02-miljoer.md). 7 dager til å akseptere eller forlate; den som ikke har akseptert, fjernes når fristen utløper. Ikke bygget ennå (WP-23).
+
+### OD-0013 — Hvor venner finner hverandres objekter
+- **Lag:** Produktspesifikasjon / UX
+- **Status:** Avklart (produkteier, 6. oktober 2026)
+- **Beslutning:** Se [PS-OBJ-020](product-spec/03-utlansobjekter.md) og [UX-JRN-013](ux/02-sentrale-brukerreiser.md). «Venner» er et eget publiseringsvalg per objekt, av som standard; synlige objekter vises på eierens profil for venner og med filteret «Venner» i Finn, og en direkte låneforespørsel starter derfra. Ikke bygget ennå (WP-27).
+
+### OD-0015 — Meldingen i en låneforespørsel og ende-til-ende-kryptering
+- **Lag:** Produktspesifikasjon / Arkitektur
+- **Status:** Avklart (produkteier, 6. oktober 2026)
+- **Beslutning:** Se [PS-LOAN-004](product-spec/04-laneforlop.md) og [PS-COM-005](product-spec/05-kommunikasjon-varsler-og-saker.md). Den valgfrie meldingen er del av den strukturerte forespørselen og krypteres ikke ende-til-ende; den er bare synlig for partene og kopieres ikke til hendelser eller logger. Videre fritekst skjer i E2EE-chat. At meldingen er valgfri, er ikke bygget ennå (WP-30).
 
 ### OD-0020 — Hvem kan stenge lånelogistikk-kanalen tidlig
 - **Lag:** Produktspesifikasjon
