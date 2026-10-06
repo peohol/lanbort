@@ -29,6 +29,7 @@ import {
   presentFound,
   selectFound,
 } from "../publications/queries";
+import { environmentOwners } from "../publications/owners";
 import { searchEnvironmentsPolicy, searchObjectsPolicy } from "./policies";
 import { rateLimits } from "../abuse/rate-limits";
 
@@ -254,12 +255,25 @@ export const searchObjects = defineQuery({
           availableThroughout(input, candidate.objectId, details, now),
         )
         .sort(relevance);
+      const shown = matching.slice(0, searchResultLimit);
+      const owners = await environmentOwners(
+        tx,
+        actor.userId,
+        shown.flatMap((candidate) =>
+          candidate.foundIn.map(({ environmentId }) => ({
+            objectId: candidate.objectId,
+            environmentId,
+          })),
+        ),
+        now,
+      );
 
       return {
         resource: {
-          candidates: matching.slice(0, searchResultLimit),
+          candidates: shown,
           more: more || matching.length > searchResultLimit,
           details,
+          owners,
         },
         context: undefined,
       };
@@ -271,6 +285,7 @@ export const searchObjects = defineQuery({
         a.environmentName.localeCompare(b.environmentName, "nb"),
       ),
       foundThroughFriends: candidate.throughFriends,
+      owners: [...(resource.owners.get(candidate.objectId) ?? [])],
     })),
     more: resource.more,
   }),

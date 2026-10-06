@@ -5,6 +5,8 @@ import type {
 } from "@lanbort/contracts";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
+import { EntryDetail } from "@/components/entry-detail";
+import { ownersDetail } from "@/components/owner-names";
 import { PersonName } from "@/components/person-name";
 import { Tag } from "@/components/tag";
 import {
@@ -17,9 +19,9 @@ import { describeAvailability } from "@/presentation/objects";
 
 /**
  * The things an active member finds in the environment (PS-OBJ-006), each
- * leading to the thing as seen here. Owners are named in WP-89
- * (PS-ENV-015). Registering a thing from here preselects the
- * environment (UX-JRN-003).
+ * leading to the thing as seen here, with its owners who are members here
+ * (PS-ENV-015). Registering a thing from here preselects the environment
+ * (UX-JRN-003).
  */
 export function Things({
   environment,
@@ -59,9 +61,12 @@ export function Things({
                 <Link href={objectHref(thing.objectId, origin)}>
                   {thing.title}
                 </Link>
-                <span className="entry-detail">
-                  {describeAvailability(thing, today)}
-                </span>
+                <EntryDetail
+                  parts={[
+                    describeAvailability(thing, today),
+                    thing.ownedByYou ? null : ownersDetail(thing.owners),
+                  ]}
+                />
                 {thing.ownedByYou && <Tag>Din</Tag>}
               </li>
             ))}

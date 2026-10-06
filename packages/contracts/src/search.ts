@@ -70,8 +70,9 @@ export const objectFoundInSchema = z.strictObject({
 });
 
 /**
- * An object as Finn shows it: like in the environment, its owners are not
- * named and its availability does not say what blocks it. It is found in at
+ * An object as Finn shows it: like in the environment, its availability does
+ * not say what blocks it, and `owners` names the owners who are active
+ * members of an environment it is found in (PS-ENV-015). It is found in at
  * least one of the caller's environments or through a friend. Images are read
  * through one of the environments it is found in, or through friends.
  */

@@ -2,6 +2,7 @@ import type {
   AvailabilityInterval,
   ObjectCategory,
   OwnObject,
+  ShownOwner,
 } from "@lanbort/contracts";
 import type { Tone } from "@/components/tag";
 import { formatDay } from "./dates";
@@ -86,3 +87,11 @@ export function ownThingStatus(
     ? { label: "Mangler ledig tid", tone: "warning" }
     : { label: "Ikke ledig nå", tone: "neutral" };
 }
+
+/** What goes before the item at `index` in a list said as «Anna, Bo og Cleo». */
+export const listSeparator = (index: number, count: number) =>
+  index === 0 ? "" : index === count - 1 ? " og " : ", ";
+
+/** The heading for a thing's owners, one or several. */
+export const ownersLabel = (owners: readonly ShownOwner[]) =>
+  owners.length === 1 ? "Eier" : "Eiere";

@@ -4,6 +4,8 @@ import {
   categoryLabel,
   describeAvailability,
   formatInterval,
+  listSeparator,
+  ownersLabel,
   ownThingStatus,
 } from "./objects";
 
@@ -101,5 +103,24 @@ describe("one of the user's own things in a list", () => {
       }),
     ).toBe("Mangler ledig tid");
     expect(label({ availableForNewLoans: false })).toBe("Ikke ledig nå");
+  });
+});
+
+describe("owners of a thing in an environment (PS-ENV-015)", () => {
+  const owner = (realName: string) => ({ realName, profileId: null });
+  const said = (names: string[]) =>
+    names
+      .map((name, index) => listSeparator(index, names.length) + name)
+      .join("");
+
+  it("lists names as they are said", () => {
+    expect(said(["Anna"])).toBe("Anna");
+    expect(said(["Anna", "Bo"])).toBe("Anna og Bo");
+    expect(said(["Anna", "Bo", "Cleo"])).toBe("Anna, Bo og Cleo");
+  });
+
+  it("heads one owner or several", () => {
+    expect(ownersLabel([owner("Anna")])).toBe("Eier");
+    expect(ownersLabel([owner("Anna"), owner("Bo")])).toBe("Eiere");
   });
 });

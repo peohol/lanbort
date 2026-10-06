@@ -352,7 +352,10 @@ describe("publishing in an environment (PS-OBJ-006)", () => {
       availableForNewLoans: true,
       ownedByYou: false,
     });
-    expect(Object.keys(listed ?? {})).not.toContain("owners");
+    // PS-ENV-015: the owner, a member, is named (publications/owners).
+    expect(listed?.owners.map((owner) => owner.profileId)).toEqual([
+      anna.userId,
+    ]);
   });
 
   it("needs the owner's own active access, and is invisible to everyone else", async () => {
