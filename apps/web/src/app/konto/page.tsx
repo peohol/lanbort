@@ -12,6 +12,7 @@ import { AccountDeletion } from "@/components/account-deletion";
 import { ActionButton } from "@/components/action-button";
 import { PreferenceSwitch } from "@/components/preference-switch";
 import { SignOutButton } from "@/components/sign-out-button";
+import { casesHref } from "@/navigation/routes";
 import { hrefFor } from "@/navigation/targets";
 import {
   minimumAccessText,
@@ -72,8 +73,8 @@ const bindingLabels: Record<AccountBinding["kind"], string> = {
 
 function Binding({ binding }: { binding: AccountBinding }) {
   const href =
-    binding.kind === "loan"
-      ? hrefFor({ type: "loan", id: binding.resourceId })
+    binding.kind === "loan" || binding.kind === "case"
+      ? hrefFor({ type: binding.kind, id: binding.resourceId })
       : null;
 
   return (
@@ -156,6 +157,13 @@ export default async function AccountPage() {
       <section aria-labelledby="profil">
         <h2 id="profil">Profil</h2>
         <p>{account.realName}</p>
+      </section>
+
+      <section aria-labelledby="saker">
+        <h2 id="saker">Saker</h2>
+        <p className="link-row">
+          <Link href={casesHref}>Dine saker</Link>
+        </p>
       </section>
 
       {active && (

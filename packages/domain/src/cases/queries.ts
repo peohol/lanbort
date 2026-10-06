@@ -8,13 +8,17 @@ import {
   environmentCaseQueueQuerySchema,
   platformCaseQueueQuerySchema,
 } from "@lanbort/contracts";
+import { realNames } from "../account/store";
 import { defineQuery } from "../commands/query";
 import { loadEnvironmentAccess } from "../environment/store";
 import { actingUserId, inSnapshot } from "../objects/state";
 import { loadCase } from "./commands";
 import {
+  type ActionRecord,
   type CaseRecord,
+  type EntryRecord,
   handlingOf,
+  type ParticipantRecord,
   platformCaseKinds,
   sharedUpTo,
   sharedWithParties,
@@ -27,13 +31,53 @@ import {
   readCasePolicy,
 } from "./policies";
 import {
+  caseHandlers,
   handledBy,
   listCases,
   loadActions,
+  loadCaseTitles,
   loadEntries,
   loadHandlingState,
   loadParticipants,
 } from "./store";
+
+/** What is read for a caller the policy will turn away. */
+const nothingRead = {
+  participants: [] as ParticipantRecord[],
+  entries: [] as EntryRecord[],
+  actions: [] as ActionRecord[],
+  titles: { loanTitle: null, objectTitle: null },
+  handlers: [] as string[],
+  names: new Map<string, string>(),
+};
+
+/** Every user a case's rows name, for their names. */
+function namedIn(
+  c: CaseRecord,
+  rows: {
+    readonly participants: readonly { readonly userId: string }[];
+    readonly entries: readonly EntryRecord[];
+    readonly actions: readonly ActionRecord[];
+    readonly handlers: readonly string[];
+    readonly assigneeUserId: string | null;
+  },
+): string[] {
+  return [
+    c.subjectUserId,
+    rows.assigneeUserId,
+    ...rows.handlers,
+    ...rows.participants.map(({ userId }) => userId),
+    ...rows.entries.flatMap((entry) => [
+      entry.authorUserId,
+      entry.audienceUserId,
+      ...entry.privateMessages.map(({ senderUserId }) => senderUserId),
+    ]),
+    ...rows.actions.flatMap(({ actorUserId, targetUserId }) => [
+      actorUserId,
+      targetUserId,
+    ]),
+  ].filter((userId): userId is string => userId !== null);
+}
 
 /**
  * A case as the caller sees it. A participant sees their own entries, what
@@ -60,13 +104,43 @@ export const readCase = defineQuery({
       const reads =
         participant !== null || (standing.holdsRole && !standing.involved);
 
+      const c = loaded.resource.case;
+      const handling = await loadHandlingState(tx, input.caseId, now);
+
+      if (!reads) {
+        return {
+          resource: { ...loaded.resource, ...nothingRead, handling },
+          context: undefined,
+        };
+      }
+
+      const participants = await loadParticipants(tx, input.caseId);
+      const entries = await loadEntries(tx, input.caseId);
+      const actions = await loadActions(tx, input.caseId);
+      const handlers =
+        participant === null && c.status === "open"
+          ? await caseHandlers(tx, input.caseId, now)
+          : [];
+
       return {
         resource: {
           ...loaded.resource,
-          participants: reads ? await loadParticipants(tx, input.caseId) : [],
-          entries: reads ? await loadEntries(tx, input.caseId) : [],
-          actions: reads ? await loadActions(tx, input.caseId) : [],
-          handling: await loadHandlingState(tx, input.caseId, now),
+          participants,
+          entries,
+          actions,
+          handling,
+          titles: await loadCaseTitles(tx, c),
+          handlers,
+          names: await realNames(
+            tx,
+            namedIn(c, {
+              participants,
+              entries,
+              actions,
+              handlers,
+              assigneeUserId: handling.assigneeUserId,
+            }),
+          ),
         },
         context: undefined,
       };
@@ -79,7 +153,7 @@ export const readCase = defineQuery({
     const { assigneeUserId, handlerAvailable } = resource.handling;
     const open = c.status === "open";
 
-    return {
+    const shown: Omit<Case, "people"> = {
       id: c.id,
       kind: c.kind,
       status: c.status,
@@ -133,9 +207,45 @@ export const readCase = defineQuery({
             reason: action.reason,
             at: action.at.toISOString(),
           })),
+      loanTitle: resource.titles.loanTitle,
+      objectTitle: resource.titles.objectTitle,
+      handlers: asParty
+        ? []
+        : resource.handlers.filter((handler) => handler !== userId),
     };
+
+    return { ...shown, people: peopleNamedIn(shown, resource.names) };
   },
 });
+
+/** The name of each user the view names, and of nobody else. */
+function peopleNamedIn(
+  shown: Omit<Case, "people">,
+  names: ReadonlyMap<string, string>,
+): Case["people"] {
+  const ids = new Set(
+    [
+      shown.subjectUserId,
+      shown.assigneeUserId,
+      ...shown.handlers,
+      ...shown.participants.map(({ userId }) => userId),
+      ...shown.entries.flatMap((entry) => [
+        entry.authorUserId,
+        entry.toUserId,
+        ...entry.privateMessages.map(({ senderUserId }) => senderUserId),
+      ]),
+      ...shown.history.flatMap(({ actorUserId, targetUserId }) => [
+        actorUserId,
+        targetUserId,
+      ]),
+    ].filter((userId): userId is string => userId !== null),
+  );
+
+  return [...ids].map((userId) => ({
+    userId,
+    realName: names.get(userId) ?? null,
+  }));
+}
 
 function summary(
   item: {

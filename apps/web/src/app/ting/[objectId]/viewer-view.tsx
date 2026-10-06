@@ -11,11 +11,13 @@ import {
 } from "@lanbort/domain";
 import Link from "next/link";
 import { ActionButton } from "@/components/action-button";
+import { MoreActions } from "@/components/more-actions";
 import { ObjectGallery } from "@/components/object-gallery";
 import { PageHeader } from "@/components/page-header";
 import { StatusCard } from "@/components/status-card";
 import { ContextTag } from "@/components/tag";
 import { findHref } from "@/navigation/areas";
+import { newCaseHref } from "@/navigation/cases";
 import {
   morePagesHref,
   pagesShown,
@@ -197,6 +199,18 @@ export async function ViewerView({
           }
         />
       )}
+      <MoreActions>
+        <Link
+          className="button"
+          href={newCaseHref({
+            kind: "report",
+            environmentId: environment?.id ?? null,
+            subject: { kind: "object", id: object.objectId },
+          })}
+        >
+          Rapporter tingen
+        </Link>
+      </MoreActions>
     </main>
   );
 }

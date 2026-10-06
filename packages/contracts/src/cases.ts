@@ -235,6 +235,12 @@ export const caseActionSchema = z.strictObject({
   at: z.iso.datetime(),
 });
 
+/** A person the case names by id; no name once their account is deleted. */
+export const casePersonSchema = z.strictObject({
+  userId: z.uuid(),
+  realName: z.string().nullable(),
+});
+
 export const caseParticipantSchema = z.strictObject({
   userId: z.uuid(),
   role: caseParticipantRoleSchema,
@@ -274,6 +280,17 @@ export const caseSchema = z.strictObject({
   participants: z.array(caseParticipantSchema),
   entries: z.array(caseEntrySchema),
   history: z.array(caseActionSchema),
+  /** The loan's title in its agreement, for a mediation (PS-COM-011). */
+  loanTitle: z.string().nullable(),
+  /** The reported object's title, while the object exists. */
+  objectTitle: z.string().nullable(),
+  /**
+   * The others who may handle the open case now, for its handler to hand it
+   * to; empty for a participant.
+   */
+  handlers: z.array(z.uuid()),
+  /** The name of everyone this view names by id (UX-INT-004). */
+  people: z.array(casePersonSchema),
 });
 
 export const caseSummarySchema = z.strictObject({
@@ -334,6 +351,7 @@ export type CaseOpenedResult = z.infer<typeof caseOpenedResultSchema>;
 export type CaseEntryResult = z.infer<typeof caseEntryResultSchema>;
 export type CaseActionResult = z.infer<typeof caseActionResultSchema>;
 export type CaseEntry = z.infer<typeof caseEntrySchema>;
+export type CasePerson = z.infer<typeof casePersonSchema>;
 export type Case = z.infer<typeof caseSchema>;
 export type CaseSummary = z.infer<typeof caseSummarySchema>;
 export type CaseList = z.infer<typeof caseListSchema>;

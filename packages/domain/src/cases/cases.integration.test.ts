@@ -257,6 +257,33 @@ describe("contact with an environment's administrators (PS-COM-010–011)", () =
     ).rejects.toMatchObject(forbidden);
   });
 
+  it("names the people its viewer already sees, and nobody else", async () => {
+    const { environmentId, admin, second, requester } =
+      await environmentWithAdministrators();
+    const { caseId } = await run(openEnvironmentContact, requester, {
+      environmentId,
+      body: "Hvem har nøkkelen?",
+    });
+    await run(claimCase, second, { caseId });
+    await write(second, caseId, "I gangen.", { audience: "parties" });
+    const named = (people: readonly { userId: string }[]) =>
+      people.map(({ userId }) => userId).sort();
+
+    // The participant sees the function, not the handler's name.
+    const asParty = await read(requester, caseId);
+    expect(named(asParty.people)).toEqual([requester.userId]);
+    expect(asParty.people[0]?.realName).toEqual(expect.any(String));
+    expect(asParty.handlers).toEqual([]);
+
+    // A handler sees who wrote and who has it, and whom to hand it to.
+    const asHandler = await read(second, caseId);
+    expect(named(asHandler.people)).toEqual(
+      [requester.userId, second.userId, admin.userId].sort(),
+    );
+    expect(asHandler.handlers).toEqual([admin.userId]);
+    expect(asHandler).toMatchObject({ loanTitle: null, objectTitle: null });
+  });
+
   it("lets only one of two administrators take it at the same time", async () => {
     const { environmentId, admin, second, requester } =
       await environmentWithAdministrators();
@@ -558,6 +585,13 @@ describe("mediation of a loan through an environment (PS-COM-012, vision 05)", (
     expect(await bodies(borrower, caseId)).not.toContain(
       "Kan du sende et bilde?",
     );
+
+    // The mediator sees which loan it is about (PS-COM-011).
+    const loan = await executeQuery(tick(), readLoan, {
+      actor: owner,
+      input: { loanId },
+    });
+    expect((await read(admin, caseId)).loanTitle).toBe(loan.agreement.title);
 
     // Closing the mediation decides nothing about the loan.
     await run(closeCase, admin, { caseId });

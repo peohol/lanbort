@@ -1,4 +1,6 @@
 import type { HomeItem, HomeItemKind, HomeSection } from "@lanbort/contracts";
+import { environmentCasesHref } from "@/navigation/cases";
+import { hrefFor } from "@/navigation/targets";
 import { formatDay, formatTime } from "./dates";
 
 /** UX-IA-005: each section says why it is there. */
@@ -71,7 +73,18 @@ const texts: Record<HomeItemKind, (item: HomeItem) => string> = {
     `${item.count} ${plural(item.count, "objekt venter", "objekter venter")} på godkjenning i ${item.title}`,
   "environment.claim_ownership": (item) =>
     `${item.title} mangler eier. Du kan melde at du vil overta`,
+  "environment.handle_cases": (item) =>
+    `${item.count} ${plural(item.count, "sak venter", "saker venter")} på behandling i ${item.title}`,
 };
+
+/**
+ * Where an item leads: its target's page, or for an environment's waiting
+ * cases, the environment's queue (UX-IA-007).
+ */
+export const homeItemHref = (item: HomeItem): string | null =>
+  item.kind === "environment.handle_cases"
+    ? environmentCasesHref(item.target.id)
+    : hrefFor(item.target);
 
 /** The item's text, and when it is about or must be done by. */
 export function describeHomeItem(item: HomeItem): {
