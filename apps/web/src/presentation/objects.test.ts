@@ -1,6 +1,11 @@
 import type { AvailabilityInterval } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
-import { categoryLabel, describeAvailability, formatInterval } from "./objects";
+import {
+  categoryLabel,
+  describeAvailability,
+  formatInterval,
+  ownThingStatus,
+} from "./objects";
 
 const found = (details: {
   availableForNewLoans?: boolean;
@@ -49,5 +54,52 @@ describe("a thing in the user's words", () => {
     const categories = [{ id: "tools", parentId: null, label: "Verktøy" }];
     expect(categoryLabel(categories, "tools")).toBe("Verktøy");
     expect(categoryLabel(categories, "other")).toBe("other");
+  });
+});
+
+describe("one of the user's own things in a list", () => {
+  const own = (details: Partial<Parameters<typeof ownThingStatus>[0]>) => ({
+    status: "active" as const,
+    availability: [{ start: "2026-10-01", end: null }],
+    availableForNewLoans: true,
+    frozenForNewLoans: false,
+    restrictions: [],
+    lentOut: false,
+    ...details,
+  });
+  const today = "2026-10-06";
+  const label = (details: Parameters<typeof own>[0]) =>
+    ownThingStatus(own(details), today).label;
+
+  it("says whether it can be lent out, is lent out, blocked or archived", () => {
+    expect(label({})).toBe("Kan lånes ut");
+    expect(label({ lentOut: true })).toBe("Utlånt");
+    expect(label({ status: "archived", lentOut: true })).toBe("Arkivert");
+    expect(label({ frozenForNewLoans: true })).toBe("Sperret for nye lån");
+    expect(
+      label({
+        restrictions: [
+          {
+            id: "r",
+            setByUserId: "u",
+            period: null,
+            createdAt: "2026-10-01T00:00:00Z",
+          },
+        ],
+      }),
+    ).toBe("Sperret for nye lån");
+  });
+
+  it("tells an owner when it has no time left to be lent in", () => {
+    expect(label({ availability: [], availableForNewLoans: false })).toBe(
+      "Mangler ledig tid",
+    );
+    expect(
+      label({
+        availability: [{ start: "2026-09-01", end: "2026-09-30" }],
+        availableForNewLoans: false,
+      }),
+    ).toBe("Mangler ledig tid");
+    expect(label({ availableForNewLoans: false })).toBe("Ikke ledig nå");
   });
 });

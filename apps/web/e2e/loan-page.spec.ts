@@ -6,6 +6,7 @@ import {
   collectBrowserProblems,
   postCommand,
   registerThroughApi,
+  showToFriends,
 } from "./helpers";
 
 /**
@@ -57,6 +58,7 @@ test("a borrower follows a loan from its page, and nobody else sees it", async (
       availability: [{ start: today(), end: null }],
     })
   ).json();
+  await showToFriends(anna, objectId);
   const preview = await (
     await bo.get(`/api/loan-requests/preview?objectId=${objectId}`)
   ).json();

@@ -149,7 +149,7 @@ export const createLoanRequest = defineCommand({
         environment_id: environmentId,
         publication_id: resource.publicationId,
         ...desiredColumns(input.start, input.end),
-        message: input.message,
+        message: input.message ?? null,
         terms_version: input.termsVersion,
         created_at: now,
         status_changed_at: now,

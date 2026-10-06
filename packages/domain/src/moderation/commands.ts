@@ -635,6 +635,18 @@ const measures: Record<ModerationMeasureKind, MeasureSpec> = {
   ),
 };
 
+/** The measures a report of `kind` about `target` can take, in order. */
+export function measuresFor(
+  kind: CaseKind,
+  target: ReportTargetKind | null,
+): ModerationMeasureKind[] {
+  return (Object.keys(measures) as ModerationMeasureKind[]).filter(
+    (measure) =>
+      measures[measure].caseKind === kind &&
+      measures[measure].target === target,
+  );
+}
+
 /**
  * PS-TRUST-013–016: the acting handler of an open report takes a measure on
  * what it is about, with its reason. The measure records what it concerns,

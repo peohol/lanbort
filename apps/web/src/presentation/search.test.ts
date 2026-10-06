@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   describeFoundIn,
   finnHref,
+  foundOrigin,
   prepareEnvironmentSearch,
   prepareObjectSearch,
   readFinnForm,
@@ -102,6 +103,33 @@ describe("found things in the user's words", () => {
     expect(
       describeFoundIn(found({ foundIn: [place("Gata"), place("Hytta")] })),
     ).toBe("I Gata, Hytta");
+    expect(
+      describeFoundIn(
+        found({ foundIn: [place("Gata")], foundThroughFriends: true }),
+      ),
+    ).toBe("I Gata · Hos en venn");
+    expect(describeFoundIn(found({ foundThroughFriends: true }))).toBe(
+      "Hos en venn",
+    );
+  });
+
+  it("opens a thing through where it was found (PS-OBJ-020)", () => {
+    const place = {
+      environmentId: id,
+      environmentName: "Gata",
+      publicationId: id,
+    };
+
+    expect(foundOrigin(found({ foundIn: [place] }))).toEqual({
+      kind: "environment",
+      environmentId: id,
+    });
+    expect(foundOrigin(found({ foundThroughFriends: true }))).toEqual({
+      kind: "direct",
+    });
+    expect(
+      foundOrigin(found({ foundIn: [place], ownedByYou: true })),
+    ).toBeUndefined();
   });
 });
 

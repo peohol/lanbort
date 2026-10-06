@@ -28,10 +28,19 @@ export const socialRelationSchema = z.strictObject({
   blockedByMe: z.boolean(),
 });
 
+/**
+ * The page of a person (WP-86) as a link target: their id while the reader
+ * may open it now (`person.read`), otherwise null, so nothing links to a
+ * page the reader may not see (UX-PRIV-007) or to a deleted account
+ * (UX-PRIV-010).
+ */
+export const profileIdSchema = z.uuid().nullable();
+
 export const socialContactSchema = z.strictObject({
   userId: z.uuid(),
   /** Null for an account without a profile, such as an unfinished one. */
   realName: z.string().nullable(),
+  profileId: profileIdSchema,
   since: z.iso.datetime(),
 });
 
@@ -43,8 +52,22 @@ export const socialOverviewSchema = z.strictObject({
   blocked: z.array(socialContactSchema),
 });
 
+/**
+ * A person as the caller may see them (WP-86): their real name, the
+ * caller's relation to them (null on the caller's own page), and whether
+ * the caller may read their trust profile (`trust_profile.read`). Whether
+ * they block the caller is never part of it (PS-USR-006).
+ */
+export const personSchema = z.strictObject({
+  userId: z.uuid(),
+  realName: z.string(),
+  relation: socialRelationSchema.nullable(),
+  trustProfile: z.boolean(),
+});
+
 export type SocialTarget = z.infer<typeof socialTargetSchema>;
 export type FriendshipState = z.infer<typeof friendshipStateSchema>;
 export type SocialRelation = z.infer<typeof socialRelationSchema>;
 export type SocialContact = z.infer<typeof socialContactSchema>;
 export type SocialOverview = z.infer<typeof socialOverviewSchema>;
+export type Person = z.infer<typeof personSchema>;

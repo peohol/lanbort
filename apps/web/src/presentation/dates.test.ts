@@ -4,6 +4,7 @@ import {
   calendarDay,
   formatDay,
   formatPeriod,
+  formatShortPeriod,
   formatTime,
 } from "./dates";
 
@@ -33,5 +34,19 @@ describe("dates as people say them", () => {
       "2026-10-04",
     );
     expect(addDays("2026-10-31", 1)).toBe("2026-11-01");
+  });
+});
+
+describe("a period on a button", () => {
+  it("says the month once when it is the same", () => {
+    expect(formatShortPeriod({ start: "2026-10-10", end: "2026-10-12" })).toBe(
+      "10.–12. oktober",
+    );
+    expect(formatShortPeriod({ start: "2026-09-30", end: "2026-10-02" })).toBe(
+      "30. september–2. oktober",
+    );
+    expect(formatShortPeriod({ start: "2026-10-10", end: "2026-10-10" })).toBe(
+      "10. oktober",
+    );
   });
 });

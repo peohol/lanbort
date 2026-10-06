@@ -16,6 +16,7 @@ import {
 } from "./authorization/policy-matrix";
 import { objectMatrices } from "./objects/policies.matrix";
 import { outboxMatrices } from "./outbox/policy.matrix";
+import { peopleMatrices } from "./people/policies.matrix";
 import { platformMatrices } from "./platform/policies.matrix";
 import { allPolicies } from "./policies";
 import { publicationMatrices } from "./publications/policies.matrix";
@@ -45,6 +46,7 @@ const matrices: readonly PolicyMatrix<never, never>[] = [
   ...homeMatrices,
   ...caseMatrices,
   ...trustMatrices,
+  ...peopleMatrices,
   ...subscriptionMatrices,
   ...questionMatrices,
   ...moderationMatrices,

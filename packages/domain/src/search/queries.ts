@@ -18,6 +18,10 @@ import { withinAvailability } from "../loans/model";
 import { addDays } from "../objects/availability";
 import { inSnapshot } from "../objects/state";
 import {
+  discoverableThroughFriends,
+  selectFoundThroughFriends,
+} from "../publications/friends";
+import {
   discoverableFor,
   type FoundRow,
   foundAvailability,
@@ -31,9 +35,9 @@ import { rateLimits } from "../abuse/rate-limits";
 type Db = Kysely<Database>;
 
 /**
- * Matches considered per environment before availability is checked. A
- * search that reaches it says there may be more (`more`), so the user
- * narrows it instead of scrolling (UX-P20).
+ * Matches considered per environment, and through friends, before
+ * availability is checked. A search that reaches it says there may be more
+ * (`more`), so the user narrows it instead of scrolling (UX-P20).
  */
 const candidatesPerEnvironment = 200;
 
@@ -56,6 +60,7 @@ interface Candidate extends Ranked {
     environmentName: string;
     publicationId: string;
   }[];
+  readonly throughFriends: boolean;
 }
 
 /**
@@ -110,12 +115,46 @@ const rankBy = (q: string | undefined) =>
     : sql<number>`ts_rank(entry.document, app.search_query(${q}))`;
 
 /**
- * Objects the caller finds (PS-OBJ-006, ADR-0005). Who finds what is
- * decided per environment by `discoverableFor`, the same rule as the
- * environment's own list, including historical privacy and blocking; the
- * derived index only matches the text. Content and actual availability are
- * read from the domain core. An object found in several environments is
- * shown once, with each of them.
+ * The text and category searched, for a query that names the object
+ * `object`, matched against the derived index.
+ */
+function matchesSearch({ q, categoryId }: ObjectSearchQuery) {
+  return sql<boolean>`(
+    ${
+      q === undefined
+        ? sql`true`
+        : sql`exists (
+            select 1 from app.search_objects as entry
+            where entry.object_id = object.id
+              and entry.document @@ app.search_query(${q})
+          )`
+    }
+    and ${
+      categoryId === undefined
+        ? sql`true`
+        : sql`object.category_id in (select app.object_category_subtree(${categoryId}))`
+    }
+  )`;
+}
+
+/** How well `object` matches the text, by the derived index. */
+const objectRank = (q: string | undefined) =>
+  q === undefined
+    ? sql<number>`0`
+    : sql<number>`(
+        select ts_rank(entry.document, app.search_query(${q}))
+        from app.search_objects as entry
+        where entry.object_id = object.id
+      )`;
+
+/**
+ * Objects the caller finds (PS-OBJ-006, PS-OBJ-020, ADR-0005). Who finds
+ * what is decided per environment by `discoverableFor`, the same rule as the
+ * environment's own list, including historical privacy and blocking, and
+ * through friends by `discoverableThroughFriends`, the same rule as a
+ * friend's profile; the derived index only matches the text. Content and
+ * actual availability are read from the domain core. An object found in
+ * several places is shown once, with each of them.
  */
 export const searchObjects = defineQuery({
   name: "search.objects",
@@ -130,14 +169,37 @@ export const searchObjects = defineQuery({
 
       const candidates = new Map<string, Candidate>();
       let more = false;
+      const near = nearOf(input);
+      const add = (
+        rows: readonly (FoundRow & { rank: number | string | null })[],
+        place: (row: FoundRow) => Candidate["foundIn"][number] | null,
+      ) => {
+        more ||= rows.length > candidatesPerEnvironment;
+
+        for (const row of rows.slice(0, candidatesPerEnvironment)) {
+          const known = candidates.get(row.object_id);
+          const found = place(row);
+
+          candidates.set(row.object_id, {
+            objectId: row.object_id,
+            title: row.title,
+            row,
+            rank: Math.max(known?.rank ?? 0, Number(row.rank ?? 0)),
+            foundIn: [...(known?.foundIn ?? []), ...(found ? [found] : [])],
+            throughFriends: (known?.throughFriends ?? false) || !found,
+          });
+        }
+      };
 
       // One after another: the snapshot has a single connection.
-      for (const environmentId of await activeEnvironmentsOf(
-        tx,
-        actor.userId,
-        input.environmentId,
-        nearOf(input),
-      )) {
+      for (const environmentId of input.friends
+        ? []
+        : await activeEnvironmentsOf(
+            tx,
+            actor.userId,
+            input.environmentId,
+            near,
+          )) {
         const access = await loadEnvironmentAccess(
           tx,
           environmentId,
@@ -151,50 +213,39 @@ export const searchObjects = defineQuery({
           continue;
         }
 
-        const rows = await selectFound(discoverable, actor.userId)
-          .$if(input.q !== undefined, (query) =>
-            query
-              .innerJoin(
-                "app.search_objects as entry",
-                "entry.object_id",
-                "publication.object_id",
-              )
-              .where(
-                sql<boolean>`entry.document @@ app.search_query(${input.q})`,
-              ),
-          )
-          .$if(input.categoryId !== undefined, (query) =>
-            query.where(
-              "object.category_id",
-              "in",
-              sql<string>`(select app.object_category_subtree(${input.categoryId}))`,
-            ),
-          )
-          .select(rankBy(input.q).as("rank"))
-          .orderBy("rank", "desc")
-          .orderBy("object.title")
-          .orderBy("publication.object_id")
-          .limit(candidatesPerEnvironment + 1)
-          .execute();
-
-        more ||= rows.length > candidatesPerEnvironment;
-
-        for (const row of rows.slice(0, candidatesPerEnvironment)) {
-          const place = {
+        add(
+          await selectFound(discoverable, actor.userId)
+            .where(matchesSearch(input))
+            .select(objectRank(input.q).as("rank"))
+            .orderBy("rank", "desc")
+            .orderBy("object.title")
+            .orderBy("object.id")
+            .limit(candidatesPerEnvironment + 1)
+            .execute(),
+          (row) => ({
             environmentId,
             environmentName: access.environment.name,
             publicationId: row.id,
-          };
-          const known = candidates.get(row.object_id);
+          }),
+        );
+      }
 
-          candidates.set(row.object_id, {
-            objectId: row.object_id,
-            title: row.title,
-            row,
-            rank: Math.max(known?.rank ?? 0, Number(row.rank)),
-            foundIn: [...(known?.foundIn ?? []), place],
-          });
-        }
+      // Objects have no place of their own, so none is near an area.
+      if (input.environmentId === undefined && near === undefined) {
+        add(
+          await selectFoundThroughFriends(
+            discoverableThroughFriends(tx, actor.userId),
+            actor.userId,
+          )
+            .where(matchesSearch(input))
+            .select(objectRank(input.q).as("rank"))
+            .orderBy("rank", "desc")
+            .orderBy("object.title")
+            .orderBy("object.id")
+            .limit(candidatesPerEnvironment + 1)
+            .execute(),
+          () => null,
+        );
       }
 
       const details = await loadFoundDetails(tx, [...candidates.keys()]);
@@ -219,6 +270,7 @@ export const searchObjects = defineQuery({
       foundIn: [...candidate.foundIn].sort((a, b) =>
         a.environmentName.localeCompare(b.environmentName, "nb"),
       ),
+      foundThroughFriends: candidate.throughFriends,
     })),
     more: resource.more,
   }),

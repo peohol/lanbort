@@ -15,7 +15,7 @@ import { type Kysely, sql } from "kysely";
 import { z } from "zod";
 import type { Actor } from "../actor";
 import type { DomainContext } from "../commands/command";
-import { defineQuery, executeQuery } from "../commands/query";
+import { defineQuery } from "../commands/query";
 import {
   acceptsNewActivity,
   activeFrom,
@@ -34,14 +34,17 @@ import {
   createdOutside,
   typeHistories,
 } from "../environment/type-change-store";
-import { DomainError } from "../errors";
 import {
   calendarDate,
   deriveAvailability,
   toApiInterval,
 } from "../objects/availability";
 import { loadAvailabilityBlocks } from "../objects/blocks";
-import { objectImageKey, type ObjectImageStore } from "../objects/images";
+import {
+  objectImageKey,
+  type ObjectImageStore,
+  readImageFile,
+} from "../objects/images";
 import {
   inSnapshot,
   loadAvailability,
@@ -55,7 +58,7 @@ import {
   listObjectPublicationsPolicy,
   readPublishedImagePolicy,
 } from "./policies";
-import { ownerHasAccess } from "./store";
+import { findFriendPublication, ownerHasAccess } from "./store";
 import { rateLimits } from "../abuse/rate-limits";
 
 type Db = Kysely<Database>;
@@ -65,17 +68,51 @@ function viewerIdOf(actor: Actor): string | null {
 }
 
 /**
- * The publications an active member finds in the environment (PS-OBJ-006,
- * PS-OBJ-009, PS-USR-006). Only active publications of active, unfrozen
- * objects that an owner still has active access behind, that an owner's
- * active account can lend (PS-ADM-002) and that no steward has blocked
- * (WP-52), and never an object whose owner and the viewer have blocked each
- * other. A viewer whose account is not active finds nothing: finding leads
- * to new activity (a request, a subscription, a question), which such an
- * account no longer starts and is not told about (PS-ADM-002). Nor one published
- * under a stricter type than the environment has had since, unless the
- * viewer was already active then (PS-ENV-009, `concealed`). This is the one
- * place discovery is decided.
+ * What every way of finding an object asks of the object and the viewer
+ * (PS-OBJ-006, PS-OBJ-009, PS-OBJ-020, PS-USR-006), for a query that names
+ * the object `object`: an active, unfrozen object that an owner's active
+ * account can lend (PS-ADM-002) and that no steward has blocked (WP-52), and
+ * never one whose owner and the viewer have blocked each other. A viewer whose
+ * account is not active finds nothing: finding leads to new activity (a
+ * request, a subscription, a question), which such an account no longer
+ * starts and is not told about (PS-ADM-002).
+ */
+export function findableBy(viewerId: string) {
+  return sql<boolean>`(
+    object.status = 'active'
+    and app.account_accepts_new_activity(${viewerId}::uuid)
+    and app.object_has_active_owner(object.id)
+    and not app.object_platform_blocked(object.id)
+    and not exists (
+      select 1 from app.object_freezes as open_freeze
+      where open_freeze.object_id = object.id and open_freeze.ended_at is null
+    )
+    and not exists (
+      select 1
+      from app.object_owners as blocked_owner
+      join app.user_blocks as block
+        on block.lifted_at is null
+        and ((block.blocker_id = blocked_owner.user_id and block.blocked_id = ${viewerId})
+          or (block.blocker_id = ${viewerId} and block.blocked_id = blocked_owner.user_id))
+      where blocked_owner.object_id = object.id
+    )
+  )`;
+}
+
+/** Whether the viewer is one of the owners of `object`. */
+export const ownedBy = (viewerId: string) =>
+  sql<boolean>`exists (
+    select 1 from app.object_owners
+    where object_id = object.id and user_id = ${viewerId}
+  )`;
+
+/**
+ * The publications an active member finds in the environment: active
+ * publications of objects they may find ({@link findableBy}) that an owner
+ * still has active access behind. Nor one published under a stricter type
+ * than the environment has had since, unless the viewer was already active
+ * then (PS-ENV-009, `concealed`). This is the one place discovery in an
+ * environment is decided.
  */
 function discoverablePublications(
   db: Db,
@@ -90,33 +127,13 @@ function discoverablePublications(
     .where("publication.environment_id", "=", environmentId)
     .where("publication.status", "=", "active")
     .where(createdOutside(sql.ref("publication.position"), concealed))
-    .where("object.status", "=", "active")
-    .where(sql<boolean>`app.account_accepts_new_activity(${viewerId}::uuid)`)
-    .where(sql<boolean>`app.object_has_active_owner(publication.object_id)`)
-    .where(sql<boolean>`not app.object_platform_blocked(publication.object_id)`)
+    .where(findableBy(viewerId))
     .where(
       ownerHasAccess(
         sql.ref("publication.object_id"),
         sql.ref("publication.environment_id"),
         now,
       ),
-    )
-    .where(
-      sql<boolean>`not exists (
-        select 1 from app.object_freezes as open_freeze
-        where open_freeze.object_id = publication.object_id and open_freeze.ended_at is null
-      )`,
-    )
-    .where(
-      sql<boolean>`not exists (
-        select 1
-        from app.object_owners as blocked_owner
-        join app.user_blocks as block
-          on block.lifted_at is null
-          and ((block.blocker_id = blocked_owner.user_id and block.blocked_id = ${viewerId})
-            or (block.blocker_id = ${viewerId} and block.blocked_id = blocked_owner.user_id))
-        where blocked_owner.object_id = publication.object_id
-      )`,
     );
 }
 
@@ -168,11 +185,12 @@ export function presentContent(
 
 /**
  * The object's publications as its owners see them: the latest one per
- * environment. A co-owner learns that the object is published somewhere,
- * but the environment and who published it only where they can see it
- * themselves: an open environment, or one they are a member of (vision:
- * «Medeierskap ved deaktivering, publisering og uttreden»), and not where it
- * was published under a stricter type before they became active there.
+ * environment, and whether it is visible to friends (PS-OBJ-020). A
+ * co-owner learns that the object is published somewhere, but the
+ * environment and who published it only where they can see it themselves:
+ * an open environment, or one they are a member of (vision: «Medeierskap ved
+ * deaktivering, publisering og uttreden»), and not where it was published
+ * under a stricter type before they became active there.
  */
 export const listObjectPublications = defineQuery({
   name: "environment_publication.list_for_object",
@@ -229,6 +247,7 @@ export const listObjectPublications = defineQuery({
         rows.map((row) => row.environment_id),
       );
       const viewerId = viewerIdOf(actor);
+      const friends = await findFriendPublication(tx, object.objectId);
       const located = rows.map((row) => ({
         ...row,
         visible:
@@ -247,7 +266,10 @@ export const listObjectPublications = defineQuery({
             )),
       }));
 
-      return { resource: { ...object, rows: located }, context: undefined };
+      return {
+        resource: { ...object, rows: located, friends },
+        context: undefined,
+      };
     }),
   present: ({ resource }): ObjectPublicationList => ({
     publications: [...resource.rows]
@@ -275,6 +297,10 @@ export const listObjectPublications = defineQuery({
           statusChangedAt: row.status_changed_at.toISOString(),
         };
       }),
+    friends: resource.friends && {
+      publishedByUserId: resource.friends.publishedByUserId,
+      publishedAt: resource.friends.publishedAt.toISOString(),
+    },
   }),
 });
 
@@ -408,10 +434,7 @@ export function selectFound(query: DiscoverableQuery, viewerId: string) {
     "object.category_id",
     "object.description",
     "object.loan_terms",
-    sql<boolean>`exists (
-      select 1 from app.object_owners
-      where object_id = publication.object_id and user_id = ${viewerId}
-    )`.as("owned_by_you"),
+    ownedBy(viewerId).as("owned_by_you"),
   ]);
 }
 
@@ -686,17 +709,10 @@ export const publishedImageFile = defineQuery({
 });
 
 /** An object's image, for those who find or review it in the environment. */
-export async function readPublishedObjectImage(
+export function readPublishedObjectImage(
   domain: Pick<DomainContext, "db" | "clock">,
   store: ObjectImageStore,
   request: { actor: Actor; input: unknown },
 ): Promise<{ bytes: Uint8Array; contentType: string }> {
-  const file = await executeQuery(domain, publishedImageFile, request);
-  const bytes = await store.get(file.key);
-
-  if (!bytes) {
-    throw new DomainError("not_found", "Image file is missing");
-  }
-
-  return { bytes, contentType: file.contentType };
+  return readImageFile(domain, store, publishedImageFile, request);
 }

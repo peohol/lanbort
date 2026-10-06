@@ -9,6 +9,12 @@ export const objectImageMaxCount = 5;
  */
 export const objectImageMaxUploadBytes = 4 * 1024 * 1024;
 
+/**
+ * The longest side, in pixels, the client scales a photo down to when it is
+ * too large to upload. The server keeps nothing larger anyway.
+ */
+export const objectImageUploadMaxSide = 2048;
+
 /** Max separate availability intervals per object. */
 export const availabilityMaxIntervals = 50;
 
@@ -130,6 +136,8 @@ export const objectImageSchema = z.strictObject({
 /** A registered owner, as every owner of the object sees it. */
 export const objectOwnerSchema = z.strictObject({
   userId: z.uuid(),
+  /** Null for an account without a profile, such as a deleted one. */
+  realName: z.string().nullable(),
   since: z.iso.datetime(),
 });
 
@@ -148,6 +156,7 @@ export const objectRestrictionSchema = z.strictObject({
 export const pendingCoOwnerInvitationSchema = z.strictObject({
   id: z.uuid(),
   userId: z.uuid(),
+  realName: z.string().nullable(),
   invitedByUserId: z.uuid(),
   createdAt: z.iso.datetime(),
 });
@@ -179,6 +188,11 @@ export const ownObjectSchema = z.strictObject({
    * clarified to one owner (PS-OBJ-009). Says nothing about who or why.
    */
   frozenForNewLoans: z.boolean(),
+  /**
+   * Handed over in a loan that has not ended, so it is out of the owners'
+   * hands. Every owner sees this; it says nothing about the loan.
+   */
+  lentOut: z.boolean(),
   /** Owners who consented to permanent deletion (PS-OBJ-011). */
   deletionConsents: z.array(z.uuid()),
   pendingInvitations: z.array(pendingCoOwnerInvitationSchema),

@@ -70,7 +70,7 @@ const eventPayload = (publication: PublicationRecord) => ({
  * commitments, and a new publication is one. Only another owner's veto
  * stops the caller; the owner who set it can lift it.
  */
-async function vetoedByAnotherOwner(
+export async function vetoedByAnotherOwner(
   tx: Tx,
   objectId: string,
   userId: string,

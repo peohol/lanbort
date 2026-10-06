@@ -1,20 +1,18 @@
 import type {
   HandoverOutcome,
   Loan,
-  LoanPerson,
   LoanRequestRole,
   ReturnOutcome,
 } from "@lanbort/contracts";
 import type { Tone } from "@/components/tag";
 import { formatDay, formatPeriod, formatTime } from "./dates";
 import { loanEndReasonLabels } from "./loans";
+import { personName } from "./people";
 
 /** Where the loan's commands are in the API. */
 export const loanApi = (loanId: string) => `/api/loans/${loanId}`;
 
-/** A person in a loan by name; a deleted account by role (UX-PRIV-010). */
-export const personName = (person: LoanPerson) =>
-  person.realName ?? "Tidligere bruker";
+export { personName };
 
 const otherSide = (role: LoanRequestRole): LoanRequestRole =>
   role === "borrower" ? "lender" : "borrower";

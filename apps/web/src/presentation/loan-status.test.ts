@@ -52,7 +52,10 @@ function loan(changes: Partial<Loan> = {}): Loan {
     responsibilityTransfer: null,
     control: null,
     approvedAt: at,
-    parties: { borrower: { realName: "Ola" }, lender: { realName: "Kari" } },
+    parties: {
+      borrower: { realName: "Ola", profileId: null },
+      lender: { realName: "Kari", profileId: null },
+    },
     mediation: null,
     actions: noActions,
     ...changes,
@@ -157,7 +160,10 @@ describe("the loan's status (UX-INT-004)", () => {
       textOf({
         status: "active",
         role: "lender",
-        parties: { borrower: { realName: null }, lender: { realName: "Kari" } },
+        parties: {
+          borrower: { realName: null, profileId: null },
+          lender: { realName: "Kari", profileId: null },
+        },
       }),
     ).toBe("Utlånt til Tidligere bruker");
   });

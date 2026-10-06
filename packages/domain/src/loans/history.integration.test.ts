@@ -14,6 +14,7 @@ import {
   offerResponsibility,
 } from "./responsibility";
 import { requestLoanMediation } from "../cases/commands";
+import { blockUser } from "../social/commands";
 import { approveLoanRequest } from "./approval";
 import { reportReturn } from "./return";
 
@@ -179,8 +180,8 @@ describe("timeline (UX-IA-008, UX-INT-008)", () => {
       .execute();
 
     expect((await loanOf(borrower, loanId)).parties).toEqual({
-      borrower: { realName: "Test Testesen" },
-      lender: { realName: null },
+      borrower: { realName: "Test Testesen", profileId: borrower.userId },
+      lender: { realName: null, profileId: null },
     });
     expect((await historyOf(borrower, loanId)).entries[0]?.actor).toEqual({
       you: false,
@@ -350,6 +351,32 @@ describe("next steps (UX-INT-001)", () => {
     expect(
       (await loanOf(borrower, loanId)).actions.withdrawResponsibility,
     ).toBe(false);
+  });
+
+  it("offers no co-owner the command would refuse (review of #68)", async () => {
+    const { owner, borrower, objectId, loanId } = await reservedLoan(1, 3);
+    const [eligible, blockedByBorrower, blockedWithLender] = [
+      await user(),
+      await user(),
+      await user(),
+    ];
+    for (const coOwner of [eligible, blockedByBorrower, blockedWithLender]) {
+      await addCoOwner(owner, objectId, coOwner);
+    }
+    await run(blockUser, borrower, { userId: blockedByBorrower.userId });
+    await run(blockUser, blockedWithLender, { userId: owner.userId });
+
+    expect(
+      (await loanOf(owner, loanId)).actions.offerResponsibility.map(
+        ({ userId }) => userId,
+      ),
+    ).toEqual([eligible.userId]);
+
+    for (const refused of [blockedByBorrower, blockedWithLender]) {
+      await expect(
+        run(offerResponsibility, owner, { loanId, toUserId: refused.userId }),
+      ).rejects.toMatchObject({ code: "conflict" });
+    }
   });
 
   it("offers mediation when the parties disagree, and links the case once asked (WP-87)", async () => {

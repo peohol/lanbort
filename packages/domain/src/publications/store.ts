@@ -311,3 +311,60 @@ export async function endEnvironmentPublications(
     });
   }
 }
+
+/** The object's current visibility to friends (PS-OBJ-020). */
+export interface FriendPublicationRecord {
+  readonly id: string;
+  readonly objectId: string;
+  readonly publishedByUserId: string;
+  readonly publishedAt: Date;
+}
+
+/**
+ * The object's current friend publication, or null while it is not visible
+ * to friends. Commands lock the object first, then this row.
+ */
+export async function findFriendPublication(
+  db: Db,
+  objectId: string,
+  options: { lock?: boolean } = {},
+): Promise<FriendPublicationRecord | null> {
+  let query = db
+    .selectFrom("app.object_friend_publications")
+    .select(["id", "object_id", "published_by_user_id", "published_at"])
+    .where("object_id", "=", objectId)
+    .where("withdrawn_at", "is", null);
+
+  if (options.lock) {
+    query = query.forUpdate();
+  }
+
+  const row = await query.executeTakeFirst();
+
+  return row
+    ? {
+        id: row.id,
+        objectId: row.object_id,
+        publishedByUserId: row.published_by_user_id,
+        publishedAt: row.published_at,
+      }
+    : null;
+}
+
+/**
+ * Takes the object back from friends. In the same transaction the database
+ * ends its open direct requests neutrally (PS-OBJ-020, PS-LOAN-002).
+ */
+export async function endFriendPublication(
+  db: Db,
+  publicationId: string,
+  userId: string,
+  now: Date,
+): Promise<void> {
+  await db
+    .updateTable("app.object_friend_publications")
+    .set({ withdrawn_at: now, withdrawn_by_user_id: userId })
+    .where("id", "=", publicationId)
+    .where("withdrawn_at", "is", null)
+    .execute();
+}

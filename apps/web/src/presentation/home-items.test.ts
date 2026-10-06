@@ -1,6 +1,6 @@
 import { type HomeItemKind, homeItemKinds } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
-import { describeHomeItem } from "./home-items";
+import { describeHomeItem, homeItemHref } from "./home-items";
 
 const item = (kind: HomeItemKind, details: object = {}) => ({
   kind,
@@ -56,5 +56,21 @@ describe("Home items in the user's words", () => {
         }),
       ).text,
     ).toBe("1 innmelding venter i Borettslaget");
+  });
+});
+
+describe("where a Home item leads", () => {
+  it("leads waiting cases to the environment's queue, the rest to their target", () => {
+    const environment = {
+      type: "environment" as const,
+      id: "00000000-0000-4000-8000-000000000002",
+    };
+
+    expect(
+      homeItemHref(item("environment.handle_cases", { target: environment })),
+    ).toBe(`/saker/miljo/${environment.id}`);
+    expect(homeItemHref(item("loan.handover"))).toBe(
+      "/lan/00000000-0000-4000-8000-000000000001",
+    );
   });
 });

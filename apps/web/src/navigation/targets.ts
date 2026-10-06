@@ -2,9 +2,8 @@ import type {
   NotificationTarget,
   NotificationTargetType,
 } from "@lanbort/contracts";
-import { accountHref } from "./areas";
 import { chatDevicesHref } from "./chat";
-import { loanHref } from "./routes";
+import { caseHref, loanHref, loanRequestHref, personHref } from "./routes";
 
 interface Place {
   /** The page that shows the target. */
@@ -27,11 +26,11 @@ const entryOn = (page: string, anchor: (id: string) => string): Place => ({
  */
 const targetPages: Record<NotificationTargetType, Place | null> = {
   loan: { href: loanHref, anchor: (id) => `lan-${id}` },
-  loan_request: entryOn("/lan", (id) => `foresporsel-${id}`),
+  loan_request: { href: loanRequestHref, anchor: (id) => `foresporsel-${id}` },
   object_invitation: entryOn("/mine-ting", (id) => `invitasjon-${id}`),
-  user: entryOn(accountHref, () => "venner"),
+  user: { href: personHref, anchor: (id) => `person-${id}` },
   environment: null,
-  case: null,
+  case: { href: caseHref, anchor: (id) => `sak-${id}` },
   object_question: null,
   object_subscription: null,
   chat_device: entryOn(chatDevicesHref, (id) => `enhet-${id}`),

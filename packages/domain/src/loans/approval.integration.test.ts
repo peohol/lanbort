@@ -36,6 +36,7 @@ const {
   create,
   addCoOwner,
   friends,
+  showToFriends,
   versionOf,
   published,
   environmentOrigin,
@@ -351,6 +352,7 @@ describe("a direct friend loan and the declaration (PS-LOAN-003)", () => {
     const coOwner = await user();
     const borrower = await user();
     const objectId = await create(owner, "Rengjøres etter bruk.");
+    await showToFriends(owner, objectId);
     await addCoOwner(owner, objectId, coOwner);
     await friends(borrower, owner);
     await friends(borrower, coOwner);
@@ -381,6 +383,7 @@ describe("a direct friend loan and the declaration (PS-LOAN-003)", () => {
     const owner = await user();
     const borrower = await user();
     const objectId = await create(owner);
+    await showToFriends(owner, objectId);
     await friends(borrower, owner);
     const { requestId } = await ask(borrower, objectId, { kind: "direct" });
     const object = await loadObjectState(db, objectId);
@@ -546,6 +549,7 @@ describe("access at approval (PS-LOAN-002, Port B)", () => {
     const friend = await user();
     await friends(friend, friendOwner);
     const direct = await create(friendOwner);
+    await showToFriends(friendOwner, direct);
     const asked = await ask(friend, direct, { kind: "direct" });
     await run(acceptResponsibility, friendOwner, {
       requestId: asked.requestId,
@@ -578,6 +582,7 @@ describe("access at approval (PS-LOAN-002, Port B)", () => {
     const friend = await user();
     await friends(friend, friendOwner);
     const direct = await create(friendOwner);
+    await showToFriends(friendOwner, direct);
     const asked = await ask(friend, direct, { kind: "direct" });
     await run(acceptResponsibility, friendOwner, {
       requestId: asked.requestId,
@@ -702,6 +707,7 @@ describe("concurrent approvals (PS-NFR-004, Port B)", () => {
       const friend = await user();
       await friends(friend, friendOwner);
       const object = await create(friendOwner);
+      await showToFriends(friendOwner, object);
       const direct = await ask(friend, object, { kind: "direct" });
       await run(acceptResponsibility, friendOwner, {
         requestId: direct.requestId,

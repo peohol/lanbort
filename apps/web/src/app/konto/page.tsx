@@ -10,8 +10,12 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { AccountDeletion } from "@/components/account-deletion";
 import { ActionButton } from "@/components/action-button";
+import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
+import { PersonName } from "@/components/person-name";
 import { PreferenceSwitch } from "@/components/preference-switch";
 import { SignOutButton } from "@/components/sign-out-button";
+import { casesHref } from "@/navigation/routes";
 import { hrefFor } from "@/navigation/targets";
 import {
   minimumAccessText,
@@ -45,7 +49,7 @@ function People({
         {people.map((person) => (
           <li key={person.userId} className="entry">
             <strong id={`person-${person.userId}`}>
-              {person.realName ?? "Ukjent navn"}
+              <PersonName person={person} />
             </strong>
             {/* The buttons are named with the person they are about. */}
             <div
@@ -72,8 +76,8 @@ const bindingLabels: Record<AccountBinding["kind"], string> = {
 
 function Binding({ binding }: { binding: AccountBinding }) {
   const href =
-    binding.kind === "loan"
-      ? hrefFor({ type: "loan", id: binding.resourceId })
+    binding.kind === "loan" || binding.kind === "case"
+      ? hrefFor({ type: binding.kind, id: binding.resourceId })
       : null;
 
   return (
@@ -152,10 +156,17 @@ export default async function AccountPage() {
 
   return (
     <main>
-      <h1>Konto</h1>
+      <PageHeader title="Konto" />
       <section aria-labelledby="profil">
         <h2 id="profil">Profil</h2>
         <p>{account.realName}</p>
+      </section>
+
+      <section aria-labelledby="saker">
+        <h2 id="saker">Saker</h2>
+        <p className="link-row">
+          <Link href={casesHref}>Dine saker</Link>
+        </p>
       </section>
 
       {active && (
@@ -200,7 +211,13 @@ export default async function AccountPage() {
               social.friends.length +
                 social.incomingRequests.length +
                 social.outgoingRequests.length ===
-                0 && <p className="quiet">Du har ingen venner her ennå.</p>}
+                0 && (
+                <EmptyState>
+                  Du har ingen venner her ennå. Du kan sende en venneforespørsel
+                  fra siden til en person du kjenner, for eksempel fra et miljø
+                  dere er med i.
+                </EmptyState>
+              )}
           </section>
 
           <section aria-labelledby="blokkerte">

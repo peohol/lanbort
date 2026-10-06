@@ -11,6 +11,7 @@ import {
   collectBrowserProblems,
   enterEmailCode,
   registerThroughApi,
+  showToFriends,
 } from "./helpers";
 
 /**
@@ -38,7 +39,9 @@ async function untilNotified(request: APIRequestContext) {
   throw new Error("The notification never arrived");
 }
 
-/** A registered user signed in in `page`, with a friend request from `other`. */
+/** Where a friend request leads: the page of the one who asked (WP-86). */
+const personPage = /\/personer\/[0-9a-f-]{36}$/;
+
 /** Bo asks Anna, signed in on `page`, to be friends; returns Anna's address. */
 async function befriended(page: Page, other: APIRequestContext) {
   const email = await registerThroughApi(page.request, undefined, "Anna Berg");
@@ -127,7 +130,7 @@ test("Home asks for what waits, and leads to where it is answered", async ({
   await waiting
     .getByRole("link", { name: "Bo Dahl vil bli venn med deg" })
     .click();
-  await expect(page).toHaveURL(/\/konto#venner$/);
+  await expect(page).toHaveURL(personPage);
   await page.getByRole("button", { name: "Godta" }).click();
   await expect(page.getByRole("button", { name: "Godta" })).toHaveCount(0);
 
@@ -165,8 +168,8 @@ test("a notification's e-mail link leads to its context and marks it read", asyn
   ).toBeGreaterThan(0);
 
   await page.goto(`/?varsel=${notification.id}`);
-  await expect(page).toHaveURL(/\/konto#venner$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Konto");
+  await expect(page).toHaveURL(personPage);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Bo Dahl");
   await expect(
     page.getByRole("link", { name: "Varsler, ingen uleste" }),
   ).toBeVisible();
@@ -193,7 +196,7 @@ test("a notification's e-mail link survives signing in", async ({
     .getByRole("link", { name: "Logg inn eller opprett konto" })
     .click();
   await enterEmailCode(mail, email);
-  await expect(mail).toHaveURL(/\/konto#venner$/);
+  await expect(mail).toHaveURL(personPage);
   await expect(
     mail.getByRole("link", { name: "Varsler, ingen uleste" }),
   ).toBeVisible();
@@ -244,6 +247,7 @@ test("Lån shows further pages of a list in place", async ({
       headers: { "Idempotency-Key": randomUUID() },
     })
   ).json();
+  await showToFriends(bo, objectId);
   const preview = await (
     await page.request.get(`/api/loan-requests/preview?objectId=${objectId}`)
   ).json();

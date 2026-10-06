@@ -23,6 +23,7 @@ import { ConfirmAction } from "@/components/confirm-action";
 import { describedBy, Field } from "@/components/field";
 import { MoreActions } from "@/components/more-actions";
 import { PageHeader } from "@/components/page-header";
+import { PersonName } from "@/components/person-name";
 import { StatusCard } from "@/components/status-card";
 import { chatConversationHref } from "@/navigation/chat";
 import {
@@ -365,7 +366,9 @@ function Agreement({ loan }: { loan: Loan }) {
       <h2 id="avtalen">Avtalen</h2>
       <dl className="facts">
         <dt>{lender ? "Du låner bort til" : "Du låner av"}</dt>
-        <dd>{otherParty(loan)}</dd>
+        <dd>
+          <PersonName person={loan.parties[lender ? "borrower" : "lender"]} />
+        </dd>
         <dt>Periode</dt>
         <dd>{formatPeriod(loan.period)}</dd>
         {loan.agreement.loanTerms && (

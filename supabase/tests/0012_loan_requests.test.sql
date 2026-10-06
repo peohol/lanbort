@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(25);
 
 select ok(
   not has_table_privilege(role_name, table_name, 'SELECT'),
@@ -134,6 +134,23 @@ select isnt(
 insert into app.friendships (id, requester_id, addressee_id, status, accepted_at)
 values ('00000000-0000-4000-8000-000000000301', '00000000-0000-4000-8000-0000000000c1',
   '00000000-0000-4000-8000-0000000000a1', 'active', now());
+
+select throws_ok(
+  $$
+    insert into app.loan_requests (
+      object_id, borrower_user_id, origin, desired_days, message, terms_version
+    )
+    values ('00000000-0000-4000-8000-0000000000f1', '00000000-0000-4000-8000-0000000000c1',
+      'direct', 3, 'Kan jeg låne den?', 1)
+  $$,
+  '23001',
+  null,
+  'no direct request for an object that is not visible to friends (PS-OBJ-020)'
+);
+
+-- Anna makes the ladder visible to friends.
+insert into app.object_friend_publications (object_id, published_by_user_id)
+values ('00000000-0000-4000-8000-0000000000f1', '00000000-0000-4000-8000-0000000000a1');
 
 select lives_ok(
   $$

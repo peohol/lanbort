@@ -54,6 +54,7 @@ const {
   create,
   addCoOwner,
   friends,
+  showToFriends,
   ask,
   dated,
   environment,
@@ -160,12 +161,16 @@ describe("deactivation (PS-ADM-002)", () => {
     const alone = await create(owner);
     const shared = await create(owner);
     await addCoOwner(owner, shared, coOwner);
+    await showToFriends(owner, alone);
+    await showToFriends(owner, shared);
     const direct = { kind: "direct" };
 
     // Its own request as a borrower.
     const lender = await user();
     await friends(owner, lender);
-    const own = await ask(owner, await create(lender), direct);
+    const lent = await create(lender);
+    await showToFriends(lender, lent);
+    const own = await ask(owner, lent, direct);
     // Requests for its objects: nobody can lend the first one any more; the
     // second has an active co-owner, but the borrower is only the deactivated
     // owner's friend.
@@ -363,6 +368,7 @@ describe("reactivation", () => {
     const borrower = await user();
     await friends(borrower, owner);
     const objectId = await create(owner);
+    await showToFriends(owner, objectId);
     const { requestId } = await ask(borrower, objectId, { kind: "direct" });
 
     await deactivate(owner);
@@ -789,6 +795,7 @@ describe("races", () => {
       const borrower = await user();
       await friends(borrower, owner);
       const objectId = await create(owner);
+      await showToFriends(owner, objectId);
 
       const [request] = await Promise.allSettled([
         ask(borrower, objectId, { kind: "direct" }),

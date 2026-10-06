@@ -2,7 +2,9 @@
 
 import { useId, useRef } from "react";
 import { BusyButton } from "./busy-button";
+import type { ErrorMessages } from "./error-messages";
 import { ErrorText } from "./error-text";
+import { fillHref } from "./form-body";
 import { useCommand } from "./use-command";
 
 /** What a consequence view lists (UX-INT-007); empty lists are left out. */
@@ -37,6 +39,8 @@ export function ConfirmAction({
   body,
   danger = false,
   idempotent = true,
+  messages,
+  next,
 }: {
   /** The button that opens the dialog. */
   label: string;
@@ -48,10 +52,20 @@ export function ConfirmAction({
   body: object;
   danger?: boolean;
   idempotent?: boolean;
+  /** What a failure means here, where the general words are not enough. */
+  messages?: ErrorMessages;
+  /** The page to go to once done, filled from the answer (`CommandForm`). */
+  next?: string | undefined;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
-  const command = useCommand({ path, done: confirmLabel, idempotent });
+  const command = useCommand({
+    path,
+    done: confirmLabel,
+    idempotent,
+    messages: messages ?? {},
+    after: next ? (data) => fillHref(next, data) : "refresh",
+  });
 
   async function confirm() {
     if (await command.run(body)) dialog.current?.close();

@@ -20,6 +20,7 @@ import {
   type Policy,
   proposeLoanAmendment,
   publishObject,
+  publishToFriends,
   reportHandover,
   reportToPlatform,
   registerChatAccount,
@@ -149,6 +150,8 @@ async function hiddenWorld() {
     objectId,
     environmentId,
   });
+  // Visible to the lender's friends too, none of whom is in the world.
+  await run(publishToFriends, lender, { objectId });
   const privateObjectId = await create(lender);
   const { invitationId: coOwnerInvitationId } = await run(
     inviteCoOwner,
@@ -448,6 +451,12 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     objectId: ids.objectId,
     imageId: ids.imageId,
   }),
+  "friend_publication.publish": (ids) => ({ objectId: ids.objectId }),
+  "friend_publication.withdraw": (ids) => ({ objectId: ids.objectId }),
+  "friend_object.read_image": (ids) => ({
+    objectId: ids.objectId,
+    imageId: ids.imageId,
+  }),
   "search.objects": (ids) => ({
     environmentId: ids.environmentId,
     categoryId: "annet",
@@ -543,6 +552,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     termsVersion: 1,
   }),
   "loan_request.read": (ids) => ({ requestId: ids.requestId }),
+  "loan_request.list": (ids) => ({ role: "lender", objectId: ids.objectId }),
   "loan_request.approve": (ids) => ({ requestId: ids.requestId }),
   "loan_request.decline": (ids) => ({ requestId: ids.requestId }),
   "loan_request.withdraw": (ids) => ({ requestId: ids.requestId }),
@@ -555,6 +565,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     declarationVersion: 1,
   }),
   "loan.read": (ids) => ({ loanId: ids.loanId }),
+  "loan.list": (ids) => ({ state: "current", objectId: ids.objectId }),
   "loan.read_history": (ids) => ({ loanId: ids.loanId }),
   "loan.read_logistics": (ids) => ({ loanId: ids.loanId }),
   "loan.cancel": (ids) => ({ loanId: ids.loanId }),
@@ -735,6 +746,9 @@ const personProbes: Record<string, (userId: string) => object> = {
   "friendship.decline": (userId) => ({ userId }),
   "friendship.withdraw": (userId) => ({ userId }),
   "friendship.remove": (userId) => ({ userId }),
+  "friend_object.list": (userId) => ({ userId }),
+  // After the request is withdrawn, so nothing relates the two any more.
+  "person.read": (userId) => ({ userId }),
   "social.relation.read": (userId) => ({ userId }),
   "trust_profile.read": (userId) => ({ userId }),
   "user_block.create": (userId) => ({ userId }),
@@ -874,12 +888,15 @@ describe("hidden environments (PS-NFR-002)", () => {
   });
 });
 
+/** Lists of the caller's own things that can also be narrowed to one object. */
+const ownLists = new Set(["loan_request.list", "loan.list"]);
+
 /** Queries over the caller's own things, which name no resource. */
 const ownReads = allOperations.filter(
   (operation) =>
     operation.kind === "query" &&
     reachableByUsers(operation) &&
-    !probed.includes(operation),
+    (!probed.includes(operation) || ownLists.has(operation.name)),
 );
 
 /** The inputs to read the caller's own things with, every way they can. */
@@ -935,6 +952,7 @@ const chatReads = ["chat.read_conversation", "chat.read_directory"];
 const loanReads = [
   "loan_request.read",
   "loan_review.read",
+  "loan.list",
   "loan.read",
   "loan.read_history",
   "loan.read_logistics",
@@ -957,6 +975,24 @@ describe("historical access", () => {
     expect(seen).toContain(world.ids.loanId);
     expect(seen).not.toContain(world.ids.environmentId);
     expect(seen).not.toContain(world.name);
+  });
+});
+
+describe("friends (PS-OBJ-020)", () => {
+  it("shows a friend of the owner the object, never the environment, its people or the loan", async () => {
+    const world = await hiddenWorld();
+    const friend = await user();
+    await kit.friends(world.actors.lender, friend);
+
+    expect(await reachable(world, friend, reads)).toEqual([
+      "friend_object.read_image",
+    ]);
+    const seen = await everythingRead(world, friend);
+    expect(seen).toContain("Må vaskes etter bruk.");
+    expect(seen).not.toContain(world.ids.environmentId);
+    expect(seen).not.toContain(world.name);
+    expect(seen).not.toContain(world.ids.requestId);
+    expect(seen).not.toContain(world.actors.borrower.userId);
   });
 });
 

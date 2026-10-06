@@ -5,6 +5,7 @@ import {
   loanListQuerySchema,
   loanPageSize,
   type LoanRequest,
+  type LoanRequestDetail,
   type LoanRequestList,
   type LoanRequestPreview,
   type LoanRequestRole,
@@ -23,13 +24,16 @@ import { defineQuery } from "../commands/query";
 import { canSeeEnvironment } from "../environment/policies";
 import { findEnvironment, loadEnvironmentAccess } from "../environment/store";
 import { calendarDate, toApiInterval } from "../objects/availability";
-import { inSnapshot, loadObjectState } from "../objects/state";
+import { inSnapshot, loadImages, loadObjectState } from "../objects/state";
+import { personPageIds, profileIdIn } from "../people/queries";
 import { assessOrigin } from "./access";
 import { findOpenAmendment, type LoanAmendmentRecord } from "./amendment-store";
 import { loanActions } from "./next-steps";
 import { loadHandoverReading } from "./handover-store";
 import {
   amendmentFits,
+  collidingRequests,
+  earliestPeriod,
   type HandoverReading,
   latestReturnStatement,
   isOpen,
@@ -61,7 +65,7 @@ import {
 } from "./reservations";
 import { afterCursor, loadRequest, loadTarget, originOf } from "./resources";
 import { presentTransfer } from "./responsibility";
-import { findTransfer } from "./responsibility-store";
+import { findTransfer, loadCoOwnerReach } from "./responsibility-store";
 import {
   findPendingReturns,
   loadReturnStatements,
@@ -78,8 +82,32 @@ import {
   visibleToLender,
 } from "./store";
 import { rateLimits } from "../abuse/rate-limits";
+import { blockedWithAny } from "../social/pair";
 
 type Db = Kysely<Database>;
+
+/**
+ * What someone who may request the object sees of it now: its actual
+ * availability, its pictures, and whether they follow it (PS-OBJ-014).
+ */
+async function loadSeen(db: Db, actor: Actor, objectId: string, now: Date) {
+  const availability = await loadDerivedAvailability(
+    db,
+    objectId,
+    calendarDate(now),
+  );
+  const images = (await loadImages(db, [objectId])).get(objectId) ?? [];
+  const following =
+    actor.kind === "user" &&
+    (await db
+      .selectFrom("app.object_subscriptions")
+      .select("id")
+      .where("object_id", "=", objectId)
+      .where("user_id", "=", actor.userId)
+      .executeTakeFirst()) !== undefined;
+
+  return { availability, images, following };
+}
 
 /**
  * PS-LOAN-004/005: what the caller would request through an origin. The
@@ -111,15 +139,11 @@ export const previewLoanRequest = defineQuery({
       }
 
       // Nothing more is read for callers the policy will turn away.
-      const availability = target.reachable
-        ? await loadDerivedAvailability(
-            tx,
-            target.object.objectId,
-            calendarDate(now),
-          )
+      const seen = target.reachable
+        ? await loadSeen(tx, actor, target.object.objectId, now)
         : null;
 
-      return { resource: { ...target, availability }, context: undefined };
+      return { resource: { ...target, seen }, context: undefined };
     }),
   present: ({ input, resource }): LoanRequestPreview => ({
     objectId: resource.object.objectId,
@@ -128,14 +152,21 @@ export const previewLoanRequest = defineQuery({
     description: resource.object.description,
     loanTerms: resource.object.loanTerms,
     termsVersion: resource.object.version,
-    effectiveAvailability: (resource.availability?.effective ?? []).map(
+    effectiveAvailability: (resource.seen?.availability.effective ?? []).map(
       toApiInterval,
     ),
-    availableForNewLoans: resource.availability?.availableForNewLoans ?? false,
+    availableForNewLoans:
+      resource.seen?.availability.availableForNewLoans ?? false,
     responsibilityDeclarationVersion:
       input.environmentId === undefined
         ? responsibilityDeclarationVersion
         : null,
+    images: (resource.seen?.images ?? []).map(({ id, width, height }) => ({
+      id,
+      width,
+      height,
+    })),
+    following: resource.seen?.following ?? false,
   }),
 });
 
@@ -254,6 +285,10 @@ async function describe(
 ): Promise<LoanRequest> {
   const { ownerIds, ...described } = await describeObject(db, request, now);
   const viewerId = actor.kind === "user" ? actor.userId : null;
+  const names = await realNames(db, [request.borrowerUserId]);
+  const pages = viewerId
+    ? await personPageIds(db, viewerId, [request.borrowerUserId], now)
+    : new Set<string>();
   const acceptances =
     request.origin === "direct"
       ? (
@@ -269,6 +304,10 @@ async function describe(
     objectId: request.objectId,
     role,
     borrowerUserId: request.borrowerUserId,
+    borrower: {
+      realName: names.get(request.borrowerUserId) ?? null,
+      profileId: profileIdIn(pages, request.borrowerUserId),
+    },
     origin: await describeOrigin(db, actor, request, role, now),
     start: request.start,
     end: request.end,
@@ -295,7 +334,65 @@ async function describe(
   };
 }
 
-/** One request, for its borrower or an owner who sees it as a lender. */
+/**
+ * UX-JRN-005: what approving the request would agree to now, by the same
+ * rules as the approval (`approveLoanRequest`): the period it would
+ * reserve, and the other open requests the lender sees that it would end
+ * because they collide (PS-LOAN-007). Only while it waits for the lender.
+ */
+async function approvalPreview(
+  db: Db,
+  actor: Actor,
+  request: LoanRequestRecord,
+  described: LoanRequest,
+  now: Date,
+): Promise<LoanRequestDetail["approval"]> {
+  if (
+    actor.kind !== "user" ||
+    described.role !== "lender" ||
+    described.status !== "requested" ||
+    request.objectId === null
+  ) {
+    return null;
+  }
+
+  const today = calendarDate(now);
+  const { effective } = await loadDerivedAvailability(
+    db,
+    request.objectId,
+    today,
+  );
+  const period = earliestPeriod(request.start, request.end, effective, today);
+
+  if (!period) {
+    return { period: null, endsOtherRequests: 0 };
+  }
+
+  const scope = await loadLenderScope(db, actor.userId, now);
+  const others = await db
+    .selectFrom("app.loan_requests as request")
+    .select(requestSelection)
+    .where("request.object_id", "=", request.objectId)
+    .where("request.id", "<>", request.id)
+    .where("request.status", "in", [...openLoanRequestStatuses])
+    .where(visibleToLender(scope))
+    .execute();
+
+  return {
+    period: toApiPeriod(period),
+    endsOtherRequests: collidingRequests(
+      others.map(toLoanRequest),
+      period,
+      effective,
+      today,
+    ).length,
+  };
+}
+
+/**
+ * One request, for its borrower or an owner who sees it as a lender, with
+ * what approving it would agree to now.
+ */
 export const readLoanRequest = defineQuery({
   name: "loan_request.read",
   input: loanRequestReadQuerySchema,
@@ -310,20 +407,23 @@ export const readLoanRequest = defineQuery({
       }
 
       // Nothing more is read for callers the policy will turn away.
-      const described =
-        role && (await describe(tx, actor, loaded.resource.request, role, now));
+      const { request } = loaded.resource;
+      const described = role && (await describe(tx, actor, request, role, now));
+      const approval =
+        described &&
+        (await approvalPreview(tx, actor, request, described, now));
 
       return {
-        resource: { ...loaded.resource, described },
+        resource: { ...loaded.resource, described, approval },
         context: undefined,
       };
     }),
-  present: ({ resource }): LoanRequest => {
+  present: ({ resource }): LoanRequestDetail => {
     if (!resource.described) {
       throw new Error("The policy allows only a party of the request");
     }
 
-    return resource.described;
+    return { ...resource.described, approval: resource.approval ?? null };
   },
 });
 
@@ -347,6 +447,9 @@ export const listLoanRequests = defineQuery({
         .where(afterCursor(input.cursor))
         .$if(input.state === "open", (open) =>
           open.where("request.status", "in", openLoanRequestStatuses),
+        )
+        .$if(input.objectId !== undefined, (one) =>
+          one.where("request.object_id", "=", input.objectId!),
         )
         .orderBy("request.created_at", "desc")
         .orderBy("request.id", "desc")
@@ -415,7 +518,12 @@ function answerDue(
 /** A loan with everything its parties see of it now. */
 type LoanDetail = NonNullable<Awaited<ReturnType<typeof loadLoanDetail>>>;
 
-async function loadLoanDetail(db: Db, loanId: string, now: Date) {
+async function loadLoanDetail(
+  db: Db,
+  loanId: string,
+  viewer: Actor,
+  now: Date,
+) {
   const loan = await findLoan(db, { loanId });
 
   if (!loan) {
@@ -439,10 +547,12 @@ async function loadLoanDetail(db: Db, loanId: string, now: Date) {
     loan.ending?.reason === "unresolved"
       ? { confirmedAt: await findControlConfirmation(db, loan.id) }
       : null;
-  const names = await realNames(db, [
-    loan.borrowerUserId,
-    loan.responsibleLenderId,
-  ]);
+  const parties = [loan.borrowerUserId, loan.responsibleLenderId];
+  const names = await realNames(db, parties);
+  const pages =
+    viewer.kind === "user"
+      ? await personPageIds(db, viewer.userId, parties, now)
+      : new Set<string>();
   const awaitingControl = control !== null && control.confirmedAt === null;
   const ownerIds =
     loan.objectId === null
@@ -454,11 +564,16 @@ async function loadLoanDetail(db: Db, loanId: string, now: Date) {
             .where("object_id", "=", loan.objectId)
             .execute()
         ).map((owner) => owner.user_id);
-  const parties = [loan.borrowerUserId, loan.responsibleLenderId];
+  // Only while the role can be offered, and only those the offer would
+  // accept (`offerResponsibility`).
   const coOwnerIds =
-    loan.status === "ended"
+    loan.status === "ended" || open?.possible
       ? []
-      : ownerIds.filter((userId) => !parties.includes(userId));
+      : await offerableCoOwners(
+          db,
+          loan,
+          ownerIds.filter((userId) => !parties.includes(userId)),
+        );
   const coOwnerNames = await realNames(db, coOwnerIds);
   const mediations = await loadMediations(db, loan.id);
 
@@ -472,6 +587,7 @@ async function loadLoanDetail(db: Db, loanId: string, now: Date) {
     transfer,
     control,
     names,
+    pages,
     awaitingControl,
     lenderOwns: awaitingControl && ownerIds.includes(loan.responsibleLenderId),
     coOwners: coOwnerIds.flatMap((userId) => {
@@ -489,6 +605,36 @@ async function loadLoanDetail(db: Db, loanId: string, now: Date) {
       ) &&
       (await findLoanRequest(db, loan.requestId))?.origin === "environment",
   };
+}
+
+/**
+ * The co-owners the responsible lender's offer would accept now, by the
+ * offer's own rules (PS-LOAN-009): one who can step into the lender's side
+ * (`app.loan_co_owner_standing`: an owner now, not blocked with the
+ * borrower), while the lender is not established as unavailable, and with
+ * no block between them and the lender.
+ */
+async function offerableCoOwners(
+  db: Db,
+  loan: LoanRecord,
+  candidates: readonly string[],
+): Promise<string[]> {
+  const offerable: string[] = [];
+
+  // One connection serves the snapshot, so these run one after another.
+  for (const userId of candidates) {
+    const reach = await loadCoOwnerReach(db, loan.id, userId);
+
+    if (
+      reach.standing !== null &&
+      !reach.lenderUnavailable &&
+      !(await blockedWithAny(db, loan.responsibleLenderId, [userId]))
+    ) {
+      offerable.push(userId);
+    }
+  }
+
+  return offerable;
 }
 
 /**
@@ -566,8 +712,12 @@ async function amendmentAcceptableNow(
   );
 }
 
-const personOf = (names: ReadonlyMap<string, string>, userId: string) => ({
+const personOf = (
+  { names, pages }: Pick<LoanDetail, "names" | "pages">,
+  userId: string,
+) => ({
   realName: names.get(userId) ?? null,
+  profileId: profileIdIn(pages, userId),
 });
 
 const noActions: LoanActions = {
@@ -667,8 +817,8 @@ function presentLoan(actor: Actor, resource: LoanDetail, now: Date): Loan {
     },
     approvedAt: resource.approvedAt.toISOString(),
     parties: {
-      borrower: personOf(resource.names, resource.borrowerUserId),
-      lender: personOf(resource.names, resource.responsibleLenderId),
+      borrower: personOf(resource, resource.borrowerUserId),
+      lender: personOf(resource, resource.responsibleLenderId),
     },
     mediation: ownMediation(actor, resource.mediations),
     actions:
@@ -714,9 +864,9 @@ export const readLoan = defineQuery({
   name: "loan.read",
   input: loanReadQuerySchema,
   policy: readLoanPolicy,
-  load: ({ db, input, now }) =>
+  load: ({ db, actor, input, now }) =>
     inSnapshot(db, async (tx) => {
-      const loan = await loadLoanDetail(tx, input.loanId, now);
+      const loan = await loadLoanDetail(tx, input.loanId, actor, now);
 
       return loan && { resource: loan, context: undefined };
     }),
@@ -764,6 +914,9 @@ export const listLoans = defineQuery({
             ? awaitingControl
             : sql<boolean>`(loan.status = 'ended') = ${input.state === "ended"}`,
         )
+        .$if(input.objectId !== undefined, (one) =>
+          one.where("loan.object_id", "=", input.objectId!),
+        )
         .where(
           input.cursor === undefined
             ? sql<boolean>`true`
@@ -780,7 +933,7 @@ export const listLoans = defineQuery({
 
       // One connection serves the snapshot, so these run one after another.
       for (const { id } of page) {
-        const loan = await loadLoanDetail(tx, id, now);
+        const loan = await loadLoanDetail(tx, id, actor, now);
 
         if (loan) {
           loans.push(loan);

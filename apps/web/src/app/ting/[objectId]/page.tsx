@@ -85,6 +85,7 @@ export default async function ObjectPage({
       environment={environment}
       categories={categoryList}
       today={today}
+      query={query}
     />
   );
 }

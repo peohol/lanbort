@@ -7,6 +7,7 @@ import { executeQuery } from "../commands/query";
 import { leaveEnvironment } from "../environment/membership-commands";
 import { calendarDate } from "../objects/availability";
 import { leaveObject } from "../objects/co-owners";
+import { getObject } from "../objects/queries";
 import { blockUser, removeFriend } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
@@ -38,6 +39,7 @@ const {
   create,
   addCoOwner,
   friends,
+  showToFriends,
   environmentOrigin,
   ask,
   day,
@@ -66,6 +68,11 @@ const conclude = () => run(concludeHandovers, systemActor(handoverProcess), {});
 
 const loanOf = (actor: UserActor, loanId: string) =>
   executeQuery(tick(), readLoan, { actor, input: { loanId } });
+
+/** Whether the object's owners see it as out of their hands (WP-81). */
+const lentOut = async (actor: UserActor, objectId: string) =>
+  (await executeQuery(tick(), getObject, { actor, input: { objectId } }))
+    .lentOut;
 
 const statusOf = async (loanId: string) =>
   await db
@@ -115,6 +122,7 @@ async function directLoan(from: number, to: number) {
   const borrower = await user();
   await friends(borrower, owner);
   const objectId = await create(owner);
+  await showToFriends(owner, objectId);
   const { requestId } = await ask(
     borrower,
     objectId,
@@ -138,6 +146,7 @@ describe("the handover (PS-LOAN-012)", () => {
     await expect(say(borrower, loanId, "handed_over")).rejects.toMatchObject(
       conflict,
     );
+    expect(await lentOut(owner, objectId)).toBe(false);
 
     kit.advance(oneDay);
     expect(await say(borrower, loanId, "handed_over")).toEqual({
@@ -146,6 +155,7 @@ describe("the handover (PS-LOAN-012)", () => {
       agreementVersion: 1,
     });
     const reportedAt = kit.now().toISOString();
+    expect(await lentOut(owner, objectId)).toBe(true);
 
     for (const party of [borrower, owner]) {
       expect(await loanOf(party, loanId)).toMatchObject({

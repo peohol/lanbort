@@ -29,12 +29,12 @@ describe("where notifications and Home lead (UX-IA-002)", () => {
   it("leads to the entry in its context", () => {
     expect(hrefFor({ type: "loan", id })).toBe(`/lan/${id}`);
     expect(hrefFor({ type: "loan_request", id })).toBe(
-      `/lan#foresporsel-${id}`,
+      `/lan/foresporsel/${id}`,
     );
     expect(hrefFor({ type: "object_invitation", id })).toBe(
       `/mine-ting#invitasjon-${id}`,
     );
-    expect(hrefFor({ type: "user", id })).toBe("/konto#venner");
+    expect(hrefFor({ type: "user", id })).toBe(`/personer/${id}`);
   });
 
   it("leads nowhere while no page shows the target", () => {

@@ -773,7 +773,8 @@ button:disabled,
 /* Links that stand on their own, not in running text, are targets a finger
    aims at (UX-A11Y-006). */
 .entry a,
-.link-row a {
+.link-row a,
+.facts a {
   display: inline-flex;
   align-items: center;
   min-width: var(--target);
@@ -860,6 +861,30 @@ fieldset {
   margin: 0 0 var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-s);
+}
+
+/* Photos of a thing in a form: a row of thumbnails, each with its own way
+   to remove it (WP-81). */
+.image-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.image-list li {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.image-list img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-s);
+  background: var(--color-sunken);
 }
 
 /* Private chat (WP-43): a message keeps its line breaks; a security code

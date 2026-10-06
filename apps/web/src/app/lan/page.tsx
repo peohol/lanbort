@@ -17,7 +17,7 @@ import {
   pagesShown,
   type SearchParams,
 } from "@/navigation/list-pages";
-import { loanHref } from "@/navigation/routes";
+import { loanHref, loanRequestHref } from "@/navigation/routes";
 import { anchorFor } from "@/navigation/targets";
 import { formatPeriod } from "@/presentation/dates";
 import { describeHomeItem } from "@/presentation/home-items";
@@ -102,7 +102,7 @@ export default async function LoansPage({
     .flatMap((list) => list.items)
     .map((request) => ({
       id: anchorFor("loan_request", request.id),
-      href: null,
+      href: loanRequestHref(request.id),
       title: request.object?.title ?? "Objektet finnes ikke lenger",
       role: loanRoleLabels[request.role],
       status: loanRequestStatusLabels[request.status],

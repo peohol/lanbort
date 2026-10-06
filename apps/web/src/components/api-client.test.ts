@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getJson, postJson } from "./api-client";
+import { getJson, postFile, postJson } from "./api-client";
 
 function respond(body: string, status: number) {
   vi.stubGlobal(
@@ -53,6 +53,22 @@ describe("getJson", () => {
     expect(await getJson("/api/x")).toEqual({
       ok: true,
       data: { unreadCount: 2 },
+    });
+  });
+});
+
+describe("postFile", () => {
+  it("sends the file as the body, with its type and the command's key", async () => {
+    const fetch = vi.fn(async () => new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetch);
+    const file = new Blob(["png"], { type: "image/png" });
+
+    await postFile("/api/x", file, { idempotencyKey: "key" });
+
+    expect(fetch).toHaveBeenCalledWith("/api/x", {
+      method: "POST",
+      headers: { "content-type": "image/png", "Idempotency-Key": "key" },
+      body: file,
     });
   });
 });

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { type APIRequestContext, expect, test } from "@playwright/test";
-import { registerThroughApi } from "./helpers";
+import { registerThroughApi, showToFriends } from "./helpers";
 
 /**
  * WP-30–34 over HTTP: a friend asks to borrow an object directly, both
@@ -52,6 +52,7 @@ test("an owner approves a friend's request into a reserved loan", async ({
       availability: [{ start: "2030-06-01", end: null }],
     })
   ).json();
+  await showToFriends(request, objectId);
 
   const preview = await (
     await bo.get(`/api/loan-requests/preview?objectId=${objectId}`)
@@ -228,6 +229,7 @@ test("a party confirms the handover, and the lender the early return (WP-33–34
       availability: [{ start: today(), end: null }],
     })
   ).json();
+  await showToFriends(request, objectId);
   const preview = await (
     await bo.get(`/api/loan-requests/preview?objectId=${objectId}`)
   ).json();
@@ -369,6 +371,7 @@ test("the lender hands the role to a co-owner who accepts it (WP-35)", async ({
       availability: [{ start: "2030-06-01", end: null }],
     })
   ).json();
+  await showToFriends(request, objectId);
   const { invitationId } = await (
     await post(request, `/api/objects/${objectId}/co-owners/invitations`, {
       userId: dagId,
