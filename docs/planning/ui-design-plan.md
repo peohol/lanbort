@@ -65,6 +65,8 @@ For hver sentral flate skal vi vite:
 
 Inventaret er en dekningssjekk, ikke en spesifikasjon av visuell løsning.
 
+Inventaret finnes i [skjerm- og flytinventaret](../ux/08-skjerm-og-flytinventar.md).
+
 ## Fase 2 — Visuell informasjonsarkitektur og navigasjon
 
 Den vedtatte informasjonsarkitekturen og navigasjonsmodellen oversettes til konkret skjermstruktur.
