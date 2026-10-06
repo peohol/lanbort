@@ -221,3 +221,9 @@ Avklar OD-0006 og en konservativ pilotgrense for OD-0001 før reelle objekter å
 
 ### WP-75 — Pilot release gate
 Kjør [kvalitetsportene](quality-gates.md), dokumenter kjente begrensninger og åpne kun for definert pilotgruppe.
+
+## Fase 8
+
+### WP-80–WP-88 — Brukerflaten
+**UX:** UX-IA, UX-JRN, UX-INT, UX-EXC, UX-PRIV, UX-A11Y  
+Den helhetlige, mobil-først brukerflaten oppå det bygde domenet: felles grunnlag først (WP-80), deretter parallelle pakker for objekter, forespørsler, miljøer, personer, lån og saker. Leveranser, skjermer, avhengigheter og rekkefølge står i [UI-arbeidspakkene](ui-work-packages.md).
