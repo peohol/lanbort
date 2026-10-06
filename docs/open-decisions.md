@@ -208,7 +208,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0012 — Avstemningsfrist ved skjult → lukket
 - **Lag:** Produktspesifikasjon
 - **Status:** Avklart (produkteier, 6. oktober 2026)
-- **Beslutning:** Se [PS-ENV-008](product-spec/02-miljoer.md). 7 dager til å akseptere eller forlate; den som ikke har akseptert, fjernes når fristen utløper. Ikke bygget ennå (WP-23).
+- **Beslutning:** Se [PS-ENV-008](product-spec/02-miljoer.md). 7 dager til å akseptere eller forlate; den som ikke har akseptert, fjernes når fristen utløper. Bygget i serverdelen av WP-85.
 
 ### OD-0013 — Hvor venner finner hverandres objekter
 - **Lag:** Produktspesifikasjon / UX

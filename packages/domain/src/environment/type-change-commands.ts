@@ -10,7 +10,7 @@ import { z } from "zod";
 import { defineCommand } from "../commands/command";
 import { DomainError } from "../errors";
 import type { EventRecorder } from "../events/recorder";
-import { tryLockEnvironment } from "./continuity-commands";
+import { releaseRolesIn, tryLockEnvironment } from "./continuity-commands";
 import {
   environmentIdInput,
   loadLockedAccess,
@@ -18,13 +18,22 @@ import {
 } from "./environment-commands";
 import {
   environmentTypeChangeProposed,
+  membershipEnded,
   membershipTypeChangeResponded,
 } from "./events";
-import { acceptsNewActivity, daysAfter, isTransitionExpired } from "./model";
+import { endMembership } from "./membership-commands";
+import {
+  acceptsNewActivity,
+  daysAfter,
+  type EnvironmentRecord,
+  isTransitionExpired,
+  type MembershipRecord,
+} from "./model";
 import {
   changeEnvironmentTypePolicy,
   concludeTypeChangesPolicy,
   respondToTypeChangePolicy,
+  typeChangeProcess,
   withdrawTypeChangePolicy,
 } from "./policies";
 import { classifyTypeChange, typeChangeDays, votePasses } from "./privacy";
@@ -96,12 +105,7 @@ export const changeEnvironmentType = defineCommand({
       conflict("A type change is already proposed");
     }
 
-    const days = typeChangeDays[change.process];
-    if (days === null) {
-      conflict("No deadline is decided for this type change");
-    }
-
-    const deadline = daysAfter(now, days);
+    const deadline = daysAfter(now, typeChangeDays[change.process]);
     const { id } = await tx
       .insertInto("app.environment_type_proposals")
       .values({
@@ -259,13 +263,53 @@ export const respondToTypeChange = defineCommand({
 type Conclusion = "adopted" | "rejected" | "lapsed";
 
 /**
+ * PS-ENV-008, hidden → closed: a member who did not accept is removed, under
+ * the ordinary rules for leaving. Roles end first through the continuity
+ * model (PS-ENV-013), since nobody handed them over; loans and history stay.
+ */
+async function removeMembers(
+  tx: Tx,
+  environment: EnvironmentRecord,
+  memberships: readonly MembershipRecord[],
+  now: Date,
+  events: EventRecorder,
+): Promise<void> {
+  const reason = "type_change_not_accepted";
+
+  for (const membership of memberships) {
+    await releaseRolesIn(
+      tx,
+      environment,
+      membership.userId,
+      reason,
+      { process: typeChangeProcess },
+      now,
+      events,
+    );
+  }
+
+  for (const membership of memberships) {
+    await endMembership(tx, membership, reason, now);
+    events.record(membershipEnded, {
+      resourceId: membership.id,
+      payload: {
+        environmentId: membership.environmentId,
+        userId: membership.userId,
+        reason,
+      },
+    });
+  }
+}
+
+/**
  * A proposal at its deadline (PS-ENV-008). Only active members count, and
  * only an explicit «yes» is support. Closed → open is adopted, and every
- * member who did not accept becomes passive. Hidden → closed needs 2/3 of all
- * active members; if it passes, everyone who did not vote for it becomes
- * passive. A passive member keeps the membership and the history, and can
- * accept the new type later. A proposal for a type the environment no longer
- * has, or for an environment winding down, lapses.
+ * member who did not accept becomes passive: the member keeps the membership
+ * and the history, and can accept the new type later. Hidden → closed needs
+ * 2/3 of all active members; if it passes, everyone who did not vote for it
+ * is removed (OD-0012). Either happens just before the type changes. A
+ * proposal for a type the environment no longer has, or for an environment
+ * winding down, lapses.
  */
 async function conclude(
   tx: Tx,
@@ -306,13 +350,14 @@ async function conclude(
   }
 
   await closeProposal(tx, proposal, "adopted", { counts }, now, events);
-  await passivate(
-    tx,
-    eligible.filter((membership) => !supporters.includes(membership)),
-    now,
-    events,
-    "type_change_not_accepted",
+  const declined = eligible.filter(
+    (membership) => !supporters.includes(membership),
   );
+  if (proposal.process === "vote") {
+    await removeMembers(tx, environment, declined, now, events);
+  } else {
+    await passivate(tx, declined, now, events, "type_change_not_accepted");
+  }
   await applyType(tx, environment, proposal.toType, proposal.id, now, events);
 
   return "adopted";
