@@ -9,6 +9,12 @@ export const objectImageMaxCount = 5;
  */
 export const objectImageMaxUploadBytes = 4 * 1024 * 1024;
 
+/**
+ * The longest side, in pixels, the client scales a photo down to when it is
+ * too large to upload. The server keeps nothing larger anyway.
+ */
+export const objectImageUploadMaxSide = 2048;
+
 /** Max separate availability intervals per object. */
 export const availabilityMaxIntervals = 50;
 
