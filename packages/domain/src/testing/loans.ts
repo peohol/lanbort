@@ -24,6 +24,7 @@ import { acceptCoOwnerInvitation, inviteCoOwner } from "../objects/co-owners";
 import { createObject } from "../objects/commands";
 import { ConsumerRegistry } from "../outbox/consumer";
 import { publishObject } from "../publications/commands";
+import { publishToFriends } from "../publications/friends";
 import { acceptFriendRequest, sendFriendRequest } from "../social/commands";
 import { registerTestUser } from "./identities";
 
@@ -185,6 +186,27 @@ export function loanTestKit(
     await run(acceptFriendRequest, b, { userId: a.userId });
   }
 
+  /** An owner makes the object visible to friends (PS-OBJ-020). */
+  async function showToFriends(owner: UserActor, objectId: string) {
+    await run(publishToFriends, owner, { objectId });
+  }
+
+  /**
+   * An object of `owner`'s that their friend `borrower` can ask for
+   * directly: they become friends, and it is visible to friends.
+   */
+  async function friendsObject(
+    owner: UserActor,
+    borrower: UserActor,
+    loanTerms?: string,
+  ) {
+    await friends(borrower, owner);
+    const objectId = await create(owner, loanTerms);
+    await showToFriends(owner, objectId);
+
+    return objectId;
+  }
+
   const versionOf = async (objectId: string) =>
     (
       await db
@@ -322,6 +344,8 @@ export function loanTestKit(
     create,
     addCoOwner,
     friends,
+    showToFriends,
+    friendsObject,
     versionOf,
     published,
     environmentOrigin,

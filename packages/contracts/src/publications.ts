@@ -91,9 +91,30 @@ export const objectPublicationSchema = z.strictObject({
   statusChangedAt: z.iso.datetime(),
 });
 
+/**
+ * PS-OBJ-020: the object is visible to friends, a publishing choice of its
+ * own next to the environments. Off unless an owner turns it on.
+ */
+export const objectFriendPublicationSchema = z.strictObject({
+  publishedByUserId: z.uuid(),
+  publishedAt: z.iso.datetime(),
+});
+
 export const objectPublicationListSchema = z.strictObject({
   /** The latest publication per environment, newest first. */
   publications: z.array(objectPublicationSchema),
+  /** Null while the object is not visible to friends. */
+  friends: objectFriendPublicationSchema.nullable(),
+});
+
+/** An owner turns the object's visibility to friends on or off. */
+export const friendPublicationSchema = z.strictObject({
+  objectId: objectIdSchema,
+});
+
+export const friendPublicationResultSchema = z.strictObject({
+  objectId: objectIdSchema,
+  visibleToFriends: z.boolean(),
 });
 
 /** The object's global content, as it is shown through a publication. */
@@ -159,6 +180,33 @@ export const environmentObjectListSchema = z.strictObject({
   nextCursor: publicationIdSchema.nullable(),
 });
 
+/**
+ * An object a friend has made visible to friends (PS-OBJ-020), as it is shown
+ * on their profile and in Finn: like in an environment, its owners are not
+ * named and its availability does not say what blocks it.
+ */
+export const friendObjectSchema = environmentObjectSchema.omit({
+  publicationId: true,
+});
+
+/** The objects a friend has made visible to friends, newest first. */
+export const friendObjectsQuerySchema = z.strictObject({
+  userId: z.uuid(),
+  cursor: z.uuid().optional(),
+});
+
+export const friendObjectListSchema = z.strictObject({
+  objects: z.array(friendObjectSchema),
+  /** Pass as `cursor` for the next page; null on the last one. */
+  nextCursor: z.uuid().nullable(),
+});
+
+/** An image of an object the caller finds through a friend. */
+export const friendObjectImageSchema = z.strictObject({
+  objectId: objectIdSchema,
+  imageId: objectImageIdSchema,
+});
+
 export const publishedObjectImageSchema = z.strictObject({
   environmentId: z.uuid(),
   objectId: objectIdSchema,
@@ -175,3 +223,8 @@ export type EnvironmentPublicationList = z.infer<
 >;
 export type EnvironmentObject = z.infer<typeof environmentObjectSchema>;
 export type EnvironmentObjectList = z.infer<typeof environmentObjectListSchema>;
+export type ObjectFriendPublication = z.infer<
+  typeof objectFriendPublicationSchema
+>;
+export type FriendObject = z.infer<typeof friendObjectSchema>;
+export type FriendObjectList = z.infer<typeof friendObjectListSchema>;

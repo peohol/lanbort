@@ -231,7 +231,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0013 — Hvor venner finner hverandres objekter
 - **Lag:** Produktspesifikasjon / UX
 - **Status:** Avklart (produkteier, 6. oktober 2026)
-- **Beslutning:** Se [PS-OBJ-020](product-spec/03-utlansobjekter.md) og [UX-JRN-013](ux/02-sentrale-brukerreiser.md). «Venner» er et eget publiseringsvalg per objekt, av som standard; synlige objekter vises på eierens profil for venner og med filteret «Venner» i Finn, og en direkte låneforespørsel starter derfra. Ikke bygget ennå (WP-27).
+- **Beslutning:** Se [PS-OBJ-020](product-spec/03-utlansobjekter.md) og [UX-JRN-013](ux/02-sentrale-brukerreiser.md). «Venner» er et eget publiseringsvalg per objekt, av som standard; synlige objekter vises på eierens profil for venner og med filteret «Venner» i Finn, og en direkte låneforespørsel starter derfra. Serverdelen er bygget; UI-et gjenstår (WP-27).
 
 ### OD-0015 — Meldingen i en låneforespørsel og ende-til-ende-kryptering
 - **Lag:** Produktspesifikasjon / Arkitektur

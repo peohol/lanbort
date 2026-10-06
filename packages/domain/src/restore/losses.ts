@@ -59,6 +59,7 @@ import {
 import { platformRoleGranted } from "../platform/events";
 import {
   environmentObjectApprovalChanged,
+  friendPublicationCreated,
   publicationApproved,
   publicationCreated,
   publicationReleasedFromApproval,
@@ -157,6 +158,7 @@ export const restoreLosses: readonly EventDefinition<unknown>[] = [
   publicationUnblocked,
   publicationReleasedFromApproval,
   environmentObjectApprovalChanged,
+  friendPublicationCreated,
   // Friendship requests and acceptances, lifted blocks. A block's and an
   // account deletion's end of a friendship are those replays.
   friendshipRequested,

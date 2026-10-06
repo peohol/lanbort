@@ -52,6 +52,7 @@ const {
   create,
   addCoOwner,
   friends,
+  showToFriends,
   ask,
   environment,
   published,
@@ -278,9 +279,9 @@ describe("deleting an account (PS-ADM-005–006)", () => {
     // A finished loan as borrower: shared history with the lender.
     const lender = await user();
     await friends(leaving, lender);
-    const { requestId } = await ask(leaving, await create(lender), {
-      kind: "direct",
-    });
+    const lent = await create(lender);
+    await showToFriends(lender, lent);
+    const { requestId } = await ask(leaving, lent, { kind: "direct" });
 
     // Its notification preference (e-mail for what asks something of it),
     // its own notification, and the e-mail waiting to tell of it (WP-41).
@@ -700,6 +701,7 @@ describe("races", () => {
       const borrower = await user();
       await friends(borrower, owner);
       const objectId = await create(owner);
+      await showToFriends(owner, objectId);
 
       await Promise.allSettled([
         ask(borrower, objectId, { kind: "direct" }),

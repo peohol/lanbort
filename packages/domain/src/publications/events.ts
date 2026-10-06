@@ -78,3 +78,24 @@ export const environmentObjectApprovalChanged = defineEvent({
   resourceType: "environment",
   payload: z.strictObject({ required: z.boolean() }),
 });
+
+/**
+ * PS-OBJ-020: an owner made the object visible to friends, or took that back.
+ * The resource is the object; who did it is the event's actor.
+ */
+const friendPublicationEvent = (type: string) =>
+  defineEvent({
+    type: `object.${type}`,
+    version: 1,
+    kind: "domain",
+    resourceType: "object",
+    payload: z.strictObject({}),
+  });
+
+export const friendPublicationCreated = friendPublicationEvent(
+  "published_to_friends",
+);
+
+export const friendPublicationWithdrawn = friendPublicationEvent(
+  "withdrawn_from_friends",
+);

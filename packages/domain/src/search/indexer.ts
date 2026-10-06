@@ -20,6 +20,8 @@ import {
 } from "../objects/events";
 import { defineConsumer, type StoredEvent } from "../outbox/consumer";
 import {
+  friendPublicationCreated,
+  friendPublicationWithdrawn,
   publicationApproved,
   publicationBlocked,
   publicationCreated,
@@ -70,7 +72,8 @@ export async function refreshSearchIndex(
 
 /**
  * What changes an object's searchable text or whether it can be found at
- * all: its content and lifecycle, and its publications.
+ * all: its content and lifecycle, its visibility to friends, and its
+ * publications.
  */
 const objectEvents: readonly EventDefinition<unknown>[] = [
   objectUpdated,
@@ -78,6 +81,8 @@ const objectEvents: readonly EventDefinition<unknown>[] = [
   objectArchived,
   objectRestored,
   objectDeleted,
+  friendPublicationCreated,
+  friendPublicationWithdrawn,
 ];
 
 const publicationEvents: readonly EventDefinition<unknown>[] = [

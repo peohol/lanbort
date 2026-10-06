@@ -93,6 +93,14 @@ export async function postCommand(
   return response;
 }
 
+/** Makes the owner's object visible to their friends (PS-OBJ-020). */
+export async function showToFriends(
+  owner: APIRequestContext,
+  objectId: string,
+) {
+  await postCommand(owner, `/api/objects/${objectId}/friends`);
+}
+
 export async function accountId(request: APIRequestContext): Promise<string> {
   return (await (await request.get("/api/account")).json()).userId;
 }
@@ -125,6 +133,7 @@ export async function agreeLoan(
       availability: [{ start: today(), end: null }],
     }),
   );
+  await showToFriends(lender, objectId);
   const preview = await json(
     borrower.get(`/api/loan-requests/preview?objectId=${objectId}`),
   );

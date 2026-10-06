@@ -39,6 +39,7 @@ const {
   create,
   addCoOwner,
   friends,
+  showToFriends,
   environmentOrigin,
   ask,
   day,
@@ -640,6 +641,7 @@ describe("access that is gone after approval (PS-LOAN-002, scenario 28)", () => 
     const friend = await user();
     await friends(friend, friendOwner);
     const objectId = await create(friendOwner);
+    await showToFriends(friendOwner, objectId);
     const { requestId } = await ask(
       friend,
       objectId,

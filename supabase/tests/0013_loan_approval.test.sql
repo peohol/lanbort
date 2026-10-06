@@ -244,6 +244,8 @@ values ('00000000-0000-4000-8000-0000000000e5', 'active', now());
 insert into app.friendships (requester_id, addressee_id, status, accepted_at)
 values ('00000000-0000-4000-8000-0000000000e5', '00000000-0000-4000-8000-0000000000d1',
   'active', now());
+insert into app.object_friend_publications (object_id, published_by_user_id)
+values ('00000000-0000-4000-8000-0000000000f1', '00000000-0000-4000-8000-0000000000d1');
 insert into app.loan_requests (
   id, object_id, borrower_user_id, origin, desired_start, desired_end, message,
   terms_version

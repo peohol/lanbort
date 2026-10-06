@@ -58,6 +58,7 @@ const {
   user,
   member,
   friends,
+  showToFriends,
   published,
   ask,
   dated,
@@ -628,6 +629,7 @@ describe("mediation of a loan through an environment (PS-COM-012, vision 05)", (
     const borrower = await user();
     await friends(borrower, owner);
     const objectId = await kit.create(owner);
+    await showToFriends(owner, objectId);
     const { requestId } = await ask(
       borrower,
       objectId,

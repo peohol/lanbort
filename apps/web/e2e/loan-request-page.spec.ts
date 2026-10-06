@@ -4,6 +4,7 @@ import {
   collectBrowserProblems,
   postCommand,
   registerThroughApi,
+  showToFriends,
   today,
   uniqueWord,
 } from "./helpers";
@@ -126,6 +127,7 @@ test("a friend asks directly, and both accept the declaration first", async ({
       availability: [{ start: today(), end: null }],
     })
   ).json();
+  await showToFriends(page.request, objectId);
 
   const dan = await friends.newPage();
   await dan.goto(`/ting/${objectId}`);

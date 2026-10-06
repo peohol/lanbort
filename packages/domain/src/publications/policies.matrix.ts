@@ -4,8 +4,13 @@ import { type PolicyCase, policyMatrix } from "../authorization/policy-matrix";
 import type { EnvironmentAccess, Viewer } from "../environment/model";
 import type { DenialReason } from "../errors";
 import type { ObjectResource } from "../objects/policies";
+import type { SocialPair } from "../social/pair";
 import { testUserActor } from "../testing/actors";
 import {
+  listFriendObjectsPolicy,
+  publishToFriendsPolicy,
+  readFriendObjectImagePolicy,
+  withdrawFromFriendsPolicy,
   listEnvironmentObjectsPolicy,
   listEnvironmentPublicationsPolicy,
   listObjectPublicationsPolicy,
@@ -146,6 +151,23 @@ const image = (
   found: Pick<PublishedImageResource, "discoverable" | "underReview">,
   type: EnvironmentType = "closed",
 ): PublishedImageResource => ({ access: access(type, viewer), ...found });
+
+/** The caller's pair with the user whose profile they look at. */
+const profile = (overrides: Partial<SocialPair> = {}) => ({
+  pair: {
+    actorId: stranger.userId,
+    otherUserId: owner.userId,
+    otherActive: true,
+    openFriendship: {
+      id: "00000000-0000-4000-8000-0000000000c1",
+      status: "active" as const,
+      requesterId: owner.userId,
+    },
+    blockedByActor: false,
+    blockedByOther: false,
+    ...overrides,
+  },
+});
 
 export const publicationMatrices = [
   policyMatrix(publishObjectPolicy, [
@@ -299,5 +321,50 @@ export const publicationMatrices = [
       image(member("active"), { discoverable: true, underReview: true }),
       "unauthenticated",
     ),
+  ]),
+  policyMatrix(publishToFriendsPolicy, ownerOnlyCases(object)),
+  policyMatrix(withdrawFromFriendsPolicy, ownerOnlyCases(object)),
+  policyMatrix(listFriendObjectsPolicy, [
+    expectCase("a friend", stranger, profile(), "allow"),
+    expectCase(
+      "someone who is not a friend sees the profile, not its objects",
+      stranger,
+      profile({ openFriendship: null }),
+      "allow",
+    ),
+    expectCase(
+      "a user who blocks the caller looks like nobody",
+      stranger,
+      profile({ openFriendship: null, blockedByOther: true }),
+      "not_found",
+    ),
+    expectCase(
+      "an account that is not registered",
+      stranger,
+      profile({ openFriendship: null, otherActive: false }),
+      "not_found",
+    ),
+    expectCase(
+      "nobody reads a pair that is not their own",
+      owner,
+      profile(),
+      "not_found",
+    ),
+    ...callerCases(profile()),
+  ]),
+  policyMatrix(readFriendObjectImagePolicy, [
+    expectCase(
+      "a friend who finds the object",
+      stranger,
+      { findable: true },
+      "allow",
+    ),
+    expectCase(
+      "anyone who does not find it through friends",
+      stranger,
+      { findable: false },
+      "not_found",
+    ),
+    ...callerCases({ findable: true }),
   ]),
 ];

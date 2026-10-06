@@ -737,6 +737,15 @@ export interface AppObjectFreezes {
   user_block_id: string;
 }
 
+export interface AppObjectFriendPublications {
+  id: Generated<string>;
+  object_id: string;
+  published_at: Generated<Timestamp>;
+  published_by_user_id: string;
+  withdrawn_at: Timestamp | null;
+  withdrawn_by_user_id: string | null;
+}
+
 export interface AppObjectImages {
   byte_size: number;
   content_type: string;
@@ -993,6 +1002,7 @@ export interface DB {
   "app.object_co_owner_invitations": AppObjectCoOwnerInvitations;
   "app.object_deletion_consents": AppObjectDeletionConsents;
   "app.object_freezes": AppObjectFreezes;
+  "app.object_friend_publications": AppObjectFriendPublications;
   "app.object_images": AppObjectImages;
   "app.object_owners": AppObjectOwners;
   "app.object_question_posts": AppObjectQuestionPosts;

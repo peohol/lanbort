@@ -7,6 +7,7 @@ import {
   newEmail,
   postCommand,
   registerThroughApi,
+  showToFriends,
   signInThroughApi,
   today,
   uniqueWord,
@@ -146,6 +147,7 @@ test.beforeAll(async ({ browser, playwright }) => {
       ).json()
     ).objectId as string;
   const ladder = await object(`Stige ${thing}`);
+  await showToFriends(anna.request, ladder);
   await postCommand(anna.request, `/api/objects/${ladder}/publications`, {
     environmentId,
   });

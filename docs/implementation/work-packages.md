@@ -78,7 +78,9 @@ Invitasjon/aksept, restriksjoner, blokkfrys, uttreden, sporbar redigering og opt
 
 ### WP-27 — Synlighet for venner
 **Krav:** PS-OBJ-020, PS-USR-004  
-Publiseringsvalget «Venner» per objekt (av som standard), vennens visning av eierens synlige objekter, filteret «Venner» i Finn og at direkte forespørsler krever valget. Ikke bygget ennå (OD-0013 avklart 6. oktober 2026).
+Publiseringsvalget «Venner» per objekt (av som standard), vennens visning av eierens synlige objekter, filteret «Venner» i Finn og at direkte forespørsler krever valget.
+
+**Status:** Serverdelen er ferdig (OD-0013 avklart 6. oktober 2026). Gjenstår: UI-delen, som venter på WP-81, WP-83 og WP-86.
 
 ## Fase 3
 
@@ -86,7 +88,7 @@ Publiseringsvalget «Venner» per objekt (av som standard), vennens visning av e
 **Krav:** PS-LOAN-001–005  
 Miljø-/venneinngang, ansvarserklæring og vilkårsbekreftelse.
 
-**Status:** Ferdig, med én rest etter OD-0013 (6. oktober 2026): direkte forespørsler skal kreve at objektet er synlig for venner (WP-27). Meldingen er valgfri etter OD-0015 (PS-LOAN-004, bygget i WP-83).
+**Status:** Ferdig. Direkte forespørsler krever at objektet er synlig for venner (WP-27), og meldingen er valgfri etter OD-0015 (PS-LOAN-004, bygget i WP-83).
 
 ### WP-31 — Atomisk godkjenning og reservasjon
 **Krav:** PS-LOAN-006–008; PS-NFR-004  

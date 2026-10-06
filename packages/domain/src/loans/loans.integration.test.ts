@@ -55,6 +55,7 @@ const {
   create,
   addCoOwner,
   friends,
+  showToFriends,
   versionOf,
   published,
   environmentOrigin,
@@ -324,6 +325,7 @@ describe("a direct request between friends (PS-LOAN-001/003)", () => {
     const borrower = await user();
     await friends(borrower, owner);
     const objectId = await create(owner);
+    await showToFriends(owner, objectId);
 
     const preview = await executeQuery(tick(), previewLoanRequest, {
       actor: borrower,
@@ -407,6 +409,7 @@ describe("a direct request between friends (PS-LOAN-001/003)", () => {
     const coOwner = await user();
     const borrower = await user();
     const objectId = await create(owner);
+    await showToFriends(owner, objectId);
 
     await expect(
       ask(borrower, objectId, { kind: "direct" }),
@@ -651,6 +654,7 @@ describe("losing access before approval (PS-LOAN-002)", () => {
     const coOwner = await user();
     const borrower = await user();
     const objectId = await create(owner);
+    await showToFriends(owner, objectId);
     await addCoOwner(owner, objectId, coOwner);
     await friends(borrower, owner);
     await friends(borrower, coOwner);
@@ -723,6 +727,7 @@ describe("losing access before approval (PS-LOAN-002)", () => {
     const coOwner = await user();
     const borrower = await user();
     const objectId = await create(owner);
+    await showToFriends(owner, objectId);
     await addCoOwner(owner, objectId, coOwner);
     await friends(borrower, coOwner);
     const { requestId } = await ask(borrower, objectId, { kind: "direct" });
@@ -743,6 +748,7 @@ describe("losing access before approval (PS-LOAN-002)", () => {
       const friend = await user();
       await friends(friend, owner);
       const direct = await create(owner);
+      await showToFriends(owner, direct);
       await Promise.allSettled([
         ask(friend, direct, { kind: "direct" }),
         run(removeFriend, owner, { userId: friend.userId }),
@@ -865,6 +871,7 @@ describe("deleting the object", () => {
     const coOwner = await user();
     await addCoOwner(owner, objectId, coOwner);
     await friends(borrower, coOwner);
+    await showToFriends(owner, objectId);
     const other = await member(environmentId, admin);
     const stranger = await user();
     const { requestId: open } = await ask(
