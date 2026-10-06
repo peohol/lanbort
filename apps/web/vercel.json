@@ -1,0 +1,58 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["arn1"],
+  "crons": [
+    {
+      "path": "/api/internal/outbox",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/internal/notification-emails",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/internal/loan-returns",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/internal/object-subscriptions",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/internal/case-queue-returns",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/internal/notification-deadlines",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/internal/loan-handovers",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/internal/loan-reviews",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/internal/environment-memberships",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/internal/environment-type-changes",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/internal/environment-continuity",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/internal/search-index",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/internal/chat-retention",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

@@ -70,7 +70,7 @@ Leveranser:
 - gjentatt idempotent kommando gir ikke duplikat, også ved samtidige kall
 
 Bevisst utsatt:
-- ekte outbox-consumers (e-post/push) kommer i Fase 4, og Vercel Cron for de interne jobbene er ennå ikke satt opp i produksjon
+- ekte outbox-consumers (e-post/push) kommer i Fase 4, og Vercel Cron kjører de planlagte jobbene i produksjon etter tidsplanen i `apps/web/vercel.json`
 - hvem som kan utnevne plattformforvaltere i appen er ikke bestemt, så det skjer foreløpig bare via driftskommandoen
 - mekanisme for sterkere autentisering for plattformforvaltere venter på OD-0010, som kan stå åpen etter Fase 1 men må avklares før slike handlinger tas i reell bruk (Port D); til da avvises de
 - endring av e-postadresse og synlighet per profilfelt (Fase 2)
