@@ -32,6 +32,7 @@ interface World {
   readonly ladder: string;
   readonly place: string;
   readonly thing: string;
+  readonly cases: { own: string; handled: string; environmentId: string };
 }
 
 /** The signed-in pages, each in the state where it has the most to show. */
@@ -67,6 +68,17 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
   { name: "Samtaler", path: () => "/samtaler" },
   { name: "Varsler", path: () => "/varsler" },
   { name: "Konto", path: () => "/konto" },
+  { name: "Saker", path: () => "/saker" },
+  { name: "Saken", path: ({ cases }) => `/saker/${cases.own}` },
+  { name: "Saken å behandle", path: ({ cases }) => `/saker/${cases.handled}` },
+  {
+    name: "Miljøets saker",
+    path: ({ cases }) => `/saker/miljo/${cases.environmentId}`,
+  },
+  {
+    name: "Ny sak",
+    path: ({ environmentId }) => `/saker/ny?kontakt=${environmentId}`,
+  },
 ];
 
 let world: World;
@@ -175,6 +187,36 @@ test.beforeAll(async ({ browser, playwright }) => {
     await postCommand(anna.request, `/api/loan-requests/${requestId}/approve`)
   ).json();
 
+  // A contact Bo wrote, and one in Bo's own environment for Bo to handle.
+  const contact = async (
+    request: typeof bo,
+    environment: string,
+    body: string,
+  ) =>
+    (
+      await (
+        await postCommand(request, "/api/environments/contact", {
+          environmentId: environment,
+          body,
+        })
+      ).json()
+    ).caseId as string;
+  const { environmentId: boden } = await (
+    await postCommand(bo, "/api/environments", {
+      name: `Boden ${place}`,
+      type: "open",
+    })
+  ).json();
+  await postCommand(cleo.request, "/api/environments/membership/join", {
+    environmentId: boden,
+    answers: [],
+  });
+  const cases = {
+    own: await contact(bo, environmentId, "Hvem har nøkkelen til boden?"),
+    handled: await contact(cleo.request, boden, "Kan jeg låne nøkkelen?"),
+    environmentId: boden,
+  };
+
   await untilOutboxSettles(bo, async () => {
     const [{ unreadCount }, { environments }] = await Promise.all([
       (await bo.get("/api/notifications/unread")).json(),
@@ -191,6 +233,7 @@ test.beforeAll(async ({ browser, playwright }) => {
     ladder,
     place,
     thing,
+    cases,
   };
   signedIn = await context.storageState();
   await context.close();
@@ -274,7 +317,8 @@ async function keyboardProblems(page: Page) {
       (element) =>
         !(element as HTMLButtonElement).disabled &&
         element.getClientRects().length > 0 &&
-        getComputedStyle(element).visibility !== "hidden",
+        // Also leaves out what waits inside a closed «Flere valg».
+        element.checkVisibility({ visibilityProperty: true }),
     );
     focusable.forEach((element, index) => {
       element.dataset.a11y = String(index);
