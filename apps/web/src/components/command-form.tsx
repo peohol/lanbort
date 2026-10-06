@@ -2,6 +2,7 @@
 
 import type { FormEvent, ReactNode } from "react";
 import { BusyButton } from "./busy-button";
+import type { ErrorMessages } from "./error-messages";
 import { ErrorText } from "./error-text";
 import { fillHref, formBody, formValues } from "./form-body";
 import { useCommand } from "./use-command";
@@ -25,6 +26,7 @@ export function CommandForm({
   idempotent = true,
   errorId,
   secondary = false,
+  messages,
   children,
 }: {
   path: string;
@@ -37,12 +39,15 @@ export function CommandForm({
   errorId?: string;
   /** For a form that is not the page's main step. */
   secondary?: boolean;
+  /** What a failure means here, where the general words are not enough. */
+  messages?: ErrorMessages;
   children?: ReactNode;
 }) {
   const command = useCommand({
     path,
     done,
     idempotent,
+    ...(messages ? { messages } : {}),
     after: next ? (data) => fillHref(next, data) : "refresh",
   });
 

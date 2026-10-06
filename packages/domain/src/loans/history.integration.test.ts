@@ -13,6 +13,8 @@ import {
   acceptResponsibilityTransfer,
   offerResponsibility,
 } from "./responsibility";
+import { requestLoanMediation } from "../cases/commands";
+import { blockUser } from "../social/commands";
 import { approveLoanRequest } from "./approval";
 import { reportReturn } from "./return";
 
@@ -229,7 +231,8 @@ describe("next steps (UX-INT-001)", () => {
   it("offers only what the commands would accept, as the loan moves on", async () => {
     const { owner, borrower, loanId } = await reservedLoan(1, 3);
 
-    // Before the handover day there is nothing to say yet.
+    // Before the handover day there is nothing to say yet, but the
+    // agreement can still change or be cancelled.
     expect((await loanOf(borrower, loanId)).actions).toEqual({
       handover: [],
       return: [],
@@ -237,6 +240,12 @@ describe("next steps (UX-INT-001)", () => {
       amendment: [],
       responsibility: [],
       confirmControl: false,
+      proposeAmendment: "period",
+      withdrawAmendment: false,
+      cancel: true,
+      offerResponsibility: [],
+      withdrawResponsibility: false,
+      requestMediation: false,
     });
 
     advanceDays(1);
@@ -253,6 +262,9 @@ describe("next steps (UX-INT-001)", () => {
     expect((await loanOf(borrower, loanId)).actions).toMatchObject({
       handover: [],
       return: ["returned"],
+      // Handed over: only the return day can move, and nobody cancels.
+      proposeAmendment: "return_day",
+      cancel: false,
     });
 
     await run(reportReturn, borrower, {
@@ -288,6 +300,113 @@ describe("next steps (UX-INT-001)", () => {
       (await loanOf({ ...borrower, accountStatus: "deactivated" }, loanId))
         .actions.amendment,
     ).toEqual(["decline"]);
+  });
+
+  it("offers a new period and a cancellation only while they can happen (WP-87)", async () => {
+    const { owner, borrower, loanId } = await reservedLoan(1, 3);
+    // An account that is not active starts nothing new (PS-ADM-002).
+    expect(
+      (await loanOf({ ...owner, accountStatus: "deactivated" }, loanId))
+        .actions,
+    ).toMatchObject({ proposeAmendment: null, cancel: true });
+
+    await run(proposeLoanAmendment, borrower, {
+      loanId,
+      agreementVersion: 1,
+      period: { start: kit.day(1), end: kit.day(4) },
+    });
+    // One proposal waits at a time; its side may take it back.
+    expect((await loanOf(borrower, loanId)).actions).toMatchObject({
+      proposeAmendment: null,
+      withdrawAmendment: true,
+    });
+    expect((await loanOf(owner, loanId)).actions).toMatchObject({
+      proposeAmendment: null,
+      withdrawAmendment: false,
+      cancel: true,
+    });
+
+    // Once the handover day is over, the loan is the handover's to settle.
+    advanceDays(2);
+    expect((await loanOf(owner, loanId)).actions.cancel).toBe(false);
+  });
+
+  it("lets the lender offer the role to a co-owner, and take the offer back (WP-87)", async () => {
+    const { owner, borrower, objectId, loanId } = await reservedLoan(1, 3);
+    const coOwner = await user();
+    await addCoOwner(owner, objectId, coOwner);
+
+    expect((await loanOf(owner, loanId)).actions.offerResponsibility).toEqual([
+      { userId: coOwner.userId, realName: "Test Testesen" },
+    ]);
+    expect(
+      (await loanOf(borrower, loanId)).actions.offerResponsibility,
+    ).toEqual([]);
+
+    await run(offerResponsibility, owner, { loanId, toUserId: coOwner.userId });
+    expect((await loanOf(owner, loanId)).actions).toMatchObject({
+      offerResponsibility: [],
+      withdrawResponsibility: true,
+    });
+    expect(
+      (await loanOf(borrower, loanId)).actions.withdrawResponsibility,
+    ).toBe(false);
+  });
+
+  it("offers no co-owner the command would refuse (review of #68)", async () => {
+    const { owner, borrower, objectId, loanId } = await reservedLoan(1, 3);
+    const [eligible, blockedByBorrower, blockedWithLender] = [
+      await user(),
+      await user(),
+      await user(),
+    ];
+    for (const coOwner of [eligible, blockedByBorrower, blockedWithLender]) {
+      await addCoOwner(owner, objectId, coOwner);
+    }
+    await run(blockUser, borrower, { userId: blockedByBorrower.userId });
+    await run(blockUser, blockedWithLender, { userId: owner.userId });
+
+    expect(
+      (await loanOf(owner, loanId)).actions.offerResponsibility.map(
+        ({ userId }) => userId,
+      ),
+    ).toEqual([eligible.userId]);
+
+    for (const refused of [blockedByBorrower, blockedWithLender]) {
+      await expect(
+        run(offerResponsibility, owner, { loanId, toUserId: refused.userId }),
+      ).rejects.toMatchObject({ code: "conflict" });
+    }
+  });
+
+  it("offers mediation when the parties disagree, and links the case once asked (WP-87)", async () => {
+    const { owner, borrower, loanId } = await reservedLoan(1, 3);
+    expect((await loanOf(borrower, loanId)).actions.requestMediation).toBe(
+      false,
+    );
+    advanceDays(2);
+    await handOver(owner, loanId);
+    await run(reportHandover, borrower, {
+      loanId,
+      agreementVersion: 1,
+      outcome: "not_handed_over",
+    });
+    expect(await loanOf(borrower, loanId)).toMatchObject({
+      status: "disputed",
+      mediation: null,
+      actions: { requestMediation: true },
+    });
+
+    const { caseId } = await run(requestLoanMediation, borrower, {
+      loanId,
+      body: "Jeg fikk den aldri.",
+    });
+    for (const party of [borrower, owner]) {
+      expect(await loanOf(party, loanId)).toMatchObject({
+        mediation: { caseId, open: true },
+        actions: { requestMediation: false },
+      });
+    }
   });
 
   it("says nothing more about a loan that has ended", async () => {

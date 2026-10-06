@@ -37,6 +37,7 @@ export const homeItemKinds = {
   "loan.report_handover": "awaiting_you",
   "loan.report_return": "awaiting_you",
   "loan.confirm_return": "awaiting_you",
+  "loan.confirm_control": "awaiting_you",
   "loan.write_review": "awaiting_you",
   "social.answer_friend_request": "awaiting_you",
   "object.answer_co_owner_invitation": "awaiting_you",

@@ -255,6 +255,29 @@ button:disabled,
   accent-color: var(--color-accent);
 }
 
+/* A choice on a scale, such as a score from 1 to 5: in one row while it
+   fits, each choice as large as a button (UX-A11Y-006). */
+.scale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.scale label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--target);
+  min-width: var(--target);
+  font-weight: 400;
+}
+
+.scale input {
+  width: 1.5rem;
+  height: 1.5rem;
+  accent-color: var(--color-accent);
+}
+
 .help {
   margin: 0;
   color: var(--color-muted);
@@ -660,6 +683,11 @@ button:disabled,
   flex-wrap: wrap;
   gap: var(--space-3);
   padding: var(--space-2) 0 var(--space-3);
+}
+
+/* A rarer step that needs a form opens on its own line below the buttons. */
+.more-actions details {
+  flex-basis: 100%;
 }
 
 /* When there is nothing yet, say so and offer the way to begin. */
