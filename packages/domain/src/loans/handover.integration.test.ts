@@ -38,6 +38,7 @@ const {
   create,
   addCoOwner,
   friends,
+  showToFriends,
   environmentOrigin,
   ask,
   day,
@@ -115,6 +116,7 @@ async function directLoan(from: number, to: number) {
   const borrower = await user();
   await friends(borrower, owner);
   const objectId = await create(owner);
+  await showToFriends(owner, objectId);
   const { requestId } = await ask(
     borrower,
     objectId,

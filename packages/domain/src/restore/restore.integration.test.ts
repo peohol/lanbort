@@ -35,6 +35,7 @@ import { outboxConsumers } from "../outbox/consumers";
 import { grantPlatformRole, revokePlatformRole } from "../platform/commands";
 import { platformRoleOpsProcess } from "../platform/policies";
 import { publishObject, withdrawPublication } from "../publications/commands";
+import { publishToFriends, withdrawFromFriends } from "../publications/friends";
 import { reconcileSearchIndex } from "../search/indexer";
 import { searchIndexProcess } from "../search/policies";
 import { searchObjects } from "../search/queries";
@@ -243,10 +244,13 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
     for (const [a, b] of [
       [people.blocker, people.blocked],
       [people.friend, people.unfriended],
+      [owner, people.viewer],
     ] as const) {
       await run(live, sendFriendRequest, a, { userId: b.userId });
       await run(live, acceptFriendRequest, b, { userId: a.userId });
     }
+    // The viewer also finds this one as the owner's friend (PS-OBJ-020).
+    await run(live, publishToFriends, owner, { objectId: objects.withdrawn });
 
     vetoedObjectId = await object(owner, "veto");
     const { invitationId } = await run(live, inviteCoOwner, owner, {
@@ -362,6 +366,9 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
       objectId: objects.withdrawn,
       publicationId: publications.withdrawn,
     });
+    await run(live, withdrawFromFriends, owner, {
+      objectId: objects.withdrawn,
+    });
     await run(live, leaveEnvironment, people.leaver, {
       environmentId: openEnvironmentId,
     });
@@ -437,6 +444,7 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
         "environment_publication.withdrawn",
         "friendship.removed",
         "object.archived",
+        "object.withdrawn_from_friends",
         "object.restriction_set",
         "object.deleted",
         "platform_role.revoked",

@@ -20,6 +20,7 @@ import {
   type Policy,
   proposeLoanAmendment,
   publishObject,
+  publishToFriends,
   reportHandover,
   reportToPlatform,
   registerChatAccount,
@@ -149,6 +150,8 @@ async function hiddenWorld() {
     objectId,
     environmentId,
   });
+  // Visible to the lender's friends too, none of whom is in the world.
+  await run(publishToFriends, lender, { objectId });
   const privateObjectId = await create(lender);
   const { invitationId: coOwnerInvitationId } = await run(
     inviteCoOwner,
@@ -448,6 +451,12 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     objectId: ids.objectId,
     imageId: ids.imageId,
   }),
+  "friend_publication.publish": (ids) => ({ objectId: ids.objectId }),
+  "friend_publication.withdraw": (ids) => ({ objectId: ids.objectId }),
+  "friend_object.read_image": (ids) => ({
+    objectId: ids.objectId,
+    imageId: ids.imageId,
+  }),
   "search.objects": (ids) => ({
     environmentId: ids.environmentId,
     categoryId: "annet",
@@ -735,6 +744,7 @@ const personProbes: Record<string, (userId: string) => object> = {
   "friendship.decline": (userId) => ({ userId }),
   "friendship.withdraw": (userId) => ({ userId }),
   "friendship.remove": (userId) => ({ userId }),
+  "friend_object.list": (userId) => ({ userId }),
   "social.relation.read": (userId) => ({ userId }),
   "trust_profile.read": (userId) => ({ userId }),
   "user_block.create": (userId) => ({ userId }),
@@ -957,6 +967,24 @@ describe("historical access", () => {
     expect(seen).toContain(world.ids.loanId);
     expect(seen).not.toContain(world.ids.environmentId);
     expect(seen).not.toContain(world.name);
+  });
+});
+
+describe("friends (PS-OBJ-020)", () => {
+  it("shows a friend of the owner the object, never the environment, its people or the loan", async () => {
+    const world = await hiddenWorld();
+    const friend = await user();
+    await kit.friends(world.actors.lender, friend);
+
+    expect(await reachable(world, friend, reads)).toEqual([
+      "friend_object.read_image",
+    ]);
+    const seen = await everythingRead(world, friend);
+    expect(seen).toContain("Må vaskes etter bruk.");
+    expect(seen).not.toContain(world.ids.environmentId);
+    expect(seen).not.toContain(world.name);
+    expect(seen).not.toContain(world.ids.requestId);
+    expect(seen).not.toContain(world.actors.borrower.userId);
   });
 });
 

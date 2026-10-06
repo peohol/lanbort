@@ -11,6 +11,8 @@ import {
 import type { EnvironmentAccess } from "../environment/model";
 import { canSeeEnvironment, isAdministrator } from "../environment/policies";
 import { isObjectOwner, type ObjectResource } from "../objects/policies";
+import type { SocialPair } from "../social/pair";
+import { visiblePair } from "../social/policies";
 
 /** Applies a rule written for one part of a combined resource. */
 function onPart<R, P>(
@@ -176,6 +178,53 @@ export const readPublishedImagePolicy = definePolicy<
   ],
 });
 
+/**
+ * PS-OBJ-020: any owner turns the object's visibility to friends on or off,
+ * like a publication in an environment.
+ */
+export const publishToFriendsPolicy = definePolicy<ObjectResource, void>({
+  action: "friend_publication.publish",
+  actor: [requireActiveAccount],
+  resource: [isObjectOwner],
+});
+
+export const withdrawFromFriendsPolicy = definePolicy<ObjectResource, void>({
+  action: "friend_publication.withdraw",
+  actor: [requireActiveAccount],
+  resource: [isObjectOwner],
+});
+
+/**
+ * Another user's objects that are visible to friends, on their profile. Any
+ * user the caller can see may be asked; only a friend gets objects. A user
+ * who blocks the caller looks like one that does not exist (PS-USR-006).
+ */
+export const listFriendObjectsPolicy = definePolicy<
+  { readonly pair: SocialPair },
+  void
+>({
+  action: "friend_object.list",
+  actor: [requireActiveAccount],
+  resource: visiblePair.map((rule) =>
+    onPart((resource) => resource.pair, rule),
+  ),
+});
+
+/** The caller finds the object through a friend now. */
+export interface FriendObjectImageResource {
+  readonly findable: boolean;
+}
+
+/** An image of an object the caller finds through a friend; to anyone else it does not exist. */
+export const readFriendObjectImagePolicy = definePolicy<
+  FriendObjectImageResource,
+  void
+>({
+  action: "friend_object.read_image",
+  actor: [requireActiveAccount],
+  resource: [({ resource }) => (resource.findable ? allow : deny("not_found"))],
+});
+
 export const publicationPolicies = [
   publishObjectPolicy,
   withdrawPublicationPolicy,
@@ -185,4 +234,8 @@ export const publicationPolicies = [
   setObjectApprovalPolicy,
   listEnvironmentObjectsPolicy,
   readPublishedImagePolicy,
+  publishToFriendsPolicy,
+  withdrawFromFriendsPolicy,
+  listFriendObjectsPolicy,
+  readFriendObjectImagePolicy,
 ];

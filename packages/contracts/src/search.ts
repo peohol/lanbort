@@ -25,18 +25,22 @@ export const searchTextSchema = z
 export const searchResultLimit = 30;
 
 /**
- * Objects the caller finds in their environments (PS-OBJ-006): by text, by
- * category (with the categories below it), within one of their environments,
- * and only those actually available the whole period from `availableFrom`
- * through `availableTo` (both inclusive). Text or category is required.
- * Near an area (WP-62), only in the caller's environments whose own
- * approximate area overlaps it: objects have no place of their own.
+ * Objects the caller finds in their environments (PS-OBJ-006) and through
+ * their friends (PS-OBJ-020): by text, by category (with the categories below
+ * it), within one of their environments or only through friends (the filter
+ * «Venner»), and only those actually available the whole period from
+ * `availableFrom` through `availableTo` (both inclusive). Text or category is
+ * required. Near an area (WP-62), only in the caller's environments whose own
+ * approximate area overlaps it: objects have no place of their own, so none
+ * is found through friends there.
  */
 export const objectSearchQuerySchema = z
   .strictObject({
     q: searchTextSchema.optional(),
     categoryId: objectCategoryIdSchema.optional(),
     environmentId: z.uuid().optional(),
+    /** Also as text, from the address of a search. */
+    friends: z.union([z.boolean(), z.stringbool()]).optional(),
     availableFrom: calendarDateSchema.optional(),
     availableTo: calendarDateSchema.optional(),
     ...nearSearchShape,
@@ -45,6 +49,10 @@ export const objectSearchQuerySchema = z
     message: "Search by text or category",
   })
   .refine(completeNearSearch, { message: "An area needs a centre and a size" })
+  .refine(
+    ({ friends, environmentId }) => !friends || environmentId === undefined,
+    { message: "Search one environment or through friends, not both" },
+  )
   .refine(
     ({ availableFrom, availableTo }) =>
       (availableFrom === undefined) === (availableTo === undefined) &&
@@ -63,14 +71,17 @@ export const objectFoundInSchema = z.strictObject({
 
 /**
  * An object as Finn shows it: like in the environment, its owners are not
- * named and its availability does not say what blocks it. Images are read
- * through one of the environments it is found in.
+ * named and its availability does not say what blocks it. It is found in at
+ * least one of the caller's environments or through a friend. Images are read
+ * through one of the environments it is found in, or through friends.
  */
 export const foundObjectSchema = z.strictObject({
   objectId: objectIdSchema,
   ...environmentObjectSchema.omit({ publicationId: true, objectId: true })
     .shape,
-  foundIn: z.array(objectFoundInSchema).min(1),
+  foundIn: z.array(objectFoundInSchema),
+  /** A friend who owns it has made it visible to friends (PS-OBJ-020). */
+  foundThroughFriends: z.boolean(),
 });
 
 export const objectSearchResultSchema = z.strictObject({

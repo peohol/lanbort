@@ -7,6 +7,7 @@ import {
   type ObjectSearchQuery,
   objectSearchQuerySchema,
 } from "@lanbort/contracts";
+import type { ObjectOrigin } from "@/navigation/routes";
 
 type Params = Record<string, string | string[] | undefined>;
 
@@ -155,7 +156,30 @@ export const membershipLabels: Record<
   passive: "Du er passivt medlem",
 };
 
-/** Where the user finds it: their own environments, by name. */
+/**
+ * Where the user finds it: their own environments, by name, and a friend
+ * who has made it visible to friends (PS-OBJ-020).
+ */
 export function describeFoundIn(object: FoundObject): string {
-  return `I ${object.foundIn.map((place) => place.environmentName).join(", ")}`;
+  return [
+    object.foundIn.length > 0
+      ? `I ${object.foundIn.map((place) => place.environmentName).join(", ")}`
+      : null,
+    object.foundThroughFriends ? "Hos en venn" : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** How the user sees a thing they found: through an environment, or as a friend. */
+export function foundOrigin(object: FoundObject): ObjectOrigin | undefined {
+  const place = object.foundIn[0];
+
+  if (object.ownedByYou) {
+    return undefined;
+  }
+
+  return place
+    ? { kind: "environment", environmentId: place.environmentId }
+    : { kind: "direct" };
 }

@@ -8,7 +8,7 @@ import { loadFreezes } from "../objects/co-owner-blocks";
 import type { ObjectState } from "../objects/state";
 import { loadPublicationGate } from "../publications/gate";
 import { isLive } from "../publications/model";
-import { hasOwnerAccess } from "../publications/store";
+import { findFriendPublication, hasOwnerAccess } from "../publications/store";
 import { blockedWithAny, friendsWithAny, lockPairsWith } from "../social/pair";
 import { endedStanding, type LoanRequestStanding, openStanding } from "./model";
 
@@ -38,7 +38,8 @@ export interface OriginAssessment {
  *   owners;
  * - the borrower's account is active (PS-ADM-001);
  * - no block either way between the borrower and any owner (PS-USR-006);
- * - direct: an active friendship with at least one owner whose account is
+ * - direct: the object is visible to friends (PS-OBJ-020) and the borrower
+ *   has an active friendship with at least one owner whose account is
  *   active (PS-USR-004);
  * - environment: the borrower's membership is active now, the same
  *   publication is still there, and its gate (WP-25) is open. A publication
@@ -98,6 +99,11 @@ export async function assessOrigin(
 
   if (publication) {
     return assessed(publication.standing);
+  }
+
+  // Taking it back from friends locks the object first, like the caller.
+  if (!(await findFriendPublication(db, object.objectId))) {
+    return assessed(endedStanding("publication_ended"));
   }
 
   return assessed(

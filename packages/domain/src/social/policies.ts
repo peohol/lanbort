@@ -35,7 +35,8 @@ const otherIsVisible: PairRule = ({ resource }) =>
 const notBlockedByActor: PairRule = ({ resource }) =>
   resource.blockedByActor ? deny("forbidden") : allow;
 
-const visiblePair = [actorIsParty, otherIsVisible] as const;
+/** The actor's own pair with a user they can see. */
+export const visiblePair = [actorIsParty, otherIsVisible] as const;
 
 export const sendFriendRequestPolicy = definePolicy<SocialPair, void>({
   action: "friendship.request",
