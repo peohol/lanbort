@@ -41,11 +41,7 @@ export function Things({
   } as const;
   const register =
     environment.state === "active" ? (
-      // Pages of other packages (WP-81, WP-86) are not fetched ahead: they
-      // are built alongside this one and may land after it.
-      <Link href={newObjectHref(environment.id)} prefetch={false}>
-        Registrer en ting her
-      </Link>
+      <Link href={newObjectHref(environment.id)}>Registrer en ting her</Link>
     ) : null;
 
   return (
@@ -111,6 +107,7 @@ export function Members({
 
             return (
               <li key={member.userId} className="entry">
+                {/* WP-86's page, built alongside this one: not fetched ahead. */}
                 {member.realName ? (
                   <Link href={personHref(member.userId)} prefetch={false}>
                     {member.realName}

@@ -26,6 +26,7 @@ const viewports = {
 
 interface World {
   readonly loanId: string;
+  readonly requestId: string;
   readonly environmentId: string;
   readonly ownThing: string;
   readonly ladder: string;
@@ -46,11 +47,24 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
   { name: "Mine ting", path: () => "/mine-ting" },
   { name: "Egen ting", path: ({ ownThing }) => `/ting/${ownThing}` },
   {
+    name: "Registrer en ting",
+    path: ({ environmentId }) => `/ting/ny?miljo=${environmentId}`,
+  },
+  {
     name: "Ting i et miljø",
     path: ({ ladder, environmentId }) =>
       `/ting/${ladder}?miljo=${environmentId}`,
   },
   { name: "Miljøet", path: ({ environmentId }) => `/miljoer/${environmentId}` },
+  {
+    name: "Be om å låne",
+    path: ({ ladder, environmentId }) =>
+      `/ting/${ladder}/lan?miljo=${environmentId}`,
+  },
+  {
+    name: "Forespørselen",
+    path: ({ requestId }) => `/lan/foresporsel/${requestId}`,
+  },
   { name: "Samtaler", path: () => "/samtaler" },
   { name: "Varsler", path: () => "/varsler" },
   { name: "Konto", path: () => "/konto" },
@@ -170,7 +184,15 @@ test.beforeAll(async ({ browser, playwright }) => {
     return unreadCount > 0 && environments.length > 0;
   });
 
-  world = { loanId, environmentId, ownThing, ladder, place, thing };
+  world = {
+    loanId,
+    requestId,
+    environmentId,
+    ownThing,
+    ladder,
+    place,
+    thing,
+  };
   signedIn = await context.storageState();
   await context.close();
 });

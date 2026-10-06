@@ -218,7 +218,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0015 — Meldingen i en låneforespørsel og ende-til-ende-kryptering
 - **Lag:** Produktspesifikasjon / Arkitektur
 - **Status:** Avklart (produkteier, 6. oktober 2026)
-- **Beslutning:** Se [PS-LOAN-004](product-spec/04-laneforlop.md) og [PS-COM-005](product-spec/05-kommunikasjon-varsler-og-saker.md). Den valgfrie meldingen er del av den strukturerte forespørselen og krypteres ikke ende-til-ende; den er bare synlig for partene og kopieres ikke til hendelser eller logger. Videre fritekst skjer i E2EE-chat. At meldingen er valgfri, er ikke bygget ennå (WP-30).
+- **Beslutning:** Se [PS-LOAN-004](product-spec/04-laneforlop.md) og [PS-COM-005](product-spec/05-kommunikasjon-varsler-og-saker.md). Den valgfrie meldingen er del av den strukturerte forespørselen og krypteres ikke ende-til-ende; den er bare synlig for partene og kopieres ikke til hendelser eller logger. Videre fritekst skjer i E2EE-chat. Bygget i WP-83.
 
 ### OD-0020 — Hvem kan stenge lånelogistikk-kanalen tidlig
 - **Lag:** Produktspesifikasjon

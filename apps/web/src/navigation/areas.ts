@@ -18,6 +18,7 @@ const hrefOf = (id: AreaId) => areas.find((area) => area.id === id)!.href;
 export const homeHref = hrefOf("home");
 export const findHref = hrefOf("find");
 export const thingsHref = hrefOf("things");
+export const loansHref = hrefOf("loans");
 
 /** The account context and the notification layer, outside the five areas. */
 export const accountHref = "/konto";
