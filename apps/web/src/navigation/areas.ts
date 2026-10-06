@@ -13,6 +13,11 @@ export const areas = [
 
 export type AreaId = (typeof areas)[number]["id"];
 
+const hrefOf = (id: AreaId) => areas.find((area) => area.id === id)!.href;
+
+export const findHref = hrefOf("find");
+export const thingsHref = hrefOf("things");
+
 /** The account context and the notification layer, outside the five areas. */
 export const accountHref = "/konto";
 export const notificationsHref = "/varsler";

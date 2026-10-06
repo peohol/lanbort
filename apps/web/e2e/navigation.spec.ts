@@ -130,6 +130,43 @@ test("Home asks for what waits, and leads to where it is answered", async ({
   expect(problems).toEqual([]);
 });
 
+test("a notification's e-mail link leads to its context and marks it read", async ({
+  browser,
+  page,
+  playwright,
+  baseURL,
+}) => {
+  const problems = collectBrowserProblems(page);
+  const other = await otherUser(playwright, baseURL!);
+  await befriended(page, other);
+  await untilNotified(page.request);
+  const [notification] = (
+    await (await page.request.get("/api/notifications")).json()
+  ).notifications;
+
+  // Someone else's notification is just Home, and nothing is marked.
+  const strangers = await browser.newContext({ baseURL: baseURL! });
+  await registerThroughApi(strangers.request, undefined, "Cleo Eng");
+  const stranger = await strangers.newPage();
+  await stranger.goto(`/?varsel=${notification.id}`);
+  await expect(stranger.getByRole("heading", { level: 1 })).toHaveText(
+    "Hei, Cleo Eng",
+  );
+  await strangers.close();
+  expect(
+    (await (await page.request.get("/api/notifications/unread")).json())
+      .unreadCount,
+  ).toBeGreaterThan(0);
+
+  await page.goto(`/?varsel=${notification.id}`);
+  await expect(page).toHaveURL(/\/konto#venner$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Konto");
+  await expect(
+    page.getByRole("link", { name: "Varsler, ingen uleste" }),
+  ).toBeVisible();
+  expect(problems).toEqual([]);
+});
+
 test("the indicator counts unread notifications until they are read", async ({
   page,
   playwright,

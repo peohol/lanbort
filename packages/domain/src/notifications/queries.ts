@@ -4,6 +4,7 @@ import {
   type NotificationList,
   notificationListQuerySchema,
   notificationPageSize,
+  notificationReadQuerySchema,
   type NotificationPreferences,
   type NotificationReadResult,
   type NotificationTargetType,
@@ -16,6 +17,7 @@ import { actingUserId, inSnapshot } from "../objects/state";
 import { presentPreferences } from "./model";
 import {
   listNotificationsPolicy,
+  readNotificationPolicy,
   readNotificationPreferencesPolicy,
 } from "./policies";
 import { countUnread, loadPreferences } from "./store";
@@ -35,6 +37,41 @@ function beforeCursor(userId: string, cursor: string | undefined) {
       )`;
 }
 
+const notificationColumns = [
+  "id",
+  "kind",
+  "level",
+  "detail",
+  "target_type",
+  "target_id",
+  "occurred_at",
+  "read_at",
+] as const;
+
+function presentNotification(row: {
+  id: string;
+  kind: string;
+  level: string;
+  detail: string | null;
+  target_type: string;
+  target_id: string;
+  occurred_at: Date;
+  read_at: Date | null;
+}): Notification {
+  return {
+    id: row.id,
+    kind: row.kind as NotificationKind,
+    level: row.level as Notification["level"],
+    detail: row.detail,
+    target: {
+      type: row.target_type as NotificationTargetType,
+      id: row.target_id,
+    },
+    occurredAt: row.occurred_at.toISOString(),
+    readAt: row.read_at?.toISOString() ?? null,
+  };
+}
+
 async function listPage(
   db: Db,
   userId: string,
@@ -42,16 +79,7 @@ async function listPage(
 ): Promise<NotificationList> {
   const rows = await db
     .selectFrom("app.notifications")
-    .select([
-      "id",
-      "kind",
-      "level",
-      "detail",
-      "target_type",
-      "target_id",
-      "occurred_at",
-      "read_at",
-    ])
+    .select(notificationColumns)
     .where("recipient_id", "=", userId)
     .where(beforeCursor(userId, cursor))
     .orderBy("position", "desc")
@@ -60,18 +88,7 @@ async function listPage(
   const page = rows.slice(0, notificationPageSize);
 
   return {
-    notifications: page.map((row): Notification => ({
-      id: row.id,
-      kind: row.kind as NotificationKind,
-      level: row.level as Notification["level"],
-      detail: row.detail,
-      target: {
-        type: row.target_type as NotificationTargetType,
-        id: row.target_id,
-      },
-      occurredAt: row.occurred_at.toISOString(),
-      readAt: row.read_at?.toISOString() ?? null,
-    })),
+    notifications: page.map(presentNotification),
     unreadCount: await countUnread(db, userId),
     nextCursor:
       rows.length > notificationPageSize ? (page.at(-1)?.id ?? null) : null,
@@ -93,6 +110,30 @@ export const listNotifications = defineQuery({
       context: undefined,
     })),
   present: ({ resource }): NotificationList => resource,
+});
+
+/**
+ * One of the caller's own notifications, for the link in its e-mail
+ * (UX-INT-010): it says where the notification leads. Anyone else's looks
+ * like one that does not exist (PS-NFR-002).
+ */
+export const readNotification = defineQuery({
+  name: "notification.read",
+  input: notificationReadQuerySchema,
+  policy: readNotificationPolicy,
+  load: async ({ db, input }) => {
+    const row = await db
+      .selectFrom("app.notifications")
+      .select([...notificationColumns, "recipient_id"])
+      .where("id", "=", input.notificationId)
+      .executeTakeFirst();
+
+    if (!row) return null;
+    const resource = { recipientIds: [row.recipient_id], row };
+
+    return { resource, context: undefined };
+  },
+  present: ({ resource }): Notification => presentNotification(resource.row),
 });
 
 /**

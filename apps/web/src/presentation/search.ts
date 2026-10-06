@@ -7,7 +7,6 @@ import {
   type ObjectSearchQuery,
   objectSearchQuerySchema,
 } from "@lanbort/contracts";
-import { formatDay } from "./dates";
 
 type Params = Record<string, string | string[] | undefined>;
 
@@ -155,20 +154,6 @@ export const membershipLabels: Record<
   pending: "Medlemskapet ditt venter på avklaring",
   passive: "Du er passivt medlem",
 };
-
-/** Whether a found object can be borrowed, without saying what blocks it. */
-export function describeAvailability(
-  object: FoundObject,
-  today: string,
-): string {
-  const next = object.effectiveAvailability[0];
-
-  if (!object.availableForNewLoans || !next) {
-    return "Ikke ledig for nye lån nå";
-  }
-
-  return next.start > today ? `Ledig fra ${formatDay(next.start)}` : "Ledig nå";
-}
 
 /** Where the user finds it: their own environments, by name. */
 export function describeFoundIn(object: FoundObject): string {

@@ -4,6 +4,7 @@ import type {
 } from "@lanbort/contracts";
 import { accountHref } from "./areas";
 import { chatDevicesHref } from "./chat";
+import { loanHref } from "./routes";
 
 interface Place {
   /** The page that shows the target. */
@@ -17,9 +18,6 @@ const entryOn = (page: string, anchor: (id: string) => string): Place => ({
   href: (id) => `${page}#${anchor(id)}`,
   anchor,
 });
-
-/** The loan's own page (WP-64); its entry in the Lån lists keeps its id. */
-export const loanHref = (id: string) => `/lan/${id}`;
 
 /**
  * Where a notification or a Home item leads (UX-IA-002: to the context,

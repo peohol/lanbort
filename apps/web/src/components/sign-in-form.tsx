@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { type ApiFailureCode, postJson } from "./api-client";
 import { BusyButton } from "./busy-button";
-import { errorMessage } from "./error-messages";
+import { emailInUseMessages, errorMessage } from "./error-messages";
 import { ErrorText, fieldErrorProps } from "./error-text";
 
 type Step = "email" | "code";
@@ -130,7 +130,9 @@ export function SignInForm() {
           </div>
         </>
       )}
-      <ErrorText id="sign-in-error">{error && errorMessage(error)}</ErrorText>
+      <ErrorText id="sign-in-error">
+        {error && errorMessage(error, emailInUseMessages)}
+      </ErrorText>
     </form>
   );
 }

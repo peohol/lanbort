@@ -20,7 +20,7 @@ import {
   pagesShown,
   type SearchParams,
 } from "@/navigation/list-pages";
-import { loanHref } from "@/navigation/targets";
+import { loanHref } from "@/navigation/routes";
 import { formatPeriod, formatTime } from "@/presentation/dates";
 import { describeHistoryEntry } from "@/presentation/loan-history";
 import {

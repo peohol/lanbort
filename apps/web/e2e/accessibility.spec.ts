@@ -26,6 +26,9 @@ const viewports = {
 
 interface World {
   readonly loanId: string;
+  readonly environmentId: string;
+  readonly ownThing: string;
+  readonly ladder: string;
   readonly place: string;
   readonly thing: string;
 }
@@ -41,6 +44,12 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
   { name: "Lån", path: () => "/lan" },
   { name: "Lånet", path: ({ loanId }) => `/lan/${loanId}?historikk=1` },
   { name: "Mine ting", path: () => "/mine-ting" },
+  { name: "Egen ting", path: ({ ownThing }) => `/ting/${ownThing}` },
+  {
+    name: "Ting i et miljø",
+    path: ({ ladder, environmentId }) =>
+      `/ting/${ladder}?miljo=${environmentId}`,
+  },
   { name: "Samtaler", path: () => "/samtaler" },
   { name: "Varsler", path: () => "/varsler" },
   { name: "Konto", path: () => "/konto" },
@@ -119,12 +128,14 @@ test.beforeAll(async ({ browser, playwright }) => {
     `/api/objects/${await object("Tilhenger")}/co-owners/invitations`,
     { userId: boId },
   );
-  await postCommand(bo, "/api/objects", {
-    title: "Sykkel",
-    categoryId: "annet",
-    description: "Bysykkel med kurv.",
-    availability: [{ start: today(), end: null }],
-  });
+  const { objectId: ownThing } = await (
+    await postCommand(bo, "/api/objects", {
+      title: "Sykkel",
+      categoryId: "annet",
+      description: "Bysykkel med kurv.",
+      availability: [{ start: today(), end: null }],
+    })
+  ).json();
 
   const preview = await (
     await bo.get(`/api/loan-requests/preview?objectId=${ladder}`)
@@ -158,7 +169,7 @@ test.beforeAll(async ({ browser, playwright }) => {
     return unreadCount > 0 && environments.length > 0;
   });
 
-  world = { loanId, place, thing };
+  world = { loanId, environmentId, ownThing, ladder, place, thing };
   signedIn = await context.storageState();
   await context.close();
 });
@@ -168,11 +179,13 @@ async function open(
   browser: import("@playwright/test").Browser,
   viewport: { width: number; height: number },
   path: string,
+  colorScheme: "light" | "dark" = "light",
 ) {
   const context = await browser.newContext({
     baseURL: test.info().project.use.baseURL!,
     storageState: signedIn,
     viewport,
+    colorScheme,
   });
   const page = await context.newPage();
   await page.route("https://cache.kartverket.no/**", (route) =>
@@ -321,6 +334,19 @@ for (const [device, viewport] of Object.entries(viewports)) {
       await page.context().close();
     });
   }
+}
+
+/**
+ * WP-80: the dark colour scheme is the same design, so it has the same
+ * contrast (WCAG 1.4.3, 1.4.11).
+ */
+for (const { name, path } of pages) {
+  test(`${name} meets WCAG in dark mode`, async ({ browser }) => {
+    const { page } = await open(browser, viewports.phone, path(world), "dark");
+
+    expect(await axeViolations(page)).toEqual([]);
+    await page.context().close();
+  });
 }
 
 /**

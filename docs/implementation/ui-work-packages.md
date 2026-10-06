@@ -44,7 +44,7 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 - **App-skall:** toppfelt med merke, varselindikator og konto, og de fem områdene nederst på mobil og ved siden på desktop (finnes, får designsystemet). Sidetopp med tittel, tilbakelenke til området og kontekstmerke for detaljsider.
 - **Komponenter:** sidetopp (`PageHeader`), statuskort (`StatusCard`), merke for status og kontekst (`Tag`, `ContextTag`), tom tilstand (`EmptyState`), «Flere valg» (`MoreActions`), konsekvensdialog (`ConfirmAction`, UX-INT-007), skjemafelt med hjelpetekst og feil (`Field`) og skjema som sender en kommando (`CommandForm`). Kommandoene deler én mekanisme med `ActionButton`: idempotensnøkkel, opptatt-tilstand, feilmelding, annonsering og ny lesing fra serveren.
 - **Ruter:** én modul med adressene til alle sider i planen (`navigation/routes.ts`), så pakkene lenker til hverandre før sidene finnes. `targetPages` peker bare til sider som finnes.
-- **Objektets side som ramme:** `/ting/[id]` velger visning for eiere eller for andre, med en enkel første versjon av hver som WP-82 og WP-83 bygger videre på.
+- **Objektets side som ramme:** `/ting/[id]` velger visning for eiere eller for andre, med en enkel første versjon av hver som WP-82 og WP-83 bygger videre på. Mine ting og treff i Finn lenker dit.
 - **E-postlenken fra varsler:** `/?varsel=<id>` merker varselet lest og sender brukeren videre til konteksten, eller til Varsler når konteksten ikke har en side (UX-INT-010).
 - Eksisterende sider tas over på designsystemet uten å endre hva de gjør.
 
@@ -87,7 +87,7 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 - **Objekt for andre** (visningen for ikke-eiere av `/ting/[id]`, med opprinnelsen i adressen, `?miljo=<id>` eller direkte): innhold, bilder, ledighet, vilkår og opprinnelse som kontekstmerke. Primærhandling «Be om å låne». Miljøets spørsmål og svar og «Følg tingen» hører til her (PS-OBJ-014–015, WP-63).
 - **Forespørsel** (`/ting/[id]/lan`): periode (dato eller «så snart som mulig», sluttdato eller varighet, aldri begge, UX-JRN-004), valgfri melding med forklaringen fra PS-LOAN-004, bekreftelse av vilkårene og ansvarserklæringen ved vennelån (PS-LOAN-003), gjennomgang og send. Etter sending går brukeren til forespørselens side med «Venter på svar fra …».
 - **Forespørselens side** (`/lan/foresporsel/[id]`): status og hva det ventes på; låntaker kan trekke den og bekrefte nye vilkår (PS-LOAN-005); utlåner ser periode, vilkår og kollisjoner og kan godkjenne med en knapp som navngir avtalen («Godkjenn lån 10.–12. oktober»), avslå eller godta ansvarserklæringen. Godkjenning leder til lånets side.
-- Lån-listen og Hjem lenker forespørsler til siden (`targets.ts`), og treff i Finn lenker til objektet.
+- Lån-listen og Hjem lenker forespørsler til siden (`targets.ts`).
 - **Server:** meldingen blir valgfri (PS-LOAN-004, rest fra WP-30): kontrakt, databasekolonne og tester.
 
 **Avhenger av:** WP-80.

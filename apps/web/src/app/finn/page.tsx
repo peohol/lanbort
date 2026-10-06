@@ -8,6 +8,7 @@ import {
   takesNewActivity,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { AreaMap } from "@/components/area-map";
 import { errorMessage } from "@/components/error-messages";
@@ -19,8 +20,9 @@ import {
   type Location,
   locate,
 } from "@/presentation/places";
+import { objectHref } from "@/navigation/routes";
+import { describeAvailability } from "@/presentation/objects";
 import {
-  describeAvailability,
   describeFoundIn,
   environmentTypeLabels,
   type FinnForm,
@@ -173,12 +175,7 @@ async function ObjectSearch({
           autoComplete="off"
         />
         <label htmlFor="finn-kategori">Kategori</label>
-        <select
-          id="finn-kategori"
-          name="kategori"
-          defaultValue={form.category}
-          className={styles.select}
-        >
+        <select id="finn-kategori" name="kategori" defaultValue={form.category}>
           <option value="">Alle kategorier</option>
           {orderedCategories(categories?.categories ?? []).map(
             ({ category, depth }) => (
@@ -214,7 +211,21 @@ async function ObjectSearch({
       >
         {result?.objects.map((object) => (
           <li key={object.objectId} className="entry">
-            <strong>{object.title}</strong>
+            <strong>
+              <Link
+                href={objectHref(
+                  object.objectId,
+                  object.ownedByYou
+                    ? undefined
+                    : {
+                        kind: "environment",
+                        environmentId: object.foundIn[0]!.environmentId,
+                      },
+                )}
+              >
+                {object.title}
+              </Link>
+            </strong>
             <span className="entry-detail">
               {[
                 labels.get(object.categoryId),
@@ -260,12 +271,7 @@ async function EnvironmentSearch({
           autoComplete="off"
         />
         <label htmlFor="finn-type">Type</label>
-        <select
-          id="finn-type"
-          name="type"
-          defaultValue={form.type}
-          className={styles.select}
-        >
+        <select id="finn-type" name="type" defaultValue={form.type}>
           <option value="">Åpne og lukkede</option>
           <option value="open">Åpne</option>
           <option value="closed">Lukkede</option>
@@ -336,7 +342,6 @@ function PlaceFields({ form, legend }: { form: FinnForm; legend: string }) {
         id="finn-avstand"
         name="avstand"
         defaultValue={form.distance || String(defaultDistanceKm)}
-        className={styles.select}
       >
         {distanceOptions.map((km) => (
           <option key={km} value={km}>
