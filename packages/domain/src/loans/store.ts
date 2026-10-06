@@ -65,7 +65,7 @@ export interface LoanRequestRow {
   desired_start: string | null;
   desired_end: string | null;
   desired_days: number | null;
-  message: string;
+  message: string | null;
   terms_version: number | null;
   former_owner_ids: string[] | null;
   status: string;
