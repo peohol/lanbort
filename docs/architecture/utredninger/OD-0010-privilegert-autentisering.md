@@ -1,6 +1,6 @@
 # Utredning: mekanisme for privilegert autentisering (OD-0010)
 
-> **Status:** Teknisk vurdering med anbefaling, 4. oktober 2026. Dette er **ikke** en beslutning. OD-0010 står åpen til produkteier har bestemt seg, og den eksisterende fail-closed-modellen gjelder uendret: ingen sesjon godtas som sterkere, og privilegerte plattformforvalterhandlinger avvises.
+> **Status:** Teknisk vurdering med anbefaling, 4. oktober 2026. Anbefalingen er vedtatt 6. oktober 2026 i [ADR-0011](../decisions/ADR-0011-webauthn-for-plattformforvaltere.md), med én presisering: fysisk sikkerhetsnøkkel støttes, men er ikke obligatorisk. ADR-en er den kanoniske beslutningen; dette dokumentet er beslutningsgrunnlaget og modellen implementeringen bygger på. Til mekanismen er bygget, gjelder fail-closed-modellen uendret.
 
 **Gjelder:** [OD-0010](../../open-decisions.md#od-0010--mekanisme-for-privilegert-autentisering), PS-USR-008, PS-USR-009, [autorisasjon og tilgang](../04-autorisasjon-og-tilgang.md), [ADR-0007](../decisions/ADR-0007-supabase-data-auth-og-storage.md), WP-12
 
@@ -80,7 +80,7 @@ Vipps Login er OpenID Connect. Med `acr_values=urn:vipps:acr:app_auth` må bruke
 
 ## Anbefalt modell i detalj
 
-Dette beskriver hva som bygges _hvis_ anbefalingen godkjennes. Ingenting av det er aktivert nå.
+Dette beskriver hva som bygges etter ADR-0011, med fysisk sikkerhetsnøkkel som anbefalt, men ikke påkrevd. Ingenting av det er aktivert nå.
 
 **Registrering**
 

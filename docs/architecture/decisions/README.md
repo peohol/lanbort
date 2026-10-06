@@ -22,3 +22,4 @@ ADR-en skal ha en kort `Forankring`-linje med ID-ene til produktkrav og UX-regle
 8. [ADR-0008 — Første leverandører for e-post, push, kart og observability](ADR-0008-integrasjoner-og-drift.md)
 9. [ADR-0009 — Backup i utviklingsfasen: Supabase Free, gjenoppbygging og manuelle dumps](ADR-0009-backup-i-utviklingsfasen.md)
 10. [ADR-0010 — E2EE-protokoll for privat chat: MLS, kontonøkkel, enheter og recovery](ADR-0010-e2ee-protokoll-enheter-og-recovery.md)
+11. [ADR-0011 — Privilegert autentisering: WebAuthn som andre faktor for plattformforvaltere](ADR-0011-webauthn-for-plattformforvaltere.md)

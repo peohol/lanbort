@@ -105,9 +105,9 @@ Denne kanalen:
 - kan brukes til korte praktiske meldinger om overlevering, retur, tidspunkt, sted og selve objektet
 - skal ikke fungere som en omvei rundt blokkering eller som gjenåpnet sosial kontakt
 - trenger ikke støtte alle funksjoner fra vanlig chat, for eksempel vedlegg, bilder eller andre rike meldingsformer
-- stenges når lånet er avsluttet eller ikke lenger krever praktisk oppfølging
+- avsluttes først når lånet er avsluttet, eller når en av dem ikke lenger er part i lånet
 
-Hvis en part bruker logistikk-kanalen til trakassering, eller det finnes en annen særskilt sikkerhetsgrunn, kan også denne fritekstkanalen stenges. Da må videre oppfølging skje gjennom strukturerte lånehandlinger og eventuelle relevante saks- eller administrative prosesser.
+Kanalen kan ikke stenges av én part mens lånet fortsatt pågår. En part som ikke ønsker å forholde seg til den, kan **dempe** samtalen (ingen varsler fra den) eller **arkivere** den (fjerne den fra egen samtaleliste). Dette er personlige valg som ikke påvirker den andre parten eller selve samtalen. Trakassering i kanalen rapporteres og håndteres etter de vanlige modereringsreglene. (Produkteier, 6. oktober 2026, OD-0020. Tidligere sto det at kanalen kunne stenges tidlig ved trakassering eller særskilt sikkerhetsgrunn.)
 
 ## Strukturert innhold i chat
 

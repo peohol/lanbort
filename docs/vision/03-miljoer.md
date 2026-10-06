@@ -419,14 +419,18 @@ Et passivt medlem:
 
 Å gjøre et skjult miljø oppdagbart er en vesentlig personvernendring og krever avstemning blant medlemmene.
 
-Forslaget vedtas bare dersom minst **2/3 av alle aktive medlemmer** stemmer for innen den fastsatte avstemningsfristen. Manglende stemme teller dermed ikke som støtte.
+Alle aktive medlemmer får **7 dager** til aktivt å akseptere den nye synligheten eller forlate miljøet. Å akseptere er det samme som å stemme for. Forslaget vedtas bare dersom minst **2/3 av alle aktive medlemmer** har akseptert innen fristen. Manglende svar er ikke samtykke og teller ikke som støtte.
 
 Hvis endringen vedtas:
 
-- medlemmer som stemte for fortsetter som aktive medlemmer
-- medlemmer som stemte mot eller ikke stemte, går over i skjult/passiv medlemsstatus
-- passive medlemmer kan senere uttrykkelig akseptere det lukkede miljøets synlighetsnivå og bli aktive igjen, eller melde seg ut
-- deres tidligere medlemskap, objekter og historiske aktivitet skal ikke gjøres synlig for nye medlemmer eller utenforstående uten deres uttrykkelige aksept
+- medlemmer som har akseptert, fortsetter som aktive medlemmer
+- medlemmer som ikke har akseptert innen fristen, fjernes fra miljøet når fristen utløper; de får ikke passiv status
+- fjerningen følger de vanlige reglene for utmelding: pågående lån og nødvendig historisk tilgang består
+- deres tidligere medlemskap, objekter og historiske aktivitet skal ikke gjøres synlig for nye medlemmer eller utenforstående
+
+Hvis forslaget ikke vedtas, forblir miljøet skjult, og ingen fjernes.
+
+Fristen og fjerningen ved manglende svar ble besluttet av produkteier 6. oktober 2026 (OD-0012). Tidligere sto det at ikke-støttende medlemmer gikk over i passiv status.
 
 Et flertall kan dermed endre **miljøets** framtidige form, men ikke oppheve den enkelte brukerens tidligere personvernvalg.
 
