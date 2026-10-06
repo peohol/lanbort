@@ -71,6 +71,8 @@ Migrasjoner kjøres aldri mot produksjon på andre måter, for da får historikk
 
 Appens servere kjører i Vercels region `arn1` (Stockholm), samme sted som databasen, og Vercel Cron kjører de planlagte jobbene etter tidsplanen i `apps/web/vercel.json`. Appen kobler seg til databasen gjennom Supabase sin «Transaction pooler» (port 6543), fordi Vercel ikke når den direkte databaseadressen, som bare finnes på IPv6.
 
+Innloggingskodene sendes gjennom Resend fra det verifiserte domenet lånbort.no (`[remotes.production.auth.email.smtp]`). Passordet er en Resend-nøkkel med bare sendetilgang i repo-hemmeligheten `SUPABASE_AUTH_SMTP_PASSWORD`; uten den stopper `config-push` før noe endres.
+
 ### Testdatabase
 
 CI starter en isolert lokal Supabase-database, bygger den fra alle migrasjoner, kjører pgTAP-testene, kontrollerer at genererte typer stemmer med skjemaet og kjører alle `*.integration.test.ts` mot databasen (`pnpm test:integration`, som krever `DATABASE_URL`). Ingen delt eller hostet database brukes i testene.
