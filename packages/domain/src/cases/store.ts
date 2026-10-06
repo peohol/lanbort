@@ -666,3 +666,33 @@ export async function caseHandlers(
 
   return rows.map((row) => row.user_id);
 }
+
+/**
+ * What the case is about, by name: the loan's title in its current
+ * agreement and the reported object's title, while each exists.
+ */
+export async function loadCaseTitles(
+  db: Db,
+  c: Pick<CaseRecord, "loanId" | "objectId">,
+): Promise<{ loanTitle: string | null; objectTitle: string | null }> {
+  const loan =
+    c.loanId === null
+      ? undefined
+      : await db
+          .selectFrom("app.loan_agreements")
+          .select("title")
+          .where("loan_id", "=", c.loanId)
+          .orderBy("version", "desc")
+          .limit(1)
+          .executeTakeFirst();
+  const object =
+    c.objectId === null
+      ? undefined
+      : await db
+          .selectFrom("app.objects")
+          .select("title")
+          .where("id", "=", c.objectId)
+          .executeTakeFirst();
+
+  return { loanTitle: loan?.title ?? null, objectTitle: object?.title ?? null };
+}

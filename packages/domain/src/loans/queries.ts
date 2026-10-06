@@ -25,6 +25,7 @@ import { canSeeEnvironment } from "../environment/policies";
 import { findEnvironment, loadEnvironmentAccess } from "../environment/store";
 import { calendarDate, toApiInterval } from "../objects/availability";
 import { inSnapshot, loadImages, loadObjectState } from "../objects/state";
+import { personPageIds, profileIdIn } from "../people/queries";
 import { assessOrigin } from "./access";
 import { findOpenAmendment, type LoanAmendmentRecord } from "./amendment-store";
 import { loanActions } from "./next-steps";
@@ -281,6 +282,9 @@ async function describe(
   const { ownerIds, ...described } = await describeObject(db, request, now);
   const viewerId = actor.kind === "user" ? actor.userId : null;
   const names = await realNames(db, [request.borrowerUserId]);
+  const pages = viewerId
+    ? await personPageIds(db, viewerId, [request.borrowerUserId], now)
+    : new Set<string>();
   const acceptances =
     request.origin === "direct"
       ? (
@@ -296,7 +300,10 @@ async function describe(
     objectId: request.objectId,
     role,
     borrowerUserId: request.borrowerUserId,
-    borrower: { realName: names.get(request.borrowerUserId) ?? null },
+    borrower: {
+      realName: names.get(request.borrowerUserId) ?? null,
+      profileId: profileIdIn(pages, request.borrowerUserId),
+    },
     origin: await describeOrigin(db, actor, request, role, now),
     start: request.start,
     end: request.end,
@@ -437,6 +444,9 @@ export const listLoanRequests = defineQuery({
         .$if(input.state === "open", (open) =>
           open.where("request.status", "in", openLoanRequestStatuses),
         )
+        .$if(input.objectId !== undefined, (one) =>
+          one.where("request.object_id", "=", input.objectId!),
+        )
         .orderBy("request.created_at", "desc")
         .orderBy("request.id", "desc")
         .limit(loanRequestPageSize + 1);
@@ -504,7 +514,12 @@ function answerDue(
 /** A loan with everything its parties see of it now. */
 type LoanDetail = NonNullable<Awaited<ReturnType<typeof loadLoanDetail>>>;
 
-async function loadLoanDetail(db: Db, loanId: string, now: Date) {
+async function loadLoanDetail(
+  db: Db,
+  loanId: string,
+  viewer: Actor,
+  now: Date,
+) {
   const loan = await findLoan(db, { loanId });
 
   if (!loan) {
@@ -528,10 +543,12 @@ async function loadLoanDetail(db: Db, loanId: string, now: Date) {
     loan.ending?.reason === "unresolved"
       ? { confirmedAt: await findControlConfirmation(db, loan.id) }
       : null;
-  const names = await realNames(db, [
-    loan.borrowerUserId,
-    loan.responsibleLenderId,
-  ]);
+  const parties = [loan.borrowerUserId, loan.responsibleLenderId];
+  const names = await realNames(db, parties);
+  const pages =
+    viewer.kind === "user"
+      ? await personPageIds(db, viewer.userId, parties, now)
+      : new Set<string>();
   const awaitingControl = control !== null && control.confirmedAt === null;
   const lenderOwns =
     awaitingControl &&
@@ -553,6 +570,7 @@ async function loadLoanDetail(db: Db, loanId: string, now: Date) {
     transfer,
     control,
     names,
+    pages,
     awaitingControl,
     lenderOwns,
   };
@@ -601,8 +619,12 @@ async function amendmentAcceptableNow(
   );
 }
 
-const personOf = (names: ReadonlyMap<string, string>, userId: string) => ({
+const personOf = (
+  { names, pages }: Pick<LoanDetail, "names" | "pages">,
+  userId: string,
+) => ({
   realName: names.get(userId) ?? null,
+  profileId: profileIdIn(pages, userId),
 });
 
 const noActions: LoanActions = {
@@ -683,8 +705,8 @@ function presentLoan(actor: Actor, resource: LoanDetail, now: Date): Loan {
     },
     approvedAt: resource.approvedAt.toISOString(),
     parties: {
-      borrower: personOf(resource.names, resource.borrowerUserId),
-      lender: personOf(resource.names, resource.responsibleLenderId),
+      borrower: personOf(resource, resource.borrowerUserId),
+      lender: personOf(resource, resource.responsibleLenderId),
     },
     actions:
       actor.kind === "user" && role
@@ -726,9 +748,9 @@ export const readLoan = defineQuery({
   name: "loan.read",
   input: loanReadQuerySchema,
   policy: readLoanPolicy,
-  load: ({ db, input, now }) =>
+  load: ({ db, actor, input, now }) =>
     inSnapshot(db, async (tx) => {
-      const loan = await loadLoanDetail(tx, input.loanId, now);
+      const loan = await loadLoanDetail(tx, input.loanId, actor, now);
 
       return loan && { resource: loan, context: undefined };
     }),
@@ -772,6 +794,9 @@ export const listLoans = defineQuery({
           ),
         )
         .where("loan.status", input.state === "ended" ? "=" : "<>", "ended")
+        .$if(input.objectId !== undefined, (one) =>
+          one.where("loan.object_id", "=", input.objectId!),
+        )
         .where(
           input.cursor === undefined
             ? sql<boolean>`true`
@@ -788,7 +813,7 @@ export const listLoans = defineQuery({
 
       // One connection serves the snapshot, so these run one after another.
       for (const { id } of page) {
-        const loan = await loadLoanDetail(tx, id, now);
+        const loan = await loadLoanDetail(tx, id, actor, now);
 
         if (loan) {
           loans.push(loan);

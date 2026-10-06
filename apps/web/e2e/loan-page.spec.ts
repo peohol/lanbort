@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { type APIRequestContext, expect, test } from "@playwright/test";
-import { collectBrowserProblems, registerThroughApi } from "./helpers";
+import {
+  collectBrowserProblems,
+  registerThroughApi,
+  showToFriends,
+} from "./helpers";
 
 /**
  * WP-64: a loan's own page shows its status in words that name who it waits
@@ -51,6 +55,7 @@ test("a borrower follows a loan from its page, and nobody else sees it", async (
       availability: [{ start: today(), end: null }],
     })
   ).json();
+  await showToFriends(anna, objectId);
   const preview = await (
     await bo.get(`/api/loan-requests/preview?objectId=${objectId}`)
   ).json();

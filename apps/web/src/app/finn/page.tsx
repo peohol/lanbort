@@ -31,6 +31,7 @@ import {
   environmentTypeLabels,
   type FinnForm,
   finnHref,
+  foundOrigin,
   membershipLabels,
   type Prepared,
   prepareEnvironmentSearch,
@@ -216,17 +217,7 @@ async function ObjectSearch({
         {result?.objects.map((object) => (
           <li key={object.objectId} className="entry">
             <strong>
-              <Link
-                href={objectHref(
-                  object.objectId,
-                  object.ownedByYou
-                    ? undefined
-                    : {
-                        kind: "environment",
-                        environmentId: object.foundIn[0]!.environmentId,
-                      },
-                )}
-              >
+              <Link href={objectHref(object.objectId, foundOrigin(object))}>
                 {object.title}
               </Link>
             </strong>

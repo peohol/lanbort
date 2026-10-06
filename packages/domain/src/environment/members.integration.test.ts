@@ -95,6 +95,7 @@ describe("the member list (WP-84, vision 03)", () => {
     expect(list.find((member) => member.userId === owner.userId)).toEqual({
       userId: owner.userId,
       realName: "Test Testesen",
+      profileId: owner.userId,
       roles: ["owner", "administrator"],
     });
     expect(list.find((member) => member.userId === bo.userId)?.roles).toEqual(

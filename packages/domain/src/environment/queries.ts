@@ -56,6 +56,7 @@ import {
 } from "./type-change-store";
 import { rateLimits } from "../abuse/rate-limits";
 import { inSnapshot } from "../objects/state";
+import { personPageIds, profileIdIn } from "../people/queries";
 
 const environmentInput = z.strictObject({ environmentId: z.uuid() });
 
@@ -520,9 +521,17 @@ export const listEnvironmentMembers = defineQuery({
         .where("revoked_at", "is", null)
         .orderBy("role", "desc")
         .execute();
+      const pages = viewerId
+        ? await personPageIds(
+            tx,
+            viewerId,
+            members.map((membership) => membership.userId),
+            now,
+          )
+        : new Set<string>();
 
       return {
-        resource: { ...access, members, grants },
+        resource: { ...access, members, grants, pages },
         context: undefined,
       };
     }),
@@ -530,6 +539,7 @@ export const listEnvironmentMembers = defineQuery({
     members: byName(resource.members).map((membership) => ({
       userId: membership.userId,
       realName: membership.realName,
+      profileId: profileIdIn(resource.pages, membership.userId),
       roles: resource.grants
         .filter((grant) => grant.user_id === membership.userId)
         .map((grant) => grant.role as EnvironmentRole),

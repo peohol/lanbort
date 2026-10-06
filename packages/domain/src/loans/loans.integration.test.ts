@@ -37,6 +37,7 @@ import {
 } from "./commands";
 import {
   listLoanRequests,
+  listLoans,
   previewLoanRequest,
   readLoanRequest,
 } from "./queries";
@@ -55,10 +56,12 @@ const {
   create,
   addCoOwner,
   friends,
+  showToFriends,
   versionOf,
   published,
   environmentOrigin,
   ask,
+  reservedLoan,
   stored,
   dated,
   day,
@@ -157,6 +160,38 @@ describe("a request through an environment (PS-LOAN-001/004)", () => {
         },
       },
     ]);
+  });
+
+  it("can be listed for one of the owner's objects, with its loans", async () => {
+    const { environmentId, owner, borrower, objectId, requestId, loanId } =
+      await reservedLoan();
+    const other = await create(owner, "Må vaskes etter bruk.");
+    await run(publishObject, owner, { objectId: other, environmentId });
+    const second = await ask(
+      borrower,
+      other,
+      environmentOrigin(environmentId),
+      dated(10, 12),
+    );
+    const requestsFor = async (id: string) =>
+      (
+        await executeQuery(tick(), listLoanRequests, {
+          actor: owner,
+          input: { role: "lender", objectId: id },
+        })
+      ).requests.map((request) => request.id);
+    const loansFor = async (id: string) =>
+      (
+        await executeQuery(tick(), listLoans, {
+          actor: owner,
+          input: { state: "current", objectId: id },
+        })
+      ).loans.map((loan) => loan.id);
+
+    expect(await requestsFor(objectId)).toEqual([requestId]);
+    expect(await requestsFor(other)).toEqual([second.requestId]);
+    expect(await loansFor(objectId)).toEqual([loanId]);
+    expect(await loansFor(other)).toEqual([]);
   });
 
   it("is retry-safe: the same key makes one request", async () => {
@@ -324,6 +359,7 @@ describe("a direct request between friends (PS-LOAN-001/003)", () => {
     const borrower = await user();
     await friends(borrower, owner);
     const objectId = await create(owner);
+    await showToFriends(owner, objectId);
 
     const preview = await executeQuery(tick(), previewLoanRequest, {
       actor: borrower,
@@ -407,6 +443,7 @@ describe("a direct request between friends (PS-LOAN-001/003)", () => {
     const coOwner = await user();
     const borrower = await user();
     const objectId = await create(owner);
+    await showToFriends(owner, objectId);
 
     await expect(
       ask(borrower, objectId, { kind: "direct" }),
@@ -651,6 +688,7 @@ describe("losing access before approval (PS-LOAN-002)", () => {
     const coOwner = await user();
     const borrower = await user();
     const objectId = await create(owner);
+    await showToFriends(owner, objectId);
     await addCoOwner(owner, objectId, coOwner);
     await friends(borrower, owner);
     await friends(borrower, coOwner);
@@ -723,6 +761,7 @@ describe("losing access before approval (PS-LOAN-002)", () => {
     const coOwner = await user();
     const borrower = await user();
     const objectId = await create(owner);
+    await showToFriends(owner, objectId);
     await addCoOwner(owner, objectId, coOwner);
     await friends(borrower, coOwner);
     const { requestId } = await ask(borrower, objectId, { kind: "direct" });
@@ -743,6 +782,7 @@ describe("losing access before approval (PS-LOAN-002)", () => {
       const friend = await user();
       await friends(friend, owner);
       const direct = await create(owner);
+      await showToFriends(owner, direct);
       await Promise.allSettled([
         ask(friend, direct, { kind: "direct" }),
         run(removeFriend, owner, { userId: friend.userId }),
@@ -865,6 +905,7 @@ describe("deleting the object", () => {
     const coOwner = await user();
     await addCoOwner(owner, objectId, coOwner);
     await friends(borrower, coOwner);
+    await showToFriends(owner, objectId);
     const other = await member(environmentId, admin);
     const stranger = await user();
     const { requestId: open } = await ask(

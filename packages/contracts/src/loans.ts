@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { environmentTypeSchema } from "./environment";
+import { profileIdSchema } from "./social";
 import {
   availabilityIntervalSchema,
   calendarDateSchema,
@@ -156,6 +157,8 @@ export const loanRequestListQuerySchema = z.strictObject({
   role: loanRequestRoleSchema,
   /** `open`: only requests that still wait for a decision or the borrower. */
   state: z.enum(["open"]).optional(),
+  /** Only the requests for this object. */
+  objectId: objectIdSchema.optional(),
   cursor: loanRequestIdSchema.optional(),
 });
 
@@ -204,10 +207,12 @@ const termsSchema = z.strictObject({
 /**
  * A person in a loan as its parties see them (UX-INT-004): by their real
  * name, or null once the account is deleted («Tidligere bruker»,
- * UX-PRIV-010). Never a link to a profile (UX-PRIV-007).
+ * UX-PRIV-010), and their page only while the reader may open it
+ * (UX-PRIV-007).
  */
 export const loanPersonSchema = z.strictObject({
   realName: z.string().nullable(),
+  profileId: profileIdSchema,
 });
 
 /** A request as its borrower or a lender sees it. */
@@ -756,6 +761,8 @@ export const loanPageSize = 50;
 export const loanListQuerySchema = z.strictObject({
   state: z.enum(["current", "ended"]),
   role: loanRequestRoleSchema.optional(),
+  /** Only the loans of this object. */
+  objectId: objectIdSchema.optional(),
   cursor: loanIdSchema.optional(),
 });
 

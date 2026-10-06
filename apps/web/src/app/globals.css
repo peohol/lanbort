@@ -745,7 +745,8 @@ button:disabled,
 /* Links that stand on their own, not in running text, are targets a finger
    aims at (UX-A11Y-006). */
 .entry a,
-.link-row a {
+.link-row a,
+.facts a {
   display: inline-flex;
   align-items: center;
   min-width: var(--target);

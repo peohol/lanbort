@@ -77,6 +77,8 @@ import { removeImage } from "../objects/images";
 import { loadObjectState } from "../objects/state";
 import { platformRoleRevoked } from "../platform/events";
 import {
+  friendPublicationCreated,
+  friendPublicationWithdrawn,
   publicationApproved,
   publicationBlocked,
   publicationEnded,
@@ -88,7 +90,9 @@ import {
 } from "../publications/events";
 import { isLive } from "../publications/model";
 import {
+  endFriendPublication,
   endPublication,
+  findFriendPublication,
   findPublication,
   setPublicationStatus,
 } from "../publications/store";
@@ -744,6 +748,37 @@ const publicationEndReplay: RestoreReplay = {
   },
 };
 
+/**
+ * PS-OBJ-020: an object taken back from friends is not found through them,
+ * unless an owner made it visible again after.
+ */
+const friendPublicationEndReplay: RestoreReplay = {
+  name: "friend_publication_end",
+  events: [friendPublicationWithdrawn],
+  settledBy: [friendPublicationCreated],
+  replay: async (args) => {
+    const { tx, entry, now } = args;
+    const object = await loadObjectState(tx, entry.resourceId, { lock: true });
+    const current =
+      object &&
+      (await findFriendPublication(tx, object.objectId, { lock: true }));
+
+    if (!current) {
+      return "unchanged";
+    }
+
+    await endFriendPublication(
+      tx,
+      current.id,
+      await originalUser(tx, entry),
+      now,
+    );
+    recordAgain(friendPublicationWithdrawn, args);
+
+    return "applied";
+  },
+};
+
 /** PS-ENV-011, PS-OBJ-017: an administrator's decision on a publication. */
 function publicationStatusReplay(
   event: AnyEvent,
@@ -1113,6 +1148,7 @@ export const restoreReplays: readonly RestoreReplay[] = [
   objectRestrictionReplay,
   archiveReplay,
   publicationEndReplay,
+  friendPublicationEndReplay,
   publicationStatusReplay(publicationRejected, "rejected", [
     publicationApproved,
   ]),

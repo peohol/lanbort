@@ -1,7 +1,7 @@
 import type { ObjectStatus, OwnObject } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql, type Updateable } from "kysely";
-import { lockAccounts } from "../account/store";
+import { lockAccounts, realNames } from "../account/store";
 import type { Actor } from "../actor";
 import { DomainError } from "../errors";
 import {
@@ -77,6 +77,8 @@ export interface ObjectDetails extends ObjectState, CoOwnershipDetails {
   readonly blocks: readonly AvailabilityBlock[];
   /** Handed over in a loan that has not ended. */
   readonly lentOut: boolean;
+  /** The real names of its owners and of those invited to become one. */
+  readonly names: ReadonlyMap<string, string>;
 }
 
 /** The acting user; object commands only ever run for signed-in users. */
@@ -393,14 +395,28 @@ async function loadDetails(
   const images = await loadImages(db, ids);
   const coOwnership = await loadCoOwnership(db, ids);
   const lentOut = await loadLentOut(db, ids);
+  const shared = states.map((state) => ({
+    state,
+    coOwnership: coOwnership(state.objectId),
+  }));
+  // The owners share the object, so they see each other's names and those
+  // of the people one of them invited (PS-OBJ-007).
+  const names = await realNames(
+    db,
+    shared.flatMap(({ state, coOwnership }) => [
+      ...state.ownerIds,
+      ...coOwnership.pendingInvitations.map((invitation) => invitation.userId),
+    ]),
+  );
 
-  return states.map((state) => ({
+  return shared.map(({ state, coOwnership }) => ({
     ...state,
-    ...coOwnership(state.objectId),
+    ...coOwnership,
     availability: availability.get(state.objectId) ?? [],
     images: images.get(state.objectId) ?? [],
     blocks: blocks.get(state.objectId) ?? [],
     lentOut: lentOut.has(state.objectId),
+    names,
   }));
 }
 
@@ -529,6 +545,7 @@ export function presentOwnObject(details: ObjectDetails, now: Date): OwnObject {
     })),
     owners: details.owners.map((owner) => ({
       userId: owner.userId,
+      realName: details.names.get(owner.userId) ?? null,
       since: owner.since.toISOString(),
     })),
     restrictions: details.restrictions.map((restriction) => ({
@@ -543,6 +560,7 @@ export function presentOwnObject(details: ObjectDetails, now: Date): OwnObject {
     pendingInvitations: details.pendingInvitations.map((invitation) => ({
       id: invitation.id,
       userId: invitation.userId,
+      realName: details.names.get(invitation.userId) ?? null,
       invitedByUserId: invitation.invitedByUserId,
       createdAt: invitation.createdAt.toISOString(),
     })),

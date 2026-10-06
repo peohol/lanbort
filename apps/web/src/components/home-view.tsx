@@ -1,9 +1,9 @@
 import type { HomeItem, HomeOverview } from "@lanbort/contracts";
 import Link from "next/link";
 import { environmentHref, newEnvironmentHref } from "@/navigation/routes";
-import { hrefFor } from "@/navigation/targets";
 import {
   describeHomeItem,
+  homeItemHref,
   homeSectionHeadings,
 } from "@/presentation/home-items";
 
@@ -11,7 +11,7 @@ const environmentRoles = { owner: "eier", administrator: "administrator" };
 
 function HomeEntry({ item }: { item: HomeItem }) {
   const { text, when } = describeHomeItem(item);
-  const href = hrefFor(item.target);
+  const href = homeItemHref(item);
 
   return (
     <li className="entry">

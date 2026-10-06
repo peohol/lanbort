@@ -5,20 +5,20 @@ import type {
 } from "@lanbort/contracts";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
+import { PersonName } from "@/components/person-name";
 import { Tag } from "@/components/tag";
 import {
   environmentHref,
   newObjectHref,
   objectHref,
-  personHref,
 } from "@/navigation/routes";
 import { roleName } from "@/presentation/environments";
 import { describeAvailability } from "@/presentation/objects";
 
 /**
  * The things an active member finds in the environment (PS-OBJ-006), each
- * leading to the thing as seen here. Owners are not named until OD-0024 is
- * decided (UI plan). Registering a thing from here preselects the
+ * leading to the thing as seen here. Owners are named in WP-89
+ * (PS-ENV-015). Registering a thing from here preselects the
  * environment (UX-JRN-003).
  */
 export function Things({
@@ -107,14 +107,7 @@ export function Members({
 
             return (
               <li key={member.userId} className="entry">
-                {/* WP-86's page, built alongside this one: not fetched ahead. */}
-                {member.realName ? (
-                  <Link href={personHref(member.userId)} prefetch={false}>
-                    {member.realName}
-                  </Link>
-                ) : (
-                  <span>Tidligere bruker</span>
-                )}
+                <PersonName person={member} />
                 {role && <Tag>{role}</Tag>}
               </li>
             );

@@ -136,6 +136,8 @@ export const objectImageSchema = z.strictObject({
 /** A registered owner, as every owner of the object sees it. */
 export const objectOwnerSchema = z.strictObject({
   userId: z.uuid(),
+  /** Null for an account without a profile, such as a deleted one. */
+  realName: z.string().nullable(),
   since: z.iso.datetime(),
 });
 
@@ -154,6 +156,7 @@ export const objectRestrictionSchema = z.strictObject({
 export const pendingCoOwnerInvitationSchema = z.strictObject({
   id: z.uuid(),
   userId: z.uuid(),
+  realName: z.string().nullable(),
   invitedByUserId: z.uuid(),
   createdAt: z.iso.datetime(),
 });

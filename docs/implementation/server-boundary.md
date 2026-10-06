@@ -48,6 +48,14 @@ Route Handler (route.user / route.public / route.scheduler)
 - Hva et medlem finner i et miljø, avgjøres bare i `discoverablePublications`: aktive publiseringer av aktive, ufrosne objekter med en eier som har tilgang, og aldri et objekt der en eier og den som ser har blokkert hverandre, eller som ble publisert under en strengere type før den som ser ble aktiv (historisk personvern). Eierne vises ikke, og medeiere ser bare miljøer de selv kan se.
 - Låserekkefølge: objekt, miljø, medlemskap, publisering.
 
+## Synlighet for venner (WP-27)
+
+- «Venner» er et eget publiseringsvalg per objekt (PS-OBJ-020), av som standard: én rad i `app.object_friend_publications`, aldri en del av objektet. Et objekt har høyst én gjeldende rad. Å ta valget tilbake setter `withdrawn_at` én gang og gjør raden til historikk; et nytt valg er en ny rad. Enhver aktiv eier kan slå det på og av (`friend_publication.publish`/`.withdraw`), og begge er idempotente. Databasen nekter valget for en som ikke er eier, og for et objekt som er arkivert eller frosset.
+- Hva en venn finner, avgjøres bare i `discoverableThroughFriends`: gjeldende valg, vennskap med minst én eier (`app.has_friend_among_owners`) og samme grunnregel som i miljøer (`findableBy`: aktivt objekt, aktiv eier, ingen frys, ingen blokkering mot noen eier, ikke plattformsperret). En venn av en medeier finner derfor objektet, men eierne vises ikke.
+- Vennens visning av eierens synlige ting er `friend_object.list` (`GET /api/social/objects?userId=`), bare mens vennskapet er aktivt; alle andre får `not_found`. Bildene leses gjennom `friend_object.read_image` med samme regel.
+- Finn tar med vennenes synlige ting i vanlig søk, merket `foundThroughFriends`. Filteret `friends` gir bare dem, og kan ikke kombineres med et miljø. Nærsøk gjelder bare miljøer. Indeksen tar med objekter som er synlige for venner.
+- Å ta valget tilbake avslutter åpne direkte forespørsler nøytralt (`publication_ended`) i samme transaksjon. Godkjente lån og miljøforespørsler berøres ikke. `app.loan_request_access_holds` krever valget for direkte forespørsler.
+
 ## Låneforespørsler (WP-30)
 
 - En låneforespørsel (PS-LOAN-001–005) er én rad i `app.loan_requests`, uansett om den kom gjennom et miljø eller direkte mellom venner. Bare opprinnelsen (`origin`) skiller dem. En miljøforespørsel peker på publiseringen den bygger på og har sin posisjon i miljøets historikk (PS-ENV-009). Åpne forespørsler reserverer ingenting og sperrer ikke ledighet; først godkjenning gjør det (WP-31).
@@ -60,7 +68,7 @@ Route Handler (route.user / route.public / route.scheduler)
 - Sletting av objektet stopper ikke på forespørsler. `app.release_loan_requests` avslutter de åpne nøytralt og løsner alle fra objektets rader før de slettes. Forespørslene består som historikk for begge parter uten objektets innhold, og eierne på slettetidspunktet (`former_owner_ids`) ser dem fortsatt med samme relasjonskrav.
 - Meldingen er valgfri (null når låntaker ikke skrev noen), lagres bare på forespørselen og kopieres aldri til hendelser eller logger (PS-LOAN-004, OD-0015).
 - `loan_request.read` viser låntakers navn, og for en utlåner mens forespørselen venter på svar også hva godkjenning ville avtale nå (`approval`): perioden etter samme regel som godkjenningen, og hvor mange andre åpne forespørsler utlåneren ser som da avsluttes fordi de kolliderer (UX-JRN-005).
-- Gjenstår (PS-OBJ-020): en direkte forespørsel skal i tillegg kreve at objektet er synlig for venner, i `assessOrigin` og i forhåndsvisningen.
+- En direkte forespørsel krever i tillegg at objektet er synlig for venner (PS-OBJ-020), både i `assessOrigin` og i forhåndsvisningen (`findsThroughFriends`). Se [synlighet for venner](#synlighet-for-venner-wp-27).
 
 ## Godkjenning og reservasjon (WP-31)
 
@@ -249,8 +257,8 @@ Route Handler (route.user / route.public / route.scheduler)
 
 ## Finn og søkeindeks (WP-61)
 
-- Søkeindeksen (ADR-0005) er avledet og er aldri kilde for tilgang eller ledighet. `app.search_objects` har bare søketeksten (tittel, kategori, beskrivelse) for aktive objekter med minst én aktiv publisering, og ingen rad sier hvor objektet er publisert eller hvem som eier det. `app.search_environments` har bare åpne og lukkede miljøer som tar imot nye medlemmer. Skjulte miljøer indekseres aldri. Hva som skal ligge i indeksen, står bare i visningene `app.search_object_sources` og `app.search_environment_sources`.
-- Objektsøk (`search.objects`) går gjennom hvert miljø der brukeren er aktivt medlem og bruker `discoverableFor`, samme regel som miljøets egen liste (historisk personvern, blokkering, frys, eiers tilgang). Indeksen brukes bare til å matche teksten. Innhold og faktisk ledighet leses fra domenekjernen, og periodefilteret bruker samme regel som en låneforespørsel (`withinAvailability`). Miljøsøk (`search.environments`) sjekker miljøets nåværende type og tilstand i samme spørring, og et miljø som har utestengt brukeren (`app.environment_access_restrictions`), finnes ikke for akkurat den brukeren. En indeks som henger etter, kan derfor aldri vise noe brukeren ikke skal se.
+- Søkeindeksen (ADR-0005) er avledet og er aldri kilde for tilgang eller ledighet. `app.search_objects` har bare søketeksten (tittel, kategori, beskrivelse) for aktive objekter med minst én aktiv publisering eller som er synlige for venner, og ingen rad sier hvor objektet er publisert eller hvem som eier det. `app.search_environments` har bare åpne og lukkede miljøer som tar imot nye medlemmer. Skjulte miljøer indekseres aldri. Hva som skal ligge i indeksen, står bare i visningene `app.search_object_sources` og `app.search_environment_sources`.
+- Objektsøk (`search.objects`) går gjennom hvert miljø der brukeren er aktivt medlem og bruker `discoverableFor`, samme regel som miljøets egen liste (historisk personvern, blokkering, frys, eiers tilgang), og gjennom ting venner har gjort synlige for venner (`discoverableThroughFriends`). Indeksen brukes bare til å matche teksten. Innhold og faktisk ledighet leses fra domenekjernen, og periodefilteret bruker samme regel som en låneforespørsel (`withinAvailability`). Miljøsøk (`search.environments`) sjekker miljøets nåværende type og tilstand i samme spørring, og et miljø som har utestengt brukeren (`app.environment_access_restrictions`), finnes ikke for akkurat den brukeren. En indeks som henger etter, kan derfor aldri vise noe brukeren ikke skal se.
 - Finn er målrettet (UX-P20): tekst eller kategori kreves, svaret har høyst `searchResultLimit` treff, og `more` sier at et smalere søk finner flere. Det finnes ingen bla-funksjon. Tekst matcher både på norsk ordstamme og på starten av et ord (`app.search_query`), og teksten tolkes aldri som søkesyntaks.
 - Indeksen oppdateres etter commit av outbox-consumeren `search_index.refresh` (`searchIndexer`), som bygger radene den berørte hendelsen gjelder på nytt fra domenetabellene (`refreshSearchIndex`). Nye domener som endrer om noe kan finnes eller hva det heter, legger hendelsestypen sin til i `search/indexer.ts`. Den planlagte jobben `/api/internal/search-index` (`search_index.reconcile`) bygger hele indeksen på nytt og fanger det som skjer uten hendelse, for eksempel en publisering som avsluttes av tilgangstap. Etter en gjenoppretting bygger `pnpm ops:restore finish` den på nytt ([backup og gjenoppretting](backup-restore.md)). Sletting av et objekt eller miljø sletter raden med en gang.
 
@@ -297,6 +305,12 @@ Serveren er bare leveringstjenesten for ende-til-ende-kryptert chat ([ADR-0010](
 - Sosiale kommandoer navngir bare den andre brukeren. Den som kaller er alltid den ene parten, så ingen input kan nå andres relasjoner. Alle endringer for samme par låses mot hverandre i databasen.
 - En bruker som har blokkert den som spør, skal se ut som en bruker som ikke finnes (`not_found`), både i svar og i lister. Om den andre har blokkert deg, returneres aldri, og blokkerings- og lukkingshendelser er audit-hendelser uten payload.
 - Nye domener som oppretter ny kontakt eller nye forpliktelser (direkte vennelån, chat, medeierskap, oppdagelse), sjekker relasjonen med `socialRelationBetween` i samme transaksjon som beslutningen. Etablerte lån, saker og anmeldelsesretter skal ikke sjekkes mot blokkering på nytt (PS-USR-007).
+
+## Personens side (WP-86)
+
+- `person.read` (`GET /api/people?userId=`) viser en person slik leseren kan se dem: navn, leserens relasjon og om leseren har tilgang til tillitsprofilen. Leseren ser seg selv, personer med profiltilgang (`hasProfileAccess`), personer de selv blokkerer (for å oppheve blokkeringen) og personer med en ventende venneforespørsel mellom dem. Alle andre, slettede kontoer, kontoer som ikke er aktive og personer som blokkerer leseren, gir `not_found` (`personVisible`, UX-PRIV-007, UX-PRIV-010).
+- Lesemodeller som navngir personer, lenker bare til siden mens leseren kan åpne den: `profileId` er personens ID da, ellers `null`. Den regnes ut med `personPageIds` i samme snapshot som navnene. Den finnes nå på lånets parter, venner/forespørsler/blokkerte i `social.overview.read` og forfattere i `trust_profile.read`. Nye flater som viser personer (forespørsler, saker, medlemslister), bruker den samme, og klienten viser navnet med `PersonName`.
+- Hvem som kan se hvem, leses samlet for mange personer om gangen (`loadPeople` i `people/store.ts`), og både personens side og tillitsprofilen avgjøres derfra.
 
 ## Innlogging og sesjon
 

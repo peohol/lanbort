@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { type APIRequestContext, expect, test } from "@playwright/test";
-import { registerThroughApi } from "./helpers";
+import { registerThroughApi, showToFriends } from "./helpers";
 
 /**
  * WP-50 over HTTP: after a friend's loan is cancelled, both parties may
@@ -48,6 +48,7 @@ test("the parties of a cancelled loan review each other double-blind", async ({
       availability: [{ start: "2030-07-01", end: null }],
     })
   ).json();
+  await showToFriends(request, objectId);
   const preview = await (
     await bo.get(`/api/loan-requests/preview?objectId=${objectId}`)
   ).json();

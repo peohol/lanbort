@@ -19,7 +19,11 @@ import {
   parseInput,
 } from "../commands/command";
 import { idempotencyKeyPattern } from "../commands/idempotency";
-import { defineQuery, executeQuery } from "../commands/query";
+import {
+  defineQuery,
+  executeQuery,
+  type QueryDefinition,
+} from "../commands/query";
 import { DomainError } from "../errors";
 import type { EventRecorder } from "../events/recorder";
 import { defineConsumer, OutboxDeliveryError } from "../outbox/consumer";
@@ -415,12 +419,25 @@ export const objectImageFile = defineQuery({
 });
 
 /** The image file, for those who may see the object. */
-export async function readObjectImage(
+export function readObjectImage(
   domain: Pick<DomainContext, "db" | "clock">,
   store: ObjectImageStore,
   request: { actor: Actor; input: unknown },
 ): Promise<{ bytes: Uint8Array; contentType: string }> {
-  const file = await executeQuery(domain, objectImageFile, request);
+  return readImageFile(domain, store, objectImageFile, request);
+}
+
+/**
+ * The file of the image `query` authorizes, read from the store only after
+ * its policy. Each way of seeing an object has its own query.
+ */
+export async function readImageFile<I, R, C>(
+  domain: Pick<DomainContext, "db" | "clock">,
+  store: ObjectImageStore,
+  query: QueryDefinition<I, R, C, { key: string; contentType: string }>,
+  request: { actor: Actor; input: unknown },
+): Promise<{ bytes: Uint8Array; contentType: string }> {
+  const file = await executeQuery(domain, query, request);
   const bytes = await store.get(file.key);
 
   if (!bytes) {

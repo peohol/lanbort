@@ -16,5 +16,6 @@ Normative UX-regler får stabile `UX-*`-ID-er og peker oppover til relevante pro
 6. [Kontekst, roller og personvern](05-kontekst-roller-og-personvern.md)
 7. [Mobil og tilgjengelighet](06-mobil-og-tilgjengelighet.md)
 8. [Scenariovalidering](07-scenariovalidering.md)
+9. [Skjerm- og flytinventar](08-skjerm-og-flytinventar.md) — ikke-normativ dekningssjekk og arbeidsgrunnlag for UI-designet
 
 Åpne detaljvalg som ennå ikke kan fastsettes, registreres i [det felles beslutningsregisteret](../open-decisions.md) fremfor å bli stående som løse TODO-er i UX-dokumentene.

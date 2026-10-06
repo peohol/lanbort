@@ -4,6 +4,7 @@ import { type Kysely, sql } from "kysely";
 import type { Actor } from "../actor";
 import { loadEnvironmentAccess } from "../environment/store";
 import { loadObjectState, type ObjectState } from "../objects/state";
+import { findsThroughFriends } from "../publications/friends";
 import { findsObject } from "../publications/queries";
 import { lockPair } from "../social/pair";
 import {
@@ -43,9 +44,9 @@ export interface LoadedTarget extends LoanRequestTarget {
 
 /**
  * Whether `actor` can reach the object through `origin` now: its access
- * stands ({@link assessOrigin}) and, through an environment, they also find
- * the object there, so historical privacy and discovery decide exactly as
- * in the environment's list (PS-ENV-009).
+ * stands ({@link assessOrigin}) and they also find the object there, so
+ * discovery decides exactly as in the environment's list, with its
+ * historical privacy (PS-ENV-009), or as on a friend's profile (PS-OBJ-020).
  */
 export async function loadTarget(
   db: Db,
@@ -79,6 +80,8 @@ export async function loadTarget(
     reachable =
       access !== null &&
       (await findsObject(db, access, object.objectId, actor.userId, now));
+  } else if (reachable) {
+    reachable = await findsThroughFriends(db, object.objectId, actor.userId);
   }
 
   return {
