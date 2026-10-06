@@ -1,6 +1,5 @@
 import type {
   AvailabilityInterval,
-  LoanStatus,
   ObjectCategory,
   OwnObject,
 } from "@lanbort/contracts";
@@ -46,22 +45,14 @@ export function categoryLabel(
   return categories.find((category) => category.id === id)?.label ?? id;
 }
 
-/** A loan in these states has the thing out of its owners' hands. */
-export const lentOutStatuses: readonly LoanStatus[] = [
-  "active",
-  "awaiting_return",
-  "late",
-];
-
 /** Whether `interval` holds on `day`. */
 const holdsOn = ({ start, end }: AvailabilityInterval, day: string) =>
   start <= day && (end === null || day <= end);
 
 /**
  * One of the user's own things in a list, in a word or two (WP-81): lent
- * out, blocked, can be lent out, or archived. `lentOut` comes from the
- * user's own loans; what blocks it is said only as far as every owner sees
- * it (PS-OBJ-007–009).
+ * out, blocked, can be lent out, or archived. What blocks it is said only
+ * as far as every owner sees it (PS-OBJ-007–009).
  */
 export function ownThingStatus(
   object: Pick<
@@ -71,13 +62,13 @@ export function ownThingStatus(
     | "availableForNewLoans"
     | "frozenForNewLoans"
     | "restrictions"
+    | "lentOut"
   >,
   today: string,
-  lentOut: boolean,
 ): { readonly label: string; readonly tone: Tone } {
   if (object.status === "archived")
     return { label: "Arkivert", tone: "neutral" };
-  if (lentOut) return { label: "Utlånt", tone: "waiting" };
+  if (object.lentOut) return { label: "Utlånt", tone: "waiting" };
 
   const restricted = object.restrictions.some(
     ({ period }) => period === null || holdsOn(period, today),

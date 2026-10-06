@@ -64,16 +64,17 @@ describe("one of the user's own things in a list", () => {
     availableForNewLoans: true,
     frozenForNewLoans: false,
     restrictions: [],
+    lentOut: false,
     ...details,
   });
   const today = "2026-10-06";
-  const label = (details: Parameters<typeof own>[0], lentOut = false) =>
-    ownThingStatus(own(details), today, lentOut).label;
+  const label = (details: Parameters<typeof own>[0]) =>
+    ownThingStatus(own(details), today).label;
 
   it("says whether it can be lent out, is lent out, blocked or archived", () => {
     expect(label({})).toBe("Kan lånes ut");
-    expect(label({}, true)).toBe("Utlånt");
-    expect(label({ status: "archived" }, true)).toBe("Arkivert");
+    expect(label({ lentOut: true })).toBe("Utlånt");
+    expect(label({ status: "archived", lentOut: true })).toBe("Arkivert");
     expect(label({ frozenForNewLoans: true })).toBe("Sperret for nye lån");
     expect(
       label({

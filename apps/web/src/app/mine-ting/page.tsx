@@ -1,8 +1,6 @@
 import {
   calendarDate,
-  collectPages,
   listCoOwnerInvitations,
-  listLoans,
   listOwnObjects,
   takesNewActivity,
 } from "@lanbort/domain";
@@ -15,7 +13,7 @@ import { PilotObjectPolicy } from "@/components/pilot-object-policy";
 import { Tag } from "@/components/tag";
 import { newObjectHref, objectHref } from "@/navigation/routes";
 import { anchorFor } from "@/navigation/targets";
-import { lentOutStatuses, ownThingStatus } from "@/presentation/objects";
+import { ownThingStatus } from "@/presentation/objects";
 import { pageQuery, requirePageAccount } from "@/server/session";
 
 export const metadata: Metadata = { title: "Mine ting – Lånbort" };
@@ -26,22 +24,12 @@ export const metadata: Metadata = { title: "Mine ting – Lånbort" };
  */
 export default async function ThingsPage() {
   const account = await requirePageAccount();
-  const [owned, invited, lent] = await Promise.all([
+  const [owned, invited] = await Promise.all([
     pageQuery(listOwnObjects, {}),
     pageQuery(listCoOwnerInvitations, {}),
-    collectPages(
-      (cursor) =>
-        pageQuery(listLoans, { state: "current", role: "lender", cursor }),
-      ({ loans }) => loans,
-    ),
   ]);
   const objects = owned?.objects ?? [];
   const invitations = invited?.invitations ?? [];
-  const lentOut = new Set(
-    lent.items
-      .filter((loan) => lentOutStatuses.includes(loan.status))
-      .map((loan) => loan.objectId),
-  );
   const today = calendarDate(new Date());
   // Registering is new activity (PS-ADM-002).
   const register = takesNewActivity(account.status) && (
@@ -105,11 +93,7 @@ export default async function ThingsPage() {
         ) : (
           <ul className="entries">
             {objects.map((object) => {
-              const status = ownThingStatus(
-                object,
-                today,
-                lentOut.has(object.id),
-              );
+              const status = ownThingStatus(object, today);
 
               return (
                 <li key={object.id} className="entry">

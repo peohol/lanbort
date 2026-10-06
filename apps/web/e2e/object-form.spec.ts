@@ -53,11 +53,11 @@ test("a thing is registered from an environment, with a photo, and published the
     buffer: await photo(),
   });
   await expect(page.getByRole("img", { name: "Bilde 1" })).toBeVisible();
-  await expect(page.getByLabel("Fra")).toHaveValue(today());
+  await expect(page.getByLabel("Fra", { exact: true })).toHaveValue(today());
 
   // Two periods that share days are pointed out before anything is sent.
   await page.getByRole("button", { name: "Legg til periode" }).click();
-  await page.getByLabel("Fra").nth(1).fill("2099-01-01");
+  await page.getByLabel("Fra", { exact: true }).nth(1).fill("2099-01-01");
   await expect(
     page.getByRole("alert").filter({ hasText: "har dager felles" }),
   ).toHaveText(
@@ -170,6 +170,49 @@ test("editing shows what someone else saved in between before saving over it", a
   expect(
     problems.filter((problem) => !problem.includes("409 (Conflict)")),
   ).toEqual([]);
+});
+
+test("photos alone are not saved over a version the user has not seen", async ({
+  page,
+}) => {
+  await registerThroughApi(page.request);
+  const { objectId, version } = await (
+    await postCommand(page.request, "/api/objects", {
+      title: "Stige",
+      categoryId: "verktoy",
+      description: "Aluminiumsstige, 4 meter.",
+    })
+  ).json();
+
+  await page.goto(`/ting/${objectId}/rediger`);
+  await page.getByLabel("Legg til bilder").setInputFiles({
+    name: "stige.png",
+    mimeType: "image/png",
+    buffer: await photo(),
+  });
+  await page.getByRole("button", { name: "Gå videre" }).click();
+  const other = await page.request.patch(`/api/objects/${objectId}`, {
+    data: { expectedVersion: version, description: "Kort stige." },
+    headers: { "Idempotency-Key": crypto.randomUUID() },
+  });
+  expect(other.ok()).toBe(true);
+
+  await page.getByRole("button", { name: "Lagre endringene" }).click();
+  const newer = page.getByRole("alert").filter({
+    hasText: "Noen andre har lagret tingen",
+  });
+  await expect(newer).toContainText("Kort stige.");
+  expect(
+    (await (await page.request.get(`/api/objects/${objectId}`)).json()).images,
+  ).toEqual([]);
+
+  await newer
+    .getByRole("button", { name: "Lagre mine endringer over" })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`/ting/${objectId}$`));
+  expect(
+    await (await page.request.get(`/api/objects/${objectId}`)).json(),
+  ).toMatchObject({ description: "Kort stige.", images: [{ width: 800 }] });
 });
 
 test("someone who does not own a thing has no page to edit it", async ({

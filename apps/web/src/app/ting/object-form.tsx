@@ -194,18 +194,27 @@ export function ObjectForm(props: ObjectFormProps) {
     }
   }
 
-  /** The photos to upload and the saved ones to remove, for `objectId`. */
-  async function saveImages(objectId: string): Promise<ApiResult<unknown>> {
+  /**
+   * The photos to upload and the saved ones to remove, for `objectId`.
+   * `saw` hears each version they make.
+   */
+  async function saveImages(
+    objectId: string,
+    saw: (version: number) => void = () => {},
+  ): Promise<ApiResult<unknown>> {
     for (const imageId of removed) {
-      const result = await steps.run(`remove:${imageId}`, (idempotencyKey) =>
-        postJson(
-          imageSrc(objectId, imageId),
-          {},
-          { method: "DELETE", idempotencyKey },
-        ),
+      const result = await steps.run<ObjectVersion>(
+        `remove:${imageId}`,
+        (idempotencyKey) =>
+          postJson(
+            imageSrc(objectId, imageId),
+            {},
+            { method: "DELETE", idempotencyKey },
+          ),
       );
+      if (result.ok) saw(result.data.version);
       // Someone else removed it already: what the user wanted holds.
-      if (!result.ok && result.code !== "not_found") return result;
+      else if (result.code !== "not_found") return result;
     }
 
     for (const image of images) {
@@ -218,6 +227,7 @@ export function ObjectForm(props: ObjectFormProps) {
           }),
       );
       if (!result.ok) return result;
+      saw(result.data.version);
     }
 
     return { ok: true, data: null };
@@ -255,36 +265,53 @@ export function ObjectForm(props: ObjectFormProps) {
     from: Base,
     current: ObjectDraft,
   ): Promise<string | null> {
+    let version = from.version;
+    const saw = (made: number) => {
+      version = Math.max(version, made);
+    };
+
     if (changedFields(from.draft, current).length > 0) {
       const result = await steps.run<ObjectVersion>("edit", (idempotencyKey) =>
         postJson(
           `/api/objects/${object.id}`,
           editOf(from.draft, current, from.version),
-          {
-            method: "PATCH",
-            idempotencyKey,
-          },
+          { method: "PATCH", idempotencyKey },
         ),
       );
       steps.forget("edit");
 
       if (!result.ok) {
-        if (result.code === "conflict") {
-          const latest = await getJson<OwnObject>(`/api/objects/${object.id}`);
-          if (latest.ok) {
-            setNewer(latest.data);
-            return null;
-          }
-        }
-        return fail(result.code);
+        return result.code === "conflict"
+          ? showNewer(object.id, result.code)
+          : fail(result.code);
       }
-
-      // What is saved is the new base, so a retry sends only what is left.
-      setBase({ draft: current, version: result.data.version });
+      saw(result.data.version);
+    } else {
+      // Photos alone carry no version to the API: look first, so they are
+      // never saved on top of a version the user has not seen.
+      const latest = await getJson<OwnObject>(`/api/objects/${object.id}`);
+      if (!latest.ok) return fail(latest.code);
+      if (latest.data.version !== from.version) {
+        setNewer(latest.data);
+        return null;
+      }
     }
 
-    const saved = await saveImages(object.id);
+    const saved = await saveImages(object.id, saw);
+    // What is saved is the new base, so a retry sends only what is left.
+    setBase({ draft: current, version });
     return saved.ok ? object.id : fail(saved.code);
+  }
+
+  /** What someone else saved, to decide on before saving over it. */
+  async function showNewer(
+    objectId: string,
+    code: ApiFailureCode,
+  ): Promise<null> {
+    const latest = await getJson<OwnObject>(`/api/objects/${objectId}`);
+    if (!latest.ok) return fail(code);
+    setNewer(latest.data);
+    return null;
   }
 
   function fail(code: ApiFailureCode): null {

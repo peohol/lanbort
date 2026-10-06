@@ -185,6 +185,11 @@ export const ownObjectSchema = z.strictObject({
    * clarified to one owner (PS-OBJ-009). Says nothing about who or why.
    */
   frozenForNewLoans: z.boolean(),
+  /**
+   * Handed over in a loan that has not ended, so it is out of the owners'
+   * hands. Every owner sees this; it says nothing about the loan.
+   */
+  lentOut: z.boolean(),
   /** Owners who consented to permanent deletion (PS-OBJ-011). */
   deletionConsents: z.array(z.uuid()),
   pendingInvitations: z.array(pendingCoOwnerInvitationSchema),
