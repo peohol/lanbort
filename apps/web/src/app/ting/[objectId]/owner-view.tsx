@@ -67,8 +67,8 @@ import { categoryLabel, formatInterval } from "@/presentation/objects";
 import { pageQuery } from "@/server/session";
 
 /*
- * Links to a thing's edit page (WP-81) and an environment's page (WP-84)
- * are not prefetched: those pages are built alongside this one.
+ * Links to an environment's page (WP-84) are not prefetched: that page is
+ * built alongside this one.
  */
 
 /** What every part of the owners' view knows. */
@@ -216,11 +216,7 @@ function OwnerStatus({
             primary
           />
         ) : (
-          <Link
-            className="button"
-            href={editObjectHref(object.id)}
-            prefetch={false}
-          >
+          <Link className="button" href={editObjectHref(object.id)}>
             Rediger
           </Link>
         ))

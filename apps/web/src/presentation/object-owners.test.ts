@@ -40,6 +40,7 @@ const thing = (details: Partial<OwnObject> = {}): OwnObject => ({
   ],
   restrictions: [],
   frozenForNewLoans: false,
+  lentOut: false,
   deletionConsents: [],
   pendingInvitations: [],
   createdAt: at,
@@ -72,6 +73,9 @@ describe("the owners' view of a thing", () => {
     expect(
       ownerStatus(thing({ status: "archived" }), me, "2026-10-04"),
     ).toMatchObject({ status: "Arkivert" });
+    expect(
+      ownerStatus(thing({ lentOut: true }), me, "2026-10-04"),
+    ).toMatchObject({ status: "Utlånt", tone: "waiting" });
     expect(
       ownerStatus(thing({ frozenForNewLoans: true }), me, "2026-10-04"),
     ).toMatchObject({ status: "Kan ikke lånes ut nå", tone: "warning" });

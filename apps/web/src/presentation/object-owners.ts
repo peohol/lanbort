@@ -65,6 +65,8 @@ export function ownerStatus(
     };
   }
 
+  if (object.lentOut) return { status: "Utlånt", tone: "waiting", why: null };
+
   if (object.frozenForNewLoans) {
     return {
       status: "Kan ikke lånes ut nå",
