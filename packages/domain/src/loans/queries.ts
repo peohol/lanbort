@@ -437,6 +437,9 @@ export const listLoanRequests = defineQuery({
         .$if(input.state === "open", (open) =>
           open.where("request.status", "in", openLoanRequestStatuses),
         )
+        .$if(input.objectId !== undefined, (one) =>
+          one.where("request.object_id", "=", input.objectId!),
+        )
         .orderBy("request.created_at", "desc")
         .orderBy("request.id", "desc")
         .limit(loanRequestPageSize + 1);
@@ -772,6 +775,9 @@ export const listLoans = defineQuery({
           ),
         )
         .where("loan.status", input.state === "ended" ? "=" : "<>", "ended")
+        .$if(input.objectId !== undefined, (one) =>
+          one.where("loan.object_id", "=", input.objectId!),
+        )
         .where(
           input.cursor === undefined
             ? sql<boolean>`true`

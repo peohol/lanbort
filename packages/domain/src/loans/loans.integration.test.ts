@@ -37,6 +37,7 @@ import {
 } from "./commands";
 import {
   listLoanRequests,
+  listLoans,
   previewLoanRequest,
   readLoanRequest,
 } from "./queries";
@@ -59,6 +60,8 @@ const {
   published,
   environmentOrigin,
   ask,
+  dated,
+  reservedLoan,
   stored,
   dated,
   day,
@@ -157,6 +160,38 @@ describe("a request through an environment (PS-LOAN-001/004)", () => {
         },
       },
     ]);
+  });
+
+  it("can be listed for one of the owner's objects, with its loans", async () => {
+    const { environmentId, owner, borrower, objectId, requestId, loanId } =
+      await reservedLoan();
+    const other = await create(owner, "Må vaskes etter bruk.");
+    await run(publishObject, owner, { objectId: other, environmentId });
+    const second = await ask(
+      borrower,
+      other,
+      environmentOrigin(environmentId),
+      dated(10, 12),
+    );
+    const requestsFor = async (id: string) =>
+      (
+        await executeQuery(tick(), listLoanRequests, {
+          actor: owner,
+          input: { role: "lender", objectId: id },
+        })
+      ).requests.map((request) => request.id);
+    const loansFor = async (id: string) =>
+      (
+        await executeQuery(tick(), listLoans, {
+          actor: owner,
+          input: { state: "current", objectId: id },
+        })
+      ).loans.map((loan) => loan.id);
+
+    expect(await requestsFor(objectId)).toEqual([requestId]);
+    expect(await requestsFor(other)).toEqual([second.requestId]);
+    expect(await loansFor(objectId)).toEqual([loanId]);
+    expect(await loansFor(other)).toEqual([]);
   });
 
   it("is retry-safe: the same key makes one request", async () => {
