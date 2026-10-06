@@ -73,7 +73,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 #### Hjem
 
 - **Oppgave:** se hva som venter på meg nå, og hva som kommer.
-- **Tilstander:** venter på deg (svare på forespørsel, bekrefte overlevering eller retur, bekrefte nye vilkår, svare på endring eller ansvarsoverføring, skrive anmeldelse, svare på invitasjon, svare på typeendring, bekrefte kontroll over en ting); kommende overlevering og retur; uavklarte forløp; administrative oppgaver for roller brukeren har; snarveier til egne miljøer; ingenting venter.
+- **Tilstander:** venter på deg (svare på forespørsel, bekrefte overlevering eller retur, bekrefte nye vilkår, svare på endring eller ansvarsoverføring, skrive anmeldelse, svare på medlems- eller rolleinvitasjon, svare på typeendring, bekrefte kontroll over en ting); kommende overlevering og retur; uavklarte forløp; administrative oppgaver for roller brukeren har; snarveier til egne miljøer; ingenting venter.
 - **Ser / handler:** brukeren selv. Administrative oppgaver bare for den som har rollen og er habil.
 - **Regler:** UX-IA-005, UX-JRN-012, UX-INT-010, UX-P08, UX-P16, UX-PRIV-006.
 - **Forløp:** begge.
@@ -171,10 +171,10 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 
 #### Miljøets side
 
-- **Oppgave:** forstå et miljø før innmelding, og bruke det som medlem.
-- **Tilstander:** åpent (krav, regler, bli med); lukket (begrenset forhåndsvisning, søk); skjult (bare for den som er invitert eller medlem); søknad venter; aktivt medlem (tingene i miljøet, «Registrer en ting her», medlemsliste, kontakt administratorene); passivt medlem forklart; under avvikling; ingen administrator kan behandle henvendelser nå.
-- **Ser / handler:** innloggede innenfor det typen tillater; medlemmer ser og bruker innholdet. Om eieren vises på tingene, avgjøres i OD-0024.
-- **Regler:** UX-IA-004, UX-JRN-002, UX-PRIV-002, UX-PRIV-003, UX-EXC-009, PS-ENV-001, PS-ENV-004, PS-ENV-012, PS-ENV-014, PS-NFR-002.
+- **Oppgave:** forstå et miljø før innmelding, bruke det som medlem og håndtere egne medlems- og rollevalg.
+- **Tilstander:** åpent (krav, regler, bli med); lukket (begrenset forhåndsvisning, søk); skjult (bare for den som er invitert eller medlem); søknad venter; aktivt medlem (tingene i miljøet, «Registrer en ting her», medlemsliste, kontakt administratorene, forlat miljøet); egen ventende rolleinvitasjon (administrator eller eierskap: godta eller avslå); passivt medlem forklart; under avvikling; ingen administrator kan behandle henvendelser nå.
+- **Ser / handler:** innloggede innenfor det typen tillater; medlemmer ser og bruker innholdet. Mottakeren av en rolleinvitasjon svarer som medlem på miljøets side før en eventuell ny rolle blir aktiv. Om eieren vises på tingene, avgjøres i OD-0024.
+- **Regler:** UX-IA-004, UX-JRN-002, UX-PRIV-002, UX-PRIV-003, UX-EXC-009, PS-ENV-001, PS-ENV-003, PS-ENV-004, PS-ENV-012, PS-ENV-014, PS-NFR-002.
 - **Forløp:** normal.
 - **UI-pakke:** WP-84.
 
@@ -217,11 +217,11 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 #### Samtaler
 
 - **Oppgave:** snakke privat med en annen part, særlig om et konkret lån.
-- **Tilstander:** privat samtale; samtale om et lån; smal logistikk-kanal etter blokkering; ingen lesebekreftelser; enheten er ikke koblet; skjult fra egen liste; ingen samtaler.
-- **Ser / handler:** deltakerne.
+- **Tilstander:** privat samtale; strukturert første kontakt mottatt, der mottakeren kan åpne for fri samtale; samtale om et lån; smal logistikk-kanal etter blokkering; ingen lesebekreftelser; enheten er ikke koblet; skjult fra egen liste; ingen samtaler.
+- **Ser / handler:** deltakerne. Ved første kontakt mellom ikke-venner er det bare mottakeren av den strukturerte henvendelsen som kan åpne fri samtale.
 - **Regler:** UX-IA-001, UX-EXC-004, PS-COM-001, PS-COM-004–007, PS-COM-009, PS-USR-005.
 - **Forløp:** begge.
-- **UI-pakke:** WP-80; demping, arkivering og start fra personens side står under «Senere» i UI-planen.
+- **UI-pakke:** WP-80; åpning av fri samtale fra strukturert kontakt, demping, arkivering og start fra personens side står under «Senere» i UI-planen.
 
 #### Konto og innstillinger
 
@@ -230,7 +230,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 - **Ser / handler:** brukeren selv.
 - **Regler:** UX-IA-003, UX-PRIV-001, PS-USR-002, PS-COM-002, PS-COM-003, PS-ADM-004, PS-ADM-005, PS-ADM-012.
 - **Forløp:** begge.
-- **UI-pakke:** WP-86 (relasjoner) og WP-88 (egne saker). Varslingsvalg, profilfelt og sletting har ingen pakke ennå.
+- **UI-pakke:** WP-80 (eksisterende varslingsvalg, kontostatus, deaktivering/reaktivering og sletting), WP-86 (relasjoner) og WP-88 (egne saker). Profilbilde, presentasjon og synlighetsvalg per profilfelt står under «Senere».
 
 ### Avvik og unntak
 
@@ -340,7 +340,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 - **Ser / handler:** brukeren selv, med minimumstilgang.
 - **Regler:** UX-EXC-007, PS-ADM-001–003, PS-LOAN-021.
 - **Forløp:** avvik.
-- **UI-pakke:** ingen samlet visning; lånets side (WP-87) viser handlingene som gjenstår.
+- **UI-pakke:** WP-80 på den eksisterende Konto-siden; lånets side (WP-87) viser handlingene som gjenstår.
 
 #### Slette konto
 
@@ -349,7 +349,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 - **Ser / handler:** brukeren selv.
 - **Regler:** UX-INT-007, UX-PRIV-010, PS-ADM-004–006, PS-USR-010.
 - **Forløp:** avvik.
-- **UI-pakke:** ingen.
+- **UI-pakke:** WP-80 på den eksisterende Konto-siden.
 
 ## Miljøadministrator
 
@@ -547,7 +547,7 @@ Alle sidene i UX-IA-modellens liste over sentrale sider er dekket:
 | Samtaler                | [Samtaler](#samtaler)                                                                                        | WP-80                |
 | Varslingssenter         | [Varslingssenteret](#varslingssenteret-og-varselslenker)                                                     | WP-80                |
 | Profil / bruker         | [Personens side](#personens-side)                                                                            | WP-86                |
-| Konto og innstillinger  | [Konto og innstillinger](#konto-og-innstillinger)                                                            | WP-86, WP-88, delvis |
+| Konto og innstillinger  | [Konto og innstillinger](#konto-og-innstillinger)                                                            | WP-80, WP-86, WP-88 |
 | Sak                     | [Sakens side for en part](#sakens-side-for-en-part)                                                          | WP-88                |
 | Rollebasert arbeidskø   | [Miljøets sakskø](#miljøets-sakskø-og-saksbehandling), [plattformkø](#plattformkø)                           | WP-88                |
 
@@ -557,9 +557,6 @@ Scenariene i [UX-scenariovalideringen](07-scenariovalidering.md) ligger alle på
 
 Disse flatene følger av spesifikasjonen og UX-modellen, men ingen pakke i UI-planen bygger dem ennå:
 
-- **Varslingsvalg** i Konto (PS-COM-003, UX-IA-003). Hva som kan slås av per nivå, er besluttet; standardvalgene er OD-0004.
-- **Slette konto** med hindringer og konsekvensvisning (PS-ADM-004–006, UX-INT-007).
-- **Egen kontostatus** når kontoen er deaktivert, suspendert eller under avslutning (PS-ADM-001–003).
 - **Melding om mulig dødsfall** fra personens side eller et felles lån (PS-COM-015, UX-EXC-008).
 - **Medlemmer og utestengelse** for administratorer, inkludert å oppheve at noen er stengt ute (PS-ENV-004). Fjerning av aktive medlemmer venter på OD-0025.
 - **Plattformforvalterens inngrep** på kontoer og miljøer. Venter på OD-0023 og OD-0026.
