@@ -51,7 +51,7 @@ Når spørsmålet er avgjort:
 
 ## Status før UI-arbeidet
 
-Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet. De to siste som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. De åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
+Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket ett nytt spørsmål, [OD-0024](#od-0024--hvem-medlemmer-ser-i-et-miljø), som bare berører medlemslisten og veien til andres profil ([UI-planen](implementation/ui-work-packages.md)). De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
 
 ## Åpne
 
@@ -173,6 +173,15 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet. De t
 - **Berører:** PS-USR-008, [ADR-0011](architecture/decisions/ADR-0011-webauthn-for-plattformforvaltere.md), WP-12
 - **Spørsmål:** Hvordan registrerer en plattformforvalter passkeys eller sikkerhetsnøkler, hvor mange må være registrert før rollen virker, og hvordan gjenopprettes tilgang når én eller alle går tapt? [Utredningen](architecture/utredninger/OD-0010-privilegert-autentisering.md#anbefalt-modell-i-detalj) anbefaler minst to autentikatorer, en engangs registreringskode som overleveres utenom e-post, og en revisjonslogget driftsvei ved tap av alle.
 - **Avklares før:** WebAuthn-mekanismen bygges (WP-12), og dermed før privilegerte plattformforvalterhandlinger tas i bruk (Port D). Til da er de avvist.
+
+### OD-0024 — Hvem medlemmer ser i et miljø
+- **Lag:** Produktspesifikasjon / UX
+- **Status:** Åpen
+- **Berører:** PS-ENV-001, PS-ENV-004, PS-USR-003, UX-IA-004, [visjon 03](vision/03-miljoer.md) («Lukket miljø», passivt medlem), [visjon 02](vision/02-brukere-roller-og-relasjoner.md) («Vennskap»)
+- **Spørsmål:** Skal aktive medlemmer kunne se miljøets medlemsliste og hvem som eier en ting i miljøet, og dermed åpne hverandres profil og sende venneforespørsel? Visjonen forutsetter en medlemsliste (ikke-medlemmer og passive medlemmer skal ikke se eller vises i den) og at venneforespørsler sendes til brukere man kan se, «for eksempel gjennom et felles miljø», men produktspesifikasjonen fastsetter ikke hva medlemmer ser. Inntil dette er besluttet, ser bare miljøets administratorer medlemmene, tingene i et miljø vises uten eiere, og man når en annen brukers profil bare gjennom et lån, en forespørsel eller en sak.
+- **Avhenger av:** Produktvurdering av personvern i miljøer, særlig skjulte miljøer og historisk personvern (PS-ENV-009).
+- **Avklares før:** medlemslisten (WP-84) og veien til en persons profil utenom lån (WP-86) bygges. Resten av UI-arbeidet kan bygges uten den.
+- **Anbefaling:** Aktive medlemmer ser hverandre i medlemslisten og ser hvem som eier tingene i miljøet; passive medlemmer og ikke-medlemmer vises ikke. Fra listen kan man åpne profilen og sende venneforespørsel. Historisk personvern gjelder som for tingene: den som ble medlem under en strengere type, vises ikke for dem som kom senere, før vedkommende har godtatt den nye typen.
 
 ## Avklart
 

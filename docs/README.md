@@ -27,4 +27,4 @@ Uavklarte valg som tilhører produktspesifikasjon, UX eller arkitektur registrer
 
 ## Implementering
 
-[Implementeringsplanen](implementation/README.md) beskriver fase- og milepælrekkefølgen etter den validerte planleggingsfasen. [Kodeagent-arbeidspakkene](implementation/work-packages.md) er den konkrete arbeidskøen; [kvalitetsportene](implementation/quality-gates.md) angir hva som må være bevist før neste modenhetsnivå. [Lokal utvikling, database og CI](implementation/local-development.md) beskriver hvordan implementeringsgrunnlaget brukes.
+[Implementeringsplanen](implementation/README.md) beskriver fase- og milepælrekkefølgen etter den validerte planleggingsfasen. [Kodeagent-arbeidspakkene](implementation/work-packages.md) er den konkrete arbeidskøen, og [UI-arbeidspakkene](implementation/ui-work-packages.md) planlegger brukerflaten; [kvalitetsportene](implementation/quality-gates.md) angir hva som må være bevist før neste modenhetsnivå. [Lokal utvikling, database og CI](implementation/local-development.md) beskriver hvordan implementeringsgrunnlaget brukes.

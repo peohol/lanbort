@@ -1,0 +1,172 @@
+# Brukerflaten: UI-arbeidspakker
+
+> **Status:** Plan for Fase 8, 6. oktober 2026. Serverens domene og API er bygget for nesten hele produktmodellen; brukerflaten dekker foreløpig bare Hjem, Finn, Lån, lånets side, Mine ting (liste), Samtaler, Varsler og Konto. Denne planen bygger resten som én helhetlig, mobil-først app etter [UX-modellen](../ux/README.md).
+
+## Prinsipper for alle pakkene
+
+Hver pakke bygger skjermer, ikke regler. Domene- og autorisasjonsregler ligger på serveren og endres bare der pakken sier det.
+
+- **Én app, fem områder.** Alle sider ligger under de fem områdene, varslingslaget eller kontoen (UX-IA-001–003). En ny side er en kontekst i et område, aldri et nytt område. Miljøer er kontekster, ikke et eget produkt (UX-IA-004).
+- **Samme byggesteiner overalt.** Sider bruker komponentene og stilene fra WP-80 i stedet for egne varianter. Mangler en byggestein, legges den til i felles grunnlag i samme PR og brukes derfra.
+- **Mobil først.** Én kolonne på 320 px uten sidelengs rulling; større skjermer får mer plass, ikke en annen logikk (UX-A11Y-001).
+- **Neste steg først.** Detaljsider starter med statuskortet: kort status, tid, hvem som må handle, én primærhandling og diskret tilgang til mer (UX-INT-001, UX-INT-004, «Standard mønster for statuskort»). Sjeldne valg ligger under «Flere valg» (UX-INT-009). Historikk er sekundær (UX-IA-008).
+- **Samtykke navngir konsekvensen.** Bindende handlinger har en knappetekst som sier hva som skjer (UX-INT-003). Destruktive og personvernutvidende handlinger viser hva som forsvinner, hva som består og hvem som påvirkes (UX-INT-007). Reverserbare handlinger utføres direkte (UX-INT-002).
+- **Serveren avgjør.** Knapper vises bare når handlingen er gyldig for brukeren, men det er bare en hjelp; serveren avviser uansett. Etter en handling viser siden den nye tilstanden fra serveren (UX-INT-005), og et ukjent nettverksutfall vises som ukjent (UX-INT-006).
+- **Personvern i presentasjonen.** Kontekstmerke der betydningen avhenger av kontekst (UX-PRIV-003), «Tidligere bruker» uten lenke for slettede brukere (UX-PRIV-010), og ingen snarveier som gjenåpner tapt tilgang (UX-PRIV-007, UX-EXC-005).
+- **Varsler leder fram.** Når en kontekst får en egen side, peker varsler og Hjem dit (én linje i `navigation/targets.ts`, UX-INT-010).
+- **Ferdig betyr testet.** Hver ny side får én linje i tilgjengelighetstesten (`e2e/accessibility.spec.ts`) og minst én nettlesertest av hovedflyten. Nye domeneoperasjoner får integrasjonstester med eksplisitte avslag, og nye lese-ruter med ressurs- eller person-ID får en probe i sikkerhetstesten (WP-70).
+- **Åpne beslutninger bygges ikke.** Funksjoner som står avslått til en OD er avgjort (OD-0003, OD-0016, OD-0017, OD-0018, OD-0023), vises ikke i UI-et. OD-0024 (hvem medlemmer ser i et miljø) berører bare medlemslisten i WP-84 og hvordan man finner personer i WP-86; resten av pakkene kan bygges uten den.
+
+## Oversikt og rekkefølge
+
+| Pakke | Innhold | Avhenger av | Kan gå parallelt med |
+| --- | --- | --- | --- |
+| [WP-80](#wp-80--felles-ui-grunnlag) | Designsystem, app-skall, komponenter, ruter | — | ingen (legges først) |
+| [WP-81](#wp-81--mine-ting-og-objektskjema) | Mine ting, opprett og rediger objekt | WP-80 | alle andre |
+| [WP-82](#wp-82--objektets-side-for-eiere) | Objektets side for eiere | WP-80 | alle andre |
+| [WP-83](#wp-83--objekt-for-lånere-og-låneforespørsel) | Objekt for lånere, forespørsel og forespørselens side | WP-80 | alle andre |
+| [WP-84](#wp-84--miljøets-side-og-medlemskap) | Miljøets side, innmelding, opprett miljø | WP-80 | alle andre |
+| [WP-85](#wp-85--miljøadministrasjon) | Administrasjon av et miljø | WP-80 | alle andre |
+| [WP-86](#wp-86--personer-venner-og-tillit) | Personens side, venner, blokkering, tillit | WP-80 | alle andre |
+| [WP-87](#wp-87--lånets-side-og-anmeldelser) | Resten av lånets side og anmeldelser | WP-80 | alle andre |
+| [WP-88](#wp-88--saker-og-arbeidskø) | Sakens side, egne saker og administratorkø | WP-80 | alle andre |
+| [WP-27](work-packages.md#wp-27--synlighet-for-venner) | Synlighet for venner (server og UI) | WP-80; UI-delen også WP-81, WP-83, WP-86 | serverdelen med alle |
+
+Etter WP-80 kan WP-81–WP-88 og serverdelen av WP-27 gå samtidig. Pakkene eier hver sine sider, så de berører hverandre bare i felles filer der hver pakke legger til én linje: `navigation/targets.ts`, `navigation/routes.ts` og listen over sider i tilgjengelighetstesten. Objektets side (`/ting/[id]`) deles av WP-82 og WP-83: WP-80 legger siden med én visning for eiere og én for andre i hver sin fil, og pakkene bygger videre i hver sin.
+
+Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å registrere en ting, publisere den i et miljø, bli funnet, få en forespørsel og gjennomføre lånet.
+
+## WP-80 — Felles UI-grunnlag
+
+**Leverer:**
+
+- **Designsystem i CSS:** fargetokener for lys og mørk modus med kontrast etter WCAG 2.2 AA, avstander, radier og typografiskala. Primær-, sekundær- og farlig knapp. Tonene for status (nøytral, venter, positiv, advarsel, fare) uttrykkes alltid også med tekst (UX-A11Y-005).
+- **App-skall:** toppfelt med merke, varselindikator og konto, og de fem områdene nederst på mobil og ved siden på desktop (finnes, får designsystemet). Sidetopp med tittel, tilbakelenke til området og kontekstmerke for detaljsider.
+- **Komponenter:** sidetopp (`PageHeader`), statuskort (`StatusCard`), merke for status og kontekst (`Tag`, `ContextTag`), tom tilstand (`EmptyState`), «Flere valg» (`MoreActions`), konsekvensdialog (`ConfirmAction`, UX-INT-007), skjemafelt med hjelpetekst og feil (`Field`) og skjema som sender en kommando (`CommandForm`). Kommandoene deler én mekanisme med `ActionButton`: idempotensnøkkel, opptatt-tilstand, feilmelding, annonsering og ny lesing fra serveren.
+- **Ruter:** én modul med adressene til alle sider i planen (`navigation/routes.ts`), så pakkene lenker til hverandre før sidene finnes. `targetPages` peker bare til sider som finnes.
+- **Objektets side som ramme:** `/ting/[id]` velger visning for eiere eller for andre, med en enkel første versjon av hver som WP-82 og WP-83 bygger videre på.
+- **E-postlenken fra varsler:** `/?varsel=<id>` merker varselet lest og sender brukeren videre til konteksten, eller til Varsler når konteksten ikke har en side (UX-INT-010).
+- Eksisterende sider tas over på designsystemet uten å endre hva de gjør.
+
+**Skjermer og flyter:** app-skallet og alle eksisterende sider (utseende), objektets side (ramme), varselslenken.
+
+**Avhenger av:** ingenting.
+
+## WP-81 — Mine ting og objektskjema
+
+**Leverer:** Én måte å registrere og redigere ting på, uansett inngang (UX-JRN-003).
+
+**Skjermer og flyter:**
+
+- **Mine ting** (`/mine-ting`): egne og medeide ting med kort status (kan lånes ut, utlånt, sperret, arkivert), medeierinvitasjoner (finnes), knappen «Registrer en ting» og pilotgrensen (finnes).
+- **Opprett** (`/ting/ny`, med `?miljo=` når brukeren starter fra et miljø): ett skjema i rekkefølgen tittel og kategori → beskrivelse og bilder (1–5, fjerning) → tilgjengelighet (ett eller flere intervaller, åpne eller avgrensede) → valgfrie vilkår → publiseringskontekster → gjennomgå og publiser. Miljøet brukeren startet fra er forhåndsvalgt. Pilotgrensen (PS-OBJ-019) vises ved kategori.
+- **Rediger** (`/ting/[id]/rediger`): samme skjema. Ved medeierskap oppdager skjemaet at noen andre har lagret i mellomtiden og lar brukeren se det før hen lagrer (PS-OBJ-013, «Samtidig redigering»). Endrede vilkår forklares: åpne forespørsler må bekreftes på nytt (PS-LOAN-005, OD-0014).
+
+**Avhenger av:** WP-80. Valget «Venner» legges i publiseringssteget av WP-27.
+
+## WP-82 — Objektets side for eiere
+
+**Leverer:** Eiernes oversikt over én ting og alt de kan gjøre med den, uten falsk kontroll over etablerte lån (UX-JRN-011).
+
+**Skjermer og flyter** (eiervisningen av `/ting/[id]`):
+
+- Statuskort: kan lånes ut nå eller hvorfor ikke (sperre, frysing, uavklart besittelse), neste kommende lån.
+- Publiseringer per miljø med status (venter på godkjenning, aktiv, avvist, sperret), publiser i et nytt miljø og trekk tilbake (PS-OBJ-006, PS-OBJ-017).
+- Lån og forespørsler for tingen, med lenke til hvert lån (`loan.list_for_co_owner`).
+- Medeiere: inviter, trekk invitasjon, tre ut (med konsekvens), medeieres begrensninger og opphevelse (PS-OBJ-007–010, UX-EXC-006).
+- Under «Flere valg»: arkiver og gjenopprett, slett (samtykke fra alle eiere, med konsekvensvisning, PS-OBJ-011) og versjonshistorikk med gjenoppretting av en tidligere versjon (PS-OBJ-013).
+
+**Avhenger av:** WP-80. Lenken «Rediger» går til WP-81s side.
+
+## WP-83 — Objekt for lånere og låneforespørsel
+
+**Leverer:** Hele veien fra en funnet ting til en sendt, besvart og godkjent forespørsel, likt for miljølån og vennelån (UX-JRN-004, UX-JRN-005, UX-JRN-006, PS-LOAN-001).
+
+**Skjermer og flyter:**
+
+- **Objekt for andre** (visningen for ikke-eiere av `/ting/[id]`, med opprinnelsen i adressen, `?miljo=<id>` eller direkte): innhold, bilder, ledighet, vilkår og opprinnelse som kontekstmerke. Primærhandling «Be om å låne». Miljøets spørsmål og svar og «Følg tingen» hører til her (PS-OBJ-014–015, WP-63).
+- **Forespørsel** (`/ting/[id]/lan`): periode (dato eller «så snart som mulig», sluttdato eller varighet, aldri begge, UX-JRN-004), valgfri melding med forklaringen fra PS-LOAN-004, bekreftelse av vilkårene og ansvarserklæringen ved vennelån (PS-LOAN-003), gjennomgang og send. Etter sending går brukeren til forespørselens side med «Venter på svar fra …».
+- **Forespørselens side** (`/lan/foresporsel/[id]`): status og hva det ventes på; låntaker kan trekke den og bekrefte nye vilkår (PS-LOAN-005); utlåner ser periode, vilkår og kollisjoner og kan godkjenne med en knapp som navngir avtalen («Godkjenn lån 10.–12. oktober»), avslå eller godta ansvarserklæringen. Godkjenning leder til lånets side.
+- Lån-listen og Hjem lenker forespørsler til siden (`targets.ts`), og treff i Finn lenker til objektet.
+- **Server:** meldingen blir valgfri (PS-LOAN-004, rest fra WP-30): kontrakt, databasekolonne og tester.
+
+**Avhenger av:** WP-80.
+
+## WP-84 — Miljøets side og medlemskap
+
+**Leverer:** Miljøet som kontekst: forstå det før innmelding, bli med, bruke det, og forlate det (UX-IA-004, UX-JRN-002).
+
+**Skjermer og flyter:**
+
+- **Miljøets side** (`/miljoer/[id]`): navn, type forklart i vanlige ord, område, regler og krav. For ikke-medlemmer bare det typen tillater (PS-ENV-001, UX-PRIV-002). For medlemmer: tingene i miljøet med lenke til objektet, «Registrer en ting her» (til WP-81 med miljøet forhåndsvalgt) og kontakt med administratorene.
+- **Innmelding:** bli med (åpent), søk med svar på krav (lukket), godta invitasjon (skjult), svar på spørsmål om mer informasjon, og følg status (PS-ENV-004–006).
+- **Typeendring for medlemmer:** se hva økt synlighet betyr og akseptere eller forlate innen fristen (UX-PRIV-008, PS-ENV-008).
+- **Forlat miljøet** med konsekvensvisning; passiv status forklart.
+- **Medlemmer og eiere:** om medlemmer ser hverandre og hvem som eier en ting i miljøet, avgjøres i OD-0024. Til da vises verken medlemsliste eller eiere, som i dag.
+- **Opprett miljø** (`/miljoer/ny`): navn, type, beskrivelse, område og krav.
+- Hjem lenker «Dine miljøer» og miljøvarsler til siden, og miljøtreff i Finn lenker hit.
+
+**Avhenger av:** WP-80.
+
+## WP-85 — Miljøadministrasjon
+
+**Leverer:** Administratorens oppgaver som konkrete oppgaver på miljøet, ikke skjulte superbrukerknapper (UX-JRN-012, UX-PRIV-006).
+
+**Skjermer og flyter** (`/miljoer/[id]/administrer`, bare for miljøets roller):
+
+- Innmeldinger: godkjenn, avvis, be om mer informasjon; inviter og trekk invitasjon.
+- Publiseringer: forhåndsgodkjenning av og på, godkjenn, avvis, sperr og opphev sperre (PS-ENV-011, PS-OBJ-017).
+- Innstillinger: navn, beskrivelse, område (fyller hullet etter WP-62) og medlemskrav med overgangsfrist (PS-ENV-005–006).
+- Roller: inviter og fjern administrator, tre ut, tilby eierskap; ta over et eierløst miljø (PS-ENV-012–014). Manglende administrator vises som manglende behandlingsevne (UX-EXC-009).
+- Typeendring med konsekvensvisning og status for avstemningen (PS-ENV-007–008), og avvikling med angrefrist (PS-ENV-013).
+- Miljøets sakskø lenkes fra her (WP-88).
+
+**Avhenger av:** WP-80.
+
+## WP-86 — Personer, venner og tillit
+
+**Leverer:** Personer som egne sider, og vennskap og blokkering der personen vises (PS-USR-003–007, PS-TRUST-006–012).
+
+**Skjermer og flyter:**
+
+- **Personens side** (`/personer/[id]`): navn, kontekstuell tillitsprofil (anmeldelser og aggregater etter tillitsreglene), handlinger etter relasjon: send, trekk, godta eller avslå venneforespørsel, fjern venn, blokker og opphev blokkering (med konsekvens). Ingen side og ingen lenke for slettede eller blokkerende brukere (UX-PRIV-007, UX-PRIV-010).
+- Personnavn i lån, forespørsler og saker lenker til siden der relasjonen tillater det. Om man også når personer gjennom et felles miljø, avgjøres i OD-0024.
+- **Konto** (`/konto`): venner, ventende forespørsler og blokkerte (finnes) får designsystemet og lenker til personens side.
+
+**Avhenger av:** WP-80. Tingene en venn har gjort synlige for venner legges på siden av WP-27.
+
+## WP-87 — Lånets side og anmeldelser
+
+**Leverer:** Resten av låneforløpet på lånets side, så ingen del av lånet krever en annen flate (UX-JRN-007–010, UX-EXC-001–010).
+
+**Skjermer og flyter** (`/lan/[id]`, finnes):
+
+- Statuskortet får designsystemet.
+- Foreslå endring av perioden (datovelger, PS-LOAN-010); svar på forslag finnes.
+- Kanseller før overlevering med konsekvensvisning (PS-LOAN-011).
+- Tilby ansvarsoverføring til en medeier (PS-LOAN-009); svar finnes.
+- Be miljøet om mekling og lenke til saken (PS-LOAN-018, WP-88).
+- **Anmeldelse** etter avslutning: bare dimensjonene som kan vurderes, forklaringen om skjult periode, og ett tilsvar (UX-JRN-010, PS-TRUST-001–005).
+- **Hjem:** lån der eier må bekrefte kontroll over tingen før nye lån, vises som ventende handling (hull fra WP-60).
+
+**Avhenger av:** WP-80.
+
+## WP-88 — Saker og arbeidskø
+
+**Leverer:** Saker i sin kontekst for partene og som arbeidskø for dem som har behandlingsansvar (UX-IA-007, PS-COM-010–015).
+
+**Skjermer og flyter:**
+
+- **Sakens side** (`/saker/[id]`): hva saken gjelder med kontekstmerke, status og hvem som behandler, partenes innlegg og forklaringsrunder (PS-COM-012), del forklaringer, og for behandleren: ta, slipp, overfør, erklær inhabilitet, eskaler, tiltak og lukk. Inhabil bruker får ikke behandlingshandlinger (UX-PRIV-006).
+- **Egne saker** fra Konto, og saken lenket fra lånet, miljøet eller varselet den gjelder.
+- **Miljøets kø** for administratorer, lenket fra miljøadministrasjonen (WP-85) og Hjem.
+- **Rapporter og kontakt:** rapporter et objekt eller en person i et miljø eller til plattformen, og kontakt miljøets administratorer.
+- **Privat melding som dokumentasjon** (WP-46): velg meldinger i samtalen og send en lesbar kopi med innlegget.
+- Plattformforvalternes kø vises ikke før WebAuthn er bygget (OD-0023), fordi handlingene avvises til da.
+
+**Avhenger av:** WP-80.
+
+## Senere
+
+- Demping og arkivering av lånesamtalen (rest fra WP-44) og start av samtale fra personens side. Privat chat er av for ekte brukere til Port C.
+- Profilbilde, kort presentasjon og synlighetsvalg per profilfelt (PS-USR-002), når profilfeltene er fastsatt.
