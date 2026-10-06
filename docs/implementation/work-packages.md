@@ -203,7 +203,7 @@ Parallelle godkjenninger, retry, dobbelttrykk, avtaleendring og gjenåpnet retur
 ### WP-72 — Backup/restore-øvelse
 Verifiser RPO/RTO-mål, rebuild av indeks og at slettet/begrenset data ikke blir aktivt igjen. I utviklingsfasen er strategien gjenoppbygging fra migrasjonene og manuelle dumps på Supabase Free ([ADR-0009](../architecture/decisions/ADR-0009-backup-i-utviklingsfasen.md)).
 
-**Status:** Øvelsen kjører i CI ([backup og gjenoppretting](backup-restore.md)). Backupnivået er bevisst utsatt (produkteier, 6. oktober 2026): Supabase Free beholdes foreløpig, og backupstrategien avgjøres før appen åpnes for et eksternt testpanel (Port D). Det er ikke et åpent spørsmål før da.
+**Status:** Øvelsen kjører i CI ([backup og gjenoppretting](backup-restore.md)). Backupnivået er bevisst utsatt (produkteier, 6. oktober 2026): Supabase Free beholdes foreløpig, og backupstrategien avgjøres før appen åpnes for et eksternt testpanel (Port D). Valget står som OD-0022 til da.
 
 ### WP-73 — Misbruks- og rate-limit-hardening
 Kontaktspam, scraping, invitasjoner, rapportering og auth-angrep.

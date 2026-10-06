@@ -178,6 +178,13 @@ Gjennomgått 6. oktober 2026. To åpne spørsmål må avgjøres før UI-designet
 - **Spørsmål:** Skal plattformforvaltere kunne utnevnes og fjernes inne i appen, og i så fall av hvem? Inntil dette er besluttet, skjer det bare med den revisjonsloggede driftskommandoen.
 - **Avklares før:** kan vente. Driftskommandoen dekker behovet.
 
+### OD-0022 — Backupnivå for piloten
+- **Lag:** Arkitektur
+- **Status:** Åpen
+- **Berører:** PS-NFR-014, [ADR-0009](architecture/decisions/ADR-0009-backup-i-utviklingsfasen.md), WP-72
+- **Spørsmål:** Hvilket backupnivå skal piloten ha: betalt Supabase-plan med daglig backup (eventuelt Point-in-Time Recovery), planlagte krypterte dumps på gratisplanen, eller lengre RPO for en liten pilot? Inntil dette er besluttet, beholdes Supabase Free med gjenoppbygging og manuelle dumps (produkteier, 6. oktober 2026).
+- **Avklares før:** appen åpnes for et eksternt testpanel (Port D).
+
 ## Avklart
 
 ### OD-0005 — Kryptografisk modell for ende-til-ende-kryptert chat
