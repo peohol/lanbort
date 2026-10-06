@@ -170,9 +170,11 @@ Administratorer og forvaltere skal så langt som mulig møte:
 - progressiv avdekking av detaljer, historikk og sjeldne funksjoner
 - samme grunnleggende språk og komponentmønstre som resten av appen
 
-## Fase 8 — Vertikal implementering og validering
+## Parallelt spor fra fase 4 — Vertikal implementering og validering
 
-Design skal ikke ferdigstilles isolert før implementering begynner.
+Dette er ikke et avsluttende trinn etter designfasene. Sporet starter så snart den første sammenhengende designbolken i fase 4 er stabil nok, og løper parallelt med fase 4–7.
+
+Design skal dermed ikke ferdigstilles isolert før implementering begynner.
 
 Når en sammenhengende bolk er stabil nok:
 
