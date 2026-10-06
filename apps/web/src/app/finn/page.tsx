@@ -20,7 +20,11 @@ import {
   type Location,
   locate,
 } from "@/presentation/places";
-import { objectHref } from "@/navigation/routes";
+import {
+  environmentHref,
+  newEnvironmentHref,
+  objectHref,
+} from "@/navigation/routes";
 import { describeAvailability } from "@/presentation/objects";
 import {
   describeFoundIn,
@@ -300,7 +304,9 @@ async function EnvironmentSearch({
       >
         {result?.environments.map((environment) => (
           <li key={environment.id} className="entry">
-            <strong>{environment.name}</strong>
+            <Link href={environmentHref(environment.id)}>
+              <strong>{environment.name}</strong>
+            </Link>
             <span className="entry-detail">
               {[environmentTypeLabels[environment.type], environment.location]
                 .filter(Boolean)
@@ -315,6 +321,9 @@ async function EnvironmentSearch({
           </li>
         ))}
       </Results>
+      <p className="link-row">
+        <Link href={newEnvironmentHref}>Opprett et miljø</Link>
+      </p>
     </>
   );
 }

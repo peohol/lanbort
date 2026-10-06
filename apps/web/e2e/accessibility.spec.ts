@@ -50,6 +50,7 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
     path: ({ ladder, environmentId }) =>
       `/ting/${ladder}?miljo=${environmentId}`,
   },
+  { name: "Miljøet", path: ({ environmentId }) => `/miljoer/${environmentId}` },
   { name: "Samtaler", path: () => "/samtaler" },
   { name: "Varsler", path: () => "/varsler" },
   { name: "Konto", path: () => "/konto" },
@@ -251,6 +252,8 @@ async function keyboardProblems(page: Page) {
     ].filter(
       (element) =>
         !(element as HTMLButtonElement).disabled &&
+        // What a closed «Flere valg» holds is reached once it is opened.
+        !element.closest("details:not([open]) > :not(summary)") &&
         element.getClientRects().length > 0 &&
         getComputedStyle(element).visibility !== "hidden",
     );

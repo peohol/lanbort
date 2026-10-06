@@ -1,6 +1,7 @@
 import type {
   Environment,
   EnvironmentContinuity,
+  EnvironmentMembers,
   EnvironmentMemberships,
   EnvironmentRoles,
   EnvironmentRole,
@@ -36,6 +37,7 @@ import {
   widenedAfterPassivation,
 } from "./privacy";
 import {
+  listMembersPolicy,
   listMembershipsPolicy,
   listRolesPolicy,
   listOwnEnvironmentsPolicy,
@@ -53,6 +55,7 @@ import {
   typePeriods,
 } from "./type-change-store";
 import { rateLimits } from "../abuse/rate-limits";
+import { inSnapshot } from "../objects/state";
 
 const environmentInput = z.strictObject({ environmentId: z.uuid() });
 
@@ -404,6 +407,133 @@ export const listMemberships = defineQuery({
       realName: membership.realName,
     })),
     restrictedUserIds: resource.restrictedUserIds,
+  }),
+});
+
+/**
+ * Of the given users, those an ordinary member may not be shown: an account
+ * that is not active, or a block either way with the viewer (PS-USR-006,
+ * UX-PRIV-007). Neither side learns which.
+ */
+async function hiddenFromViewer(
+  db: Parameters<typeof findContinuity>[0],
+  viewerId: string,
+  userIds: readonly string[],
+): Promise<Set<string>> {
+  if (userIds.length === 0) {
+    return new Set();
+  }
+
+  const inactive = await db
+    .selectFrom("app.users")
+    .select("id")
+    .where("id", "in", [...userIds])
+    .where("status", "<>", "active")
+    .execute();
+  const blocks = await db
+    .selectFrom("app.user_blocks")
+    .select(["blocker_id", "blocked_id"])
+    .where("lifted_at", "is", null)
+    .where((eb) =>
+      eb.or([
+        eb.and([
+          eb("blocker_id", "=", viewerId),
+          eb("blocked_id", "in", [...userIds]),
+        ]),
+        eb.and([
+          eb("blocked_id", "=", viewerId),
+          eb("blocker_id", "in", [...userIds]),
+        ]),
+      ]),
+    )
+    .execute();
+
+  return new Set([
+    ...inactive.map((row) => row.id),
+    ...blocks.map((row) =>
+      row.blocker_id === viewerId ? row.blocked_id : row.blocker_id,
+    ),
+  ]);
+}
+
+/** In alphabetical order, names that are gone last. */
+const byName = <T extends { realName: string | null }>(people: readonly T[]) =>
+  [...people].sort(
+    (a, b) =>
+      Number(a.realName === null) - Number(b.realName === null) ||
+      (a.realName ?? "").localeCompare(b.realName ?? "", "nb"),
+  );
+
+/**
+ * The other active members, as an active member sees them (vision 03): name
+ * and role, so members can find each other's pages and become friends. With
+ * the same historical visibility as the administrators' list (PS-ENV-009),
+ * and nothing given to the membership process (UX-PRIV-009). Passive
+ * members, accounts that are not active and anyone the viewer has blocked
+ * or is blocked by are left out.
+ */
+export const listEnvironmentMembers = defineQuery({
+  name: "environment_member.list",
+  input: environmentInput,
+  policy: listMembersPolicy,
+  rateLimit: rateLimits.lookups,
+  load: ({ db, actor, input, now }) =>
+    inSnapshot(db, async (tx) => {
+      const access = await loadEnvironmentAccess(
+        tx,
+        input.environmentId,
+        actor,
+        now,
+      );
+
+      if (!access) {
+        return null;
+      }
+
+      const viewerId = actor.kind === "user" ? actor.userId : null;
+      const visible = historicallyVisible(
+        await typePeriods(tx, input.environmentId),
+        activeFrom(access.ownMembership),
+      );
+      const candidates = (
+        await listCurrentMemberships(tx, input.environmentId, ["active"])
+      ).filter(
+        (membership) =>
+          membership.userId !== viewerId &&
+          effectiveState(membership, now) === "active" &&
+          visible(membership),
+      );
+      const hidden = viewerId
+        ? await hiddenFromViewer(
+            tx,
+            viewerId,
+            candidates.map((membership) => membership.userId),
+          )
+        : new Set<string>();
+      const members = candidates.filter(
+        (membership) => !hidden.has(membership.userId),
+      );
+      const grants = await tx
+        .selectFrom("app.environment_role_grants")
+        .select(["user_id", "role"])
+        .where("environment_id", "=", input.environmentId)
+        .where("revoked_at", "is", null)
+        .orderBy("role", "desc")
+        .execute();
+
+      return {
+        resource: { ...access, members, grants },
+        context: undefined,
+      };
+    }),
+  present: ({ resource }): EnvironmentMembers => ({
+    members: byName(resource.members).map((membership) => ({
+      userId: membership.userId,
+      realName: membership.realName,
+      roles: resource.grants
+        .filter((grant) => grant.user_id === membership.userId)
+        .map((grant) => grant.role as EnvironmentRole),
+    })),
   }),
 });
 

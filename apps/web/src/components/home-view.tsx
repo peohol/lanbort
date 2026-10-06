@@ -1,5 +1,6 @@
 import type { HomeItem, HomeOverview } from "@lanbort/contracts";
 import Link from "next/link";
+import { environmentHref, newEnvironmentHref } from "@/navigation/routes";
 import { hrefFor } from "@/navigation/targets";
 import {
   describeHomeItem,
@@ -59,7 +60,9 @@ export function HomeView({
           <ul className="entries">
             {home.environments.map((environment) => (
               <li key={environment.id} className="entry">
-                <span>{environment.name}</span>
+                <Link href={environmentHref(environment.id)}>
+                  {environment.name}
+                </Link>
                 {environment.roles.length > 0 && (
                   <span className="entry-detail">
                     Du er{" "}
@@ -71,6 +74,9 @@ export function HomeView({
               </li>
             ))}
           </ul>
+          <p className="link-row">
+            <Link href={newEnvironmentHref}>Opprett et miljø</Link>
+          </p>
         </section>
       )}
     </main>

@@ -4,7 +4,7 @@ import type {
 } from "@lanbort/contracts";
 import { accountHref } from "./areas";
 import { chatDevicesHref } from "./chat";
-import { loanHref } from "./routes";
+import { environmentHref, loanHref } from "./routes";
 
 interface Place {
   /** The page that shows the target. */
@@ -30,7 +30,7 @@ const targetPages: Record<NotificationTargetType, Place | null> = {
   loan_request: entryOn("/lan", (id) => `foresporsel-${id}`),
   object_invitation: entryOn("/mine-ting", (id) => `invitasjon-${id}`),
   user: entryOn(accountHref, () => "venner"),
-  environment: null,
+  environment: { href: environmentHref, anchor: (id) => `miljo-${id}` },
   case: null,
   object_question: null,
   object_subscription: null,

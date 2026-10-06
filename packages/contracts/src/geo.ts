@@ -73,5 +73,21 @@ export function nearOf({
     : { latitude, longitude, radiusKm };
 }
 
+/**
+ * A place found by name, to centre an approximate area on: in words, and
+ * already as coarse as an area may be.
+ */
+export const placeOptionSchema = z.strictObject({
+  label: z.string(),
+  latitude: z.number(),
+  longitude: z.number(),
+});
+
+export const placeOptionsSchema = z.strictObject({
+  places: z.array(placeOptionSchema),
+});
+
 export type GeoArea = z.infer<typeof geoAreaSchema>;
+export type PlaceOption = z.infer<typeof placeOptionSchema>;
+export type PlaceOptions = z.infer<typeof placeOptionsSchema>;
 export type AreaRadiusKm = GeoArea["radiusKm"];
