@@ -46,6 +46,8 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       # Optional. Without it the CLI signs in with a temporary login role.
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      # Send-only Resend API key for Auth's SMTP (supabase/config.toml).
+      SUPABASE_AUTH_SMTP_PASSWORD: ${{ secrets.SUPABASE_AUTH_SMTP_PASSWORD }}
 
     steps:
       - name: Check out repository
@@ -100,6 +102,12 @@ jobs:
               ;;
             config-diff) pnpm exec supabase config diff ;;
             config-push)
+              # Without the key the CLI would push an empty SMTP password and
+              # sign-in codes would stop arriving.
+              if [ -z "$SUPABASE_AUTH_SMTP_PASSWORD" ]; then
+                echo "::error::The SUPABASE_AUTH_SMTP_PASSWORD repository secret is missing."
+                exit 1
+              fi
               pnpm exec supabase config push --yes
               pnpm exec supabase config diff
               ;;

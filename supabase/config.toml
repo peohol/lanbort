@@ -75,3 +75,16 @@ additional_redirect_urls = ["https://lanbort.vercel.app/**", "https://www.xn--ln
 # Auth's usual minute between codes to the same address applies.
 [remotes.production.auth.email]
 max_frequency = "60s"
+
+# Production sends Auth e-mail (sign-in codes) through Resend on the verified
+# domain; the built-in sender only reaches the project's own team. The
+# password is a send-only Resend API key in the repository secret
+# SUPABASE_AUTH_SMTP_PASSWORD, which the production workflow passes in.
+[remotes.production.auth.email.smtp]
+enabled = true
+host = "smtp.resend.com"
+port = 465
+user = "resend"
+pass = "env(SUPABASE_AUTH_SMTP_PASSWORD)"
+admin_email = "ikke-svar@xn--lnbort-iua.no"
+sender_name = "Lånbort"
