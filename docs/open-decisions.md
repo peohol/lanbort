@@ -51,7 +51,7 @@ Når spørsmålet er avgjort:
 
 ## Status før UI-arbeidet
 
-Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket ett nytt, smalt spørsmål, [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som bare berører hvordan tingene i et miljø vises ([UI-planen](implementation/ui-work-packages.md)). De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
+Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket ett nytt, smalt spørsmål, [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som bare berører hvordan tingene i et miljø vises ([UI-planen](implementation/ui-work-packages.md)). [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
 
 ## Åpne
 
@@ -182,6 +182,24 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Avhenger av:** Produktvurdering av personvern i miljøer.
 - **Avklares før:** WP-84 og WP-83 viser eieren på tingene. Til da vises tingene uten eier, og resten av UI-arbeidet bygges uten den.
 - **Anbefaling:** Vis eierens navn på tingene for aktive medlemmer, med lenke til profilen, siden de allerede ser hverandre i medlemslisten. For ting publisert under en strengere type gjelder samme historiske synlighet som i medlemslisten.
+
+### OD-0025 — Fjerning og utestengelse av aktive medlemmer i et miljø
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-ENV-004, PS-TRUST-013, PS-TRUST-016, PS-USR-009, [visjon 03](vision/03-miljoer.md) («Kontinuitet ved avvikling, utestengelse og manglende administrasjon»), [skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md#medlemmer-og-utestengelse)
+- **Spørsmål:** Visjonen forutsetter at et medlem kan bli utestengt etter at et lån er godkjent, og at administratorene modererer i eget miljø, men verken visjonen eller spesifikasjonen sier om administratorene kan avslutte eller stenge ute et aktivt medlem. Hvis ja: kan alle administratorer gjøre det eller bare eieren, kreves en rapport eller sak som grunnlag, og hva får medlemmet vite? I dag kan noen bare stenges ute når en søknad avslås, og de lokale tiltakene i en rapport gjelder publiseringer, ikke medlemskap. Inntil dette er besluttet, har administratorene ingen handling for å fjerne et aktivt medlem.
+- **Avhenger av:** Produktvurdering av miljøadministratorens myndighet og habilitet.
+- **Avklares før:** miljøadministrasjonen skal kunne fjerne medlemmer. Til da vises ingen slik handling.
+- **Anbefaling:** La habile administratorer avslutte et aktivt medlemskap med begrunnelse, eventuelt også stenge for nye forsøk, som et sporbart modereringstiltak (PS-TRUST-016) med samme virkning på pågående lån som utmelding.
+
+### OD-0026 — Hvor plattformforvalterens inngrep på kontoer og miljøer gjøres
+- **Lag:** UX
+- **Status:** Åpen
+- **Berører:** UX-IA-007, UX-PRIV-006, PS-ADM-003, PS-ADM-009, PS-ADM-010, PS-ADM-014, PS-TRUST-016, [visjon 03](vision/03-miljoer.md) («Administrasjon»), OD-0023, [skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md#inngrep-på-kontoer)
+- **Spørsmål:** UX-modellen sier at plattformforvalterens handlinger ligger «i relevant plattformkontekst» og at forvalterne får en arbeidskø, men ikke hvor inngrep som ikke hører til én bestemt rapport gjøres: suspensjon og gjeninnsetting, kontrollert kontoavslutning, duplikat og falsk identitet, og inngrep mot misbruk av en administrator- eller eierrolle i et miljø. Skal slike inngrep alltid startes fra en sak i plattformkøen, fra personens eller miljøets side for den som har rollen, eller fra en egen plattformflate?
+- **Avhenger av:** Fase 7 i [planen for UI-designfasen](planning/ui-design-plan.md) og OD-0023.
+- **Avklares før:** plattformforvalterens flater designes og vises (etter OD-0023). Til da finnes ingen slik flate i appen.
+- **Anbefaling:** Start alle inngrep fra en sak i plattformkøen, slik at begrunnelse, habilitet og historikk følger saken (PS-TRUST-016, PS-ADM-014), og vis ingen forvalterhandlinger på ordinære person- og miljøsider.
 
 ## Avklart
 

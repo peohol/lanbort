@@ -172,3 +172,4 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 
 - Demping og arkivering av lånesamtalen (rest fra WP-44) og start av samtale fra personens side. Privat chat er av for ekte brukere til Port C.
 - Profilbilde, kort presentasjon og synlighetsvalg per profilfelt (PS-USR-002), når profilfeltene er fastsatt.
+- Flatene [skjerm- og flytinventaret](../ux/08-skjerm-og-flytinventar.md#hull-flater-uten-ui-pakke) viser at ingen pakke bygger ennå: varslingsvalg, sletting av konto, egen kontostatus, melding om mulig dødsfall og administratorenes oversikt over medlemmer og utestengte.
