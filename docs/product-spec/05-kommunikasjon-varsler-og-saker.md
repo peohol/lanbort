@@ -27,7 +27,7 @@ Systemet skal ikke bruke én universell innboks som semantisk modell. Varsler re
 ### PS-COM-005 — Privat chat er ende-til-ende-kryptert som produktkrav
 **Forankring:** [Ende-til-ende-kryptering](../vision/06-kommunikasjon-varsler-og-saker.md)
 
-Vanlig privat fritekst og private vedlegg mellom to brukere, inkludert privat samtale rundt et konkret lån, skal bare kunne leses av samtaledeltakerne. Strukturerte lånehendelser er systemdata og omfattes ikke av dette kravet.
+Vanlig privat fritekst og private vedlegg mellom to brukere, inkludert privat samtale rundt et konkret lån, skal bare kunne leses av samtaledeltakerne. Strukturerte lånehendelser og den valgfrie meldingen i en låneforespørsel (PS-LOAN-004) er del av den strukturerte henvendelsen og omfattes ikke av dette kravet.
 
 ### PS-COM-006 — Ikke-venners første kontakt er kontrollert
 **Forankring:** PS-USR-005

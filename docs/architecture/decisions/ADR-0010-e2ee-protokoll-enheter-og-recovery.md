@@ -216,7 +216,7 @@ Klienten sender ingen «lest»- eller «skriver»-signaler (PS-COM-004). Enheten
 - CSP uten `unsafe-inline` for skript på chatsidene.
 - Gjenopprettingsnøkkel med sikkerhetskopi kan leveres i WP-43 eller i en egen pakke rett etter, men chat aktiveres ikke for reelle brukere før kobling, fjerning av enhet og tilbakestilling virker og Port C er oppfylt.
 - Nye hendelsestyper og tabeller klassifiseres for gjenoppretting (WP-72), i tråd med punkt 9.
-- OD-0015 (meldingen i en låneforespørsel) er fortsatt et produktspørsmål; denne ADR-en avgjør det ikke.
+- Meldingen i en låneforespørsel er del av den strukturerte forespørselen og omfattes ikke av ende-til-ende-krypteringen (PS-LOAN-004, avklart i OD-0015).
 
 **WP-44 — lånelogistikk ved blokkering**
 

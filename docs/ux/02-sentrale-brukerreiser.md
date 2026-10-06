@@ -38,7 +38,7 @@ Brukeren kan starte fra Mine ting eller fra et miljø. Samme skjema brukes:
 2. beskrivelse og eventuelle bilder
 3. tilgjengelighet
 4. valgfrie vilkår
-5. velg publiseringskontekst(er)
+5. velg publiseringskontekst(er): «Venner» og/eller miljøer, der «Venner» er av som standard (PS-OBJ-020)
 6. gjennomgå og publiser
 
 Starter brukeren i et miljø, er dette miljøet forhåndsvalgt, men objektet opprettes fortsatt som brukerens globale objekt.
@@ -48,7 +48,9 @@ Starter brukeren i et miljø, er dette miljøet forhåndsvalgt, men objektet opp
 ### UX-JRN-004 — Forespørsel skal samles i ett kort forløp
 **Forankring:** UX-P03, UX-P07; PS-LOAN-004
 
-Objekt → velg ønsket periode/start → skriv kort melding → gjennomgå → send. UI skal ikke be om samme tidsinformasjon både som intervall og varighet.
+Objekt → velg ønsket periode/start → eventuelt skriv en kort melding → gjennomgå → send. UI skal ikke be om samme tidsinformasjon både som intervall og varighet.
+
+Meldingen er valgfri og vises i forespørselen for begge parter, ikke i Samtaler. Feltet forklarer kort at den er synlig for den andre parten og ikke er ende-til-ende-kryptert, og at videre samtale skjer i privat chat (PS-LOAN-004).
 
 Etter sending går brukeren direkte til lånedetaljen med tydelig status «Venter på svar fra …».
 
@@ -58,6 +60,11 @@ Etter sending går brukeren direkte til lånedetaljen med tydelig status «Vente
 Utlåner ser forespørsel, periode, relevante vilkår og kollisjonsstatus. Ved godkjenning viser bekreftelsesflaten hva som blir bindende. Godkjenning skal ikke presenteres som en triviell «liker»-handling.
 
 ## Direkte vennelån
+
+### UX-JRN-013 — Direkte vennelån starter fra vennens objekt
+**Forankring:** UX-P02; PS-OBJ-020, PS-USR-004, PS-LOAN-001
+
+En venn finner objektet på eierens profil eller med filteret «Venner» i Finn. Derfra brukes samme forespørselsforløp som i UX-JRN-004, med opprinnelsen «Direkte mellom venner» som kontekst. Det finnes ingen egen liste over alle venners ting utenom profilen og filteret.
 
 ### UX-JRN-006 — Ansvarserklæringen er del av godkjenningen, ikke onboarding
 **Forankring:** UX-P03, UX-P19; PS-LOAN-003

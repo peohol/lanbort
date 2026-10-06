@@ -38,6 +38,13 @@ Når fysisk besittelse er reelt uavklart, er objektet ikke tilgjengelig for nye 
 
 En miljøpublisering krever at minst én nåværende medeier har nødvendig adgang til miljøet. Hvis siste adgangsberettigede medeier mister adgang, avpubliseres objektet der og ikke-godkjente forespørsler avsluttes nøytralt. Godkjente lån fortsetter.
 
+### PS-OBJ-020 — Synlighet for venner er et eget publiseringsvalg
+**Forankring:** VP-03, VP-06, VP-08; [Vennskap](../vision/02-brukere-roller-og-relasjoner.md); avklarer OD-0013 (produkteier, 6. oktober 2026)
+
+Et objekt kan eksplisitt publiseres til venner som et eget publiseringsvalg ved siden av miljøpubliseringene (PS-OBJ-006). Valget er av som standard. Et objekt som er synlig for venner, vises for eierens venner på eierens profil og kan finnes gjennom filteret «Venner» i Finn, og en direkte låneforespørsel (PS-USR-004) startes derfra. Et objekt som ikke er synlig for venner, kan ikke forespørres direkte.
+
+Som en miljøpublisering endrer valget ikke objektet selv. Det følger de samme grensene som andre måter å finne objektet på: den som ser må være venn med en nåværende eier, og verken blokkering mot en eier, frysing eller sperre for nye lån gjør objektet synlig. Slås valget av eller forsvinner vennskapet, avsluttes ikke-godkjente direkte forespørsler nøytralt (PS-LOAN-002). Godkjente lån fortsetter.
+
 ### PS-OBJ-007 — Medeierskap krever aksept
 **Forankring:** [Medeierskap](../vision/04-utlansobjekter.md)
 

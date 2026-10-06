@@ -24,7 +24,9 @@ Begge parter må uttrykkelig akseptere ansvarserklæringen for det konkrete lån
 ### PS-LOAN-004 — Forespørselen inneholder nødvendig avtalegrunnlag
 **Forankring:** [Låneforespørsel](../vision/05-laneforlop.md)
 
-Forespørselen inneholder objekt, ønsket start, ønsket slutt/varighet og en melding. «Så snart som mulig» kan brukes som startønske.
+Forespørselen inneholder objekt, ønsket start, ønsket slutt/varighet og en valgfri melding. «Så snart som mulig» kan brukes som startønske.
+
+Meldingen er del av den strukturerte låneforespørselen og er ikke ende-til-ende-kryptert (PS-COM-005). Den er bare synlig for partene og kopieres ikke til hendelser eller logger. Videre fritekstsamtale skjer i den ende-til-ende-krypterte chatten. (Produkteier, 6. oktober 2026, OD-0015.)
 
 ### PS-LOAN-005 — Vesentlig endrede vilkår krever ny bekreftelse
 **Forankring:** VP-06; [Endring av vilkår mens forespørselen venter](../vision/05-laneforlop.md)

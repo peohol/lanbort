@@ -20,7 +20,7 @@ Vennskap oppstår først når en mottaker godtar en venneforespørsel. Én bruke
 ### PS-USR-004 — Direkte lån krever aktivt vennskap ved godkjenning
 **Forankring:** VP-06; [Vennskap](../vision/02-brukere-roller-og-relasjoner.md)
 
-Et direkte vennelån kan initieres mellom venner, men kan bare godkjennes dersom vennskapet fortsatt består. Opphør før godkjenning avslutter forespørselen. Opphør etter godkjenning endrer ikke lånet.
+Et direkte vennelån kan initieres mellom venner, fra et objekt eieren har gjort synlig for venner (PS-OBJ-020), men kan bare godkjennes dersom vennskapet fortsatt består. Opphør før godkjenning avslutter forespørselen. Opphør etter godkjenning endrer ikke lånet.
 
 ### PS-USR-005 — Ikke-venner kan bare initiere kontakt i legitim kontekst
 **Forankring:** [Kontakt mellom brukere som ikke er venner](../vision/02-brukere-roller-og-relasjoner.md)

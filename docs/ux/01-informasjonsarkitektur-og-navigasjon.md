@@ -12,7 +12,7 @@ Lånbort skal ha få stabile globale områder. Objekt-, miljø-, låne- og saksr
 På mobil brukes fem hovedinnganger:
 
 1. **Hjem** — personlig status- og handlingsflate.
-2. **Finn** — målrettet søk og oppdagelse av objekter og oppdagbare miljøer.
+2. **Finn** — målrettet søk og oppdagelse av objekter og oppdagbare miljøer, med filteret «Venner» for objekter venner har gjort synlige for venner (PS-OBJ-020).
 3. **Lån** — brukerens egne låneforløp, både som låntaker og utlåner.
 4. **Mine ting** — egne og medeide objekter.
 5. **Samtaler** — private samtaler og aktive lånelogistikk-kanaler.
@@ -63,7 +63,7 @@ Gjeldende status, avtale og neste handling vises først. Historiske hendelser li
 ## Sentrale sider
 
 - Hjem
-- Finn: objekter / miljøer
+- Finn: objekter / miljøer, med filteret «Venner»
 - Objekt
 - Mine ting
 - Opprett/rediger objekt

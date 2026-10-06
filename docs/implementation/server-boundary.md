@@ -58,7 +58,8 @@ Route Handler (route.user / route.public / route.scheduler)
 - Direkte forespørsler har en ansvarserklæring med versjon (`responsibilityDeclarationVersion`). Låntaker godtar den når forespørselen sendes; en eier som er låntakers venn, godtar med egen kommando. Hver aksept er en uforanderlig rad. Godkjenning krever at både låntaker og eieren som godkjenner har godtatt gjeldende versjon.
 - Ønsket periode må få plass i ett sammenhengende intervall av faktisk ledighet (`earliestPeriod`). «Så snart som mulig» starter første ledige dag der hele varigheten, eller alle dager fram til ønsket sluttdag, er ledige uten brudd.
 - Sletting av objektet stopper ikke på forespørsler. `app.release_loan_requests` avslutter de åpne nøytralt og løsner alle fra objektets rader før de slettes. Forespørslene består som historikk for begge parter uten objektets innhold, og eierne på slettetidspunktet (`former_owner_ids`) ser dem fortsatt med samme relasjonskrav.
-- Meldingen lagres bare på forespørselen og kopieres aldri til hendelser eller logger (OD-0015).
+- Meldingen lagres bare på forespørselen og kopieres aldri til hendelser eller logger (PS-LOAN-004). Gjenstår: meldingen skal være valgfri; i dag kreves den.
+- Gjenstår (PS-OBJ-020): en direkte forespørsel skal i tillegg kreve at objektet er synlig for venner, i `assessOrigin` og i forhåndsvisningen.
 
 ## Godkjenning og reservasjon (WP-31)
 
