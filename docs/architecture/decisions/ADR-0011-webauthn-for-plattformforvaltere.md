@@ -13,7 +13,11 @@ Plattformforvaltere bekrefter privilegerte handlinger med **passkey/WebAuthn** s
 - WebAuthn-faktoren er den eneste metoden som gir sterkere autentisering (`aal2`) for plattformforvaltere. TOTP/autentiseringsapp, SMS/telefon, gjenopprettingskoder og en ny e-postkode godtas ikke som sterkere, selv om auth-leverandøren skulle rapportere `aal2`.
 - Privilegerte handlinger krever at WebAuthn-bekreftelsen er fersk, ikke bare at sesjonen en gang har vært bekreftet.
 
-Utredningens modell for registrering, recovery og tester er grunnlaget for implementeringen, med denne presiseringen: en fysisk sikkerhetsnøkkel anbefales, men kreves ikke. Registrering skal fortsatt aldri kunne gjøres med en e-postinnlogget sesjon alene, og det finnes ingen vei der en e-postkode, en supporthenvendelse eller en kode på papir alene gir forvaltertilgang.
+En e-postinnlogget sesjon alene skal aldri kunne registrere en ny autentikator, og det finnes ingen vei der en e-postkode, en supporthenvendelse eller en kode på papir alene gir forvaltertilgang.
+
+## Hva som ikke er besluttet her
+
+Hvordan forvaltere registrerer autentikatorer, hvor mange de må ha før rollen virker, og hvordan tilgang gjenopprettes når de går tapt, er ikke besluttet. Det er åpent som [OD-0023](../../open-decisions.md#od-0023--registrering-og-recovery-for-plattformforvalteres-webauthn). Utredningens modell (minst to autentikatorer, engangs registreringskode og en revisjonslogget driftsvei ved tap av alle) er teknisk anbefaling og utgangspunkt, ikke bindende krav.
 
 ## Hva som ikke endres før mekanismen er bygget
 
@@ -29,4 +33,4 @@ WebAuthn er det eneste av de vurderte alternativene som tåler phishing også n�
 
 - WebAuthn holdes bak adapteren i `packages/auth`. Første valg er Supabase Auths egen WebAuthn-faktor; reserveløsningen er standard WebAuthn-verifisering på serveren, bundet til Supabase-sesjonen (se utredningen).
 - Domenet og policyene endres ikke: `platformStewardAccess` krever fortsatt `aal2`, og bare den valgte mekanismen legges til som sterkere metode.
-- Hver registrering, fjerning og utstedt registreringskode revisjonslogges før en sterkere sesjon godtas, uten nøkkelmateriale.
+- Hver registrering og fjerning av en autentikator revisjonslogges før en sterkere sesjon godtas, uten nøkkelmateriale.

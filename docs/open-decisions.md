@@ -185,6 +185,13 @@ Gjennomgått 6. oktober 2026. To åpne spørsmål må avgjøres før UI-designet
 - **Spørsmål:** Hvilket backupnivå skal piloten ha: betalt Supabase-plan med daglig backup (eventuelt Point-in-Time Recovery), planlagte krypterte dumps på gratisplanen, eller lengre RPO for en liten pilot? Inntil dette er besluttet, beholdes Supabase Free med gjenoppbygging og manuelle dumps (produkteier, 6. oktober 2026).
 - **Avklares før:** appen åpnes for et eksternt testpanel (Port D).
 
+### OD-0023 — Registrering og recovery for plattformforvalteres WebAuthn
+- **Lag:** Tverrgående
+- **Status:** Åpen
+- **Berører:** PS-USR-008, [ADR-0011](architecture/decisions/ADR-0011-webauthn-for-plattformforvaltere.md), WP-12
+- **Spørsmål:** Hvordan registrerer en plattformforvalter passkeys eller sikkerhetsnøkler, hvor mange må være registrert før rollen virker, og hvordan gjenopprettes tilgang når én eller alle går tapt? [Utredningen](architecture/utredninger/OD-0010-privilegert-autentisering.md#anbefalt-modell-i-detalj) anbefaler minst to autentikatorer, en engangs registreringskode som overleveres utenom e-post, og en revisjonslogget driftsvei ved tap av alle.
+- **Avklares før:** WebAuthn-mekanismen bygges (WP-12), og dermed før privilegerte plattformforvalterhandlinger tas i bruk (Port D). Til da er de avvist.
+
 ## Avklart
 
 ### OD-0005 — Kryptografisk modell for ende-til-ende-kryptert chat
@@ -205,7 +212,7 @@ Gjennomgått 6. oktober 2026. To åpne spørsmål må avgjøres før UI-designet
 ### OD-0010 — Mekanisme for privilegert autentisering
 - **Lag:** Tverrgående
 - **Status:** Avklart (produkteier, 6. oktober 2026)
-- **Beslutning:** Se [ADR-0011](architecture/decisions/ADR-0011-webauthn-for-plattformforvaltere.md). Passkey/WebAuthn som ekstra sterk bekreftelse, bare for plattformforvaltere; fysisk sikkerhetsnøkkel støttes, men kreves ikke. Ikke bygget ennå (WP-12).
+- **Beslutning:** Se [ADR-0011](architecture/decisions/ADR-0011-webauthn-for-plattformforvaltere.md). Passkey/WebAuthn som ekstra sterk bekreftelse, bare for plattformforvaltere; fysisk sikkerhetsnøkkel støttes, men kreves ikke. Registrering og recovery er åpne i OD-0023. Ikke bygget ennå (WP-12).
 
 ### OD-0012 — Avstemningsfrist ved skjult → lukket
 - **Lag:** Produktspesifikasjon
