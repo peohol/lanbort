@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  accountId,
   collectBrowserProblems,
   postCommand,
   registerThroughApi,
@@ -21,6 +22,7 @@ test("a thing has one page, seen by its owner or through an environment", async 
 }) => {
   const problems = collectBrowserProblems(page);
   await registerThroughApi(page.request, undefined, "Anna Berg");
+  const annaId = await accountId(page.request);
   const word = uniqueWord();
   const { environmentId } = await (
     await postCommand(page.request, "/api/environments", {
@@ -65,6 +67,10 @@ test("a thing has one page, seen by its owner or through an environment", async 
   const member = await members.newPage();
   await member.goto(`/finn?q=${word}`);
   await expect(member.getByText("Eier: Anna Berg")).toBeVisible();
+  await expect(member.getByRole("link", { name: "Anna Berg" })).toHaveAttribute(
+    "href",
+    `/personer/${annaId}`,
+  );
   await member.getByRole("link", { name: `Stige ${word}` }).click();
   await expect(member).toHaveURL(new RegExp(`/ting/${objectId}\\?miljo=`));
   await expect(member.getByText(`Gården ${word}`)).toBeVisible();

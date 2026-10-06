@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   categoryLabel,
   describeAvailability,
-  describeOwners,
   formatInterval,
-  joinNames,
+  listSeparator,
+  ownersLabel,
   ownThingStatus,
 } from "./objects";
 
@@ -108,19 +108,19 @@ describe("one of the user's own things in a list", () => {
 
 describe("owners of a thing in an environment (PS-ENV-015)", () => {
   const owner = (realName: string) => ({ realName, profileId: null });
+  const said = (names: string[]) =>
+    names
+      .map((name, index) => listSeparator(index, names.length) + name)
+      .join("");
 
   it("lists names as they are said", () => {
-    expect(joinNames([])).toBe("");
-    expect(joinNames(["Anna"])).toBe("Anna");
-    expect(joinNames(["Anna", "Bo"])).toBe("Anna og Bo");
-    expect(joinNames(["Anna", "Bo", "Cleo"])).toBe("Anna, Bo og Cleo");
+    expect(said(["Anna"])).toBe("Anna");
+    expect(said(["Anna", "Bo"])).toBe("Anna og Bo");
+    expect(said(["Anna", "Bo", "Cleo"])).toBe("Anna, Bo og Cleo");
   });
 
-  it("names one or several owners, and nothing when none are shown", () => {
-    expect(describeOwners([])).toBeNull();
-    expect(describeOwners([owner("Anna")])).toBe("Eier: Anna");
-    expect(describeOwners([owner("Anna"), owner("Bo")])).toBe(
-      "Eiere: Anna og Bo",
-    );
+  it("heads one owner or several", () => {
+    expect(ownersLabel([owner("Anna")])).toBe("Eier");
+    expect(ownersLabel([owner("Anna"), owner("Bo")])).toBe("Eiere");
   });
 });

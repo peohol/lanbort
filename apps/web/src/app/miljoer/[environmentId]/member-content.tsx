@@ -5,6 +5,8 @@ import type {
 } from "@lanbort/contracts";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
+import { EntryDetail } from "@/components/entry-detail";
+import { ownersDetail } from "@/components/owner-names";
 import { PersonName } from "@/components/person-name";
 import { Tag } from "@/components/tag";
 import {
@@ -13,7 +15,7 @@ import {
   objectHref,
 } from "@/navigation/routes";
 import { roleName } from "@/presentation/environments";
-import { describeAvailability, describeOwners } from "@/presentation/objects";
+import { describeAvailability } from "@/presentation/objects";
 
 /**
  * The things an active member finds in the environment (PS-OBJ-006), each
@@ -59,14 +61,12 @@ export function Things({
                 <Link href={objectHref(thing.objectId, origin)}>
                   {thing.title}
                 </Link>
-                <span className="entry-detail">
-                  {[
+                <EntryDetail
+                  parts={[
                     describeAvailability(thing, today),
-                    thing.ownedByYou ? null : describeOwners(thing.owners),
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </span>
+                    thing.ownedByYou ? null : ownersDetail(thing.owners),
+                  ]}
+                />
                 {thing.ownedByYou && <Tag>Din</Tag>}
               </li>
             ))}

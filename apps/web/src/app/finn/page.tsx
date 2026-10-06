@@ -12,8 +12,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { AreaMap } from "@/components/area-map";
 import { errorMessage } from "@/components/error-messages";
+import { EntryDetail } from "@/components/entry-detail";
 import { ErrorText } from "@/components/error-text";
 import { NearMeButton } from "@/components/near-me-button";
+import { ownersDetail } from "@/components/owner-names";
 import {
   defaultDistanceKm,
   distanceOptions,
@@ -25,7 +27,7 @@ import {
   newEnvironmentHref,
   objectHref,
 } from "@/navigation/routes";
-import { describeAvailability, describeOwners } from "@/presentation/objects";
+import { describeAvailability } from "@/presentation/objects";
 import {
   describeFoundIn,
   environmentTypeLabels,
@@ -221,15 +223,13 @@ async function ObjectSearch({
                 {object.title}
               </Link>
             </strong>
-            <span className="entry-detail">
-              {[
+            <EntryDetail
+              parts={[
                 labels.get(object.categoryId),
                 describeFoundIn(object),
-                object.ownedByYou ? "Din ting" : describeOwners(object.owners),
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </span>
+                object.ownedByYou ? "Din ting" : ownersDetail(object.owners),
+              ]}
+            />
             <span>{describeAvailability(object, today)}</span>
           </li>
         ))}
@@ -298,11 +298,12 @@ async function EnvironmentSearch({
             <Link href={environmentHref(environment.id)}>
               <strong>{environment.name}</strong>
             </Link>
-            <span className="entry-detail">
-              {[environmentTypeLabels[environment.type], environment.location]
-                .filter(Boolean)
-                .join(" · ")}
-            </span>
+            <EntryDetail
+              parts={[
+                environmentTypeLabels[environment.type],
+                environment.location,
+              ]}
+            />
             {environment.description && <span>{environment.description}</span>}
             {environment.membershipState && (
               <span className="waiting">

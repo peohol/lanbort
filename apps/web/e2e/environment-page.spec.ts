@@ -108,12 +108,19 @@ test("an environment is created, applied to, used and left in the browser", asyn
     "href",
     `/ting/${objectId}?miljo=${environmentId}`,
   );
-  await expect(bo.page.getByText(/Eier: Anna Berg/)).toBeVisible();
+  const things = bo.page.getByRole("region", { name: "Ting i miljøet" });
+  await expect(things.getByText(/Eier: Anna Berg/)).toBeVisible();
+  await expect(things.getByRole("link", { name: "Anna Berg" })).toHaveAttribute(
+    "href",
+    `/personer/${annaId}`,
+  );
   await expect(
     bo.page.getByRole("link", { name: "Registrer en ting her" }),
   ).toHaveAttribute("href", `/ting/ny?miljo=${environmentId}`);
   await expect(
-    bo.page.getByRole("link", { name: "Anna Berg" }),
+    bo.page
+      .getByRole("region", { name: /Medlemmer/ })
+      .getByRole("link", { name: "Anna Berg" }),
   ).toHaveAttribute("href", `/personer/${annaId}`);
   await expect(
     bo.page.getByRole("heading", { name: "Kontakt administratorene" }),
