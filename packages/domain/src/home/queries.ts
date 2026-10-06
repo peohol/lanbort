@@ -1,6 +1,7 @@
 import { type HomeOverview } from "@lanbort/contracts";
 import { z } from "zod";
 import { defineQuery } from "../commands/query";
+import { caseQueueHomeSource } from "../cases/home";
 import { AuthorizationError } from "../errors";
 import { environmentHomeSource } from "../environment/home";
 import { listOwnEnvironments } from "../environment/queries";
@@ -25,6 +26,7 @@ export const homeSources: readonly HomeSource[] = [
   socialHomeSource,
   coOwnerInvitationHomeSource,
   environmentHomeSource,
+  caseQueueHomeSource,
 ];
 
 /**
