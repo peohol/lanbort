@@ -127,6 +127,11 @@ describe("becoming a co-owner (PS-OBJ-007)", () => {
   it("needs an explicit acceptance, after which every owner has the same rights", async () => {
     const anna = await user();
     const bo = await user();
+    // Anna has no profile, like a deleted account; Bo has one.
+    await db
+      .insertInto("app.profiles")
+      .values({ user_id: bo.userId, real_name: "Bo Bakke" })
+      .execute();
     const { objectId } = await create(anna);
 
     const { invitationId, status } = await invite(anna, objectId, bo);
@@ -146,8 +151,13 @@ describe("becoming a co-owner (PS-OBJ-007)", () => {
         object: expect.objectContaining({ title: "Tilhenger" }),
       }),
     ]);
+    // The owners see who they invited by name.
     expect((await read(anna, objectId)).pendingInvitations).toEqual([
-      expect.objectContaining({ id: invitationId, userId: bo.userId }),
+      expect.objectContaining({
+        id: invitationId,
+        userId: bo.userId,
+        realName: "Bo Bakke",
+      }),
     ]);
 
     // Nobody but the invited user can answer.
@@ -159,9 +169,11 @@ describe("becoming a co-owner (PS-OBJ-007)", () => {
       objectId,
     });
     const seenByBo = await read(bo, objectId);
-    expect(seenByBo.owners.map((owner) => owner.userId)).toEqual([
-      anna.userId,
-      bo.userId,
+    expect(
+      seenByBo.owners.map(({ userId, realName }) => ({ userId, realName })),
+    ).toEqual([
+      { userId: anna.userId, realName: null },
+      { userId: bo.userId, realName: "Bo Bakke" },
     ]);
     expect(seenByBo.pendingInvitations).toEqual([]);
     expect(await invitationsOf(bo)).toEqual([]);

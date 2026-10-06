@@ -156,6 +156,8 @@ export const loanRequestListQuerySchema = z.strictObject({
   role: loanRequestRoleSchema,
   /** `open`: only requests that still wait for a decision or the borrower. */
   state: z.enum(["open"]).optional(),
+  /** Only the requests for this object. */
+  objectId: objectIdSchema.optional(),
   cursor: loanRequestIdSchema.optional(),
 });
 
@@ -756,6 +758,8 @@ export const loanPageSize = 50;
 export const loanListQuerySchema = z.strictObject({
   state: z.enum(["current", "ended"]),
   role: loanRequestRoleSchema.optional(),
+  /** Only the loans of this object. */
+  objectId: objectIdSchema.optional(),
   cursor: loanIdSchema.optional(),
 });
 

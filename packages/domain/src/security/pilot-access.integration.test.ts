@@ -552,6 +552,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     termsVersion: 1,
   }),
   "loan_request.read": (ids) => ({ requestId: ids.requestId }),
+  "loan_request.list": (ids) => ({ role: "lender", objectId: ids.objectId }),
   "loan_request.approve": (ids) => ({ requestId: ids.requestId }),
   "loan_request.decline": (ids) => ({ requestId: ids.requestId }),
   "loan_request.withdraw": (ids) => ({ requestId: ids.requestId }),
@@ -564,6 +565,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     declarationVersion: 1,
   }),
   "loan.read": (ids) => ({ loanId: ids.loanId }),
+  "loan.list": (ids) => ({ state: "current", objectId: ids.objectId }),
   "loan.read_history": (ids) => ({ loanId: ids.loanId }),
   "loan.read_logistics": (ids) => ({ loanId: ids.loanId }),
   "loan.cancel": (ids) => ({ loanId: ids.loanId }),
@@ -884,12 +886,15 @@ describe("hidden environments (PS-NFR-002)", () => {
   });
 });
 
+/** Lists of the caller's own things that can also be narrowed to one object. */
+const ownLists = new Set(["loan_request.list", "loan.list"]);
+
 /** Queries over the caller's own things, which name no resource. */
 const ownReads = allOperations.filter(
   (operation) =>
     operation.kind === "query" &&
     reachableByUsers(operation) &&
-    !probed.includes(operation),
+    (!probed.includes(operation) || ownLists.has(operation.name)),
 );
 
 /** The inputs to read the caller's own things with, every way they can. */
@@ -945,6 +950,7 @@ const chatReads = ["chat.read_conversation", "chat.read_directory"];
 const loanReads = [
   "loan_request.read",
   "loan_review.read",
+  "loan.list",
   "loan.read",
   "loan.read_history",
   "loan.read_logistics",
