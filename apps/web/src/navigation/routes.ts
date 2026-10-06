@@ -62,3 +62,31 @@ export const caseHref = (id: string) => `/saker/${id}`;
 
 /** Own cases and, for those who handle cases, their queues. */
 export const casesHref = "/saker";
+
+/** The query parameter of the link in a notification's e-mail (WP-41). */
+export const notificationParam = "varsel";
+
+/** The query parameter that says where to go once signed in. */
+export const returnParam = "neste";
+
+/**
+ * A place to return to after signing in, if it stays within Lånbort: a path
+ * of our own, never another site (`//host`, `/\host`) or a control
+ * character a browser would drop to make one.
+ */
+export function returnPath(value: unknown): string | undefined {
+  return typeof value === "string" &&
+    /^\/(?![/\\])[^\\\u0000-\u001f]*$/.test(value)
+    ? value
+    : undefined;
+}
+
+export const signInHref = (next?: string) =>
+  `/logg-inn${query({ [returnParam]: returnPath(next) })}`;
+
+export const registrationHref = (next?: string) =>
+  `/registrering${query({ [returnParam]: returnPath(next) })}`;
+
+/** Where a notification's e-mail link leads: Home, which forwards it. */
+export const notificationLinkHref = (id: string) =>
+  `/${query({ [notificationParam]: id })}`;

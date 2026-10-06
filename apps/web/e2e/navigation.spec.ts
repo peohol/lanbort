@@ -7,7 +7,11 @@ import {
   test,
 } from "@playwright/test";
 import { loanRequestPageSize } from "@lanbort/contracts";
-import { collectBrowserProblems, registerThroughApi } from "./helpers";
+import {
+  collectBrowserProblems,
+  enterEmailCode,
+  registerThroughApi,
+} from "./helpers";
 
 /**
  * WP-60: the five areas, the notification layer, the account context and
@@ -35,14 +39,16 @@ async function untilNotified(request: APIRequestContext) {
 }
 
 /** A registered user signed in in `page`, with a friend request from `other`. */
+/** Bo asks Anna, signed in on `page`, to be friends; returns Anna's address. */
 async function befriended(page: Page, other: APIRequestContext) {
-  await registerThroughApi(page.request, undefined, "Anna Berg");
+  const email = await registerThroughApi(page.request, undefined, "Anna Berg");
   const anna = await accountId(page.request);
   await registerThroughApi(other, undefined, "Bo Dahl");
   await other.post("/api/social/friend-requests", {
     data: { userId: anna },
     headers: { "Idempotency-Key": randomUUID() },
   });
+  return email;
 }
 
 /** A second user's own API session, as a browser on the same site. */
@@ -165,6 +171,37 @@ test("a notification's e-mail link leads to its context and marks it read", asyn
     page.getByRole("link", { name: "Varsler, ingen uleste" }),
   ).toBeVisible();
   expect(problems).toEqual([]);
+});
+
+test("a notification's e-mail link survives signing in", async ({
+  browser,
+  page,
+  playwright,
+  baseURL,
+}) => {
+  const email = await befriended(page, await otherUser(playwright, baseURL!));
+  await untilNotified(page.request);
+  const [notification] = (
+    await (await page.request.get("/api/notifications")).json()
+  ).notifications;
+
+  // The e-mail is opened in a browser without a session.
+  const signedOut = await browser.newContext({ baseURL: baseURL! });
+  const mail = await signedOut.newPage();
+  await mail.goto(`/?varsel=${notification.id}`);
+  await mail
+    .getByRole("link", { name: "Logg inn eller opprett konto" })
+    .click();
+  await enterEmailCode(mail, email);
+  await expect(mail).toHaveURL(/\/konto#venner$/);
+  await expect(
+    mail.getByRole("link", { name: "Varsler, ingen uleste" }),
+  ).toBeVisible();
+
+  // A return path never leads off the site.
+  await mail.goto("/logg-inn?neste=//example.com");
+  await expect(mail).toHaveURL(/\/$/);
+  await signedOut.close();
 });
 
 test("the indicator counts unread notifications until they are read", async ({

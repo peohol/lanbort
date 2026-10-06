@@ -7,8 +7,8 @@ import { BusyButton } from "./busy-button";
 import { emailInUseMessages, errorMessage } from "./error-messages";
 import { ErrorText, fieldErrorProps } from "./error-text";
 
-/** UX-JRN-001 step 3: real name and 18+ confirmation. */
-export function RegistrationForm() {
+/** UX-JRN-001 step 3: real name and 18+ confirmation, then on to `next`. */
+export function RegistrationForm({ next = "/" }: { next?: string }) {
   const router = useRouter();
   const [realName, setRealName] = useState("");
   const [adultConfirmed, setAdultConfirmed] = useState(false);
@@ -33,7 +33,7 @@ export function RegistrationForm() {
       return;
     }
 
-    router.replace("/");
+    router.replace(next);
     router.refresh();
   }
 

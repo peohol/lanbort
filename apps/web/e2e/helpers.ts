@@ -33,6 +33,11 @@ export function collectBrowserProblems(page: Page) {
 
 export async function signInThroughUi(page: Page, email: string) {
   await page.goto("/logg-inn");
+  await enterEmailCode(page, email);
+}
+
+/** The sign-in form's two steps, on a page that shows it. */
+export async function enterEmailCode(page: Page, email: string) {
   await page.getByLabel("E-postadresse").fill(email);
   const since = new Date();
   await page.getByRole("button", { name: "Send kode" }).click();
