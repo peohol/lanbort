@@ -67,3 +67,7 @@
 ## Neste punkt
 
 Planleggingsfasen er fullført. Neste separate fase er **implementering**, med [Fase 0](../implementation/README.md) som start: konkret stackvalg (OD-0009), prosjektskjelett og kvalitetsgrunnlag før domenefunksjonalitet bygges.
+
+## Videre plan for UI
+
+Når implementeringsgrunnlaget er klart for konkret grensesnittarbeid, følges [planen for UI-designfasen](ui-design-plan.md). Den beskriver arbeidsdelingen mellom kanonisk dokumentasjon, Claude Design og Claude Code, og rekkefølgen fra skjerm-/flytinventar til visuell retning, kjerneflyt, designsystem og vertikal implementering.
