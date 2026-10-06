@@ -9,6 +9,12 @@ export const objectImageMaxCount = 5;
  */
 export const objectImageMaxUploadBytes = 4 * 1024 * 1024;
 
+/**
+ * The longest side, in pixels, the client scales a photo down to when it is
+ * too large to upload. The server keeps nothing larger anyway.
+ */
+export const objectImageUploadMaxSide = 2048;
+
 /** Max separate availability intervals per object. */
 export const availabilityMaxIntervals = 50;
 
@@ -179,6 +185,11 @@ export const ownObjectSchema = z.strictObject({
    * clarified to one owner (PS-OBJ-009). Says nothing about who or why.
    */
   frozenForNewLoans: z.boolean(),
+  /**
+   * Handed over in a loan that has not ended, so it is out of the owners'
+   * hands. Every owner sees this; it says nothing about the loan.
+   */
+  lentOut: z.boolean(),
   /** Owners who consented to permanent deletion (PS-OBJ-011). */
   deletionConsents: z.array(z.uuid()),
   pendingInvitations: z.array(pendingCoOwnerInvitationSchema),

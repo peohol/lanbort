@@ -1,4 +1,5 @@
 import {
+  calendarDate,
   listCoOwnerInvitations,
   listOwnObjects,
   takesNewActivity,
@@ -6,17 +7,21 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ActionButton } from "@/components/action-button";
-import { objectHref } from "@/navigation/routes";
+import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
+import { PilotObjectPolicy } from "@/components/pilot-object-policy";
+import { Tag } from "@/components/tag";
+import { newObjectHref, objectHref } from "@/navigation/routes";
 import { anchorFor } from "@/navigation/targets";
-import {
-  pilotObjectPolicy,
-  pilotObjectPolicySummary,
-} from "@/presentation/object-policy";
+import { ownThingStatus } from "@/presentation/objects";
 import { pageQuery, requirePageAccount } from "@/server/session";
 
 export const metadata: Metadata = { title: "Mine ting – Lånbort" };
 
-/** Mine ting (UX-IA-001): the objects the user owns or co-owns. */
+/**
+ * Mine ting (UX-IA-001): the things the user owns or co-owns, each with a
+ * short status, invitations to co-own, and the way to register another.
+ */
 export default async function ThingsPage() {
   const account = await requirePageAccount();
   const [owned, invited] = await Promise.all([
@@ -25,10 +30,18 @@ export default async function ThingsPage() {
   ]);
   const objects = owned?.objects ?? [];
   const invitations = invited?.invitations ?? [];
+  const today = calendarDate(new Date());
+  // Registering is new activity (PS-ADM-002).
+  const register = takesNewActivity(account.status) && (
+    <Link className="button button-primary" href={newObjectHref()}>
+      Registrer en ting
+    </Link>
+  );
 
   return (
     <main>
-      <h1>Mine ting</h1>
+      <PageHeader title="Mine ting" />
+      {register && <div className="actions">{register}</div>}
       {invitations.length > 0 && (
         <section aria-labelledby="invitasjoner">
           <h2 id="invitasjoner">Invitasjoner til medeierskap</h2>
@@ -73,42 +86,38 @@ export default async function ThingsPage() {
       <section aria-labelledby="ting">
         <h2 id="ting">Dine ting</h2>
         {objects.length === 0 ? (
-          <p className="quiet">Du har ingen ting registrert ennå.</p>
+          <EmptyState>
+            Du har ingen ting registrert ennå. Registrer noe du kan låne ut, så
+            kan du velge hvem som får se det.
+          </EmptyState>
         ) : (
           <ul className="entries">
-            {objects.map((object) => (
-              <li key={object.id} className="entry">
-                <strong>
-                  <Link href={objectHref(object.id)}>{object.title}</Link>
-                </strong>
-                <span className="entry-detail">
-                  {object.status === "archived"
-                    ? "Arkivert"
-                    : object.availableForNewLoans
-                      ? "Kan lånes ut nå"
-                      : "Kan ikke lånes ut nå"}
-                  {object.owners.length > 1 &&
-                    ` · ${object.owners.length} eiere`}
-                </span>
-              </li>
-            ))}
+            {objects.map((object) => {
+              const status = ownThingStatus(object, today);
+
+              return (
+                <li key={object.id} className="entry">
+                  <strong>
+                    <Link href={objectHref(object.id)}>{object.title}</Link>
+                  </strong>
+                  <span className="tags">
+                    <Tag tone={status.tone}>{status.label}</Tag>
+                    {object.owners.length > 1 && (
+                      <span className="entry-detail">
+                        Dere er {object.owners.length} eiere
+                      </span>
+                    )}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
       {/* PS-OBJ-019: the pilot's limit, where things are managed. */}
       <section aria-labelledby="pilotgrense">
         <h2 id="pilotgrense">Hva kan lånes ut?</h2>
-        <p className="quiet">{pilotObjectPolicySummary}</p>
-        {pilotObjectPolicy.map((group) => (
-          <details key={group.heading}>
-            <summary>{group.heading}</summary>
-            <ul>
-              {group.items.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </details>
-        ))}
+        <PilotObjectPolicy />
       </section>
     </main>
   );
