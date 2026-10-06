@@ -330,46 +330,48 @@ export const listEnvironmentPublications = defineQuery({
       }
 
       // Nothing is read for callers the policy will turn away.
-      const rows = access.viewer.roles.includes("administrator")
-        ? await tx
-            .selectFrom("app.environment_publications as publication")
-            .innerJoin(
-              "app.objects as object",
-              "object.id",
-              "publication.object_id",
-            )
-            .select([
-              "publication.id",
-              "publication.object_id",
-              "publication.status",
-              "publication.published_by_user_id",
-              "publication.created_at",
-              "publication.status_changed_at",
-              "object.title",
-              "object.category_id",
-              "object.description",
-              "object.loan_terms",
-            ])
-            .where("publication.environment_id", "=", access.environment.id)
-            .where(
-              createdOutside(
-                sql.ref("publication.position"),
-                await concealedFrom(tx, access),
-              ),
-            )
-            .where(
-              "publication.status",
-              "in",
-              input.status
-                ? [input.status]
-                : ["pending", "active", "rejected", "blocked"],
-            )
-            .where(afterCursor(input.cursor))
-            .orderBy("publication.created_at", "desc")
-            .orderBy("publication.id", "desc")
-            .limit(publicationPageSize + 1)
-            .execute()
-        : [];
+      const rows =
+        actor.kind === "user" && access.viewer.roles.includes("administrator")
+          ? await tx
+              .selectFrom("app.environment_publications as publication")
+              .innerJoin(
+                "app.objects as object",
+                "object.id",
+                "publication.object_id",
+              )
+              .select([
+                "publication.id",
+                "publication.object_id",
+                "publication.status",
+                "publication.published_by_user_id",
+                "publication.created_at",
+                "publication.status_changed_at",
+                "object.title",
+                "object.category_id",
+                "object.description",
+                "object.loan_terms",
+                ownedBy(actor.userId).as("owned_by_you"),
+              ])
+              .where("publication.environment_id", "=", access.environment.id)
+              .where(
+                createdOutside(
+                  sql.ref("publication.position"),
+                  await concealedFrom(tx, access),
+                ),
+              )
+              .where(
+                "publication.status",
+                "in",
+                input.status
+                  ? [input.status]
+                  : ["pending", "active", "rejected", "blocked"],
+              )
+              .where(afterCursor(input.cursor))
+              .orderBy("publication.created_at", "desc")
+              .orderBy("publication.id", "desc")
+              .limit(publicationPageSize + 1)
+              .execute()
+          : [];
       const { items, nextCursor } = page(rows);
       const images = await loadImages(
         tx,
@@ -390,6 +392,7 @@ export const listEnvironmentPublications = defineQuery({
       createdAt: row.created_at.toISOString(),
       statusChangedAt: row.status_changed_at.toISOString(),
       object: presentContent(row, resource.images),
+      ownedByYou: row.owned_by_you,
     })),
     nextCursor: resource.nextCursor,
   }),
