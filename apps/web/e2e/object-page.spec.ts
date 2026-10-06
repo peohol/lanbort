@@ -10,8 +10,9 @@ import {
 
 /**
  * WP-80: a thing's own page. Its owner reaches it from Mine ting; a member
- * finds it in Finn and sees it through the environment; anyone else sees
- * nothing, like a thing that does not exist (PS-NFR-002).
+ * finds it in Finn and sees it through the environment, with the owner
+ * named and linked (PS-ENV-015, WP-89); anyone else sees nothing, like a
+ * thing that does not exist (PS-NFR-002).
  */
 test("a thing has one page, seen by its owner or through an environment", async ({
   browser,
@@ -63,10 +64,15 @@ test("a thing has one page, seen by its owner or through an environment", async 
   });
   const member = await members.newPage();
   await member.goto(`/finn?q=${word}`);
+  await expect(member.getByText("Eier: Anna Berg")).toBeVisible();
   await member.getByRole("link", { name: `Stige ${word}` }).click();
   await expect(member).toHaveURL(new RegExp(`/ting/${objectId}\\?miljo=`));
   await expect(member.getByText(`Gården ${word}`)).toBeVisible();
   await expect(member.getByText("Aluminiumsstige, 4 meter.")).toBeVisible();
+  await member.getByRole("link", { name: "Anna Berg" }).click();
+  await expect(member.getByRole("heading", { level: 1 })).toHaveText(
+    "Anna Berg",
+  );
 
   // Without the environment, Bo has no way to it: they are not friends.
   const direct = await member.goto(`/ting/${objectId}`);

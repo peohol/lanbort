@@ -2,6 +2,7 @@ import type {
   AvailabilityInterval,
   ObjectCategory,
   OwnObject,
+  ShownOwner,
 } from "@lanbort/contracts";
 import type { Tone } from "@/components/tag";
 import { formatDay } from "./dates";
@@ -86,3 +87,23 @@ export function ownThingStatus(
     ? { label: "Mangler ledig tid", tone: "warning" }
     : { label: "Ikke ledig nå", tone: "neutral" };
 }
+
+/** Names as a list is said: «Anna», «Anna og Bo», «Anna, Bo og Cleo». */
+export function joinNames(names: readonly string[]): string {
+  return names.length <= 1
+    ? (names[0] ?? "")
+    : `${names.slice(0, -1).join(", ")} og ${names.at(-1)}`;
+}
+
+/** The heading for a thing's owners, one or several. */
+export const ownersLabel = (owners: readonly ShownOwner[]) =>
+  owners.length === 1 ? "Eier" : "Eiere";
+
+/**
+ * Who owns a thing found through an environment (PS-ENV-015), in a line of
+ * details; null when nobody else is named.
+ */
+export const describeOwners = (owners: readonly ShownOwner[]) =>
+  owners.length === 0
+    ? null
+    : `${ownersLabel(owners)}: ${joinNames(owners.map((owner) => owner.realName))}`;

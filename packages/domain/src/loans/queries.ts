@@ -26,6 +26,7 @@ import { findEnvironment, loadEnvironmentAccess } from "../environment/store";
 import { calendarDate, toApiInterval } from "../objects/availability";
 import { inSnapshot, loadImages, loadObjectState } from "../objects/state";
 import { personPageIds, profileIdIn } from "../people/queries";
+import { environmentOwners } from "../publications/owners";
 import { assessOrigin } from "./access";
 import { findOpenAmendment, type LoanAmendmentRecord } from "./amendment-store";
 import { loanActions } from "./next-steps";
@@ -138,8 +139,27 @@ export const previewLoanRequest = defineQuery({
       const seen = target.reachable
         ? await loadSeen(tx, actor, target.object.objectId, now)
         : null;
+      const owners =
+        seen && actor.kind === "user" && input.environmentId !== undefined
+          ? (
+              await environmentOwners(
+                tx,
+                actor.userId,
+                [
+                  {
+                    objectId: target.object.objectId,
+                    environmentId: input.environmentId,
+                  },
+                ],
+                now,
+              )
+            ).get(target.object.objectId)
+          : undefined;
 
-      return { resource: { ...target, seen }, context: undefined };
+      return {
+        resource: { ...target, seen, owners: [...(owners ?? [])] },
+        context: undefined,
+      };
     }),
   present: ({ input, resource }): LoanRequestPreview => ({
     objectId: resource.object.objectId,
@@ -163,6 +183,7 @@ export const previewLoanRequest = defineQuery({
       height,
     })),
     following: resource.seen?.following ?? false,
+    owners: resource.owners,
   }),
 });
 

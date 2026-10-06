@@ -21,7 +21,7 @@ import {
   locate,
 } from "@/presentation/places";
 import { objectHref } from "@/navigation/routes";
-import { describeAvailability } from "@/presentation/objects";
+import { describeAvailability, describeOwners } from "@/presentation/objects";
 import {
   describeFoundIn,
   environmentTypeLabels,
@@ -221,7 +221,7 @@ async function ObjectSearch({
               {[
                 labels.get(object.categoryId),
                 describeFoundIn(object),
-                object.ownedByYou ? "Din ting" : null,
+                object.ownedByYou ? "Din ting" : describeOwners(object.owners),
               ]
                 .filter(Boolean)
                 .join(" · ")}

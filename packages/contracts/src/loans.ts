@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { environmentTypeSchema } from "./environment";
+import { shownOwnerSchema } from "./publications";
 import { profileIdSchema } from "./social";
 import {
   availabilityIntervalSchema,
@@ -196,6 +197,11 @@ export const loanRequestPreviewSchema = z.strictObject({
    * environment can be followed.
    */
   following: z.boolean(),
+  /**
+   * Through an environment, the owners who are active members of it
+   * (PS-ENV-015); empty for a direct request.
+   */
+  owners: z.array(shownOwnerSchema),
 });
 
 /** The terms of one object version. */

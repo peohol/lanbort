@@ -7,6 +7,7 @@ import {
   objectImageIdSchema,
   objectImageSchema,
 } from "./objects";
+import { profileIdSchema } from "./social";
 
 /**
  * A publication of an object in one environment (PS-OBJ-006, PS-ENV-011). The
@@ -156,9 +157,17 @@ export const environmentPublicationListSchema = z.strictObject({
 });
 
 /**
- * An object an active member finds in the environment. Its owners are not
- * named, and its actual availability is derived without saying what blocks
- * it.
+ * An owner a member is shown of an object in an environment (PS-ENV-015),
+ * linked to their page while the caller may open it.
+ */
+export const shownOwnerSchema = z.strictObject({
+  realName: z.string(),
+  profileId: profileIdSchema,
+});
+
+/**
+ * An object an active member finds in the environment. Its actual
+ * availability is derived without saying what blocks it.
  */
 export const environmentObjectSchema = z.strictObject({
   publicationId: publicationIdSchema,
@@ -167,6 +176,11 @@ export const environmentObjectSchema = z.strictObject({
   effectiveAvailability: z.array(availabilityIntervalSchema),
   availableForNewLoans: z.boolean(),
   ownedByYou: z.boolean(),
+  /**
+   * The other owners who are active members of the environment, by name; a
+   * co-owner outside it is not named (PS-ENV-015).
+   */
+  owners: z.array(shownOwnerSchema),
 });
 
 export const environmentObjectsQuerySchema = z.strictObject({
@@ -182,11 +196,12 @@ export const environmentObjectListSchema = z.strictObject({
 
 /**
  * An object a friend has made visible to friends (PS-OBJ-020), as it is shown
- * on their profile and in Finn: like in an environment, its owners are not
- * named and its availability does not say what blocks it.
+ * on their profile: its availability does not say what blocks it, and the
+ * profile already says whose it is.
  */
 export const friendObjectSchema = environmentObjectSchema.omit({
   publicationId: true,
+  owners: true,
 });
 
 /** The objects a friend has made visible to friends, newest first. */
@@ -221,6 +236,7 @@ export type ReviewedPublication = z.infer<typeof reviewedPublicationSchema>;
 export type EnvironmentPublicationList = z.infer<
   typeof environmentPublicationListSchema
 >;
+export type ShownOwner = z.infer<typeof shownOwnerSchema>;
 export type EnvironmentObject = z.infer<typeof environmentObjectSchema>;
 export type EnvironmentObjectList = z.infer<typeof environmentObjectListSchema>;
 export type ObjectFriendPublication = z.infer<

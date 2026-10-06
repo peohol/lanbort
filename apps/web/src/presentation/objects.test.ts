@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   categoryLabel,
   describeAvailability,
+  describeOwners,
   formatInterval,
+  joinNames,
   ownThingStatus,
 } from "./objects";
 
@@ -101,5 +103,24 @@ describe("one of the user's own things in a list", () => {
       }),
     ).toBe("Mangler ledig tid");
     expect(label({ availableForNewLoans: false })).toBe("Ikke ledig nå");
+  });
+});
+
+describe("owners of a thing in an environment (PS-ENV-015)", () => {
+  const owner = (realName: string) => ({ realName, profileId: null });
+
+  it("lists names as they are said", () => {
+    expect(joinNames([])).toBe("");
+    expect(joinNames(["Anna"])).toBe("Anna");
+    expect(joinNames(["Anna", "Bo"])).toBe("Anna og Bo");
+    expect(joinNames(["Anna", "Bo", "Cleo"])).toBe("Anna, Bo og Cleo");
+  });
+
+  it("names one or several owners, and nothing when none are shown", () => {
+    expect(describeOwners([])).toBeNull();
+    expect(describeOwners([owner("Anna")])).toBe("Eier: Anna");
+    expect(describeOwners([owner("Anna"), owner("Bo")])).toBe(
+      "Eiere: Anna og Bo",
+    );
   });
 });
