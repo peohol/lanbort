@@ -9,6 +9,7 @@ import {
   chatAccount,
   postCommand,
   registerThroughApi,
+  showToFriends,
   signInThroughApi,
   today,
 } from "./helpers";
@@ -92,6 +93,11 @@ const probes: Record<string, (ids: Ids) => Record<string, string>> = {
   "search/objects": (ids) => ({
     environmentId: ids.environmentId,
     categoryId: "annet",
+  }),
+  "social/objects": (ids) => ({ userId: ids.userId }),
+  "social/objects/image": (ids) => ({
+    objectId: ids.objectId,
+    imageId: ids.imageId,
   }),
   "social/relation": (ids) => ({ userId: ids.userId }),
   trust: (ids) => ({ userId: ids.userId }),
@@ -202,6 +208,8 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
   await postCommand(lender.context, `/api/objects/${objectId}/publications`, {
     environmentId,
   });
+  // Also visible to the lender's friends, which the stranger is not.
+  await showToFriends(lender.context, objectId);
   const upload = await lender.context.post(`/api/objects/${objectId}/images`, {
     data: await sharp({
       create: { width: 40, height: 30, channels: 3, background: "#4a7" },

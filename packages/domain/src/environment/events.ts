@@ -54,6 +54,7 @@ export const roleRevokeReasonSchema = z.enum([
   "removed",
   "transferred",
   "account_departed",
+  "type_change_not_accepted",
 ]);
 
 export const environmentRoleRevoked = defineEvent({
@@ -300,6 +301,7 @@ export const membershipEnded = membershipEvent("ended", "domain", {
     "invitation_withdrawn",
     "environment_wound_down",
     "environment_type_changed",
+    "type_change_not_accepted",
     "account_deleted",
   ]),
 });

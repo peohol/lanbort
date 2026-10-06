@@ -24,9 +24,11 @@ import {
   withdrawPublication,
 } from "../publications/commands";
 import { blockUser, removeFriend, sendFriendRequest } from "../social/commands";
+import { subscribeToObject } from "../subscriptions/commands";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
 import { startTestVote } from "../testing/type-changes";
+import { approveLoanRequest } from "./approval";
 import {
   acceptResponsibility,
   confirmLoanTerms,
@@ -59,6 +61,8 @@ const {
   environmentOrigin,
   ask,
   stored,
+  dated,
+  day,
 } = kit;
 
 const notFound = { code: "not_found" };
@@ -938,5 +942,80 @@ describe("deleting the object", () => {
     expect((await eventsFor(open)).map((event) => event.event_type)).toEqual([
       "loan_request.created",
     ]);
+  });
+});
+
+describe("the message (PS-LOAN-004, OD-0015)", () => {
+  it("is optional, seen only by the parties, and never in an event", async () => {
+    const { environmentId, owner, borrower, objectId } = await published();
+    const origin = environmentOrigin(environmentId);
+
+    const without = await ask(borrower, objectId, origin, {
+      ...dated(2, 3),
+      message: undefined,
+    });
+    expect(await read(borrower, without.requestId)).toMatchObject({
+      message: null,
+    });
+
+    const text = `Kan jeg hente den ${randomUUID()}?`;
+    const { requestId } = await ask(borrower, objectId, origin, {
+      ...dated(5, 6),
+      message: text,
+    });
+    expect(await read(owner, requestId)).toMatchObject({
+      message: text,
+      borrower: { realName: "Test Testesen" },
+    });
+    await expect(read(await user(), requestId)).rejects.toMatchObject(notFound);
+    expect(JSON.stringify(await eventsFor(requestId))).not.toContain(text);
+
+    // Text the user left empty is never stored as a message.
+    await expect(
+      ask(borrower, objectId, origin, { ...dated(8, 9), message: "  " }),
+    ).rejects.toMatchObject(invalid);
+  });
+});
+
+describe("what a request's page shows (UX-JRN-005)", () => {
+  it("tells a lender what approving would agree to, and what it would end", async () => {
+    const { environmentId, owner, borrower, objectId, admin } =
+      await published();
+    const origin = environmentOrigin(environmentId);
+    const other = await member(environmentId, admin);
+    const { requestId } = await ask(borrower, objectId, origin, {
+      start: { kind: "asap" },
+      end: { kind: "duration", days: 3 },
+    });
+    const colliding = await ask(other, objectId, origin, dated(1, 2));
+    await ask(other, objectId, origin, dated(20, 21));
+
+    expect((await read(owner, requestId)).approval).toEqual({
+      period: { start: day(0), end: day(2) },
+      endsOtherRequests: 1,
+    });
+    expect((await read(borrower, requestId)).approval).toBeNull();
+
+    await run(approveLoanRequest, owner, { requestId: colliding.requestId });
+    expect((await read(owner, requestId)).approval).toEqual({
+      period: { start: day(3), end: day(5) },
+      endsOtherRequests: 0,
+    });
+
+    await run(approveLoanRequest, owner, { requestId });
+    expect((await read(owner, requestId)).approval).toBeNull();
+  });
+
+  it("shows a would-be borrower the pictures and whether they follow it", async () => {
+    const { environmentId, borrower, objectId } = await published();
+    const preview = () =>
+      executeQuery(tick(), previewLoanRequest, {
+        actor: borrower,
+        input: { objectId, environmentId },
+      });
+
+    expect(await preview()).toMatchObject({ images: [], following: false });
+    await run(subscribeToObject, borrower, { objectId });
+    expect(await preview()).toMatchObject({ following: true });
   });
 });

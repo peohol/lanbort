@@ -6,6 +6,7 @@ import {
   multilineText,
   objectCategoryIdSchema,
   objectIdSchema,
+  objectImageSchema,
 } from "./objects";
 
 /**
@@ -71,7 +72,8 @@ export const createLoanRequestSchema = z
     origin: loanRequestOriginSchema,
     start: desiredStartSchema,
     end: desiredEndSchema,
-    message: loanRequestMessageSchema,
+    /** Optional, and never end-to-end encrypted (PS-LOAN-004, OD-0015). */
+    message: loanRequestMessageSchema.optional(),
     termsVersion: termsVersionSchema,
     responsibilityDeclarationVersion: z.int().min(1).optional(),
   })
@@ -181,12 +183,31 @@ export const loanRequestPreviewSchema = z.strictObject({
   availableForNewLoans: z.boolean(),
   /** The declaration to accept for a direct request, null otherwise. */
   responsibilityDeclarationVersion: z.int().nullable(),
+  /**
+   * Its pictures. Through an environment they are read as there
+   * (`environment_object.read_image`).
+   */
+  images: z.array(objectImageSchema),
+  /**
+   * The caller follows the object (PS-OBJ-014). Only an object found in an
+   * environment can be followed.
+   */
+  following: z.boolean(),
 });
 
 /** The terms of one object version. */
 const termsSchema = z.strictObject({
   version: z.int(),
   loanTerms: z.string().nullable(),
+});
+
+/**
+ * A person in a loan as its parties see them (UX-INT-004): by their real
+ * name, or null once the account is deleted («Tidligere bruker»,
+ * UX-PRIV-010). Never a link to a profile (UX-PRIV-007).
+ */
+export const loanPersonSchema = z.strictObject({
+  realName: z.string().nullable(),
 });
 
 /** A request as its borrower or a lender sees it. */
@@ -196,6 +217,8 @@ export const loanRequestSchema = z.strictObject({
   objectId: objectIdSchema.nullable(),
   role: loanRequestRoleSchema,
   borrowerUserId: z.uuid(),
+  /** The borrower by name, for the lenders who answer (UX-JRN-005). */
+  borrower: loanPersonSchema,
   /**
    * The environment is named only to those who can still see it, and not
    * where its history is private to them (PS-ENV-009).
@@ -215,7 +238,11 @@ export const loanRequestSchema = z.strictObject({
   ]),
   start: desiredStartSchema,
   end: desiredEndSchema,
-  message: z.string(),
+  /**
+   * Seen only by the parties, and not end-to-end encrypted (PS-LOAN-004).
+   * Null when the borrower wrote none.
+   */
+  message: z.string().nullable(),
   status: loanRequestStatusSchema,
   endReason: loanRequestEndReasonSchema.nullable(),
   /**
@@ -263,6 +290,24 @@ export const loanPeriodSchema = z.strictObject({
 });
 
 export const loanIdSchema = z.uuid();
+
+/**
+ * One request as its page shows it: for a lender, also what approving it
+ * would agree to now (UX-JRN-005). `period` is the period approval would
+ * reserve, «as soon as possible» from the earliest day it fits whole, or
+ * null when the object is not available for it; `endsOtherRequests` counts
+ * the other open requests it would end because they collide (PS-LOAN-007).
+ * Null for the borrower, and while the request cannot be approved as it
+ * stands.
+ */
+export const loanRequestDetailSchema = loanRequestSchema.extend({
+  approval: z
+    .strictObject({
+      period: loanPeriodSchema.nullable(),
+      endsOtherRequests: z.int().min(0),
+    })
+    .nullable(),
+});
 
 /**
  * PS-LOAN-006: an owner who sees the request approves it. The period is the
@@ -586,15 +631,6 @@ export const loanUnresolvedResultSchema = z.strictObject({
   endedAt: z.iso.datetime(),
 });
 
-/**
- * A person in a loan as its parties see them (UX-INT-004): by their real
- * name, or null once the account is deleted («Tidligere bruker»,
- * UX-PRIV-010). Never a link to a profile (UX-PRIV-007).
- */
-export const loanPersonSchema = z.strictObject({
-  realName: z.string().nullable(),
-});
-
 const answerSchema = z.enum(["accept", "decline"]);
 
 /**
@@ -864,8 +900,10 @@ export type CreateLoanRequest = z.infer<typeof createLoanRequestSchema>;
 export type LoanRequestStatus = z.infer<typeof loanRequestStatusSchema>;
 export type LoanRequestEndReason = z.infer<typeof loanRequestEndReasonSchema>;
 export type LoanRequestRole = z.infer<typeof loanRequestRoleSchema>;
+export type LoanRequestResult = z.infer<typeof loanRequestResultSchema>;
 export type LoanRequestPreview = z.infer<typeof loanRequestPreviewSchema>;
 export type LoanRequest = z.infer<typeof loanRequestSchema>;
+export type LoanRequestDetail = z.infer<typeof loanRequestDetailSchema>;
 export type LoanRequestList = z.infer<typeof loanRequestListSchema>;
 export type LoanPeriod = z.infer<typeof loanPeriodSchema>;
 export type LoanApprovalResult = z.infer<typeof loanApprovalResultSchema>;

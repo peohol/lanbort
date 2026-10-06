@@ -18,14 +18,13 @@ export const isStricter = (to: EnvironmentType, from: EnvironmentType) =>
   privacyRank[to] > privacyRank[from];
 
 /**
- * PS-ENV-008: closed → open gives every member a week to accept. For
- * hidden → closed the specification names no voting period (OD-0012), so
- * that vote cannot be started until one is decided. null means undecided.
+ * PS-ENV-008: closed → open gives every member a week to accept, and
+ * hidden → closed a week to accept or leave (OD-0012).
  */
 export const typeChangeDays = {
   consent: 7,
-  vote: null,
-} as const satisfies Record<TypeChangeProcess, number | null>;
+  vote: 7,
+} as const satisfies Record<TypeChangeProcess, number>;
 
 export type TypeChange =
   | { readonly kind: "stricter" }

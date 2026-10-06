@@ -1,17 +1,15 @@
 import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
 import { daysAfter } from "../environment/model";
+import { typeChangeDays } from "../environment/privacy";
 
 /**
- * No voting period is decided for hidden → closed (OD-0012), so no command
- * starts that vote yet. Tests of the vote, and of what follows from it,
- * start one directly with this test deadline.
- *
- * Tests in other areas use it to adopt a weaker type within minutes:
- * concluding is one job for every environment, so moving the clock days
- * ahead to conclude would also conclude other tests' proposals early.
+ * Starts a proposal directly, without a command. Tests in other areas use it
+ * to adopt a weaker type within minutes: concluding is one job for every
+ * environment, so moving the clock days ahead to conclude would also
+ * conclude other tests' proposals early.
  */
-export const testVoteDays = 7;
+export const testVoteDays = typeChangeDays.vote;
 
 export async function startTestVote(
   db: Kysely<Database>,

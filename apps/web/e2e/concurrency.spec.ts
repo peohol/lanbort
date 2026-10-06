@@ -10,6 +10,7 @@ import {
   collectBrowserProblems,
   postCommand,
   registerThroughApi,
+  showToFriends,
   today,
 } from "./helpers";
 
@@ -43,6 +44,7 @@ async function directRequest(
       availability: [{ start: today(), end: null }],
     })
   ).json();
+  await showToFriends(owner, objectId);
 
   return { objectId, requestId: await ask(borrower, objectId, start, owner) };
 }

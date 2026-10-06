@@ -11,6 +11,7 @@ import {
   collectBrowserProblems,
   enterEmailCode,
   registerThroughApi,
+  showToFriends,
 } from "./helpers";
 
 /**
@@ -244,6 +245,7 @@ test("Lån shows further pages of a list in place", async ({
       headers: { "Idempotency-Key": randomUUID() },
     })
   ).json();
+  await showToFriends(bo, objectId);
   const preview = await (
     await page.request.get(`/api/loan-requests/preview?objectId=${objectId}`)
   ).json();

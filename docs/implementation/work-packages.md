@@ -62,7 +62,7 @@ Administrator/eier, rolleinvitasjon, eieroverføring, eierløshet og avvikling.
 **Krav:** PS-ENV-007–010  
 Strengere/svakere personvern, passiv status og konto-bundne skjulte invitasjoner.
 
-**Status:** Gjenstår etter OD-0012 (6. oktober 2026): skjult→lukket skal kunne startes med 7 dagers frist, og når den vedtas, skal medlemmer uten ja fjernes (avsluttet medlemskap) i stedet for å bli passive (PS-ENV-008). Bygges i WP-85.
+**Status:** Ferdig. Resten etter OD-0012 (skjult→lukket med 7 dagers frist, og fjerning i stedet for passiv status for medlemmer uten ja, PS-ENV-008) ble bygget som serverdelen av WP-85.
 
 ### WP-24 — Objektkjerne
 **Krav:** PS-OBJ-001–005  
@@ -88,7 +88,7 @@ Publiseringsvalget «Venner» per objekt (av som standard), vennens visning av e
 **Krav:** PS-LOAN-001–005  
 Miljø-/venneinngang, ansvarserklæring og vilkårsbekreftelse.
 
-**Status:** Ferdig, med én rest etter OD-0015 (6. oktober 2026): meldingen skal bli valgfri (PS-LOAN-004). Direkte forespørsler krever at objektet er synlig for venner (WP-27).
+**Status:** Ferdig. Direkte forespørsler krever at objektet er synlig for venner (WP-27), og meldingen er valgfri etter OD-0015 (PS-LOAN-004, bygget i WP-83).
 
 ### WP-31 — Atomisk godkjenning og reservasjon
 **Krav:** PS-LOAN-006–008; PS-NFR-004  
