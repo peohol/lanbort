@@ -113,7 +113,7 @@ Vi vurderer blant annet:
 
 Den valgte retningen brukes først på én sammenhengende ende-til-ende-flyt:
 
-**oppdage objekt → objektside → låneforespørsel → godkjenning → aktivt lån → retur**
+**oppdage objekt → objektside → låneforespørsel → godkjenning → reservert lån → overlevering → aktivt lån → retur**
 
 Flyten skal dekke både normaltilstander og de viktigste situasjonene som påvirker brukerens forståelse av avtalen, uten at alle sjeldne avvik må ferdigdesignes samtidig.
 
@@ -122,6 +122,7 @@ Denne fasen skal bevise at:
 - status er forståelig
 - neste handling er tydelig
 - forpliktelser og samtykke har passende friksjon
+- overgangen fra godkjent/reservert lån gjennom fysisk overlevering til aktivt lån er forståelig
 - samme lånemodell oppleves konsistent gjennom hele forløpet
 - mobilopplevelsen fungerer uten å være avhengig av desktopplass
 
