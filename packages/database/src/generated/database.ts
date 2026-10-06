@@ -544,7 +544,10 @@ export interface AppLoanRequests {
   environment_id: string | null;
   former_owner_ids: string[] | null;
   id: Generated<string>;
-  message: string;
+  /**
+   * Optional, to the owners (PS-LOAN-004). Never copied into events or logs.
+   */
+  message: string | null;
   object_id: string | null;
   origin: string;
   position: Int8 | null;

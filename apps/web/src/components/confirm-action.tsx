@@ -3,6 +3,7 @@
 import { useId, useRef } from "react";
 import { BusyButton } from "./busy-button";
 import { ErrorText } from "./error-text";
+import { fillHref } from "./form-body";
 import { useCommand } from "./use-command";
 
 /** What a consequence view lists (UX-INT-007); empty lists are left out. */
@@ -37,6 +38,7 @@ export function ConfirmAction({
   body,
   danger = false,
   idempotent = true,
+  next,
 }: {
   /** The button that opens the dialog. */
   label: string;
@@ -48,10 +50,17 @@ export function ConfirmAction({
   body: object;
   danger?: boolean;
   idempotent?: boolean;
+  /** The page to go to once done, filled from the answer (`CommandForm`). */
+  next?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
-  const command = useCommand({ path, done: confirmLabel, idempotent });
+  const command = useCommand({
+    path,
+    done: confirmLabel,
+    idempotent,
+    after: next ? (data) => fillHref(next, data) : "refresh",
+  });
 
   async function confirm() {
     if (await command.run(body)) dialog.current?.close();

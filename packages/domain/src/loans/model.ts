@@ -51,7 +51,8 @@ export interface LoanRequestRecord {
   readonly position: HistoryPosition | null;
   readonly start: DesiredStart;
   readonly end: DesiredEnd;
-  readonly message: string;
+  /** Optional (PS-LOAN-004); null when the borrower wrote none. */
+  readonly message: string | null;
   /** The object version whose terms the borrower confirmed (PS-LOAN-005). */
   readonly termsVersion: number | null;
   /** The owners when the object was deleted; null while it exists. */
