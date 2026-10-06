@@ -16,6 +16,7 @@ import {
   availabilityBlockSources,
   loadAvailabilityBlocks,
 } from "./blocks";
+import { returnPhaseStatuses } from "../loans/model";
 import { loadFreezes } from "./co-owner-blocks";
 import type { ObjectResource } from "./policies";
 import { type RevisionNote, recordRevision } from "./revisions";
@@ -74,6 +75,8 @@ export interface ObjectDetails extends ObjectState, CoOwnershipDetails {
   readonly availability: readonly DateInterval[];
   readonly images: readonly ObjectImageRow[];
   readonly blocks: readonly AvailabilityBlock[];
+  /** Handed over in a loan that has not ended. */
+  readonly lentOut: boolean;
 }
 
 /** The acting user; object commands only ever run for signed-in users. */
@@ -269,6 +272,27 @@ export async function loadImages(
   return images;
 }
 
+/**
+ * The objects that are out of their owners' hands: handed over in a loan
+ * that has not ended (PS-LOAN-014–017).
+ */
+async function loadLentOut(
+  db: Kysely<Database>,
+  objectIds: readonly string[],
+): Promise<Set<string>> {
+  if (objectIds.length === 0) return new Set();
+
+  const rows = await db
+    .selectFrom("app.loans")
+    .select("object_id")
+    .distinct()
+    .where("object_id", "in", objectIds)
+    .where("status", "in", returnPhaseStatuses)
+    .execute();
+
+  return new Set(rows.flatMap((row) => row.object_id ?? []));
+}
+
 /** Restrictions in force, oldest first. */
 async function loadRestrictions(
   db: Kysely<Database>,
@@ -368,6 +392,7 @@ async function loadDetails(
   const availability = await loadAvailability(db, ids);
   const images = await loadImages(db, ids);
   const coOwnership = await loadCoOwnership(db, ids);
+  const lentOut = await loadLentOut(db, ids);
 
   return states.map((state) => ({
     ...state,
@@ -375,6 +400,7 @@ async function loadDetails(
     availability: availability.get(state.objectId) ?? [],
     images: images.get(state.objectId) ?? [],
     blocks: blocks.get(state.objectId) ?? [],
+    lentOut: lentOut.has(state.objectId),
   }));
 }
 
@@ -512,6 +538,7 @@ export function presentOwnObject(details: ObjectDetails, now: Date): OwnObject {
       createdAt: restriction.createdAt.toISOString(),
     })),
     frozenForNewLoans: details.frozen,
+    lentOut: details.lentOut,
     deletionConsents: [...details.deletionConsents],
     pendingInvitations: details.pendingInvitations.map((invitation) => ({
       id: invitation.id,

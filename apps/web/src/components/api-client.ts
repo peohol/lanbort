@@ -15,6 +15,17 @@ export type ApiFailureCode = ApiErrorCode | "network";
 export type ApiResult<T> =
   { ok: true; data: T } | { ok: false; code: ApiFailureCode };
 
+/** How a command is sent; the API's commands take one key per attempt. */
+export interface SendOptions {
+  readonly idempotencyKey?: string;
+  readonly method?: "POST" | "PATCH" | "DELETE";
+}
+
+const keyHeader = (options: SendOptions) =>
+  options.idempotencyKey
+    ? { [idempotencyKeyHeader]: options.idempotencyKey }
+    : {};
+
 /**
  * Same-origin JSON calls to Lånbort's API. Session cookies are HttpOnly and
  * travel automatically; the browser never handles tokens.
@@ -22,17 +33,28 @@ export type ApiResult<T> =
 export async function postJson<T = unknown>(
   path: string,
   body: unknown,
-  options: { idempotencyKey?: string } = {},
+  options: SendOptions = {},
+): Promise<ApiResult<T>> {
+  return request<T>(path, {
+    method: options.method ?? "POST",
+    headers: { "content-type": "application/json", ...keyHeader(options) },
+    body: JSON.stringify(body ?? {}),
+  });
+}
+
+/** A file as the whole body, such as a photo of a thing. */
+export async function postFile<T = unknown>(
+  path: string,
+  file: Blob,
+  options: Pick<SendOptions, "idempotencyKey"> = {},
 ): Promise<ApiResult<T>> {
   return request<T>(path, {
     method: "POST",
     headers: {
-      "content-type": "application/json",
-      ...(options.idempotencyKey
-        ? { [idempotencyKeyHeader]: options.idempotencyKey }
-        : {}),
+      "content-type": file.type || "application/octet-stream",
+      ...keyHeader(options),
     },
-    body: JSON.stringify(body ?? {}),
+    body: file,
   });
 }
 
