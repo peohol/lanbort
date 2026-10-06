@@ -90,7 +90,7 @@ Prosesser som krever administrator kan stå på vent dersom ingen habil administ
 ### PS-ENV-015 — Aktive medlemmer ser hverandre og hvem som eier tingene
 **Forankring:** [Lukket miljø og passivt medlem](../vision/03-miljoer.md), [Vennskap](../vision/02-brukere-roller-og-relasjoner.md)
 
-Aktive medlemmer ser miljøets medlemsliste og eierne av tingene som er publisert i miljøet, og kan derfra åpne en persons profil og sende venneforespørsel. Passive medlemmer vises ikke, og ikke-medlemmer ser verken medlemsliste eller eiere. Historisk personvern (PS-ENV-009) gjelder for begge: et medlemskap eller en publisering fra en strengere miljøtype vises ikke bredere før medlemmet har akseptert den nye typen. (Produkteier, 6. oktober 2026, OD-0024.)
+Aktive medlemmer ser miljøets medlemsliste og eierne av tingene som er publisert i miljøet, og kan derfra åpne en persons profil og sende venneforespørsel. Som eiere vises bare de medeierne som selv er aktive medlemmer av miljøet; en medeier utenfor miljøet vises ikke for miljøets medlemmer (PS-OBJ-006). Passive medlemmer vises ikke, og ikke-medlemmer ser verken medlemsliste eller eiere. Historisk personvern (PS-ENV-009) gjelder for begge: et medlemskap eller en publisering fra en strengere miljøtype vises ikke bredere før medlemmet har akseptert den nye typen. (Produkteier, 6. oktober 2026, OD-0024.)
 
 ## Miljøtilstand
 

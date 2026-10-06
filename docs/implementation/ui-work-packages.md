@@ -176,7 +176,7 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 **Skjermer og flyter:**
 
 - Tingene på miljøets side, treff gjennom et miljø i Finn og tingens side sett gjennom et miljø viser eierne med navn, lenket til personens side der den er tilgjengelig (`PersonName`).
-- **Server:** lesemodellene for tingene i et miljø får eierne med `profileId`, med samme historiske synlighet som medlemslisten (PS-ENV-009): eiere hvis publisering eller medlemskap stammer fra en strengere type, vises ikke for medlemmer som ikke kunne se dem da, før eieren har akseptert den nye typen. Passive medlemmers ting er allerede avpublisert. Negative tester for ikke-medlemmer, passive medlemmer og historisk skjulte eiere.
+- **Server:** lesemodellene for tingene i et miljø får eierne som er aktive medlemmer av miljøet, med `profileId` (felles aktivt miljø gir allerede tilgang til profilen), og med samme historiske synlighet som medlemslisten (PS-ENV-009): eiere hvis publisering eller medlemskap stammer fra en strengere type, vises ikke for medlemmer som ikke kunne se dem da, før eieren har akseptert den nye typen. Passive medlemmers ting er allerede avpublisert. Negative tester for ikke-medlemmer, passive medlemmer og historisk skjulte eiere.
 
 **Avhenger av:** WP-84.
 
