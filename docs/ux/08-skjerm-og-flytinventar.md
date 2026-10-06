@@ -92,7 +92,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 
 - **Oppgave:** forstå hva tingen er og om den kan lånes, og be om å låne den.
 - **Tilstander:** ledig og når; ikke ledig (uten å røpe hvorfor, UX-PRIV-004); opprinnelse (miljø eller «Direkte mellom venner»); vilkår; egen åpen forespørsel; følger tingen; spørsmål og svar i miljøet; tilgang borte.
-- **Ser / handler:** medlemmer av miljøer der tingen er publisert, og venner når tingen er synlig for venner. De kan be om å låne, følge tingen og stille spørsmål i miljøet. Om eieren vises, avgjøres i OD-0024.
+- **Ser / handler:** medlemmer av miljøer der tingen er publisert, og venner når tingen er synlig for venner. De kan be om å låne, følge tingen og stille spørsmål i miljøet. Gjennom et miljø vises eierne med navn (PS-ENV-015, WP-89).
 - **Regler:** UX-INT-001, UX-P06, UX-PRIV-003, UX-PRIV-004, PS-OBJ-001, PS-OBJ-014, PS-OBJ-015, PS-OBJ-020, PS-DOM-008.
 - **Forløp:** normal.
 - **UI-pakke:** WP-83.
@@ -173,7 +173,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 
 - **Oppgave:** forstå et miljø før innmelding, og bruke det som medlem.
 - **Tilstander:** åpent (krav, regler, bli med); lukket (begrenset forhåndsvisning, søk); skjult (bare for den som er invitert eller medlem); søknad venter; aktivt medlem (tingene i miljøet, «Registrer en ting her», medlemsliste, kontakt administratorene); passivt medlem forklart; under avvikling; ingen administrator kan behandle henvendelser nå.
-- **Ser / handler:** innloggede innenfor det typen tillater; medlemmer ser og bruker innholdet. Om eieren vises på tingene, avgjøres i OD-0024.
+- **Ser / handler:** innloggede innenfor det typen tillater; medlemmer ser og bruker innholdet, ser medlemslisten og ser hvem som eier tingene (PS-ENV-015).
 - **Regler:** UX-IA-004, UX-JRN-002, UX-PRIV-002, UX-PRIV-003, UX-EXC-009, PS-ENV-001, PS-ENV-004, PS-ENV-012, PS-ENV-014, PS-NFR-002.
 - **Forløp:** normal.
 - **UI-pakke:** WP-84.
@@ -579,6 +579,5 @@ Til en beslutning finnes, viser UI-et ikke funksjonen den gjelder.
 | OD-0018    | Egen kontostatus                                          | Ingen automatisk dvale                                             |
 | OD-0019    | Tingens side for andre                                    | «Følg» varsler bare når tingen blir ledig igjen                    |
 | OD-0023    | Plattformkø og alle plattformforvalterflater              | Vises ikke                                                         |
-| OD-0024    | Miljøets side, tingens side for andre, Finn               | Tingene i et miljø vises uten eier                                 |
 | OD-0025    | Medlemmer og utestengelse                                 | Ingen handling for å fjerne et aktivt medlem                       |
 | OD-0026    | Inngrep på kontoer, inngrep i et miljø                    | Ingen flate                                                        |

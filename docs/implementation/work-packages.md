@@ -226,6 +226,6 @@ Kjør [kvalitetsportene](quality-gates.md), dokumenter kjente begrensninger og �
 
 ## Fase 8
 
-### WP-80–WP-88 — Brukerflaten
+### WP-80–WP-89 — Brukerflaten
 **UX:** UX-IA, UX-JRN, UX-INT, UX-EXC, UX-PRIV, UX-A11Y  
 Den helhetlige, mobil-først brukerflaten oppå det bygde domenet: felles grunnlag først (WP-80), deretter parallelle pakker for objekter, forespørsler, miljøer, personer, lån og saker. Leveranser, skjermer, avhengigheter og rekkefølge står i [UI-arbeidspakkene](ui-work-packages.md).

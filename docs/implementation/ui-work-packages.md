@@ -15,7 +15,7 @@ Hver pakke bygger skjermer, ikke regler. Domene- og autorisasjonsregler ligger p
 - **Personvern i presentasjonen.** Kontekstmerke der betydningen avhenger av kontekst (UX-PRIV-003), «Tidligere bruker» uten lenke for slettede brukere (UX-PRIV-010), og ingen snarveier som gjenåpner tapt tilgang (UX-PRIV-007, UX-EXC-005).
 - **Varsler leder fram.** Når en kontekst får en egen side, peker varsler og Hjem dit (én linje i `navigation/targets.ts`, UX-INT-010).
 - **Ferdig betyr testet.** Hver ny side får én linje i tilgjengelighetstesten (`e2e/accessibility.spec.ts`) og minst én nettlesertest av hovedflyten. Nye domeneoperasjoner får integrasjonstester med eksplisitte avslag, og nye lese-ruter med ressurs- eller person-ID får en probe i sikkerhetstesten (WP-70).
-- **Åpne beslutninger bygges ikke.** Funksjoner som står avslått til en OD er avgjort (OD-0003, OD-0016, OD-0017, OD-0018, OD-0023), vises ikke i UI-et. OD-0024 (om eieren vises på tingene i et miljø) berører bare hvordan tingene i et miljø vises; til den er avgjort, vises de uten eier.
+- **Åpne beslutninger bygges ikke.** Funksjoner som står avslått til en OD er avgjort (OD-0003, OD-0016, OD-0017, OD-0018, OD-0023), vises ikke i UI-et.
 
 ## Oversikt og rekkefølge
 
@@ -30,9 +30,10 @@ Hver pakke bygger skjermer, ikke regler. Domene- og autorisasjonsregler ligger p
 | [WP-86](#wp-86--personer-venner-og-tillit) | Personens side, venner, blokkering, tillit | WP-80 | alle andre |
 | [WP-87](#wp-87--lånets-side-og-anmeldelser) | Resten av lånets side og anmeldelser | WP-80 | alle andre |
 | [WP-88](#wp-88--saker-og-arbeidskø) | Sakens side, egne saker og administratorkø | WP-80 | alle andre |
+| [WP-89](#wp-89--eiere-på-tingene-i-et-miljø) | Eierens navn på tingene i et miljø | WP-84 | alle unntatt WP-84 |
 | [WP-27](work-packages.md#wp-27--synlighet-for-venner) | Synlighet for venner (server og UI) | WP-80; UI-delen også WP-81, WP-83, WP-86 | serverdelen med alle |
 
-Etter WP-80 kan WP-81–WP-88 og serverdelen av WP-27 gå samtidig. Pakkene eier hver sine sider, så de berører hverandre bare i felles filer der hver pakke legger til én linje: `navigation/targets.ts`, `navigation/routes.ts` og listen over sider i tilgjengelighetstesten. Objektets side (`/ting/[id]`) deles av WP-82 og WP-83: WP-80 legger siden med én visning for eiere og én for andre i hver sin fil, og pakkene bygger videre i hver sin.
+Etter WP-80 kan WP-81–WP-88 og serverdelen av WP-27 gå samtidig; WP-89 kommer etter WP-84. Pakkene eier hver sine sider, så de berører hverandre bare i felles filer der hver pakke legger til én linje: `navigation/targets.ts`, `navigation/routes.ts` og listen over sider i tilgjengelighetstesten. Objektets side (`/ting/[id]`) deles av WP-82 og WP-83: WP-80 legger siden med én visning for eiere og én for andre i hver sin fil, og pakkene bygger videre i hver sin.
 
 Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å registrere en ting, publisere den i et miljø, bli funnet, få en forespørsel og gjennomføre lånet.
 
@@ -103,7 +104,7 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 - **Typeendring for medlemmer:** se hva økt synlighet betyr og akseptere eller forlate innen fristen (UX-PRIV-008, PS-ENV-008). For skjult→lukket bygger dette på serverleveransen i WP-85.
 - **Forlat miljøet** med konsekvensvisning; passiv status forklart.
 - **Medlemsliste** for aktive medlemmer: de andre aktive medlemmene med navn og rolle, hver med lenke til personens side (WP-86), der man kan sende venneforespørsel (visjon 02, «Vennskap»). Passive medlemmer vises ikke, og ikke-medlemmer ser ingen liste (visjon 03). Serverleveranse: en medlemsvendt spørring med samme historiske synlighet som administratorenes medlemsliste (PS-ENV-009), uten svar på medlemskrav (UX-PRIV-009).
-- **Eiere på tingene:** om eieren vises direkte på tingene i miljøet, avgjøres i OD-0024. Til da vises tingene uten eier.
+- **Eiere på tingene** (OD-0024, PS-ENV-015) bygges i WP-89 etter denne pakken.
 - **Opprett miljø** (`/miljoer/ny`): navn, type, beskrivelse, område og krav.
 - Hjem lenker «Dine miljøer» og miljøvarsler til siden, og miljøtreff i Finn lenker hit.
 
@@ -167,6 +168,17 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 - Plattformforvalternes kø vises ikke før WebAuthn er bygget (OD-0023), fordi handlingene avvises til da.
 
 **Avhenger av:** WP-80.
+
+## WP-89 — Eiere på tingene i et miljø
+
+**Leverer:** Eierens navn på tingene i et miljø, slik at medlemmer ser hvem de låner av og kan nå personen (PS-ENV-015, OD-0024).
+
+**Skjermer og flyter:**
+
+- Tingene på miljøets side, treff gjennom et miljø i Finn og tingens side sett gjennom et miljø viser eierne med navn, lenket til personens side der den er tilgjengelig (`PersonName`).
+- **Server:** lesemodellene for tingene i et miljø får eierne med `profileId`, med samme historiske synlighet som medlemslisten (PS-ENV-009): eiere hvis publisering eller medlemskap stammer fra en strengere type, vises ikke for medlemmer som ikke kunne se dem da, før eieren har akseptert den nye typen. Passive medlemmers ting er allerede avpublisert. Negative tester for ikke-medlemmer, passive medlemmer og historisk skjulte eiere.
+
+**Avhenger av:** WP-84.
 
 ## Senere
 
