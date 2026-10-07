@@ -5,7 +5,7 @@ import type {
   ProfilePictureVisibility,
 } from "@lanbort/contracts";
 import { useRouter } from "next/navigation";
-import { type ChangeEvent, useEffect, useState } from "react";
+import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { ActionButton } from "@/components/action-button";
 import { announce } from "@/components/announcer";
 import { postFile, postJson } from "@/components/api-client";
@@ -66,6 +66,11 @@ export function ProfilePictureSettings({
   const [error, setError] = useState<string | null>(null);
   const [uploadKey, setUploadKey] = useState(() => crypto.randomUUID());
   const [visibility, setVisibility] = useState(picture.visibility);
+  // Choices are saved one after another, so the last one made is the one
+  // that stays, however quickly they are made.
+  const saved = useRef(picture.visibility);
+  const wanted = useRef(picture.visibility);
+  const queue = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => () => photo?.close(), [photo]);
 
@@ -111,22 +116,31 @@ export function ProfilePictureSettings({
     router.refresh();
   }
 
-  async function show(next: ProfilePictureVisibility) {
-    const before = visibility;
+  function show(next: ProfilePictureVisibility) {
+    wanted.current = next;
     setVisibility(next);
     setError(null);
-    const result = await postJson("/api/account/picture/visibility", {
-      visibility: next,
+    queue.current = queue.current.then(async () => {
+      const result = await postJson("/api/account/picture/visibility", {
+        visibility: next,
+      });
+      const latest = wanted.current === next;
+
+      if (!result.ok) {
+        if (latest) {
+          wanted.current = saved.current;
+          setVisibility(saved.current);
+          setError(errorMessage(result.code));
+        }
+        return;
+      }
+
+      saved.current = next;
+      if (latest) {
+        announce("Valget for hvem som ser bildet er lagret.");
+        router.refresh();
+      }
     });
-
-    if (!result.ok) {
-      setVisibility(before);
-      setError(errorMessage(result.code));
-      return;
-    }
-
-    announce("Valget for hvem som ser bildet er lagret.");
-    router.refresh();
   }
 
   return (
@@ -186,7 +200,7 @@ export function ProfilePictureSettings({
                 name="profilbilde-synlighet"
                 value={option}
                 checked={visibility === option}
-                onChange={() => void show(option)}
+                onChange={() => show(option)}
               />
               <label htmlFor={`profilbilde-${option}`}>
                 {visibilityLabels[option]}

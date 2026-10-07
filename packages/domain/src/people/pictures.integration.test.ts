@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 import type { AccountStatus, UserActor } from "../actor";
 import { getOwnAccount } from "../account/queries";
 import { deleteOwnAccount } from "../account/deletion";
+import { deactivateAccount } from "../account/lifecycle";
 import { executeQuery } from "../commands/query";
 import { listEnvironmentMembers } from "../environment/queries";
 import type { ImageProcessor, ImageStore } from "../objects/images";
@@ -182,6 +183,22 @@ describe("setting a profile picture", () => {
     );
     await deliver();
     expect(filesOf(me)).toEqual([]);
+  });
+
+  it("shows an account that is not active its initials, as its picture is not served", async () => {
+    const me = await user();
+    await upload(me);
+    await run(deactivateAccount, me, {});
+    const inactive = { ...me, accountStatus: "deactivated" as const };
+
+    expect(
+      (
+        await executeQuery(tick(), getOwnAccount, {
+          actor: inactive,
+          input: {},
+        })
+      ).picture.pictureId,
+    ).toBeNull();
   });
 });
 

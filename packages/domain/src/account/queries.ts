@@ -6,6 +6,7 @@ import type {
 import { z } from "zod";
 import type { AccountStatus } from "../actor";
 import { defineQuery } from "../commands/query";
+import { takesNewActivity } from "./model";
 import { readOwnAccount } from "./policies";
 
 /**
@@ -51,7 +52,11 @@ export const getOwnAccount = defineQuery({
             realName: row.real_name,
             email: row.address,
             picture: {
-              pictureId: row.picture_id,
+              // Pictures are served to active accounts only, so one that is
+              // not active is shown its initials instead.
+              pictureId: takesNewActivity(row.status as AccountStatus)
+                ? row.picture_id
+                : null,
               // A profile is shown generally until its owner chooses otherwise.
               visibility: (row.picture_visibility ??
                 "general") as ProfilePictureVisibility,

@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import {
   initialsOf,
   pictureFrameStyle,
@@ -25,8 +28,11 @@ export function ProfilePicture({
 }) {
   const className = `profile-picture profile-picture-${size}`;
   const style = pictureFrameStyle();
+  // A picture replaced or hidden since the page was made is not served any
+  // more; the person is then shown as if they had none.
+  const [failed, setFailed] = useState<string | null>(null);
 
-  if (pictureId) {
+  if (pictureId && failed !== pictureId) {
     return (
       // A private file behind the API's policy, not a static asset.
       // eslint-disable-next-line @next/next/no-img-element
@@ -37,6 +43,13 @@ export function ProfilePicture({
         alt=""
         loading="lazy"
         decoding="async"
+        onError={() => setFailed(pictureId)}
+        // One that failed before the page came alive has no error to hear.
+        ref={(image) => {
+          if (image?.complete && image.naturalWidth === 0) {
+            setFailed(pictureId);
+          }
+        }}
       />
     );
   }
