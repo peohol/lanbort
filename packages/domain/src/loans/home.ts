@@ -10,8 +10,10 @@ import { listLoanRequests, listLoans } from "./queries";
 import { listCoOwnerLoans } from "./responsibility";
 
 /**
- * What a loan asks of one of its parties now (UX-IA-005, UX-P04), or null
- * once it has ended. An open proposal the other side made comes first,
+ * What a loan asks of one of its parties now (UX-IA-005, UX-P04). An ended
+ * loan asks only that its lender confirms having the object back after it
+ * ended unresolved, since the object takes no new loans until then
+ * (PS-LOAN-019). An open proposal the other side made comes first,
  * then the handover or return statement only this party can give; a loan
  * that waits for the other side or is disputed is unresolved, and one that
  * is simply under way shows its next day.
@@ -23,7 +25,9 @@ export function loanHomeItem(loan: Loan): HomeItem | null {
   const own = loan.role;
 
   if (loan.status === "ended") {
-    return null;
+    return loan.actions.confirmControl
+      ? homeItem("loan.confirm_control", target, details)
+      : null;
   }
 
   if (loan.amendment && loan.amendment.proposedBy !== own) {
@@ -141,18 +145,22 @@ const present = <T>(items: readonly T[], item: (from: T) => HomeItem | null) =>
   items.flatMap((from) => item(from) ?? []);
 
 /**
- * Every current loan of the caller, page by page: one that asks something
- * of them must not drop off Home because newer loans fill the first page.
+ * Every loan of the caller that may still ask something of them, page by
+ * page: one must not drop off Home because newer loans fill the first page.
  */
 export const loanHomeSource: HomeSource = {
   name: "loans",
   async items({ query }) {
-    const { items } = await collectPages(
-      (cursor) => query(listLoans, { state: "current", cursor }),
-      ({ loans }) => loans,
+    const lists = await Promise.all(
+      (["current", "awaiting_control"] as const).map((state) =>
+        collectPages(
+          (cursor) => query(listLoans, { state, cursor }),
+          ({ loans }) => loans,
+        ),
+      ),
     );
 
-    return present(items, loanHomeItem);
+    return lists.flatMap(({ items }) => present(items, loanHomeItem));
   },
 };
 

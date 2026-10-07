@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { type APIRequestContext, expect, test } from "@playwright/test";
 import {
+  agreeLoan,
+  axeViolations,
   collectBrowserProblems,
+  postCommand,
   registerThroughApi,
   showToFriends,
 } from "./helpers";
@@ -144,4 +147,104 @@ test("a borrower follows a loan from its page, and nobody else sees it", async (
   await registerThroughApi(page.request);
   expect((await page.goto(`/lan/${loanId}`))?.status()).toBe(404);
   expect((await page.goto("/lan/ikke-et-lan"))?.status()).toBe(404);
+});
+
+/** The calendar date `days` after `date`. */
+const after = (date: string, days: number) => {
+  const day = new Date(`${date}T00:00:00Z`);
+  day.setUTCDate(day.getUTCDate() + days);
+  return day.toISOString().slice(0, 10);
+};
+
+test("a borrower changes, cancels and reviews a loan on its page (WP-87)", async ({
+  page,
+  playwright,
+  baseURL,
+}) => {
+  const problems = collectBrowserProblems(page);
+  const bo = page.request;
+  await registerThroughApi(bo, undefined, "Bo Dahl");
+  const boId = await accountId(bo);
+  const anna = await playwright.request.newContext({
+    baseURL: baseURL!,
+    extraHTTPHeaders: { origin: baseURL! },
+  });
+  await registerThroughApi(anna, undefined, "Anna Berg");
+  const annaId = await accountId(anna);
+  await postCommand(anna, "/api/social/friend-requests", { userId: boId });
+  await postCommand(bo, "/api/social/friend-requests/accept", {
+    userId: annaId,
+  });
+  const loanId = await agreeLoan(anna, bo, "Stige");
+
+  await page.goto(`/lan/${loanId}`);
+  const status = page.getByRole("region", { name: "Status" });
+  // «Flere valg» stays as the user left it when the page reads again.
+  const more = async () => {
+    const details = status.locator("details.more-actions");
+    if (!(await details.evaluate((element) => element.hasAttribute("open")))) {
+      await details.getByText("Flere valg", { exact: true }).click();
+    }
+  };
+
+  // A new return day is only a proposal until Anna accepts it.
+  await more();
+  await status.getByText("Foreslå ny periode", { exact: true }).click();
+  await status.getByLabel("Leveres tilbake").fill(after(today(), 3));
+  await status.getByRole("button", { name: "Send forslaget" }).click();
+  await expect(status).toContainText(
+    "Venter på at Anna Berg svarer på forslaget om ny periode",
+  );
+
+  await more();
+  await status
+    .getByRole("button", { name: "Trekk forslaget om ny periode" })
+    .click();
+  await expect(status).toContainText("Avtalt: du låner Stige av Anna Berg");
+
+  // Cancelling shows what it means first.
+  await more();
+  await status.getByRole("button", { name: "Avlys lånet" }).click();
+  const dialog = page.getByRole("dialog", { name: "Avlyse lånet av Stige?" });
+  await expect(dialog).toContainText("Perioden blir ledig for andre lån.");
+  await expect(dialog).toContainText(
+    "Anna Berg får beskjed om at du har avlyst.",
+  );
+  await dialog.getByRole("button", { name: "Avlys lånet" }).click();
+  await expect(status).toContainText("Avlyst før overlevering av deg");
+
+  // Only what could be assessed is asked, and the review stays hidden.
+  const reviews = page.getByRole("region", { name: "Anmeldelser" });
+  await expect(reviews).toContainText(
+    "Anmeldelsen din er skjult til Anna Berg også har anmeldt deg",
+  );
+  await expect(reviews.getByRole("group")).toHaveCount(1);
+  await reviews
+    .getByRole("group", { name: "Kommunikasjon" })
+    .getByLabel("4")
+    .check();
+  expect(await axeViolations(page)).toEqual([]);
+  await reviews.getByRole("button", { name: "Send anmeldelsen" }).click();
+  await expect(
+    reviews.getByRole("article", { name: "Din anmeldelse" }),
+  ).toContainText("4 av 5");
+
+  // Once Anna has reviewed, both appear, and Bo answers once.
+  await postCommand(anna, `/api/loans/${loanId}/reviews`, {
+    scores: [{ dimension: "communication", score: 2 }],
+    text: "Avlyste sent.",
+  });
+  await page.reload();
+  const received = reviews.getByRole("article", {
+    name: "Anna Berg sin anmeldelse av deg",
+  });
+  await expect(received).toContainText("2 av 5");
+  await expect(received).toContainText("Avlyste sent.");
+  await received.getByText("Gi et tilsvar", { exact: true }).click();
+  await received.getByLabel("Tilsvar").fill("Beklager, ble syk.");
+  await received.getByRole("button", { name: "Send tilsvaret" }).click();
+  await expect(received).toContainText("Beklager, ble syk.");
+  await expect(received.getByText("Gi et tilsvar")).toBeHidden();
+
+  expect(problems).toEqual([]);
 });

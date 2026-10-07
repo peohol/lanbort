@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  addDays,
+  calendarDay,
   formatDay,
   formatPeriod,
   formatShortPeriod,
@@ -25,6 +27,13 @@ describe("dates as people say them", () => {
     expect(formatPeriod({ start: "2026-10-03", end: "2026-10-04" })).toBe(
       "lørdag 3. oktober – søndag 4. oktober",
     );
+  });
+
+  it("names the day in Norway, and the days after it", () => {
+    expect(calendarDay(new Date("2026-10-03T22:30:00.000Z"))).toBe(
+      "2026-10-04",
+    );
+    expect(addDays("2026-10-31", 1)).toBe("2026-11-01");
   });
 });
 

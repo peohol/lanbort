@@ -36,6 +36,7 @@ import {
   leaveEnvironmentPolicy,
   liftRestrictionPolicy,
   listMembershipsPolicy,
+  listMembersPolicy,
   listOwnEnvironmentsPolicy,
   membershipTransitionProcess,
   readEnvironmentPolicy,
@@ -422,10 +423,10 @@ const ownMembershipCases = (): Case[] => [
 ];
 
 /**
- * Consent and votes on a weaker type (PS-ENV-008): each active member for
- * themselves. Passive members and outsiders take no part.
+ * What only active members do: each for themselves, with or without a role.
+ * Passive members, applicants and outsiders take no part.
  */
-const typeChangeResponseCases = (): Case[] => [
+const activeMemberCases = (): Case[] => [
   expectCase("an active member", access("closed", member("active")), "allow"),
   expectCase(
     "an active member of a hidden environment",
@@ -484,6 +485,7 @@ export const environmentMatrices = [
   policyMatrix(updateEnvironmentDetailsPolicy, administrationCases()),
   policyMatrix(updateRequirementsPolicy, administrationCases()),
   policyMatrix(listMembershipsPolicy, administrationCases()),
+  policyMatrix(listMembersPolicy, activeMemberCases()),
   policyMatrix(inviteMemberPolicy, administrationCases()),
   policyMatrix(liftRestrictionPolicy, administrationCases()),
   policyMatrix(joinEnvironmentPolicy, [
@@ -533,6 +535,6 @@ export const environmentMatrices = [
   ),
   policyMatrix(changeEnvironmentTypePolicy, administrationCases()),
   policyMatrix(withdrawTypeChangePolicy, administrationCases()),
-  policyMatrix(respondToTypeChangePolicy, typeChangeResponseCases()),
+  policyMatrix(respondToTypeChangePolicy, activeMemberCases()),
   policyMatrix(concludeTypeChangesPolicy, systemCases(typeChangeProcess)),
 ];

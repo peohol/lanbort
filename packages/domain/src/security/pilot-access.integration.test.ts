@@ -307,6 +307,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     environmentId: ids.environmentId,
   }),
   "environment.list_roles": (ids) => ({ environmentId: ids.environmentId }),
+  "environment_member.list": (ids) => ({ environmentId: ids.environmentId }),
   "environment.update_details": (ids) => ({
     environmentId: ids.environmentId,
     name: "Nytt navn",

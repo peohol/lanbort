@@ -144,6 +144,16 @@ export const listMembershipsPolicy = definePolicy<EnvironmentAccess, void>({
   resource: [...administration],
 });
 
+/**
+ * Active members see each other (vision 03); passive members, applicants
+ * and outsiders see no list.
+ */
+export const listMembersPolicy = definePolicy<EnvironmentAccess, void>({
+  action: "environment_member.list",
+  actor: [requireActiveAccount],
+  resource: [canSeeEnvironment, hasMembership, isActiveMember],
+});
+
 export const inviteMemberPolicy = definePolicy<EnvironmentAccess, void>({
   action: "environment_membership.invite",
   actor: [requireActiveAccount],
@@ -376,6 +386,7 @@ export const environmentPolicies = [
   acceptInvitationPolicy,
   leaveEnvironmentPolicy,
   listMembershipsPolicy,
+  listMembersPolicy,
   inviteMemberPolicy,
   liftRestrictionPolicy,
   approveMembershipPolicy,

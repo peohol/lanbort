@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { ActionButton } from "@/components/action-button";
 import { MoreActions } from "@/components/more-actions";
+import { OwnerNames } from "@/components/owner-names";
 import { ObjectGallery } from "@/components/object-gallery";
 import { PageHeader } from "@/components/page-header";
 import { StatusCard } from "@/components/status-card";
@@ -34,6 +35,7 @@ import {
   categoryLabel,
   describeAvailability,
   formatInterval,
+  ownersLabel,
 } from "@/presentation/objects";
 import { pageQuery } from "@/server/session";
 import { Questions, questionsId } from "./questions";
@@ -56,8 +58,8 @@ async function openRequestFor(objectId: string) {
 /**
  * A thing as someone who may borrow it sees it (UX-JRN-004, UX-JRN-013):
  * through one environment, or directly between friends, said as its
- * context (UX-PRIV-003). Its owners are not named, and what blocks it is
- * not said (UX-PRIV-004). The next step is to ask to borrow it; in an
+ * context (UX-PRIV-003). Through an environment its owners who are members
+ * there are named (PS-ENV-015); what blocks it is not said (UX-PRIV-004). The next step is to ask to borrow it; in an
  * environment the thing can also be followed and asked about there
  * (PS-OBJ-014–015).
  */
@@ -167,6 +169,14 @@ export async function ViewerView({
       <section aria-labelledby="om-tingen">
         <h2 id="om-tingen">Om tingen</h2>
         <dl className="facts">
+          {object.owners.length > 0 && (
+            <>
+              <dt>{ownersLabel(object.owners)}</dt>
+              <dd>
+                <OwnerNames owners={object.owners} />
+              </dd>
+            </>
+          )}
           <dt>Beskrivelse</dt>
           <dd className="message-text">{object.description}</dd>
           <dt>Vilkår</dt>

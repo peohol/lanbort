@@ -110,7 +110,7 @@ export async function locate(
  * before it: the same spot twice («Bergen», the town and the municipality)
  * is no choice.
  */
-function distinctChoices(found: readonly Place[]) {
+export function distinctChoices(found: readonly Place[]) {
   const kept: (PlaceChoice & {
     at: { latitude: number; longitude: number };
   })[] = [];

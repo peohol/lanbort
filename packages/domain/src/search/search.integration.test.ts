@@ -195,9 +195,10 @@ describe("Finn: objects (WP-61, ADR-0005)", () => {
       ],
       more: false,
     });
-    expect(JSON.stringify(result), "the owners are never named").not.toContain(
-      owner.userId,
-    );
+    expect(
+      result.objects[0]?.owners.map((shown) => shown.profileId),
+      "the owner, a member there, is named (PS-ENV-015)",
+    ).toEqual([owner.userId]);
     expect(await found(viewer, { q: `stiger ${name}` }), "a stem").toEqual([
       objectId,
     ]);
