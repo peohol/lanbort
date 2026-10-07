@@ -136,6 +136,8 @@ export const reviewedPublicationSchema = z.strictObject({
   createdAt: z.iso.datetime(),
   statusChangedAt: z.iso.datetime(),
   object: publishedObjectContentSchema,
+  /** The caller owns the object, so another administrator decides (PS-USR-009). */
+  ownedByYou: z.boolean(),
 });
 
 /** Lists come newest first, a page at a time. */

@@ -21,7 +21,7 @@ import {
   leaveEnvironment,
   rejectMembership,
 } from "../environment/membership-commands";
-import { getEnvironment } from "../environment/queries";
+import { getEnvironment, listMemberships } from "../environment/queries";
 import { changeEnvironmentType } from "../environment/type-change-commands";
 import { addDays, calendarDate } from "../objects/availability";
 import { archiveObject, createObject, updateObject } from "../objects/commands";
@@ -481,9 +481,13 @@ describe("Finn: environments (WP-61, PS-ENV-001)", () => {
       [closed, other].sort(),
     );
 
+    const { restrictions } = await executeQuery(domain, listMemberships, {
+      actor: admin,
+      input: { environmentId: closed },
+    });
     await run(liftRestriction, admin, {
       environmentId: closed,
-      userId: applicant.userId,
+      restrictionId: restrictions[0]?.id ?? "",
     });
     expect((await environmentsFound(applicant, { q: name })).sort()).toEqual(
       [closed, other].sort(),

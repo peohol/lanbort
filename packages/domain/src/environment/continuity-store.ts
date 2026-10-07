@@ -383,6 +383,24 @@ export async function administrators(
 }
 
 /**
+ * PS-ENV-003: an administrator may give up the role while another remains;
+ * the owner hands over or winds down first. One rule for the command and
+ * for what the caller is offered.
+ */
+export function mayResignAdministration(
+  admins: readonly AdministratorRecord[],
+  userId: string,
+): boolean {
+  const self = admins.find((admin) => admin.userId === userId);
+
+  return (
+    self !== undefined &&
+    !self.isOwner &&
+    admins.some((admin) => admin.userId !== userId)
+  );
+}
+
+/**
  * The owner is gone without handing over (PS-ENV-013). With administrators
  * left, they get the claim period; without any, nobody can take over and the
  * environment winds down at once. A winding-down environment just continues

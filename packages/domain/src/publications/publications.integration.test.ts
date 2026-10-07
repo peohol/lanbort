@@ -536,6 +536,18 @@ describe("approval in the environment (PS-ENV-011)", () => {
       admin,
       await member(environmentId, admin),
     );
+    // The review list says whose decision it is.
+    for (const [reviewer, ownedByYou] of [
+      [admin, true],
+      [other, false],
+    ] as const) {
+      const { publications } = await executeQuery(
+        domain,
+        listEnvironmentPublications,
+        { actor: reviewer, input: { environmentId } },
+      );
+      expect(publications).toMatchObject([{ id: publicationId, ownedByYou }]);
+    }
     expect(
       await decide(approvePublication, other, environmentId, publicationId),
     ).toMatchObject({ status: "active" });

@@ -166,6 +166,15 @@ export const liftRestrictionPolicy = definePolicy<EnvironmentAccess, void>({
   resource: [...administration],
 });
 
+export const liftConcealedRestrictionsPolicy = definePolicy<
+  EnvironmentAccess,
+  void
+>({
+  action: "environment.lift_concealed_restrictions",
+  actor: [requireActiveAccount],
+  resource: [...administration],
+});
+
 /**
  * Deciding on someone's membership. An administrator never decides on their
  * own (PS-USR-009).
@@ -389,6 +398,7 @@ export const environmentPolicies = [
   listMembersPolicy,
   inviteMemberPolicy,
   liftRestrictionPolicy,
+  liftConcealedRestrictionsPolicy,
   approveMembershipPolicy,
   rejectMembershipPolicy,
   requestInformationPolicy,

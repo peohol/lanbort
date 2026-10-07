@@ -100,8 +100,8 @@ export function findableBy(viewerId: string) {
   )`;
 }
 
-/** Whether the viewer is one of the owners of `object`. */
-export const ownedBy = (viewerId: string) =>
+/** Whether the viewer is one of the owners of `object` (never without one). */
+export const ownedBy = (viewerId: string | null) =>
   sql<boolean>`exists (
     select 1 from app.object_owners
     where object_id = object.id and user_id = ${viewerId}
@@ -349,6 +349,9 @@ export const listEnvironmentPublications = defineQuery({
               "object.category_id",
               "object.description",
               "object.loan_terms",
+              ownedBy(actor.kind === "user" ? actor.userId : null).as(
+                "owned_by_you",
+              ),
             ])
             .where("publication.environment_id", "=", access.environment.id)
             .where(
@@ -390,6 +393,7 @@ export const listEnvironmentPublications = defineQuery({
       createdAt: row.created_at.toISOString(),
       statusChangedAt: row.status_changed_at.toISOString(),
       object: presentContent(row, resource.images),
+      ownedByYou: row.owned_by_you,
     })),
     nextCursor: resource.nextCursor,
   }),

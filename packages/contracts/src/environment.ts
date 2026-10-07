@@ -183,6 +183,11 @@ export const environmentContinuitySchema = z.strictObject({
    * need one wait; nobody else decides them (PS-ENV-014).
    */
   administrationAvailable: z.boolean(),
+  /**
+   * The caller, an administrator but not the owner, may give up the role:
+   * another administrator remains (PS-ENV-003), active or not.
+   */
+  mayResign: z.boolean(),
   /** PS-ENV-013: the owner is gone; administrators may claim ownership. */
   ownershipVacancy: z
     .strictObject({
@@ -260,9 +265,22 @@ export const administeredMembershipSchema = z.strictObject({
   realName: z.string().nullable(),
 });
 
+/** Someone barred from new attempts until an administrator lifts it. */
+export const accessRestrictionSchema = z.strictObject({
+  id: z.uuid(),
+  userId: z.uuid(),
+  realName: z.string().nullable(),
+  imposedAt: z.iso.datetime(),
+});
+
 export const environmentMembershipsSchema = z.strictObject({
   memberships: z.array(administeredMembershipSchema),
-  restrictedUserIds: z.array(z.uuid()),
+  /** Also of those whose membership has ended, so the bar can be lifted. */
+  /**
+   * Not those imposed under a stricter type than the viewer was active in
+   * (PS-ENV-009); `environment.lift_concealed_restrictions` lifts them.
+   */
+  restrictions: z.array(accessRestrictionSchema),
 });
 
 /**
@@ -287,6 +305,8 @@ export const roleHolderSchema = z.strictObject({
   roles: z.array(environmentRoleSchema),
   /** Start of the continuous administrator period (PS-ENV-013). */
   administratorSince: z.iso.datetime(),
+  /** Has an active membership, so can act and take over ownership. */
+  canAct: z.boolean(),
 });
 
 export const pendingRoleInvitationSchema = z.strictObject({

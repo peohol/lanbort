@@ -11,12 +11,14 @@ import type {
   OwnMembership,
   TypeChangeProposal,
 } from "@lanbort/contracts";
+import { sql } from "kysely";
 import { z } from "zod";
 import { defineQuery } from "../commands/query";
 import {
   type AdministratorRecord,
   administrators,
   findContinuity,
+  mayResignAdministration,
   pendingRoleInvitations,
 } from "./continuity-store";
 import {
@@ -31,6 +33,7 @@ import {
   unmetRequirements,
 } from "./model";
 import {
+  concealedSpans,
   type HistoryPosition,
   mayExposeHistory,
   type TypePeriod,
@@ -50,6 +53,7 @@ import {
   loadEnvironmentAccess,
 } from "./store";
 import {
+  createdOutside,
   currentResponses,
   findOpenProposal,
   typePeriods,
@@ -100,12 +104,14 @@ function presentContinuity(
   continuity: ContinuityRecord,
   admins: readonly AdministratorRecord[],
   claimedByYou: boolean,
+  userId: string,
   now: Date,
 ): EnvironmentContinuity {
   const { vacancy, windDown } = continuity;
 
   return {
     administrationAvailable: admins.some((admin) => admin.canAct),
+    mayResign: mayResignAdministration(admins, userId),
     ownershipVacancy: vacancy
       ? { claimDeadline: vacancy.claimDeadline.toISOString(), claimedByYou }
       : null,
@@ -148,6 +154,7 @@ export const getEnvironment = defineQuery({
     const continuity =
       own && userId
         ? {
+            userId,
             record: await findContinuity(db, input.environmentId),
             admins: await administrators(db, input.environmentId, now),
             claimed: await hasOpenClaim(db, input.environmentId, userId),
@@ -207,6 +214,7 @@ export const getEnvironment = defineQuery({
             continuity.record,
             continuity.admins,
             continuity.claimed,
+            continuity.userId,
             now,
           )
         : null,
@@ -349,7 +357,9 @@ export const listOwnEnvironments = defineQuery({
  * What administrators need to handle memberships: every current membership
  * with the member's name and the answers given to the membership process
  * (UX-PRIV-009: shown as membership information, not as profile data), and
- * who is barred from new attempts.
+ * who is barred from new attempts by name, also once their membership has
+ * ended, so an administrator can lift the bar (PS-ENV-004). Both follow the
+ * historical privacy of the type they arose in (PS-ENV-009).
  */
 export const listMemberships = defineQuery({
   name: "environment_membership.list",
@@ -367,19 +377,32 @@ export const listMemberships = defineQuery({
       return null;
     }
 
-    const visible = historicallyVisible(
-      await typePeriods(db, input.environmentId),
-      activeFrom(access.ownMembership),
-    );
+    const periods = await typePeriods(db, input.environmentId);
+    const viewerActiveFrom = activeFrom(access.ownMembership);
+    const visible = historicallyVisible(periods, viewerActiveFrom);
     const memberships = (
       await listCurrentMemberships(db, input.environmentId)
     ).filter(visible);
+    // PS-ENV-009: a bar from a stricter type stays with those who were
+    // active then; others learn neither who, when nor whether there are any.
+    const concealed = concealedSpans(periods, viewerActiveFrom);
     const restrictions = await db
-      .selectFrom("app.environment_access_restrictions")
-      .select("user_id")
-      .where("environment_id", "=", input.environmentId)
-      .where("lifted_at", "is", null)
-      .orderBy("imposed_at")
+      .selectFrom("app.environment_access_restrictions as restriction")
+      .leftJoin(
+        "app.profiles as profile",
+        "profile.user_id",
+        "restriction.user_id",
+      )
+      .select([
+        "restriction.id",
+        "restriction.user_id",
+        "restriction.imposed_at",
+        "profile.real_name",
+      ])
+      .where("restriction.environment_id", "=", input.environmentId)
+      .where("restriction.lifted_at", "is", null)
+      .where(createdOutside(sql.ref("restriction.position"), concealed))
+      .orderBy("restriction.position")
       .execute();
 
     return {
@@ -391,7 +414,7 @@ export const listMemberships = defineQuery({
           db,
           memberships.map((membership) => membership.id),
         ),
-        restrictedUserIds: restrictions.map((row) => row.user_id),
+        restrictions,
       },
       context: undefined,
     };
@@ -407,7 +430,12 @@ export const listMemberships = defineQuery({
       userId: membership.userId,
       realName: membership.realName,
     })),
-    restrictedUserIds: resource.restrictedUserIds,
+    restrictions: resource.restrictions.map((row) => ({
+      id: row.id,
+      userId: row.user_id,
+      realName: row.real_name,
+      imposedAt: row.imposed_at.toISOString(),
+    })),
   }),
 });
 
@@ -612,6 +640,7 @@ export const listRoles = defineQuery({
       realName: resource.names.get(admin.userId) ?? null,
       roles: admin.isOwner ? ["owner", "administrator"] : ["administrator"],
       administratorSince: admin.administratorSince.toISOString(),
+      canAct: admin.canAct,
     })),
     invitations: resource.invitations.map((invitation) => ({
       id: invitation.id,

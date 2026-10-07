@@ -11,18 +11,23 @@ import { executeQuery } from "../commands/query";
 import { ConsumerRegistry } from "../outbox/consumer";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
+import { acceptFriendRequest, sendFriendRequest } from "../social/commands";
 import { startTestVote, testVoteDays } from "../testing/type-changes";
 import {
   releaseDepartedUser,
   startEnvironmentWindDown,
 } from "./continuity-commands";
-import { createEnvironment } from "./environment-commands";
+import {
+  createEnvironment,
+  liftConcealedRestrictions,
+} from "./environment-commands";
 import {
   acceptInvitation,
   approveMembership,
   inviteMember,
   joinEnvironment,
   leaveEnvironment,
+  rejectMembership,
   submitAnswers,
   withdrawInvitation,
 } from "./membership-commands";
@@ -37,6 +42,7 @@ import {
 import {
   acceptRoleInvitation,
   inviteAdministrator,
+  offerOwnership,
   resignAdministrator,
 } from "./role-commands";
 import {
@@ -438,6 +444,58 @@ describe("closed → open (PS-ENV-008)", () => {
     ).toMatchObject({ state: "active" });
     expect(await history(environmentId)).toEqual(["closed", "open", "hidden"]);
   });
+
+  it("keeps a passive administrator listed, but not acting or taking over", async () => {
+    const owner = await user();
+    const environmentId = await environment(owner, "closed");
+    const administrator = await member(environmentId, owner);
+    await makeAdministrator(environmentId, owner, administrator);
+    const { proposal } = await changeType(
+      owner,
+      environmentId,
+      "closed",
+      "open",
+    );
+    await respond(owner, environmentId, proposal!.id, true);
+    passDays(typeChangeDays.consent);
+    await conclude();
+
+    const { holders } = await executeQuery(domain, listRoles, {
+      actor: owner,
+      input: { environmentId },
+    });
+    expect(
+      Object.fromEntries(
+        holders.map((holder) => [holder.userId, holder.canAct]),
+      ),
+    ).toEqual({ [owner.userId]: true, [administrator.userId]: false });
+    await expect(
+      run(offerOwnership, owner, {
+        environmentId,
+        userId: administrator.userId,
+      }),
+    ).rejects.toMatchObject({ code: "conflict" });
+    // With the owner still there, the passive administrator may resign.
+    expect((await read(administrator, environmentId)).continuity).toMatchObject(
+      { mayResign: true },
+    );
+    expect((await read(owner, environmentId)).continuity).toMatchObject({
+      mayResign: false,
+    });
+
+    // Once the owner is gone, the passive administrator is the last one and
+    // is neither offered resigning nor allowed it.
+    await executeCommand(tick(), releaseDepartedUser, {
+      actor: systemActor(accountLifecycleProcess),
+      input: { userId: owner.userId },
+    });
+    expect((await read(administrator, environmentId)).continuity).toMatchObject(
+      { mayResign: false },
+    );
+    await expect(
+      run(resignAdministrator, administrator, { environmentId }),
+    ).rejects.toMatchObject({ code: "conflict" });
+  });
 });
 
 describe("hidden → closed (PS-ENV-008)", () => {
@@ -713,6 +771,173 @@ describe("historical privacy (PS-ENV-009)", () => {
     expect(await memberIds(newcomer, environmentId)).not.toContain(
       keeper.userId,
     );
+  });
+
+  /**
+   * An applicant rejected while the environment was closed, barred or not;
+   * then closed → open, a newcomer who becomes administrator, and closed
+   * again so that invitations are possible.
+   */
+  async function rejectedBeforeWeakening(restrict: boolean) {
+    const owner = await user();
+    const environmentId = await environment(owner, "closed");
+    const applicant = await user();
+    const { membershipId } = await output(joinEnvironment, applicant, {
+      environmentId,
+      answers: [],
+    });
+    await output(rejectMembership, owner, {
+      environmentId,
+      membershipId,
+      restrict,
+    });
+    const { proposal } = await changeType(
+      owner,
+      environmentId,
+      "closed",
+      "open",
+    );
+    await respond(owner, environmentId, proposal!.id, true);
+    passDays(typeChangeDays.consent);
+    await conclude();
+    const newcomer = await member(environmentId, owner);
+    await makeAdministrator(environmentId, owner, newcomer);
+    await changeType(owner, environmentId, "open", "closed");
+
+    return { owner, environmentId, applicant, newcomer };
+  }
+
+  const memberships = (actor: UserActor, environmentId: string) =>
+    executeQuery(domain, listMemberships, {
+      actor,
+      input: { environmentId },
+    });
+
+  /** What a view says once ids, names and times are left out. */
+  const shape = (value: unknown) =>
+    JSON.stringify(value, (key, field: unknown) =>
+      key === "realName" ||
+      (typeof field === "string" &&
+        /^([0-9a-f-]{36}|\d{4}-\d\d-\d\dT.*Z)$/.test(field))
+        ? "…"
+        : field,
+    );
+
+  it("keeps whether anyone was barred under a stricter type from administrators who joined later", async () => {
+    const barred = await rejectedBeforeWeakening(true);
+    const control = await rejectedBeforeWeakening(false);
+
+    // Those who were there see the bar by name.
+    expect(
+      (await memberships(barred.owner, barred.environmentId)).restrictions,
+    ).toEqual([expect.objectContaining({ userId: barred.applicant.userId })]);
+    // A later administrator sees the same as where nobody was barred.
+    const later = await memberships(barred.newcomer, barred.environmentId);
+    expect(later.restrictions).toEqual([]);
+    expect(shape(later)).toBe(
+      shape(await memberships(control.newcomer, control.environmentId)),
+    );
+    expect(JSON.stringify(later)).not.toContain(barred.applicant.userId);
+    // The bar still holds for the one barred.
+    await expect(
+      run(joinEnvironment, barred.applicant, {
+        environmentId: barred.environmentId,
+        answers: [],
+      }),
+    ).rejects.toMatchObject({ code: "forbidden" });
+    // Those who were there are told to lift it before inviting.
+    await expect(
+      run(inviteMember, barred.owner, {
+        environmentId: barred.environmentId,
+        userId: barred.applicant.userId,
+      }),
+    ).rejects.toMatchObject({ code: "conflict" });
+  });
+
+  it("invites a friend barred under a stricter type as if they never were", async () => {
+    const barred = await rejectedBeforeWeakening(true);
+    const control = await rejectedBeforeWeakening(false);
+    const invited = [];
+
+    for (const scene of [barred, control]) {
+      await output(sendFriendRequest, scene.newcomer, {
+        userId: scene.applicant.userId,
+      });
+      await output(acceptFriendRequest, scene.applicant, {
+        userId: scene.newcomer.userId,
+      });
+      invited.push({
+        answer: await output(inviteMember, scene.newcomer, {
+          environmentId: scene.environmentId,
+          userId: scene.applicant.userId,
+        }),
+        view: shape(await memberships(scene.newcomer, scene.environmentId)),
+      });
+    }
+
+    const [withBar, withoutBar] = invited;
+    expect(shape(withBar?.answer)).toBe(shape(withoutBar?.answer));
+    expect(withBar?.view).toBe(withoutBar?.view);
+    // The invitation lifted the bar, for those who saw it too.
+    expect(await memberships(barred.owner, barred.environmentId)).toMatchObject(
+      { restrictions: [] },
+    );
+    expect(
+      (
+        await output(acceptInvitation, barred.applicant, {
+          environmentId: barred.environmentId,
+          answers: [],
+        })
+      ).state,
+    ).toBe("active");
+  });
+
+  it("lifts bars from before an administrator came with the same answer whether there are any", async () => {
+    const barred = await rejectedBeforeWeakening(true);
+    const control = await rejectedBeforeWeakening(false);
+
+    for (const scene of [barred, control]) {
+      expect(
+        await output(liftConcealedRestrictions, scene.newcomer, {
+          environmentId: scene.environmentId,
+        }),
+      ).toEqual({ lifted: true });
+    }
+    expect(await memberships(barred.owner, barred.environmentId)).toMatchObject(
+      { restrictions: [] },
+    );
+    expect(
+      (
+        await output(joinEnvironment, barred.applicant, {
+          environmentId: barred.environmentId,
+          answers: [],
+        })
+      ).state,
+    ).toBe("pending");
+  });
+
+  it("lifts only bars the administrator cannot see", async () => {
+    const { owner, environmentId, newcomer } =
+      await rejectedBeforeWeakening(true);
+    const applicant = await user();
+    const { membershipId } = await output(joinEnvironment, applicant, {
+      environmentId,
+      answers: [],
+    });
+    await output(rejectMembership, owner, {
+      environmentId,
+      membershipId,
+      restrict: true,
+    });
+
+    await output(liftConcealedRestrictions, newcomer, { environmentId });
+    expect((await memberships(newcomer, environmentId)).restrictions).toEqual([
+      expect.objectContaining({ userId: applicant.userId }),
+    ]);
+    await output(liftConcealedRestrictions, owner, { environmentId });
+    expect((await memberships(owner, environmentId)).restrictions).toEqual([
+      expect.objectContaining({ userId: applicant.userId }),
+    ]);
   });
 });
 

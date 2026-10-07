@@ -20,6 +20,7 @@ import {
 } from "./environment-commands";
 import {
   environmentRestrictionImposed,
+  environmentRestrictionLifted,
   membershipActivated,
   membershipAnswersSubmitted,
   membershipEnded,
@@ -31,6 +32,7 @@ import {
 } from "./events";
 import {
   acceptsNewActivity,
+  activeFrom,
   type EnvironmentRecord,
   type MembershipRecord,
   unmetRequirements,
@@ -56,8 +58,9 @@ import {
   saveAnswers,
   settleMembership,
 } from "./store";
-import { toOptionalPosition } from "./privacy";
+import { isConcealed, toOptionalPosition, toPosition } from "./privacy";
 import { rateLimits } from "../abuse/rate-limits";
+import { concealedHistory } from "./type-change-store";
 
 const membershipOutput = z.strictObject({
   membershipId: z.uuid(),
@@ -502,7 +505,7 @@ export const inviteMember = defineCommand({
       .select([
         "user.status",
         "membership.id as membership_id",
-        "restriction.id as restriction_id",
+        "restriction.position as restriction_position",
       ])
       .where("user.id", "=", input.userId)
       .executeTakeFirst();
@@ -516,8 +519,29 @@ export const inviteMember = defineCommand({
       conflict("Already a member or invited");
     }
 
-    if (invitee.restriction_id !== null) {
-      conflict("The user is barred; lift the restriction first");
+    if (invitee.restriction_position !== null) {
+      const concealed = await concealedHistory(
+        tx,
+        environment.id,
+        activeFrom(resource.ownMembership),
+      );
+      if (!isConcealed(concealed, toPosition(invitee.restriction_position))) {
+        conflict("The user is barred; lift the restriction first");
+      }
+      // PS-ENV-009: a bar from a stricter type than the inviter was active
+      // in must not show. Inviting someone the administrator already knows
+      // lifts it, so the invitation goes exactly as if there were none.
+      await tx
+        .updateTable("app.environment_access_restrictions")
+        .set({ lifted_at: now, lifted_by_user_id: userIdOf(actor) })
+        .where("environment_id", "=", environment.id)
+        .where("user_id", "=", input.userId)
+        .where("lifted_at", "is", null)
+        .execute();
+      events.record(environmentRestrictionLifted, {
+        resourceId: environment.id,
+        payload: { userId: input.userId },
+      });
     }
 
     // An invitation is new contact between the two (PS-USR-006): a block in

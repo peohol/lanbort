@@ -123,6 +123,7 @@ describe("what an environment asks of its member", () => {
         },
         continuity: {
           administrationAvailable: true,
+          mayResign: false,
           ownershipVacancy: { claimDeadline: due, claimedByYou: false },
           windDown: null,
         },
@@ -143,6 +144,7 @@ describe("what an environment asks of its member", () => {
         },
         continuity: {
           administrationAvailable: true,
+          mayResign: false,
           ownershipVacancy: { claimDeadline: due, claimedByYou: true },
           windDown: null,
         },
@@ -161,7 +163,7 @@ describe("an administrator's tasks", () => {
       userId: row.userId,
       realName: null,
     })),
-    restrictedUserIds: [],
+    restrictions: [],
   });
   const publication = (objectId: string) =>
     ({ objectId }) as ReviewedPublication;

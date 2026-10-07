@@ -68,6 +68,10 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
     name: "Forespørselen",
     path: ({ requestId }) => `/lan/foresporsel/${requestId}`,
   },
+  {
+    name: "Administrer miljø",
+    path: ({ environmentId }) => `/miljoer/${environmentId}/administrer`,
+  },
   { name: "Samtaler", path: () => "/samtaler" },
   { name: "Varsler", path: () => "/varsler" },
   { name: "Konto", path: () => "/konto" },
@@ -91,7 +95,7 @@ let signedIn: Awaited<ReturnType<BrowserContext["storageState"]>>;
 /**
  * Bo, with something on every page: a loan waiting for its handover, a
  * friend request to answer, a co-ownership to accept, a block, an
- * environment with an area, and notifications.
+ * environment with an area that Bo helps administer, and notifications.
  */
 test.beforeAll(async ({ browser, playwright }) => {
   test.setTimeout(120_000);
@@ -137,6 +141,17 @@ test.beforeAll(async ({ browser, playwright }) => {
   await postCommand(bo, "/api/environments/membership/join", {
     environmentId,
     answers: [],
+  });
+  const { invitationId } = await (
+    await postCommand(
+      anna.request,
+      "/api/environments/roles/invite-administrator",
+      { environmentId, userId: boId },
+    )
+  ).json();
+  await postCommand(bo, "/api/environments/roles/accept", {
+    environmentId,
+    invitationId,
   });
   const object = async (title: string) =>
     (

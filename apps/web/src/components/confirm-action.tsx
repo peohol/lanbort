@@ -23,6 +23,30 @@ const groups = [
   { key: "affects", heading: "Dette berører andre" },
 ] as const;
 
+/** What disappears, what stays and who is affected, in that order. */
+export function ConsequenceList({
+  consequences,
+}: {
+  consequences: Consequences;
+}) {
+  return (
+    <div className="consequences">
+      {groups.map(({ key, heading }) =>
+        consequences[key]?.length ? (
+          <section key={key}>
+            <h3>{heading}</h3>
+            <ul>
+              {consequences[key].map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </section>
+        ) : null,
+      )}
+    </div>
+  );
+}
+
 /**
  * A command whose consequence is significant, affects others or cannot
  * simply be undone (UX-INT-002, UX-INT-007): the button opens a modal
@@ -82,20 +106,7 @@ export function ConfirmAction({
       </button>
       <dialog ref={dialog} className="dialog" aria-labelledby={titleId}>
         <h2 id={titleId}>{title}</h2>
-        <div className="consequences">
-          {groups.map(({ key, heading }) =>
-            consequences[key]?.length ? (
-              <section key={key}>
-                <h3>{heading}</h3>
-                <ul>
-                  {consequences[key].map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </section>
-            ) : null,
-          )}
-        </div>
+        <ConsequenceList consequences={consequences} />
         <div className="dialog-actions">
           <button type="button" onClick={() => dialog.current?.close()}>
             Avbryt

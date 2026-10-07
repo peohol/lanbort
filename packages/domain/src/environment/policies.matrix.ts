@@ -34,6 +34,7 @@ import {
   inviteMemberPolicy,
   joinEnvironmentPolicy,
   leaveEnvironmentPolicy,
+  liftConcealedRestrictionsPolicy,
   liftRestrictionPolicy,
   listMembershipsPolicy,
   listMembersPolicy,
@@ -488,6 +489,7 @@ export const environmentMatrices = [
   policyMatrix(listMembersPolicy, activeMemberCases()),
   policyMatrix(inviteMemberPolicy, administrationCases()),
   policyMatrix(liftRestrictionPolicy, administrationCases()),
+  policyMatrix(liftConcealedRestrictionsPolicy, administrationCases()),
   policyMatrix(joinEnvironmentPolicy, [
     expectCase("a non-member of an open environment", access("open"), "allow"),
     expectCase(
