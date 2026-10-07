@@ -1,6 +1,6 @@
 # UX-modell
 
-> **Status:** UX-modell v0.1. Informasjonsarkitektur, normalreiser, unntaksforløp, interaksjonsmønstre, personvern og tilgjengelighetsmodell er definert og scenariovalidert.
+> **Status:** UX-modell v0.1. Informasjonsarkitektur, normalreiser, unntaksforløp, interaksjonsmønstre, personvern og tilgjengelighetsmodell er definert og scenariovalidert. Skjermstrukturen og navigasjonen er låst i UI-designets fase 2 (7. oktober 2026).
 
 UX-modellen beskriver **hvordan produktmodellen skal fremstå og håndteres for brukeren**. Den skal gå på tvers av produktområdene der brukerens mentale modell gjør det.
 

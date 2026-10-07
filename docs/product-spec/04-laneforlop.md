@@ -113,6 +113,11 @@ Når ansvarlig utlåner bekrefter fysisk retur før avtalt slutt, avsluttes lån
 
 Når et objekt allerede er overlevert, skal nødvendig strukturert retur-/mottakstilgang bestå selv om ordinær sosial tilgang eller kontoaktivitet stanses, med strengere kontrollert prosess ved særskilt sikkerhetsrisiko.
 
+### PS-LOAN-022 — Én parts registrering av overlevering er nok uten motsigelse
+**Forankring:** VP-12; [Når et godkjent lån ikke blir hentet](../vision/05-laneforlop.md)
+
+Begge parter kan registrere utfallet av overleveringen. Når én part har registrert «overlevert» og den andre ikke har sagt noe annet, er lånet **utlånt**; den andre parten trenger ikke bekrefte. Motstridende registreringer gir **usikker/uenighet** (PS-LOAN-013). Regelen gjelder både på overleveringsdagen og under overleveringsavklaringen (PS-LOAN-012). (Produkteier, 7. oktober 2026.)
+
 ## Tilstander
 
 ### Før godkjenning

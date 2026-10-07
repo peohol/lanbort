@@ -74,7 +74,7 @@ Ansvarserklæring vises først når et konkret direkte vennelån skal etableres.
 ## Overlevering
 
 ### UX-JRN-007 — Lånedetaljen skal alltid vise neste praktiske steg
-**Forankring:** UX-P04; PS-LOAN-012
+**Forankring:** UX-P04; PS-LOAN-012, PS-LOAN-022
 
 Før overlevering vises:
 - avtalt tidspunkt/periode
@@ -82,7 +82,9 @@ Før overlevering vises:
 - tydelig status
 - relevante handlinger: bekreft overlevering, foreslå endring, kanseller
 
-Når tidspunktet passerer uten avklaring, erstattes normalhandlingen av avklaringsvalg uten at brukeren må finne en egen feilmassasje.
+Begge parter kan bekrefte overleveringen. Én parts bekreftelse uten motsigelse gjør lånet utlånt, så UI-et skal ikke vente på at begge har bekreftet (PS-LOAN-022).
+
+Når tidspunktet passerer uten avklaring, erstattes normalhandlingen av avklaringsvalg uten at brukeren må finne en egen feilmassasje. Valgene er likeverdige faktaalternativer (UX-INT-001).
 
 ## Aktivt lån og retur
 

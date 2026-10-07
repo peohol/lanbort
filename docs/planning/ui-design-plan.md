@@ -1,6 +1,6 @@
 # Plan for UI-designfasen
 
-> **Status:** Vedtatt arbeidsplan før konkret visuell design. Planen beskriver rekkefølgen for UI-arbeidet og innfører ikke nye produktkrav eller UX-regler.
+> **Status:** Vedtatt arbeidsplan for UI-designet. Fase 1 og 2 er ferdige; neste er fase 3, alternative visuelle retninger. Planen beskriver rekkefølgen for UI-arbeidet og innfører ikke nye produktkrav eller UX-regler.
 
 ## Formål
 
@@ -47,6 +47,8 @@ En mockup eller prototype er aldri i seg selv kilde til ny produktlogikk.
 
 ## Fase 1 — Skjerm- og flytinventar
 
+**Status:** Ferdig.
+
 Før visuell design skal det lages et eksplisitt inventar over nødvendige flater, sentrale tilstander og hovedflyter.
 
 Inventaret grupperes minst i:
@@ -69,6 +71,8 @@ Inventaret finnes i [skjerm- og flytinventaret](../ux/08-skjerm-og-flytinventar.
 
 ## Fase 2 — Visuell informasjonsarkitektur og navigasjon
 
+**Status:** Ferdig 7. oktober 2026. Strukturen er låst i [skjermstruktur og navigasjon](../ux/01-informasjonsarkitektur-og-navigasjon.md#skjermstruktur-og-navigasjon) (UX-IA-009–015): den konsoliderte retningen, navigasjonsstabelen, hjemområdene, direkte innganger og oppgaver som åpner arbeidsflaten direkte. Designreferansen er `design/Fase 2 IA-retninger iterasjon 3.html`, særlig 3a og 3b; de tidligere iterasjonene i `design/` er arbeidshistorikk. Ukjent nettverksutfall og ansvarserklæringen ved vennelån er fortsatt krav, men endrer ikke strukturen og designes i fase 4.
+
 Den vedtatte informasjonsarkitekturen og navigasjonsmodellen oversettes til konkret skjermstruktur.
 
 Arbeidet skal avklare hvordan blant annet følgende faktisk oppleves:
@@ -87,6 +91,8 @@ Fokus er hierarki, orientering, neste relevante handling og hvor lite global nav
 Ingen detaljert visuell stil låses før denne strukturen fungerer.
 
 ## Fase 3 — Alternative visuelle retninger
+
+**Status:** Neste. Retningene bygger på den låste strukturen fra fase 2 og endrer den ikke; de skiller seg i visuelt uttrykk og informasjonsbehandling innenfor den.
 
 Claude Design lager et lite antall tydelig forskjellige visuelle retninger for representative skjermer.
 
