@@ -21,7 +21,7 @@ Disse tilstandene og mønstrene gjelder alle flater nedenfor og gjentas ikke for
 
 | Situasjon                                 | Hva flaten må vise                                                                                              | Regler                                  |
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| Neste steg                                | Statuskort med kort status, tid, hvem som må handle, én primærhandling når ett neste steg finnes (likeverdige faktaalternativer i nøytrale avklaringer) og diskret tilgang til mer | UX-INT-001, UX-INT-004, UX-P04          |
+| Neste steg                                | Statuskort med kort status, tid, hvem som må handle, én primærhandling når ett neste steg finnes (i nøytrale avklaringer likeverdige utsagn om hva som skjedde) og diskret tilgang til mer | UX-INT-001, UX-INT-004, UX-P04          |
 | Sjeldne valg                              | Under «Flere valg» eller en detaljseksjon, på et forutsigbart sted                                              | UX-INT-009, UX-P06                      |
 | Bindende eller destruktiv handling        | Knappetekst som navngir konsekvensen; konsekvensvisning for det som forsvinner, består og påvirker andre        | UX-INT-003, UX-INT-007, UX-P03          |
 | Reverserbar handling                      | Utføres direkte med kort angremulighet                                                                          | UX-INT-002, UX-P09                      |

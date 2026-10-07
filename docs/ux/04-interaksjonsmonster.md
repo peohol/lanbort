@@ -3,11 +3,11 @@
 > **Status:** UX-modell v0.1.
 
 ### UX-INT-001 — Primær handling følger neste gyldige steg
-**Forankring:** UX-P04, UX-P05, UX-P14; PS-LOAN-012
+**Forankring:** UX-P04, UX-P05, UX-P14; PS-LOAN-010, PS-LOAN-012
 
 På objekt-, lån-, miljø- og saksflater skal én tydelig primærhandling representere det mest relevante neste steget når ett slikt steg finnes. Sekundære og sjeldne handlinger plasseres underordnet.
 
-Kravet om én primærhandling gjelder bare når ett relevant neste steg finnes. Når det ventes på den andre parten, vises ingen primærhandling, og overskriften sier hvem det ventes på (UX-INT-004). I nøytrale avklaringer, der systemet ikke vet hva som skjedde, kan likeverdige faktaalternativer presenteres symmetrisk, for eksempel «Ola fikk drillen», «Vi avtaler nytt tidspunkt» og «Overleveringen skjedde ikke». Ingen av dem fremheves som det forventede svaret (UX-EXC-002).
+Kravet om én primærhandling gjelder bare når ett relevant neste steg finnes. Når det ventes på den andre parten, vises ingen primærhandling, og overskriften sier hvem det ventes på (UX-INT-004). I nøytrale avklaringer, der systemet ikke vet hva som skjedde, kan likeverdige faktaalternativer presenteres symmetrisk. Bare faktiske utsagn om hva som skjedde er slike alternativer, for eksempel «Ola fikk drillen» og «Overleveringen skjedde ikke». Ingen av dem fremheves som det forventede svaret (UX-EXC-002). En ny overleveringsdag er ikke et faktaalternativ, men en avtaleendring (PS-LOAN-010). Den presenteres separat som et forslag motparten må godta.
 
 ### UX-INT-002 — Reverserbar handling foretrekker angre fremfor modal
 **Forankring:** UX-P09

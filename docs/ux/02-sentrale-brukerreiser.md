@@ -84,7 +84,7 @@ Før overlevering vises:
 
 Begge parter kan bekrefte overleveringen. Én parts bekreftelse uten motsigelse gjør lånet utlånt, så UI-et skal ikke vente på at begge har bekreftet. Parten som ikke har sagt noe, beholder muligheten til å si at overleveringen ikke skjedde som en underordnet handling på det aktive lånet (PS-LOAN-022, PS-LOAN-013).
 
-Når tidspunktet passerer uten avklaring, erstattes normalhandlingen av avklaringsvalg uten at brukeren må finne en egen feilmassasje. Valgene er likeverdige faktaalternativer (UX-INT-001).
+Når tidspunktet passerer uten avklaring, erstattes normalhandlingen av avklaringsvalg uten at brukeren må finne en egen feilmassasje. Utsagnene om hva som skjedde er likeverdige faktaalternativer (UX-INT-001). Et forslag om ny overleveringsdag er en avtaleendring som vises separat og må godtas av motparten (PS-LOAN-010).
 
 ## Aktivt lån og retur
 
