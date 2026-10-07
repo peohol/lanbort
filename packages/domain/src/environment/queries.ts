@@ -17,6 +17,7 @@ import {
   type AdministratorRecord,
   administrators,
   findContinuity,
+  mayResignAdministration,
   pendingRoleInvitations,
 } from "./continuity-store";
 import {
@@ -100,12 +101,14 @@ function presentContinuity(
   continuity: ContinuityRecord,
   admins: readonly AdministratorRecord[],
   claimedByYou: boolean,
+  userId: string,
   now: Date,
 ): EnvironmentContinuity {
   const { vacancy, windDown } = continuity;
 
   return {
     administrationAvailable: admins.some((admin) => admin.canAct),
+    mayResign: mayResignAdministration(admins, userId),
     ownershipVacancy: vacancy
       ? { claimDeadline: vacancy.claimDeadline.toISOString(), claimedByYou }
       : null,
@@ -148,6 +151,7 @@ export const getEnvironment = defineQuery({
     const continuity =
       own && userId
         ? {
+            userId,
             record: await findContinuity(db, input.environmentId),
             admins: await administrators(db, input.environmentId, now),
             claimed: await hasOpenClaim(db, input.environmentId, userId),
@@ -207,6 +211,7 @@ export const getEnvironment = defineQuery({
             continuity.record,
             continuity.admins,
             continuity.claimed,
+            continuity.userId,
             now,
           )
         : null,

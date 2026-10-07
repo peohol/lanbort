@@ -253,11 +253,13 @@ function Overview({
 
 /**
  * An administrator who is not an active member cannot administer
- * (PS-ENV-003) until they are active again, but may still give up the role.
+ * (PS-ENV-003) until they are active again, but may still give up the role
+ * when the domain allows it: not the owner, and not the last administrator.
  * Without an active administrator, waiting decisions wait (UX-EXC-009).
  */
 function PassiveAdministrator({ environment }: { environment: Environment }) {
   const isOwner = environment.roles.includes("owner");
+  const mayResign = environment.continuity?.mayResign ?? false;
 
   return (
     <main>
@@ -270,15 +272,21 @@ function PassiveAdministrator({ environment }: { environment: Environment }) {
         tone="warning"
         who="Rollen gjelder bare mens du er aktivt medlem. Bli aktivt medlem igjen fra miljøets side."
         actions={
-          isOwner ? undefined : (
+          mayResign ? (
             <ActionButton
               label="Gå av som administrator"
               path="/api/environments/roles/resign"
               body={{ environmentId: environment.id }}
             />
-          )
+          ) : undefined
         }
       >
+        {!isOwner && !mayResign && (
+          <p>
+            Du er den eneste administratoren, så du kan ikke gå av før noen
+            andre er administrator.
+          </p>
+        )}
         {environment.continuity?.administrationAvailable === false && (
           <p>
             Ingen administrator er aktiv nå, så innmeldinger og andre

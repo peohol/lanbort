@@ -14,7 +14,6 @@ import { formatTime } from "@/presentation/dates";
 import { environmentRoleNames } from "@/presentation/environments";
 import {
   describeRoles,
-  mayResign,
   membershipTask,
   ownershipRecipients,
 } from "@/presentation/environment-admin";
@@ -51,7 +50,8 @@ export function RolesSection({
         )
       : [],
   );
-  const resignable = mayResign(roles.holders, ownUserId);
+  // The domain decides who may resign, here and for a passive administrator.
+  const resignable = environment.continuity?.mayResign ?? false;
   const candidates = members.filter(
     (member) =>
       membershipTask(member) === "member" &&

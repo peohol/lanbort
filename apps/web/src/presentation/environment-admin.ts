@@ -141,15 +141,6 @@ export const ownershipRecipients = (
       holder.canAct,
   );
 
-/**
- * Whether the viewer may give up the administrator role: never the owner,
- * who hands over or winds down first, and never the last administrator.
- */
-export const mayResign = (holders: readonly Holder[], ownUserId: string) =>
-  holders.some(
-    (holder) => holder.userId === ownUserId && !holder.roles.includes("owner"),
-  ) && holders.some((holder) => holder.userId !== ownUserId);
-
 /** How administrators group the memberships they handle. */
 export type MembershipTask =
   "application" | "reactivation" | "confirmation" | "invitation" | "member";

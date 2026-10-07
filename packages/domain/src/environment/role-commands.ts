@@ -16,6 +16,7 @@ import {
   grantRole,
   type ChangedBy,
   lapseInvitationsOf,
+  mayResignAdministration,
   type RoleRevokeReason,
   pendingRoleInvitations,
   revokeRoles,
@@ -433,11 +434,12 @@ export const resignAdministrator = defineCommand({
       conflict("The owner hands over ownership or winds down first");
     }
 
-    const others = (await administrators(tx, environmentId, now)).filter(
-      (administrator) => administrator.userId !== userId,
-    );
-
-    if (others.length === 0) {
+    if (
+      !mayResignAdministration(
+        await administrators(tx, environmentId, now),
+        userId,
+      )
+    ) {
       conflict("The last administrator cannot resign");
     }
 

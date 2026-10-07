@@ -183,6 +183,11 @@ export const environmentContinuitySchema = z.strictObject({
    * need one wait; nobody else decides them (PS-ENV-014).
    */
   administrationAvailable: z.boolean(),
+  /**
+   * The caller, an administrator but not the owner, may give up the role:
+   * another administrator remains (PS-ENV-003), active or not.
+   */
+  mayResign: z.boolean(),
   /** PS-ENV-013: the owner is gone; administrators may claim ownership. */
   ownershipVacancy: z
     .strictObject({

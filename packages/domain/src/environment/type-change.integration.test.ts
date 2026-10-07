@@ -470,6 +470,26 @@ describe("closed → open (PS-ENV-008)", () => {
         userId: administrator.userId,
       }),
     ).rejects.toMatchObject({ code: "conflict" });
+    // With the owner still there, the passive administrator may resign.
+    expect((await read(administrator, environmentId)).continuity).toMatchObject(
+      { mayResign: true },
+    );
+    expect((await read(owner, environmentId)).continuity).toMatchObject({
+      mayResign: false,
+    });
+
+    // Once the owner is gone, the passive administrator is the last one and
+    // is neither offered resigning nor allowed it.
+    await executeCommand(tick(), releaseDepartedUser, {
+      actor: systemActor(accountLifecycleProcess),
+      input: { userId: owner.userId },
+    });
+    expect((await read(administrator, environmentId)).continuity).toMatchObject(
+      { mayResign: false },
+    );
+    await expect(
+      run(resignAdministrator, administrator, { environmentId }),
+    ).rejects.toMatchObject({ code: "conflict" });
   });
 });
 

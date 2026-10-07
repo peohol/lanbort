@@ -8,7 +8,6 @@ import {
   administrationHref,
   awaitsDecision,
   membershipStatus,
-  mayResign,
   membershipTask,
   ownershipRecipients,
   proposalWaitsFor,
@@ -106,7 +105,7 @@ describe("memberships administrators handle", () => {
   });
 });
 
-describe("role actions follow the domain's rules (PS-ENV-013)", () => {
+describe("ownership is offered as the domain allows (PS-ENV-013)", () => {
   const holder = (
     userId: string,
     details: Partial<EnvironmentRoles["holders"][number]> = {},
@@ -129,19 +128,6 @@ describe("role actions follow the domain's rules (PS-ENV-013)", () => {
         ({ userId }) => userId,
       ),
     ).toEqual(["active"]);
-  });
-
-  it("lets an administrator resign, but not the owner or the last one", () => {
-    const only = holder("only");
-
-    expect(mayResign([owner, holder("admin")], "admin")).toBe(true);
-    expect(mayResign([owner, holder("admin")], "owner")).toBe(false);
-    // Without an owner (a vacancy), the sole administrator stays.
-    expect(mayResign([only], "only")).toBe(false);
-    // A passive administrator still counts, as the domain counts them.
-    expect(
-      mayResign([only, holder("passive", { canAct: false })], "only"),
-    ).toBe(true);
   });
 });
 
