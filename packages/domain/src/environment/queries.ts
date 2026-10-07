@@ -11,6 +11,7 @@ import type {
   OwnMembership,
   TypeChangeProposal,
 } from "@lanbort/contracts";
+import { sql } from "kysely";
 import { z } from "zod";
 import { defineQuery } from "../commands/query";
 import {
@@ -34,9 +35,7 @@ import {
 import {
   concealedSpans,
   type HistoryPosition,
-  isConcealed,
   mayExposeHistory,
-  toPosition,
   type TypePeriod,
   widenedAfterPassivation,
 } from "./privacy";
@@ -54,6 +53,7 @@ import {
   loadEnvironmentAccess,
 } from "./store";
 import {
+  createdOutside,
   currentResponses,
   findOpenProposal,
   typePeriods,
@@ -383,32 +383,27 @@ export const listMemberships = defineQuery({
     const memberships = (
       await listCurrentMemberships(db, input.environmentId)
     ).filter(visible);
-    // PS-ENV-009: who was barred under a stricter type, and when, stays with
-    // those who were active then; others can only lift the bar.
+    // PS-ENV-009: a bar from a stricter type stays with those who were
+    // active then; others learn neither who, when nor whether there are any.
     const concealed = concealedSpans(periods, viewerActiveFrom);
-    const restrictions = (
-      await db
-        .selectFrom("app.environment_access_restrictions as restriction")
-        .leftJoin(
-          "app.profiles as profile",
-          "profile.user_id",
-          "restriction.user_id",
-        )
-        .select([
-          "restriction.id",
-          "restriction.user_id",
-          "restriction.imposed_at",
-          "restriction.position",
-          "profile.real_name",
-        ])
-        .where("restriction.environment_id", "=", input.environmentId)
-        .where("restriction.lifted_at", "is", null)
-        .orderBy("restriction.position")
-        .execute()
-    ).map((row) => ({
-      ...row,
-      concealed: isConcealed(concealed, toPosition(row.position)),
-    }));
+    const restrictions = await db
+      .selectFrom("app.environment_access_restrictions as restriction")
+      .leftJoin(
+        "app.profiles as profile",
+        "profile.user_id",
+        "restriction.user_id",
+      )
+      .select([
+        "restriction.id",
+        "restriction.user_id",
+        "restriction.imposed_at",
+        "profile.real_name",
+      ])
+      .where("restriction.environment_id", "=", input.environmentId)
+      .where("restriction.lifted_at", "is", null)
+      .where(createdOutside(sql.ref("restriction.position"), concealed))
+      .orderBy("restriction.position")
+      .execute();
 
     return {
       resource: {
@@ -435,17 +430,12 @@ export const listMemberships = defineQuery({
       userId: membership.userId,
       realName: membership.realName,
     })),
-    restrictions: resource.restrictions
-      .filter((row) => !row.concealed)
-      .map((row) => ({
-        id: row.id,
-        userId: row.user_id,
-        realName: row.real_name,
-        imposedAt: row.imposed_at.toISOString(),
-      })),
-    concealedRestrictionIds: resource.restrictions
-      .filter((row) => row.concealed)
-      .map((row) => row.id),
+    restrictions: resource.restrictions.map((row) => ({
+      id: row.id,
+      userId: row.user_id,
+      realName: row.real_name,
+      imposedAt: row.imposed_at.toISOString(),
+    })),
   }),
 });
 

@@ -458,7 +458,6 @@ describe("closed environments", () => {
         imposedAt: expect.any(String),
       },
     ]);
-    expect(barred.concealedRestrictionIds).toEqual([]);
     const restrictionId = barred.restrictions[0]?.id ?? "";
 
     await expect(join(applicant, environmentId)).rejects.toMatchObject({

@@ -154,7 +154,10 @@ test("a barred applicant stays listed until the bar is lifted", async ({
 
   await page.goto(`/miljoer/${environmentId}/administrer`);
   const applications = page.getByRole("region", { name: "Innmeldinger" });
-  await applications.getByText("Flere valg").click();
+  await applications
+    .getByRole("group", { name: "Ola Vest" })
+    .getByText("Flere valg")
+    .click();
   await applications
     .getByRole("button", { name: "Avvis og steng ute", exact: true })
     .click();
@@ -179,6 +182,25 @@ test("a barred applicant stays listed until the bar is lifted", async ({
   );
   expect((await apply()).ok()).toBe(true);
   await page.reload();
+  await expect(
+    applications.getByRole("button", { name: "Godkjenn Ola Vest" }),
+  ).toBeVisible();
+
+  // Bars from before the administrator came are lifted without the page
+  // telling whether there were any (PS-ENV-009).
+  await applications.getByText("Tidligere utestengelser").click();
+  await applications
+    .getByRole("button", { name: "Opphev utestengelser fra før du ble med" })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Opphev utestengelser fra før du ble med" })
+    .getByRole("button", { name: "Opphev utestengelsene" })
+    .click();
+  await expect(
+    page.getByRole("dialog", {
+      name: "Opphev utestengelser fra før du ble med",
+    }),
+  ).toBeHidden();
   await expect(
     applications.getByRole("button", { name: "Godkjenn Ola Vest" }),
   ).toBeVisible();

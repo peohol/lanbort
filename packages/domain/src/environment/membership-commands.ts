@@ -57,14 +57,9 @@ import {
   saveAnswers,
   settleMembership,
 } from "./store";
-import {
-  concealedSpans,
-  isConcealed,
-  toOptionalPosition,
-  toPosition,
-} from "./privacy";
+import { isConcealed, toOptionalPosition, toPosition } from "./privacy";
 import { rateLimits } from "../abuse/rate-limits";
-import { typePeriods } from "./type-change-store";
+import { concealedHistory } from "./type-change-store";
 
 const membershipOutput = z.strictObject({
   membershipId: z.uuid(),
@@ -527,8 +522,9 @@ export const inviteMember = defineCommand({
       // PS-ENV-009: a bar from a stricter type than the inviter was active
       // in looks like any account that cannot be invited, so it never tells
       // them who was barred before.
-      const concealed = concealedSpans(
-        await typePeriods(tx, environment.id),
+      const concealed = await concealedHistory(
+        tx,
+        environment.id,
         activeFrom(resource.ownMembership),
       );
       if (isConcealed(concealed, toPosition(invitee.restriction_position))) {

@@ -322,6 +322,9 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     environmentId: ids.environmentId,
     restrictionId: ids.restrictionId,
   }),
+  "environment.lift_concealed_restrictions": (ids) => ({
+    environmentId: ids.environmentId,
+  }),
   "environment.change_type": (ids) => ({
     environmentId: ids.environmentId,
     type: "closed",

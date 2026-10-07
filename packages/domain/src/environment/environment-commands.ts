@@ -5,7 +5,7 @@ import {
   updateRequirementsSchema,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 import type { Actor } from "../actor";
 import { defineCommand } from "../commands/command";
@@ -22,6 +22,7 @@ import {
   membershipTransitionStarted,
 } from "./events";
 import {
+  activeFrom,
   isTransitionExpired,
   type MembershipRecord,
   planRequirementChange,
@@ -31,6 +32,7 @@ import {
 } from "./model";
 import {
   createEnvironmentPolicy,
+  liftConcealedRestrictionsPolicy,
   liftRestrictionPolicy,
   updateEnvironmentDetailsPolicy,
   updateRequirementsPolicy,
@@ -42,6 +44,7 @@ import {
   lockMemberships,
   passivate,
 } from "./store";
+import { concealedHistory, createdOutside } from "./type-change-store";
 
 /** The environment a command acts on, taken from the URL. */
 export const environmentIdInput = { environmentId: z.uuid() };
@@ -411,6 +414,47 @@ export const liftRestriction = defineCommand({
       resourceId: resource.environment.id,
       payload: { userId: lifted.user_id },
     });
+
+    return { lifted: true as const };
+  },
+});
+
+/**
+ * PS-ENV-004 with PS-ENV-009: lifts every bar from a stricter type than the
+ * administrator was active in. They cannot see those bars, so the answer is
+ * the same whether there were none or many.
+ */
+export const liftConcealedRestrictions = defineCommand({
+  name: "environment.lift_concealed_restrictions",
+  input: z.strictObject({ ...environmentIdInput }),
+  output: z.strictObject({ lifted: z.literal(true) }),
+  policy: liftConcealedRestrictionsPolicy,
+  idempotency: "required",
+  load: loadLockedAccess,
+  execute: async ({ tx, actor, resource, events, now }) => {
+    const concealed = await concealedHistory(
+      tx,
+      resource.environment.id,
+      activeFrom(resource.ownMembership),
+    );
+
+    if (concealed.length > 0) {
+      const lifted = await tx
+        .updateTable("app.environment_access_restrictions")
+        .set({ lifted_at: now, lifted_by_user_id: userIdOf(actor) })
+        .where("environment_id", "=", resource.environment.id)
+        .where("lifted_at", "is", null)
+        .where(({ not }) => not(createdOutside(sql.ref("position"), concealed)))
+        .returning("user_id")
+        .execute();
+
+      for (const { user_id } of lifted) {
+        events.record(environmentRestrictionLifted, {
+          resourceId: resource.environment.id,
+          payload: { userId: user_id },
+        });
+      }
+    }
 
     return { lifted: true as const };
   },

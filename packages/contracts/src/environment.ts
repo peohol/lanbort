@@ -276,13 +276,11 @@ export const accessRestrictionSchema = z.strictObject({
 export const environmentMembershipsSchema = z.strictObject({
   memberships: z.array(administeredMembershipSchema),
   /** Also of those whose membership has ended, so the bar can be lifted. */
-  restrictions: z.array(accessRestrictionSchema),
   /**
-   * Restrictions imposed under a stricter type than the viewer was active in
-   * (PS-ENV-009): they can be lifted, but who and when stay with those who
-   * were there.
+   * Not those imposed under a stricter type than the viewer was active in
+   * (PS-ENV-009); `environment.lift_concealed_restrictions` lifts them.
    */
-  concealedRestrictionIds: z.array(z.uuid()),
+  restrictions: z.array(accessRestrictionSchema),
 });
 
 /**
