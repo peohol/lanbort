@@ -11,6 +11,7 @@ import { executeQuery } from "../commands/query";
 import { ConsumerRegistry } from "../outbox/consumer";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
+import { acceptFriendRequest, sendFriendRequest } from "../social/commands";
 import { startTestVote, testVoteDays } from "../testing/type-changes";
 import {
   releaseDepartedUser,
@@ -830,35 +831,71 @@ describe("historical privacy (PS-ENV-009)", () => {
     expect(
       (await memberships(barred.owner, barred.environmentId)).restrictions,
     ).toEqual([expect.objectContaining({ userId: barred.applicant.userId })]);
-    // A later administrator sees the same as where nobody was barred, and an
-    // invitation is refused as for an account that cannot be invited.
+    // A later administrator sees the same as where nobody was barred.
     const later = await memberships(barred.newcomer, barred.environmentId);
     expect(later.restrictions).toEqual([]);
     expect(shape(later)).toBe(
       shape(await memberships(control.newcomer, control.environmentId)),
     );
     expect(JSON.stringify(later)).not.toContain(barred.applicant.userId);
-    await expect(
-      run(inviteMember, barred.newcomer, {
-        environmentId: barred.environmentId,
-        userId: barred.applicant.userId,
-      }),
-    ).rejects.toMatchObject({ code: "not_found" });
-    await expect(
-      run(inviteMember, barred.owner, {
-        environmentId: barred.environmentId,
-        userId: barred.applicant.userId,
-      }),
-    ).rejects.toMatchObject({ code: "conflict" });
+    // The bar still holds for the one barred.
     await expect(
       run(joinEnvironment, barred.applicant, {
         environmentId: barred.environmentId,
         answers: [],
       }),
     ).rejects.toMatchObject({ code: "forbidden" });
+    // Those who were there are told to lift it before inviting.
+    await expect(
+      run(inviteMember, barred.owner, {
+        environmentId: barred.environmentId,
+        userId: barred.applicant.userId,
+      }),
+    ).rejects.toMatchObject({ code: "conflict" });
+  });
 
-    // The later administrator can still lift such bars, with the same
-    // answer whether there were any or not.
+  it("invites a friend barred under a stricter type as if they never were", async () => {
+    const barred = await rejectedBeforeWeakening(true);
+    const control = await rejectedBeforeWeakening(false);
+    const invited = [];
+
+    for (const scene of [barred, control]) {
+      await output(sendFriendRequest, scene.newcomer, {
+        userId: scene.applicant.userId,
+      });
+      await output(acceptFriendRequest, scene.applicant, {
+        userId: scene.newcomer.userId,
+      });
+      invited.push({
+        answer: await output(inviteMember, scene.newcomer, {
+          environmentId: scene.environmentId,
+          userId: scene.applicant.userId,
+        }),
+        view: shape(await memberships(scene.newcomer, scene.environmentId)),
+      });
+    }
+
+    const [withBar, withoutBar] = invited;
+    expect(shape(withBar?.answer)).toBe(shape(withoutBar?.answer));
+    expect(withBar?.view).toBe(withoutBar?.view);
+    // The invitation lifted the bar, for those who saw it too.
+    expect(await memberships(barred.owner, barred.environmentId)).toMatchObject(
+      { restrictions: [] },
+    );
+    expect(
+      (
+        await output(acceptInvitation, barred.applicant, {
+          environmentId: barred.environmentId,
+          answers: [],
+        })
+      ).state,
+    ).toBe("active");
+  });
+
+  it("lifts bars from before an administrator came with the same answer whether there are any", async () => {
+    const barred = await rejectedBeforeWeakening(true);
+    const control = await rejectedBeforeWeakening(false);
+
     for (const scene of [barred, control]) {
       expect(
         await output(liftConcealedRestrictions, scene.newcomer, {

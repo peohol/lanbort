@@ -20,6 +20,7 @@ import {
 } from "./environment-commands";
 import {
   environmentRestrictionImposed,
+  environmentRestrictionLifted,
   membershipActivated,
   membershipAnswersSubmitted,
   membershipEnded,
@@ -519,18 +520,28 @@ export const inviteMember = defineCommand({
     }
 
     if (invitee.restriction_position !== null) {
-      // PS-ENV-009: a bar from a stricter type than the inviter was active
-      // in looks like any account that cannot be invited, so it never tells
-      // them who was barred before.
       const concealed = await concealedHistory(
         tx,
         environment.id,
         activeFrom(resource.ownMembership),
       );
-      if (isConcealed(concealed, toPosition(invitee.restriction_position))) {
-        throw new DomainError("not_found", "No such account");
+      if (!isConcealed(concealed, toPosition(invitee.restriction_position))) {
+        conflict("The user is barred; lift the restriction first");
       }
-      conflict("The user is barred; lift the restriction first");
+      // PS-ENV-009: a bar from a stricter type than the inviter was active
+      // in must not show. Inviting someone the administrator already knows
+      // lifts it, so the invitation goes exactly as if there were none.
+      await tx
+        .updateTable("app.environment_access_restrictions")
+        .set({ lifted_at: now, lifted_by_user_id: userIdOf(actor) })
+        .where("environment_id", "=", environment.id)
+        .where("user_id", "=", input.userId)
+        .where("lifted_at", "is", null)
+        .execute();
+      events.record(environmentRestrictionLifted, {
+        resourceId: environment.id,
+        payload: { userId: input.userId },
+      });
     }
 
     // An invitation is new contact between the two (PS-USR-006): a block in
