@@ -27,6 +27,7 @@ const domain: DomainContext = {
   consumers: outboxConsumers({
     domain: () => domain,
     imageStore: () => undefined,
+    pictureStore: () => undefined,
     identities: () => undefined,
   }),
 };

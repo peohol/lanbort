@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
+import { ProfilePicture } from "@/components/profile-picture";
 import { chatConversationHref, chatDevicesHref } from "@/navigation/chat";
 import { chatApi } from "./api";
 import { useEngineVersion } from "./chat-provider";
@@ -16,6 +17,8 @@ import { chatErrorMessage } from "./messages";
 export interface ChatPerson {
   userId: string;
   realName: string | null;
+  /** Their picture, where the reader may see it (PS-USR-002). */
+  pictureId?: string | null;
 }
 
 /** Someone the page was opened to write to, with what allows it. */
@@ -25,6 +28,22 @@ export interface ChatInvitation extends ChatPerson {
 
 const nameOf = (people: readonly ChatPerson[]) =>
   people.map((person) => person.realName ?? "Ukjent navn").join(", ");
+
+/** The people by name, each with their picture where it is shown. */
+function People({ people }: { people: readonly ChatPerson[] }) {
+  return (
+    <span className="person-name">
+      {people.map((person) => (
+        <ProfilePicture
+          key={person.userId}
+          pictureId={person.pictureId ?? null}
+          name={person.realName}
+        />
+      ))}
+      {nameOf(people)}
+    </span>
+  );
+}
 
 const time = (iso: string) =>
   new Date(iso).toLocaleString("nb-NO", {
@@ -155,7 +174,7 @@ function ConversationList({
           {conversations?.map((conversation) => (
             <li key={conversation.conversationId} className="entry">
               <Link href={chatConversationHref(conversation.conversationId)}>
-                {nameOf(conversation.others)}
+                <People people={conversation.others} />
               </Link>
               <span className="entry-detail">
                 {conversation.loanId ? "Om lånet · " : ""}
@@ -173,7 +192,9 @@ function ConversationList({
           <ul className="entries">
             {newFriends.map((friend) => (
               <li key={friend.userId} className="entry">
-                <strong id={`venn-${friend.userId}`}>{nameOf([friend])}</strong>
+                <strong id={`venn-${friend.userId}`}>
+                  <People people={[friend]} />
+                </strong>
                 <div
                   className="actions"
                   role="group"

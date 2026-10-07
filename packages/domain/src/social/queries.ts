@@ -8,7 +8,7 @@ import { defineQuery } from "../commands/query";
 import { loadPair, readSnapshot, relationOf } from "./pair";
 import { readSocialOverviewPolicy, readSocialRelationPolicy } from "./policies";
 import { rateLimits } from "../abuse/rate-limits";
-import { personPageIds, profileIdIn } from "../people/queries";
+import { linkIn, type PersonLinks, personLinks } from "../people/queries";
 
 /**
  * The caller's relation to one other user, for example to show the right
@@ -42,12 +42,12 @@ interface ContactRow {
 
 const contacts = (
   rows: readonly ContactRow[],
-  pages: ReadonlySet<string>,
+  links: PersonLinks,
 ): SocialContact[] =>
   rows.map((row) => ({
     userId: row.userId,
     realName: row.realName,
-    profileId: profileIdIn(pages, row.userId),
+    ...linkIn(links, row.userId),
     since: row.since.toISOString(),
   }));
 
@@ -66,7 +66,7 @@ export const getSocialOverview = defineQuery({
     }
 
     const me = actor.userId;
-    const [relations, blocks, pages] = await readSnapshot(
+    const [relations, blocks, links] = await readSnapshot(
       db,
       async (snapshot) => {
         const relations = await snapshot
@@ -120,31 +120,31 @@ export const getSocialOverview = defineQuery({
           .where("block.lifted_at", "is", null)
           .orderBy("block.created_at", "desc")
           .execute();
-        const pages = await personPageIds(
+        const links = await personLinks(
           snapshot,
           me,
           [...relations, ...blocks].map((row) => row.userId),
           now,
         );
 
-        return [relations, blocks, pages] as const;
+        return [relations, blocks, links] as const;
       },
     );
 
     const overview: SocialOverview = {
       friends: contacts(
         relations.filter((r) => r.status === "active"),
-        pages,
+        links,
       ),
       incomingRequests: contacts(
         relations.filter((r) => r.status === "pending" && r.requesterId !== me),
-        pages,
+        links,
       ),
       outgoingRequests: contacts(
         relations.filter((r) => r.status === "pending" && r.requesterId === me),
-        pages,
+        links,
       ),
-      blocked: contacts(blocks, pages),
+      blocked: contacts(blocks, links),
     };
 
     return { resource: overview, context: undefined };

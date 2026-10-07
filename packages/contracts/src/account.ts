@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ownProfilePictureSchema } from "./profile";
 
 /**
  * PS-ADM-001: the account's lifecycle state.
@@ -54,6 +55,8 @@ export const ownAccountSchema = z.strictObject({
   statusReason: accountStatusReasonSchema.nullable(),
   realName: z.string().nullable(),
   email: z.string().nullable(),
+  /** The own profile picture and who sees it (PS-USR-002). */
+  picture: ownProfilePictureSchema,
 });
 
 /** The account's state after a lifecycle change. */

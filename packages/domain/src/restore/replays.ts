@@ -75,6 +75,13 @@ import {
 } from "../objects/events";
 import { removeImage } from "../objects/images";
 import { loadObjectState } from "../objects/state";
+import {
+  profilePictureChanged,
+  profilePictureRemoved,
+  profilePictureUploadStarted,
+  profilePictureVisibilityChanged,
+} from "../people/events";
+import { changeVisibility, removePicture } from "../people/pictures";
 import { platformRoleRevoked } from "../platform/events";
 import {
   friendPublicationCreated,
@@ -572,6 +579,72 @@ const imageUploadReplay: RestoreReplay = {
     recordAgain(objectImageUploadStarted, args);
 
     return "applied";
+  },
+};
+
+/**
+ * A removed or replaced profile picture goes again (PS-USR-002), and its
+ * file after commit. A picture set after the backup is lost: its upload's
+ * replay deletes its file.
+ */
+const profilePictureRemovalReplay: RestoreReplay = {
+  name: "profile_picture_removal",
+  events: [profilePictureRemoved, profilePictureChanged],
+  replay: async ({ tx, entry, events }) => {
+    const pictureId =
+      entry.type === profilePictureChanged.type
+        ? payloadOf(profilePictureChanged, entry).replacedPictureId
+        : payloadOf(profilePictureRemoved, entry).pictureId;
+
+    return pictureId !== null &&
+      (await removePicture(tx, entry.resourceId, events, pictureId))
+      ? "applied"
+      : "unchanged";
+  },
+};
+
+/** Like an object image's upload: an orphaned file is deleted. */
+const profilePictureUploadReplay: RestoreReplay = {
+  name: "profile_picture_upload",
+  events: [profilePictureUploadStarted],
+  replay: async (args) => {
+    const { pictureId } = payloadOf(profilePictureUploadStarted, args.entry);
+    const registered = await args.tx
+      .selectFrom("app.profile_pictures")
+      .select("id")
+      .where("id", "=", pictureId)
+      .executeTakeFirst();
+
+    if (registered) {
+      return "unchanged";
+    }
+
+    recordAgain(profilePictureUploadStarted, args);
+
+    return "applied";
+  },
+};
+
+/**
+ * Who sees a profile picture is set again as the person last chose, so a
+ * picture they hid is not shown more widely (PS-NFR-014).
+ */
+const profilePictureVisibilityReplay: RestoreReplay = {
+  name: "profile_picture_visibility",
+  events: [profilePictureVisibilityChanged],
+  replay: async ({ tx, entry, events, now }) => {
+    const { visibility } = payloadOf(profilePictureVisibilityChanged, entry);
+    const profile = await tx
+      .selectFrom("app.profiles")
+      .select(["user_id as userId", "picture_visibility as visibility"])
+      .where("user_id", "=", entry.resourceId)
+      .forUpdate()
+      .executeTakeFirst();
+
+    return profile &&
+      (await changeVisibility(tx, profile, visibility, events, now))
+      ? "applied"
+      : "unchanged";
   },
 };
 
@@ -1144,6 +1217,9 @@ export const restoreReplays: readonly RestoreReplay[] = [
   objectDeletionReplay,
   imageRemovalReplay,
   imageUploadReplay,
+  profilePictureRemovalReplay,
+  profilePictureUploadReplay,
+  profilePictureVisibilityReplay,
   coOwnerLeftReplay,
   objectRestrictionReplay,
   archiveReplay,

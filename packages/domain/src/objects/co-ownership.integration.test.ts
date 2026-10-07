@@ -31,7 +31,7 @@ import {
 import { getObjectHistory, revertObject } from "./history";
 import {
   objectImageFileCleanup,
-  type ObjectImageStore,
+  type ImageStore,
   uploadObjectImage,
 } from "./images";
 import { getObject, listOwnObjects } from "./queries";
@@ -40,7 +40,7 @@ import { liftObjectRestriction, setObjectRestriction } from "./restrictions";
 const db = connectTestDatabase();
 afterAll(() => db.destroy());
 
-class MemoryStore implements ObjectImageStore {
+class MemoryStore implements ImageStore {
   readonly files = new Map<string, Uint8Array>();
   async put(key: string, bytes: Uint8Array) {
     this.files.set(key, bytes);

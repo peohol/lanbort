@@ -21,7 +21,7 @@ import {
   type ImageProcessor,
   objectImageFileCleanup,
   objectImageKey,
-  type ObjectImageStore,
+  type ImageStore,
   readObjectImage,
   removeObjectImage,
   uploadObjectImage,
@@ -33,7 +33,7 @@ const db = connectTestDatabase();
 afterAll(() => db.destroy());
 
 /** In-memory stand-in for the storage adapter. */
-class MemoryStore implements ObjectImageStore {
+class MemoryStore implements ImageStore {
   readonly files = new Map<string, Uint8Array>();
   async put(key: string, bytes: Uint8Array) {
     this.files.set(key, bytes);
@@ -711,7 +711,7 @@ describe("images (PS-OBJ-002)", () => {
     const owner = await user();
     const { objectId } = await create(owner);
     const kept = (await upload(owner, objectId, "img-kept")).output;
-    const crashing: ObjectImageStore = {
+    const crashing: ImageStore = {
       get: (fileKey) => store.get(fileKey),
       remove: (fileKey) => store.remove(fileKey),
       put: async (fileKey, bytes) => {

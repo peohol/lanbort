@@ -31,6 +31,28 @@ export function personVisible(person: PersonRelation): boolean {
   );
 }
 
+/**
+ * Whether the viewer may see the person's profile picture (PS-USR-002):
+ * only where they may open the person's page, and then as the person
+ * chose, generally, to friends or only to themselves.
+ */
+export function pictureVisible(person: PersonRelation): boolean {
+  const { picture, pair } = person;
+
+  if (!picture || !personVisible(person)) {
+    return false;
+  }
+
+  switch (picture.visibility) {
+    case "general":
+      return true;
+    case "friends":
+      return pair === null || pair.openFriendship?.status === "active";
+    case "only_me":
+      return pair === null;
+  }
+}
+
 const visibleToActor: ResourceRule<PersonRelation, void> = ({
   actor,
   resource,
@@ -48,4 +70,39 @@ export const readPersonPolicy = definePolicy<PersonRelation, void>({
   resource: [visibleToActor],
 });
 
-export const peoplePolicies = [readPersonPolicy];
+/** A person's profile picture, for those who may see it. */
+export const readProfilePicturePolicy = definePolicy<PersonRelation, void>({
+  action: "profile_picture.read",
+  actor: [requireActiveAccount],
+  resource: [
+    ({ actor, resource }) =>
+      actor.kind === "user" &&
+      actor.userId === resource.viewerId &&
+      pictureVisible(resource)
+        ? allow
+        : deny("not_found"),
+  ],
+});
+
+/** The caller's own profile, the only one whose picture they change. */
+export interface OwnProfile {
+  readonly userId: string;
+}
+
+/** Adding, replacing or removing one's own picture, and who sees it. */
+export const changeProfilePicturePolicy = definePolicy<OwnProfile, void>({
+  action: "profile_picture.change",
+  actor: [requireActiveAccount],
+  resource: [
+    ({ actor, resource }) =>
+      actor.kind === "user" && actor.userId === resource.userId
+        ? allow
+        : deny("not_found"),
+  ],
+});
+
+export const peoplePolicies = [
+  readPersonPolicy,
+  readProfilePicturePolicy,
+  changeProfilePicturePolicy,
+];

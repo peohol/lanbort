@@ -50,6 +50,7 @@ describe("a person's page (WP-86)", () => {
     expect(await personOf(me, me)).toEqual({
       userId: me.userId,
       realName: name,
+      pictureId: null,
       relation: null,
       trustProfile: true,
     });
@@ -63,6 +64,7 @@ describe("a person's page (WP-86)", () => {
     expect(await personOf(owner, friend)).toEqual({
       userId: friend.userId,
       realName: name,
+      pictureId: null,
       relation: relation(friend, "friends"),
       trustProfile: true,
     });
@@ -78,6 +80,7 @@ describe("a person's page (WP-86)", () => {
 
     expect(await personOf(bo, anna)).toMatchObject({
       realName: name,
+      pictureId: null,
       relation: relation(anna, "incoming_pending"),
       trustProfile: false,
     });
@@ -183,8 +186,8 @@ describe("links to a person's page (UX-PRIV-007)", () => {
       ).parties;
 
     expect(await parties(borrower)).toEqual({
-      borrower: { realName: name, profileId: borrower.userId },
-      lender: { realName: name, profileId: owner.userId },
+      borrower: { realName: name, profileId: borrower.userId, pictureId: null },
+      lender: { realName: name, profileId: owner.userId, pictureId: null },
     });
 
     // Without a shared environment or friendship, the loan stays but the
@@ -193,6 +196,7 @@ describe("links to a person's page (UX-PRIV-007)", () => {
     expect((await parties(borrower)).lender).toEqual({
       realName: name,
       profileId: null,
+      pictureId: null,
     });
   });
 });

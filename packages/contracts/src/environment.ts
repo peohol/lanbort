@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { geoAreaSchema } from "./geo";
-import { profileIdSchema } from "./social";
+import { personLinkShape } from "./social";
 
 /** PS-ENV-001: the three privacy types of an environment. */
 export const environmentTypeSchema = z.enum(["open", "closed", "hidden"]);
@@ -290,7 +290,7 @@ export const environmentMembershipsSchema = z.strictObject({
 export const environmentMemberSchema = z.strictObject({
   userId: z.uuid(),
   realName: z.string().nullable(),
-  profileId: profileIdSchema,
+  ...personLinkShape,
   roles: z.array(environmentRoleSchema),
 });
 

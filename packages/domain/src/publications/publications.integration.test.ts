@@ -45,7 +45,7 @@ import {
   leaveObject,
 } from "../objects/co-owners";
 import { archiveObject, createObject } from "../objects/commands";
-import { type ObjectImageStore, uploadObjectImage } from "../objects/images";
+import { type ImageStore, uploadObjectImage } from "../objects/images";
 import { getObject } from "../objects/queries";
 import {
   liftObjectRestriction,
@@ -130,7 +130,7 @@ const notFound = { code: "not_found" };
 const forbidden = { code: "forbidden" };
 const conflict = { code: "conflict" };
 
-class MemoryStore implements ObjectImageStore {
+class MemoryStore implements ImageStore {
   readonly files = new Map<string, Uint8Array>();
   async put(key: string, bytes: Uint8Array) {
     this.files.set(key, bytes);

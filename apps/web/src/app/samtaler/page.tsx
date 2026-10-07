@@ -34,10 +34,9 @@ export default async function ConversationsPage({
 }) {
   const social = await pageQuery(getSocialOverview, {});
   const invitation = invitationSchema.safeParse(await searchParams);
-  const friends = (social?.friends ?? []).map(({ userId, realName }) => ({
-    userId,
-    realName,
-  }));
+  const friends = (social?.friends ?? []).map(
+    ({ userId, realName, pictureId }) => ({ userId, realName, pictureId }),
+  );
 
   return (
     <main>

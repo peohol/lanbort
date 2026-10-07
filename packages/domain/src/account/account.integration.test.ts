@@ -110,6 +110,7 @@ describe("registration (UX-JRN-001, PS-USR-001)", () => {
       statusReason: null,
       realName: "Kari Nordmann",
       email: verified.email,
+      picture: { pictureId: null, visibility: "general" },
     });
     expect(
       (await eventsFor(actor.userId)).map((event) => event.event_type),
@@ -162,6 +163,7 @@ describe("registration (UX-JRN-001, PS-USR-001)", () => {
       statusReason: null,
       realName: null,
       email: verified.email,
+      picture: { pictureId: null, visibility: "general" },
     });
   });
 });

@@ -8,7 +8,7 @@ import type { Loaded } from "../commands/command";
 import { defineQuery } from "../commands/query";
 import { loadLenderScope } from "../loans/store";
 import { inSnapshot } from "../objects/state";
-import { personPageIds, profileIdIn } from "../people/queries";
+import { linkIn, type PersonLinks, personLinks } from "../people/queries";
 import { otherSide, scoreContested } from "../reviews/model";
 import { loadReviewScores, type StoredScore } from "../reviews/store";
 import { type ScoreTally, summarizeRole } from "./model";
@@ -36,14 +36,14 @@ interface TrustProfileResource extends ProfileAccessResource {
     readonly reviews: readonly ProfileReviewRow[];
     readonly scores: ReadonlyMap<string, readonly StoredScore[]>;
     /** The authors whose page the reader may open. */
-    readonly pages: ReadonlySet<string>;
+    readonly links: PersonLinks;
   } | null;
 }
 
 function present(
   review: ProfileReviewRow,
   scores: readonly StoredScore[],
-  pages: ReadonlySet<string>,
+  links: PersonLinks,
 ): ProfileReview {
   return {
     id: review.id,
@@ -51,7 +51,7 @@ function present(
     basis: review.basis,
     author: review.author && {
       ...review.author,
-      profileId: profileIdIn(pages, review.author.userId),
+      ...linkIn(links, review.author.userId),
     },
     environment: review.environment,
     scores: scores.map((score) => ({
@@ -125,7 +125,7 @@ export const readTrustProfile = defineQuery({
           tx,
           reviews.map((review) => review.id),
         );
-        const pages = await personPageIds(
+        const links = await personLinks(
           tx,
           actor.userId,
           reviews.flatMap((review) => review.author?.userId ?? []),
@@ -135,7 +135,7 @@ export const readTrustProfile = defineQuery({
         return {
           resource: {
             ...access,
-            detail: { dimensions, counts, tallies, reviews, scores, pages },
+            detail: { dimensions, counts, tallies, reviews, scores, links },
           },
           context: undefined,
         };
@@ -148,7 +148,7 @@ export const readTrustProfile = defineQuery({
       throw new Error("The policy allows only readers with profile access");
     }
 
-    const { dimensions, counts, tallies, reviews, scores, pages } = detail;
+    const { dimensions, counts, tallies, reviews, scores, links } = detail;
     const page = reviews.slice(0, trustReviewPageSize);
 
     return {
@@ -167,7 +167,7 @@ export const readTrustProfile = defineQuery({
         tallies,
       ),
       reviews: page.map((review) =>
-        present(review, scores.get(review.id) ?? [], pages),
+        present(review, scores.get(review.id) ?? [], links),
       ),
       nextCursor:
         reviews.length > trustReviewPageSize ? (page.at(-1)?.id ?? null) : null,

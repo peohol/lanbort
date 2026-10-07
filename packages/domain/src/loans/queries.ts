@@ -25,7 +25,7 @@ import { canSeeEnvironment } from "../environment/policies";
 import { findEnvironment, loadEnvironmentAccess } from "../environment/store";
 import { calendarDate, toApiInterval } from "../objects/availability";
 import { inSnapshot, loadImages, loadObjectState } from "../objects/state";
-import { personPageIds, profileIdIn } from "../people/queries";
+import { linkIn, noPersonLinks, personLinks } from "../people/queries";
 import { environmentOwners } from "../publications/owners";
 import { assessOrigin } from "./access";
 import { findOpenAmendment, type LoanAmendmentRecord } from "./amendment-store";
@@ -307,9 +307,9 @@ async function describe(
   const { ownerIds, ...described } = await describeObject(db, request, now);
   const viewerId = actor.kind === "user" ? actor.userId : null;
   const names = await realNames(db, [request.borrowerUserId]);
-  const pages = viewerId
-    ? await personPageIds(db, viewerId, [request.borrowerUserId], now)
-    : new Set<string>();
+  const links = viewerId
+    ? await personLinks(db, viewerId, [request.borrowerUserId], now)
+    : noPersonLinks;
   const acceptances =
     request.origin === "direct"
       ? (
@@ -327,7 +327,7 @@ async function describe(
     borrowerUserId: request.borrowerUserId,
     borrower: {
       realName: names.get(request.borrowerUserId) ?? null,
-      profileId: profileIdIn(pages, request.borrowerUserId),
+      ...linkIn(links, request.borrowerUserId),
     },
     origin: await describeOrigin(db, actor, request, role, now),
     start: request.start,
@@ -570,10 +570,10 @@ async function loadLoanDetail(
       : null;
   const parties = [loan.borrowerUserId, loan.responsibleLenderId];
   const names = await realNames(db, parties);
-  const pages =
+  const links =
     viewer.kind === "user"
-      ? await personPageIds(db, viewer.userId, parties, now)
-      : new Set<string>();
+      ? await personLinks(db, viewer.userId, parties, now)
+      : noPersonLinks;
   const awaitingControl = control !== null && control.confirmedAt === null;
   const ownerIds =
     loan.objectId === null
@@ -608,7 +608,7 @@ async function loadLoanDetail(
     transfer,
     control,
     names,
-    pages,
+    links,
     awaitingControl,
     lenderOwns: awaitingControl && ownerIds.includes(loan.responsibleLenderId),
     coOwners: coOwnerIds.flatMap((userId) => {
@@ -734,11 +734,11 @@ async function amendmentAcceptableNow(
 }
 
 const personOf = (
-  { names, pages }: Pick<LoanDetail, "names" | "pages">,
+  { names, links }: Pick<LoanDetail, "names" | "links">,
   userId: string,
 ) => ({
   realName: names.get(userId) ?? null,
-  profileId: profileIdIn(pages, userId),
+  ...linkIn(links, userId),
 });
 
 const noActions: LoanActions = {

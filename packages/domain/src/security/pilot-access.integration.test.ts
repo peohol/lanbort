@@ -33,6 +33,7 @@ import {
   startChatConversation,
   transferCase,
   uploadObjectImage,
+  uploadProfilePicture,
 } from "../index";
 import { testChatAccount, testChatDevice } from "../testing/chat";
 import { connectTestDatabase } from "../testing/database";
@@ -96,11 +97,27 @@ const resourceKeys = new Set([
   "conversationId",
   "linkRequestId",
   "channelId",
+  "pictureId",
 ]);
 
+/** The probes ask the images' read policies; their files are never read. */
+const noFiles = {
+  store: {
+    put: async () => {},
+    get: async () => null,
+    remove: async () => {},
+  },
+  process: async (bytes: Uint8Array) => ({
+    bytes,
+    contentType: "image/webp" as const,
+    width: 10,
+    height: 10,
+  }),
+};
+
 /**
- * A hidden environment with everything that can live in it: members, an
- * object with a co-owner, its publication, a loan with an amendment and a
+ * A hidden environment with everything that can live in it: members (one
+ * with a profile picture), an object with a co-owner, its publication, a loan with an amendment and a
  * responsibility offer waiting, pending invitations, a case, a question,
  * the lender's chat with the borrower, a pending chat device link, and the
  * loan's logistics channel once the borrower has blocked the lender.
@@ -122,29 +139,19 @@ async function hiddenWorld() {
   const objectId = await create(lender, "Må vaskes etter bruk.");
   await addCoOwner(lender, objectId, coOwner);
   const { imageId } = (
-    await uploadObjectImage(
-      kit.tick(),
-      {
-        // The probes ask the image's read policy; its file is never read.
-        store: {
-          put: async () => {},
-          get: async () => null,
-          remove: async () => {},
-        },
-        process: async (bytes) => ({
-          bytes,
-          contentType: "image/webp",
-          width: 10,
-          height: 10,
-        }),
-      },
-      {
-        actor: lender,
-        objectId,
-        bytes: new TextEncoder().encode(randomUUID()),
-        idempotencyKey: randomUUID(),
-      },
-    )
+    await uploadObjectImage(kit.tick(), noFiles, {
+      actor: lender,
+      objectId,
+      bytes: new TextEncoder().encode(randomUUID()),
+      idempotencyKey: randomUUID(),
+    })
+  ).output;
+  const { pictureId } = (
+    await uploadProfilePicture(kit.tick(), noFiles, {
+      actor: other,
+      bytes: new TextEncoder().encode(randomUUID()),
+      idempotencyKey: randomUUID(),
+    })
   ).output;
   const { publicationId } = await run(publishObject, lender, {
     objectId,
@@ -249,6 +256,7 @@ async function hiddenWorld() {
       transferId,
       restrictionId,
       imageId,
+      pictureId: pictureId!,
       caseId,
       questionId,
       conversationId,
@@ -485,6 +493,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
   // Objects
   "object.read": (ids) => ({ objectId: ids.objectId }),
   "object.read_history": (ids) => ({ objectId: ids.objectId }),
+  "profile_picture.read": (ids) => ({ pictureId: ids.pictureId }),
   "object.read_image": (ids) => ({
     objectId: ids.objectId,
     imageId: ids.imageId,

@@ -7,7 +7,7 @@ import {
   objectImageIdSchema,
   objectImageSchema,
 } from "./objects";
-import { profileIdSchema } from "./social";
+import { personLinkShape } from "./social";
 
 /**
  * A publication of an object in one environment (PS-OBJ-006, PS-ENV-011). The
@@ -164,7 +164,7 @@ export const environmentPublicationListSchema = z.strictObject({
  */
 export const shownOwnerSchema = z.strictObject({
   realName: z.string(),
-  profileId: profileIdSchema,
+  ...personLinkShape,
 });
 
 /**

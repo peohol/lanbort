@@ -23,6 +23,7 @@ import { z } from "zod";
 import { rateLimits } from "../abuse/rate-limits";
 import { takesNewActivity } from "../account/model";
 import { accountStatuses, realNames } from "../account/store";
+import { linkIn, type PersonLinks, personLinks } from "../people/queries";
 import type { Actor } from "../actor";
 import { defineCommand } from "../commands/command";
 import { defineQuery } from "../commands/query";
@@ -293,15 +294,23 @@ const conversationLoad =
     context: undefined,
   });
 
-/** The conversation as one participant sees it. */
+/** The participants of `conversation` other than `viewerId`. */
+const othersIn = (conversation: ConversationRecord, viewerId: string) =>
+  conversation.participantIds.filter((id) => id !== viewerId);
+
+/**
+ * The conversation as one participant sees it, with `links` to the other
+ * participants' pages and pictures (from {@link personLinks}).
+ */
 async function presentConversation(
   db: Db,
   conversation: ConversationRecord,
   viewerId: string,
   device: ChatDeviceRecord | null,
   open: boolean,
+  links: PersonLinks,
 ) {
-  const others = conversation.participantIds.filter((id) => id !== viewerId);
+  const others = othersIn(conversation, viewerId);
   const [names, members, waiting] = await Promise.all([
     realNames(db, others),
     groupMembers(db, conversation.id, conversation.generation),
@@ -329,6 +338,7 @@ async function presentConversation(
     others: others.map((userId) => ({
       userId,
       realName: names.get(userId) ?? null,
+      ...linkIn(links, userId),
     })),
     loanId: conversation.loanLogistics?.loanId ?? null,
     open,
@@ -342,20 +352,28 @@ export const readChatConversation = defineQuery({
   name: "chat.read_conversation",
   input: chatConversationTargetSchema,
   policy: readChatConversationPolicy,
-  load: async ({ db, actor, input }) => {
+  load: async ({ db, actor, input, now }) => {
     const access = await loadAccess(db, actor, input.conversationId);
+    const present = async (viewerId: string) =>
+      presentConversation(
+        db,
+        access.conversation,
+        viewerId,
+        access.device,
+        access.open,
+        await personLinks(
+          db,
+          viewerId,
+          othersIn(access.conversation, viewerId),
+          now,
+        ),
+      );
 
     return {
       resource: {
         ...access,
         presented: access.participant
-          ? await presentConversation(
-              db,
-              access.conversation,
-              actingUserId(actor),
-              access.device,
-              access.open,
-            )
+          ? await present(actingUserId(actor))
           : null,
       },
       context: undefined,
@@ -375,7 +393,7 @@ export const listChatConversations = defineQuery({
   name: "chat.list_conversations",
   input: z.strictObject({}),
   policy: listChatConversationsPolicy,
-  load: async ({ db, actor }) => {
+  load: async ({ db, actor, now }) => {
     const userId = actingUserId(actor);
     const rows = await db
       .selectFrom("app.chat_participants as participant")
@@ -401,10 +419,26 @@ export const listChatConversations = defineQuery({
       .limit(conversationListSize)
       .execute();
     const device = await sessionDevice(db, actor);
-    const conversations = [];
+    const loaded = [];
 
     for (const { id } of rows) {
-      const conversation = (await loadConversation(db, id))!;
+      loaded.push((await loadConversation(db, id))!);
+    }
+
+    // Everyone the list names, looked up once for the whole list.
+    const links = await personLinks(
+      db,
+      userId,
+      [
+        ...new Set(
+          loaded.flatMap((conversation) => othersIn(conversation, userId)),
+        ),
+      ],
+      now,
+    );
+    const conversations = [];
+
+    for (const conversation of loaded) {
       conversations.push(
         await presentConversation(
           db,
@@ -412,6 +446,7 @@ export const listChatConversations = defineQuery({
           userId,
           device,
           await conversationOpen(db, conversation),
+          links,
         ),
       );
     }

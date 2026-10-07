@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { loanEndReasonSchema, loanRequestRoleSchema } from "./loans";
-import { profileIdSchema } from "./social";
+import { personLinkShape } from "./social";
 import {
   loanReviewIdSchema,
   reviewDimensionSchema,
@@ -71,7 +71,7 @@ export const profileReviewSchema = z.strictObject({
     .strictObject({
       userId: z.uuid(),
       realName: z.string(),
-      profileId: profileIdSchema,
+      ...personLinkShape,
     })
     .nullable(),
   environment: z.strictObject({ id: z.uuid(), name: z.string() }).nullable(),
