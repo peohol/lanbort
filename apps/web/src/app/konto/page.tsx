@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { PersonName } from "@/components/person-name";
 import { PreferenceSwitch } from "@/components/preference-switch";
+import { ProfilePicture } from "@/components/profile-picture";
 import { SignOutButton } from "@/components/sign-out-button";
 import { casesHref } from "@/navigation/routes";
 import { hrefFor } from "@/navigation/targets";
@@ -24,6 +25,7 @@ import {
 } from "@/presentation/account";
 import { notificationLevelLabels } from "@/presentation/notifications";
 import { pageQuery, requirePageAccount } from "@/server/session";
+import { ProfilePictureSettings } from "./profile-picture-settings";
 
 export const metadata: Metadata = { title: "Konto – Lånbort" };
 
@@ -160,6 +162,18 @@ export default async function AccountPage() {
       <section aria-labelledby="profil">
         <h2 id="profil">Profil</h2>
         <p>{account.realName}</p>
+        {active ? (
+          <ProfilePictureSettings
+            realName={account.realName ?? ""}
+            picture={account.picture}
+          />
+        ) : (
+          <ProfilePicture
+            pictureId={account.picture.pictureId}
+            name={account.realName}
+            size="large"
+          />
+        )}
       </section>
 
       <section aria-labelledby="saker">

@@ -32,6 +32,7 @@ export default async function RootLayout({
         {signedIn ? (
           <AppShell
             realName={account.realName ?? ""}
+            pictureId={account.picture.pictureId}
             unread={unread?.unreadCount ?? 0}
             notice={restingNotice(account.status)}
           >

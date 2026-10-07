@@ -159,6 +159,7 @@ describe("trust per role (PS-TRUST-006/012)", () => {
           userId: owner.userId,
           realName: "Test Testesen",
           profileId: owner.userId,
+          pictureId: null,
         },
         environment: { id: setup.environmentId, name: "Borettslaget" },
         scores: lenderDimensions.map((dimension) => ({
@@ -373,6 +374,7 @@ describe("reviews from a hidden environment (PS-TRUST-007, scenarios 22/54)", ()
           userId: setup.owner.userId,
           realName: "Test Testesen",
           profileId: setup.owner.userId,
+          pictureId: null,
         },
         environment: { id: setup.environmentId, name: "Hemmelig klubb" },
       }),

@@ -76,6 +76,7 @@ function domainOn(db: Kysely<Database>): DomainContext {
     consumers: outboxConsumers({
       domain: () => domain,
       imageStore: () => undefined,
+      pictureStore: () => undefined,
       identities: () => undefined,
     }),
   };

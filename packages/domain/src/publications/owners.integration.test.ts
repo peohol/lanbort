@@ -29,7 +29,11 @@ async function shown(...owners: UserActor[]) {
     .execute();
 
   return rows
-    .map((row) => ({ realName: row.real_name, profileId: row.user_id }))
+    .map((row) => ({
+      realName: row.real_name,
+      profileId: row.user_id,
+      pictureId: null,
+    }))
     .sort(
       (a, b) =>
         a.realName.localeCompare(b.realName, "nb") ||

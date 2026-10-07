@@ -270,7 +270,7 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 - **Ser / handler:** brukeren selv.
 - **Regler:** UX-IA-003, UX-PRIV-001, PS-USR-002, PS-COM-002, PS-COM-003, PS-ADM-004, PS-ADM-005, PS-ADM-012.
 - **Forløp:** begge.
-- **UI-pakke:** WP-80 (eksisterende varslingsvalg, kontostatus, deaktivering/reaktivering og sletting), WP-86 (relasjoner) og WP-88 (egne saker). Profilbilde, presentasjon og synlighetsvalg per profilfelt står under «Senere».
+- **UI-pakke:** WP-80 (eksisterende varslingsvalg, kontostatus, deaktivering/reaktivering og sletting), WP-86 (relasjoner) og WP-88 (egne saker). Profilbildet, med beskjæring og synlighetsvalg, ligger på Konto; formen er OD-0027. Presentasjon og synlighetsvalg for andre profilfelt står under «Senere».
 
 ### Avvik og unntak
 
@@ -611,7 +611,7 @@ Disse flatene følger av spesifikasjonen og UX-modellen, men ingen pakke i UI-pl
 - **Plattformforvalterens inngrep** på kontoer og miljøer. Venter på OD-0023 og OD-0026.
 - **Varsel før utlogging på en enhet med privat chat** (ADR-0010 punkt 7). Konto-sidens «Logg ut» har ikke dette varselet ennå; «Fjern denne enheten» i Mine enheter sier hva enheten mister.
 - **Gjenopprettingsnøkkel og overføring av gammel historikk** for privat chat (ADR-0010 punkt 5 og 8). Begge er vedtatt som valgfrie for brukeren, men ikke bygget; til da er kobling fra en annen enhet eller tilbakestilling de eneste veiene.
-- Profilbilde, presentasjon og synlighet per profilfelt, og demping og arkivering av lånesamtalen, står allerede under «Senere» i UI-planen.
+- Presentasjon og synlighet for andre profilfelt, og demping og arkivering av lånesamtalen, står allerede under «Senere» i UI-planen.
 
 ### Åpne beslutninger som berører flatene
 
@@ -629,3 +629,4 @@ Til en beslutning finnes, viser UI-et ikke funksjonen den gjelder.
 | OD-0023    | Plattformkø og alle plattformforvalterflater              | Vises ikke                                                         |
 | OD-0025    | Medlemmer og utestengelse                                 | Ingen handling for å fjerne et aktivt medlem                       |
 | OD-0026    | Inngrep på kontoer, inngrep i et miljø                    | Ingen flate                                                        |
+| OD-0027    | Profilbildet overalt der det vises, beskjæringen          | Sirkel                                                             |

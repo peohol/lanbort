@@ -45,12 +45,13 @@ import {
 } from "./state";
 
 /**
- * Object images (PS-OBJ-002) are stored by a storage adapter behind these
- * ports, so the domain never sees a vendor API. The bucket is private: the
- * server uploads only after validation and hands images out only after the
- * object's read policy has allowed it.
+ * Images (object images, PS-OBJ-002, and profile pictures, PS-USR-002) are
+ * stored by a storage adapter behind these ports, so the domain never sees
+ * a vendor API. Each kind has its own private bucket: the server uploads
+ * only after validation and hands an image out only after its read policy
+ * has allowed it.
  */
-export interface ObjectImageStore {
+export interface ImageStore {
   /** Creates or replaces the file at `key`. */
   put(key: string, bytes: Uint8Array, contentType: string): Promise<void>;
   /** The file's bytes, or null if there is none. */
@@ -72,8 +73,8 @@ export type ImageProcessor = (
   bytes: Uint8Array,
 ) => Promise<ProcessedImage | null>;
 
-export interface ObjectImageServices {
-  readonly store: ObjectImageStore;
+export interface ImageServices {
+  readonly store: ImageStore;
   readonly process: ImageProcessor;
 }
 
@@ -83,14 +84,20 @@ export function objectImageKey(objectId: string, imageId: string): string {
 }
 
 /**
- * The image id for an upload, derived from who uploads, the idempotency key
- * and the bytes. A retry of the same upload gets the same id (and replays the
- * first result); a different upload never collides with an earlier file.
+ * The image id for an upload of `kind`, derived from who uploads, the
+ * idempotency key and the bytes. A retry of the same upload gets the same id
+ * (and replays the first result); a different upload never collides with an
+ * earlier file.
  */
-function uploadImageId(scope: string, key: string, bytes: Uint8Array): string {
+export function uploadedImageId(
+  kind: string,
+  scope: string,
+  key: string,
+  bytes: Uint8Array,
+): string {
   const content = createHash("sha256").update(bytes).digest("hex");
   const hex = createHash("sha256")
-    .update(JSON.stringify(["object-image", scope, key, content]))
+    .update(JSON.stringify([kind, scope, key, content]))
     .digest("hex");
 
   // RFC 9562 version 8 (custom) UUID.
@@ -244,34 +251,23 @@ export interface UploadObjectImageRequest {
  */
 export async function uploadObjectImage(
   domain: DomainContext,
-  services: ObjectImageServices,
+  services: ImageServices,
   request: UploadObjectImageRequest,
 ): Promise<CommandResult<ObjectImageAdded>> {
-  if (request.idempotencyKey === undefined) {
-    throw new DomainError(
-      "idempotency_key_required",
-      "Adding an image requires an idempotency key",
-    );
-  }
-
-  if (!idempotencyKeyPattern.test(request.idempotencyKey)) {
-    throw new DomainError("invalid_input", "Invalid idempotency key", [
-      "idempotencyKey",
-    ]);
-  }
-
+  const uploadKey = requireUploadKey(request.idempotencyKey);
   const { objectId } = parseInput(objectReference, {
     objectId: request.objectId,
   });
   // Unauthenticated actors have no scope; the policy below refuses them.
-  const imageId = uploadImageId(
+  const imageId = uploadedImageId(
+    "object-image",
     actorScope(request.actor) ?? "",
-    request.idempotencyKey,
+    uploadKey,
     request.bytes,
   );
   const prepared = await executeCommand(domain, prepareObjectImage, {
     actor: request.actor,
-    input: { objectId, imageId, uploadKey: request.idempotencyKey },
+    input: { objectId, imageId, uploadKey },
     correlationId: request.correlationId,
   });
   const image = await services.process(request.bytes);
@@ -297,9 +293,30 @@ export async function uploadObjectImage(
       width: image.width,
       height: image.height,
     },
-    idempotencyKey: request.idempotencyKey,
+    idempotencyKey: uploadKey,
     correlationId: request.correlationId,
   });
+}
+
+/**
+ * An upload's idempotency key: required, since a retried upload must find
+ * the file and result of the first one.
+ */
+export function requireUploadKey(key: string | undefined): string {
+  if (key === undefined) {
+    throw new DomainError(
+      "idempotency_key_required",
+      "Adding an image requires an idempotency key",
+    );
+  }
+
+  if (!idempotencyKeyPattern.test(key)) {
+    throw new DomainError("invalid_input", "Invalid idempotency key", [
+      "idempotencyKey",
+    ]);
+  }
+
+  return key;
 }
 
 /**
@@ -421,7 +438,7 @@ export const objectImageFile = defineQuery({
 /** The image file, for those who may see the object. */
 export function readObjectImage(
   domain: Pick<DomainContext, "db" | "clock">,
-  store: ObjectImageStore,
+  store: ImageStore,
   request: { actor: Actor; input: unknown },
 ): Promise<{ bytes: Uint8Array; contentType: string }> {
   return readImageFile(domain, store, objectImageFile, request);
@@ -433,7 +450,7 @@ export function readObjectImage(
  */
 export async function readImageFile<I, R, C>(
   domain: Pick<DomainContext, "db" | "clock">,
-  store: ObjectImageStore,
+  store: ImageStore,
   query: QueryDefinition<I, R, C, { key: string; contentType: string }>,
   request: { actor: Actor; input: unknown },
 ): Promise<{ bytes: Uint8Array; contentType: string }> {
@@ -448,17 +465,18 @@ export async function readImageFile<I, R, C>(
 }
 
 export interface ObjectImageFileCleanupOptions {
-  readonly store: () => ObjectImageStore | undefined;
+  readonly store: () => ImageStore | undefined;
   readonly db: () => Kysely<Database>;
-  /**
-   * How long an upload may take from its intent to its registration. Until
-   * then an unregistered file may still be on its way in and is kept.
-   */
+  /** See {@link uploadGraceMs}. */
   readonly uploadGraceMs?: number;
 }
 
-/** Far above any request's time limit. */
-const defaultUploadGraceMs = 15 * 60 * 1000;
+/**
+ * How long an upload may take from its intent to its registration, far
+ * above any request's time limit. Until then an unregistered file may still
+ * be on its way in and is kept.
+ */
+export const uploadGraceMs = 15 * 60 * 1000;
 
 /**
  * Deletes image files nobody refers to (outbox, at-least-once): the file of a
@@ -469,7 +487,7 @@ const defaultUploadGraceMs = 15 * 60 * 1000;
 export function objectImageFileCleanup({
   store,
   db,
-  uploadGraceMs = defaultUploadGraceMs,
+  uploadGraceMs: graceMs = uploadGraceMs,
 }: ObjectImageFileCleanupOptions) {
   return defineConsumer({
     name: "object_images.delete_file",
@@ -496,7 +514,7 @@ export function objectImageFileCleanup({
           return;
         }
 
-        if (Date.now() - event.occurredAt.getTime() < uploadGraceMs) {
+        if (Date.now() - event.occurredAt.getTime() < graceMs) {
           // Retried with backoff until the upload can no longer be running.
           throw new OutboxDeliveryError("upload_in_progress");
         }

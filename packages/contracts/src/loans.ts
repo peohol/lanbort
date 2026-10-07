@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { environmentTypeSchema } from "./environment";
 import { shownOwnerSchema } from "./publications";
-import { profileIdSchema } from "./social";
+import { personLinkShape } from "./social";
 import {
   availabilityIntervalSchema,
   calendarDateSchema,
@@ -218,7 +218,7 @@ const termsSchema = z.strictObject({
  */
 export const loanPersonSchema = z.strictObject({
   realName: z.string().nullable(),
-  profileId: profileIdSchema,
+  ...personLinkShape,
 });
 
 /** A request as its borrower or a lender sees it. */

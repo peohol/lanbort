@@ -7,6 +7,7 @@ export * from "./account";
 export * from "./security";
 export * from "./objects";
 export * from "./social";
+export * from "./profile";
 export * from "./publications";
 export * from "./object-subscriptions";
 export * from "./object-questions";

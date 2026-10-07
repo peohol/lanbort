@@ -7,7 +7,7 @@ import {
 } from "@/server/http/body";
 import { errorResponse } from "@/server/http/errors";
 import { route } from "@/server/http/route";
-import { objectImageServices } from "@/server/object-images";
+import { objectImageServices } from "@/server/images";
 
 /**
  * Adds an image (the raw file as the body). The server re-encodes it without

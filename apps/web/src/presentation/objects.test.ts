@@ -107,7 +107,11 @@ describe("one of the user's own things in a list", () => {
 });
 
 describe("owners of a thing in an environment (PS-ENV-015)", () => {
-  const owner = (realName: string) => ({ realName, profileId: null });
+  const owner = (realName: string) => ({
+    realName,
+    profileId: null,
+    pictureId: null,
+  });
   const said = (names: string[]) =>
     names
       .map((name, index) => listSeparator(index, names.length) + name)

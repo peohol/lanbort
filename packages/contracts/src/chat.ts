@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { personLinkShape } from "./social";
 
 /**
  * Private end-to-end encrypted chat (PS-COM-004–006, PS-COM-009, ADR-0010).
@@ -232,6 +233,7 @@ export const chatParticipantSchema = z.strictObject({
   userId: z.uuid(),
   /** Null once the account is deleted (PS-ADM-006). */
   realName: z.string().nullable(),
+  ...personLinkShape,
 });
 
 export const chatConversationSchema = z.strictObject({

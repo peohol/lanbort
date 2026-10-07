@@ -7,7 +7,7 @@ import { approveLoanRequest } from "../loans/approval";
 import { acceptResponsibility } from "../loans/commands";
 import { previewLoanRequest, readLoan } from "../loans/queries";
 import { archiveObject } from "../objects/commands";
-import { type ObjectImageStore, uploadObjectImage } from "../objects/images";
+import { type ImageStore, uploadObjectImage } from "../objects/images";
 import { setObjectRestriction } from "../objects/restrictions";
 import { refreshSearchIndex, searchIndexer } from "../search/indexer";
 import { searchObjects } from "../search/queries";
@@ -387,7 +387,7 @@ describe("images of friends' objects", () => {
     const stranger = await user();
     const objectId = await friendsObject(owner, friend);
     const files = new Map<string, Uint8Array>();
-    const store: ObjectImageStore = {
+    const store: ImageStore = {
       put: async (key, bytes) => {
         files.set(key, bytes);
       },

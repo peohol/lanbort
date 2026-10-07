@@ -1,3 +1,4 @@
+import type { ProfilePictureVisibility } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
 import type { OpenFriendship, SocialPair } from "../social/pair";
@@ -8,8 +9,8 @@ type Db = Kysely<Database>;
 /**
  * Everything that decides what a viewer may see of another person (WP-86):
  * the name, the social pair as the viewer sees it, and whether both are
- * active members of an environment now. `pair` is null for the viewer
- * themselves.
+ * active members of an environment now, and their profile picture with
+ * who they let see it. `pair` is null for the viewer themselves.
  */
 export interface PersonRelation {
   readonly viewerId: string;
@@ -18,6 +19,11 @@ export interface PersonRelation {
   readonly realName: string | null;
   readonly pair: SocialPair | null;
   readonly shareEnvironment: boolean;
+  /** The current profile picture, if any (PS-USR-002). */
+  readonly picture: {
+    readonly id: string;
+    readonly visibility: ProfilePictureVisibility;
+  } | null;
 }
 
 /** An active membership now, outside a lapsed transition (PS-ENV-006). */
@@ -47,6 +53,7 @@ export async function loadPeople(
   const rows = await db
     .selectFrom("app.users as person")
     .leftJoin("app.profiles as profile", "profile.user_id", "person.id")
+    .leftJoin("app.profile_pictures as picture", "picture.user_id", "person.id")
     .leftJoin("app.friendships as friendship", (join) =>
       join.on((eb) =>
         eb.and([
@@ -68,6 +75,8 @@ export async function loadPeople(
       "person.id as userId",
       "person.status",
       "profile.real_name as realName",
+      "profile.picture_visibility as pictureVisibility",
+      "picture.id as pictureId",
       "friendship.id as friendshipId",
       "friendship.status as friendshipStatus",
       "friendship.requester_id as requesterId",
@@ -124,6 +133,13 @@ export async function loadPeople(
                 blockedByOther: row.blockedByPerson,
               },
         shareEnvironment: row.shareEnvironment,
+        picture:
+          row.pictureId && row.pictureVisibility
+            ? {
+                id: row.pictureId,
+                visibility: row.pictureVisibility as ProfilePictureVisibility,
+              }
+            : null,
       },
     ]),
   );

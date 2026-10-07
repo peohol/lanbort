@@ -2,6 +2,7 @@ import type { TrustProfile as Profile } from "@lanbort/contracts";
 import { collectPages, readPerson, readTrustProfile } from "@lanbort/domain";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
+import { ProfilePicture } from "@/components/profile-picture";
 import { StatusCard } from "@/components/status-card";
 import { Tag } from "@/components/tag";
 import {
@@ -64,6 +65,15 @@ export default async function PersonPage({
     <main>
       <PageHeader
         title={person.realName}
+        picture={
+          person.pictureId && (
+            <ProfilePicture
+              pictureId={person.pictureId}
+              name={person.realName}
+              size="large"
+            />
+          )
+        }
         back={{ href: friendsHref, label: "Venner" }}
         context={relation.tag && <Tag tone={relation.tone}>{relation.tag}</Tag>}
       />

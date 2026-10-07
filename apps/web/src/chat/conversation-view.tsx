@@ -7,6 +7,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { announce } from "@/components/announcer";
 import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
+import { ProfilePicture } from "@/components/profile-picture";
 import { chatHref } from "@/navigation/chat";
 import { loanHref } from "@/navigation/routes";
 import { chatApi } from "./api";
@@ -102,14 +103,17 @@ function Message({
   entry: HistoryEntry;
   others: ChatConversation["others"];
 }) {
-  const sender = entry.own
-    ? "Deg"
-    : (others.find((o) => o.userId === entry.senderUserId)?.realName ??
-      "Ukjent avsender");
+  const person = entry.own
+    ? null
+    : others.find((o) => o.userId === entry.senderUserId);
+  const sender = entry.own ? "Deg" : (person?.realName ?? "Ukjent avsender");
 
   return (
     <li className="entry">
-      <span className="entry-detail">
+      <span className="entry-detail person-name">
+        {person && (
+          <ProfilePicture pictureId={person.pictureId} name={person.realName} />
+        )}
         {sender}
         {entry.sentAt ? ` · ${time(entry.sentAt)}` : ""}
         {entry.unsent ? " · ikke sendt ennå" : ""}
@@ -199,7 +203,15 @@ function Conversation({ engine, id }: { engine: ChatEngine; id: string }) {
 
   return (
     <>
-      <h1>
+      <h1 className="person-name">
+        {others.map((o) => (
+          <ProfilePicture
+            key={o.userId}
+            pictureId={o.pictureId}
+            name={o.realName}
+            size="medium"
+          />
+        ))}
         {others.map((o) => o.realName ?? "Ukjent navn").join(", ") || "Samtale"}
       </h1>
       <p className="link-row">

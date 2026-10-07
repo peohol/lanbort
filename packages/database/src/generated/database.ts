@@ -859,8 +859,19 @@ export interface AppPlatformRoleGrants {
   user_id: string;
 }
 
+export interface AppProfilePictures {
+  byte_size: number;
+  content_type: string;
+  created_at: Generated<Timestamp>;
+  height: number;
+  id: string;
+  user_id: string;
+  width: number;
+}
+
 export interface AppProfiles {
   created_at: Generated<Timestamp>;
+  picture_visibility: Generated<string>;
   real_name: string;
   updated_at: Generated<Timestamp>;
   user_id: string;
@@ -1013,6 +1024,7 @@ export interface DB {
   "app.objects": AppObjects;
   "app.outbox_messages": AppOutboxMessages;
   "app.platform_role_grants": AppPlatformRoleGrants;
+  "app.profile_pictures": AppProfilePictures;
   "app.profiles": AppProfiles;
   "app.rate_limit_key": AppRateLimitKey;
   "app.rate_limits": AppRateLimits;

@@ -8,11 +8,14 @@ import type { ReactNode } from "react";
  */
 export function PageHeader({
   title,
+  picture,
   back,
   context,
   children,
 }: {
   title: ReactNode;
+  /** The picture of the person the page is about. */
+  picture?: ReactNode;
   back?: { href: string; label: string };
   context?: ReactNode;
   /** A short lead under the title. */
@@ -25,6 +28,7 @@ export function PageHeader({
           <span aria-hidden="true">‹</span> {back.label}
         </Link>
       )}
+      {picture && <div className="page-picture">{picture}</div>}
       <h1>{title}</h1>
       {context && <div className="tags">{context}</div>}
       {children && <p className="page-lead">{children}</p>}

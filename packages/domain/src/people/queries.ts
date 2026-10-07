@@ -1,35 +1,58 @@
 import type { Database } from "@lanbort/database";
-import { type Person, socialTargetSchema } from "@lanbort/contracts";
+import {
+  type Person,
+  type PersonLink,
+  socialTargetSchema,
+} from "@lanbort/contracts";
 import type { Kysely } from "kysely";
 import { rateLimits } from "../abuse/rate-limits";
 import { defineQuery } from "../commands/query";
 import { inSnapshot } from "../objects/state";
 import { relationOf } from "../social/pair";
 import { hasProfileAccess } from "../trust/policies";
-import { personVisible, readPersonPolicy } from "./policies";
-import { loadPeople, profileAccessOf } from "./store";
+import { pictureVisible, personVisible, readPersonPolicy } from "./policies";
+import { loadPeople, type PersonRelation, profileAccessOf } from "./store";
+
+/** What `viewerId` is shown of people's pages and pictures, by user id. */
+export type PersonLinks = ReadonlyMap<string, PersonLink>;
+
+/** No link to anyone, for read models without a signed-in viewer. */
+export const noPersonLinks: PersonLinks = new Map();
+
+const unlinked: PersonLink = { profileId: null, pictureId: null };
+
+/** What a read model may show of a person (UX-PRIV-007, PS-USR-002). */
+export function personLinkOf(person: PersonRelation): PersonLink {
+  return personVisible(person)
+    ? {
+        profileId: person.userId,
+        pictureId: pictureVisible(person) ? person.picture!.id : null,
+      }
+    : unlinked;
+}
 
 /**
- * Of `userIds`, the people whose page `viewerId` may open now, for read
- * models that name people: a name links to the page only then
- * (UX-PRIV-007). Read it in the same snapshot as the names.
+ * Of `userIds`, the pages and pictures `viewerId` may see now, for read
+ * models that name people: a name links to the page, and shows the
+ * picture, only then (UX-PRIV-007, PS-USR-002). Read it in the same
+ * snapshot as the names.
  */
-export async function personPageIds(
+export async function personLinks(
   db: Kysely<Database>,
   viewerId: string,
   userIds: readonly string[],
   now: Date,
-): Promise<ReadonlySet<string>> {
+): Promise<PersonLinks> {
   const people = await loadPeople(db, viewerId, userIds, now);
 
-  return new Set(
-    [...people.values()].filter(personVisible).map((person) => person.userId),
+  return new Map(
+    [...people.values()].map((person) => [person.userId, personLinkOf(person)]),
   );
 }
 
-/** A person's id when their page is in `pages`, for `profileId` fields. */
-export const profileIdIn = (pages: ReadonlySet<string>, userId: string) =>
-  pages.has(userId) ? userId : null;
+/** A person's link in `links`, for the `profileId` and `pictureId` fields. */
+export const linkIn = (links: PersonLinks, userId: string): PersonLink =>
+  links.get(userId) ?? unlinked;
 
 /**
  * A person's page (WP-86): their name, the caller's relation to them, and
@@ -61,6 +84,7 @@ export const readPerson = defineQuery({
     return {
       userId: resource.userId,
       realName: resource.realName,
+      pictureId: personLinkOf(resource).pictureId,
       relation: resource.pair && relationOf(resource.pair),
       trustProfile: hasProfileAccess(
         resource.viewerId,

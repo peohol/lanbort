@@ -32,6 +32,7 @@ import {
 import { deleteObject } from "../objects/deletion";
 import { loadObjectState } from "../objects/state";
 import { defineConsumer, OutboxDeliveryError } from "../outbox/consumer";
+import { profilePictureDeletionStep } from "../people/pictures";
 import { platformRoleRevoked } from "../platform/events";
 import { chatAccountDeletionStep } from "../chat/maintenance";
 import { reviewRightsStep } from "../reviews/account-deletion";
@@ -238,9 +239,9 @@ const platformRolesStep: AccountDeletionStep = {
 };
 
 /**
- * PS-ADM-006: the profile, verified contact addresses, stored command
- * results, and the account's own notifications, their waiting e-mails and its
- * preferences go. What remains of the account is its internal id, its state and
+ * PS-ADM-006: the profile (its picture went in the step before), verified
+ * contact addresses, stored command results, and the account's own
+ * notifications, their waiting e-mails and its preferences go. What remains of the account is its internal id, its state and
  * the records of its changes, so shared history (loans, requests, events)
  * keeps its references but shows no name. How long the remaining history is
  * kept is not decided (OD-0002), so nothing here removes it.
@@ -290,6 +291,7 @@ export const accountDeletionSteps: readonly AccountDeletionStep[] = [
   reviewRightsStep,
   subscriptionsStep,
   chatAccountDeletionStep,
+  profilePictureDeletionStep,
   personalDataStep,
 ];
 

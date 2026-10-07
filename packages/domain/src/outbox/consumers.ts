@@ -7,10 +7,8 @@ import {
 import { chatSessionEnding } from "../chat/maintenance";
 import type { DomainContext } from "../commands/command";
 import { notificationGenerator } from "../notifications/generator";
-import {
-  type ObjectImageStore,
-  objectImageFileCleanup,
-} from "../objects/images";
+import { type ImageStore, objectImageFileCleanup } from "../objects/images";
+import { profilePictureFileCleanup } from "../people/pictures";
 import { searchIndexer } from "../search/indexer";
 import { objectAvailabilityWatcher } from "../subscriptions/availability";
 import { ConsumerRegistry } from "./consumer";
@@ -19,14 +17,16 @@ import { ConsumerRegistry } from "./consumer";
 export interface OutboxConsumerDependencies {
   readonly domain: () => DomainContext;
   /** Undefined where no file store is configured; deliveries are retried. */
-  readonly imageStore: () => ObjectImageStore | undefined;
+  readonly imageStore: () => ImageStore | undefined;
+  /** The same for profile pictures, which have their own private bucket. */
+  readonly pictureStore: () => ImageStore | undefined;
   /** Undefined where no provider key is configured; deliveries are retried. */
   readonly identities: () => IdentityProviderAdmin | undefined;
 }
 
 /**
  * Every side effect that runs from the outbox (ADR-0004, ADR-0008): image
- * file cleanup, the in-app notifications (WP-40), telling object subscribers
+ * and profile picture file cleanup, the in-app notifications (WP-40), telling object subscribers
  * when an object has become available (WP-63), the derived search index
  * (WP-61), removing a deleted account's sign-in identity (WP-53) and
  * ending the sign-in sessions of revoked chat devices (WP-43).
@@ -39,12 +39,14 @@ export interface OutboxConsumerDependencies {
 export function outboxConsumers({
   domain,
   imageStore,
+  pictureStore,
   identities,
 }: OutboxConsumerDependencies): ConsumerRegistry {
   const db = (): Kysely<Database> => domain().db;
 
   return new ConsumerRegistry([
     objectImageFileCleanup({ store: imageStore, db }),
+    profilePictureFileCleanup({ store: pictureStore, db }),
     notificationGenerator({ db }),
     objectAvailabilityWatcher({ db }),
     searchIndexer({ db }),

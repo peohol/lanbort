@@ -288,7 +288,7 @@ const smallTargets = (page: Page) =>
     };
     const targets = [
       ...document.querySelectorAll(
-        "button, select, textarea, summary, input:not([type=hidden]):not([type=checkbox]), .checkbox, a[href]",
+        "button, select, textarea, summary, input:not([type=hidden], [type=checkbox], [type=radio]), .checkbox, .scale label, a[href]",
       ),
     ].filter(
       (element) =>
@@ -315,6 +315,14 @@ const smallTargets = (page: Page) =>
  */
 async function keyboardProblems(page: Page) {
   const expected = await page.evaluate(() => {
+    const radioStop = (radio: HTMLInputElement) => {
+      const group = [
+        ...document.querySelectorAll<HTMLInputElement>(
+          `input[type=radio][name="${CSS.escape(radio.name)}"]`,
+        ),
+      ];
+      return group.find((other) => other.checked) ?? group[0];
+    };
     const focusable = [
       ...document.querySelectorAll<HTMLElement>(
         'a[href], button, input:not([type=hidden]), select, textarea, summary, [tabindex]:not([tabindex="-1"])',
@@ -326,7 +334,14 @@ async function keyboardProblems(page: Page) {
         !element.closest("details:not([open]) > :not(summary)") &&
         element.getClientRects().length > 0 &&
         // Also leaves out what waits inside a closed «Flere valg».
-        element.checkVisibility({ visibilityProperty: true }),
+        element.checkVisibility({ visibilityProperty: true }) &&
+        // Tab stops once in a group of radio buttons, at the chosen one or
+        // else the first; the arrow keys move within it.
+        !(
+          element instanceof HTMLInputElement &&
+          element.type === "radio" &&
+          element !== radioStop(element)
+        ),
     );
     focusable.forEach((element, index) => {
       element.dataset.a11y = String(index);

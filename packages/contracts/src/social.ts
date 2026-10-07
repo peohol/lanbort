@@ -36,11 +36,27 @@ export const socialRelationSchema = z.strictObject({
  */
 export const profileIdSchema = z.uuid().nullable();
 
+/**
+ * A person's profile picture (PS-USR-002) as an address target: the id of
+ * their current picture while the reader may see it, otherwise null. Only
+ * someone who may open the page may see the picture, so it is null whenever
+ * `profileId` is.
+ */
+export const pictureIdSchema = z.uuid().nullable();
+
+/** How a read model that names a person points to their page and picture. */
+export const personLinkShape = {
+  profileId: profileIdSchema,
+  pictureId: pictureIdSchema,
+} as const;
+
+export const personLinkSchema = z.strictObject(personLinkShape);
+
 export const socialContactSchema = z.strictObject({
   userId: z.uuid(),
   /** Null for an account without a profile, such as an unfinished one. */
   realName: z.string().nullable(),
-  profileId: profileIdSchema,
+  ...personLinkShape,
   since: z.iso.datetime(),
 });
 
@@ -61,6 +77,7 @@ export const socialOverviewSchema = z.strictObject({
 export const personSchema = z.strictObject({
   userId: z.uuid(),
   realName: z.string(),
+  pictureId: pictureIdSchema,
   relation: socialRelationSchema.nullable(),
   trustProfile: z.boolean(),
 });
@@ -71,3 +88,4 @@ export type SocialRelation = z.infer<typeof socialRelationSchema>;
 export type SocialContact = z.infer<typeof socialContactSchema>;
 export type SocialOverview = z.infer<typeof socialOverviewSchema>;
 export type Person = z.infer<typeof personSchema>;
+export type PersonLink = z.infer<typeof personLinkSchema>;

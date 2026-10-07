@@ -6,7 +6,7 @@ import {
 import { commandResponse, idempotencyKeyOf } from "@/server/http/body";
 import { errorResponse } from "@/server/http/errors";
 import { route } from "@/server/http/route";
-import { objectImageServices } from "@/server/object-images";
+import { imageFileResponse, objectImageServices } from "@/server/images";
 
 /** The image file, streamed only after the object's read policy allowed it. */
 export const GET = route.user(async ({ params, actor, domain }) => {
@@ -21,12 +21,7 @@ export const GET = route.user(async ({ params, actor, domain }) => {
     input: { objectId: params.objectId, imageId: params.imageId },
   });
 
-  return new Response(new Uint8Array(image.bytes), {
-    headers: {
-      "content-type": image.contentType,
-      "content-disposition": "inline",
-    },
-  });
+  return imageFileResponse(image);
 });
 
 /** Removes the image; its file is deleted after commit (outbox). */
