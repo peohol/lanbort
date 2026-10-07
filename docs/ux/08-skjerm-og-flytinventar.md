@@ -127,7 +127,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 #### Lånets side
 
 - **Oppgave:** vite hva som er avtalt, hva som skjer nå, og gjøre neste praktiske steg.
-- **Tilstander:** reservert (tid, praktisk informasjon, bekreft overlevering (én part er nok), foreslå endring, kanseller); utlånt (returtid, foreslå forlengelse, meld returnert); venter på at utlåner bekrefter retur; retur bekreftet med 30 sekunders angremulighet; gjennomført; endringsforslag venter på svar; ansvarsoverføring tilbudt; opprinnelse som kontekstmerke; tidslinje.
+- **Tilstander:** reservert (tid, praktisk informasjon, bekreft overlevering (én part er nok), foreslå endring, kanseller); utlånt (returtid, foreslå forlengelse, meld returnert; for parten som ikke registrerte overleveringen også «ble ikke overlevert» som underordnet valg); venter på at utlåner bekrefter retur; retur bekreftet med 30 sekunders angremulighet; gjennomført; endringsforslag venter på svar; ansvarsoverføring tilbudt; opprinnelse som kontekstmerke; tidslinje.
 - **Ser / handler:** låntaker og ansvarlig utlåner. Andre medeiere ser lånet, men får bare handlinger de har rett til (UX-JRN-011).
 - **Regler:** UX-IA-014, UX-JRN-007, UX-JRN-008, UX-JRN-009, UX-INT-001, UX-INT-002, UX-IA-008, PS-LOAN-008–011, PS-LOAN-015, PS-LOAN-016, PS-LOAN-020, PS-LOAN-022, PS-COM-008.
 - **Forløp:** normal. Avvikene står [under](#lånets-side-i-avvik).

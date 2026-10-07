@@ -82,7 +82,7 @@ Før overlevering vises:
 - tydelig status
 - relevante handlinger: bekreft overlevering, foreslå endring, kanseller
 
-Begge parter kan bekrefte overleveringen. Én parts bekreftelse uten motsigelse gjør lånet utlånt, så UI-et skal ikke vente på at begge har bekreftet (PS-LOAN-022).
+Begge parter kan bekrefte overleveringen. Én parts bekreftelse uten motsigelse gjør lånet utlånt, så UI-et skal ikke vente på at begge har bekreftet. Parten som ikke har sagt noe, beholder muligheten til å si at overleveringen ikke skjedde som en underordnet handling på det aktive lånet (PS-LOAN-022, PS-LOAN-013).
 
 Når tidspunktet passerer uten avklaring, erstattes normalhandlingen av avklaringsvalg uten at brukeren må finne en egen feilmassasje. Valgene er likeverdige faktaalternativer (UX-INT-001).
 
