@@ -161,7 +161,7 @@ describe("an administrator's tasks", () => {
       userId: row.userId,
       realName: null,
     })),
-    restrictedUserIds: [],
+    restrictions: [],
   });
   const publication = (objectId: string) =>
     ({ objectId }) as ReviewedPublication;

@@ -260,9 +260,17 @@ export const administeredMembershipSchema = z.strictObject({
   realName: z.string().nullable(),
 });
 
+/** Someone barred from new attempts until an administrator lifts it. */
+export const accessRestrictionSchema = z.strictObject({
+  userId: z.uuid(),
+  realName: z.string().nullable(),
+  imposedAt: z.iso.datetime(),
+});
+
 export const environmentMembershipsSchema = z.strictObject({
   memberships: z.array(administeredMembershipSchema),
-  restrictedUserIds: z.array(z.uuid()),
+  /** Also of those whose membership has ended, so the bar can be lifted. */
+  restrictions: z.array(accessRestrictionSchema),
 });
 
 /**
@@ -287,6 +295,8 @@ export const roleHolderSchema = z.strictObject({
   roles: z.array(environmentRoleSchema),
   /** Start of the continuous administrator period (PS-ENV-013). */
   administratorSince: z.iso.datetime(),
+  /** Has an active membership, so can act and take over ownership. */
+  canAct: z.boolean(),
 });
 
 export const pendingRoleInvitationSchema = z.strictObject({

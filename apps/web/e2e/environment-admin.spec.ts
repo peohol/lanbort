@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  accountId,
   collectBrowserProblems,
   postCommand,
   registerThroughApi,
@@ -113,5 +114,74 @@ test("administrators decide memberships, things and the type on the environment"
   const response = await kari.newPage().then((other) => other.goto(adminPage));
   expect(response?.status()).toBe(404);
   await kari.close();
+  expect(problems).toEqual([]);
+});
+
+/**
+ * PS-ENV-004: someone rejected and barred is still listed by name once the
+ * application has ended, cannot be invited, and can apply again once an
+ * administrator lifts the bar.
+ */
+test("a barred applicant stays listed until the bar is lifted", async ({
+  browser,
+  page,
+  baseURL,
+}) => {
+  const problems = collectBrowserProblems(page);
+  await registerThroughApi(page.request, undefined, "Eva Eier");
+  const word = uniqueWord();
+  const { environmentId } = await (
+    await postCommand(page.request, "/api/environments", {
+      name: `Vellet ${word}`,
+      type: "closed",
+    })
+  ).json();
+
+  const ola = await browser.newContext({ baseURL: baseURL! });
+  await registerThroughApi(ola.request, undefined, "Ola Vest");
+  await postCommand(page.request, "/api/social/friend-requests", {
+    userId: await accountId(ola.request),
+  });
+  await postCommand(ola.request, "/api/social/friend-requests/accept", {
+    userId: await accountId(page.request),
+  });
+  const apply = () =>
+    ola.request.post("/api/environments/membership/join", {
+      data: { environmentId, answers: [] },
+      headers: { "Idempotency-Key": crypto.randomUUID() },
+    });
+  expect((await apply()).ok()).toBe(true);
+
+  await page.goto(`/miljoer/${environmentId}/administrer`);
+  const applications = page.getByRole("region", { name: "Innmeldinger" });
+  await applications.getByText("Flere valg").click();
+  await applications
+    .getByRole("button", { name: "Avvis og steng ute", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Avvis og steng ute Ola Vest" })
+    .getByRole("button", { name: "Avvis og steng ute Ola Vest" })
+    .click();
+
+  const barred = applications.getByRole("listitem").filter({
+    hasText: "Ola Vest",
+  });
+  await expect(barred.getByText(/Kan ikke søke eller inviteres/)).toBeVisible();
+  // A barred friend is not offered as someone to invite.
+  await expect(
+    applications.getByRole("option", { name: "Ola Vest" }),
+  ).toHaveCount(0);
+  expect((await apply()).status()).toBe(403);
+
+  await barred.getByRole("button", { name: "Opphev utestengelsen" }).click();
+  await expect(applications.getByText("Stengt ute fra nye forsøk")).toHaveCount(
+    0,
+  );
+  expect((await apply()).ok()).toBe(true);
+  await page.reload();
+  await expect(
+    applications.getByRole("button", { name: "Godkjenn Ola Vest" }),
+  ).toBeVisible();
+  await ola.close();
   expect(problems).toEqual([]);
 });

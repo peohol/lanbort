@@ -37,6 +37,7 @@ import {
 import {
   acceptRoleInvitation,
   inviteAdministrator,
+  offerOwnership,
   resignAdministrator,
 } from "./role-commands";
 import {
@@ -437,6 +438,38 @@ describe("closed → open (PS-ENV-008)", () => {
       await output(joinEnvironment, silent, { environmentId, answers: [] }),
     ).toMatchObject({ state: "active" });
     expect(await history(environmentId)).toEqual(["closed", "open", "hidden"]);
+  });
+
+  it("keeps a passive administrator listed, but not acting or taking over", async () => {
+    const owner = await user();
+    const environmentId = await environment(owner, "closed");
+    const administrator = await member(environmentId, owner);
+    await makeAdministrator(environmentId, owner, administrator);
+    const { proposal } = await changeType(
+      owner,
+      environmentId,
+      "closed",
+      "open",
+    );
+    await respond(owner, environmentId, proposal!.id, true);
+    passDays(typeChangeDays.consent);
+    await conclude();
+
+    const { holders } = await executeQuery(domain, listRoles, {
+      actor: owner,
+      input: { environmentId },
+    });
+    expect(
+      Object.fromEntries(
+        holders.map((holder) => [holder.userId, holder.canAct]),
+      ),
+    ).toEqual({ [owner.userId]: true, [administrator.userId]: false });
+    await expect(
+      run(offerOwnership, owner, {
+        environmentId,
+        userId: administrator.userId,
+      }),
+    ).rejects.toMatchObject({ code: "conflict" });
   });
 });
 

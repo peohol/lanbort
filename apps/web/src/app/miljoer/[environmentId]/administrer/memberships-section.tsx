@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Field } from "@/components/field";
 import { MoreActions } from "@/components/more-actions";
 import { Tag } from "@/components/tag";
+import { formatTime } from "@/presentation/dates";
 import {
   awaitsDecision,
   membershipStatus,
@@ -30,7 +31,7 @@ export const memberName = (membership: { realName: string | null }) =>
  */
 export function MembershipsSection({
   environment,
-  memberships: { memberships, restrictedUserIds },
+  memberships: { memberships, restrictions },
   friends,
   ownUserId,
 }: {
@@ -39,7 +40,7 @@ export function MembershipsSection({
   friends: readonly SocialContact[];
   ownUserId: string;
 }) {
-  const restricted = new Set(restrictedUserIds);
+  const restricted = new Set(restrictions.map(({ userId }) => userId));
   const byTask = (...tasks: ReturnType<typeof membershipTask>[]) =>
     memberships.filter((membership) =>
       tasks.includes(membershipTask(membership)),
@@ -49,12 +50,6 @@ export function MembershipsSection({
   );
   const confirming = byTask("confirmation");
   const invited = byTask("invitation");
-  const restrictedMembers = memberships.filter((membership) =>
-    restricted.has(membership.userId),
-  );
-  const unnamedRestrictions = restrictedUserIds.filter(
-    (userId) => !memberships.some((membership) => membership.userId === userId),
-  ).length;
   const nothing =
     deciding.length + confirming.length + invited.length === 0 &&
     restricted.size === 0;
@@ -91,37 +86,16 @@ export function MembershipsSection({
           />
         )}
       />
-      {(restrictedMembers.length > 0 || unnamedRestrictions > 0) && (
-        <>
-          <h3>Stengt ute fra nye forsøk</h3>
-          <MembershipList
-            memberships={restrictedMembers}
-            environment={environment}
-            actions={(membership) => (
-              <ActionButton
-                label="Opphev utestengelsen"
-                path="/api/environments/restrictions/lift"
-                body={{
-                  environmentId: environment.id,
-                  userId: membership.userId,
-                }}
-              />
-            )}
-          />
-          {unnamedRestrictions > 0 && (
-            <p className="quiet">
-              {unnamedRestrictions === 1
-                ? "I tillegg er én tidligere søker stengt ute."
-                : `I tillegg er ${unnamedRestrictions} tidligere søkere stengt ute.`}
-            </p>
-          )}
-        </>
-      )}
+      <Restrictions
+        environmentId={environment.id}
+        restrictions={restrictions}
+      />
       <Invite
         environment={environment}
         candidates={friends.filter(
           (friend) =>
             friend.userId !== ownUserId &&
+            !restricted.has(friend.userId) &&
             !memberships.some(
               (membership) => membership.userId === friend.userId,
             ),
@@ -281,8 +255,52 @@ function Decision({
 }
 
 /**
+ * Those barred from new attempts (PS-ENV-004), also once the application
+ * that was rejected has ended, so an administrator can let them try again.
+ * Until then they can neither apply nor be invited.
+ */
+function Restrictions({
+  environmentId,
+  restrictions,
+}: {
+  environmentId: string;
+  restrictions: EnvironmentMemberships["restrictions"];
+}) {
+  if (restrictions.length === 0) return null;
+
+  return (
+    <>
+      <h3>Stengt ute fra nye forsøk</h3>
+      <ul className="entries">
+        {restrictions.map((restriction) => {
+          const nameId = `utestengt-${restriction.userId}`;
+          const name = memberName(restriction);
+
+          return (
+            <li key={restriction.userId} className="entry">
+              <strong id={nameId}>{name}</strong>
+              <span className="entry-detail">
+                {`Stengt ute ${formatTime(restriction.imposedAt)}. Kan ikke søke eller inviteres.`}
+              </span>
+              <div className="actions" role="group" aria-labelledby={nameId}>
+                <ActionButton
+                  label="Opphev utestengelsen"
+                  path="/api/environments/restrictions/lift"
+                  body={{ environmentId, userId: restriction.userId }}
+                />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
+/**
  * PS-ENV-010: administrators invite existing accounts, here the friends
- * who are not already members. An open environment needs no invitation.
+ * who are neither members nor barred. An open environment needs no
+ * invitation.
  */
 function Invite({
   environment,
@@ -308,7 +326,7 @@ function Invite({
           : "Du kan invitere vennene dine. Andre kan søke fra miljøets side."}
       </p>
       {candidates.length === 0 ? (
-        <p className="quiet">Alle vennene dine er allerede med.</p>
+        <p className="quiet">Ingen av vennene dine kan inviteres nå.</p>
       ) : (
         <CommandForm
           path="/api/environments/memberships/invite"

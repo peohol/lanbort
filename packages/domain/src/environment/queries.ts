@@ -349,7 +349,8 @@ export const listOwnEnvironments = defineQuery({
  * What administrators need to handle memberships: every current membership
  * with the member's name and the answers given to the membership process
  * (UX-PRIV-009: shown as membership information, not as profile data), and
- * who is barred from new attempts.
+ * who is barred from new attempts by name, also once their membership has
+ * ended, so an administrator can lift the bar (PS-ENV-004).
  */
 export const listMemberships = defineQuery({
   name: "environment_membership.list",
@@ -375,11 +376,20 @@ export const listMemberships = defineQuery({
       await listCurrentMemberships(db, input.environmentId)
     ).filter(visible);
     const restrictions = await db
-      .selectFrom("app.environment_access_restrictions")
-      .select("user_id")
-      .where("environment_id", "=", input.environmentId)
-      .where("lifted_at", "is", null)
-      .orderBy("imposed_at")
+      .selectFrom("app.environment_access_restrictions as restriction")
+      .leftJoin(
+        "app.profiles as profile",
+        "profile.user_id",
+        "restriction.user_id",
+      )
+      .select([
+        "restriction.user_id",
+        "restriction.imposed_at",
+        "profile.real_name",
+      ])
+      .where("restriction.environment_id", "=", input.environmentId)
+      .where("restriction.lifted_at", "is", null)
+      .orderBy("restriction.imposed_at")
       .execute();
 
     return {
@@ -391,7 +401,7 @@ export const listMemberships = defineQuery({
           db,
           memberships.map((membership) => membership.id),
         ),
-        restrictedUserIds: restrictions.map((row) => row.user_id),
+        restrictions,
       },
       context: undefined,
     };
@@ -407,7 +417,11 @@ export const listMemberships = defineQuery({
       userId: membership.userId,
       realName: membership.realName,
     })),
-    restrictedUserIds: resource.restrictedUserIds,
+    restrictions: resource.restrictions.map((row) => ({
+      userId: row.user_id,
+      realName: row.real_name,
+      imposedAt: row.imposed_at.toISOString(),
+    })),
   }),
 });
 
@@ -612,6 +626,7 @@ export const listRoles = defineQuery({
       realName: resource.names.get(admin.userId) ?? null,
       roles: admin.isOwner ? ["owner", "administrator"] : ["administrator"],
       administratorSince: admin.administratorSince.toISOString(),
+      canAct: admin.canAct,
     })),
     invitations: resource.invitations.map((invitation) => ({
       id: invitation.id,

@@ -1,6 +1,7 @@
 import type {
   AdministeredMembership,
   EnvironmentRole,
+  EnvironmentRoles,
   EnvironmentType,
   HomeItem,
   HomeItemKind,
@@ -122,6 +123,32 @@ export const proposalWaitsFor: Record<"consent" | "vote", string> = {
     "Venter på at medlemmene godtar. Den som ikke godtar innen fristen, blir passiv.",
   vote: "Venter på medlemmenes svar. Minst to tredeler av de aktive medlemmene må godta, ellers forblir miljøet skjult.",
 };
+
+type Holder = EnvironmentRoles["holders"][number];
+
+/**
+ * Who the owner may offer ownership to (PS-ENV-013): another administrator
+ * who can act, that is with an active membership, as the domain requires.
+ */
+export const ownershipRecipients = (
+  holders: readonly Holder[],
+  ownUserId: string,
+) =>
+  holders.filter(
+    (holder) =>
+      holder.userId !== ownUserId &&
+      !holder.roles.includes("owner") &&
+      holder.canAct,
+  );
+
+/**
+ * Whether the viewer may give up the administrator role: never the owner,
+ * who hands over or winds down first, and never the last administrator.
+ */
+export const mayResign = (holders: readonly Holder[], ownUserId: string) =>
+  holders.some(
+    (holder) => holder.userId === ownUserId && !holder.roles.includes("owner"),
+  ) && holders.some((holder) => holder.userId !== ownUserId);
 
 /** How administrators group the memberships they handle. */
 export type MembershipTask =

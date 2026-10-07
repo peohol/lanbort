@@ -1,10 +1,16 @@
-import type { AdministeredMembership, HomeItemKind } from "@lanbort/contracts";
+import type {
+  AdministeredMembership,
+  EnvironmentRoles,
+  HomeItemKind,
+} from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import {
   administrationHref,
   awaitsDecision,
   membershipStatus,
+  mayResign,
   membershipTask,
+  ownershipRecipients,
   proposalWaitsFor,
   typeChoices,
 } from "./environment-admin";
@@ -97,6 +103,45 @@ describe("memberships administrators handle", () => {
       "Venter på mer informasjon fra søkeren",
     );
     expect(membershipTask(membership({ state: "passive" }))).toBeNull();
+  });
+});
+
+describe("role actions follow the domain's rules (PS-ENV-013)", () => {
+  const holder = (
+    userId: string,
+    details: Partial<EnvironmentRoles["holders"][number]> = {},
+  ) => ({
+    userId,
+    realName: null,
+    roles: ["administrator" as const],
+    administratorSince: "2026-10-01T00:00:00.000Z",
+    canAct: true,
+    ...details,
+  });
+  const owner = holder("owner", { roles: ["owner", "administrator"] });
+
+  it("offers ownership only to other administrators who can act", () => {
+    const active = holder("active");
+    const passive = holder("passive", { canAct: false });
+
+    expect(
+      ownershipRecipients([owner, active, passive], "owner").map(
+        ({ userId }) => userId,
+      ),
+    ).toEqual(["active"]);
+  });
+
+  it("lets an administrator resign, but not the owner or the last one", () => {
+    const only = holder("only");
+
+    expect(mayResign([owner, holder("admin")], "admin")).toBe(true);
+    expect(mayResign([owner, holder("admin")], "owner")).toBe(false);
+    // Without an owner (a vacancy), the sole administrator stays.
+    expect(mayResign([only], "only")).toBe(false);
+    // A passive administrator still counts, as the domain counts them.
+    expect(
+      mayResign([only, holder("passive", { canAct: false })], "only"),
+    ).toBe(true);
   });
 });
 

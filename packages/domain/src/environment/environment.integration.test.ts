@@ -448,9 +448,14 @@ describe("closed environments", () => {
       }),
     ).toEqual({ membershipId, state: "ended" });
     expect((await read(applicant, environmentId)).membership).toBeNull();
-    expect((await memberships(owner, environmentId)).restrictedUserIds).toEqual(
-      [applicant.userId],
-    );
+    // The ended application leaves the bar, named so it can be lifted.
+    expect((await memberships(owner, environmentId)).restrictions).toEqual([
+      {
+        userId: applicant.userId,
+        realName: expect.any(String),
+        imposedAt: expect.any(String),
+      },
+    ]);
 
     await expect(join(applicant, environmentId)).rejects.toMatchObject({
       code: "forbidden",
@@ -467,6 +472,7 @@ describe("closed environments", () => {
       run(liftRestriction, owner, { environmentId, userId: applicant.userId }),
     ).rejects.toMatchObject({ code: "not_found" });
     expect((await join(applicant, environmentId)).state).toBe("pending");
+    expect((await memberships(owner, environmentId)).restrictions).toEqual([]);
   });
 
   it("lets the applicant withdraw", async () => {

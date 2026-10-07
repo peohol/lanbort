@@ -8,11 +8,13 @@ import {
   listRoles,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionButton } from "@/components/action-button";
 import { PageHeader } from "@/components/page-header";
 import { StatusCard } from "@/components/status-card";
 import { ContextTag, Tag } from "@/components/tag";
+import { environmentCasesHref } from "@/navigation/cases";
 import { environmentHref } from "@/navigation/routes";
 import { formatTime } from "@/presentation/dates";
 import { environmentTypeNames } from "@/presentation/environments";
@@ -114,7 +116,7 @@ export default async function EnvironmentAdministrationPage({
       <nav aria-label="På denne siden" className="link-row">
         <a href="#innmeldinger">Innmeldinger</a> <a href="#ting">Ting</a>{" "}
         <a href="#roller">Roller</a> <a href="#innstillinger">Innstillinger</a>{" "}
-        <a href="#miljotype">Miljøtype</a>
+        <a href="#miljotype">Miljøtype</a> <a href="#saker">Saker</a>
       </nav>
       <MembershipsSection
         environment={environment}
@@ -138,6 +140,16 @@ export default async function EnvironmentAdministrationPage({
       <SettingsSection environment={environment} />
       <TypeSection environment={environment} />
       {isOwner && <WindDownSection environment={environment} />}
+      <section aria-labelledby="saker">
+        <h2 id="saker">Saker</h2>
+        <p>
+          Meldinger og meklinger som miljøet har ansvar for, ligger i{" "}
+          <Link href={environmentCasesHref(environment.id)}>
+            miljøets saker
+          </Link>
+          .
+        </p>
+      </section>
     </main>
   );
 }

@@ -9,11 +9,14 @@ import { ConfirmAction } from "@/components/confirm-action";
 import { describedBy, Field } from "@/components/field";
 import { MoreActions } from "@/components/more-actions";
 import { ReauthenticatedAction } from "@/components/reauthenticated-action";
+import { Tag } from "@/components/tag";
 import { formatTime } from "@/presentation/dates";
 import { environmentRoleNames } from "@/presentation/environments";
 import {
   describeRoles,
+  mayResign,
   membershipTask,
+  ownershipRecipients,
 } from "@/presentation/environment-admin";
 import { memberName } from "./memberships-section";
 
@@ -41,6 +44,14 @@ export function RolesSection({
   const handoverPending = roles.invitations.some(
     (invitation) => invitation.role === "owner",
   );
+  const recipients = new Set(
+    isOwner && !handoverPending
+      ? ownershipRecipients(roles.holders, ownUserId).map(
+          (holder) => holder.userId,
+        )
+      : [],
+  );
+  const resignable = mayResign(roles.holders, ownUserId);
   const candidates = members.filter(
     (member) =>
       membershipTask(member) === "member" &&
@@ -67,8 +78,15 @@ export function RolesSection({
               <span className="entry-detail">
                 {`${describeRoles(holder.roles)}, administrator siden ${formatTime(holder.administratorSince)}`}
               </span>
+              {!holder.canAct && (
+                <span>
+                  <Tag tone="waiting">
+                    Ikke aktivt medlem, så kan ikke administrere nå
+                  </Tag>
+                </span>
+              )}
               <div className="actions" role="group" aria-labelledby={nameId}>
-                {isOwner && !self && !handoverPending && (
+                {recipients.has(holder.userId) && (
                   <ReauthenticatedAction
                     label="Gi eierskapet"
                     title={`Gi eierskapet til ${name}`}
@@ -99,7 +117,7 @@ export function RolesSection({
                     />
                   </MoreActions>
                 )}
-                {self && !ownerHere && (
+                {self && resignable && (
                   <MoreActions>
                     <ConfirmAction
                       label="Gå av som administrator"
@@ -122,8 +140,14 @@ export function RolesSection({
       </ul>
       {isOwner && (
         <p className="help">
-          Som eier gir du eierskapet til en annen administrator eller avvikler
-          miljøet før du kan gå av.
+          Som eier gir du eierskapet til en annen administrator som er aktivt
+          medlem, eller avvikler miljøet, før du kan gå av.
+        </p>
+      )}
+      {!isOwner && !resignable && (
+        <p className="help">
+          Du er den eneste administratoren, så du kan ikke gå av før noen andre
+          er administrator.
         </p>
       )}
       {roles.invitations.length > 0 && (
