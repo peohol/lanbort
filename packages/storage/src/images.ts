@@ -9,6 +9,13 @@ export const storedImageMaxSide = 2048;
 /** Refuses decompression bombs before decoding: about 50 megapixels. */
 const maxInputPixels = 50_000_000;
 
+export interface NormalizeOptions {
+  /** Longest side kept, in pixels; smaller images are never enlarged. */
+  readonly maxSide?: number;
+  /** WebP quality, 1–100. */
+  readonly quality?: number;
+}
+
 export interface NormalizedImage {
   readonly bytes: Uint8Array;
   readonly contentType: "image/webp";
@@ -25,6 +32,7 @@ export interface NormalizedImage {
  */
 export async function normalizeImage(
   bytes: Uint8Array,
+  { maxSide = storedImageMaxSide, quality = 82 }: NormalizeOptions = {},
 ): Promise<NormalizedImage | null> {
   try {
     const input = sharp(bytes, {
@@ -40,12 +48,12 @@ export async function normalizeImage(
     const { data, info } = await input
       .rotate()
       .resize({
-        width: storedImageMaxSide,
-        height: storedImageMaxSide,
+        width: maxSide,
+        height: maxSide,
         fit: "inside",
         withoutEnlargement: true,
       })
-      .webp({ quality: 82 })
+      .webp({ quality })
       .toBuffer({ resolveWithObject: true });
 
     return {

@@ -1,7 +1,7 @@
 import { readPublishedObjectImage } from "@lanbort/domain";
 import { errorResponse } from "@/server/http/errors";
 import { route } from "@/server/http/route";
-import { objectImageServices } from "@/server/object-images";
+import { imageFileResponse, objectImageServices } from "@/server/images";
 
 /**
  * `?environmentId=&objectId=&imageId=`: an image of an object the caller
@@ -19,10 +19,5 @@ export const GET = route.user(async ({ request, actor, domain }) => {
     input: Object.fromEntries(request.nextUrl.searchParams),
   });
 
-  return new Response(new Uint8Array(image.bytes), {
-    headers: {
-      "content-type": image.contentType,
-      "content-disposition": "inline",
-    },
-  });
+  return imageFileResponse(image);
 });

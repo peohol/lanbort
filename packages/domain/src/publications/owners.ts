@@ -2,7 +2,7 @@ import type { Database } from "@lanbort/database";
 import type { ShownOwner } from "@lanbort/contracts";
 import type { Kysely } from "kysely";
 import { realNames } from "../account/store";
-import { personPageIds, profileIdIn } from "../people/queries";
+import { linkIn, personLinks } from "../people/queries";
 
 /** An object as it is found in one environment. */
 export interface FoundThrough {
@@ -64,7 +64,7 @@ export async function environmentOwners(
 
   const userIds = rows.map((row) => row.user_id);
   const names = await realNames(db, userIds);
-  const pages = await personPageIds(db, viewerId, userIds, now);
+  const links = await personLinks(db, viewerId, userIds, now);
   const named = rows.flatMap((row) => {
     const realName = names.get(row.user_id);
     return realName === undefined ? [] : [{ ...row, realName }];
@@ -81,7 +81,7 @@ export async function environmentOwners(
   for (const row of named) {
     owners.set(row.object_id, [
       ...(owners.get(row.object_id) ?? []),
-      { realName: row.realName, profileId: profileIdIn(pages, row.user_id) },
+      { realName: row.realName, ...linkIn(links, row.user_id) },
     ]);
   }
 

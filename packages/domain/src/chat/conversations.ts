@@ -23,6 +23,7 @@ import { z } from "zod";
 import { rateLimits } from "../abuse/rate-limits";
 import { takesNewActivity } from "../account/model";
 import { accountStatuses, realNames } from "../account/store";
+import { linkIn, personLinks } from "../people/queries";
 import type { Actor } from "../actor";
 import { defineCommand } from "../commands/command";
 import { defineQuery } from "../commands/query";
@@ -300,10 +301,12 @@ async function presentConversation(
   viewerId: string,
   device: ChatDeviceRecord | null,
   open: boolean,
+  now: Date,
 ) {
   const others = conversation.participantIds.filter((id) => id !== viewerId);
-  const [names, members, waiting] = await Promise.all([
+  const [names, links, members, waiting] = await Promise.all([
     realNames(db, others),
+    personLinks(db, viewerId, others, now),
     groupMembers(db, conversation.id, conversation.generation),
     device
       ? db
@@ -329,6 +332,7 @@ async function presentConversation(
     others: others.map((userId) => ({
       userId,
       realName: names.get(userId) ?? null,
+      ...linkIn(links, userId),
     })),
     loanId: conversation.loanLogistics?.loanId ?? null,
     open,
@@ -342,7 +346,7 @@ export const readChatConversation = defineQuery({
   name: "chat.read_conversation",
   input: chatConversationTargetSchema,
   policy: readChatConversationPolicy,
-  load: async ({ db, actor, input }) => {
+  load: async ({ db, actor, input, now }) => {
     const access = await loadAccess(db, actor, input.conversationId);
 
     return {
@@ -355,6 +359,7 @@ export const readChatConversation = defineQuery({
               actingUserId(actor),
               access.device,
               access.open,
+              now,
             )
           : null,
       },
@@ -375,7 +380,7 @@ export const listChatConversations = defineQuery({
   name: "chat.list_conversations",
   input: z.strictObject({}),
   policy: listChatConversationsPolicy,
-  load: async ({ db, actor }) => {
+  load: async ({ db, actor, now }) => {
     const userId = actingUserId(actor);
     const rows = await db
       .selectFrom("app.chat_participants as participant")
@@ -412,6 +417,7 @@ export const listChatConversations = defineQuery({
           userId,
           device,
           await conversationOpen(db, conversation),
+          now,
         ),
       );
     }

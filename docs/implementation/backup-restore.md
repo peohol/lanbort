@@ -63,7 +63,7 @@ Fremgangsmåten er den samme om backupen er en manuell dump eller, senere, en ba
    Kommandoen kan kjøres flere ganger; det som er gjort, gjøres ikke igjen. Svarer den `Ready to open`, er databasen klar.
 6. **Åpne appen** ved å oppheve pausen. Outbox-arbeideren sletter da innloggingsidentitetene til slettede kontoer og foreldreløse bildefiler.
 7. **Fortell brukerne** hvilket tidsrom som gikk tapt, så de kan gjøre det de gjorde da, på nytt.
-8. **Avvikle det gamle prosjektet** når det nye er åpnet og fungerer, hvis gjenopprettingen gikk til et nytt prosjekt. Det gamle inneholder fortsatt slettede data og bildefiler som det nye ikke kjenner til, og som etterarbeidet derfor ikke kan slette. Kopier først over bilder som fortsatt hører til objekter i den gjenopprettede databasen, og slett deretter prosjektet. Sletting kan ikke angres og gjøres bare etter klarsignal fra produkteier.
+8. **Avvikle det gamle prosjektet** når det nye er åpnet og fungerer, hvis gjenopprettingen gikk til et nytt prosjekt. Det gamle inneholder fortsatt slettede data og bildefiler som det nye ikke kjenner til, og som etterarbeidet derfor ikke kan slette. Kopier først over bilder som fortsatt hører til objekter og profiler i den gjenopprettede databasen, og slett deretter prosjektet. Sletting kan ikke angres og gjøres bare etter klarsignal fra produkteier.
 
 `pnpm ops:restore verify` kjører bare migrasjonssjekken og sjekkene, for eksempel etter en vanlig vedlikeholdsjobb.
 

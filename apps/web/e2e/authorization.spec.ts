@@ -2,7 +2,12 @@ import { randomUUID } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type APIResponse, expect, test } from "@playwright/test";
+import {
+  type APIRequestContext,
+  type APIResponse,
+  expect,
+  test,
+} from "@playwright/test";
 import sharp from "sharp";
 import {
   accountId,
@@ -51,6 +56,7 @@ interface Ids {
   questionId: string;
   conversationId: string;
   linkRequestId: string;
+  pictureId: string;
   userId: string;
 }
 
@@ -92,6 +98,7 @@ const probes: Record<string, (ids: Ids) => Record<string, string>> = {
   "objects/[objectId]/images/[imageId]": () => ({}),
   "objects/[objectId]/publications": () => ({}),
   people: (ids) => ({ userId: ids.userId }),
+  "people/pictures/[pictureId]": () => ({}),
   "search/objects": (ids) => ({
     environmentId: ids.environmentId,
     categoryId: "annet",
@@ -159,6 +166,20 @@ async function seen(response: APIResponse, sent: readonly string[]) {
   };
 }
 
+/** Uploads a small photo to `path` and returns what the API answers. */
+async function uploadImage(context: APIRequestContext, path: string) {
+  const upload = await context.post(path, {
+    data: await sharp({
+      create: { width: 40, height: 30, channels: 3, background: "#4a7" },
+    })
+      .jpeg()
+      .toBuffer(),
+    headers: { "content-type": "image/jpeg", "Idempotency-Key": randomUUID() },
+  });
+  expect(upload.ok(), await upload.text()).toBe(true);
+  return upload.json();
+}
+
 test("a hidden environment answers a stranger as if nothing in it existed", async ({
   request,
   playwright,
@@ -213,16 +234,14 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
   });
   // Also visible to the lender's friends, which the stranger is not.
   await showToFriends(lender.context, objectId);
-  const upload = await lender.context.post(`/api/objects/${objectId}/images`, {
-    data: await sharp({
-      create: { width: 40, height: 30, channels: 3, background: "#4a7" },
-    })
-      .jpeg()
-      .toBuffer(),
-    headers: { "content-type": "image/jpeg", "Idempotency-Key": randomUUID() },
-  });
-  expect(upload.ok(), await upload.text()).toBe(true);
-  const { imageId } = await upload.json();
+  const { imageId } = await uploadImage(
+    lender.context,
+    `/api/objects/${objectId}/images`,
+  );
+  const { pictureId } = await uploadImage(
+    lender.context,
+    "/api/account/picture",
+  );
   const { termsVersion } = await (
     await borrower.context.get(
       `/api/loan-requests/preview?objectId=${objectId}&environmentId=${environmentId}`,
@@ -289,6 +308,7 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
     questionId,
     conversationId,
     linkRequestId,
+    pictureId,
     userId: lender.userId,
   };
   const nowhere: Ids = {

@@ -54,6 +54,15 @@ describe("normalizeImage (PS-OBJ-002, malicious uploads)", () => {
     expect(small).toMatchObject({ width: 64, height: 32 });
   });
 
+  it("keeps no more than a smaller longest side when asked", async () => {
+    const picture = await normalizeImage(
+      await photo(1000, 800).jpeg().toBuffer(),
+      { maxSide: 384 },
+    );
+
+    expect(picture).toMatchObject({ width: 384, height: 307 });
+  });
+
   it.each([
     [
       "an SVG with script",

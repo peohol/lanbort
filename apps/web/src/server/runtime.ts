@@ -12,7 +12,7 @@ import {
   outboxConsumers,
 } from "@lanbort/domain";
 import { serverEnv } from "./env";
-import { objectImageServices } from "./object-images";
+import { objectImageServices, profilePictureServices } from "./images";
 
 /**
  * The composition root: the only place that wires the database, the auth
@@ -51,6 +51,7 @@ function identityAdmin(): IdentityProviderAdmin | undefined {
 const consumers = outboxConsumers({
   domain: () => runtime.domain(),
   imageStore: () => objectImageServices()?.store,
+  pictureStore: () => profilePictureServices()?.store,
   identities: identityAdmin,
 });
 

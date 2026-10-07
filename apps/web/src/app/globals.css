@@ -408,10 +408,64 @@ button:disabled,
   border-radius: var(--radius-pill);
 }
 
-.avatar {
+/* A profile picture, or initials where none is shown, in the picture shape
+   set in presentation/profile-picture.ts (OD-0027). Its height follows the
+   shape's proportions. */
+.profile-picture {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--picture-size);
+  height: auto;
+  overflow: hidden;
+  object-fit: cover;
+  vertical-align: middle;
+  background: var(--color-sunken);
+}
+
+.profile-picture-small {
+  --picture-size: 1.75rem;
+}
+
+.profile-picture-medium {
+  --picture-size: 2.25rem;
+}
+
+.profile-picture-large {
+  --picture-size: 7rem;
+}
+
+.profile-initials {
+  font-size: calc(var(--picture-size) * 0.4);
   font-weight: 700;
+  line-height: 1;
   color: var(--color-on-accent);
   background: var(--color-accent);
+}
+
+/* A name with the person's picture before it. */
+.person-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.page-picture {
+  margin-bottom: var(--space-3);
+}
+
+/* The picture editor: the page stays put while fingers move the photo. */
+.picture-cropper,
+.profile-picture-settings {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.picture-stage {
+  touch-action: none;
+  border-radius: var(--radius-m);
+  background: var(--color-sunken);
 }
 
 .badge {

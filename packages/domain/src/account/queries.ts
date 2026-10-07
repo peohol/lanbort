@@ -1,10 +1,17 @@
-import type { AccountStatusReason, OwnAccount } from "@lanbort/contracts";
+import type {
+  AccountStatusReason,
+  OwnAccount,
+  ProfilePictureVisibility,
+} from "@lanbort/contracts";
 import { z } from "zod";
 import type { AccountStatus } from "../actor";
 import { defineQuery } from "../commands/query";
 import { readOwnAccount } from "./policies";
 
-/** The signed-in user's own account, profile and verified e-mail. */
+/**
+ * The signed-in user's own account, profile with its picture, and verified
+ * e-mail.
+ */
 export const getOwnAccount = defineQuery({
   name: "account.read",
   input: z.strictObject({}),
@@ -17,6 +24,7 @@ export const getOwnAccount = defineQuery({
     const row = await db
       .selectFrom("app.users as user")
       .leftJoin("app.profiles as profile", "profile.user_id", "user.id")
+      .leftJoin("app.profile_pictures as picture", "picture.user_id", "user.id")
       .leftJoin("app.verified_contacts as contact", (join) =>
         join
           .onRef("contact.user_id", "=", "user.id")
@@ -27,6 +35,8 @@ export const getOwnAccount = defineQuery({
         "user.status",
         "user.status_reason",
         "profile.real_name",
+        "profile.picture_visibility",
+        "picture.id as picture_id",
         "contact.address",
       ])
       .where("user.id", "=", actor.userId)
@@ -40,6 +50,12 @@ export const getOwnAccount = defineQuery({
             statusReason: row.status_reason as AccountStatusReason | null,
             realName: row.real_name,
             email: row.address,
+            picture: {
+              pictureId: row.picture_id,
+              // A profile is shown generally until its owner chooses otherwise.
+              visibility: (row.picture_visibility ??
+                "general") as ProfilePictureVisibility,
+            },
           },
           context: undefined,
         }
@@ -51,5 +67,6 @@ export const getOwnAccount = defineQuery({
     statusReason: resource.statusReason,
     realName: resource.realName,
     email: resource.email,
+    picture: resource.picture,
   }),
 });

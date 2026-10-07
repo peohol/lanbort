@@ -180,8 +180,12 @@ describe("timeline (UX-IA-008, UX-INT-008)", () => {
       .execute();
 
     expect((await loanOf(borrower, loanId)).parties).toEqual({
-      borrower: { realName: "Test Testesen", profileId: borrower.userId },
-      lender: { realName: null, profileId: null },
+      borrower: {
+        realName: "Test Testesen",
+        profileId: borrower.userId,
+        pictureId: null,
+      },
+      lender: { realName: null, profileId: null, pictureId: null },
     });
     expect((await historyOf(borrower, loanId)).entries[0]?.actor).toEqual({
       you: false,

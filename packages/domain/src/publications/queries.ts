@@ -42,7 +42,7 @@ import {
 import { loadAvailabilityBlocks } from "../objects/blocks";
 import {
   objectImageKey,
-  type ObjectImageStore,
+  type ImageStore,
   readImageFile,
 } from "../objects/images";
 import {
@@ -725,7 +725,7 @@ export const publishedImageFile = defineQuery({
 /** An object's image, for those who find or review it in the environment. */
 export function readPublishedObjectImage(
   domain: Pick<DomainContext, "db" | "clock">,
-  store: ObjectImageStore,
+  store: ImageStore,
   request: { actor: Actor; input: unknown },
 ): Promise<{ bytes: Uint8Array; contentType: string }> {
   return readImageFile(domain, store, publishedImageFile, request);
