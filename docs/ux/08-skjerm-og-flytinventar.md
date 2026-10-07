@@ -221,7 +221,47 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 - **Ser / handler:** deltakerne. Ved første kontakt mellom ikke-venner er det bare mottakeren av den strukturerte henvendelsen som kan åpne fri samtale.
 - **Regler:** UX-IA-001, UX-EXC-004, PS-COM-001, PS-COM-004–007, PS-COM-009, PS-USR-005.
 - **Forløp:** begge.
-- **UI-pakke:** WP-80; åpning av fri samtale fra strukturert kontakt, demping, arkivering og start fra personens side står under «Senere» i UI-planen.
+- **UI-pakke:** WP-80, med enhetene under [enheter for privat chat](#enheter-for-privat-chat); åpning av fri samtale fra strukturert kontakt, demping, arkivering og start fra personens side står under «Senere» i UI-planen.
+
+#### Enheter for privat chat
+
+Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene gir ingen tilgang til samtalene, og en ny enhet ser bare meldinger som sendes etter at den ble koblet til ([ADR-0010](../architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md)). Flatene under finnes allerede (WP-43) og tas over på designsystemet i WP-80 uten å endre hva de gjør. Som resten av privat chat er de av for ekte brukere til Port C, som krever at nøkkel- og enhetstap har definert UX ([kvalitetsportene](../implementation/quality-gates.md)).
+
+##### Slå på privat chat på første enhet
+
+- **Oppgave:** ta i bruk privat chat første gang, slik at denne enheten blir den første som kan lese samtalene.
+- **Tilstander:** ikke slått på, med kort forklaring og «Slå på privat chat»; slått på, videre til samtalene; «Om krypteringen» sier hva krypteringen beskytter mot og ikke, og at ingen får vite om en melding er lest; chat er åpen i en annen fane; kunne ikke hentes, prøv igjen.
+- **Ser / handler:** brukeren selv, på enheten.
+- **Regler:** PS-COM-004, PS-COM-005, PS-NFR-007, ADR-0010 punkt 3, 13 og 14.
+- **Forløp:** normal.
+- **UI-pakke:** WP-80 (finnes fra WP-43).
+
+##### Koble til en ny enhet
+
+- **Oppgave:** få privat chat på en enhet til når kontoen allerede har chat på en annen.
+- **Tilstander:** enheten er ikke koblet, med forklaring om at den må godkjennes fra en annen enhet og bare ser nye meldinger; QR-kode og en kode på 26 tegn for den som ikke kan skanne; venter på godkjenning; koblet, videre til samtalene; koblingen ble ikke fullført eller koden har utløpt, med ny kode; allerede koblet; enheten har mistet nøklene (for eksempel fordi nettleserdataene er slettet) og må logge inn igjen og kobles på nytt.
+- **Ser / handler:** brukeren selv, på den nye enheten. Har brukeren ingen annen enhet med chat, vises veien til [tilbakestilling](#tilbakestill-privat-chat).
+- **Regler:** PS-COM-005, PS-NFR-007, ADR-0010 punkt 5 og 8.
+- **Forløp:** normal.
+- **UI-pakke:** WP-80 (finnes fra WP-43).
+
+##### Godkjenn en ny enhet fra en eksisterende enhet
+
+- **Oppgave:** på en enhet som allerede har chat: godkjenne den nye enheten ved å skanne QR-koden eller skrive inn koden.
+- **Tilstander:** skann med kameraet; skriv inn koden når kameraet mangler eller ikke kan brukes; enheten som ber om tilgang og når den ba, vises før brukeren godkjenner eller avbryter; godkjent; fant ingen enhet med koden (feil, utløpt eller allerede brukt).
+- **Ser / handler:** brukeren selv, på en godkjent enhet. Kameraet brukes bare på denne siden.
+- **Regler:** PS-COM-005, ADR-0010 punkt 5, UX-INT-003.
+- **Forløp:** normal.
+- **UI-pakke:** WP-80 (finnes fra WP-43). Overføring av gammel historikk ved kobling er ikke bygget (se [hull](#hull-flater-uten-ui-pakke)).
+
+##### Mine enheter
+
+- **Oppgave:** se hvilke enheter som kan lese de private samtalene, fjerne en tapt eller ukjent enhet, og finne veien til å koble til en ny.
+- **Tilstander:** enhetene med når de ble lagt til, og hvilken som er denne; enheter som venter på godkjenning nå; fjern en annen enhet, med konsekvensen at den stenges ute med en gang, logges ut og ikke kan lese nye meldinger; fjern denne enheten, med konsekvensen at den mister chatten og alt den har lagret av samtaler, og at brukeren logges ut her; fjernet.
+- **Ser / handler:** brukeren selv, på en godkjent enhet. Nås fra Samtaler.
+- **Regler:** UX-INT-007, PS-COM-005, ADR-0010 punkt 4 og 7.
+- **Forløp:** begge.
+- **UI-pakke:** WP-80 (finnes fra WP-43).
 
 #### Konto og innstillinger
 
@@ -350,6 +390,15 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 - **Regler:** UX-INT-007, UX-PRIV-010, PS-ADM-004–006, PS-USR-010.
 - **Forløp:** avvik.
 - **UI-pakke:** WP-80 på den eksisterende Konto-siden.
+
+#### Tilbakestill privat chat
+
+- **Oppgave:** få privat chat igjen når brukeren ikke lenger har noen godkjent enhet å koble fra.
+- **Tilstander:** konsekvensvisning før start: denne enheten får nye nøkler, alle andre enheter stenges ute, meldinger fra før kan ikke leses på nye enheter, og de brukeren skriver med får beskjed om at sikkerhetskoden er endret; kode sendt til e-posten for å bekrefte at det er brukeren; feil eller utløpt kode; for mange forsøk; tilbakestilt, med påkrevd varsel og e-post om tilbakestillingen. Hos kontaktene: «Sikkerhetskoden til … er endret», som må godtas før samtalen fortsetter.
+- **Ser / handler:** brukeren selv, fra en enhet som ikke er koblet eller har mistet nøklene, og fra Mine enheter. Kontaktene godtar den nye sikkerhetskoden i samtalen.
+- **Regler:** UX-INT-003, UX-INT-007, PS-COM-005, PS-NFR-007, ADR-0010 punkt 3, 7 og 8.
+- **Forløp:** avvik.
+- **UI-pakke:** WP-80 (finnes fra WP-43). Gjenoppretting med gjenopprettingsnøkkel uten å miste historikken er ikke bygget (se [hull](#hull-flater-uten-ui-pakke)), så tilbakestilling er i dag eneste vei når alle enheter er borte.
 
 ## Miljøadministrator
 
@@ -544,7 +593,7 @@ Alle sidene i UX-IA-modellens liste over sentrale sider er dekket:
 | Opprett/rediger objekt  | [Registrer og rediger en ting](#registrer-og-rediger-en-ting)                                                | WP-81                |
 | Miljø                   | [Miljøets side](#miljøets-side), [administrer miljøet](#administrer-miljøet)                                 | WP-84, WP-85         |
 | Lån / lånedetalj        | [Lån](#lån), [forespørselens side](#forespørselens-side), [lånets side](#lånets-side)                        | WP-80, WP-83, WP-87  |
-| Samtaler                | [Samtaler](#samtaler)                                                                                        | WP-80                |
+| Samtaler                | [Samtaler](#samtaler), [enheter for privat chat](#enheter-for-privat-chat), [tilbakestilling](#tilbakestill-privat-chat) | WP-80                |
 | Varslingssenter         | [Varslingssenteret](#varslingssenteret-og-varselslenker)                                                     | WP-80                |
 | Profil / bruker         | [Personens side](#personens-side)                                                                            | WP-86                |
 | Konto og innstillinger  | [Konto og innstillinger](#konto-og-innstillinger)                                                            | WP-80, WP-86, WP-88 |
@@ -560,6 +609,8 @@ Disse flatene følger av spesifikasjonen og UX-modellen, men ingen pakke i UI-pl
 - **Melding om mulig dødsfall** fra personens side eller et felles lån (PS-COM-015, UX-EXC-008).
 - **Medlemmer og utestengelse** for administratorer, inkludert å oppheve at noen er stengt ute (PS-ENV-004). Fjerning av aktive medlemmer venter på OD-0025.
 - **Plattformforvalterens inngrep** på kontoer og miljøer. Venter på OD-0023 og OD-0026.
+- **Varsel før utlogging på en enhet med privat chat** (ADR-0010 punkt 7). Konto-sidens «Logg ut» har ikke dette varselet ennå; «Fjern denne enheten» i Mine enheter sier hva enheten mister.
+- **Gjenopprettingsnøkkel og overføring av gammel historikk** for privat chat (ADR-0010 punkt 5 og 8). Begge er vedtatt som valgfrie for brukeren, men ikke bygget; til da er kobling fra en annen enhet eller tilbakestilling de eneste veiene.
 - Profilbilde, presentasjon og synlighet per profilfelt, og demping og arkivering av lånesamtalen, står allerede under «Senere» i UI-planen.
 
 ### Åpne beslutninger som berører flatene

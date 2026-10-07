@@ -47,9 +47,9 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 - **Ruter:** én modul med adressene til alle sider i planen (`navigation/routes.ts`), så pakkene lenker til hverandre før sidene finnes. `targetPages` peker bare til sider som finnes.
 - **Objektets side som ramme:** `/ting/[id]` velger visning for eiere eller for andre, med en enkel første versjon av hver som WP-82 og WP-83 bygger videre på. Mine ting og treff i Finn lenker dit.
 - **E-postlenken fra varsler:** `/?varsel=<id>` merker varselet lest og sender brukeren videre til konteksten, eller til Varsler når konteksten ikke har en side (UX-INT-010).
-- Eksisterende sider tas over på designsystemet uten å endre hva de gjør. Det inkluderer Konto-sidens eksisterende varslingsvalg, kontostatus, deaktivering/reaktivering og kontosletting.
+- Eksisterende sider tas over på designsystemet uten å endre hva de gjør. Det inkluderer Konto-sidens eksisterende varslingsvalg, kontostatus, deaktivering/reaktivering og kontosletting. Det inkluderer også privat chats enhetsflyter fra WP-43 ([ADR-0010](../architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md)): slå på chat på første enhet, koble til en ny enhet, godkjenn den fra en eksisterende enhet med QR eller kode, Mine enheter med fjerning av en tapt eller ukjent enhet, og tilbakestilling når ingen godkjent enhet er igjen, med konsekvensen for nøkler og gammel historikk. De er av for ekte brukere til Port C.
 
-**Skjermer og flyter:** app-skallet og alle eksisterende sider (utseende), objektets side (ramme), varselslenken.
+**Skjermer og flyter:** app-skallet og alle eksisterende sider (utseende), inkludert enhetsflytene for privat chat, objektets side (ramme), varselslenken.
 
 **Avhenger av:** ingenting.
 
@@ -185,4 +185,4 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 
 - Åpning av fri samtale fra en mottatt strukturert henvendelse, demping og arkivering av lånesamtalen (rest fra WP-44), og start av samtale fra personens side. Privat chat er av for ekte brukere til Port C.
 - Profilbilde, kort presentasjon og synlighetsvalg per profilfelt (PS-USR-002), når profilfeltene er fastsatt.
-- Flatene [skjerm- og flytinventaret](../ux/08-skjerm-og-flytinventar.md#hull-flater-uten-ui-pakke) viser at ingen pakke bygger ennå: melding om mulig dødsfall og administratorenes oversikt over medlemmer og utestengte.
+- Flatene [skjerm- og flytinventaret](../ux/08-skjerm-og-flytinventar.md#hull-flater-uten-ui-pakke) viser at ingen pakke bygger ennå: melding om mulig dødsfall, administratorenes oversikt over medlemmer og utestengte, og for privat chat varsel før utlogging, gjenopprettingsnøkkel og overføring av gammel historikk (ADR-0010).
