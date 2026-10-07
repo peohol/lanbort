@@ -9,7 +9,7 @@ Hver pakke bygger skjermer, ikke regler. Domene- og autorisasjonsregler ligger p
 - **Én app, fem områder.** Alle sider ligger under de fem områdene, varslingslaget eller kontoen (UX-IA-001–003). En ny side er en kontekst i et område, aldri et nytt område. Miljøer er kontekster, ikke et eget produkt (UX-IA-004).
 - **Samme byggesteiner overalt.** Sider bruker komponentene og stilene fra WP-80 i stedet for egne varianter. Mangler en byggestein, legges den til i felles grunnlag i samme PR og brukes derfra.
 - **Mobil først.** Én kolonne på 320 px uten sidelengs rulling; større skjermer får mer plass, ikke en annen logikk (UX-A11Y-001).
-- **Neste steg først.** Detaljsider starter med statuskortet: kort status, tid, hvem som må handle, én primærhandling og diskret tilgang til mer (UX-INT-001, UX-INT-004, «Standard mønster for statuskort»). Sjeldne valg ligger under «Flere valg» (UX-INT-009). Historikk er sekundær (UX-IA-008).
+- **Neste steg først.** Detaljsider starter med statuskortet: kort status, tid, hvem som må handle, én primærhandling når ett neste steg finnes og diskret tilgang til mer (UX-INT-001, UX-INT-004, «Standard mønster for statuskort»). Sjeldne valg ligger under «Flere valg» (UX-INT-009). Historikk er sekundær (UX-IA-008).
 - **Samtykke navngir konsekvensen.** Bindende handlinger har en knappetekst som sier hva som skjer (UX-INT-003). Destruktive og personvernutvidende handlinger viser hva som forsvinner, hva som består og hvem som påvirkes (UX-INT-007). Reverserbare handlinger utføres direkte (UX-INT-002).
 - **Serveren avgjør.** Knapper vises bare når handlingen er gyldig for brukeren, men det er bare en hjelp; serveren avviser uansett. Etter en handling viser siden den nye tilstanden fra serveren (UX-INT-005), og et ukjent nettverksutfall vises som ukjent (UX-INT-006).
 - **Personvern i presentasjonen.** Kontekstmerke der betydningen avhenger av kontekst (UX-PRIV-003), «Tidligere bruker» uten lenke for slettede brukere (UX-PRIV-010), og ingen snarveier som gjenåpner tapt tilgang (UX-PRIV-007, UX-EXC-005).
@@ -183,6 +183,7 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 
 ## Senere
 
+- Skjermstrukturen og navigasjonen som ble låst i UI-designets fase 2 (UX-IA-009–015) er ikke bygget ennå. I appen i dag går tilbakelenken til sidens faste område, ikke langs en stabel; varsler og e-postlenker åpner målet uten bygget stabel og merke; forespørselen og lånet er to sider; og skjemaet for låneforespørselen viser områdene. Dette bygges i det vertikale implementeringssporet fra designfase 4 ([UI-designplanen](../planning/ui-design-plan.md)).
 - Åpning av fri samtale fra en mottatt strukturert henvendelse, demping og arkivering av lånesamtalen (rest fra WP-44), og start av samtale fra personens side. Privat chat er av for ekte brukere til Port C.
 - Kort presentasjon og synlighetsvalg for andre profilfelt (PS-USR-002), når profilfeltene er fastsatt. Profilbildet er bygget, med eget synlighetsvalg; formen det vises i er OD-0027.
 - Flatene [skjerm- og flytinventaret](../ux/08-skjerm-og-flytinventar.md#hull-flater-uten-ui-pakke) viser at ingen pakke bygger ennå: melding om mulig dødsfall, administratorenes oversikt over medlemmer og utestengte, og for privat chat varsel før utlogging, gjenopprettingsnøkkel og overføring av gammel historikk (ADR-0010).

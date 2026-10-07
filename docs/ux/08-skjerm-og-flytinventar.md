@@ -1,6 +1,6 @@
 # Skjerm- og flytinventar
 
-> **Status:** Fase 1 i [planen for UI-designfasen](../planning/ui-design-plan.md), 6. oktober 2026. Inventaret er en dekningssjekk og et arbeidsgrunnlag for Claude Design, ikke visuell design. Det er ikke normativt og innfører ingen nye regler: hver flate viser til `PS-*`- og `UX-*`-reglene som styrer den, og ved tvil gjelder reglene. Uavklarte spørsmål står i [beslutningsregisteret](../open-decisions.md).
+> **Status:** Fase 1 i [planen for UI-designfasen](../planning/ui-design-plan.md), 6. oktober 2026. Inventaret er en dekningssjekk og et arbeidsgrunnlag for Claude Design, ikke visuell design. Det er ikke normativt og innfører ingen nye regler: hver flate viser til `PS-*`- og `UX-*`-reglene som styrer den, og ved tvil gjelder reglene. Uavklarte spørsmål står i [beslutningsregisteret](../open-decisions.md). Skjermstrukturen og navigasjonen mellom flatene er låst i fase 2 ([UX-IA-009–015](01-informasjonsarkitektur-og-navigasjon.md#skjermstruktur-og-navigasjon)).
 
 ## Slik leses inventaret
 
@@ -21,7 +21,7 @@ Disse tilstandene og mønstrene gjelder alle flater nedenfor og gjentas ikke for
 
 | Situasjon                                 | Hva flaten må vise                                                                                              | Regler                                  |
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| Neste steg                                | Statuskort med kort status, tid, hvem som må handle, én primærhandling og diskret tilgang til mer               | UX-INT-001, UX-INT-004, UX-P04          |
+| Neste steg                                | Statuskort med kort status, tid, hvem som må handle, én primærhandling når ett neste steg finnes (likeverdige faktaalternativer i nøytrale avklaringer) og diskret tilgang til mer | UX-INT-001, UX-INT-004, UX-P04          |
 | Sjeldne valg                              | Under «Flere valg» eller en detaljseksjon, på et forutsigbart sted                                              | UX-INT-009, UX-P06                      |
 | Bindende eller destruktiv handling        | Knappetekst som navngir konsekvensen; konsekvensvisning for det som forsvinner, består og påvirker andre        | UX-INT-003, UX-INT-007, UX-P03          |
 | Reverserbar handling                      | Utføres direkte med kort angremulighet                                                                          | UX-INT-002, UX-P09                      |
@@ -42,7 +42,7 @@ Disse tilstandene og mønstrene gjelder alle flater nedenfor og gjentas ikke for
 - **Oppgave:** orientere seg og nå de fem områdene, varslene og kontoen.
 - **Tilstander:** aktivt område; uleste varsler; ikke innlogget.
 - **Ser / handler:** alle innloggede.
-- **Regler:** UX-IA-001, UX-IA-002, UX-IA-003, UX-A11Y-001, UX-P12.
+- **Regler:** UX-IA-001, UX-IA-002, UX-IA-003, UX-IA-009, UX-IA-010, UX-IA-015, UX-A11Y-001, UX-P12.
 - **Forløp:** normal.
 - **UI-pakke:** WP-80.
 
@@ -51,7 +51,7 @@ Disse tilstandene og mønstrene gjelder alle flater nedenfor og gjentas ikke for
 - **Oppgave:** se hva som krever oppmerksomhet, forstå hvorfor, og komme til konteksten.
 - **Tilstander:** ulest og lest; nivå (påkrevd, handling, informasjon); varsel om noe brukeren ikke lenger har tilgang til; ingen varsler; lenke fra e-post.
 - **Ser / handler:** mottakeren.
-- **Regler:** UX-IA-002, UX-INT-010, UX-P08, PS-COM-001–003, PS-OBJ-014.
+- **Regler:** UX-IA-002, UX-IA-011, UX-INT-010, UX-P08, PS-COM-001–003, PS-OBJ-014.
 - **Forløp:** normal.
 - **UI-pakke:** WP-80, og hver pakke peker varsler til sin side.
 
@@ -75,7 +75,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 - **Oppgave:** se hva som venter på meg nå, og hva som kommer.
 - **Tilstander:** venter på deg (svare på forespørsel, bekrefte overlevering eller retur, bekrefte nye vilkår, svare på endring eller ansvarsoverføring, skrive anmeldelse, svare på medlems- eller rolleinvitasjon, svare på typeendring, bekrefte kontroll over en ting); kommende overlevering og retur; uavklarte forløp; administrative oppgaver for roller brukeren har; snarveier til egne miljøer; ingenting venter.
 - **Ser / handler:** brukeren selv. Administrative oppgaver bare for den som har rollen og er habil.
-- **Regler:** UX-IA-005, UX-JRN-012, UX-INT-010, UX-P08, UX-P16, UX-PRIV-006.
+- **Regler:** UX-IA-005, UX-IA-012, UX-JRN-012, UX-INT-010, UX-P08, UX-P16, UX-PRIV-006.
 - **Forløp:** begge.
 - **UI-pakke:** WP-80; hver pakke legger sine oppgaver til.
 
@@ -102,7 +102,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 - **Oppgave:** be om å låne en ting for en periode, med en valgfri melding.
 - **Tilstander:** start (dato eller «så snart som mulig»); slutt som dato eller varighet, aldri begge; melding med forklaringen om hvem som ser den; vilkår; ansvarserklæring ved vennelån; gjennomgang; sendt; ikke sendt eller ukjent utfall.
 - **Ser / handler:** den som kan se tingen og ikke eier den.
-- **Regler:** UX-JRN-004, UX-JRN-006, UX-JRN-013, UX-INT-003, PS-LOAN-003, PS-LOAN-004, PS-NFR-005, PS-NFR-006.
+- **Regler:** UX-IA-013, UX-JRN-004, UX-JRN-006, UX-JRN-013, UX-INT-003, PS-LOAN-003, PS-LOAN-004, PS-NFR-005, PS-NFR-006.
 - **Forløp:** normal.
 - **UI-pakke:** WP-83.
 
@@ -111,7 +111,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 - **Oppgave:** følge en forespørsel, og for utlåner: svare på den og se hva som blir bindende.
 - **Tilstander:** venter på svar fra …; venter på at låntaker bekrefter nye vilkår; satt på vent fordi miljøet vurderer tingen; mangler ansvarserklæring; godkjent (videre til lånets side); avslått; trukket; avsluttet nøytralt fordi en annen forespørsel ble godkjent eller adgangen falt bort.
 - **Ser / handler:** låntaker kan trekke og bekrefte nye vilkår. Tingens eiere ser periode, vilkår og kollisjoner og kan godkjenne, avslå og godta ansvarserklæringen. Den som godkjenner, blir ansvarlig utlåner.
-- **Regler:** UX-JRN-004, UX-JRN-005, UX-INT-003, UX-INT-004, UX-EXC-005, PS-LOAN-002, PS-LOAN-005–008.
+- **Regler:** UX-IA-014, UX-JRN-004, UX-JRN-005, UX-INT-003, UX-INT-004, UX-EXC-005, PS-LOAN-002, PS-LOAN-005–008.
 - **Forløp:** begge.
 - **UI-pakke:** WP-83.
 
@@ -127,9 +127,9 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 #### Lånets side
 
 - **Oppgave:** vite hva som er avtalt, hva som skjer nå, og gjøre neste praktiske steg.
-- **Tilstander:** reservert (tid, praktisk informasjon, bekreft overlevering, foreslå endring, kanseller); utlånt (returtid, foreslå forlengelse, meld returnert); venter på at utlåner bekrefter retur; retur bekreftet med 30 sekunders angremulighet; gjennomført; endringsforslag venter på svar; ansvarsoverføring tilbudt; opprinnelse som kontekstmerke; tidslinje.
+- **Tilstander:** reservert (tid, praktisk informasjon, bekreft overlevering (én part er nok), foreslå endring, kanseller); utlånt (returtid, foreslå forlengelse, meld returnert; for parten som ikke registrerte overleveringen også «ble ikke overlevert» som underordnet valg); venter på at utlåner bekrefter retur; retur bekreftet med 30 sekunders angremulighet; gjennomført; endringsforslag venter på svar; ansvarsoverføring tilbudt; opprinnelse som kontekstmerke; tidslinje.
 - **Ser / handler:** låntaker og ansvarlig utlåner. Andre medeiere ser lånet, men får bare handlinger de har rett til (UX-JRN-011).
-- **Regler:** UX-JRN-007, UX-JRN-008, UX-JRN-009, UX-INT-001, UX-INT-002, UX-IA-008, PS-LOAN-008–011, PS-LOAN-015, PS-LOAN-016, PS-LOAN-020, PS-COM-008.
+- **Regler:** UX-IA-014, UX-JRN-007, UX-JRN-008, UX-JRN-009, UX-INT-001, UX-INT-002, UX-IA-008, PS-LOAN-008–011, PS-LOAN-015, PS-LOAN-016, PS-LOAN-020, PS-LOAN-022, PS-COM-008.
 - **Forløp:** normal. Avvikene står [under](#lånets-side-i-avvik).
 - **UI-pakke:** WP-87.
 
@@ -174,7 +174,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 - **Oppgave:** forstå et miljø før innmelding, bruke det som medlem og håndtere egne medlems- og rollevalg.
 - **Tilstander:** åpent (krav, regler, bli med); lukket (begrenset forhåndsvisning, søk); skjult (bare for den som er invitert eller medlem); søknad venter; aktivt medlem (tingene i miljøet, «Registrer en ting her», medlemsliste, kontakt administratorene, forlat miljøet); egen ventende rolleinvitasjon (administrator eller eierskap: godta eller avslå); passivt medlem forklart; under avvikling; ingen administrator kan behandle henvendelser nå.
 - **Ser / handler:** innloggede innenfor det typen tillater; medlemmer ser og bruker innholdet, ser medlemslisten og ser hvem som eier tingene (PS-ENV-015). Mottakeren av en rolleinvitasjon svarer som medlem på miljøets side før en eventuell ny rolle blir aktiv.
-- **Regler:** UX-IA-004, UX-JRN-002, UX-PRIV-002, UX-PRIV-003, UX-EXC-009, PS-ENV-001, PS-ENV-003, PS-ENV-004, PS-ENV-012, PS-ENV-014, PS-NFR-002.
+- **Regler:** UX-IA-004, UX-IA-010, UX-JRN-002, UX-PRIV-002, UX-PRIV-003, UX-EXC-009, PS-ENV-001, PS-ENV-003, PS-ENV-004, PS-ENV-012, PS-ENV-014, PS-NFR-002.
 - **Forløp:** normal.
 - **UI-pakke:** WP-84.
 
@@ -210,7 +210,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 - **Oppgave:** forstå hvem en person er i en konkret situasjon, og styre relasjonen.
 - **Tilstander:** venn; ikke venn; venneforespørsel sendt eller mottatt; blokkert av deg; tillitsprofil per rolle med datagrunnlag og usikkerhet; få anmeldelser; tingene personen har gjort synlige for venner; ingen side for slettede eller blokkerende brukere.
 - **Ser / handler:** den som har legitim tilgang (venner, felles miljø, part i lån). Handlinger etter relasjon: send, trekk, godta eller avslå forespørsel, fjern venn, blokker og opphev blokkering.
-- **Regler:** UX-P15, UX-PRIV-007, UX-PRIV-010, PS-USR-002–007, PS-TRUST-006, PS-TRUST-007, PS-TRUST-010, PS-TRUST-011.
+- **Regler:** UX-IA-010, UX-P15, UX-PRIV-007, UX-PRIV-010, PS-USR-002–007, PS-TRUST-006, PS-TRUST-007, PS-TRUST-010, PS-TRUST-011.
 - **Forløp:** normal.
 - **UI-pakke:** WP-86; venners ting i WP-27.
 
@@ -279,7 +279,7 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 - **Oppgave:** forstå hva som er uavklart og finne veien videre, på samme side som lånet.
 - **Tilstander:** avventer overleveringsavklaring (72 timer); ikke gjennomført; avventer returavklaring; forsinket (bare når det er kjent at låntaker har tingen); usikker/uenighet; gjenåpnet fordi en tidligere retur er bestridt; avsluttet som administrativt uavklart; stanset av plattformen (skilt fra kansellering); rapporter problem etter angrefristen; be miljøet om mekling.
 - **Ser / handler:** partene. I miljølån kan miljøets administratorer mekle gjennom en sak.
-- **Regler:** UX-EXC-001–003, UX-EXC-007, UX-EXC-010, UX-P23, PS-LOAN-011–014, PS-LOAN-017–019, PS-COM-012.
+- **Regler:** UX-EXC-001–003, UX-EXC-007, UX-EXC-010, UX-INT-001, UX-P23, PS-LOAN-011–014, PS-LOAN-017–019, PS-LOAN-022, PS-COM-012.
 - **Forløp:** avvik.
 - **UI-pakke:** WP-87; meklingssaken i WP-88.
 
@@ -409,7 +409,7 @@ Miljøadministrator omfatter miljøets eier, som også er administrator, og admi
 - **Oppgave:** se hvilke administrative oppgaver som venter i egne miljøer.
 - **Tilstander:** innmeldinger; ting som venter på godkjenning; saker i køen; svar på administrator- eller eierskapstilbud; miljø uten eier som trenger en ny.
 - **Ser / handler:** miljøets administratorer.
-- **Regler:** UX-IA-005, UX-JRN-012, UX-PRIV-006.
+- **Regler:** UX-IA-005, UX-IA-012, UX-JRN-012, UX-PRIV-006.
 - **Forløp:** normal.
 - **UI-pakke:** WP-85 og WP-88.
 
