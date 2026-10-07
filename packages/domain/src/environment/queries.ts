@@ -32,8 +32,11 @@ import {
   unmetRequirements,
 } from "./model";
 import {
+  concealedSpans,
   type HistoryPosition,
+  isConcealed,
   mayExposeHistory,
+  toPosition,
   type TypePeriod,
   widenedAfterPassivation,
 } from "./privacy";
@@ -355,7 +358,8 @@ export const listOwnEnvironments = defineQuery({
  * with the member's name and the answers given to the membership process
  * (UX-PRIV-009: shown as membership information, not as profile data), and
  * who is barred from new attempts by name, also once their membership has
- * ended, so an administrator can lift the bar (PS-ENV-004).
+ * ended, so an administrator can lift the bar (PS-ENV-004). Both follow the
+ * historical privacy of the type they arose in (PS-ENV-009).
  */
 export const listMemberships = defineQuery({
   name: "environment_membership.list",
@@ -373,29 +377,38 @@ export const listMemberships = defineQuery({
       return null;
     }
 
-    const visible = historicallyVisible(
-      await typePeriods(db, input.environmentId),
-      activeFrom(access.ownMembership),
-    );
+    const periods = await typePeriods(db, input.environmentId);
+    const viewerActiveFrom = activeFrom(access.ownMembership);
+    const visible = historicallyVisible(periods, viewerActiveFrom);
     const memberships = (
       await listCurrentMemberships(db, input.environmentId)
     ).filter(visible);
-    const restrictions = await db
-      .selectFrom("app.environment_access_restrictions as restriction")
-      .leftJoin(
-        "app.profiles as profile",
-        "profile.user_id",
-        "restriction.user_id",
-      )
-      .select([
-        "restriction.user_id",
-        "restriction.imposed_at",
-        "profile.real_name",
-      ])
-      .where("restriction.environment_id", "=", input.environmentId)
-      .where("restriction.lifted_at", "is", null)
-      .orderBy("restriction.imposed_at")
-      .execute();
+    // PS-ENV-009: who was barred under a stricter type, and when, stays with
+    // those who were active then; others can only lift the bar.
+    const concealed = concealedSpans(periods, viewerActiveFrom);
+    const restrictions = (
+      await db
+        .selectFrom("app.environment_access_restrictions as restriction")
+        .leftJoin(
+          "app.profiles as profile",
+          "profile.user_id",
+          "restriction.user_id",
+        )
+        .select([
+          "restriction.id",
+          "restriction.user_id",
+          "restriction.imposed_at",
+          "restriction.position",
+          "profile.real_name",
+        ])
+        .where("restriction.environment_id", "=", input.environmentId)
+        .where("restriction.lifted_at", "is", null)
+        .orderBy("restriction.position")
+        .execute()
+    ).map((row) => ({
+      ...row,
+      concealed: isConcealed(concealed, toPosition(row.position)),
+    }));
 
     return {
       resource: {
@@ -422,11 +435,17 @@ export const listMemberships = defineQuery({
       userId: membership.userId,
       realName: membership.realName,
     })),
-    restrictions: resource.restrictions.map((row) => ({
-      userId: row.user_id,
-      realName: row.real_name,
-      imposedAt: row.imposed_at.toISOString(),
-    })),
+    restrictions: resource.restrictions
+      .filter((row) => !row.concealed)
+      .map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        realName: row.real_name,
+        imposedAt: row.imposed_at.toISOString(),
+      })),
+    concealedRestrictionIds: resource.restrictions
+      .filter((row) => row.concealed)
+      .map((row) => row.id),
   }),
 });
 

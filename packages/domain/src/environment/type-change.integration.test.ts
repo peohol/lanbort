@@ -16,13 +16,14 @@ import {
   releaseDepartedUser,
   startEnvironmentWindDown,
 } from "./continuity-commands";
-import { createEnvironment } from "./environment-commands";
+import { createEnvironment, liftRestriction } from "./environment-commands";
 import {
   acceptInvitation,
   approveMembership,
   inviteMember,
   joinEnvironment,
   leaveEnvironment,
+  rejectMembership,
   submitAnswers,
   withdrawInvitation,
 } from "./membership-commands";
@@ -766,6 +767,68 @@ describe("historical privacy (PS-ENV-009)", () => {
     expect(await memberIds(newcomer, environmentId)).not.toContain(
       keeper.userId,
     );
+  });
+
+  it("keeps who was barred under a stricter type from administrators who joined later", async () => {
+    const owner = await user();
+    const environmentId = await environment(owner, "closed");
+    const barred = await user();
+    const { membershipId } = await output(joinEnvironment, barred, {
+      environmentId,
+      answers: [],
+    });
+    await output(rejectMembership, owner, {
+      environmentId,
+      membershipId,
+      restrict: true,
+    });
+    const { proposal } = await changeType(
+      owner,
+      environmentId,
+      "closed",
+      "open",
+    );
+    await respond(owner, environmentId, proposal!.id, true);
+    passDays(typeChangeDays.consent);
+    await conclude();
+    const newcomer = await member(environmentId, owner);
+    await makeAdministrator(environmentId, owner, newcomer);
+    // A stricter type again, so invitations are possible.
+    await changeType(owner, environmentId, "open", "closed");
+
+    const memberships = (actor: UserActor) =>
+      executeQuery(domain, listMemberships, {
+        actor,
+        input: { environmentId },
+      });
+    const known = await memberships(owner);
+    const later = await memberships(newcomer);
+    const restrictionId = known.restrictions[0]?.id;
+    expect(known.restrictions).toEqual([
+      expect.objectContaining({ userId: barred.userId }),
+    ]);
+    expect(known.concealedRestrictionIds).toEqual([]);
+    // The later administrator can lift the bar but learns neither who nor
+    // when, not even by trying to invite them.
+    expect(later.restrictions).toEqual([]);
+    expect(later.concealedRestrictionIds).toEqual([restrictionId]);
+    expect(JSON.stringify(later)).not.toContain(barred.userId);
+    await expect(
+      run(inviteMember, newcomer, { environmentId, userId: barred.userId }),
+    ).rejects.toMatchObject({ code: "not_found" });
+    await expect(
+      run(inviteMember, owner, { environmentId, userId: barred.userId }),
+    ).rejects.toMatchObject({ code: "conflict" });
+    await expect(
+      run(joinEnvironment, barred, { environmentId, answers: [] }),
+    ).rejects.toMatchObject({ code: "forbidden" });
+
+    await output(liftRestriction, newcomer, { environmentId, restrictionId });
+    expect(await memberships(owner)).toMatchObject({ restrictions: [] });
+    expect(
+      (await output(joinEnvironment, barred, { environmentId, answers: [] }))
+        .state,
+    ).toBe("pending");
   });
 });
 

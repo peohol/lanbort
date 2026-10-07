@@ -449,13 +449,17 @@ describe("closed environments", () => {
     ).toEqual({ membershipId, state: "ended" });
     expect((await read(applicant, environmentId)).membership).toBeNull();
     // The ended application leaves the bar, named so it can be lifted.
-    expect((await memberships(owner, environmentId)).restrictions).toEqual([
+    const barred = await memberships(owner, environmentId);
+    expect(barred.restrictions).toEqual([
       {
+        id: expect.any(String),
         userId: applicant.userId,
         realName: expect.any(String),
         imposedAt: expect.any(String),
       },
     ]);
+    expect(barred.concealedRestrictionIds).toEqual([]);
+    const restrictionId = barred.restrictions[0]?.id ?? "";
 
     await expect(join(applicant, environmentId)).rejects.toMatchObject({
       code: "forbidden",
@@ -464,12 +468,9 @@ describe("closed environments", () => {
       run(inviteMember, owner, { environmentId, userId: applicant.userId }),
     ).rejects.toMatchObject({ code: "conflict" });
 
-    await output(liftRestriction, owner, {
-      environmentId,
-      userId: applicant.userId,
-    });
+    await output(liftRestriction, owner, { environmentId, restrictionId });
     await expect(
-      run(liftRestriction, owner, { environmentId, userId: applicant.userId }),
+      run(liftRestriction, owner, { environmentId, restrictionId }),
     ).rejects.toMatchObject({ code: "not_found" });
     expect((await join(applicant, environmentId)).state).toBe("pending");
     expect((await memberships(owner, environmentId)).restrictions).toEqual([]);
@@ -603,7 +604,7 @@ describe("hidden environments (PS-NFR-002)", () => {
           updateEnvironmentDetails,
           { environmentId: id, name: "Ny", expectedVersion: 1 },
         ],
-        [liftRestriction, { environmentId: id, userId: outsider.userId }],
+        [liftRestriction, { environmentId: id, restrictionId: randomUUID() }],
         [approveMembership, { environmentId: id, membershipId: randomUUID() }],
       ] as const) {
         await expect(

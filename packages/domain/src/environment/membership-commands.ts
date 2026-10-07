@@ -31,6 +31,7 @@ import {
 } from "./events";
 import {
   acceptsNewActivity,
+  activeFrom,
   type EnvironmentRecord,
   type MembershipRecord,
   unmetRequirements,
@@ -56,8 +57,14 @@ import {
   saveAnswers,
   settleMembership,
 } from "./store";
-import { toOptionalPosition } from "./privacy";
+import {
+  concealedSpans,
+  isConcealed,
+  toOptionalPosition,
+  toPosition,
+} from "./privacy";
 import { rateLimits } from "../abuse/rate-limits";
+import { typePeriods } from "./type-change-store";
 
 const membershipOutput = z.strictObject({
   membershipId: z.uuid(),
@@ -502,7 +509,7 @@ export const inviteMember = defineCommand({
       .select([
         "user.status",
         "membership.id as membership_id",
-        "restriction.id as restriction_id",
+        "restriction.position as restriction_position",
       ])
       .where("user.id", "=", input.userId)
       .executeTakeFirst();
@@ -516,7 +523,17 @@ export const inviteMember = defineCommand({
       conflict("Already a member or invited");
     }
 
-    if (invitee.restriction_id !== null) {
+    if (invitee.restriction_position !== null) {
+      // PS-ENV-009: a bar from a stricter type than the inviter was active
+      // in looks like any account that cannot be invited, so it never tells
+      // them who was barred before.
+      const concealed = concealedSpans(
+        await typePeriods(tx, environment.id),
+        activeFrom(resource.ownMembership),
+      );
+      if (isConcealed(concealed, toPosition(invitee.restriction_position))) {
+        throw new DomainError("not_found", "No such account");
+      }
       conflict("The user is barred; lift the restriction first");
     }
 

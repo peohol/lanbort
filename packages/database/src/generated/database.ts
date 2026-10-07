@@ -250,6 +250,7 @@ export interface AppEnvironmentAccessRestrictions {
   imposed_by_user_id: string;
   lifted_at: Timestamp | null;
   lifted_by_user_id: string | null;
+  position: Generated<Int8>;
   user_id: string;
 }
 

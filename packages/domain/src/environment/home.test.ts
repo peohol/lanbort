@@ -164,6 +164,7 @@ describe("an administrator's tasks", () => {
       realName: null,
     })),
     restrictions: [],
+    concealedRestrictionIds: [],
   });
   const publication = (objectId: string) =>
     ({ objectId }) as ReviewedPublication;

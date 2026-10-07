@@ -31,7 +31,7 @@ export const memberName = (membership: { realName: string | null }) =>
  */
 export function MembershipsSection({
   environment,
-  memberships: { memberships, restrictions },
+  memberships: administered,
   friends,
   ownUserId,
 }: {
@@ -40,6 +40,7 @@ export function MembershipsSection({
   friends: readonly SocialContact[];
   ownUserId: string;
 }) {
+  const { memberships, restrictions, concealedRestrictionIds } = administered;
   const restricted = new Set(restrictions.map(({ userId }) => userId));
   const byTask = (...tasks: ReturnType<typeof membershipTask>[]) =>
     memberships.filter((membership) =>
@@ -51,8 +52,12 @@ export function MembershipsSection({
   const confirming = byTask("confirmation");
   const invited = byTask("invitation");
   const nothing =
-    deciding.length + confirming.length + invited.length === 0 &&
-    restricted.size === 0;
+    deciding.length +
+      confirming.length +
+      invited.length +
+      restrictions.length +
+      concealedRestrictionIds.length ===
+    0;
 
   return (
     <section aria-labelledby="innmeldinger">
@@ -86,10 +91,7 @@ export function MembershipsSection({
           />
         )}
       />
-      <Restrictions
-        environmentId={environment.id}
-        restrictions={restrictions}
-      />
+      <Restrictions environmentId={environment.id} memberships={administered} />
       <Invite
         environment={environment}
         candidates={friends.filter(
@@ -257,36 +259,49 @@ function Decision({
 /**
  * Those barred from new attempts (PS-ENV-004), also once the application
  * that was rejected has ended, so an administrator can let them try again.
- * Until then they can neither apply nor be invited.
+ * Until then they can neither apply nor be invited. A bar from a stricter
+ * type than the administrator was active in can be lifted, but says neither
+ * who nor when (PS-ENV-009).
  */
 function Restrictions({
   environmentId,
-  restrictions,
+  memberships: { restrictions, concealedRestrictionIds },
 }: {
   environmentId: string;
-  restrictions: EnvironmentMemberships["restrictions"];
+  memberships: EnvironmentMemberships;
 }) {
-  if (restrictions.length === 0) return null;
+  const entries = [
+    ...restrictions.map((restriction) => ({
+      id: restriction.id,
+      name: memberName(restriction),
+      detail: `Stengt ute ${formatTime(restriction.imposedAt)}. Kan ikke søke eller inviteres.`,
+    })),
+    ...concealedRestrictionIds.map((id) => ({
+      id,
+      name: "Stengt ute da miljøet var mer privat",
+      detail:
+        "Hvem det gjelder, vises bare for dem som var med da. Personen kan ikke søke eller inviteres.",
+    })),
+  ];
+
+  if (entries.length === 0) return null;
 
   return (
     <>
       <h3>Stengt ute fra nye forsøk</h3>
       <ul className="entries">
-        {restrictions.map((restriction) => {
-          const nameId = `utestengt-${restriction.userId}`;
-          const name = memberName(restriction);
+        {entries.map((entry) => {
+          const nameId = `utestengt-${entry.id}`;
 
           return (
-            <li key={restriction.userId} className="entry">
-              <strong id={nameId}>{name}</strong>
-              <span className="entry-detail">
-                {`Stengt ute ${formatTime(restriction.imposedAt)}. Kan ikke søke eller inviteres.`}
-              </span>
+            <li key={entry.id} className="entry">
+              <strong id={nameId}>{entry.name}</strong>
+              <span className="entry-detail">{entry.detail}</span>
               <div className="actions" role="group" aria-labelledby={nameId}>
                 <ActionButton
                   label="Opphev utestengelsen"
                   path="/api/environments/restrictions/lift"
-                  body={{ environmentId, userId: restriction.userId }}
+                  body={{ environmentId, restrictionId: entry.id }}
                 />
               </div>
             </li>

@@ -320,7 +320,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
   }),
   "environment.lift_restriction": (ids) => ({
     environmentId: ids.environmentId,
-    userId: ids.userId,
+    restrictionId: ids.restrictionId,
   }),
   "environment.change_type": (ids) => ({
     environmentId: ids.environmentId,

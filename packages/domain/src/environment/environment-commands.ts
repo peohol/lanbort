@@ -386,19 +386,21 @@ function nextDeadline(
 /** Lets a barred user make membership attempts again. */
 export const liftRestriction = defineCommand({
   name: "environment.lift_restriction",
-  input: z.strictObject({ ...environmentIdInput, userId: z.uuid() }),
+  input: z.strictObject({ ...environmentIdInput, restrictionId: z.uuid() }),
   output: z.strictObject({ lifted: z.literal(true) }),
   policy: liftRestrictionPolicy,
   idempotency: "required",
   load: loadLockedAccess,
   execute: async ({ tx, actor, input, resource, events, now }) => {
+    // By the restriction, not the person: a restriction from a stricter type
+    // can be lifted by administrators who may not learn who it bars.
     const lifted = await tx
       .updateTable("app.environment_access_restrictions")
       .set({ lifted_at: now, lifted_by_user_id: userIdOf(actor) })
+      .where("id", "=", input.restrictionId)
       .where("environment_id", "=", resource.environment.id)
-      .where("user_id", "=", input.userId)
       .where("lifted_at", "is", null)
-      .returning("id")
+      .returning("user_id")
       .executeTakeFirst();
 
     if (!lifted) {
@@ -407,7 +409,7 @@ export const liftRestriction = defineCommand({
 
     events.record(environmentRestrictionLifted, {
       resourceId: resource.environment.id,
-      payload: { userId: input.userId },
+      payload: { userId: lifted.user_id },
     });
 
     return { lifted: true as const };

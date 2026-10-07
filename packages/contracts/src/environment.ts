@@ -267,6 +267,7 @@ export const administeredMembershipSchema = z.strictObject({
 
 /** Someone barred from new attempts until an administrator lifts it. */
 export const accessRestrictionSchema = z.strictObject({
+  id: z.uuid(),
   userId: z.uuid(),
   realName: z.string().nullable(),
   imposedAt: z.iso.datetime(),
@@ -276,6 +277,12 @@ export const environmentMembershipsSchema = z.strictObject({
   memberships: z.array(administeredMembershipSchema),
   /** Also of those whose membership has ended, so the bar can be lifted. */
   restrictions: z.array(accessRestrictionSchema),
+  /**
+   * Restrictions imposed under a stricter type than the viewer was active in
+   * (PS-ENV-009): they can be lifted, but who and when stay with those who
+   * were there.
+   */
+  concealedRestrictionIds: z.array(z.uuid()),
 });
 
 /**
