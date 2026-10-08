@@ -1,6 +1,6 @@
 # Skjerm- og flytinventar
 
-> **Status:** Fase 1 i [planen for UI-designfasen](../planning/ui-design-plan.md), 6. oktober 2026. Inventaret er en dekningssjekk og et arbeidsgrunnlag for Claude Design, ikke visuell design. Det er ikke normativt og innfører ingen nye regler: hver flate viser til `PS-*`- og `UX-*`-reglene som styrer den, og ved tvil gjelder reglene. Uavklarte spørsmål står i [beslutningsregisteret](../open-decisions.md). Skjermstrukturen og navigasjonen mellom flatene er låst i fase 2 ([UX-IA-009–015](01-informasjonsarkitektur-og-navigasjon.md#skjermstruktur-og-navigasjon)).
+> **Status:** Fase 1 i [planen for UI-designfasen](../planning/ui-design-plan.md), 6. oktober 2026. Inventaret er en dekningssjekk og et arbeidsgrunnlag for Claude Design, ikke visuell design. Det er ikke normativt og innfører ingen nye regler: hver flate viser til `PS-*`- og `UX-*`-reglene som styrer den, og ved tvil gjelder reglene. Uavklarte spørsmål står i [beslutningsregisteret](../open-decisions.md). Skjermstrukturen og navigasjonen mellom flatene er låst i fase 2 ([UX-IA-009–015](01-informasjonsarkitektur-og-navigasjon.md#skjermstruktur-og-navigasjon)). Hjem og varsler ble presisert i fase 4 ([UX-IA-016–019](01-informasjonsarkitektur-og-navigasjon.md#ux-ia-016--hjem-har-fast-seksjonsrekkefolge-og-tomme-seksjoner-skjules)).
 
 ## Slik leses inventaret
 
@@ -42,16 +42,18 @@ Disse tilstandene og mønstrene gjelder alle flater nedenfor og gjentas ikke for
 - **Oppgave:** orientere seg og nå de fem områdene, varslene og kontoen.
 - **Tilstander:** aktivt område; uleste varsler; ikke innlogget.
 - **Ser / handler:** alle innloggede.
-- **Regler:** UX-IA-001, UX-IA-002, UX-IA-003, UX-IA-009, UX-IA-010, UX-IA-015, UX-A11Y-001, UX-P12.
+- **Regler:** UX-IA-001, UX-IA-002, UX-IA-003, UX-IA-009, UX-IA-010, UX-IA-015, UX-IA-019, UX-A11Y-001, UX-P12.
 - **Forløp:** normal.
 - **UI-pakke:** WP-80.
 
 ### Varslingssenteret og varselslenker
 
+**Eksempel på påkrevd sikkerhetsvarsel ved ny enhet for privat chat** (PS-COM-003; ADR-0010 punkt 5): Tittel «En ny enhet er koblet til privat chat». Tekst «Enheten kan motta nye meldinger fra nå av. Den får ikke tidligere meldinger automatisk. Var det ikke deg, fjern den i Mine enheter.» Varselet leder til stabelen Samtaler › Mine enheter.
+
 - **Oppgave:** se hva som krever oppmerksomhet, forstå hvorfor, og komme til konteksten.
-- **Tilstander:** ulest og lest; nivå (påkrevd, handling, informasjon); varsel om noe brukeren ikke lenger har tilgang til; ingen varsler; lenke fra e-post.
+- **Tilstander:** ulest og lest; markert som lest uten at oppgaven er gjort; handling allerede gjort et annet sted; eldre, leste varsler fra samme låneforløp samlet; nivå (påkrevd, handling, informasjon); varsel om noe brukeren ikke lenger har tilgang til; ingen varsler; lenke fra e-post; åpnet fra hvilket som helst hovedområde og lukket tilbake til samme skjerm, stabel, filter og rulleposisjon.
 - **Ser / handler:** mottakeren.
-- **Regler:** UX-IA-002, UX-IA-011, UX-INT-010, UX-P08, PS-COM-001–003, PS-OBJ-014.
+- **Regler:** UX-IA-002, UX-IA-011, UX-IA-018, UX-IA-019, UX-INT-010, UX-P08, PS-COM-001–003, PS-OBJ-014.
 - **Forløp:** normal.
 - **UI-pakke:** WP-80, og hver pakke peker varsler til sin side.
 
@@ -73,9 +75,9 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 #### Hjem
 
 - **Oppgave:** se hva som venter på meg nå, og hva som kommer.
-- **Tilstander:** venter på deg (svare på forespørsel, bekrefte overlevering eller retur, bekrefte nye vilkår, svare på endring eller ansvarsoverføring, skrive anmeldelse, svare på medlems- eller rolleinvitasjon, svare på typeendring, bekrefte kontroll over en ting); kommende overlevering og retur; uavklarte forløp; administrative oppgaver for roller brukeren har; snarveier til egne miljøer; ingenting venter.
+- **Tilstander:** venter på deg (svare på forespørsel, bekrefte overlevering eller retur, bekrefte nye vilkår, svare på endring eller ansvarsoverføring, skrive anmeldelse, svare på medlems- eller rolleinvitasjon, svare på typeendring, bekrefte kontroll over en ting); kommende overlevering og retur; uavklarte forløp; administrative oppgaver med egen telling for roller brukeren har; samlede oppgaver av samme type uten å skjule dagens frister; snarveier til egne miljøer; ingenting venter.
 - **Ser / handler:** brukeren selv. Administrative oppgaver bare for den som har rollen og er habil.
-- **Regler:** UX-IA-005, UX-IA-012, UX-JRN-012, UX-INT-010, UX-P08, UX-P16, UX-PRIV-006.
+- **Regler:** UX-IA-005, UX-IA-012, UX-IA-016–019, UX-JRN-012, UX-INT-010, UX-P08, UX-P16, UX-PRIV-006.
 - **Forløp:** begge.
 - **UI-pakke:** WP-80; hver pakke legger sine oppgaver til.
 
