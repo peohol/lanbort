@@ -1,6 +1,6 @@
 # Informasjonsarkitektur og navigasjon
 
-> **Status:** UX-modell v0.1. Skjermstrukturen og navigasjonen er låst i fase 2 av UI-designplanen, 7. oktober 2026 (UX-IA-009–015).
+> **Status:** UX-modell v0.1. Skjermstrukturen og navigasjonen er låst i fase 2 av UI-designplanen, 7. oktober 2026 (UX-IA-009–015). Reglene for Hjem og varsler ble supplert 8. oktober 2026 (UX-IA-016–019).
 
 ## Overordnet modell
 
@@ -70,7 +70,7 @@ Oppgavekø og stabel er grunnarkitekturen: Hjem er en prioritert handlingsflate,
 
 Områdene:
 
-- **Hjem:** «Venter på deg» med antall, «Kommer», «Som administrator» og «Dine miljøer», i den rekkefølgen. Det som har et tidspunkt i dag, får fullt kort; resten er rader med handlingsverb, så køen er lett å skanne. Rollen står ved oppgaven og miljøet, ikke i en egen administratorflate (UX-PRIV-005, UX-PRIV-006). Når ingenting venter, er Hjem en rolig tomtilstand uten feed eller forslag (UX-IA-005).
+- **Hjem:** «Venter på deg» med antall, «Kommer», «Uavklart», «Som administrator» med egen oppgavetelling og «Dine miljøer», i den rekkefølgen (UX-IA-016). Det som har et tidspunkt i dag, får fullt kort; resten er rader med handlingsverb, så køen er lett å skanne. Rollen står ved oppgaven og miljøet, ikke i en egen administratorflate (UX-PRIV-005, UX-PRIV-006). Når ingenting venter, er Hjem en rolig tomtilstand uten feed eller forslag (UX-IA-005).
 - **Finn:** søk etter ting eller miljøer, med filtrene «Venner» og område. Treff viser ledighet og kontekst.
 - **Lån:** én liste med filtrene «Alle», «Låner» og «Låner bort», gruppert i «Venter på deg», «Pågår og kommende» og «Venter på andre», med avsluttede lån bak en egen rad (UX-IA-006).
 - **Mine ting:** egne og medeide ting med nåstatus og hvem de er synlige for, «Registrer» og arkiverte ting bak en egen rad.
@@ -110,6 +110,8 @@ Flater som ikke står i tabellen, får hjemområde når de designes.
 - Tilbake og brødsmuler følger den bygde stabelen. «‹ Lån» betyr alltid Lån-oversikten, uansett hvor brukeren var før.
 - Målet merkes «Åpnet fra varsel» eller «Åpnet fra e-post» til brukeren navigerer videre.
 - Varslingssenteret er et lag, ikke et steg i stabelen (UX-IA-002). Å velge et varsel er en direkte inngang, og varslene åpnes igjen fra indikatoren.
+- Varslingssenteret kan åpnes fra varselindikatoren, som har samme plassering i alle fem hovedområder og i detaljer i stabelen; indikatoren skjules bare i avgrensede oppgaver (UX-IA-013).
+- Å lukke varslingssenteret returnerer til nøyaktig forrige skjerm, inkludert område, stabel, filter og rulleposisjon. Å velge et varsel bygger i stedet stabelen fra regelen, uavhengig av hvilken skjerm varslingssenteret ble åpnet fra.
 - Har brukeren ikke lenger tilgang, vises samme nøytrale «finnes ikke eller ingen tilgang» i hjemområdet (UX-PRIV-002).
 
 | Inngang                          | Bygget stabel                         | Tilbake           |
@@ -125,6 +127,8 @@ Flater som ikke står i tabellen, får hjemområde når de designes.
 **Forankring:** UX-P04, UX-P05, UX-P08
 
 En oppgave på Hjem åpner flaten der oppgaven gjøres, med stabelen Hjem › arbeidsflaten: innmeldingene i et miljø, forespørselen som venter på svar, eller lånet der retur skal bekreftes. Miljø, person og ting ligger som lenker derfra, ikke som mellomsteg.
+
+Handlingsknapper og oppgaverader på Hjem åpner den eksisterende arbeidsflaten; de gjennomfører aldri en bindende handling direkte. Knappeteksten beskriver hvor brukeren kommer, for eksempel «Gå til overleveringen» eller «Se forespørselen», ikke selve avgjørelsen på målsiden.
 
 ### UX-IA-013 — Et skjema er en avgrenset oppgave
 **Forankring:** UX-P03, UX-P21; UX-JRN-004
@@ -143,6 +147,41 @@ Et skjema som sendes inn, for eksempel låneforespørselen, skjuler områdene og
 **Forankring:** UX-P11, UX-P13; PS-DOM-005, PS-DOM-007
 
 Hver detalj har en typeetikett (Ting, Forespørsel, Lån, Person, Miljø, Samtale) og et kontekstmerke («Via Borettslaget Lia», «Direkte mellom venner») eller en rolle («Du handler som administrator»). Der synligheten avhenger av kontekst, forklarer én linje hvorfor («Du ser tingen fordi du er medlem i Borettslaget Lia»). Kontekstmerker og forklaringer erstatter en vedvarende kontekstlinse, så ingen skjult filtertilstand avgjør hva brukeren ser.
+
+**Designreferanse for Hjem og varsler:** [Lånbort – Hjem og varsler v2](../../design/L%C3%A5nbort%20-%20Hjem%20og%20varsler%20v2.html). Besluttet 8. oktober 2026; navn og datoer i referansen er eksempler. Ved tvil gjelder reglene nedenfor.
+
+### UX-IA-016 — Hjem har fast seksjonsrekkefølge, og tomme seksjoner skjules
+**Forankring:** UX-P04, UX-P08, UX-P16; UX-IA-005
+
+- Rekkefølgen er «Venter på deg» → «Kommer» → «Uavklart» → «Som administrator» → «Dine miljøer».
+- En seksjon uten innhold vises ikke, heller ikke som overskrift.
+- «Venter på deg» viser det brukeren selv skal gjøre, med antall.
+- «Kommer» viser avtalte overleveringer og returer der ingen handling er påkrevd ennå.
+- «Uavklart» viser viktige forhold der brukeren foreløpig venter på andre: avvik, forsinkelse, mekling og saker som står på vent.
+- «Som administrator» har en egen oppgavetelling, atskilt fra personlige oppgaver. Den telles ikke med i «Venter på deg». Saker der administratoren selv er part, vises ikke her.
+
+### UX-IA-017 — Én hendelse står ett sted på Hjem
+**Forankring:** UX-P02, UX-P16; UX-IA-008
+
+- Samme hendelse vises aldri i flere seksjoner på Hjem samtidig.
+- Når status endres, flytter hendelsen mellom seksjonene og beholder relevant tidsinformasjon (for eksempel «Avtalt i dag» eller en svarfrist).
+- Eksempel: En avtalt retur står i «Kommer»; når låntaker melder den returnert, flytter den til «Venter på deg» med «Avtalt i dag». Har brukeren svart på et avvik og venter på motparten, flytter det til «Uavklart» med samme frist.
+- Lånets egen side og historikken påvirkes ikke av regelen.
+
+### UX-IA-018 — Gruppering skjuler aldri det tidskritiske
+**Forankring:** UX-P08, UX-P16
+
+- Mange oppgaver av samme type kan samles i én rad med antall og inngang til hver enkelt oppgave.
+- Oppgaver med frist eller avtale i dag står alltid alene og samles aldri.
+- I varslingssenteret kan eldre, leste varsler fra samme låneforløp samles til én rad med siste hendelse. Nye og påkrevde varsler om forløpet står alltid for seg.
+
+### UX-IA-019 — Lest er ikke det samme som håndtert
+**Forankring:** UX-P08; PS-COM-002, PS-COM-003
+
+- Varselindikatoren viser antall uleste varsler, og tallet er det samme i alle områder. Bunnmenyen har ingen varseltall eller varselprikk.
+- Et varsel markeres som lest når brukeren åpner det eller velger «Marker som lest», uavhengig av om oppgaven er fullført.
+- En oppgave forsvinner fra Hjem først når den er håndtert og serveren har bekreftet den nye tilstanden.
+- Er handlingen allerede gjort et annet sted, viser varselet utfallet (for eksempel «Du godtok forespørselen») og oppfordrer ikke til handlingen igjen.
 
 ### Krav som ikke endrer strukturen
 
