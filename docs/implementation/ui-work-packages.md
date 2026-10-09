@@ -139,6 +139,19 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 
 **Avhenger av:** WP-80. Tingene en venn har gjort synlige for venner legges på siden av WP-27.
 
+**Gjenstår etter beslutningene 9. oktober 2026** (designreferanse: [Personer, venner og tillit v1](../../design/L%C3%A5nbort%20-%20Personer%2C%20venner%20og%20tillit%20v1.html)). Bygges i det vertikale sporet, ikke i designarbeidet:
+
+- **Sperre etter avslag (PS-USR-012).** Endrer eksisterende relasjonslogikk.
+  - Serveren avviser `friendship.request` når den siste vennskapsraden mellom paret er avslått og ble sendt av den som nå prøver. Mottakerens egen forespørsel løfter sperren, også om den senere trekkes eller avslås. Sjekken gjøres under parlåsen, i samme transaksjon som innsettingen, så to samtidige forsøk ikke kan slippe gjennom. Dataene finnes allerede (`end_reason = 'declined'` og `requester_id` i `app.friendships`); ingen ny tabell trengs.
+  - Avvisningen er den samme nøytrale som når en forespørsel ellers ikke kan sendes. Ingen feilkode, tekst, hendelse eller logg sier «avslått» til avsenderen.
+  - Relasjonen avsenderen leser, får et felt som bare sier om en forespørsel kan sendes nå, uten grunn. Brukerflaten skjuler «Send venneforespørsel» og viser «Du kan ikke sende … en venneforespørsel nå» når feltet er usant.
+  - Blokkering og oppheving løfter ikke sperren. Tilbaketrukket forespørsel og fjernet vennskap gir ingen sperre.
+  - Tester: domenetest for sperren, for at mottakerens forespørsel løfter den og for at blokkering/oppheving ikke gjør det; negativ sikkerhetstest for direkte API-kall fra avsenderen; test av at svaret og lesemodellen ikke røper avslaget.
+- **Varsler (PS-USR-011).** Appen varsler allerede bare ny og godtatt forespørsel, og varselet åpner personens side med gjeldende relasjon. Når varslingssenteret får designet, må et varsel om en trukket forespørsel si at den ikke lenger gjelder (UX-IA-019).
+- **Konto som lag (UX-IA-020).** I dag er Konto en vanlig side (`/konto`). Den blir et fullskjerms lag med egen stabel og «Lukk» som returnerer til forrige skjerm med tilstanden. Bygges sammen med stabelen fra UI-designets fase 2 (se «Senere»).
+- **Rollen fra inngangen først (UX-PRIV-012).** Tillitsprofilen viser i dag alltid «Som låntaker» først, som er standardrekkefølgen. Inngangen må gi rollen når den gjelder et lån, en forespørsel eller en ting.
+- **Ingen aktivitetstall (PS-TRUST-017).** Appen viser ingen i dag; ingenting skal bygges.
+
 ## WP-87 — Lånets side og anmeldelser
 
 **Leverer:** Resten av låneforløpet på lånets side, så ingen del av lånet krever en annen flate (UX-JRN-007–010, UX-EXC-001–010).
@@ -185,5 +198,5 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 
 - Skjermstrukturen og navigasjonen som ble låst i UI-designets fase 2 (UX-IA-009–015) er ikke bygget ennå. I appen i dag går tilbakelenken til sidens faste område, ikke langs en stabel; varsler og e-postlenker åpner målet uten bygget stabel og merke; forespørselen og lånet er to sider; og skjemaet for låneforespørselen viser områdene. Dette bygges i det vertikale implementeringssporet fra designfase 4 ([UI-designplanen](../planning/ui-design-plan.md)).
 - Åpning av fri samtale fra en mottatt strukturert henvendelse, demping og arkivering av lånesamtalen (rest fra WP-44), og start av samtale fra personens side. Privat chat er av for ekte brukere til Port C.
-- Kort presentasjon og synlighetsvalg for andre profilfelt (PS-USR-002), når profilfeltene er fastsatt. Profilbildet er bygget, med eget synlighetsvalg; formen det vises i er OD-0027.
+- Kort presentasjon og synlighetsvalg for andre profilfelt (PS-USR-002), når profilfeltene er fastsatt. Profilbildet er bygget, med eget synlighetsvalg, og vises som sirkel (PS-USR-002).
 - Flatene [skjerm- og flytinventaret](../ux/08-skjerm-og-flytinventar.md#hull-flater-uten-ui-pakke) viser at ingen pakke bygger ennå: melding om mulig dødsfall, administratorenes oversikt over medlemmer og utestengte, og for privat chat varsel før utlogging, gjenopprettingsnøkkel og overføring av gammel historikk (ADR-0010).

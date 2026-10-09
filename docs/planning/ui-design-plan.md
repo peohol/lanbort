@@ -1,6 +1,6 @@
 # Plan for UI-designfasen
 
-> **Status:** Vedtatt arbeidsplan. Fase 1–3 er fullført; kjerneflyt 1–4 har gjeldende HTML-prototyper, og kjerneflyt 5 («Samtaler og enheter») er et arbeidsutkast med åpne produktspørsmål (9. oktober 2026). Prototypene er ennå ikke implementert som samlet UI i appen. Se [gjeldende designreferanser](../../design/README.md). Planen innfører ikke nye produktkrav eller UX-regler.
+> **Status:** Vedtatt arbeidsplan. Fase 1–3 er fullført; kjerneflyt 1–4 har gjeldende HTML-prototyper, kjerneflyt 5 («Samtaler og enheter») er arbeidsutkast med åpne produktspørsmål, og kjerneflyt 6 («Personer, venner og tillit») er til siste gjennomgang etter produktbeslutningene 9. oktober 2026. Prototypene er ennå ikke implementert som samlet UI i appen. Se [gjeldende designreferanser](../../design/README.md). Planen innfører ikke nye produktkrav eller UX-regler.
 
 ## Formål
 
@@ -160,7 +160,7 @@ Målet er et lite, konsistent system som dekker reelle behov. Nye komponentvaria
 
 ## Fase 6 — Utvid ordinær brukerflate
 
-**Status:** Pågår. Gjeldende prototyper i `design/` dekker registrering av ting (kjerneflyt 2), finne/bli med i miljø (3), Hjem/varsler (4) og Samtaler/enheter (5, ennå ikke godkjent). Neste naturlige designbolk er «Personer, venner og tillit» (WP-86). Se `design/README.md` for eksakte aktive filnavn og status.
+**Status:** Pågår. Gjeldende prototyper i `design/` dekker registrering av ting (kjerneflyt 2), finne/bli med i miljø (3), Hjem/varsler (4), Samtaler/enheter (5, ennå ikke godkjent) og Personer, venner og tillit (6, WP-86, ennå ikke godkjent). Se `design/README.md` for eksakte aktive filnavn og status.
 
 Deretter designes resten av sluttbrukeropplevelsen med gjenbruk av de etablerte mønstrene.
 

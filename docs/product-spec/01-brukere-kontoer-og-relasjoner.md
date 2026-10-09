@@ -10,7 +10,7 @@ En ny bruker skal være minst 18 år, oppgi virkelig navn og verifisere minst é
 ### PS-USR-002 — Minimal profil
 **Forankring:** [Profil og synlighet](../vision/02-brukere-roller-og-relasjoner.md)
 
-Profilen skal minst ha virkelig navn. Profilbilde og kort presentasjon kan være valgfrie. Hvert profilfelt som kan deles skal ha en eksplisitt synlighetsregel med minst nivåene **generelt**, **venner** og **bare meg**. Systemkritiske kontoopplysninger skal ikke gjøres til profilfelt bare fordi de finnes.
+Profilen skal minst ha virkelig navn. Profilbilde og kort presentasjon kan være valgfrie. Hvert profilfelt som kan deles skal ha en eksplisitt synlighetsregel med minst nivåene **generelt**, **venner** og **bare meg**. Systemkritiske kontoopplysninger skal ikke gjøres til profilfelt bare fordi de finnes. Profilbildet vises som sirkel overalt der det vises, og brukeren beskjærer det i den samme sirkelen (OD-0027).
 
 ### PS-USR-003 — Vennskap krever gjensidig aksept
 **Forankring:** [Vennskap](../vision/02-brukere-roller-og-relasjoner.md)
@@ -31,6 +31,18 @@ En bruker som ikke er venn med mottakeren kan ikke starte vilkårlig fri chat. F
 **Forankring:** VP-11; [Blokkering](../vision/02-brukere-roller-og-relasjoner.md)
 
 Blokkering avslutter vennskap og skal hindre ordinær oppdagelse, nye venneforespørsler, nye direktemeldinger og nye lån mellom partene. Den blokkerte varsles ikke eksplisitt om hvem som blokkerte.
+
+### PS-USR-011 — Bare ny og godtatt venneforespørsel varsles
+**Forankring:** [Vennskap](../vision/02-brukere-roller-og-relasjoner.md); OD-0028
+
+Den andre får varsel når en venneforespørsel kommer og når den blir godtatt. Avslag, tilbaketrukket forespørsel og fjernet vennskap varsles ikke. Relasjonen oppdateres likevel for begge med en gang. Et varsel om en forespørsel som ikke lenger gjelder, gir ikke tilgang til handlinger som har falt bort; det sier at forespørselen ikke lenger gjelder, uten grunn (UX-IA-019).
+
+### PS-USR-012 — Etter avslag må mottakeren ta neste initiativ
+**Forankring:** [Vennskap](../vision/02-brukere-roller-og-relasjoner.md); PS-USR-003, PS-USR-011; OD-0029
+
+Når en venneforespørsel avslås, kan avsenderen ikke sende en ny forespørsel til mottakeren før mottakeren selv har sendt en forespørsel til avsenderen. Mottakeren kan sende når som helst. Sperren består om en av dem blokkerer og senere opphever blokkeringen, og den gjelder ikke etter en tilbaketrukket forespørsel eller et fjernet vennskap.
+
+Sperren vises nøytralt: avsenderen ser at de ikke er venner og at en forespørsel ikke kan sendes nå, men ingen status, tekst, kode eller felt sier at forespørselen ble avslått. Regelen håndheves på serveren; at handlingen mangler i brukerflaten, er ikke sperren.
 
 ### PS-USR-007 — Blokkering opphever ikke etablerte forpliktelser
 **Forankring:** VP-05, VP-10, VP-11
@@ -58,7 +70,7 @@ Etter permanent sletting fjernes aktiv profil og aktive sosiale relasjoner. Nød
 
 `ventende → aktivt → avsluttet`
 
-Blokkering kan når som helst avslutte et aktivt vennskap. En avsluttet relasjon gjenopprettes ikke automatisk.
+En ventende forespørsel avsluttes også når den avslås eller trekkes. Blokkering kan når som helst avslutte et aktivt vennskap. En avsluttet relasjon gjenopprettes ikke automatisk. Et avslag sperrer ny forespørsel fra samme avsender til mottakeren har tatt initiativ (PS-USR-012).
 
 ### Blokkering
 

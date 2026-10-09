@@ -56,3 +56,8 @@ Når identitet ikke lenger trengs skal historiske flater bruke nøytral betegnel
 **Forankring:** PS-ADM-008
 
 En representant ved død/varig utilgjengelighet skal aldri «logge inn som» brukeren. UI viser eksplisitt hvilket konkret lån/forhold representanten håndterer og hvilke handlinger som er tilgjengelige.
+
+### UX-PRIV-012 — Tillit vises først i rollen inngangen gjelder
+**Forankring:** UX-P02, UX-P11; PS-TRUST-006; OD-0032
+
+Personens side viser erfaringene som låntaker og som utlåner hver for seg, og begge rollene er alltid tilgjengelige. Når inngangen gjelder et konkret lån, en forespørsel eller en ting, står rollen personen har der, først: «Som låntaker» når personen låner eller spør om å låne, «Som utlåner» når personen eier tingen eller låner den ut. Fra nøytrale innganger, som Konto, miljøets medlemsliste, en samtale uten lån, et varsel om vennskap eller en delt lenke, er rekkefølgen alltid den samme: «Som låntaker», så «Som utlåner».

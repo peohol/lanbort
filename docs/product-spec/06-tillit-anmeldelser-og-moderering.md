@@ -62,6 +62,11 @@ Hvis mønstre senere vises, skal de uttrykkes som forståelige rolle- og hendels
 
 Statistisk kalibrering eller vekting av anmeldere inngår ikke i første versjon.
 
+### PS-TRUST-017 — Personens side viser ingen generelle aktivitetstall
+**Forankring:** VP-14; [Delingsaktivitet er ikke en tillitsskår](../vision/07-tillit-anmeldelser-og-moderering.md); OD-0030
+
+Personens side viser anmeldelsene og hva de bygger på, men ingen generelle aktivitetstall, for eksempel antall gjennomførte utlån eller delte ting. Personlig aktivitetsstatistikk som bare brukeren selv ser, kan vurderes senere under Konto.
+
 ### PS-TRUST-013 — Lokal moderering og plattformmoderering er forskjellige nivåer
 **Forankring:** VP-13, VP-17
 
