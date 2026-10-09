@@ -103,6 +103,14 @@ export function RelationCard({ person }: { person: Person }) {
 }
 
 /**
+ * Where a report about the person can go: the administrators of each
+ * environment the reader shares with them, each named when there are
+ * several, or else Lånbort. The report page offers Lånbort in either case.
+ */
+const reportTargets = (person: Person) =>
+  person.sharedEnvironments.length > 0 ? person.sharedEnvironments : [null];
+
+/**
  * The rarer steps, in the same place on every person's page (UX-INT-009):
  * remove the friend, block, and report. Removing and blocking show what
  * ends, what stays and what the other learns first (UX-INT-007). Someone
@@ -165,16 +173,22 @@ export function PersonMoreActions({ person }: { person: Person }) {
         body={{ userId: person.userId }}
         danger
       />
-      <Link
-        className="button"
-        href={newCaseHref({
-          kind: "report",
-          environmentId: person.sharedEnvironments[0]?.id ?? null,
-          subject: { kind: "user", id: person.userId },
-        })}
-      >
-        Rapporter {name}
-      </Link>
+      {reportTargets(person).map((environment) => (
+        <Link
+          key={environment?.id ?? "lanbort"}
+          className="button"
+          href={newCaseHref({
+            kind: "report",
+            environmentId: environment?.id ?? null,
+            subject: { kind: "user", id: person.userId },
+          })}
+        >
+          Rapporter {name}
+          {environment &&
+            person.sharedEnvironments.length > 1 &&
+            ` i ${environment.name}`}
+        </Link>
+      ))}
     </MoreActions>
   );
 }

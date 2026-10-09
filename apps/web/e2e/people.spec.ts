@@ -72,6 +72,10 @@ test("members befriend each other on their pages, and a block hides the blocker"
 
   // Blocking says what it ends and what stays before it happens.
   await anna.page.getByText("Flere valg").click();
+  // A report goes to the administrators of the environment they share.
+  await expect(
+    anna.page.getByRole("link", { name: "Rapporter Bo Dahl" }),
+  ).toHaveAttribute("href", `/saker/ny?miljo=${environmentId}&person=${bo.id}`);
   await anna.page.getByRole("button", { name: "Blokker Bo Dahl" }).click();
   const dialog = anna.page.getByRole("dialog", { name: "Blokkere Bo Dahl?" });
   await expect(dialog).toContainText("Vennskapet avsluttes.");
