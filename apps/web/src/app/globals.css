@@ -1132,9 +1132,22 @@ button:disabled,
   stroke-width: 2;
 }
 
-.status-meta {
+.status-card > .tag {
+  justify-self: start;
+}
+
+.status-meta,
+.status-body {
   margin: 0;
   color: var(--color-muted);
+}
+
+.status-body > :first-child {
+  margin-top: 0;
+}
+
+.status-body > :last-child {
+  margin-bottom: 0;
 }
 
 /* On a phone the next step spans the card; a wider screen keeps buttons
