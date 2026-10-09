@@ -46,6 +46,7 @@ Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) er la
 - **Ikoner:** `Icon` (`components/icon.tsx`) med ikonene fra prototypene. Ikoner står alltid ved tekst.
 - **Status og kontekst:** `Tag` med tonene `attention` («Venter på deg»), `waiting` (venter på andre), `positive`, `warning`, `danger` og `neutral`; tonen gir farge og ikon, ordene bærer meningen. `ContextTag` med ikon for kontekst («Via Borettslaget Lia»).
 - **Sider:** `PageHeader` (tilbake, typeetikett med `kind`, tittel, kontekst), `StatusCard` («Nå»-kortet), `EmptyState`, `MoreActions`, `ConfirmAction` (ark fra bunnen på mobil), `Field`, `CommandForm`, `PersonName`.
+- **Navigasjon (UX-IA-009–013):** en side sier bare hvor den hører hjemme, så følger tilbake-knappen (mobil) og brødsmulene (større skjerm) stabelen brukeren faktisk gikk. `PageHeader` får `back` (områdets egen side, en fast beholder som en kø, eller for et skjema stedet det ble startet fra) og `home` når hjemområdet ikke er `back`. `task` gjør et skjema til en avgrenset oppgave: uten områder og klokke, bare «Avbryt». Sidens første rad deler linje med klokke og profilbilde. Logikken ligger i `navigation/stack.ts` (ren og testet) og `components/navigation-stack.ts`; sider skal ikke bygge egne tilbake-lenker. En lenke som er en direkte inngang, kaller `expectDirectEntry` før den følges, slik varsler gjør.
 
 ## WP-80 — Felles UI-grunnlag
 
