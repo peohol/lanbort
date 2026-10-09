@@ -148,7 +148,7 @@ Et skjema som sendes inn, for eksempel låneforespørselen, skjuler områdene og
 
 Hver detalj har en typeetikett (Ting, Forespørsel, Lån, Person, Miljø, Samtale) og et kontekstmerke («Via Borettslaget Lia», «Direkte mellom venner») eller en rolle («Du handler som administrator»). Der synligheten avhenger av kontekst, forklarer én linje hvorfor («Du ser tingen fordi du er medlem i Borettslaget Lia»). Kontekstmerker og forklaringer erstatter en vedvarende kontekstlinse, så ingen skjult filtertilstand avgjør hva brukeren ser.
 
-**Designreferanse for Hjem og varsler:** [Lånbort – Hjem og varsler v2](../../design/L%C3%A5nbort%20-%20Hjem%20og%20varsler%20v2.html). Besluttet 8. oktober 2026; navn og datoer i referansen er eksempler. Ved tvil gjelder reglene nedenfor.
+**Designreferanse for Hjem og varsler:** [Lånbort – Hjem og varsler v3](../../design/L%C3%A5nbort%20-%20Hjem%20og%20varsler%20v3.html). Besluttet 8. oktober 2026; navn og datoer i referansen er eksempler. Ved tvil gjelder reglene nedenfor.
 
 ### UX-IA-016 — Hjem har fast seksjonsrekkefølge, og tomme seksjoner skjules
 **Forankring:** UX-P04, UX-P08, UX-P16; UX-IA-005
