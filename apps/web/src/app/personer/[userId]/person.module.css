@@ -1,6 +1,44 @@
 /* A person's page (WP-86, kjerneflyt 6): why the reader sees them, what is
    between them now, and what others said about them in each role. */
 
+/* The page in one column, and on a wide screen in two (the design's screen
+   09): who the person is and what is between you on the left, what others
+   said about them on the right. */
+.page > * {
+  min-width: 0;
+}
+
+.aside {
+  container: person-aside / inline-size;
+}
+
+@media (min-width: 72rem) {
+  /* The left parts (header, why, «Dere to», between, things, more) each
+     take an auto row; the last row is flexible, so a long right column
+     grows into it instead of spreading the left parts apart. */
+  .page {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-rows: repeat(6, auto) 1fr;
+    align-items: start;
+    column-gap: var(--space-6);
+  }
+
+  .page > * {
+    grid-column: 1;
+  }
+
+  /* Level with the picture: below the way back, which shares its line
+     with the bell and the account. */
+  .page > .aside {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    margin-top: calc(
+      var(--header-covers, var(--header-height)) + var(--space-3)
+    );
+  }
+}
+
 /* Why the reader sees the person: a quiet line with its icon. */
 .why {
   display: flex;
@@ -34,19 +72,18 @@
   color: var(--color-muted);
 }
 
-/* Rows in one card, each leading on with a chevron. The row's link covers
-   the whole row, so the finger needs no aim (UX-A11Y-006). */
-.rows {
+/* A row's detail on lines of its own, such as a thing's availability over
+   where it is seen. */
+.lines {
   display: grid;
-  margin: 0;
-  padding: var(--space-1) var(--space-4);
-  list-style: none;
-  background: var(--color-surface);
-  border-radius: var(--radius-l);
-  box-shadow: var(--shadow-raised);
+  justify-items: start;
+  gap: var(--space-1);
 }
 
-.row {
+/* A role's heading row. On a phone its link covers the whole row, so the
+   finger needs no aim (UX-A11Y-006); the places to go elsewhere on the page
+   are `MenuList` rows. */
+.roleHead {
   position: relative;
   display: flex;
   align-items: center;
@@ -55,53 +92,32 @@
   padding: var(--space-3) 0;
 }
 
-.row + .row {
-  border-top: 1px solid var(--color-border);
-}
-
-.row a {
+.roleHead a {
   font-weight: 700;
   color: var(--color-text);
   text-decoration: none;
 }
 
-.row a::after {
+.roleHead a::after {
   content: "";
   position: absolute;
   inset: 0;
 }
 
-.row:has(a):hover a {
+.roleHead:has(a):hover a {
   text-decoration: underline;
 }
 
-.rowText {
+.roleText {
   flex: 1;
   min-width: 0;
   display: grid;
   gap: 0.125rem;
 }
 
-.rowText > span {
+.roleText > span {
   font-size: var(--text-s);
   color: var(--color-muted);
-}
-
-/* A thing without its picture: a soft square with the thing's icon. */
-.lead {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: var(--radius-s);
-  color: var(--color-muted);
-  background: linear-gradient(
-    135deg,
-    var(--color-image-from),
-    var(--color-image-to)
-  );
 }
 
 .chevron {
@@ -122,7 +138,7 @@
 }
 
 /* Each role on its own: rows in one card on a phone, and on a wider screen
-   a card each, side by side and unfolded. */
+   a card each, unfolded, side by side where there is room. */
 .roles {
   display: grid;
   padding: var(--space-1) var(--space-4);
@@ -145,7 +161,6 @@
 
 @media (min-width: 48rem) {
   .roles {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
     gap: var(--space-3);
     padding: 0;
@@ -170,12 +185,18 @@
   }
 
   /* Unfolded, the row is a heading and the link is in the text. */
-  .role .row a::after {
+  .roleHead a::after {
     content: none;
   }
 
   .role .chevron {
     display: none;
+  }
+}
+
+@container person-aside (min-width: 30rem) {
+  .roles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

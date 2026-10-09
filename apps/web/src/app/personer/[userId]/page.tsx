@@ -116,7 +116,7 @@ export default async function PersonPage({
   const { picture, context } = header(person);
 
   return (
-    <main>
+    <main className={`main-wide ${styles.page}`}>
       <PageHeader
         kind="Person"
         title={person.realName}
@@ -132,16 +132,18 @@ export default async function PersonPage({
       )}
       <RelationCard person={person} />
       {loans && <Between loans={loans} />}
-      {trust ? (
-        <TrustSummary userId={userId} profile={trust} role={roleIn(query)} />
-      ) : (
-        !person.relation?.blockedByMe && (
-          <p className="quiet">
-            Anmeldelser fra lån vises for venner og for medlemmer av et felles
-            miljø.
-          </p>
-        )
-      )}
+      <div className={styles.aside}>
+        {trust ? (
+          <TrustSummary userId={userId} profile={trust} role={roleIn(query)} />
+        ) : (
+          !person.relation?.blockedByMe && (
+            <p className="quiet">
+              Anmeldelser fra lån vises for venner og for medlemmer av et felles
+              miljø.
+            </p>
+          )
+        )}
+      </div>
       {things && (
         <FriendThings
           name={person.realName}
