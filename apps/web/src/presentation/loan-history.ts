@@ -64,7 +64,7 @@ const texts: Record<
   responsibility_accepted: (entry) =>
     `${subject(entry.actor)} godtok ansvarserklæringen`,
   reserved: (entry) => `${subject(entry.actor)} godkjente lånet`,
-  cancelled: (entry) => `${subject(entry.actor)} avlyste lånet`,
+  cancelled: (entry) => `${subject(entry.actor)} kansellerte lånet`,
   stopped: () =>
     "Lånet ble stoppet før overleveringen på grunn av en plattformbegrensning",
   amendment_proposed: (entry) =>

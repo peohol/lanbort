@@ -1,6 +1,5 @@
 import type {
   Loan,
-  LoanHistoryEntry,
   LoanLogisticsChannel,
   LoanLogisticsCloseReason,
   LoanReview,
@@ -11,6 +10,7 @@ import {
   readLoan,
   readLoanHistory,
   readLoanLogistics,
+  readLoanRequest,
   readLoanReviews,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
@@ -23,29 +23,27 @@ import { ConfirmAction } from "@/components/confirm-action";
 import { describedBy, Field } from "@/components/field";
 import { MoreActions } from "@/components/more-actions";
 import { PageHeader } from "@/components/page-header";
-import { PersonName } from "@/components/person-name";
 import { StatusCard } from "@/components/status-card";
-import { chatConversationHref } from "@/navigation/chat";
+import { ContextTag } from "@/components/tag";
+import { chatConversationHref, chatHref } from "@/navigation/chat";
 import {
   morePagesHref,
   pagesShown,
   type SearchParams,
 } from "@/navigation/list-pages";
+import { loansHref } from "@/navigation/areas";
 import { loanHref } from "@/navigation/routes";
 import { hrefFor } from "@/navigation/targets";
-import {
-  addDays,
-  calendarDay,
-  formatPeriod,
-  formatTime,
-} from "@/presentation/dates";
-import { describeHistoryEntry } from "@/presentation/loan-history";
+import { addDays, calendarDay, formatPeriod } from "@/presentation/dates";
+import { requestOriginLabel } from "@/presentation/loan-requests";
 import {
   describeLoanStatus,
   loanApi,
+  loanProgress,
   type LoanStep,
   loanSteps,
-  loanTone,
+  loanTitle,
+  otherParty,
   personName,
 } from "@/presentation/loan-status";
 import { basisNote, hiddenUntil, scoreLines } from "@/presentation/reviews";
@@ -56,6 +54,10 @@ import {
   pageQueryOrNotFound,
   requirePageAccount,
 } from "@/server/session";
+import styles from "../_parts/loan.module.css";
+import { Party } from "../_parts/party";
+import { Progress } from "../_parts/progress";
+import { Timeline } from "../_parts/timeline";
 import { ReviewForm } from "./review-form";
 
 export const metadata: Metadata = { title: "Lån – Lånbort" };
@@ -63,24 +65,14 @@ export const metadata: Metadata = { title: "Lån – Lånbort" };
 /** The timeline's pages in the address, and the element it is. */
 const historyKey = "historikk";
 
-/** The other party, by name (UX-INT-004). */
-const otherParty = (loan: Loan) =>
-  personName(loan.parties[loan.role === "lender" ? "borrower" : "lender"]);
-
-function Steps({
-  steps,
-  primary = false,
-}: {
-  steps: readonly LoanStep[];
-  primary?: boolean;
-}) {
-  return steps.map((step, index) => (
+function Steps({ steps }: { steps: readonly LoanStep[] }) {
+  return steps.map((step) => (
     <ActionButton
       key={`${step.path} ${step.label}`}
       label={step.label}
       path={step.path}
       body={step.body}
-      primary={primary && index === 0}
+      primary={step.primary ?? false}
     />
   ));
 }
@@ -165,20 +157,24 @@ function Cancel({ loan }: { loan: Loan }) {
 
   return (
     <ConfirmAction
-      label="Avlys lånet"
-      title={`Avlyse lånet av ${title}?`}
+      label="Kanseller lånet"
+      icon="close"
+      title="Kansellere lånet?"
       consequences={{
         gone: [
-          `Avtalen om ${title} ${formatPeriod(loan.period)} avsluttes som avlyst.`,
+          `Avtalen om ${title} ${formatPeriod(loan.period)} avsluttes som kansellert.`,
           "Perioden blir ledig for andre lån.",
         ],
         stays: [
-          "Historikken for lånet.",
-          "Dere kan begge anmelde kommunikasjonen frem til nå.",
+          "Tidslinjen for lånet.",
+          "Dere kan begge anmelde kommunikasjonen fram til nå.",
         ],
-        affects: [`${otherParty(loan)} får beskjed om at du har avlyst.`],
+        affects: [
+          `${otherParty(loan)} får varsel om at du har kansellert. Du trenger ikke oppgi noen grunn.`,
+          "Det kan ikke angres.",
+        ],
       }}
-      confirmLabel="Avlys lånet"
+      confirmLabel="Kanseller lånet"
       path={`${loanApi(loan.id)}/cancel`}
       body={{}}
       danger
@@ -280,39 +276,81 @@ function Mediation({ loan }: { loan: Loan }) {
 }
 
 /**
- * The status card (UX-INT-001, UX-INT-004): what the loan waits for and
- * who, its date, and the next step first; the rarer steps under «Flere
- * valg» (UX-INT-009), where a deviation keeps the same place (UX-EXC-001).
+ * The status card (UX-INT-001, UX-INT-004, KF7): the situation in words,
+ * who it waits on, what to know about it and the next step first. When
+ * the loan has ended and the reader can still review, the way to the
+ * review is here too (UX-JRN-010).
  */
-function LoanStatus({ loan }: { loan: Loan }) {
-  const status = describeLoanStatus(loan);
-  const { primary, secondary } = loanSteps(loan);
-  const { actions } = loan;
-  const more =
-    secondary.length > 0 ||
-    actions.proposeAmendment !== null ||
-    actions.cancel ||
-    actions.offerResponsibility.length > 0;
+function LoanStatus({
+  loan,
+  reviews,
+}: {
+  loan: Loan;
+  reviews: LoanReviews | null;
+}) {
+  const situation = describeLoanStatus(loan, calendarDay());
+  const { primary } = loanSteps(loan);
+  const waits = situation.tone === "attention" || situation.tone === "waiting";
+  const review =
+    reviews?.window?.status === "open" && !reviews.own ? reviews : null;
 
   return (
     <StatusCard
-      status={status.text}
-      tone={loanTone(loan)}
-      when={status.when}
-      actions={primary.length > 0 && <Steps steps={primary} primary />}
-      more={
-        more && (
-          <MoreActions>
-            <Steps steps={secondary} />
-            <Cancel loan={loan} />
-            <ProposeAmendment loan={loan} />
-            <OfferResponsibility loan={loan} />
-          </MoreActions>
+      status={situation.headline}
+      tone={situation.tone}
+      who={waits ? situation.label : undefined}
+      actions={
+        primary.length > 0 && (
+          <div className={styles.answers}>
+            <Steps steps={primary} />
+          </div>
         )
       }
     >
+      {situation.body.map((text) => (
+        <p key={text} className={styles.body}>
+          {text}
+        </p>
+      ))}
       <Mediation loan={loan} />
+      {review && (
+        <>
+          <p>
+            <a className="button button-secondary" href="#anmeldelser">
+              Anmeld {otherParty(loan)}
+            </a>
+          </p>
+          <p className="help">{hiddenUntil(review, otherParty(loan))}</p>
+        </>
+      )}
     </StatusCard>
+  );
+}
+
+/**
+ * The rarer steps (UX-INT-009), below the agreement and the other party
+ * as in KF7: only what the loan offers now.
+ */
+function LoanMoreActions({ loan }: { loan: Loan }) {
+  const { secondary } = loanSteps(loan);
+  const { actions } = loan;
+
+  if (
+    secondary.length === 0 &&
+    actions.proposeAmendment === null &&
+    !actions.cancel &&
+    actions.offerResponsibility.length === 0
+  ) {
+    return null;
+  }
+
+  return (
+    <MoreActions>
+      <Steps steps={secondary} />
+      <ProposeAmendment loan={loan} />
+      <OfferResponsibility loan={loan} />
+      <Cancel loan={loan} />
+    </MoreActions>
   );
 }
 
@@ -359,32 +397,37 @@ function Logistics({ channel }: { channel: LoanLogisticsChannel }) {
 
 /** What was agreed, as it is now (PS-LOAN-008, PS-LOAN-010). */
 function Agreement({ loan }: { loan: Loan }) {
-  const lender = loan.role === "lender";
-
   return (
-    <section aria-labelledby="avtalen">
-      <h2 id="avtalen">Avtalen</h2>
+    <section className={styles.flat} aria-label="Avtalen">
       <dl className="facts">
-        <dt>{lender ? "Du låner bort til" : "Du låner av"}</dt>
-        <dd>
-          <PersonName
-            person={loan.parties[lender ? "borrower" : "lender"]}
-            role={lender ? "borrower" : "lender"}
-          />
-        </dd>
         <dt>Periode</dt>
         <dd>{formatPeriod(loan.period)}</dd>
-        {loan.agreement.loanTerms && (
-          <>
-            <dt>Vilkår</dt>
-            <dd>{loan.agreement.loanTerms}</dd>
-          </>
-        )}
+        <dt>Vilkår</dt>
+        <dd>{loan.agreement.loanTerms ?? "Ingen egne vilkår"}</dd>
         <dt>Beskrivelse</dt>
         <dd>{loan.agreement.description}</dd>
       </dl>
     </section>
   );
+}
+
+/**
+ * Where «Skriv til» leads (KF7, PS-COM-006): the lender may start a private
+ * conversation with the borrower from the request they received; the
+ * borrower finds it among their conversations once it exists. Private chat
+ * is off for real users until Port C.
+ */
+function writeHref(loan: Loan): string | null {
+  if (!chatEnabled() || loan.role !== "lender") {
+    return null;
+  }
+
+  const query = new URLSearchParams({
+    med: loan.borrowerUserId,
+    foresporsel: loan.requestId,
+  });
+
+  return `${chatHref}?${query.toString()}`;
 }
 
 /** A review as its parties see it, with its one response (PS-TRUST-005). */
@@ -398,7 +441,7 @@ function Review({
   children?: ReactNode;
 }) {
   return (
-    <article aria-label={heading}>
+    <article className={styles.review} aria-label={heading}>
       <h3>{heading}</h3>
       {review.status === "removed" ? (
         <p>Anmeldelsen er fjernet av moderering.</p>
@@ -412,7 +455,9 @@ function Review({
               </Fragment>
             ))}
           </dl>
-          {review.text && <p className="message-text">{review.text}</p>}
+          {review.text && (
+            <p className={`message-text ${styles.quote}`}>{review.text}</p>
+          )}
           {review.moderated.textRemoved && (
             <p className="help">Teksten er fjernet av moderering.</p>
           )}
@@ -424,12 +469,12 @@ function Review({
         </>
       )}
       {review.response && (
-        <>
+        <div className={styles.quote}>
           <h4>Tilsvar</h4>
           <p className="message-text">
             {review.response.text ?? "Tilsvaret er fjernet av moderering."}
           </p>
-        </>
+        </div>
       )}
       {children}
     </article>
@@ -456,8 +501,8 @@ function Reviews({ loan, reviews }: { loan: Loan; reviews: LoanReviews }) {
     "Du kan svare én gang. Tilsvaret vises sammen med anmeldelsen og endrer ikke vurderingen.";
 
   return (
-    <section aria-labelledby="anmeldelser">
-      <h2 id="anmeldelser">Anmeldelser</h2>
+    <section id="anmeldelser" aria-labelledby="anmeldelser-tittel">
+      <h2 id="anmeldelser-tittel">Anmeldelser</h2>
       {window.status === "paused" && (
         <p>
           Lånet er åpnet igjen. Anmeldelsene venter til det er avsluttet på
@@ -467,7 +512,7 @@ function Reviews({ loan, reviews }: { loan: Loan; reviews: LoanReviews }) {
       {open && <p>{hiddenUntil(reviews, other)}</p>}
       {open && note && <p className="help">{note}</p>}
       {own ? (
-        <Review review={own} heading="Din anmeldelse">
+        <Review review={own} heading={`Din anmeldelse av ${other}`}>
           {own.status === "hidden" && open && (
             <details>
               <summary>Endre anmeldelsen</summary>
@@ -480,14 +525,14 @@ function Reviews({ loan, reviews }: { loan: Loan; reviews: LoanReviews }) {
           )}
         </Review>
       ) : open ? (
-        <>
+        <div className={styles.review}>
           <h3>Anmeld {other}</h3>
           <ReviewForm
             loanId={loan.id}
             dimensions={window.dimensions}
             own={null}
           />
-        </>
+        </div>
       ) : null}
       {received && (
         <Review review={received} heading={`${other} sin anmeldelse av deg`}>
@@ -522,46 +567,10 @@ function Reviews({ loan, reviews }: { loan: Loan; reviews: LoanReviews }) {
 }
 
 /**
- * UX-IA-008, UX-INT-008: the history is secondary, so it stays closed
- * until asked for; once more of it is asked for, it is open.
- */
-function History({
-  loan,
-  entries,
-  more,
-  open,
-}: {
-  loan: Loan;
-  entries: readonly LoanHistoryEntry[];
-  more: string | null;
-  open: boolean;
-}) {
-  return (
-    <details id={historyKey} open={open}>
-      <summary>Historikk</summary>
-      <ol className="entries" aria-label="Historikk, nyeste først">
-        {entries.map((entry) => (
-          <li key={entry.id} className="entry">
-            <span>{describeHistoryEntry(entry, loan.agreement.title)}</span>
-            <time className="entry-detail" dateTime={entry.at}>
-              {formatTime(entry.at)}
-            </time>
-          </li>
-        ))}
-      </ol>
-      {more && (
-        <p className="link-row">
-          <a href={more}>Vis eldre hendelser</a>
-        </p>
-      )}
-    </details>
-  );
-}
-
-/**
- * One loan for one of its parties (WP-64, WP-87): the current status and
- * every step the loan offers, the agreement, the reviews once it has
- * ended, and the history below it. No part of the loan needs another page
+ * One loan for one of its parties (WP-64, WP-87, KF7): the loan's steps,
+ * the status and every step the loan offers, the agreement and the other
+ * party, the reviews once it has ended, and the timeline, which a wider
+ * screen shows beside the rest. No part of the loan needs another page
  * (UX-JRN-007–010).
  */
 export default async function LoanPage({
@@ -575,38 +584,78 @@ export default async function LoanPage({
   const { loanId } = await params;
   const query = await searchParams;
   const loan = await pageQueryOrNotFound(readLoan, { loanId });
-  const history = await collectPages(
-    (cursor) => pageQuery(readLoanHistory, { loanId, cursor }),
-    ({ entries }) => entries,
-    pagesShown(query, historyKey),
-  );
-  // Newest first, and at most one open: the one that matters now.
-  const logistics = chatEnabled()
-    ? (await pageQuery(readLoanLogistics, { loanId }))?.channels[0]
-    : undefined;
-  // The reviews are their reviewers': after a change of lender, the former.
-  const reviews = await pageQueryIfAllowed(readLoanReviews, { loanId });
+  const [history, logistics, reviews, request] = await Promise.all([
+    collectPages(
+      (cursor) => pageQuery(readLoanHistory, { loanId, cursor }),
+      ({ entries }) => entries,
+      pagesShown(query, historyKey),
+    ),
+    // Newest first, and at most one open: the one that matters now.
+    chatEnabled()
+      ? pageQuery(readLoanLogistics, { loanId }).then(
+          (result) => result?.channels[0],
+        )
+      : undefined,
+    // The reviews are their reviewers': after a change of lender, the former.
+    pageQueryIfAllowed(readLoanReviews, { loanId }),
+    // The request names where the loan came from (UX-PRIV-003), while the
+    // reader may still see it.
+    pageQueryIfAllowed(readLoanRequest, { requestId: loan.requestId }),
+  ]);
+  const other = loan.role === "lender" ? "borrower" : "lender";
 
   return (
-    <main>
+    <main className={styles.page}>
       <PageHeader
-        title={loan.agreement.title}
-        back={{ href: "/lan", label: "Lån" }}
-      />
-      <LoanStatus loan={loan} />
-      {logistics && <Logistics channel={logistics} />}
-      <Agreement loan={loan} />
-      {reviews && <Reviews loan={loan} reviews={reviews} />}
-      <History
-        loan={loan}
-        entries={history.items}
-        more={
-          history.nextCursor === null
-            ? null
-            : morePagesHref(loanHref(loan.id), query, historyKey, historyKey)
+        kind="Lån"
+        title={loanTitle(loan)}
+        back={{ href: loansHref, label: "Lån" }}
+        context={
+          request && (
+            <ContextTag
+              label="Gjennom"
+              icon={request.origin.kind === "direct" ? "people" : "environment"}
+            >
+              {request.origin.kind === "direct"
+                ? requestOriginLabel(request)
+                : `Via ${requestOriginLabel(request)}`}
+            </ContextTag>
+          )
         }
-        open={query[historyKey] !== undefined}
       />
+      <Progress progress={loanProgress(loan)} />
+      <div className={styles.layout}>
+        <div className={styles.column}>
+          <LoanStatus loan={loan} reviews={reviews} />
+          {logistics && <Logistics channel={logistics} />}
+          <Agreement loan={loan} />
+          <Party
+            person={loan.parties[other]}
+            role={other}
+            writeHref={writeHref(loan)}
+          />
+          <LoanMoreActions loan={loan} />
+          {reviews && <Reviews loan={loan} reviews={reviews} />}
+        </div>
+        <div className={styles.column}>
+          <Timeline
+            id={historyKey}
+            title={loan.agreement.title}
+            entries={history.items}
+            more={
+              history.nextCursor === null
+                ? null
+                : morePagesHref(
+                    loanHref(loan.id),
+                    query,
+                    historyKey,
+                    historyKey,
+                  )
+            }
+            open={query[historyKey] !== undefined}
+          />
+        </div>
+      </div>
     </main>
   );
 }

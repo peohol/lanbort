@@ -25,7 +25,9 @@ describe("how a loan ended", () => {
   });
 
   it("never calls an administrative stop a cancellation (UX-EXC-007)", () => {
-    expect(loanEndReasonLabels.stopped).not.toMatch(/avlyst|ikke gjennomført/i);
+    expect(loanEndReasonLabels.stopped).not.toMatch(
+      /kansellert|avlyst|ikke gjennomført/i,
+    );
     expect(loanEndReasonLabels.stopped).toContain("plattformbegrensning");
   });
 });

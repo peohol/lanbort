@@ -1,0 +1,280 @@
+/* The loan's pages (KF1 v2, KF7): what is particular to a loan, on top of
+   the shared Tomat foundation in globals.css. */
+
+/* A wider screen gives the timeline its own column (KF7, «Større skjerm»). */
+@media (min-width: 64rem) {
+  :global(.app-content) main.page {
+    width: min(64rem, 100%);
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-5);
+  }
+}
+
+.column {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.column > :global(.status-card) {
+  margin: 0;
+}
+
+/* The way from request to done: done steps as filled dots, the step the
+   loan is at as a pill with its word, the rest as rings. Every step is said
+   to assistive technology; on a wider screen they are also shown. */
+.progress {
+  display: flex;
+  align-items: center;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.stage {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+.stage:not(:last-child)::after {
+  content: "";
+  flex: 1 1 auto;
+  min-width: var(--space-3);
+  height: 1.5px;
+  background: var(--color-border-strong);
+  opacity: 0.6;
+}
+
+.stage.current {
+  flex: none;
+}
+
+.stage.current:not(:last-child)::after {
+  width: var(--space-4);
+}
+
+.dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-muted);
+}
+
+.done .dot {
+  background: var(--color-muted);
+}
+
+.name {
+  display: none;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  color: var(--color-on-accent);
+  background: var(--color-accent-strong);
+  white-space: nowrap;
+}
+
+.pill::before {
+  content: "";
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+@media (min-width: 48rem) {
+  .name {
+    display: inline;
+    white-space: nowrap;
+  }
+}
+
+/* What the status card says beyond its headline. */
+.body {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+/* Answers to a clarification or a proposal: side by side and the same size
+   on a wider screen, one under the other on a phone (KF7). */
+.answers {
+  display: grid;
+  gap: var(--space-3);
+}
+
+@media (min-width: 30rem) {
+  .answers:has(> :nth-child(2)) {
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  }
+}
+
+.answers > :global(.error) {
+  grid-column: 1 / -1;
+}
+
+/* The agreement and the other party: flat cards under the status card. */
+.flat {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-m);
+  box-shadow: inset 0 0 0 1.5px var(--color-border);
+}
+
+.flat :global(.facts) {
+  margin: 0;
+}
+
+.party {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+}
+
+.who {
+  display: grid;
+  min-width: 0;
+}
+
+.who strong {
+  font-weight: 700;
+}
+
+/* The name leads to the person, and is a target a finger aims at
+   (UX-A11Y-006). */
+.who a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+}
+
+.role {
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+/* The timeline: closed until asked for (UX-INT-008), as a card with its
+   count; Lånbort's own entries are quieter than what people did. */
+.timeline {
+  background: var(--color-surface);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-raised);
+}
+
+.timeline > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--control);
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text);
+  text-decoration: none;
+  border-radius: var(--radius-l);
+}
+
+.timeline > summary::after {
+  margin-left: auto;
+}
+
+.timelineIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  color: var(--color-muted);
+  background: var(--color-sunken);
+}
+
+.timelineTitle {
+  display: grid;
+}
+
+.timelineTitle strong {
+  font-weight: 700;
+}
+
+.timelineTitle span {
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+.events {
+  margin: 0;
+  padding: 0 var(--space-4) var(--space-3);
+  list-style: none;
+}
+
+.event {
+  display: grid;
+  grid-template-columns: minmax(0, 6.5rem) minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.event time {
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+.system {
+  color: var(--color-muted);
+}
+
+.more {
+  margin: 0;
+  padding: 0 var(--space-4) var(--space-3);
+}
+
+/* Reviews: each one a card of its own. */
+.review {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-raised);
+}
+
+.review h3 {
+  margin: 0;
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.review :global(.facts) {
+  margin: 0;
+}
+
+.quote {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-m);
+  background: var(--color-sunken);
+}
