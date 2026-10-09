@@ -21,7 +21,7 @@
 | Kjerneflyt 5 – Samtaler og enheter | [Lånbort - Samtaler og enheter v2.html](<Lånbort - Samtaler og enheter v2.html>) | **Arbeidsutkast, ikke godkjent produktatferd.** U1–U11 i prototypen er forslag som må avklares mot kanoniske regler / beslutningsregisteret |
 | Kjerneflyt 6 – Personer, venner og tillit | [Lånbort - Personer, venner og tillit v1.html](<Lånbort - Personer, venner og tillit v1.html>) | **Til siste gjennomgang, ennå ikke godkjent.** Dekker WP-86 (personens side, tillit i rollen, venneforespørsler, fjerning, blokkering og Konto-visningene). Produktvalgene fra første utkast ble avgjort 9. oktober 2026 (OD-0027–OD-0032) og står i PS-USR-002, PS-USR-011–012, PS-TRUST-017, UX-IA-020 og UX-PRIV-012. Skrevet som vanlig HTML, ikke som bundle |
 
-**Foreslått neste designbolk:** Avklar først U1–U3 og K1–K2 i kjerneflyt 6. Neste bolk velges deretter etter fase 6 i `docs/planning/ui-design-plan.md`.
+**Foreslått neste designbolk:** Produktvalgene i kjerneflyt 6 er avklart (OD-0027–OD-0032) og skal ikke tas opp igjen. Neste bolk velges etter fase 6 i `docs/planning/ui-design-plan.md`.
 
 ## Konkrete stilankre
 
