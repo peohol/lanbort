@@ -221,6 +221,7 @@ const describers: Partial<
   >
 > = {
   loan: loanAbout,
+  loan_reviews: loanAbout,
   loan_request: requestAbout,
   user: personAbout,
   environment: environmentAbout,
