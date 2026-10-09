@@ -15,6 +15,7 @@ import {
 describe("notification levels (PS-COM-003)", () => {
   it("follow from the kind: events in an approved loan are required", () => {
     expect(levelOf("loan.cancelled")).toBe("required");
+    expect(levelOf("chat.device_linked")).toBe("required");
     expect(levelOf("loan.return_day_passed")).toBe("required");
     expect(levelOf("loan_request.received")).toBe("action");
     expect(levelOf("social.friend_request_accepted")).toBe("information");
