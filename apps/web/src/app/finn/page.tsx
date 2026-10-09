@@ -15,7 +15,9 @@ import { errorMessage } from "@/components/error-messages";
 import { EntryDetail } from "@/components/entry-detail";
 import { ErrorText } from "@/components/error-text";
 import { NearMeButton } from "@/components/near-me-button";
+import { Icon } from "@/components/icon";
 import { ownersDetail } from "@/components/owner-names";
+import { ContextTag, Tag } from "@/components/tag";
 import {
   defaultDistanceKm,
   distanceOptions,
@@ -30,10 +32,11 @@ import {
 import { describeAvailability } from "@/presentation/objects";
 import {
   describeFoundIn,
-  environmentTypeLabels,
   type FinnForm,
   finnHref,
   foundOrigin,
+  joiningExplained,
+  joiningLabels,
   membershipLabels,
   type Prepared,
   prepareEnvironmentSearch,
@@ -80,9 +83,9 @@ export default async function FindPage({
   const form = readFinnForm(await searchParams);
 
   return (
-    <main>
+    <main className={styles.finn}>
       <h1>Finn</h1>
-      <nav aria-label="Hva du leter etter" className="filters">
+      <nav aria-label="Hva du leter etter" className={styles.segments}>
         {tabs.map(({ tab, href, label }) => (
           <a
             key={tab}
@@ -171,68 +174,85 @@ async function ObjectSearch({
 
   return (
     <>
-      <form role="search" action="/finn" method="get">
-        <label htmlFor="finn-q">Hva leter du etter?</label>
-        <input
-          id="finn-q"
-          name="q"
-          type="search"
-          defaultValue={form.q}
-          maxLength={100}
-          autoComplete="off"
-        />
-        <label htmlFor="finn-kategori">Kategori</label>
-        <select id="finn-kategori" name="kategori" defaultValue={form.category}>
-          <option value="">Alle kategorier</option>
-          {orderedCategories(categories?.categories ?? []).map(
-            ({ category, depth }) => (
-              <option key={category.id} value={category.id}>
-                {`${"– ".repeat(depth)}${category.label}`}
-              </option>
-            ),
-          )}
-        </select>
-        <fieldset>
-          <legend>Ledig hele perioden (valgfritt)</legend>
-          <label htmlFor="finn-fra">Første dag</label>
-          <input
-            id="finn-fra"
-            name="fra"
-            type="date"
-            defaultValue={form.from}
-          />
-          <label htmlFor="finn-til">Siste dag</label>
-          <input id="finn-til" name="til" type="date" defaultValue={form.to} />
-        </fieldset>
-        <PlaceFields form={form} legend="I miljøer nær et sted (valgfritt)" />
-        <button type="submit">Søk</button>
+      <form role="search" action="/finn" method="get" className={styles.form}>
+        <SearchField label="Hva leter du etter?" form={form} />
+        <MoreFilters
+          chosen={Boolean(form.category || form.from || form.to || form.place)}
+        >
+          <label htmlFor="finn-kategori">Kategori</label>
+          <select
+            id="finn-kategori"
+            name="kategori"
+            defaultValue={form.category}
+          >
+            <option value="">Alle kategorier</option>
+            {orderedCategories(categories?.categories ?? []).map(
+              ({ category, depth }) => (
+                <option key={category.id} value={category.id}>
+                  {`${"– ".repeat(depth)}${category.label}`}
+                </option>
+              ),
+            )}
+          </select>
+          <fieldset>
+            <legend>Ledig hele perioden (valgfritt)</legend>
+            <label htmlFor="finn-fra">Første dag</label>
+            <input
+              id="finn-fra"
+              name="fra"
+              type="date"
+              defaultValue={form.from}
+            />
+            <label htmlFor="finn-til">Siste dag</label>
+            <input
+              id="finn-til"
+              name="til"
+              type="date"
+              defaultValue={form.to}
+            />
+          </fieldset>
+          <PlaceFields form={form} legend="I miljøer nær et sted (valgfritt)" />
+        </MoreFilters>
       </form>
       <Results
         prepared={prepared}
         location={location}
         form={form}
         count={result?.objects.length ?? 0}
+        counted={(count) => `${count} ting`}
         more={result?.more ?? false}
         empty="Ingen ting i miljøene dine passer med søket."
         hint="Søk etter ting i miljøene du er medlem av, med ord eller kategori."
       >
-        {result?.objects.map((object) => (
-          <li key={object.objectId} className="entry">
-            <strong>
-              <Link href={objectHref(object.objectId, foundOrigin(object))}>
+        {result?.objects.map((object) => {
+          const availability = describeAvailability(object, today);
+
+          return (
+            <li key={object.objectId} className={styles.result}>
+              <Link
+                className={styles.name}
+                href={objectHref(object.objectId, foundOrigin(object))}
+              >
                 {object.title}
               </Link>
-            </strong>
-            <EntryDetail
-              parts={[
-                labels.get(object.categoryId),
-                describeFoundIn(object),
-                object.ownedByYou ? "Din ting" : ownersDetail(object.owners),
-              ]}
-            />
-            <span>{describeAvailability(object, today)}</span>
-          </li>
-        ))}
+              <EntryDetail
+                parts={[
+                  object.ownedByYou ? "Din ting" : ownersDetail(object.owners),
+                  labels.get(object.categoryId),
+                ]}
+              />
+              <ContextTag label="Kontekst" icon="environment">
+                {describeFoundIn(object)}
+              </ContextTag>
+              <Tag
+                tone={availability === "Ledig nå" ? "positive" : "neutral"}
+                icon={availability === "Ledig nå" ? "check" : "clock"}
+              >
+                {availability}
+              </Tag>
+            </li>
+          );
+        })}
       </Results>
     </>
   );
@@ -254,33 +274,30 @@ async function EnvironmentSearch({
 
   return (
     <>
-      <form role="search" action="/finn" method="get">
+      <form role="search" action="/finn" method="get" className={styles.form}>
         <input type="hidden" name="vis" value="miljoer" />
-        <label htmlFor="finn-q">Navn, sted eller hva miljøet handler om</label>
-        <input
-          id="finn-q"
-          name="q"
-          type="search"
-          defaultValue={form.q}
-          maxLength={100}
-          autoComplete="off"
+        <SearchField
+          label="Navn, sted eller hva miljøet handler om"
+          form={form}
         />
-        <label htmlFor="finn-type">Type</label>
-        <select id="finn-type" name="type" defaultValue={form.type}>
-          <option value="">Åpne og lukkede</option>
-          <option value="open">Åpne</option>
-          <option value="closed">Lukkede</option>
-        </select>
-        <PlaceFields form={form} legend="Nær et sted (valgfritt)" />
-        <button type="submit">Søk</button>
+        <MoreFilters chosen={Boolean(form.type || form.place)}>
+          <label htmlFor="finn-type">Type</label>
+          <select id="finn-type" name="type" defaultValue={form.type}>
+            <option value="">Åpne og lukkede</option>
+            <option value="open">Åpne</option>
+            <option value="closed">Lukkede</option>
+          </select>
+          <PlaceFields form={form} legend="Nær et sted (valgfritt)" />
+        </MoreFilters>
       </form>
       <Results
         prepared={prepared}
         location={location}
         form={form}
         count={result?.environments.length ?? 0}
+        counted={(count) => (count === 1 ? "1 miljø" : `${count} miljøer`)}
         more={result?.more ?? false}
-        empty="Ingen miljøer passer med søket."
+        empty="Ingen miljøer passer med søket. Prøv et stedsnavn, et borettslag eller en forening. Du kan også starte et miljø selv."
         hint="Finn åpne og lukkede miljøer du kan bli med i, etter navn, tema eller sted."
         map={
           result && (
@@ -294,29 +311,99 @@ async function EnvironmentSearch({
         }
       >
         {result?.environments.map((environment) => (
-          <li key={environment.id} className="entry">
-            <Link href={environmentHref(environment.id)}>
-              <strong>{environment.name}</strong>
+          <li key={environment.id} className={styles.result}>
+            <Link
+              className={styles.name}
+              href={environmentHref(environment.id)}
+            >
+              {environment.name}
             </Link>
-            <EntryDetail
-              parts={[
-                environmentTypeLabels[environment.type],
-                environment.location,
-              ]}
-            />
-            {environment.description && <span>{environment.description}</span>}
-            {environment.membershipState && (
-              <span className="waiting">
-                {membershipLabels[environment.membershipState]}
+            {environment.location && (
+              <ContextTag label="Sted" icon="environment">
+                {environment.location}
+              </ContextTag>
+            )}
+            {environment.description && (
+              <span className={styles.description}>
+                {environment.description}
               </span>
+            )}
+            {environment.membershipState ? (
+              <Tag
+                tone={
+                  environment.membershipState === "active"
+                    ? "positive"
+                    : "waiting"
+                }
+              >
+                {membershipLabels[environment.membershipState]}
+              </Tag>
+            ) : (
+              <Tag icon={environment.type === "open" ? "people" : "lock"}>
+                {joiningLabels[environment.type]}
+              </Tag>
             )}
           </li>
         ))}
       </Results>
+      <details className={styles.explained}>
+        <summary>Hva betyr åpent og lukket?</summary>
+        <ul>
+          {joiningExplained.map(({ name, text }) => (
+            <li key={name}>
+              <strong>{name}</strong> {text}
+            </li>
+          ))}
+        </ul>
+        <p>I alle miljøene ser bare medlemmer tingene og hvem som er med.</p>
+      </details>
       <p className="link-row">
         <Link href={newEnvironmentHref}>Opprett et miljø</Link>
       </p>
     </>
+  );
+}
+
+/**
+ * The words to search for, in one large field (UX-P20), with its name for
+ * assistive technology; the button searches without a script too.
+ */
+function SearchField({ label, form }: { label: string; form: FinnForm }) {
+  return (
+    <div className={styles.search}>
+      <label htmlFor="finn-q" className="visually-hidden">
+        {label}
+      </label>
+      <Icon name="find" />
+      <input
+        id="finn-q"
+        name="q"
+        type="search"
+        defaultValue={form.q}
+        maxLength={100}
+        autoComplete="off"
+        placeholder={label}
+      />
+      <button type="submit" className="button-primary">
+        Søk
+      </button>
+    </div>
+  );
+}
+
+/** The rest of the search, folded away until it is used. */
+function MoreFilters({
+  chosen,
+  children,
+}: {
+  chosen: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <details className={styles.more} open={chosen}>
+      <summary>Avgrens søket</summary>
+      <div className={styles.fields}>{children}</div>
+    </details>
   );
 }
 
@@ -401,6 +488,7 @@ function Results({
   location,
   form,
   count,
+  counted,
   more,
   empty,
   hint,
@@ -411,6 +499,8 @@ function Results({
   location: Location | undefined;
   form: FinnForm;
   count: number;
+  /** The count in words, as the heading of the results. */
+  counted: (count: number) => string;
   more: boolean;
   empty: string;
   hint: string;
@@ -426,13 +516,15 @@ function Results({
   }
 
   return (
-    <section aria-labelledby="treff" className={styles.results}>
-      <h2 id="treff">Treff</h2>
+    <section aria-label="Treff" className={styles.found}>
+      <h2 className={styles.count}>
+        {count === 0 ? "Ingen treff" : counted(count)}
+      </h2>
       {location && <LocationNote form={form} location={location} />}
       {count === 0 ? (
         <p className="quiet">{empty}</p>
       ) : (
-        <ul className="entries">{children}</ul>
+        <ul className={styles.results}>{children}</ul>
       )}
       {more && (
         <p className="quiet">
