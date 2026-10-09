@@ -94,7 +94,7 @@ test("Finn finds environments to join, and then the things in them", async ({
     .getByRole("listitem");
   await expect(found).toHaveCount(1);
   await expect(found).toContainText(`Nabolaget ${place}`);
-  await expect(found).toContainText("Åpent miljø – alle kan bli med");
+  await expect(found).toContainText("Åpent · bli med med en gang");
   await expect(found).toContainText("Grünerløkka");
 
   await post(page.request, "/api/environments/membership/join", {
@@ -120,7 +120,7 @@ test("Finn finds environments to join, and then the things in them", async ({
     .getByRole("listitem");
   await expect(thingFound).toHaveCount(1);
   await expect(thingFound).toContainText(`Kantklipper ${thing}`);
-  await expect(thingFound).toContainText(`I Nabolaget ${place}`);
+  await expect(thingFound).toContainText(`Via Nabolaget ${place}`);
   await expect(thingFound).toContainText("Ledig fra");
   expect(problems).toEqual([]);
 });
@@ -205,6 +205,10 @@ test("Finn explains what to change instead of searching", async ({ page }) => {
     "role",
     "alert",
   );
+  // «Bruk der jeg er» sets only the point; the place stays in view.
+  await expect(
+    page.locator("details", { hasText: "Avgrens søket" }),
+  ).toHaveAttribute("open", "");
 });
 
 test("search needs a signed-in user", async ({ request }) => {

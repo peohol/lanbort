@@ -102,12 +102,12 @@ describe("found things in the user's words", () => {
     });
     expect(
       describeFoundIn(found({ foundIn: [place("Gata"), place("Hytta")] })),
-    ).toBe("I Gata, Hytta");
+    ).toBe("Via Gata, Hytta");
     expect(
       describeFoundIn(
         found({ foundIn: [place("Gata")], foundThroughFriends: true }),
       ),
-    ).toBe("I Gata · Hos en venn");
+    ).toBe("Via Gata · Hos en venn");
     expect(describeFoundIn(found({ foundThroughFriends: true }))).toBe(
       "Hos en venn",
     );
