@@ -31,6 +31,7 @@ import {
   requestObjectHref,
 } from "@/navigation/routes";
 import { loanRequestStatusLabels } from "@/presentation/loans";
+import { environmentImageHref } from "@/presentation/object-images";
 import {
   categoryLabel,
   describeAvailability,
@@ -39,11 +40,6 @@ import {
 } from "@/presentation/objects";
 import { pageQuery } from "@/server/session";
 import { Questions, questionsId } from "./questions";
-
-/** An environment's picture of a thing, read through its publication. */
-const environmentImage =
-  (environmentId: string, objectId: string) => (imageId: string) =>
-    `/api/environments/objects/image?${new URLSearchParams({ environmentId, objectId, imageId })}`;
 
 /** The caller's own open request for the thing, if they have one. */
 async function openRequestFor(objectId: string) {
@@ -117,7 +113,9 @@ export async function ViewerView({
         <ObjectGallery
           title={object.title}
           images={object.images}
-          src={environmentImage(environment.id, object.objectId)}
+          src={(imageId) =>
+            environmentImageHref(environment.id, object.objectId, imageId)
+          }
         />
       )}
       <StatusCard
