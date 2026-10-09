@@ -114,7 +114,10 @@ describe("loans on Home", () => {
     expect(await item(borrower, loanId)).toMatchObject({
       day: day(2),
       role: "borrower",
+      via: "Borettslaget",
+      period: { start: day(2), end: day(4) },
     });
+    expect((await item(borrower, loanId)).person).toEqual(expect.any(String));
     expect(await about(admin, loanId)).toEqual([]);
     expect(await about(await user(), loanId)).toEqual([]);
   });
@@ -379,8 +382,8 @@ describe("the order of Home", () => {
 
     expect(sections.map(({ section }) => section)).toEqual([
       "awaiting_you",
-      "unresolved",
       "upcoming",
+      "unresolved",
       "administration",
     ]);
     expect(
@@ -388,8 +391,11 @@ describe("the order of Home", () => {
         .filter(({ target }) =>
           [later.requestId, sooner.requestId].includes(target.id),
         )
-        .map(({ kind }) => kind),
-    ).toEqual(["loan_request.answer", "loan_request.answer"]);
+        .map(({ kind, target }) => [kind, target.id]),
+    ).toEqual([
+      ["loan_request.answer", sooner.requestId],
+      ["loan_request.answer", later.requestId],
+    ]);
   });
 });
 

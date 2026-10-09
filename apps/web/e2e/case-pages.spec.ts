@@ -52,7 +52,8 @@ test("a member's contact is taken from Home, answered and closed in the case", a
   // The administrator's Home leads to the queue, and the queue to the case.
   await eva.goto("/");
   await eva
-    .getByRole("link", { name: `1 sak venter på behandling i ${name}` })
+    .getByRole("group", { name })
+    .getByRole("link", { name: "Svar på 1 henvendelse" })
     .click();
   await expect(eva.getByRole("heading", { level: 1 })).toHaveText("Saker");
   await eva.getByRole("link", { name: "Kontakt med administratorene" }).click();

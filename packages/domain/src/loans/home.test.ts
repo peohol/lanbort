@@ -33,6 +33,15 @@ function loan(changes: Partial<Loan> = {}): Loan {
     responsibilityTransfer: null,
     control: null,
     approvedAt: at,
+    origin: {
+      kind: "environment",
+      environment: { id, type: "closed", name: "Borettslaget Lia" },
+    },
+    parties: {
+      borrower: { realName: "Ola", profileId: null },
+      lender: { realName: "Kari", profileId: null },
+    },
+    mediation: null,
     actions: { confirmControl: false },
     ...changes,
   } as Loan;
@@ -52,6 +61,36 @@ describe("what a loan asks of its party", () => {
       kind: "loan.return",
       day: "2026-10-07",
     });
+  });
+
+  it("names the other party and the environment it came through", () => {
+    expect(loanHomeItem(loan())).toMatchObject({
+      person: "Kari",
+      via: "Borettslaget Lia",
+      period: { start: "2026-10-05", end: "2026-10-07" },
+    });
+    expect(
+      loanHomeItem(
+        loan({
+          role: "lender",
+          origin: { kind: "environment", environment: null },
+        }),
+      ),
+    ).toMatchObject({ person: "Ola", via: null });
+  });
+
+  it("waits for the administrators while they mediate", () => {
+    const mediation = { caseId: id, open: true };
+
+    expect(kindOf({ status: "disputed", mediation })).toBe("loan.mediation");
+    expect(kindOf({ status: "late", mediation })).toBe("loan.mediation");
+    expect(
+      kindOf({ status: "disputed", mediation: { caseId: id, open: false } }),
+    ).toBe("loan.disputed");
+    // What the party has to do still waits for them.
+    expect(
+      kindOf({ status: "awaiting_return", role: "lender", mediation }),
+    ).toBe("loan.confirm_return");
   });
 
   it("asks only the side that did not propose a change", () => {
@@ -167,6 +206,10 @@ function request(changes: Partial<LoanRequest> = {}): LoanRequest {
     status: "requested",
     object: { title: "Tilhenger", categoryId: "annet" },
     responsibility: null,
+    borrower: { realName: "Per Lien", profileId: null },
+    origin: { kind: "direct" },
+    start: { kind: "date", date: "2026-10-14" },
+    end: { kind: "duration", days: 2 },
     ...changes,
   } as LoanRequest;
 }
@@ -175,6 +218,25 @@ describe("what an open request asks", () => {
   it("asks the lender to answer, never the borrower who waits", () => {
     expect(loanRequestHomeItem(request())?.kind).toBe("loan_request.answer");
     expect(loanRequestHomeItem(request({ role: "borrower" }))).toBeNull();
+  });
+
+  it("names the borrower to the lender, and the days asked for", () => {
+    expect(loanRequestHomeItem(request())).toMatchObject({
+      person: "Per Lien",
+      via: null,
+      period: { start: "2026-10-14", end: "2026-10-15" },
+    });
+    expect(
+      loanRequestHomeItem(
+        request({
+          start: { kind: "asap" },
+          origin: {
+            kind: "environment",
+            environment: { id, type: "open", name: "Nabodeling" },
+          },
+        }),
+      ),
+    ).toMatchObject({ period: null, via: "Nabodeling" });
   });
 
   it("asks the borrower to confirm changed terms", () => {

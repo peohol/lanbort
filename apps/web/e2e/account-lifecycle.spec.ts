@@ -110,9 +110,12 @@ test.describe("the own account in the browser", () => {
 
     // Home stays, with what it still has; Finn finds nothing new for it.
     await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "Hei, Hvile Konto",
-    );
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hjem");
+    await expect(
+      page.getByRole("link", {
+        name: "Konto og innstillinger for Hvile Konto",
+      }),
+    ).toBeVisible();
     await expect(notice).toBeVisible();
     await page.goto("/finn");
     await expect(

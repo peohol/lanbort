@@ -39,6 +39,7 @@ import {
   listLoanRequests,
   listLoans,
   previewLoanRequest,
+  readLoan,
   readLoanRequest,
 } from "./queries";
 
@@ -878,6 +879,36 @@ describe("historical privacy (PS-ENV-009)", () => {
     });
     // The owner is still a member there, and still sees where it came from.
     expect((await read(owner, withdrawn)).origin).toMatchObject({
+      environment: { id: environmentId },
+    });
+  });
+
+  it("names a hidden environment on the loan only while the party can see it", async () => {
+    const { environmentId, owner, borrower, objectId } = await published({
+      type: "hidden",
+    });
+    const { requestId } = await ask(
+      borrower,
+      objectId,
+      environmentOrigin(environmentId),
+      dated(2, 3),
+    );
+    const { loanId } = await run(approveLoanRequest, owner, { requestId });
+    const origin = (actor: UserActor) =>
+      executeQuery(tick(), readLoan, { actor, input: { loanId } }).then(
+        (loan) => loan.origin,
+      );
+
+    expect(await origin(borrower)).toMatchObject({
+      environment: { id: environmentId, name: "Borettslaget" },
+    });
+
+    await run(leaveEnvironment, borrower, { environmentId });
+    expect(await origin(borrower)).toEqual({
+      kind: "environment",
+      environment: null,
+    });
+    expect(await origin(owner)).toMatchObject({
       environment: { id: environmentId },
     });
   });

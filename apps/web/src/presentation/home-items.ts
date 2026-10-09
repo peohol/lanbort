@@ -3,12 +3,18 @@ import { environmentCasesHref } from "@/navigation/cases";
 import { hrefFor } from "@/navigation/targets";
 import { formatDay, formatTime } from "./dates";
 
-/** UX-IA-005: each section says why it is there. */
-export const homeSectionHeadings: Record<HomeSection, string> = {
-  awaiting_you: "Venter på deg",
-  unresolved: "Ikke avklart ennå",
-  upcoming: "Kommer snart",
-  administration: "Oppgaver som administrator",
+/**
+ * UX-IA-016: each section says why it is there, the counted ones with how
+ * many tasks they hold.
+ */
+export const homeSectionHeadings: Record<
+  HomeSection,
+  (count: number) => string
+> = {
+  awaiting_you: (count) => `${count} venter på deg`,
+  upcoming: () => "Kommer",
+  unresolved: () => "Uavklart",
+  administration: (count) => `${count} som administrator`,
 };
 
 const name = (item: HomeItem) => item.title ?? "objektet";
@@ -61,6 +67,8 @@ const texts: Record<HomeItemKind, (item: HomeItem) => string> = {
   "loan.late": (item) => `${name(item)} er ikke levert tilbake ennå`,
   "loan.disputed": (item) =>
     `Dere har sagt ulike ting om ${name(item)}. Avklar det sammen`,
+  "loan.mediation": (item) =>
+    `Administratorene i miljøet ser på lånet av ${name(item)}`,
   "loan.handover": (item) =>
     item.role === "lender"
       ? `Du låner bort ${name(item)}`

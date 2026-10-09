@@ -1,13 +1,33 @@
-import type {
-  CoOwnerLoan,
-  HomeItem,
-  Loan,
-  LoanRequest,
+import {
+  type CoOwnerLoan,
+  type HomeItem,
+  homeItemKinds,
+  type Loan,
+  type LoanOrigin,
+  type LoanRequest,
 } from "@lanbort/contracts";
 import { collectPages } from "../commands/pages";
+import { addDays } from "../objects/availability";
 import { type HomeSource, homeItem } from "../home/source";
 import { listLoanRequests, listLoans } from "./queries";
 import { listCoOwnerLoans } from "./responsibility";
+
+/** The environment as its context, while the reader may see it. */
+const via = (origin: LoanOrigin) =>
+  origin.kind === "environment" ? (origin.environment?.name ?? null) : null;
+
+/**
+ * The days a request asks for, once both are known: a start «as soon as
+ * possible» has none yet.
+ */
+function requestedPeriod({ start, end }: LoanRequest): HomeItem["period"] {
+  if (start.kind !== "date") return null;
+
+  return {
+    start: start.date,
+    end: end.kind === "date" ? end.date : addDays(start.date, end.days - 1),
+  };
+}
 
 /**
  * What a loan asks of one of its parties now (UX-IA-005, UX-P04). An ended
@@ -19,10 +39,28 @@ import { listCoOwnerLoans } from "./responsibility";
  * is simply under way shows its next day.
  */
 export function loanHomeItem(loan: Loan): HomeItem | null {
+  const item = loanTask(loan);
+
+  // While the environment mediates (PS-LOAN-018), an unsettled loan waits
+  // for its administrators rather than for the other party.
+  return item &&
+    loan.mediation?.open &&
+    homeItemKinds[item.kind] === "unresolved"
+    ? { ...item, kind: "loan.mediation" }
+    : item;
+}
+
+function loanTask(loan: Loan): HomeItem | null {
   const target = { type: "loan", id: loan.id } as const;
-  const details = { title: loan.agreement.title, role: loan.role };
-  const transfer = loan.responsibilityTransfer;
   const own = loan.role;
+  const details = {
+    title: loan.agreement.title,
+    role: own,
+    person: loan.parties[own === "borrower" ? "lender" : "borrower"].realName,
+    via: via(loan.origin),
+    period: loan.period,
+  };
+  const transfer = loan.responsibilityTransfer;
 
   if (loan.status === "ended") {
     return loan.actions.confirmControl
@@ -94,7 +132,13 @@ export function loanHomeItem(loan: Loan): HomeItem | null {
  */
 export function loanRequestHomeItem(request: LoanRequest): HomeItem | null {
   const target = { type: "loan_request", id: request.id } as const;
-  const details = { title: request.object?.title ?? null, role: request.role };
+  const details = {
+    title: request.object?.title ?? null,
+    role: request.role,
+    person: request.role === "lender" ? request.borrower.realName : null,
+    via: via(request.origin),
+    period: requestedPeriod(request),
+  };
 
   if (request.role === "lender" && request.status === "requested") {
     return homeItem("loan_request.answer", target, details);

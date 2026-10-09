@@ -221,6 +221,25 @@ export const loanPersonSchema = z.strictObject({
   ...personLinkShape,
 });
 
+/**
+ * Where a request, and the loan it became, came from (PS-LOAN-001). The
+ * environment is named only to those who can still see it, and not where
+ * its history is private to them (PS-ENV-009).
+ */
+export const loanOriginSchema = z.discriminatedUnion("kind", [
+  z.strictObject({
+    kind: z.literal("environment"),
+    environment: z
+      .strictObject({
+        id: z.uuid(),
+        type: environmentTypeSchema,
+        name: z.string(),
+      })
+      .nullable(),
+  }),
+  z.strictObject({ kind: z.literal("direct") }),
+]);
+
 /** A request as its borrower or a lender sees it. */
 export const loanRequestSchema = z.strictObject({
   id: loanRequestIdSchema,
@@ -230,23 +249,7 @@ export const loanRequestSchema = z.strictObject({
   borrowerUserId: z.uuid(),
   /** The borrower by name, for the lenders who answer (UX-JRN-005). */
   borrower: loanPersonSchema,
-  /**
-   * The environment is named only to those who can still see it, and not
-   * where its history is private to them (PS-ENV-009).
-   */
-  origin: z.discriminatedUnion("kind", [
-    z.strictObject({
-      kind: z.literal("environment"),
-      environment: z
-        .strictObject({
-          id: z.uuid(),
-          type: environmentTypeSchema,
-          name: z.string(),
-        })
-        .nullable(),
-    }),
-    z.strictObject({ kind: z.literal("direct") }),
-  ]),
+  origin: loanOriginSchema,
   start: desiredStartSchema,
   end: desiredEndSchema,
   /**
@@ -701,6 +704,11 @@ export const loanActionsSchema = z.strictObject({
 export const loanSchema = z.strictObject({
   id: loanIdSchema,
   requestId: loanRequestIdSchema,
+  /**
+   * Where its request came from. The environment is named only while the
+   * reader can see it (PS-ENV-001), whichever side they are on.
+   */
+  origin: loanOriginSchema,
   /** Null once an ended loan's object is deleted. */
   objectId: objectIdSchema.nullable(),
   role: loanRequestRoleSchema,
@@ -953,6 +961,7 @@ export type LoanRequestEndReason = z.infer<typeof loanRequestEndReasonSchema>;
 export type LoanRequestRole = z.infer<typeof loanRequestRoleSchema>;
 export type LoanRequestResult = z.infer<typeof loanRequestResultSchema>;
 export type LoanRequestPreview = z.infer<typeof loanRequestPreviewSchema>;
+export type LoanOrigin = z.infer<typeof loanOriginSchema>;
 export type LoanRequest = z.infer<typeof loanRequestSchema>;
 export type LoanRequestDetail = z.infer<typeof loanRequestDetailSchema>;
 export type LoanRequestList = z.infer<typeof loanRequestListSchema>;

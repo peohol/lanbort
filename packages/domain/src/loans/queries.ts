@@ -2,6 +2,7 @@ import {
   type Loan,
   type LoanActions,
   type LoanList,
+  type LoanOrigin,
   loanListQuerySchema,
   loanPageSize,
   type LoanRequest,
@@ -191,35 +192,44 @@ export const previewLoanRequest = defineQuery({
   }),
 });
 
+/** The environment, if `actor` can see it now (PS-ENV-001). */
+async function visibleEnvironment(
+  db: Db,
+  actor: Actor,
+  environmentId: string,
+  now: Date,
+) {
+  const access = await loadEnvironmentAccess(db, environmentId, actor, now);
+
+  return access &&
+    canSeeEnvironment({ actor, now, resource: access, context: undefined })
+      .allowed
+    ? access.environment
+    : null;
+}
+
 /**
  * The environment a request came through, as the viewer may see it. A
- * lender sees it only as an active member there (`visibleToLender`). The
- * borrower made the request there, so they see it as long as they can see
- * the environment at all (PS-ENV-001): a hidden one only while a member.
+ * lender reads an open request only as an active member there
+ * (`visibleToLender`). Anyone else, the borrower who made it and the
+ * parties of the loan it became, sees it as long as they can see the
+ * environment at all (PS-ENV-001): a hidden one only while a member.
  */
 async function describeOrigin(
   db: Db,
   actor: Actor,
   request: LoanRequestRecord,
-  role: LoanRequestRole,
+  as: "request_lender" | "other",
   now: Date,
-): Promise<LoanRequest["origin"]> {
+): Promise<LoanOrigin> {
   if (request.origin === "direct" || request.environmentId === null) {
     return { kind: "direct" };
   }
 
-  const access =
-    role === "borrower"
-      ? await loadEnvironmentAccess(db, request.environmentId, actor, now)
-      : null;
   const environment =
-    role === "borrower"
-      ? access &&
-        canSeeEnvironment({ actor, now, resource: access, context: undefined })
-          .allowed
-        ? access.environment
-        : null
-      : await findEnvironment(db, request.environmentId);
+    as === "request_lender"
+      ? await findEnvironment(db, request.environmentId)
+      : await visibleEnvironment(db, actor, request.environmentId, now);
 
   return {
     kind: "environment",
@@ -329,7 +339,13 @@ async function describe(
       realName: names.get(request.borrowerUserId) ?? null,
       ...linkIn(links, request.borrowerUserId),
     },
-    origin: await describeOrigin(db, actor, request, role, now),
+    origin: await describeOrigin(
+      db,
+      actor,
+      request,
+      role === "lender" ? "request_lender" : "other",
+      now,
+    ),
     start: request.start,
     end: request.end,
     message: request.message,
@@ -597,6 +613,10 @@ async function loadLoanDetail(
         );
   const coOwnerNames = await realNames(db, coOwnerIds);
   const mediations = await loadMediations(db, loan.id);
+  const request = await findLoanRequest(db, loan.requestId);
+  const origin: LoanOrigin = request
+    ? await describeOrigin(db, viewer, request, "other", now)
+    : { kind: "direct" };
 
   return {
     ...loan,
@@ -609,6 +629,7 @@ async function loadLoanDetail(
     control,
     names,
     links,
+    origin,
     awaitingControl,
     lenderOwns: awaitingControl && ownerIds.includes(loan.responsibleLenderId),
     coOwners: coOwnerIds.flatMap((userId) => {
@@ -624,7 +645,7 @@ async function loadLoanDetail(
         now,
         calendarDate(now),
       ) &&
-      (await findLoanRequest(db, loan.requestId))?.origin === "environment",
+      request?.origin === "environment",
   };
 }
 
@@ -780,6 +801,7 @@ function presentLoan(actor: Actor, resource: LoanDetail, now: Date): Loan {
   return {
     id: resource.id,
     requestId: resource.requestId,
+    origin: resource.origin,
     objectId: resource.objectId,
     role: role ?? "lender",
     borrowerUserId: resource.borrowerUserId,

@@ -1,23 +1,23 @@
 import { z } from "zod";
 import { environmentSummarySchema } from "./environment";
-import { loanRequestRoleSchema } from "./loans";
+import { loanPeriodSchema, loanRequestRoleSchema } from "./loans";
 import { notificationTargetSchema } from "./notifications";
 import { calendarDateSchema } from "./objects";
 
 /**
  * Home (UX-IA-005): what needs the user now, before anything else. Each
- * section is a reason to look, in the order Home shows them:
+ * section is a reason to look, in the order Home shows them (UX-IA-016):
  * - `awaiting_you`: something only the user can do now;
+ * - `upcoming`: the next handover or return day of a loan;
  * - `unresolved`: a loan whose handover or return is not settled, waiting
  *   for the other side or for clarification;
- * - `upcoming`: the next handover or return day of a loan;
  * - `administration`: tasks of a role the user actually holds (UX-JRN-012).
  * Home is never a feed: nothing appears here that asks nothing of the user.
  */
 export const homeSections = [
   "awaiting_you",
-  "unresolved",
   "upcoming",
+  "unresolved",
   "administration",
 ] as const;
 export const homeSectionSchema = z.enum(homeSections);
@@ -50,6 +50,7 @@ export const homeItemKinds = {
   "loan.awaiting_return": "unresolved",
   "loan.late": "unresolved",
   "loan.disputed": "unresolved",
+  "loan.mediation": "unresolved",
   "loan.handover": "upcoming",
   "loan.return": "upcoming",
   "environment.review_memberships": "administration",
@@ -67,7 +68,8 @@ export const homeItemKindSchema = z.enum(
 /**
  * One thing on Home and where it leads (the same targets as notifications).
  * It names only what the user already sees in that context: the object's
- * title in the loan's agreement, the environment's or the person's name.
+ * title in the loan's agreement, the environment's or the person's name,
+ * the other party and the environment a loan came through.
  */
 export const homeItemSchema = z.strictObject({
   kind: homeItemKindSchema,
@@ -75,6 +77,18 @@ export const homeItemSchema = z.strictObject({
   title: z.string().nullable(),
   /** The user's side of a loan or request. */
   role: loanRequestRoleSchema.nullable(),
+  /**
+   * The other party of a loan or request, by name (UX-INT-004); null when
+   * there is none, or their account is deleted (UX-PRIV-010).
+   */
+  person: z.string().nullable(),
+  /**
+   * The environment a loan or request came through, as its context
+   * (UX-PRIV-003), while the user may see it; null for a direct one.
+   */
+  via: z.string().nullable(),
+  /** The days a loan or request is about, when both are known. */
+  period: loanPeriodSchema.nullable(),
   /** The handover or return day the item is about. */
   day: calendarDateSchema.nullable(),
   /** When the chance to act ends, if it does. */

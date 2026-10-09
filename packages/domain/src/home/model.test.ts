@@ -22,8 +22,8 @@ describe("arrangeHome", () => {
     expect(sections.map(({ section, items }) => [section, ids(items)])).toEqual(
       [
         ["awaiting_you", [target(4).id]],
-        ["unresolved", [target(3).id]],
         ["upcoming", [target(1).id]],
+        ["unresolved", [target(3).id]],
         ["administration", [target(2).id]],
       ],
     );

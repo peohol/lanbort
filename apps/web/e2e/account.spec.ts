@@ -34,9 +34,12 @@ test("a new user registers with e-mail code, name and 18+ and can sign out", asy
   await page.getByRole("button", { name: "Fullfør" }).click();
 
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Hei, Kari Nordmann",
-  );
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hjem");
+  await expect(
+    page.getByRole("link", {
+      name: "Konto og innstillinger for Kari Nordmann",
+    }),
+  ).toBeVisible();
 
   // The session lives only in HttpOnly cookies the page's scripts cannot read.
   const sessionCookies = (await context.cookies()).filter(({ name }) =>
@@ -47,9 +50,12 @@ test("a new user registers with e-mail code, name and 18+ and can sign out", asy
   expect(await page.evaluate(() => document.cookie)).not.toContain("sb-");
 
   await page.reload();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Hei, Kari Nordmann",
-  );
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hjem");
+  await expect(
+    page.getByRole("link", {
+      name: "Konto og innstillinger for Kari Nordmann",
+    }),
+  ).toBeVisible();
 
   // Signing out is in the account context, behind the user's own avatar.
   await page.getByRole("link", { name: /^Konto og innstillinger/ }).click();
@@ -79,9 +85,10 @@ test("a returning user goes straight home, and a wrong code is explained", async
   // Local Auth allows one code per address per second (max_frequency).
   await page.waitForTimeout(1100);
   await signInThroughUi(page, email);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Hei, Ola Nordmann",
-  );
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hjem");
+  await expect(
+    page.getByRole("link", { name: "Konto og innstillinger for Ola Nordmann" }),
+  ).toBeVisible();
 });
 
 test.describe("API boundary", () => {

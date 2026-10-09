@@ -74,5 +74,5 @@ export default async function HomePage({
 
   const home = await pageQuery(readHome, {});
 
-  return <HomeView realName={account.realName ?? ""} home={home!} />;
+  return <HomeView home={home!} />;
 }

@@ -29,6 +29,7 @@ function loan(changes: Partial<Loan> = {}): Loan {
   return {
     id,
     requestId: id,
+    origin: { kind: "direct" },
     objectId: id,
     role: "borrower",
     borrowerUserId: id,
