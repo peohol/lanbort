@@ -348,6 +348,44 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
     ).toMatchObject({ linkRequestId, package: "c2VhbGVk" });
     await run(finishChatLink, laptop, { linkRequestId });
 
+    // An approved device always alerts its owner, even though the owner
+    // authorized it. Redelivering the outbox cannot create another notice.
+    await deliverAll(db, consumers);
+    await deliverAll(db, consumers);
+    const security = await db
+      .selectFrom("app.notifications")
+      .select(["kind", "level", "target_type", "target_id"])
+      .where("recipient_id", "=", alice.actor.userId)
+      .where("kind", "=", "chat.device_linked")
+      .execute();
+    expect(security).toEqual([
+      {
+        kind: "chat.device_linked",
+        level: "required",
+        target_type: "chat_device",
+        target_id: deviceId,
+      },
+    ]);
+    const unrelated = await db
+      .selectFrom("app.notifications")
+      .select("id")
+      .where("recipient_id", "=", bob.actor.userId)
+      .where("kind", "=", "chat.device_linked")
+      .execute();
+    expect(unrelated).toEqual([]);
+    const queuedEmail = await db
+      .selectFrom("app.notification_deliveries as delivery")
+      .innerJoin(
+        "app.notifications as notice",
+        "notice.id",
+        "delivery.notification_id",
+      )
+      .select("delivery.channel")
+      .where("notice.recipient_id", "=", alice.actor.userId)
+      .where("notice.kind", "=", "chat.device_linked")
+      .execute();
+    expect(queuedEmail).toEqual([{ channel: "email" }]);
+
     const own = await executeQuery(tick(), readOwnChatDevices, {
       actor: laptop,
       input: {},
