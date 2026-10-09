@@ -76,6 +76,7 @@ export const notificationKinds = {
   "object.question_replied": "information",
   "object.available": "information",
   "chat.account_key_reset": "required",
+  "chat.device_linked": "required",
 } as const satisfies Record<string, NotificationLevel>;
 
 export type NotificationKind = keyof typeof notificationKinds;
@@ -87,8 +88,9 @@ export type NotificationKind = keyof typeof notificationKinds;
  * Kansellering and forslag til endring; kommende and passert returtid; behov
  * for returavklaring (and its handover counterpart, with the 72-hour
  * deadline); konflikthendelser og vesentlige avvik. This is a rule per kind,
- * not a channel choice. A reset of the account's private chat goes out the
- * same way, as ADR-0010 §8 requires. Other required kinds stay in the app
+ * not a channel choice. Security events for
+ * the account's private chat (a key reset or a newly linked device) go out
+ * the same way, under PS-COM-016 and ADR-0010 §§5, 8. Other required kinds stay in the app
  * only, until OD-0004 settles the channels per kind and level.
  */
 export const emailReserveKinds = [
@@ -101,6 +103,7 @@ export const emailReserveKinds = [
   "loan.return_reported",
   "loan.possession_uncertain",
   "chat.account_key_reset",
+  "chat.device_linked",
 ] as const satisfies readonly NotificationKind[];
 
 export const notificationKindSchema = z.enum(
