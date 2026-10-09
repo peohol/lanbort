@@ -134,7 +134,7 @@ Serveren kan holde en tilbakekalling tilbake fra en kontakt. Det gir ikke den ta
 
 **Gjenopprettingsnøkkel (valgfri, tilbys brukeren):**
 
-- 256 tilfeldige bit laget på enheten, vist én gang som 52 tegn i grupper. Brukeren skriver den ned eller lagrer den i en passordbehandler.
+- 256 tilfeldige bit laget på enheten, vist én gang som 52 tegn i grupper. Brukeren skriver den ned eller lagrer den i en passordbehandler. Når og hvor den tilbys, står i PS-COM-019.
 - Fra den utledes (HKDF-SHA256) en nøkkel som krypterer en sikkerhetskopi av kontonøkkelen og historikkarkivets nøkkel. Sikkerhetskopien og arkivet lagres hos serveren som ciphertext.
 - **Passord eller PIN brukes aldri** som grunnlag. En laventropi-hemmelighet kan knekkes av den som har ciphertexten, og uten maskinvarebasert forsøksbegrensning (HSM) har vi ingen måte å hindre det på.
 
@@ -177,7 +177,7 @@ Hvert private vedlegg krypteres på enheten med en tilfeldig nøkkel per fil (AE
 
 - Loggeren slipper bare gjennom felt på tillatelseslisten (`@lanbort/observability`); nøkler, sertifikater og ciphertext er ikke på den og skal aldri legges til.
 - Revisjons- og domenehendelser for chat inneholder bare ID-er og tilstand (for eksempel samtale opprettet, enhet koblet, enhet tilbakekalt, kontonøkkel tilbakestilt), aldri nøkkelmateriale, sertifikater, ciphertext eller meldingsinnhold. Selve meldingssendingen er ikke en domenehendelse.
-- Varsler om nye meldinger sier bare at det finnes en ny melding (ADR-0008).
+- Varsler om nye meldinger viser aldri meldingstekst, vedlegg eller hvilket lån det gjelder. I den innloggede appen viser varselet avsenderens navn og antall nye meldinger; e-post er generisk og viser verken avsender, lån eller innhold (PS-COM-018, ADR-0008).
 - Chatsidene skal ikke ha analyse- eller tredjepartsskript.
 
 ## 13. Hva webklienten realistisk kan love

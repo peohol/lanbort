@@ -84,6 +84,21 @@ Meldingen skal ikke automatisk endre konto, lån eller tilgang. Bare autoriserte
 
 Når en eksisterende, godkjent enhet godkjenner kobling av en ny chat-enhet til kontoen, skal kontoeieren få ett påkrevd varsel i appen og en sikkerhetsmelding til sin verifiserte e-postadresse. Hendelsen varsles også når kontoeieren selv utførte godkjenningen: en uventet ny enhet kan bety at kontoen er kompromittert. Varselet viser bare at en enhet er koblet til, forklarer at den kan motta nye meldinger, men ikke automatisk tidligere historikk, og leder til «Samtaler › Mine enheter», slik at en ukjent enhet kan tilbakekalles. Det skal ikke inneholde private nøkler, chatinnhold eller annen sensitiv samtaleinformasjon. Varsling opprettes fra den allerede registrerte `chat.device_linked`-hendelsen gjennom den idempotente varslingsmotoren, slik at samme kobling ikke gir duplikater. Et mislykket varsel må ikke rulle tilbake en gyldig enhetskobling.
 
+### PS-COM-017 — Én privat samtale per personpar
+**Forankring:** PS-COM-005, PS-COM-007; UX-IA-014
+
+To personer har én privat, ende-til-ende-kryptert samtale, også når de har flere lån eller forespørsler mellom seg. Lån og forespørsler lenker til den samme samtalen, og samtalen viser de pågående lånene og forespørslene mellom partene. Lånelogistikk-kanalen ved blokkering (PS-COM-007) er en egen samtale knyttet til hvert enkelt pågående lån. (Produkteier, 9. oktober 2026, OD-0045.)
+
+### PS-COM-018 — Varsel om nye meldinger samles per samtale
+**Forankring:** PS-COM-002–PS-COM-004, PS-COM-007; ADR-0010 §12
+
+Nye meldinger i en samtale gir ett samlet informasjonsvarsel i appens varslingssenter, på som standard. Varselet viser avsenderens navn og antall nye meldinger, men aldri meldingstekst, vedlegg eller hvilket lån det gjelder. Nye meldinger før samtalen er åpnet, oppdaterer samme varsel i stedet for å lage nye, og varselet regnes som lest når samtalen åpnes. E-post er et frivillig valg som er av som standard; slått på er e-posten generisk og viser verken avsender, lån eller meldingsinnhold. Demping av en samtale gjelder bare meldingsvarsler fra den samtalen, aldri påkrevde sikkerhetsvarsler (PS-COM-016) eller varsler om bindende lånehendelser. (Produkteier, 9. oktober 2026, OD-0043.)
+
+### PS-COM-019 — Gjenopprettingsnøkkelen tilbys uten å mase
+**Forankring:** ADR-0010 §8; UX-P08
+
+Gjenopprettingsnøkkelen for privat chat tilbys én gang rett etter at privat chat er slått på, med «Ikke nå», og kan alltid lages fra «Mine enheter». Den som takket nei, får én diskret påminnelse i Samtaler som ikke hindrer bruk, etter at hen faktisk har begynt å utveksle meldinger, og bare så lenge ingen gjenopprettingsnøkkel finnes. Det gis ingen gjentatte dialoger eller regelmessige påminnelser. Tekster om gjenoppretting lover bare at sikkerhetskopierte meldinger kan hentes tilbake. (Produkteier, 9. oktober 2026, OD-0044.)
+
 ## Kanalstandard for pilot
 
 Alle relevante hendelser representeres i appens varslingssenter. Verifisert e-post brukes som reservekanal for sikkerhets-/kontohendelser og tidskritiske hendelser i allerede godkjente lån. Vanlige handlings- og informasjonsvarsler skal kunne konfigureres uten at dette endrer systemtilstand. Web push kan legges til når teknisk støtte og samtykke er på plass.
