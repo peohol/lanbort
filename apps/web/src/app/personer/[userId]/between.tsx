@@ -1,6 +1,7 @@
 import type { FriendObjectList, LoanList } from "@lanbort/contracts";
 import Link from "next/link";
 import { EntryDetail } from "@/components/entry-detail";
+import { Icon } from "@/components/icon";
 import { MenuList, MenuRow } from "@/components/menu-list";
 import { ContextTag } from "@/components/tag";
 import { loansHref } from "@/navigation/areas";
@@ -25,7 +26,7 @@ export function Between({ loans }: { loans: LoanList }) {
         {loans.loans.map((loan) => (
           <MenuRow
             key={loan.id}
-            icon="things"
+            lead={<Icon name="things" />}
             href={loanHref(loan.id)}
             label={loan.agreement.title}
             detail={
@@ -75,7 +76,7 @@ export function FriendThings({
           {things.map((thing) => (
             <MenuRow
               key={thing.objectId}
-              icon="things"
+              lead={<Icon name="things" />}
               href={objectHref(thing.objectId, { kind: "direct" })}
               label={thing.title}
               detail={

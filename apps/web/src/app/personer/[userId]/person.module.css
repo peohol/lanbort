@@ -1,6 +1,44 @@
 /* A person's page (WP-86, kjerneflyt 6): why the reader sees them, what is
    between them now, and what others said about them in each role. */
 
+/* The page in one column, and on a wide screen in two (the design's screen
+   09): who the person is and what is between you on the left, what others
+   said about them on the right. */
+.page > * {
+  min-width: 0;
+}
+
+.aside {
+  container: person-aside / inline-size;
+}
+
+@media (min-width: 72rem) {
+  /* The left parts (header, why, «Dere to», between, things, more) each
+     take an auto row; the last row is flexible, so a long right column
+     grows into it instead of spreading the left parts apart. */
+  .page {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-rows: repeat(6, auto) 1fr;
+    align-items: start;
+    column-gap: var(--space-6);
+  }
+
+  .page > * {
+    grid-column: 1;
+  }
+
+  /* Level with the picture: below the way back, which shares its line
+     with the bell and the account. */
+  .page > .aside {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    margin-top: calc(
+      var(--header-covers, var(--header-height)) + var(--space-3)
+    );
+  }
+}
+
 /* Why the reader sees the person: a quiet line with its icon. */
 .why {
   display: flex;
@@ -100,7 +138,7 @@
 }
 
 /* Each role on its own: rows in one card on a phone, and on a wider screen
-   a card each, side by side and unfolded. */
+   a card each, unfolded, side by side where there is room. */
 .roles {
   display: grid;
   padding: var(--space-1) var(--space-4);
@@ -123,7 +161,6 @@
 
 @media (min-width: 48rem) {
   .roles {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
     gap: var(--space-3);
     padding: 0;
@@ -154,6 +191,12 @@
 
   .role .chevron {
     display: none;
+  }
+}
+
+@container person-aside (min-width: 30rem) {
+  .roles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
