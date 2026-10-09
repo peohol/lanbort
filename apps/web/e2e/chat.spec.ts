@@ -113,6 +113,24 @@ test("two friends chat end to end, and a new device is linked with its code", as
   };
   expect(await securityCode(anna.page)).toBe(await securityCode(bo.page));
 
+  // Bo mutes the conversation for himself, and chooses e-mail about new
+  // messages under «Varslingsvalg» (PS-COM-018).
+  await bo.page.getByRole("link", { name: "Om samtalen" }).click();
+  await bo.page.getByRole("button", { name: "Demp samtalen" }).click();
+  const unmute = bo.page.getByRole("button", { name: "Slå på varsler igjen" });
+  await expect(unmute).toBeVisible();
+  await bo.page.reload();
+  await expect(unmute).toBeVisible();
+  await bo.page.goto("/konto/varslingsvalg");
+  const chatChoices = bo.page.getByRole("group", { name: "Privat chat" });
+  await expect(chatChoices.getByLabel("Nye meldinger i appen")).toBeChecked();
+  const email = chatChoices.getByLabel("Nye meldinger på e-post");
+  await expect(email).not.toBeChecked();
+  await email.check();
+  await bo.page.reload();
+  await expect(email).toBeChecked();
+  await bo.page.goto(conversation);
+
   // Anna signs in on a second device: it needs her first device's approval.
   const laptop = await device(browser);
   await signInThroughApi(laptop.context.request, anna.email);

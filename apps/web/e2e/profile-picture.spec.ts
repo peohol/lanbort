@@ -104,6 +104,10 @@ test("a member frames a picture that fellow members see beside the name", async 
   expect(await loaded(bo.page, "Anna Berg")).toBeGreaterThan(0);
   await bo.page.goto(`/personer/${anna.id}`);
   await expect(bo.page.locator(".page-picture img")).toBeVisible();
+  // Beside her name, as on a person's page in the design.
+  const picture = await bo.page.locator(".page-picture").boundingBox();
+  const name = await bo.page.getByRole("heading", { level: 1 }).boundingBox();
+  expect(picture!.x + picture!.width).toBeLessThanOrEqual(name!.x);
 
   // Shown only to herself, it is gone for Bo, also at its address.
   await anna.page.goto("/konto/profilbilde");

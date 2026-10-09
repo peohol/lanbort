@@ -343,3 +343,30 @@
   border-radius: var(--radius-m);
   background: var(--color-sunken);
 }
+
+/* A card's own title, quieter than the page's headings (KF7). */
+.cardTitle {
+  margin: 0;
+  font-size: var(--text-m);
+}
+
+/* What one party told, set off by a line, never as a fact (PS-LOAN-023). */
+.statement {
+  display: grid;
+  gap: var(--space-1);
+  padding-left: var(--space-3);
+  border-left: 3px solid var(--color-border-strong);
+}
+
+.statement p {
+  margin: 0;
+}
+
+.statedBy {
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+.statedBy strong {
+  color: var(--color-text);
+}

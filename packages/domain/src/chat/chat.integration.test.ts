@@ -5,7 +5,10 @@ import { deleteOwnAccount } from "../account/deletion";
 import { systemActor, type UserActor } from "../actor";
 import { executeCommand } from "../commands/command";
 import { executeQuery } from "../commands/query";
+import { readNotificationCentre } from "../notification-centre/queries";
+import { setNotificationPreference } from "../notifications/commands";
 import { notificationGenerator } from "../notifications/generator";
+import { chatMessageEmailDelayMs } from "../notifications/store";
 import { ConsumerRegistry } from "../outbox/consumer";
 import { restoreActor } from "../restore/replays";
 import { blockUser, liftUserBlock } from "../social/commands";
@@ -26,9 +29,11 @@ import {
   claimChatKeyPackages,
   hideChatConversation,
   listChatConversations,
+  muteChatConversation,
   readChatConversation,
   readChatDirectory,
   readChatInbox,
+  readChatMessageNotifications,
   sendChatMessage,
   startChatConversation,
   submitChatCommit,
@@ -71,7 +76,7 @@ const consumers = new ConsumerRegistry([
   notificationGenerator({ db: () => db }),
 ]);
 const kit = loanTestKit(db, { startInDays: 2000, consumers });
-const { run, tick, user, friends } = kit;
+const { run, tick, now, user, friends } = kit;
 
 const notFound = { code: "not_found" };
 const forbidden = { code: "forbidden" };
@@ -856,5 +861,204 @@ describe("retention and restore (ADR-0010 §8–9)", () => {
       conversationId,
       open: false,
     });
+  });
+});
+
+describe("notifications of new messages (PS-COM-018)", () => {
+  const messageNotifications = (recipientId: string, conversationId: string) =>
+    db
+      .selectFrom("app.notifications")
+      .select(["id", "level", "detail", "target_type", "position", "read_at"])
+      .where("recipient_id", "=", recipientId)
+      .where("kind", "=", "chat.new_messages")
+      .where("target_id", "=", conversationId)
+      .orderBy("position")
+      .execute();
+
+  const emails = (notificationId: string) =>
+    db
+      .selectFrom("app.notification_deliveries")
+      .select(["status", "available_at"])
+      .where("notification_id", "=", notificationId)
+      .execute();
+
+  it("counts new messages in one notification until the conversation is read", async () => {
+    const { alice, bob, conversationId } = await pairInConversation();
+
+    await send(alice, conversationId, 1);
+    const [first] = await messageNotifications(
+      bob.actor.userId,
+      conversationId,
+    );
+    expect(first).toMatchObject({
+      level: "information",
+      detail: "messages_1",
+      target_type: "chat_conversation",
+      read_at: null,
+    });
+
+    await send(alice, conversationId, 1);
+    const [counted, ...more] = await messageNotifications(
+      bob.actor.userId,
+      conversationId,
+    );
+    // The same notification, at the top of the list again.
+    expect(more).toEqual([]);
+    expect(counted).toMatchObject({ id: first!.id, detail: "messages_2" });
+    expect(BigInt(counted!.position)).toBeGreaterThan(BigInt(first!.position));
+    // The sender is told nothing about their own messages.
+    expect(
+      await messageNotifications(alice.actor.userId, conversationId),
+    ).toEqual([]);
+
+    await run(readChatMessageNotifications, bob.actor, { conversationId });
+    expect(
+      (await messageNotifications(bob.actor.userId, conversationId))[0]!
+        .read_at,
+    ).not.toBeNull();
+
+    await send(alice, conversationId, 1);
+    const after = await messageNotifications(bob.actor.userId, conversationId);
+    expect(after).toHaveLength(2);
+    expect(after[1]).toMatchObject({ detail: "messages_1", read_at: null });
+  });
+
+  it("is named by the one who wrote in the reader's centre, never by what", async () => {
+    const { alice, bob, conversationId } = await pairInConversation();
+
+    await send(alice, conversationId, 1);
+    await send(alice, conversationId, 1);
+    const { notifications } = await executeQuery(
+      tick(),
+      readNotificationCentre,
+      { actor: bob.actor, input: {} },
+    );
+
+    expect(
+      notifications.filter(({ kind }) => kind === "chat.new_messages"),
+    ).toEqual([
+      expect.objectContaining({
+        detail: "messages_2",
+        target: { type: "chat_conversation", id: conversationId },
+        about: { thing: null, person: expect.any(String), place: null },
+      }),
+    ]);
+  });
+
+  it("tells no one who muted the conversation, until they unmute it", async () => {
+    const { alice, bob, conversationId } = await pairInConversation();
+
+    await run(muteChatConversation, bob.actor, {
+      conversationId,
+      muted: true,
+    });
+    expect(await read(bob.actor, conversationId)).toMatchObject({
+      muted: true,
+    });
+    // Only for the one who muted it.
+    expect(await read(alice.actor, conversationId)).toMatchObject({
+      muted: false,
+    });
+
+    await send(alice, conversationId, 1);
+    expect(
+      await messageNotifications(bob.actor.userId, conversationId),
+    ).toEqual([]);
+    expect((await acknowledge(bob.actor)).map(({ type }) => type)).toEqual([
+      "application",
+    ]);
+
+    await run(muteChatConversation, bob.actor, {
+      conversationId,
+      muted: false,
+    });
+    await send(alice, conversationId, 1);
+    expect(
+      await messageNotifications(bob.actor.userId, conversationId),
+    ).toHaveLength(1);
+  });
+
+  it("follows the recipient's own choices for new messages", async () => {
+    const { alice, bob, conversationId } = await pairInConversation();
+
+    // E-mail for information in general does not send these.
+    await run(setNotificationPreference, bob.actor, {
+      level: "information",
+      channel: "email",
+      enabled: true,
+    });
+    await send(alice, conversationId, 1);
+    const [notification] = await messageNotifications(
+      bob.actor.userId,
+      conversationId,
+    );
+    expect(await emails(notification!.id)).toEqual([]);
+    await run(readChatMessageNotifications, bob.actor, { conversationId });
+
+    // Their own e-mail choice sends one, later, for the whole batch.
+    await run(setNotificationPreference, bob.actor, {
+      kind: "chat.new_messages",
+      channel: "email",
+      enabled: true,
+    });
+    await send(alice, conversationId, 1);
+    const sentAt = now();
+    await send(alice, conversationId, 1);
+    const unread = (
+      await messageNotifications(bob.actor.userId, conversationId)
+    ).at(-1)!;
+    expect(unread.detail).toBe("messages_2");
+    expect(await emails(unread.id)).toEqual([
+      {
+        status: "pending",
+        available_at: new Date(sentAt.getTime() + chatMessageEmailDelayMs),
+      },
+    ]);
+    await run(readChatMessageNotifications, bob.actor, { conversationId });
+
+    // Chosen while a notification waits unread: its e-mail comes too.
+    await run(setNotificationPreference, bob.actor, {
+      kind: "chat.new_messages",
+      channel: "email",
+      enabled: false,
+    });
+    await send(alice, conversationId, 1);
+    await run(setNotificationPreference, bob.actor, {
+      kind: "chat.new_messages",
+      channel: "email",
+      enabled: true,
+    });
+    await send(alice, conversationId, 1);
+    const waiting = (
+      await messageNotifications(bob.actor.userId, conversationId)
+    ).at(-1)!;
+    expect(await emails(waiting.id)).toEqual([
+      expect.objectContaining({ status: "pending" }),
+    ]);
+    await run(readChatMessageNotifications, bob.actor, { conversationId });
+
+    // Off in the app: nothing at all.
+    await run(setNotificationPreference, bob.actor, {
+      kind: "chat.new_messages",
+      channel: "in_app",
+      enabled: false,
+    });
+    const before = await messageNotifications(bob.actor.userId, conversationId);
+    await send(alice, conversationId, 1);
+    expect(
+      await messageNotifications(bob.actor.userId, conversationId),
+    ).toEqual(before);
+  });
+
+  it("lets only the participants mute or read", async () => {
+    const { conversationId } = await pairInConversation();
+    const eve = await chatUser();
+
+    await expect(
+      run(muteChatConversation, eve.actor, { conversationId, muted: true }),
+    ).rejects.toMatchObject(notFound);
+    await expect(
+      run(readChatMessageNotifications, eve.actor, { conversationId }),
+    ).rejects.toMatchObject(notFound);
   });
 });

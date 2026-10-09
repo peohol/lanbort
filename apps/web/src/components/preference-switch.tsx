@@ -3,6 +3,7 @@
 import type {
   NotificationChannel,
   NotificationLevel,
+  NotificationTopic,
 } from "@lanbort/contracts";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
@@ -12,19 +13,22 @@ import { errorMessage } from "./error-messages";
 import { ErrorText } from "./error-text";
 
 /**
- * One configurable channel of one notification level (PS-COM-003). The
+ * One configurable channel of one notification level, or of one kind with
+ * choices of its own such as new chat messages (PS-COM-003, PS-COM-018). The
  * choice only decides how the user is told, never anything in a loan. It
  * is saved at once, and saying so is announced (UX-A11Y-009).
  */
 export function PreferenceSwitch({
-  level,
+  subject,
   channel,
   label,
+  help,
   enabled,
 }: {
-  level: NotificationLevel;
+  subject: { level: NotificationLevel } | { kind: NotificationTopic };
   channel: NotificationChannel;
   label: string;
+  help?: string;
   enabled: boolean;
 }) {
   const router = useRouter();
@@ -38,7 +42,7 @@ export function PreferenceSwitch({
     setPending(true);
     setError(null);
     const result = await postJson("/api/notifications/preferences", {
-      level,
+      ...subject,
       channel,
       enabled: next,
     });
@@ -60,6 +64,7 @@ export function PreferenceSwitch({
         id={id}
         type="checkbox"
         checked={checked}
+        aria-describedby={help ? `${id}-help` : undefined}
         // Not disabled: that would drop the keyboard focus (UX-A11Y-003).
         aria-disabled={pending || undefined}
         onChange={(event) => {
@@ -67,6 +72,11 @@ export function PreferenceSwitch({
         }}
       />
       <label htmlFor={id}>{label}</label>
+      {help && (
+        <p id={`${id}-help`} className="help">
+          {help}
+        </p>
+      )}
       <ErrorText>{error}</ErrorText>
     </div>
   );

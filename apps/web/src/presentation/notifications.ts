@@ -4,6 +4,7 @@ import {
   type NotificationKind,
   type NotificationLevel,
   type NotificationTargetType,
+  chatMessageCountOf,
   productTimeZone,
 } from "@lanbort/contracts";
 import { notificationEmailSubjects } from "@lanbort/domain";
@@ -32,6 +33,9 @@ const named: Partial<
 > = {
   "loan_request.received": ({ thing, person }) =>
     thing && `${person ?? "Noen"} vil låne ${thing}`,
+  // The name and how many, never what was written (PS-COM-018).
+  "chat.new_messages": ({ person }, detail) =>
+    person && `${newMessages(detail)} fra ${person}`,
   "loan_request.terms_changed": ({ thing }) =>
     thing && `Vilkårene for ${thing} er endret og venter på deg`,
   "loan_request.declined": ({ thing }) =>
@@ -112,6 +116,7 @@ const refinements: Partial<
     (detail: string | null) => string | NotificationWords | undefined
   >
 > = {
+  "chat.new_messages": (detail) => `${newMessages(detail)} i privat chat`,
   "chat.device_linked": () => ({
     title: notificationEmailSubjects["chat.device_linked"],
     detail:
@@ -127,6 +132,12 @@ const refinements: Partial<
       ? "Du er spurt om å bli eier av et miljø"
       : "Du er spurt om å bli administrator i et miljø",
 };
+
+function newMessages(detail: string | null): string {
+  const count = chatMessageCountOf(detail);
+
+  return count === 1 ? "Ny melding" : `${count} nye meldinger`;
+}
 
 const returnTexts: Record<string, string> = {
   returned: "Låntakeren sier at objektet er levert tilbake",
@@ -216,6 +227,7 @@ const contexts: Record<
   object_subscription: { label: "Ting", icon: "things" },
   case: { label: "Sak", icon: "flag" },
   chat_device: { label: "Konto", icon: "lock" },
+  chat_conversation: { label: "Samtaler", icon: "conversations" },
 };
 
 /** The context a notification belongs to: an environment by its name. */
@@ -275,17 +287,22 @@ export interface NotificationEntry<N extends Notification = Notification> {
   readonly older: number;
 }
 
-/** The courses whose older notifications are gathered in one row. */
-const gathered: ReadonlySet<NotificationTargetType> = new Set([
-  "loan",
-  "loan_request",
-]);
+/**
+ * The courses whose older notifications are gathered in one row, and what
+ * the line under the row calls them.
+ */
+const olderAbout: Partial<Record<NotificationTargetType, string>> = {
+  loan: "dette lånet",
+  loan_request: "forespørselen",
+  chat_conversation: "denne samtalen",
+};
+const gathered = new Set(Object.keys(olderAbout));
 
 /**
  * The notification centre's order (UX-IA-018–019): every unread
  * notification on its own, newest first, then the read ones, where older
- * notifications about the same loan or request stand behind the newest of
- * them. Everything stays unchanged in the loan's own timeline.
+ * notifications about the same loan, request or conversation stand behind
+ * the newest of them. Everything stays unchanged in the loan's own timeline.
  */
 export function arrangeNotifications<N extends Notification>(
   notifications: readonly N[],
@@ -320,8 +337,8 @@ export function arrangeNotifications<N extends Notification>(
 export function olderText(entry: NotificationEntry): string | null {
   if (entry.older === 0) return null;
 
-  const about =
-    entry.notification.target.type === "loan" ? "dette lånet" : "forespørselen";
+  // Only a gathered row stands for older ones.
+  const about = olderAbout[entry.notification.target.type]!;
 
   return entry.older === 1
     ? `Og 1 eldre varsel om ${about}`

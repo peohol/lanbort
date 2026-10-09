@@ -13,6 +13,7 @@ import {
   chatInboxSchema,
   chatLimits,
   chatMessageSentSchema,
+  muteChatConversationSchema,
   sendChatMessageSchema,
   startChatConversationSchema,
   submitChatCommitSchema,
@@ -31,6 +32,10 @@ import { DomainError } from "../errors";
 import { loadLenderScope, visibleToLender } from "../loans/store";
 import { actingUserId } from "../objects/state";
 import { loadQuestion, seesQuestion } from "../questions/store";
+import {
+  markChatMessagesRead,
+  recordChatMessage,
+} from "../notifications/store";
 import { loadPair, lockPair } from "../social/pair";
 import { chatConversationStarted } from "./events";
 import { readPrivateMessage, readWelcome } from "./mls";
@@ -40,9 +45,11 @@ import {
   claimChatKeyPackagesPolicy,
   hideChatConversationPolicy,
   listChatConversationsPolicy,
+  muteChatConversationPolicy,
   readChatConversationPolicy,
   readChatDirectoryPolicy,
   readChatInboxPolicy,
+  readChatMessageNotificationsPolicy,
   sendChatMessagePolicy,
   startChatConversationPolicy,
   submitChatCommitPolicy,
@@ -311,7 +318,7 @@ async function presentConversation(
   links: PersonLinks,
 ) {
   const others = othersIn(conversation, viewerId);
-  const [names, members, waiting] = await Promise.all([
+  const [names, members, waiting, participant] = await Promise.all([
     realNames(db, others),
     groupMembers(db, conversation.id, conversation.generation),
     device
@@ -328,6 +335,12 @@ async function presentConversation(
           .limit(1)
           .executeTakeFirst()
       : undefined,
+    db
+      .selectFrom("app.chat_participants")
+      .select("muted_at")
+      .where("conversation_id", "=", conversation.id)
+      .where("user_id", "=", viewerId)
+      .executeTakeFirst(),
   ]);
 
   return {
@@ -344,6 +357,7 @@ async function presentConversation(
     open,
     joined: device !== null && members.includes(device.id),
     waiting: waiting !== undefined,
+    muted: (participant?.muted_at ?? null) !== null,
     lastActivityAt: conversation.lastActivityAt.toISOString(),
   };
 }
@@ -523,6 +537,54 @@ export const hideChatConversation = defineCommand({
 });
 
 /**
+ * «Demp samtalen» (PS-COM-018): no notifications of new messages in this
+ * conversation for the caller, or again after unmuting. Nothing else
+ * changes, and the other participant sees no difference.
+ */
+export const muteChatConversation = defineCommand({
+  name: "chat.mute_conversation",
+  input: muteChatConversationSchema,
+  output: chatDoneSchema,
+  policy: muteChatConversationPolicy,
+  idempotency: "required",
+  load: conversationLoad<z.infer<typeof muteChatConversationSchema>>(),
+  execute: async ({ tx, actor, input, now }) => {
+    await tx
+      .updateTable("app.chat_participants")
+      .set({ muted_at: input.muted ? now : null })
+      .where("conversation_id", "=", input.conversationId)
+      .where("user_id", "=", actingUserId(actor))
+      .execute();
+
+    return {};
+  },
+});
+
+/**
+ * The caller opened the conversation: its notification of new messages is
+ * read (PS-COM-018). Only the caller's own notification; nothing is told to
+ * anyone else (PS-COM-004).
+ */
+export const readChatMessageNotifications = defineCommand({
+  name: "chat.read_message_notifications",
+  input: chatConversationTargetSchema,
+  output: chatDoneSchema,
+  policy: readChatMessageNotificationsPolicy,
+  idempotency: "none",
+  load: conversationLoad(),
+  execute: async ({ tx, actor, input, now }) => {
+    await markChatMessagesRead(
+      tx,
+      actingUserId(actor),
+      input.conversationId,
+      now,
+    );
+
+    return {};
+  },
+});
+
+/**
  * Whether the caller's device may change the group: it is a member, or the
  * group has no live member left, so the caller's device starts it anew.
  */
@@ -597,6 +659,48 @@ export const claimChatKeyPackages = defineCommand({
     return { keyPackages };
   },
 });
+
+/**
+ * PS-COM-018: whoever got the message on a device of theirs is told, unless
+ * they muted the conversation. Who writes to whom, and when, is what the
+ * server knows already; nothing of the message itself is used.
+ */
+async function notifyNewMessage(
+  tx: Tx,
+  message: {
+    conversationId: string;
+    position: string;
+    senderId: string;
+    deviceIds: readonly string[];
+    now: Date;
+  },
+): Promise<void> {
+  const [devices, muted] = await Promise.all([
+    tx
+      .selectFrom("app.chat_devices")
+      .select("user_id")
+      .where("id", "in", [...message.deviceIds])
+      .execute(),
+    tx
+      .selectFrom("app.chat_participants")
+      .select("user_id")
+      .where("conversation_id", "=", message.conversationId)
+      .where("muted_at", "is not", null)
+      .execute(),
+  ]);
+  const quiet = new Set([message.senderId, ...muted.map((row) => row.user_id)]);
+
+  await recordChatMessage(tx, {
+    conversationId: message.conversationId,
+    messageKey: message.position,
+    recipientIds: [
+      ...new Set(
+        devices.map((row) => row.user_id).filter((id) => !quiet.has(id)),
+      ),
+    ],
+    occurredAt: message.now,
+  });
+}
 
 async function deliver(
   tx: Tx,
@@ -795,7 +899,7 @@ export const sendChatMessage = defineCommand({
   rateLimit: rateLimits.chatMessages,
   idempotency: "required",
   load: conversationLoad<z.infer<typeof sendChatMessageSchema>>({ lock: true }),
-  execute: async ({ tx, input, resource, now }) => {
+  execute: async ({ tx, actor, input, resource, now }) => {
     const { conversation } = resource;
     const device = resource.device!;
 
@@ -831,6 +935,7 @@ export const sendChatMessage = defineCommand({
       conflict("This device is not in the conversation yet");
     }
 
+    const recipients = members.filter((id) => id !== device.id);
     const position = await deliver(
       tx,
       {
@@ -841,8 +946,18 @@ export const sendChatMessage = defineCommand({
         ciphertext,
         now,
       },
-      members.filter((id) => id !== device.id),
+      recipients,
     );
+
+    if (position !== null) {
+      await notifyNewMessage(tx, {
+        conversationId: conversation.id,
+        position,
+        senderId: actingUserId(actor),
+        deviceIds: recipients,
+        now,
+      });
+    }
 
     // A new message shows the conversation again for anyone who removed it
     // from their list (PS-COM-009).

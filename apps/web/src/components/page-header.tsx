@@ -25,7 +25,7 @@ export function PageHeader({
   label?: string | undefined;
   /** The type of a detail, such as «Lån» or «Person» (UX-IA-015). */
   kind?: string;
-  /** The picture of the person the page is about. */
+  /** The picture of the person the page is about, beside its title. */
   picture?: ReactNode;
   /**
    * Where the page lies by the rule (UX-IA-011): its home area's own page,
@@ -44,6 +44,12 @@ export function PageHeader({
   const backArea = back && areaAt(back.href);
   const homeArea = home ?? backArea ?? "home";
   const container = back && !backArea ? back : undefined;
+  const heading = (
+    <>
+      {kind && <p className="page-kind">{kind}</p>}
+      <h1>{title}</h1>
+    </>
+  );
 
   return (
     <header className="page-header" data-task={task || undefined}>
@@ -57,9 +63,14 @@ export function PageHeader({
           />
         )
       )}
-      {picture && <div className="page-picture">{picture}</div>}
-      {kind && <p className="page-kind">{kind}</p>}
-      <h1>{title}</h1>
+      {picture ? (
+        <div className="page-title-row">
+          <div className="page-picture">{picture}</div>
+          <div>{heading}</div>
+        </div>
+      ) : (
+        heading
+      )}
       {context && <div className="tags">{context}</div>}
       {children && <p className="page-lead">{children}</p>}
     </header>
