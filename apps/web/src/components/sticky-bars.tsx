@@ -54,8 +54,9 @@ export function StickyBars() {
         return;
       }
 
-      // Only the bar at the bottom of a phone covers from below.
-      if (wide.matches) return;
+      // Only the bar at the bottom of a phone covers from below, and not
+      // where it is hidden, as in a form (UX-IA-013).
+      if (wide.matches || navigation.getClientRects().length === 0) return;
 
       const box = event.target.getBoundingClientRect();
       const top = header.getBoundingClientRect().bottom;

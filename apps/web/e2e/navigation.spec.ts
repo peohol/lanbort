@@ -456,6 +456,24 @@ test("on a phone the areas sit at the bottom, without sideways scrolling", async
   ).toBeFocused();
 });
 
+test("on a phone a form stays still when a field in view is chosen", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await registerThroughApi(page.request);
+  await page.goto("/ting/ny");
+  await expect(mainNavigation(page)).toBeHidden();
+
+  // A field in view: nothing covers it, so nothing scrolls.
+  const field = page
+    .locator("main :is(input, textarea, select):visible")
+    .first();
+  await expect(field).toBeInViewport({ ratio: 1 });
+  const before = await page.evaluate(() => window.scrollY);
+  await field.focus();
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+});
+
 test("the areas need a signed-in user", async ({ page, request }) => {
   for (const path of [
     "/finn",
