@@ -177,75 +177,76 @@ export function RequestForm({
           </button>
         </p>
       )}
-      <form
-        hidden={reviewing}
-        className={styles.column}
-        onSubmit={(event) => {
-          event.preventDefault();
-          setReviewing(true);
-        }}
-      >
-        <Choice
-          legend="Start"
-          name={field("start")}
-          value={startKind}
-          options={startChoices}
-          onChange={setStartKind}
-        />
-        {startKind === "date" && (
-          <Field id={field("start-date")} label="Første dag">
-            <input
-              id={field("start-date")}
-              type="date"
-              required
-              min={today}
-              value={startDate}
-              onChange={(event) => setStartDate(event.target.value)}
-            />
-          </Field>
-        )}
-        <Choice
-          legend="Slutt"
-          name={field("end")}
-          value={endKind}
-          options={endChoices}
-          onChange={setEndKind}
-        />
-        {endKind === "date" ? (
-          <Field id={field("end-date")} label="Siste dag">
-            <input
-              id={field("end-date")}
-              type="date"
-              required
-              min={earliestEnd}
-              value={endDate}
-              onChange={(event) => setEndDate(event.target.value)}
-            />
-          </Field>
-        ) : (
-          <Field id={field("days")} label="Antall dager">
-            <input
-              id={field("days")}
-              type="number"
-              inputMode="numeric"
-              required
-              min={1}
-              max={3650}
-              step={1}
-              value={days}
-              onChange={(event) => setDays(event.target.value)}
-            />
-          </Field>
-        )}
-        {chosen && (
-          <p className={styles.body} aria-live="polite">
-            Valgt: <strong>{chosen}</strong>
-          </p>
-        )}
-        <div className="actions">
-          <button type="submit">Videre</button>
-        </div>
-      </form>
+      {!reviewing && (
+        <form
+          className={styles.column}
+          onSubmit={(event) => {
+            event.preventDefault();
+            setReviewing(true);
+          }}
+        >
+          <Choice
+            legend="Start"
+            name={field("start")}
+            value={startKind}
+            options={startChoices}
+            onChange={setStartKind}
+          />
+          {startKind === "date" && (
+            <Field id={field("start-date")} label="Første dag">
+              <input
+                id={field("start-date")}
+                type="date"
+                required
+                min={today}
+                value={startDate}
+                onChange={(event) => setStartDate(event.target.value)}
+              />
+            </Field>
+          )}
+          <Choice
+            legend="Slutt"
+            name={field("end")}
+            value={endKind}
+            options={endChoices}
+            onChange={setEndKind}
+          />
+          {endKind === "date" ? (
+            <Field id={field("end-date")} label="Siste dag">
+              <input
+                id={field("end-date")}
+                type="date"
+                required
+                min={earliestEnd}
+                value={endDate}
+                onChange={(event) => setEndDate(event.target.value)}
+              />
+            </Field>
+          ) : (
+            <Field id={field("days")} label="Antall dager">
+              <input
+                id={field("days")}
+                type="number"
+                inputMode="numeric"
+                required
+                min={1}
+                max={3650}
+                step={1}
+                value={days}
+                onChange={(event) => setDays(event.target.value)}
+              />
+            </Field>
+          )}
+          {chosen && (
+            <p className={styles.body} aria-live="polite">
+              Valgt: <strong>{chosen}</strong>
+            </p>
+          )}
+          <div className="actions">
+            <button type="submit">Videre</button>
+          </div>
+        </form>
+      )}
       {reviewing && (
         <form
           className={styles.column}
