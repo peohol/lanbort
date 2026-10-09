@@ -317,6 +317,7 @@ export const listOwnEnvironments = defineQuery({
         "environment.name",
         "membership.state",
         "membership.transition_deadline as transitionDeadline",
+        "environment.requires_object_approval as requiresObjectApproval",
       ])
       .where("membership.user_id", "=", actor.userId)
       .where("membership.state", "<>", "ended")
@@ -350,6 +351,7 @@ export const listOwnEnvironments = defineQuery({
       name: row.name,
       membershipState: effectiveState(row, now),
       roles: [...row.roles],
+      requiresObjectApproval: row.requiresObjectApproval,
     })),
 });
 

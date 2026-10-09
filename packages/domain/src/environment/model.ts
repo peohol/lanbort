@@ -254,6 +254,7 @@ export interface OwnEnvironmentRow {
   readonly state: MembershipState;
   readonly transitionDeadline: Date | null;
   readonly roles: readonly EnvironmentRole[];
+  readonly requiresObjectApproval: boolean;
 }
 
 /** What environment policies decide on, loaded inside the command. */

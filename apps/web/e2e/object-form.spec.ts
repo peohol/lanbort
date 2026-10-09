@@ -70,6 +70,12 @@ test("a thing is registered from an environment, with a photo, and published the
     "Periodene 1 og 2 har dager felles. Slå dem sammen eller endre datoene.",
   );
   await page.getByLabel("Når som helst").check();
+  // The periods given are kept while «any time» is chosen.
+  await page.getByLabel("Bare i bestemte perioder").check();
+  await expect(page.getByLabel("Fra", { exact: true }).nth(1)).toHaveValue(
+    "2099-02-01",
+  );
+  await page.getByLabel("Når som helst").check();
   await page.getByLabel("Vilkår for lånet (valgfritt)").fill("Tørk den av.");
   await page.getByRole("button", { name: "Videre" }).click();
 
@@ -253,6 +259,13 @@ test("a thing can be saved without publishing, and «Avbryt» asks before anythi
   await registerThroughApi(page.request);
 
   await page.goto("/ting/ny");
+  // Any choice made counts as something that would be lost.
+  await page.getByLabel("Kategori").selectOption({ label: "Verktøy" });
+  await page.getByRole("link", { name: "Avbryt" }).click();
+  await page
+    .getByRole("dialog", { name: "Forkaste tingen?" })
+    .getByRole("button", { name: "Fortsett å registrere" })
+    .click();
   await page.getByLabel("Navn").fill("Sag");
   await page.getByRole("link", { name: "Avbryt" }).click();
   const discard = page.getByRole("dialog", { name: "Forkaste Sag?" });

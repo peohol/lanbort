@@ -1,6 +1,5 @@
 import {
   calendarDate,
-  getEnvironment,
   listObjectCategories,
   listOwnEnvironments,
   takesNewActivity,
@@ -12,7 +11,7 @@ import { PageHeader } from "@/components/page-header";
 import { thingsHref } from "@/navigation/areas";
 import { environmentHref, environmentParam } from "@/navigation/routes";
 import { pageQuery, requirePageAccount } from "@/server/session";
-import { ObjectForm, type PublishTarget } from "../object-form";
+import { ObjectForm } from "../object-form";
 
 export const metadata: Metadata = { title: "Registrer en ting – Lånbort" };
 
@@ -46,24 +45,9 @@ export default async function NewObjectPage({
     pageQuery(listOwnEnvironments, {}),
   ]);
   const preselected = query[environmentParam];
-  // Only an active member may publish (PS-OBJ-006); each says whether its
-  // administrators approve new things first (PS-ENV-011).
-  const targets = (
-    await Promise.all(
-      (environments ?? [])
-        .filter(({ membershipState }) => membershipState === "active")
-        .map(({ id }) => pageQuery(getEnvironment, { environmentId: id })),
-    )
-  ).flatMap((environment): PublishTarget[] =>
-    environment
-      ? [
-          {
-            id: environment.id,
-            name: environment.name,
-            requiresApproval: environment.requiresObjectApproval,
-          },
-        ]
-      : [],
+  // Only an active member may publish (PS-OBJ-006).
+  const targets = (environments ?? []).filter(
+    ({ membershipState }) => membershipState === "active",
   );
   const started = targets.find(({ id }) => id === preselected);
 

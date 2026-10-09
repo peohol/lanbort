@@ -30,6 +30,7 @@ import {
   changedFields,
   changedTermsNotice,
   contentOf,
+  type DraftInterval,
   draftOf,
   editOf,
   type FormStep,
@@ -158,11 +159,11 @@ export function ObjectForm(props: ObjectFormProps) {
   const [draft, setDraft] = useState<ObjectDraft>(
     editing ? draftOf(editing) : newDraft(today),
   );
-  const [mode, setMode] = useState<AvailabilityMode>(
-    isAnytime(draft.availability, today) ? "anytime" : "periods",
-  );
+  const modeOf = (availability: readonly DraftInterval[]): AvailabilityMode =>
+    isAnytime(availability, today) ? "anytime" : "periods";
+  const [mode, setMode] = useState(modeOf(draft.availability));
   // The periods last given, kept while «any time» is chosen.
-  const [periods, setPeriods] = useState(
+  const [periods, setPeriods] = useState<readonly DraftInterval[]>(
     mode === "periods" ? draft.availability : [],
   );
   const [images, setImages] = useState<FormImage[]>(
@@ -180,6 +181,7 @@ export function ObjectForm(props: ObjectFormProps) {
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<ApiFailureCode | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
   const [newer, setNewer] = useState<OwnObject | null>(null);
   const titleField = useRef<HTMLInputElement>(null);
   const discard = useRef<HTMLDialogElement>(null);
@@ -192,10 +194,7 @@ export function ObjectForm(props: ObjectFormProps) {
     removed.length > 0 || images.some((image) => image.kind === "new");
   const dirty = editing
     ? changed.length > 0 || imagesChanged
-    : draft.title !== "" ||
-      draft.description !== "" ||
-      draft.loanTerms !== "" ||
-      images.length > 0;
+    : changedFields(newDraft(today), draft).length > 0 || images.length > 0;
 
   // A new step is announced by moving focus to its heading.
   useEffect(() => {
@@ -255,7 +254,9 @@ export function ObjectForm(props: ObjectFormProps) {
 
   function chooseMode(next: AvailabilityMode) {
     setMode(next);
-    set({
+    // Not through `set`: the periods given stay remembered.
+    setDraft((current) => ({
+      ...current,
       availability:
         next === "anytime"
           ? isAnytime(base?.draft.availability ?? [], today)
@@ -264,7 +265,7 @@ export function ObjectForm(props: ObjectFormProps) {
           : periods.length > 0
             ? periods
             : [{ start: "", end: "" }],
-    });
+    }));
   }
 
   function go(to: number) {
@@ -345,6 +346,8 @@ export function ObjectForm(props: ObjectFormProps) {
     const saved = await saveImages(objectId);
     if (!saved.ok) return fail(saved.code);
     if (!publish) return objectId;
+    // From here, saving without publishing would no longer be true.
+    setPublishing(true);
 
     for (const environmentId of published) {
       const result = await steps.run(
@@ -464,8 +467,13 @@ export function ObjectForm(props: ObjectFormProps) {
 
   /** Starts again from what is saved now. */
   function takeSaved(latest: OwnObject) {
-    setBase({ draft: draftOf(latest), version: latest.version });
-    setDraft(draftOf(latest));
+    const saved = draftOf(latest);
+    setBase({ draft: saved, version: latest.version });
+    setDraft(saved);
+    setMode(modeOf(saved.availability));
+    setPeriods(
+      modeOf(saved.availability) === "periods" ? saved.availability : [],
+    );
     setImages(savedImages(latest));
     setRemoved([]);
     setNewer(null);
@@ -673,7 +681,7 @@ export function ObjectForm(props: ObjectFormProps) {
                 ? "Lagre endringene"
                 : (publishAs ?? "Lagre uten å publisere")}
             </BusyButton>
-            {!editing && publishAs && (
+            {!editing && publishAs && !publishing && (
               <p className={styles.private}>
                 <button
                   type="button"

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ObjectCategory } from "@lanbort/contracts";
+import type { EnvironmentSummary, ObjectCategory } from "@lanbort/contracts";
 import type { ReactNode, RefObject } from "react";
 import { describedBy, Field, helpId } from "@/components/field";
 import { Icon } from "@/components/icon";
@@ -20,13 +20,14 @@ import {
 } from "./object-form-fields";
 import styles from "./object-form.module.css";
 
-/** An environment the user may publish in: one they are an active member of. */
-export interface PublishTarget {
-  readonly id: string;
-  readonly name: string;
-  /** Its administrators approve new things first (PS-ENV-011). */
-  readonly requiresApproval: boolean;
-}
+/**
+ * An environment the user may publish in: one they are an active member
+ * of, and whether its administrators approve new things first (PS-ENV-011).
+ */
+export type PublishTarget = Pick<
+  EnvironmentSummary,
+  "id" | "name" | "requiresObjectApproval"
+>;
 
 type Change = (change: Partial<ObjectDraft>) => void;
 
@@ -249,7 +250,7 @@ export function WhoStep({
                 environment.id === preselected
                   ? "Valgt fordi du startet her."
                   : `Medlemmer i ${environment.name}.`,
-                environment.requiresApproval &&
+                environment.requiresObjectApproval &&
                   "Administratorene godkjenner nye ting før de vises.",
               ]
                 .filter(Boolean)
