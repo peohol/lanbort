@@ -231,7 +231,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0043 — Varsler om nye meldinger i privat chat
 - **Lag:** Produktspesifikasjon / UX
 - **Status:** Avklart (produkteier, 9. oktober 2026)
-- **Beslutning:** Se [PS-COM-018](product-spec/05-kommunikasjon-varsler-og-saker.md) og ADR-0010 punkt 12. Ett samlet informasjonsvarsel per samtale i appen, med navn og antall, uten innhold eller lån; e-post av som standard og generisk. Ikke bygget ennå.
+- **Beslutning:** Se [PS-COM-018](product-spec/05-kommunikasjon-varsler-og-saker.md) og ADR-0010 punkt 12. Ett samlet informasjonsvarsel per samtale i appen, med navn og antall, uten innhold eller lån; e-post av som standard og generisk. Bygget 9. oktober 2026.
 
 ### OD-0044 — Når gjenopprettingsnøkkelen for privat chat tilbys
 - **Lag:** UX

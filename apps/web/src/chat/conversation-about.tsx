@@ -8,6 +8,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { announce } from "@/components/announcer";
 import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
 import { PageHeader } from "@/components/page-header";
@@ -142,6 +143,7 @@ function About({
   const [info, setInfo] = useState<ChatConversation>();
   const [directory, setDirectory] = useState<ChatDirectory>();
   const [busy, setBusy] = useState(false);
+  const [muting, setMuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -162,6 +164,20 @@ function About({
     } catch (problem) {
       setBusy(false);
       setError(chatErrorMessage(problem));
+    }
+  }
+
+  async function mute(muted: boolean) {
+    setMuting(true);
+    setError(null);
+    try {
+      await chatApi.mute(id, muted);
+      setInfo((current) => current && { ...current, muted });
+      announce(muted ? "Samtalen er dempet." : "Varslene er slått på igjen.");
+    } catch (problem) {
+      setError(chatErrorMessage(problem));
+    } finally {
+      setMuting(false);
     }
   }
 
@@ -215,6 +231,22 @@ function About({
               person={person}
             />
           ))}
+
+          <section className="card" aria-label="Demp samtalen">
+            <BusyButton
+              type="button"
+              busy={muting}
+              onClick={() => void mute(!info.muted)}
+            >
+              {info.muted ? "Slå på varsler igjen" : "Demp samtalen"}
+            </BusyButton>
+            <p className="quiet">
+              {info.muted
+                ? "Du får ikke varsler om nye meldinger her. "
+                : "Bare varsler om nye meldinger her, og bare for deg. "}
+              Påkrevde sikkerhetsvarsler og varsler om lånet kommer som før.
+            </p>
+          </section>
 
           <section className="card" aria-label="Fjern fra mine samtaler">
             <BusyButton type="button" busy={busy} onClick={() => void hide()}>

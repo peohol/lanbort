@@ -14,6 +14,7 @@ import {
 } from "react";
 import { announce } from "@/components/announcer";
 import { BusyButton } from "@/components/busy-button";
+import { announceDataChanged } from "@/components/data-changed";
 import { ErrorText } from "@/components/error-text";
 import { PageHeader } from "@/components/page-header";
 import { PlaceBar } from "@/components/place-bar";
@@ -345,13 +346,24 @@ function Conversation({
   // Whether the reader was at the newest message before more came.
   const atEnd = useRef(true);
   const newest = useRef<string | undefined>(undefined);
+  const notified = useRef<string | undefined>(undefined);
 
   // Read up to the newest message once the reader has it in view, on this
   // device only: a message that came while they were further up stays new.
+  // The notification of new messages is read then too (PS-COM-018), once
+  // for each newest message.
   const readToEnd = useCallback(() => {
+    if (document.visibilityState !== "visible") return;
     const last = newest.current;
-    if (last && document.visibilityState === "visible") {
-      void engine.markSeen(id, last);
+    if (last) void engine.markSeen(id, last);
+    // Also with nothing here yet, as on a newly linked device: the
+    // notification is the account's, not this device's.
+    const seen = last ?? "";
+    if (notified.current !== seen) {
+      notified.current = seen;
+      chatApi.readNotifications(id).then(announceDataChanged, () => {
+        notified.current = undefined;
+      });
     }
   }, [engine, id]);
 
