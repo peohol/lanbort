@@ -219,7 +219,7 @@ export function CaseEvidence({
   title: string;
 }) {
   return (
-    <ReadyChat title="Send inn meldinger">
+    <ReadyChat header={<h1>Send inn meldinger</h1>}>
       {(engine) => <Choose engine={engine} caseId={caseId} title={title} />}
     </ReadyChat>
   );

@@ -155,7 +155,7 @@ function Devices({ engine }: { engine: ChatEngine }) {
 /** «Mine enheter» (ADR-0010 §7): the account's devices with chat. */
 export function DeviceList() {
   return (
-    <ReadyChat title="Mine enheter">
+    <ReadyChat header={<h1>Mine enheter</h1>}>
       {(engine) => <Devices engine={engine} />}
     </ReadyChat>
   );

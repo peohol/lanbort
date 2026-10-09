@@ -3,16 +3,26 @@
 import type { ChatContext, ChatConversation } from "@lanbort/contracts";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { BusyButton } from "@/components/busy-button";
+import { EmptyState } from "@/components/empty-state";
 import { ErrorText } from "@/components/error-text";
+import { Icon } from "@/components/icon";
 import { ProfilePicture } from "@/components/profile-picture";
+import { Tag } from "@/components/tag";
 import { chatConversationHref, chatDevicesHref } from "@/navigation/chat";
 import { chatApi } from "./api";
-import { useEngineVersion } from "./chat-provider";
-import { EncryptionNote, ReadyChat } from "./chat-setup";
+import styles from "./chat.module.css";
+import { ChatIcon } from "./chat-icon";
+import { ReadyChat } from "./chat-setup";
 import type { ChatEngine } from "./engine";
+import { type ChatLoans, loansLine } from "./loans";
 import { chatErrorMessage } from "./messages";
+import { listTime } from "./time";
+import {
+  type ConversationSummary,
+  useConversations,
+} from "./use-conversations";
 
 export interface ChatPerson {
   userId: string;
@@ -26,30 +36,96 @@ export interface ChatInvitation extends ChatPerson {
   context?: ChatContext;
 }
 
-const nameOf = (people: readonly ChatPerson[]) =>
-  people.map((person) => person.realName ?? "Ukjent navn").join(", ");
+export const nameOf = (people: readonly ChatPerson[]) =>
+  people.map((person) => person.realName ?? "Tidligere bruker").join(", ");
 
-/** The people by name, each with their picture where it is shown. */
-function People({ people }: { people: readonly ChatPerson[] }) {
+/** The first person's picture, or their initials where none is shown. */
+export function Picture({ people }: { people: readonly ChatPerson[] }) {
+  const [first] = people;
   return (
-    <span className="person-name">
-      {people.map((person) => (
-        <ProfilePicture
-          key={person.userId}
-          pictureId={person.pictureId ?? null}
-          name={person.realName}
-        />
-      ))}
-      {nameOf(people)}
-    </span>
+    <ProfilePicture
+      pictureId={first?.pictureId ?? null}
+      name={first?.realName ?? null}
+      size="medium"
+      initials
+    />
   );
 }
 
-const time = (iso: string) =>
-  new Date(iso).toLocaleString("nb-NO", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+/** The loan a loan logistics conversation is about, by its id. */
+export const loanOf = (loans: ChatLoans, loanId: string | null) =>
+  loanId === null
+    ? undefined
+    : Object.values(loans)
+        .flat()
+        .find((loan) => loan.id === loanId);
+
+/** What the row says under the name: the loans, or the loan it is for. */
+function rowContext(conversation: ChatConversation, loans: ChatLoans) {
+  if (conversation.kind === "loan_logistics") {
+    const loan = loanOf(loans, conversation.loanId);
+    return loan ? `Lånelogistikk · ${loan.title}` : "Lånelogistikk";
+  }
+  const [other] = conversation.others;
+  return other ? loansLine(loans[other.userId]) : null;
+}
+
+function preview(summary: ConversationSummary | undefined) {
+  if (!summary?.last) return "Ingen meldinger på denne enheten ennå";
+  const text = summary.last.text ?? "Meldingen kunne ikke leses her";
+  return summary.last.own ? `Du: ${text}` : text;
+}
+
+/** One row per conversation (01), the open one marked where it shows. */
+export function ConversationRows({
+  conversations,
+  summaries,
+  loans,
+  current,
+}: {
+  conversations: readonly ChatConversation[];
+  summaries: ReadonlyMap<string, ConversationSummary>;
+  loans: ChatLoans;
+  current?: string;
+}) {
+  return (
+    <ul className={styles.list}>
+      {conversations.map((conversation) => {
+        const id = conversation.conversationId;
+        const summary = summaries.get(id);
+        const context = rowContext(conversation, loans);
+        const at = summary?.last?.sentAt ?? conversation.lastActivityAt;
+        return (
+          <li key={id} className={summary?.isNew ? styles.rowNew : undefined}>
+            <Link
+              href={chatConversationHref(id)}
+              className={styles.row}
+              aria-current={id === current ? "page" : undefined}
+            >
+              <Picture people={conversation.others} />
+              <span className={styles.rowText}>
+                <span className={styles.rowTop}>
+                  <span className={styles.rowName}>
+                    {nameOf(conversation.others)}
+                  </span>
+                  <span className={styles.rowTime}>{listTime(at)}</span>
+                </span>
+                {context && <span className={styles.rowLoans}>{context}</span>}
+                <span className={styles.rowPreview}>{preview(summary)}</span>
+                {summary?.isNew && <Tag tone="attention">Ny melding</Tag>}
+                {!conversation.open && (
+                  <Tag tone="neutral" icon="lock">
+                    Stengt
+                  </Tag>
+                )}
+              </span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 function StartButton({
   engine,
@@ -84,7 +160,12 @@ function StartButton({
 
   return (
     <>
-      <BusyButton type="button" busy={busy} onClick={() => void start()}>
+      <BusyButton
+        type="button"
+        className="button-secondary"
+        busy={busy}
+        onClick={() => void start()}
+      >
         {label}
       </BusyButton>
       <ErrorText>{error}</ErrorText>
@@ -92,65 +173,93 @@ function StartButton({
   );
 }
 
+/** «Mine enheter», with how many devices can read the conversations. */
+export function DevicesLink() {
+  const [count, setCount] = useState<number>();
+
+  useEffect(() => {
+    chatApi
+      .devices()
+      .then(({ devices }) =>
+        setCount(devices.filter((d) => d.revokedAt === null).length),
+      )
+      .catch(() => undefined);
+  }, []);
+
+  return (
+    <Link href={chatDevicesHref} className={styles.linkCard}>
+      <span className={styles.iconBubble}>
+        <ChatIcon name="device" />
+      </span>
+      <span className={styles.linkText}>
+        <strong>Mine enheter</strong>
+        {count !== undefined && (
+          <small>
+            {count === 1 ? "1 enhet kan" : `${count} enheter kan`} lese
+            samtalene dine
+          </small>
+        )}
+      </span>
+      <Icon name="chevron" />
+    </Link>
+  );
+}
+
+/** The list could not be fetched: what the device holds still reads (21). */
+export function NotUpdated({
+  error,
+  retry,
+}: {
+  error: string;
+  retry: () => void;
+}) {
+  return (
+    <div className={styles.notice} role="alert">
+      <Tag tone="warning">Ikke oppdatert</Tag>
+      <p>Vi fikk ikke hentet samtalene. {error}</p>
+      <button type="button" className="button-secondary" onClick={retry}>
+        Prøv igjen
+      </button>
+    </div>
+  );
+}
+
 function ConversationList({
   engine,
   friends,
+  loans,
   invitation,
 }: {
   engine: ChatEngine;
   friends: readonly ChatPerson[];
+  loans: ChatLoans;
   invitation?: ChatInvitation;
 }) {
-  const version = useEngineVersion(engine);
-  const [conversations, setConversations] = useState<ChatConversation[]>();
-  const [error, setError] = useState<string | null>(null);
+  const { conversations, summaries, error, retry } = useConversations(engine);
 
-  useEffect(() => {
-    let current = true;
-    chatApi
-      .conversations()
-      .then((list) => {
-        if (current) setConversations(list.conversations);
-      })
-      .catch((problem: unknown) => {
-        if (current) setError(chatErrorMessage(problem));
-      });
-    return () => {
-      current = false;
-    };
-  }, [version]);
-
-  // Keeps every group in line with its participants' devices, so a device
-  // someone linked since gets the messages too (ADR-0010 §4). Once per
-  // visit, not on every change it causes itself.
-  const maintained = useRef(false);
-  useEffect(() => {
-    if (!conversations || maintained.current) return;
-    maintained.current = true;
-    const open = conversations
-      .filter((c) => c.open)
-      .map((c) => c.conversationId);
-    void (async () => {
-      for (const id of open) await engine.maintain(id).catch(() => undefined);
-    })();
-  }, [conversations, engine]);
-
-  // A loan's own conversation is not a private one to start again from.
+  // One private conversation per person (PS-COM-017): those already in
+  // the list are not offered again.
   const talkingTo = new Set(
     (conversations ?? [])
       .filter((c) => c.kind === "private")
       .flatMap((c) => c.others.map((o) => o.userId)),
   );
-  const newFriends = friends.filter((f) => !talkingTo.has(f.userId));
+  const newFriends = conversations
+    ? friends.filter((f) => !talkingTo.has(f.userId))
+    : [];
 
   return (
     <>
-      {invitation && !talkingTo.has(invitation.userId) && (
-        <section aria-labelledby="ny-samtale">
+      {invitation && conversations && !talkingTo.has(invitation.userId) && (
+        <section
+          aria-labelledby="ny-samtale"
+          className={`card ${styles.stack}`}
+        >
           <h2 id="ny-samtale">Ny samtale</h2>
           <p>
             Vil du starte en privat samtale med{" "}
-            {invitation.realName ?? "den som kontaktet deg"}?
+            {invitation.realName ?? "den som kontaktet deg"}? Å åpne samtalen
+            svarer ikke på henvendelsen.
           </p>
           <StartButton
             engine={engine}
@@ -162,44 +271,46 @@ function ConversationList({
       )}
 
       <section aria-labelledby="samtaler">
-        <h2 id="samtaler">Dine samtaler</h2>
-        <ErrorText>{error}</ErrorText>
+        <h2 id="samtaler" className="visually-hidden">
+          Dine samtaler
+        </h2>
+        {error && <NotUpdated error={error} retry={retry} />}
         {conversations === undefined && !error && (
           <p role="status">Henter samtaler …</p>
         )}
         {conversations?.length === 0 && (
-          <p className="quiet">Du har ingen samtaler ennå.</p>
+          <EmptyState>
+            <strong>Ingen samtaler ennå.</strong> Skriv til en venn herfra.
+            Andre kan du skrive med når de har sendt deg en forespørsel eller
+            spurt om en ting.
+          </EmptyState>
         )}
-        <ul className="entries">
-          {conversations?.map((conversation) => (
-            <li key={conversation.conversationId} className="entry">
-              <Link href={chatConversationHref(conversation.conversationId)}>
-                <People people={conversation.others} />
-              </Link>
-              <span className="entry-detail">
-                {conversation.loanId ? "Om lånet · " : ""}
-                {conversation.open ? "" : "Stengt · "}
-                Sist aktiv {time(conversation.lastActivityAt)}
-              </span>
-            </li>
-          ))}
-        </ul>
+        {conversations && conversations.length > 0 && (
+          <ConversationRows
+            conversations={conversations}
+            summaries={summaries}
+            loans={loans}
+          />
+        )}
       </section>
 
       {newFriends.length > 0 && (
         <section aria-labelledby="venner">
-          <h2 id="venner">Skriv til en venn</h2>
-          <ul className="entries">
+          <h2 id="venner" className={styles.sectionHeading}>
+            Skriv til en venn
+          </h2>
+          <ul className={styles.list}>
             {newFriends.map((friend) => (
-              <li key={friend.userId} className="entry">
-                <strong id={`venn-${friend.userId}`}>
-                  <People people={[friend]} />
-                </strong>
-                <div
-                  className="actions"
-                  role="group"
-                  aria-labelledby={`venn-${friend.userId}`}
-                >
+              <li key={friend.userId} className={styles.friend}>
+                <span className="person-name" id={`venn-${friend.userId}`}>
+                  <Picture people={[friend]} />
+                  <span>
+                    <strong>{nameOf([friend])}</strong>
+                    <br />
+                    <span className="quiet">Venn</span>
+                  </span>
+                </span>
+                <div role="group" aria-labelledby={`venn-${friend.userId}`}>
                   <StartButton
                     engine={engine}
                     person={friend}
@@ -209,13 +320,13 @@ function ConversationList({
               </li>
             ))}
           </ul>
+          <p className="help quiet">
+            Venner du allerede har en samtale med, står i listen over.
+          </p>
         </section>
       )}
 
-      <p className="link-row">
-        <Link href={chatDevicesHref}>Mine enheter</Link>
-      </p>
-      <EncryptionNote />
+      <DevicesLink />
     </>
   );
 }
@@ -223,6 +334,7 @@ function ConversationList({
 /** Samtaler: the device's conversations, and who it can start one with. */
 export function ChatHome(props: {
   friends: readonly ChatPerson[];
+  loans: ChatLoans;
   invitation?: ChatInvitation;
 }) {
   return (

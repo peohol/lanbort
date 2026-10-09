@@ -5,37 +5,10 @@ import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
 import { chatLinkHref } from "@/navigation/chat";
 import { useChat } from "./chat-provider";
+import { EncryptionSheet } from "./encryption";
 import { ChatReset } from "./chat-reset";
 import { type ChatEngine, createChat } from "./engine";
 import { chatErrorMessage } from "./messages";
-
-/**
- * What the product may promise about encryption, and no more (ADR-0010
- * §13–14).
- */
-export function EncryptionNote() {
-  return (
-    <details>
-      <summary>Om krypteringen</summary>
-      <p>
-        Meldingene er ende-til-ende-kryptert. De krypteres på enheten din, og
-        bare enhetene til deg og den du skriver med kan lese dem. Lånbort kan
-        ikke lese dem.
-      </p>
-      <p>
-        Krypteringen beskytter ikke mot at noen bruker enheten din, mot
-        skadelige nettleserutvidelser eller mot at appen blir endret av den som
-        leverer den. Lånbort vet hvem som skriver med hvem, og når, men ikke
-        hva.
-      </p>
-      <p>
-        Ingen får vite om eller når du har lest en melding. Meldingene lagres
-        bare på enhetene som har lest dem, så en ny enhet ser bare det som
-        sendes etter at den ble koblet til.
-      </p>
-    </details>
-  );
-}
 
 function StartChat() {
   const { userId, started } = useChat();
@@ -64,7 +37,7 @@ function StartChat() {
         Slå på privat chat
       </BusyButton>
       <ErrorText>{error}</ErrorText>
-      <EncryptionNote />
+      <EncryptionSheet />
     </>
   );
 }
@@ -74,11 +47,11 @@ function StartChat() {
  * device needs: start chat, be linked, or recover (ADR-0010 §5, §8).
  */
 export function ReadyChat({
-  title,
+  header,
   children,
 }: {
-  /** The page's heading while it waits for the device; the page sets its own after. */
-  title?: string;
+  /** The page's top while it waits for the device; the page sets its own after. */
+  header?: ReactNode;
   children: (engine: ChatEngine) => ReactNode;
 }) {
   const { state } = useChat();
@@ -87,7 +60,7 @@ export function ReadyChat({
     children(state.engine)
   ) : (
     <>
-      {title && <h1>{title}</h1>}
+      {header}
       <Setup />
     </>
   );

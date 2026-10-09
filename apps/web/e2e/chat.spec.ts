@@ -44,11 +44,17 @@ async function turnOnChat(page: Page) {
   ).toBeVisible();
 }
 
+/** The conversation's messages, apart from the list beside them. */
+const messages = (page: Page) =>
+  page.getByRole("region", { name: "Meldinger" });
+
 /** Messages arrive with the next sync; a reload asks at once. */
 async function expectMessage(page: Page, text: string) {
   await expect(async () => {
     await page.reload();
-    await expect(page.getByText(text)).toBeVisible({ timeout: 5_000 });
+    await expect(messages(page).getByText(text)).toBeVisible({
+      timeout: 5_000,
+    });
   }).toPass({ timeout: 45_000 });
 }
 
@@ -78,7 +84,7 @@ test("two friends chat end to end, and a new device is linked with its code", as
   await anna.page.getByLabel("Ny melding").fill("Hei Bo, kan jeg låne stigen?");
   await anna.page.getByRole("button", { name: "Send" }).click();
   await expect(
-    anna.page.getByText("Hei Bo, kan jeg låne stigen?"),
+    messages(anna.page).getByText("Hei Bo, kan jeg låne stigen?"),
   ).toBeVisible();
 
   // Bo reads it on his device and answers.
@@ -92,14 +98,20 @@ test("two friends chat end to end, and a new device is linked with its code", as
 
   expect(await axeViolations(anna.page)).toEqual([]);
 
-  // Both see the same security code.
-  const securityCode = async (page: Page, name: string) => {
-    await page.getByText(`Sikkerhetskode med ${name}`).click();
-    return page.locator(".security-code").getAttribute("aria-label");
+  // Both see the same security code, under «Om samtalen».
+  const securityCode = async (page: Page) => {
+    await page.getByRole("link", { name: "Om samtalen" }).click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Om samtalen" }),
+    ).toBeVisible();
+    const code = await page
+      .locator(".security-code")
+      .getAttribute("aria-label");
+    expect(await axeViolations(page)).toEqual([]);
+    await page.goBack();
+    return code;
   };
-  expect(await securityCode(anna.page, "Bo Dahl")).toBe(
-    await securityCode(bo.page, "Anna Berg"),
-  );
+  expect(await securityCode(anna.page)).toBe(await securityCode(bo.page));
 
   // Anna signs in on a second device: it needs her first device's approval.
   const laptop = await device(browser);
@@ -142,7 +154,7 @@ test("two friends chat end to end, and a new device is linked with its code", as
     });
   }).toPass({ timeout: 45_000 });
   await expect(
-    laptop.page.getByText("Hei Bo, kan jeg låne stigen?"),
+    messages(laptop.page).getByText("Hei Bo, kan jeg låne stigen?"),
   ).toHaveCount(0);
   await bo.page.getByLabel("Ny melding").fill("Hent den når du vil.");
   await bo.page.getByRole("button", { name: "Send" }).click();
@@ -182,12 +194,14 @@ test("a message waits until the friend has turned chat on", async ({
       .getByRole("status")
       .filter({ hasText: "har slått på privat chat" }),
   ).toBeVisible();
-  await expect(anna.page.getByText("ikke sendt ennå")).toBeVisible();
+  await expect(
+    messages(anna.page).getByText("Venter · sendes når"),
+  ).toBeVisible();
 
   // When Eli enables chat, Dag's next background sync must add the new
   // device and send the waiting message without a page reload.
   await turnOnChat(bo.page);
-  await expect(anna.page.getByText("ikke sendt ennå")).toHaveCount(0, {
+  await expect(messages(anna.page).getByText("Venter")).toHaveCount(0, {
     timeout: 45_000,
   });
   await bo.page.goto("/samtaler");
@@ -232,9 +246,7 @@ test("after a block, a loan's parties write about the loan only, in short messag
   await expect(
     bo.page.getByRole("heading", { level: 1, name: "Frida Holm" }),
   ).toBeVisible();
-  await expect(
-    bo.page.getByText("kun for den praktiske avslutningen"),
-  ).toBeVisible();
+  await expect(bo.page.getByText("Bare for å avslutte lånet")).toBeVisible();
 
   // Only what fits one short message can be sent.
   const composer = bo.page.getByLabel("Ny melding");
@@ -245,7 +257,7 @@ test("after a block, a loan's parties write about the loan only, in short messag
   await composer.fill("Jeg leverer tilhengeren kl. 18.");
   await expect(bo.page.getByText("Meldingen er for lang")).toHaveCount(0);
   await bo.page.getByRole("button", { name: "Send" }).click();
-  await expect(bo.page.getByText("ikke sendt ennå")).toHaveCount(0, {
+  await expect(messages(bo.page).getByText(/Venter|Sender/)).toHaveCount(0, {
     timeout: 30_000,
   });
 
@@ -255,9 +267,11 @@ test("after a block, a loan's parties write about the loan only, in short messag
     .getByRole("region", { name: "Samtale om lånet" })
     .getByRole("link", { name: "Gå til samtalen om lånet" })
     .click();
+  // The reload in expectMessage must not race the navigation it follows.
+  await expect(anna.page).toHaveURL(/\/samtaler\/[0-9a-f-]+$/);
   await expectMessage(anna.page, "Jeg leverer tilhengeren kl. 18.");
   await anna.page.goto("/samtaler");
-  await expect(anna.page.getByText("Om lånet ·")).toBeVisible();
+  await expect(anna.page.getByText("Lånelogistikk · Tilhenger")).toBeVisible();
 
   for (const someone of [anna, bo]) {
     expect(

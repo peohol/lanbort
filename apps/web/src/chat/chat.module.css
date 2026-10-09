@@ -1,0 +1,575 @@
+/* Private chat in Tomat (design/Lånbort - Samtaler og enheter v3.html).
+   Only what chat alone needs; cards, buttons, tags and sheets come from
+   globals.css. */
+
+/* A sheet's title with its close button beside it. */
+.sheetHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.sheetHeading h2 {
+  margin: var(--space-2) 0 var(--space-3);
+}
+
+.roundButton {
+  flex: none;
+  width: var(--target);
+  min-width: var(--target);
+  padding: 0;
+}
+
+/* The list of conversations: one card, a row per person (01). */
+.list {
+  overflow: hidden;
+  margin: 0 0 var(--space-4);
+  padding: var(--space-1) 0;
+  list-style: none;
+  background: var(--color-surface);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-raised);
+}
+
+.list > li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  color: inherit;
+  text-decoration: none;
+}
+
+.row:hover {
+  background: var(--color-page);
+}
+
+.row[aria-current="page"] {
+  background: var(--color-accent-soft);
+}
+
+.rowText {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.rowTop {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.rowName {
+  font-size: var(--text-l);
+  font-weight: 700;
+}
+
+.rowTime,
+.rowLoans {
+  flex: none;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.rowLoans {
+  font-weight: 700;
+}
+
+.rowPreview {
+  overflow: hidden;
+  font-size: var(--text-m);
+  color: var(--color-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rowText > :global(.tag) {
+  justify-self: start;
+  margin-top: var(--space-1);
+}
+
+.rowNew .rowPreview {
+  color: var(--color-text);
+}
+
+/* A row whose person has no picture shows their initials. */
+.row :global(.profile-picture),
+.head :global(.profile-picture) {
+  --picture-size: 2.75rem;
+}
+
+/* A link that stands on its own as a card row, such as «Mine enheter». */
+.linkCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--radius-l);
+  box-shadow: inset 0 0 0 1.5px var(--color-border);
+}
+
+.linkCard:hover {
+  background: var(--color-surface);
+}
+
+.linkText {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.linkCard small {
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+.iconBubble {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  color: var(--color-muted);
+  background: var(--color-sunken);
+}
+
+.sectionHeading {
+  margin: var(--space-5) 0 var(--space-2);
+  padding: 0 var(--space-1);
+  font-family: var(--font-body);
+  font-size: var(--text-m);
+  color: var(--color-muted);
+}
+
+.friend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+/* The conversation (02). */
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.headText {
+  flex: 1;
+  min-width: 0;
+}
+
+.headText h1 {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+
+.headText :global(.page-kind) {
+  margin: 0;
+}
+
+.moreLink {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--target);
+  height: var(--target);
+  border-radius: 50%;
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-low);
+}
+
+/* «Lån mellom dere»: the loans, each a link, never an action here. */
+.loans {
+  display: grid;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-raised);
+}
+
+.loans h2 {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.loans ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.loans li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.loanLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target);
+  padding: var(--space-2) 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.loanLink > span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.loanLink small,
+.loans p {
+  margin: 0;
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+/* One line on who can read the messages, with the way to more. */
+.secure {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-s);
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.secure > span > :global(.icon) {
+  width: 1rem;
+  height: 1rem;
+  margin-right: var(--space-1);
+  vertical-align: -0.15em;
+}
+
+/* The sheet opened from the line reads like any other. */
+.secure :global(.dialog) {
+  font-size: 1rem;
+  color: var(--color-text);
+  text-align: start;
+}
+
+.secure :global(.button-quiet) {
+  min-height: var(--target);
+  font-size: var(--text-s);
+  vertical-align: middle;
+}
+
+/* A card that says how the conversation stands: offline, closed, a
+   changed security code, a loan's own channel. */
+.notice {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-raised);
+}
+
+.notice p {
+  margin: 0;
+}
+
+.notice h2 {
+  margin: 0;
+  font-size: var(--text-l);
+}
+
+.noticeRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+/* The messages, own to the right (02). */
+.messages {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day {
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: var(--text-s);
+  font-weight: 700;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+/* «Ny melding»: where the new messages begin, on this device only. */
+.newLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+  font-size: var(--text-s);
+  font-weight: 700;
+  color: var(--color-info-strong);
+}
+
+.newLine::before,
+.newLine::after {
+  content: "";
+  flex: 1;
+  border-top: 1.5px solid var(--color-info);
+}
+
+.message {
+  display: grid;
+  justify-items: start;
+  gap: 0.125rem;
+  max-width: 85%;
+}
+
+.own {
+  justify-self: end;
+  justify-items: end;
+}
+
+.bubble {
+  padding: var(--space-3) 0.875rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--color-surface);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-low);
+}
+
+.own .bubble {
+  background: var(--color-accent-soft);
+  box-shadow: none;
+}
+
+/* Waiting to be sent: a dashed edge, an icon and words, never colour
+   alone (20). */
+.waiting .bubble {
+  background: var(--color-surface);
+  border: 1.5px dashed var(--color-accent);
+}
+
+.unreadable {
+  font-style: italic;
+  color: var(--color-muted);
+}
+
+.meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.meta :global(.icon) {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.waiting .meta {
+  font-weight: 700;
+  color: var(--color-accent-strong);
+}
+
+/* The field to write in, kept in view above the areas on a phone. */
+.composer {
+  position: sticky;
+  bottom: calc(var(--nav-covers, var(--nav-height)) + var(--space-2));
+  z-index: 4;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--space-2);
+  max-width: none;
+  margin-top: var(--space-4);
+  padding: var(--space-2) 0;
+  background: var(--color-page);
+}
+
+.composer textarea {
+  min-height: var(--control);
+  max-height: 10rem;
+  border-radius: var(--radius-xl);
+  resize: none;
+}
+
+.composer .footnote {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.send {
+  width: var(--control);
+  min-width: var(--control);
+  min-height: var(--control);
+  padding: 0;
+}
+
+.send[aria-disabled="true"] {
+  color: var(--color-muted);
+  background: var(--color-sunken);
+  opacity: 1;
+}
+
+.jump {
+  position: sticky;
+  bottom: calc(var(--nav-covers, var(--nav-height)) + 5rem);
+  justify-self: center;
+  z-index: 4;
+  color: var(--color-on-accent);
+  background: var(--color-info-strong);
+  box-shadow: var(--shadow-raised);
+}
+
+.jump:hover {
+  background: var(--color-info-strong);
+  filter: brightness(1.1);
+}
+
+/* How much room a loan's own channel leaves (22). */
+.budget {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.budget meter {
+  flex: 1;
+  height: 0.375rem;
+}
+
+.budgetOver {
+  color: var(--color-danger);
+}
+
+/* Om samtalen (04): the security code in groups of five. */
+.code {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  justify-content: center;
+  gap: var(--space-1) var(--space-4);
+  margin: var(--space-2) 0 0;
+  font-family: ui-monospace, monospace;
+  font-size: var(--text-l);
+  font-weight: 700;
+}
+
+@media (max-width: 22rem) {
+  .code {
+    grid-template-columns: repeat(3, auto);
+  }
+}
+
+.cardList {
+  margin: 0 0 var(--space-3);
+  padding: 0 var(--space-4);
+  list-style: none;
+  background: var(--color-surface);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-raised);
+}
+
+.cardList > li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.stack {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.stack > :global(.card) :is(h2, p) {
+  margin: 0;
+}
+
+.stack > :global(.card) h2 {
+  font-size: var(--text-l);
+}
+
+/* What encryption protects against, and not (06). */
+.points {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.points li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.pointsHeading {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* Wider screens: the list beside the open conversation (UX-IA-001). The
+   list is only there when the screen is this wide (useWide). */
+@media (min-width: 64rem) {
+  :global(.app-content) main:has(> .split) {
+    width: min(72rem, 100%);
+  }
+
+  .split {
+    display: grid;
+    grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-5);
+  }
+
+  .splitList {
+    position: sticky;
+    top: calc(var(--header-covers, var(--header-height)) + var(--space-3));
+    max-height: calc(
+      100dvh - var(--header-covers, var(--header-height)) - var(--space-5)
+    );
+    overflow-y: auto;
+  }
+}
+
+@media (min-width: 48rem) {
+  .composer {
+    bottom: var(--space-2);
+  }
+
+  .jump {
+    bottom: 5rem;
+  }
+}
