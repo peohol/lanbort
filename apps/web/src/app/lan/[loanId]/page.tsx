@@ -45,6 +45,7 @@ import {
   loanTitle,
   otherParty,
   personName,
+  proposalDefaults,
 } from "@/presentation/loan-status";
 import { basisNote, hiddenUntil, scoreLines } from "@/presentation/reviews";
 import { chatEnabled } from "@/server/env";
@@ -71,6 +72,15 @@ export const metadata: Metadata = { title: "Lån – Lånbort" };
 const historyKey = "historikk";
 
 /**
+ * While the handover is being clarified, a new handover day is proposed
+ * from the status card, apart from the answers about what happened
+ * (UX-JRN-006, PS-LOAN-012, KF7).
+ */
+const newHandoverDay = (loan: Loan) =>
+  loan.status === "awaiting_handover" &&
+  loan.actions.proposeAmendment === "period";
+
+/**
  * PS-LOAN-010: a new period, proposed for the agreement as it is now.
  * Before the handover both days may move, from today on; once it is handed
  * over only the last day does, to a day after today. Nothing changes until
@@ -86,11 +96,16 @@ function ProposeAmendment({ loan }: { loan: Loan }) {
   const today = calendarDay();
   const help = `Ingenting endres før ${otherParty(loan)} godtar forslaget.`;
   const endMin = mode === "period" ? today : addDays(today, 1);
+  const shown = proposalDefaults(loan.period, mode, today);
 
   return (
     <details>
       <summary>
-        {mode === "period" ? "Foreslå ny periode" : "Foreslå ny returdag"}
+        {newHandoverDay(loan)
+          ? "Foreslå ny overleveringsdag"
+          : mode === "period"
+            ? "Foreslå ny periode"
+            : "Foreslå ny returdag"}
       </summary>
       <CommandForm
         path={`${loanApi(loan.id)}/amendments`}
@@ -114,9 +129,7 @@ function ProposeAmendment({ loan }: { loan: Loan }) {
               type="date"
               required
               min={today}
-              defaultValue={
-                loan.period.start < today ? today : loan.period.start
-              }
+              defaultValue={shown.start}
             />
           </Field>
         ) : (
@@ -129,7 +142,7 @@ function ProposeAmendment({ loan }: { loan: Loan }) {
             type="date"
             required
             min={endMin}
-            defaultValue={loan.period.end < endMin ? endMin : loan.period.end}
+            defaultValue={shown.end}
           />
         </Field>
       </CommandForm>
@@ -292,10 +305,15 @@ function LoanStatus({
       tone={situation.tone}
       label={situation.label}
       actions={
-        primary.length > 0 && (
-          <div className={styles.answers}>
-            <Steps steps={primary} />
-          </div>
+        (primary.length > 0 || newHandoverDay(loan)) && (
+          <>
+            {primary.length > 0 && (
+              <div className={styles.answers}>
+                <Steps steps={primary} />
+              </div>
+            )}
+            {newHandoverDay(loan) && <ProposeAmendment loan={loan} />}
+          </>
         )
       }
     >
@@ -335,10 +353,12 @@ function LoanMoreActions({
   const mayReport = condition?.mayReport ?? false;
   const { actions } = loan;
 
+  const proposes = actions.proposeAmendment !== null && !newHandoverDay(loan);
+
   if (
     !mayReport &&
     secondary.length === 0 &&
-    actions.proposeAmendment === null &&
+    !proposes &&
     !actions.cancel &&
     actions.offerResponsibility.length === 0
   ) {
@@ -348,7 +368,7 @@ function LoanMoreActions({
   return (
     <MoreActions>
       <Steps steps={secondary} />
-      <ProposeAmendment loan={loan} />
+      {proposes && <ProposeAmendment loan={loan} />}
       <OfferResponsibility loan={loan} />
       {condition?.mayReport && (
         <ReportCondition

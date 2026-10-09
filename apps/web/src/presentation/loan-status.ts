@@ -8,6 +8,8 @@ import type {
 } from "@lanbort/contracts";
 import type { Tone } from "@/components/tag";
 import {
+  addDays,
+  daysBetween,
   formatDay,
   formatPeriod,
   formatShortPeriod,
@@ -778,4 +780,32 @@ export function loanSteps(loan: Loan): {
       ...(returnsNow ? [] : returns),
     ],
   };
+}
+
+/**
+ * Where a proposal starts from (PS-LOAN-010, KF7): the agreed period, moved
+ * to start today at the earliest and keeping its length, as when a new
+ * handover day is proposed after the old one passed. After the handover
+ * only the return day moves, to tomorrow at the earliest.
+ */
+export function proposalDefaults(
+  period: { start: string; end: string },
+  mode: "period" | "return_day",
+  today: string,
+): { start: string; end: string } {
+  if (mode === "return_day") {
+    const earliest = addDays(today, 1);
+
+    return {
+      start: period.start,
+      end: period.end < earliest ? earliest : period.end,
+    };
+  }
+
+  return period.start < today
+    ? {
+        start: today,
+        end: addDays(today, daysBetween(period.start, period.end)),
+      }
+    : period;
 }

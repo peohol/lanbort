@@ -6,6 +6,7 @@ import {
   loanSteps,
   loanTitle,
   personName,
+  proposalDefaults,
 } from "./loan-status";
 
 const id = "00000000-0000-4000-8000-000000000001";
@@ -562,5 +563,30 @@ describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
       primary: [],
       secondary: [],
     });
+  });
+});
+
+describe("where a proposal starts from (PS-LOAN-010)", () => {
+  const period = { start: "2026-10-05", end: "2026-10-07" };
+
+  it("keeps the agreed period while its handover is ahead", () => {
+    expect(proposalDefaults(period, "period", "2026-10-04")).toEqual(period);
+  });
+
+  it("moves a passed handover day to today, keeping the length", () => {
+    expect(proposalDefaults(period, "period", "2026-10-09")).toEqual({
+      start: "2026-10-09",
+      end: "2026-10-11",
+    });
+  });
+
+  it("moves only the return day after the handover, to tomorrow at the earliest", () => {
+    expect(proposalDefaults(period, "return_day", "2026-10-08")).toEqual({
+      start: "2026-10-05",
+      end: "2026-10-09",
+    });
+    expect(proposalDefaults(period, "return_day", "2026-10-06")).toEqual(
+      period,
+    );
   });
 });
