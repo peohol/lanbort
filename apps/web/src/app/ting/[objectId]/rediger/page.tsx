@@ -38,18 +38,21 @@ export default async function EditObjectPage({
 
   return (
     <main>
-      <PageHeader title="Rediger tingen" back={back} home="things" task />
       {takesNewActivity(account.status) ? (
         <ObjectForm
           mode="edit"
           object={object}
           categories={categories?.categories ?? []}
           today={calendarDate(new Date())}
+          from={{ ...back, home: "things" }}
         />
       ) : (
-        <EmptyState action={<Link href={back.href}>Tilbake til tingen</Link>}>
-          Du kan ikke endre tingen mens kontoen din ikke er aktiv.
-        </EmptyState>
+        <>
+          <PageHeader title="Rediger tingen" back={back} home="things" task />
+          <EmptyState action={<Link href={back.href}>Tilbake til tingen</Link>}>
+            Du kan ikke endre tingen mens kontoen din ikke er aktiv.
+          </EmptyState>
+        </>
       )}
     </main>
   );

@@ -1,5 +1,6 @@
 import {
   calendarDate,
+  getEnvironment,
   listObjectCategories,
   listOwnEnvironments,
   takesNewActivity,
@@ -9,9 +10,9 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { thingsHref } from "@/navigation/areas";
-import { environmentParam } from "@/navigation/routes";
+import { environmentHref, environmentParam } from "@/navigation/routes";
 import { pageQuery, requirePageAccount } from "@/server/session";
-import { ObjectForm } from "../object-form";
+import { ObjectForm, type PublishTarget } from "../object-form";
 
 export const metadata: Metadata = { title: "Registrer en ting – Lånbort" };
 
@@ -44,22 +45,45 @@ export default async function NewObjectPage({
     pageQuery(listObjectCategories, {}),
     pageQuery(listOwnEnvironments, {}),
   ]);
-  const from = query[environmentParam];
+  const preselected = query[environmentParam];
+  // Only an active member may publish (PS-OBJ-006); each says whether its
+  // administrators approve new things first (PS-ENV-011).
+  const targets = (
+    await Promise.all(
+      (environments ?? [])
+        .filter(({ membershipState }) => membershipState === "active")
+        .map(({ id }) => pageQuery(getEnvironment, { environmentId: id })),
+    )
+  ).flatMap((environment): PublishTarget[] =>
+    environment
+      ? [
+          {
+            id: environment.id,
+            name: environment.name,
+            requiresApproval: environment.requiresObjectApproval,
+          },
+        ]
+      : [],
+  );
+  const started = targets.find(({ id }) => id === preselected);
 
   return (
     <main>
-      <PageHeader title="Registrer en ting" back={back} task>
-        Tingen blir din, og du velger selv hvor den vises.
-      </PageHeader>
       <ObjectForm
         mode="create"
         categories={categories?.categories ?? []}
         today={calendarDate(new Date())}
-        // Only an active member may publish (PS-OBJ-006).
-        environments={(environments ?? [])
-          .filter(({ membershipState }) => membershipState === "active")
-          .map(({ id, name }) => ({ id, name }))}
-        preselected={typeof from === "string" ? from : undefined}
+        from={
+          started
+            ? {
+                href: environmentHref(started.id),
+                label: started.name,
+                home: "home",
+              }
+            : back
+        }
+        environments={targets}
+        preselected={started?.id}
       />
     </main>
   );

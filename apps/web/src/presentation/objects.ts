@@ -98,6 +98,12 @@ export function ownThingStatus(
 export const listSeparator = (index: number, count: number) =>
   index === 0 ? "" : index === count - 1 ? " og " : ", ";
 
+/** Words said as a list: «Lia», «Lia og Furu», «Lia, Furu og Nøste». */
+export const sayList = (words: readonly string[]) =>
+  words
+    .map((word, index) => listSeparator(index, words.length) + word)
+    .join("");
+
 /** The heading for a thing's owners, one or several. */
 export const ownersLabel = (owners: readonly ShownOwner[]) =>
   owners.length === 1 ? "Eier" : "Eiere";

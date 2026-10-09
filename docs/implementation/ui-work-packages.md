@@ -76,6 +76,8 @@ Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) er la
 
 **Avhenger av:** WP-80. Valget «Venner» legges i publiseringssteget av WP-27.
 
+**I Tomat (kjerneflyt 2), 9. oktober 2026:** Mine ting og miljøets ting er kort med bilde, hvor tingen vises og status (`ThingCard`). Skjemaet er fire steg med spørsmålet som overskrift: «Om tingen», «Når og vilkår» («Når som helst» fra i dag, eller bestemte perioder), «Hvem kan låne» (miljøene og «Venner» som egne valg, «Venner» av som standard) og «Se over», der hver gruppe har «Endre» og knappen sier hvor tingen blir synlig. «Lagre uten å publisere» er et diskret valg, og «Avbryt» spør før noe går tapt. Redigering har tre steg; hvor tingen vises, endres på tingens side. En ting uten perioder kan lagres som før, men kan ikke lånes ut før den får en.
+
 ## WP-82 — Objektets side for eiere
 
 **Leverer:** Eiernes oversikt over én ting og alt de kan gjøre med den, uten falsk kontroll over etablerte lån (UX-JRN-011).
