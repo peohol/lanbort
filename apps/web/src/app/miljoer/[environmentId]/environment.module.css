@@ -1,5 +1,4 @@
-/* An environment's pages (Tomat kjerneflyt 3): what it is as cards, and
-   the way on to «Om miljøet og medlemmer» as one wide row. */
+/* An environment's pages (Tomat kjerneflyt 3): what it is, as cards. */
 .card {
   margin-block: var(--space-5);
   padding: var(--space-3) var(--space-4);
@@ -14,34 +13,4 @@
 
 .card > p {
   margin-bottom: 0;
-}
-
-.more {
-  margin-block: var(--space-5);
-}
-
-.moreLink {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  min-height: var(--control);
-  padding: var(--space-3) var(--space-4);
-  font-weight: 700;
-  color: var(--color-text);
-  text-decoration: none;
-  background: var(--color-surface);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-m);
-}
-
-.moreLink:hover {
-  background: var(--color-sunken);
-}
-
-.moreLink .icon {
-  flex: none;
-  width: 1.2rem;
-  height: 1.2rem;
-  color: var(--color-muted);
 }

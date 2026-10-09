@@ -4,8 +4,7 @@ import {
   listEnvironmentObjects,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Icon } from "@/components/icon";
+import { MenuList, MenuRow } from "@/components/menu-list";
 import { PageHeader } from "@/components/page-header";
 import { Tag } from "@/components/tag";
 import { environmentAboutHref, environmentHref } from "@/navigation/routes";
@@ -19,7 +18,6 @@ import { About, MembersOnly } from "./about";
 import { environmentBack } from "./back";
 import { Things } from "./member-content";
 import { Membership } from "./membership";
-import styles from "./environment.module.css";
 
 export const metadata: Metadata = { title: "Miljøet – Lånbort" };
 
@@ -81,19 +79,15 @@ export default async function EnvironmentPage({
         />
       )}
       {member ? (
-        <p className={styles.more}>
-          <Link
-            className={styles.moreLink}
+        <MenuList>
+          <MenuRow
             href={environmentAboutHref(environmentId)}
-          >
-            <span>
-              {active
-                ? "Om miljøet og medlemmer"
-                : "Om miljøet og medlemskapet"}
-            </span>
-            <Icon name="chevron" />
-          </Link>
-        </p>
+            icon="people"
+            label={
+              active ? "Om miljøet og medlemmer" : "Om miljøet og medlemskapet"
+            }
+          />
+        </MenuList>
       ) : (
         <>
           <About environment={environment} />
