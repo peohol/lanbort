@@ -36,11 +36,12 @@ test("a thing is registered from an environment, with a photo, and published the
     page.getByRole("link", { name: "Registrer en ting" }),
   ).toHaveAttribute("href", "/ting/ny");
 
-  // Started from the environment, which is chosen already.
+  // Started from the environment, the same steps: about the thing first.
   await page.goto(`/ting/ny?miljo=${environmentId}`);
-  await expect(page.getByLabel(`Gården ${word}`)).toBeChecked();
-  await page.getByLabel("Tittel").fill(`Stige ${word}`);
+  await expect(page.getByText("Steg 1 av 4")).toBeVisible();
+  await page.getByLabel("Navn").fill(`Stige ${word}`);
   await page.getByLabel("Kategori").selectOption({ label: "Verktøy" });
+  await page.getByText("Noen ting kan ikke lånes ut her. Se hvilke").click();
   await expect(
     page.getByText("Kan ikke lånes ut gjennom Lånbort"),
   ).toBeVisible();
@@ -51,27 +52,55 @@ test("a thing is registered from an environment, with a photo, and published the
     buffer: await photo(),
   });
   await expect(page.getByRole("img", { name: "Bilde 1" })).toBeVisible();
-  await expect(page.getByLabel("Fra", { exact: true })).toHaveValue(today());
+  await page.getByRole("button", { name: "Videre" }).click();
 
+  // When: any time from today unless the user gives periods.
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Når kan den lånes?" }),
+  ).toBeFocused();
+  await expect(page.getByLabel("Når som helst")).toBeChecked();
+  await page.getByLabel("Bare i bestemte perioder").check();
+  await page.getByLabel("Fra", { exact: true }).fill("2099-01-01");
   // Two periods that share days are pointed out before anything is sent.
   await page.getByRole("button", { name: "Legg til periode" }).click();
-  await page.getByLabel("Fra", { exact: true }).nth(1).fill("2099-01-01");
+  await page.getByLabel("Fra", { exact: true }).nth(1).fill("2099-02-01");
   await expect(
     page.getByRole("alert").filter({ hasText: "har dager felles" }),
   ).toHaveText(
     "Periodene 1 og 2 har dager felles. Slå dem sammen eller endre datoene.",
   );
-  await page.getByRole("button", { name: "Fjern periode 2" }).click();
-  await page.getByLabel("Vilkår for lån (valgfritt)").fill("Tørk den av.");
-  await page.getByRole("button", { name: "Gå videre" }).click();
+  await page.getByLabel("Når som helst").check();
+  // The periods given are kept while «any time» is chosen.
+  await page.getByLabel("Bare i bestemte perioder").check();
+  await expect(page.getByLabel("Fra", { exact: true }).nth(1)).toHaveValue(
+    "2099-02-01",
+  );
+  await page.getByLabel("Når som helst").check();
+  await page.getByLabel("Vilkår for lånet (valgfritt)").fill("Tørk den av.");
+  await page.getByRole("button", { name: "Videre" }).click();
 
-  const review = page.getByRole("region", {
-    name: "Se over før du registrerer",
-  });
-  await expect(review.getByRole("heading")).toBeFocused();
-  await expect(review).toContainText(`Gården ${word}`);
-  await expect(review).toContainText("Tørk den av.");
-  await review.getByRole("button", { name: "Registrer og publiser" }).click();
+  // Who: the environment it was started from, and friends when chosen.
+  await expect(page.getByLabel(`Gården ${word}`)).toBeChecked();
+  await expect(page.getByText("Valgt fordi du startet her.")).toBeVisible();
+  await expect(page.getByLabel("Venner", { exact: true })).not.toBeChecked();
+  await page.getByLabel("Venner", { exact: true }).check();
+  await page.getByRole("button", { name: "Videre" }).click();
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Se over og publiser" }),
+  ).toBeFocused();
+  await expect(page.getByRole("region", { name: "Om tingen" })).toContainText(
+    `Stige ${word}`,
+  );
+  const when = page.getByRole("region", { name: "Når og vilkår" });
+  await expect(when).toContainText("Når som helst, fra ");
+  await expect(when).toContainText("Tørk den av.");
+  await expect(
+    page.getByRole("region", { name: "Hvem kan låne" }),
+  ).toContainText(`Gården ${word}Publiseres`);
+  await page
+    .getByRole("button", { name: `Publiser i Gården ${word} og for venner` })
+    .click();
 
   await expect(page).toHaveURL(/\/ting\/[0-9a-f-]+$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
@@ -87,12 +116,13 @@ test("a thing is registered from an environment, with a photo, and published the
     availability: [{ start: today(), end: null }],
     images: [{ width: 800, height: 600 }],
   });
-  const { publications } = await (
+  const shown = await (
     await page.request.get(`/api/objects/${objectId}/publications`)
   ).json();
-  expect(publications).toMatchObject([
+  expect(shown.publications).toMatchObject([
     { status: "active", environment: { id: environmentId } },
   ]);
+  expect(shown.friends).not.toBeNull();
 
   await page.goto("/mine-ting");
   const entry = page.getByRole("listitem").filter({ hasText: `Stige ${word}` });
@@ -125,13 +155,14 @@ test("editing shows what someone else saved in between before saving over it", a
   await page.goto(`/ting/${objectId}/rediger`);
   await expect(page.getByRole("img", { name: "Bilde 1" })).toBeVisible();
   await page.getByRole("button", { name: "Fjern bilde 1" }).click();
-  await page.getByLabel("Vilkår for lån (valgfritt)").fill("Tørk den av.");
+  await page.getByRole("button", { name: "Videre" }).click();
+  await page.getByLabel("Vilkår for lånet (valgfritt)").fill("Tørk den av.");
   await expect(
     page.getByText("godta de nye vilkårene", { exact: false }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Gå videre" }).click();
+  await page.getByRole("button", { name: "Videre" }).click();
   await expect(
-    page.getByText("Du endrer: vilkår for lån, bilder."),
+    page.getByText("Du endrer: vilkår for lånet, bilder."),
   ).toBeVisible();
 
   // Meanwhile, the title is changed elsewhere.
@@ -188,7 +219,15 @@ test("photos alone are not saved over a version the user has not seen", async ({
     mimeType: "image/png",
     buffer: await photo(),
   });
-  await page.getByRole("button", { name: "Gå videre" }).click();
+  // A thing with no periods can be saved as before; nobody can borrow it yet.
+  await page.getByRole("button", { name: "Videre" }).click();
+  await expect(page.getByLabel("Bare i bestemte perioder")).toBeChecked();
+  await page.getByRole("button", { name: "Videre" }).click();
+  await expect(
+    page.getByText(
+      "Ingen perioder. Den kan ikke lånes ut før du legger inn en.",
+    ),
+  ).toBeVisible();
   const other = await page.request.patch(`/api/objects/${objectId}`, {
     data: { expectedVersion: version, description: "Kort stige." },
     headers: { "Idempotency-Key": crypto.randomUUID() },
@@ -211,6 +250,67 @@ test("photos alone are not saved over a version the user has not seen", async ({
   expect(
     await (await page.request.get(`/api/objects/${objectId}`)).json(),
   ).toMatchObject({ description: "Kort stige.", images: [{ width: 800 }] });
+});
+
+test("a thing can be saved without publishing, and «Avbryt» asks before anything is lost", async ({
+  page,
+}) => {
+  const problems = collectBrowserProblems(page);
+  await registerThroughApi(page.request);
+
+  await page.goto("/ting/ny");
+  // Any choice made counts as something that would be lost.
+  await page.getByLabel("Kategori").selectOption({ label: "Verktøy" });
+  await page.getByRole("link", { name: "Avbryt" }).click();
+  await page
+    .getByRole("dialog", { name: "Forkaste tingen?" })
+    .getByRole("button", { name: "Fortsett å registrere" })
+    .click();
+  await page.getByLabel("Navn").fill("Sag");
+  await page.getByRole("link", { name: "Avbryt" }).click();
+  const discard = page.getByRole("dialog", { name: "Forkaste Sag?" });
+  await expect(discard).toBeVisible();
+  await discard.getByRole("button", { name: "Fortsett å registrere" }).click();
+  await expect(page.getByLabel("Navn")).toHaveValue("Sag");
+
+  await page.getByLabel("Kategori").selectOption({ label: "Verktøy" });
+  await page.getByLabel("Beskrivelse").fill("Fintannet håndsag.");
+  await page.getByRole("button", { name: "Videre" }).click();
+  await page.getByRole("button", { name: "Videre" }).click();
+  await expect(
+    page.getByText("Du er ikke med i noen miljøer ennå."),
+  ).toBeVisible();
+  await page.getByLabel("Venner", { exact: true }).check();
+  await page.getByRole("button", { name: "Videre" }).click();
+  await expect(
+    page.getByRole("button", { name: "Publiser for venner" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Lagre uten å publisere" }).click();
+
+  await expect(page).toHaveURL(/\/ting\/[0-9a-f-]+$/);
+  const objectId = new URL(page.url()).pathname.split("/").pop()!;
+  expect(
+    await (
+      await page.request.get(`/api/objects/${objectId}/publications`)
+    ).json(),
+  ).toMatchObject({ publications: [], friends: null });
+
+  // Leaving with nothing changed asks nothing.
+  await page.goto(`/ting/${objectId}/rediger`);
+  await page.getByRole("link", { name: "Avbryt" }).click();
+  await expect(page).toHaveURL(new RegExp(`/ting/${objectId}$`));
+
+  // Leaving with a change asks first, and «Forkast» leaves it as it was.
+  await page.goto("/ting/ny");
+  await page.getByLabel("Navn").fill("Hammer");
+  await page.getByRole("link", { name: "Avbryt" }).click();
+  await page
+    .getByRole("dialog", { name: "Forkaste Hammer?" })
+    .getByRole("button", { name: "Forkast" })
+    .click();
+  await expect(page).toHaveURL(/\/mine-ting$/);
+  await expect(page.getByText("Hammer")).toHaveCount(0);
+  expect(problems).toEqual([]);
 });
 
 test("someone who does not own a thing has no page to edit it", async ({

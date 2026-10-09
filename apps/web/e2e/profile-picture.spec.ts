@@ -59,7 +59,7 @@ test("a member frames a picture that fellow members see beside the name", async 
   });
 
   // Anna chooses a photo and places it in the frame.
-  await anna.page.goto("/konto");
+  await anna.page.goto("/konto/profilbilde");
   await anna.page.getByLabel("Legg til profilbilde").setInputFiles({
     name: "meg.jpg",
     mimeType: "image/jpeg",
@@ -76,9 +76,15 @@ test("a member frames a picture that fellow members see beside the name", async 
     .getByRole("button", { name: "Roter en kvart omdreining" })
     .click();
   await expect(anna.page.getByText("Rotasjon: 91°")).toBeVisible();
+  const uploaded = anna.page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/account/picture") && response.ok(),
+  );
   await anna.page.getByRole("button", { name: "Lagre bildet" }).click();
+  await uploaded;
 
   // The picture replaces her initials at the top of every page.
+  await anna.page.goto("/");
   const account = anna.page.getByRole("link", {
     name: "Konto og innstillinger for Anna Berg",
   });
@@ -100,7 +106,7 @@ test("a member frames a picture that fellow members see beside the name", async 
   await expect(bo.page.locator(".page-picture img")).toBeVisible();
 
   // Shown only to herself, it is gone for Bo, also at its address.
-  await anna.page.goto("/konto");
+  await anna.page.goto("/konto/profilbilde");
   const saved = anna.page.waitForResponse(
     (response) =>
       response.url().endsWith("/api/account/picture/visibility") &&
@@ -115,7 +121,13 @@ test("a member frames a picture that fellow members see beside the name", async 
   expect((await bo.page.request.get(src!)).status()).toBe(404);
 
   // Removed, her initials are back.
+  const removed = anna.page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/account/picture/removal") && response.ok(),
+  );
   await anna.page.getByRole("button", { name: "Fjern profilbildet" }).click();
+  await removed;
+  await anna.page.goto("/");
   await expect(account.locator("img")).toHaveCount(0);
   await expect(account).toContainText("AB");
   expect(problems.filter((problem) => !problem.includes("404"))).toEqual([]);

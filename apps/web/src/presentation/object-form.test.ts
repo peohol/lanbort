@@ -4,9 +4,12 @@ import {
   contentOf,
   draftOf,
   editOf,
+  isAnytime,
   newDraft,
   type ObjectDraft,
   overlappingPeriods,
+  publishLabel,
+  publishOutcome,
   rebaseDraft,
 } from "./object-form";
 
@@ -73,5 +76,52 @@ describe("the form for a thing", () => {
         { start: "", end: "" },
       ]),
     ).toEqual([2, 3]);
+  });
+});
+
+describe("isAnytime", () => {
+  const today = "2026-10-09";
+
+  it("is one open period that has begun", () => {
+    expect(isAnytime([{ start: today, end: "" }], today)).toBe(true);
+    expect(isAnytime([{ start: "2026-01-01", end: "" }], today)).toBe(true);
+  });
+
+  it("is not a period that ends, starts later, or several", () => {
+    expect(isAnytime([{ start: today, end: "2026-12-01" }], today)).toBe(false);
+    expect(isAnytime([{ start: "2026-11-01", end: "" }], today)).toBe(false);
+    expect(isAnytime([], today)).toBe(false);
+    expect(
+      isAnytime(
+        [
+          { start: today, end: "" },
+          { start: "2027-01-01", end: "" },
+        ],
+        today,
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("publishing a new thing", () => {
+  it("names where it becomes visible on the button", () => {
+    expect(publishLabel({ environments: ["Lia"], friends: false })).toBe(
+      "Publiser i Lia",
+    );
+    expect(publishLabel({ environments: ["Lia", "Furu"], friends: true })).toBe(
+      "Publiser i 2 miljøer og for venner",
+    );
+    expect(publishLabel({ environments: [], friends: true })).toBe(
+      "Publiser for venner",
+    );
+    expect(publishLabel({ environments: [], friends: false })).toBeNull();
+  });
+
+  it("says who can find it", () => {
+    expect(
+      publishOutcome({ environments: ["Lia", "Furu"], friends: true }, "Stige"),
+    ).toMatch(
+      /^Når du publiserer, kan medlemmer i Lia og Furu og vennene dine finne Stige og be om å låne den\./,
+    );
   });
 });

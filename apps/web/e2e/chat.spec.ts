@@ -121,7 +121,7 @@ test("two friends chat end to end, and a new device is linked with its code", as
   await expect(unmute).toBeVisible();
   await bo.page.reload();
   await expect(unmute).toBeVisible();
-  await bo.page.goto("/konto");
+  await bo.page.goto("/konto/varslingsvalg");
   const chatChoices = bo.page.getByRole("group", { name: "Privat chat" });
   await expect(chatChoices.getByLabel("Nye meldinger i appen")).toBeChecked();
   const email = chatChoices.getByLabel("Nye meldinger på e-post");

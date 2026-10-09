@@ -256,6 +256,8 @@ export const environmentSummarySchema = z.strictObject({
   name: z.string(),
   membershipState: membershipStateSchema,
   roles: z.array(environmentRoleSchema),
+  /** PS-ENV-011: new things wait for an administrator's approval. */
+  requiresObjectApproval: z.boolean(),
 });
 
 /** What administrators see of a membership to handle it. */

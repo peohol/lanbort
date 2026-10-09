@@ -5,12 +5,13 @@ import {
 } from "@lanbort/domain";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { accountHref } from "@/navigation/areas";
+import { PageHeader } from "@/components/page-header";
 import {
   morePagesHref,
   pagesShown,
   type SearchParams,
 } from "@/navigation/list-pages";
+import { notificationChoicesHref } from "@/navigation/routes";
 import { pageQuery, requirePageAccount } from "@/server/session";
 import { NotificationList } from "./notification-list";
 import styles from "./notifications.module.css";
@@ -19,7 +20,6 @@ export const metadata: Metadata = { title: "Varsler – Lånbort" };
 
 const pagesKey = "sider";
 const listId = "varselliste";
-const preferencesHref = `${accountHref}#varslingsvalg`;
 
 /**
  * The notification centre (UX-IA-002, PS-COM-001): a layer opened from the
@@ -44,7 +44,7 @@ export default async function NotificationsPage({
 
   return (
     <main className={styles.page}>
-      <h1>Varsler</h1>
+      <PageHeader title="Varsler" />
       {notifications.length === 0 ? (
         <div className={styles.empty}>
           <h2>Ingen varsler</h2>
@@ -68,7 +68,7 @@ export default async function NotificationsPage({
         </p>
       )}
       <p className="link-row">
-        <Link href={preferencesHref}>Varslingsvalg</Link>
+        <Link href={notificationChoicesHref}>Varslingsvalg</Link>
       </p>
     </main>
   );

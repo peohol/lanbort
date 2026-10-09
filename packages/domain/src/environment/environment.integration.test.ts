@@ -660,6 +660,7 @@ describe("hidden environments (PS-NFR-002)", () => {
         name: "Hemmelig klubb",
         membershipState: "pending",
         roles: [],
+        requiresObjectApproval: false,
       },
     ]);
 

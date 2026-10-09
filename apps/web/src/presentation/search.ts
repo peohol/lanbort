@@ -8,6 +8,12 @@ import {
   objectSearchQuerySchema,
 } from "@lanbort/contracts";
 import type { ObjectOrigin } from "@/navigation/routes";
+import {
+  environmentImageHref,
+  firstImageHref,
+  friendImageHref,
+  ownImageHref,
+} from "./object-images";
 
 type Params = Record<string, string | string[] | undefined>;
 
@@ -144,12 +150,16 @@ export function prepareEnvironmentSearch(
   return parsed.success ? { input: parsed.data } : { problem: tooShort };
 }
 
-/** UX-JRN-002: the type says what joining takes before anyone tries. */
-export const environmentTypeLabels: Record<FoundEnvironment["type"], string> = {
-  open: "Åpent miljø – alle kan bli med",
-  closed: "Lukket miljø – en administrator godkjenner nye medlemmer",
+/**
+ * UX-JRN-002: the type says what joining takes before anyone tries
+ * («Finne og bli med i et miljø v2»).
+ */
+export const joiningLabels: Record<FoundEnvironment["type"], string> = {
+  open: "Åpent · bli med med en gang",
+  closed: "Lukket · du søker om å bli med",
 };
 
+/** The caller's own membership instead, once they have one. */
 export const membershipLabels: Record<
   NonNullable<FoundEnvironment["membershipState"]>,
   string
@@ -160,18 +170,44 @@ export const membershipLabels: Record<
 };
 
 /**
- * Where the user finds it: their own environments, by name, and a friend
- * who has made it visible to friends (PS-OBJ-020).
+ * The three ways to join, for «Hva betyr åpent og lukket?». A hidden
+ * environment is only ever described, never found (PS-ENV-001).
+ */
+export const joiningExplained = [
+  { name: "Åpent.", text: "Du godtar reglene og er med med en gang." },
+  { name: "Lukket.", text: "Du søker, og administratorene avgjør." },
+  {
+    name: "Bare med invitasjon.",
+    text: "Noen miljøer vises ikke i søk. Der kan bare administratorene invitere deg, og invitasjonen kommer i Lånbort.",
+  },
+] as const;
+
+/**
+ * Where the user finds it (UX-IA-015): through their own environments, by
+ * name, or from a friend who has made it visible to friends (PS-OBJ-020).
  */
 export function describeFoundIn(object: FoundObject): string {
   return [
     object.foundIn.length > 0
-      ? `I ${object.foundIn.map((place) => place.environmentName).join(", ")}`
+      ? `Via ${object.foundIn.map((place) => place.environmentName).join(", ")}`
       : null,
     object.foundThroughFriends ? "Hos en venn" : null,
   ]
     .filter(Boolean)
     .join(" · ");
+}
+
+/** The first photo of a thing they found, read the way `foundOrigin` sees it. */
+export function foundImage(object: FoundObject): string | null {
+  const place = object.foundIn[0];
+
+  return firstImageHref(object.images, (imageId) =>
+    object.ownedByYou
+      ? ownImageHref(object.objectId, imageId)
+      : place
+        ? environmentImageHref(place.environmentId, object.objectId, imageId)
+        : friendImageHref(object.objectId, imageId),
+  );
 }
 
 /** How the user sees a thing they found: through an environment, or as a friend. */

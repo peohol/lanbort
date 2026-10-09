@@ -103,7 +103,7 @@ test.describe("the own account in the browser", () => {
     await registerThroughApi(page.request, newEmail(), "Hvile Konto");
     const notice = page.locator(".account-notice");
 
-    await page.goto("/konto");
+    await page.goto("/konto/kontoen");
     await expect(page.getByText("Kontoen din er aktiv.")).toBeVisible();
     await page.getByRole("button", { name: "Deaktiver kontoen" }).click();
     await expect(notice).toContainText("Kontoen din er deaktivert.");
@@ -138,7 +138,7 @@ test.describe("the own account in the browser", () => {
       "Slett Meg",
     );
 
-    await page.goto("/konto");
+    await page.goto("/konto/kontoen");
     await expect(page.getByText("Dette forsvinner:")).toBeVisible();
     await expect(
       page.getByText("Dette består, uten navnet ditt:"),

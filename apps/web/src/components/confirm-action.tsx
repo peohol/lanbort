@@ -63,6 +63,7 @@ export function ConfirmAction({
   path,
   body,
   danger = false,
+  primary = false,
   icon,
   idempotent = true,
   messages,
@@ -77,6 +78,8 @@ export function ConfirmAction({
   path: string;
   body: object;
   danger?: boolean;
+  /** The step the page leads to (UX-INT-001), as on `ActionButton`. */
+  primary?: boolean;
   /** Drawn on the button that opens the dialog, as Tomat does for
    * destructive steps («Blokker», «Slett»). */
   icon?: IconName;
@@ -104,7 +107,9 @@ export function ConfirmAction({
     <>
       <button
         type="button"
-        className={danger ? "button-danger" : undefined}
+        className={
+          danger ? "button-danger" : primary ? "button-primary" : undefined
+        }
         onClick={() => dialog.current?.showModal()}
       >
         {icon && <Icon name={icon} />}

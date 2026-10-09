@@ -192,6 +192,15 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Avklares før:** plattformforvalterens flater designes og vises (etter OD-0023). Til da finnes ingen slik flate i appen.
 - **Anbefaling:** Start alle inngrep fra en sak i plattformkøen, slik at begrunnelse, habilitet og historikk følger saken (PS-TRUST-016, PS-ADM-014), og vis ingen forvalterhandlinger på ordinære person- og miljøsider.
 
+### OD-0048 — Omtrentlig medlemstall før medlemskap
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-ENV-001, [visjon 03](vision/03-miljoer.md) («omtrentlig medlemstall»), Finn miljøer i Tomat-designet
+- **Spørsmål:** Visjonen sier at den som ikke er medlem kan se et omtrentlig medlemstall for åpne og lukkede miljøer, og designet for Finn viser for eksempel «ca. 140 medlemmer», men spesifikasjonen sier ikke hvor grovt tallet skal være. Et nøyaktig tall i små miljøer kan avsløre når én bestemt person blir med eller går ut. Hvordan skal tallet rundes, og skal små miljøer vises uten tall? Inntil dette er besluttet, viser Finn ikke medlemstall.
+- **Avhenger av:** Produktvurdering av personvern i små miljøer.
+- **Avklares før:** medlemstallet skal vises i Finn eller på miljøets side for ikke-medlemmer.
+- **Anbefaling:** Vis «under 10 medlemmer» for de minste miljøene, og ellers tallet rundet til nærmeste ti («ca. 140 medlemmer»), slik at én person inn eller ut sjelden endrer det som vises.
+
 ## Avklart
 
 ### OD-0033 — Hvordan skade, mangel eller tap registreres på et lån
@@ -202,7 +211,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0034 — Hva en medeier som ikke er part, ser av et lån
 - **Lag:** UX
 - **Status:** Avklart (produkteier, 9. oktober 2026)
-- **Beslutning:** Se [UX-PRIV-013](ux/05-kontekst-roller-og-personvern.md) og [UX-JRN-011](ux/02-sentrale-brukerreiser.md). Avgrenset innsyn for medeiere i eierkretsen ved godkjenning eller spurt om ansvaret, håndhevet på serveren. Ikke bygget; i dag kan bare partene åpne lånet.
+- **Beslutning:** Se [UX-PRIV-013](ux/05-kontekst-roller-og-personvern.md) og [UX-JRN-011](ux/02-sentrale-brukerreiser.md). Avgrenset innsyn for medeiere i eierkretsen ved godkjenning eller spurt om ansvaret, håndhevet på serveren. Bygget 9. oktober 2026 (#94 og lånets side).
 
 ### OD-0035 — Tilsvar på en anmeldelse uten tekst
 - **Lag:** Produktspesifikasjon

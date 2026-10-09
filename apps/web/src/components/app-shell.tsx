@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { accountHref } from "@/navigation/areas";
+import { accountStateHref } from "@/navigation/routes";
 import { minimumAccessText } from "@/presentation/account";
 import { FocusKeeper } from "./focus-keeper";
 import { MainNavigation } from "./main-navigation";
@@ -43,6 +44,7 @@ export function AppShell({
           <NotificationIndicator unread={unread} />
           <Link
             href={accountHref}
+            scroll={false}
             className="avatar"
             aria-label={`Konto og innstillinger for ${realName}`}
           >
@@ -65,7 +67,7 @@ export function AppShell({
               {notice} {minimumAccessText}
             </p>
             <p className="link-row">
-              <Link href={`${accountHref}#kontoen`}>Se hva du kan gjøre</Link>
+              <Link href={accountStateHref}>Se hva du kan gjøre</Link>
             </p>
           </div>
         )}

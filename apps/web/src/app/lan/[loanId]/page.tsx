@@ -1,22 +1,24 @@
-import type {
-  Loan,
-  LoanLogisticsChannel,
-  LoanLogisticsCloseReason,
-  LoanReview,
-  LoanReviews,
+import {
+  type Loan,
+  type LoanLogisticsChannel,
+  type LoanLogisticsCloseReason,
+  type LoanReview,
+  type LoanReviews,
+  loanIdSchema,
 } from "@lanbort/contracts";
 import {
   collectPages,
   readLoan,
+  readLoanAsCoOwner,
   readLoanHistory,
   readLoanLogistics,
   readLoanReviews,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Fragment, type ReactNode } from "react";
 import { StartLoanLogistics } from "@/chat/start-loan-logistics";
-import { ActionButton } from "@/components/action-button";
 import { CommandForm } from "@/components/command-form";
 import { ConfirmAction } from "@/components/confirm-action";
 import { describedBy, Field } from "@/components/field";
@@ -37,7 +39,6 @@ import {
   describeLoanStatus,
   loanApi,
   loanProgress,
-  type LoanStep,
   loanSteps,
   loanTitle,
   otherParty,
@@ -56,25 +57,15 @@ import { OriginTag } from "../_parts/origin-tag";
 import { Party } from "../_parts/party";
 import { writeHref } from "../_parts/write-href";
 import { Progress } from "../_parts/progress";
+import { Steps } from "../_parts/steps";
 import { Timeline } from "../_parts/timeline";
+import { CoOwnerLoan } from "./co-owner-loan";
 import { ReviewForm } from "./review-form";
 
 export const metadata: Metadata = { title: "Lån – Lånbort" };
 
 /** The timeline's pages in the address, and the element it is. */
 const historyKey = "historikk";
-
-function Steps({ steps }: { steps: readonly LoanStep[] }) {
-  return steps.map((step) => (
-    <ActionButton
-      key={`${step.path} ${step.label}`}
-      label={step.label}
-      path={step.path}
-      body={step.body}
-      primary={step.primary ?? false}
-    />
-  ));
-}
 
 /**
  * PS-LOAN-010: a new period, proposed for the agreement as it is now.
@@ -561,8 +552,23 @@ export default async function LoanPage({
 }) {
   await requirePageAccount();
   const { loanId } = await params;
+
+  if (!loanIdSchema.safeParse(loanId).success) {
+    notFound();
+  }
+
   const query = await searchParams;
-  const loan = await pageQueryOrNotFound(readLoan, { loanId });
+  const loan = await pageQueryIfAllowed(readLoan, { loanId });
+
+  // Not a party: a co-owner who may see it gets the restricted view
+  // (UX-PRIV-013); to anyone else it does not exist.
+  if (!loan) {
+    return (
+      <CoOwnerLoan
+        view={await pageQueryOrNotFound(readLoanAsCoOwner, { loanId })}
+      />
+    );
+  }
   const [history, logistics, reviews] = await Promise.all([
     collectPages(
       (cursor) => pageQuery(readLoanHistory, { loanId, cursor }),

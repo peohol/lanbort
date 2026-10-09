@@ -8,6 +8,7 @@ import {
 } from "@playwright/test";
 import { loanRequestPageSize } from "@lanbort/contracts";
 import {
+  axeViolations,
   collectBrowserProblems,
   enterEmailCode,
   registerThroughApi,
@@ -106,17 +107,103 @@ test("the five areas are the main navigation, and the current one is marked", as
     ).toHaveAttribute("aria-current", "page");
   }
 
-  // Notifications and the account are not areas of their own.
+  // Notifications and the account are layers over the area, not areas of
+  // their own (UX-IA-002, UX-IA-020).
   await expect(links).toHaveCount(5);
   await page.getByRole("link", { name: "Varsler, ingen uleste" }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Varsler");
+  const notifications = page.getByRole("dialog", { name: "Varsler" });
+  await expect(notifications.getByRole("heading", { level: 1 })).toHaveText(
+    "Varsler",
+  );
+  await notifications.getByRole("button", { name: "Lukk Varsler" }).click();
+  await expect(notifications).toHaveCount(0);
+  await expect(page).toHaveURL("/samtaler");
   await page
     .getByRole("link", { name: "Konto og innstillinger for Kari Nordmann" })
     .click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Konto");
-  await expect(mainNavigation(page).locator("[aria-current=page]")).toHaveCount(
-    0,
-  );
+  await expect(
+    page
+      .getByRole("dialog", { name: "Konto" })
+      .getByRole("heading", { level: 1 }),
+  ).toHaveText("Konto");
+  expect(problems).toEqual([]);
+});
+
+test("Konto is a layer with its own stack, and Lukk returns to exactly the screen under it", async ({
+  page,
+  playwright,
+  baseURL,
+}) => {
+  const problems = collectBrowserProblems(page);
+  await befriended(page, await otherUser(playwright, baseURL!));
+  await page.goto("/lan?side=borrower");
+  const account = page.getByRole("dialog", { name: "Konto" });
+  const title = account.getByRole("heading", { level: 1 });
+
+  await page.getByRole("link", { name: /^Konto og innstillinger/ }).click();
+  await expect(title).toHaveText("Konto");
+  await expect(title).toBeFocused();
+  expect(await axeViolations(page)).toEqual([]);
+  await account.getByRole("link", { name: /Venner/ }).click();
+  await expect(title).toHaveText("Venner");
+
+  // A person opened from Konto lies in Konto's stack.
+  await account.getByRole("link", { name: "Bo Dahl" }).click();
+  await expect(title).toHaveText("Bo Dahl");
+  await expect(page).toHaveURL(/\/konto\/personer\//);
+  await account.getByRole("link", { name: "Venner" }).click();
+  await expect(title).toHaveText("Venner");
+  await account.getByRole("link", { name: "Konto" }).click();
+  await expect(title).toHaveText("Konto");
+
+  // «Lukk» goes back to the screen Konto was opened over, filter and all,
+  // with focus where it was.
+  await account.getByRole("button", { name: "Lukk Konto" }).click();
+  await expect(account).toHaveCount(0);
+  await expect(page).toHaveURL("/lan?side=borrower");
+  await expect(
+    page.getByRole("link", { name: /^Konto og innstillinger/ }),
+  ).toBeFocused();
+
+  // Reached from outside, Konto has nothing under it: Lukk leads to Hjem.
+  await page.goto("/konto/venner");
+  // The key only works once the page has come alive.
+  await expect(async () => {
+    await page.keyboard.press("Escape");
+    await expect(page).toHaveURL("/", { timeout: 1000 });
+  }).toPass();
+  expect(problems).toEqual([]);
+});
+
+test("a layer keeps the screen under it through the browser's history, and a reloaded one is replaced", async ({
+  page,
+}) => {
+  const problems = collectBrowserProblems(page);
+  await registerThroughApi(page.request, undefined, "Kari Nordmann");
+  const account = page.getByRole("dialog", { name: "Konto" });
+  const close = account.getByRole("button", { name: "Lukk Konto" });
+
+  await page.goto("/lan?side=borrower");
+  await page.getByRole("link", { name: /^Konto og innstillinger/ }).click();
+  await expect(account.getByRole("heading", { level: 1 })).toHaveText("Konto");
+  await close.click();
+  await expect(page).toHaveURL("/lan?side=borrower");
+
+  // Forward into the layer again: it still lies over the same screen.
+  await page.goForward();
+  await expect(account.getByRole("heading", { level: 1 })).toHaveText("Konto");
+  await close.click();
+  await expect(account).toHaveCount(0);
+  await expect(page).toHaveURL("/lan?side=borrower");
+
+  // Konto reached from outside is the page; what it opens takes its place
+  // instead of lying on top, and closes to Hjem.
+  await page.goto("/konto");
+  await page.getByRole("link", { name: /Venner/ }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Venner");
+  await expect(page.locator(".layer:visible")).toHaveCount(1);
+  await close.click();
+  await expect(page).toHaveURL("/");
   expect(problems).toEqual([]);
 });
 
@@ -151,23 +238,22 @@ test("the way back follows the path taken, also through the browser's back and f
 }) => {
   const problems = collectBrowserProblems(page);
   await befriended(page, await otherUser(playwright, baseURL!));
-  const title = page.getByRole("heading", { level: 1 });
-  const steps = page
-    .getByRole("navigation", { name: "Du er her" })
-    .getByRole("listitem");
+  const account = page.getByRole("dialog", { name: "Konto" });
+  const title = account.getByRole("heading", { level: 1 });
 
   await page.goto("/");
   await page.getByRole("link", { name: /^Konto og innstillinger/ }).click();
   await expect(title).toHaveText("Konto");
-  await page.getByRole("link", { name: "Bo Dahl" }).click();
+  await account.getByRole("link", { name: /Venner/ }).click();
+  await expect(title).toHaveText("Venner");
+  await account.getByRole("link", { name: "Bo Dahl" }).click();
   await expect(title).toHaveText("Bo Dahl");
-  await expect(steps).toHaveText(["Hjem", "Konto", "Bo Dahl"]);
 
   await page.goBack();
-  await expect(steps).toHaveText(["Hjem", "Konto"]);
+  await expect(title).toHaveText("Venner");
   await page.goForward();
   await expect(title).toHaveText("Bo Dahl");
-  await expect(steps).toHaveText(["Hjem", "Konto", "Bo Dahl"]);
+  await expect(account.getByRole("link", { name: "Venner" })).toBeVisible();
 
   // A form is a bounded task: only «Avbryt» leads out of it (UX-IA-013).
   await page.goto("/ting/ny");
@@ -284,7 +370,10 @@ test("an empty notification centre says what will come, and leads to the choices
     page.getByRole("heading", { name: "Ingen varsler" }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Varslingsvalg" }).click();
-  await expect(page).toHaveURL(/\/konto#varslingsvalg$/);
+  await expect(page).toHaveURL("/konto/varslingsvalg");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Varslingsvalg",
+  );
 });
 
 test("Lån shows further pages of a list in place", async ({
@@ -365,6 +454,24 @@ test("on a phone the areas sit at the bottom, without sideways scrolling", async
   await expect(
     page.getByRole("link", { name: "Hopp til innholdet" }),
   ).toBeFocused();
+});
+
+test("on a phone a form stays still when a field in view is chosen", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await registerThroughApi(page.request);
+  await page.goto("/ting/ny");
+  await expect(mainNavigation(page)).toBeHidden();
+
+  // A field in view: nothing covers it, so nothing scrolls.
+  const field = page
+    .locator("main :is(input, textarea, select):visible")
+    .first();
+  await expect(field).toBeInViewport({ ratio: 1 });
+  const before = await page.evaluate(() => window.scrollY);
+  await field.focus();
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
 });
 
 test("the areas need a signed-in user", async ({ page, request }) => {

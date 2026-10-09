@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { accountHref, areaAt, areaOf, areas } from "@/navigation/areas";
-import { isStackOf, samePlace } from "@/navigation/stack";
+import { areaAt, areaOf, areas, layerOf } from "@/navigation/areas";
+import { isStackOf } from "@/navigation/stack";
 import { Icon } from "./icon";
-import { enterArea, useStack } from "./navigation-stack";
+import { enterArea, trackAddress, useStack } from "./navigation-stack";
 
 /**
  * UX-IA-001: the five areas. One list for every screen size: at the bottom
@@ -20,14 +20,15 @@ export function MainNavigation() {
   const pathname = usePathname();
   const stack = useStack();
   const root = areaAt(pathname);
-  // The account is no area (UX-IA-003), whatever stack it lies in.
-  const current = samePlace(pathname, accountHref)
-    ? null
-    : isStackOf(stack, pathname)
+  // Under a layer, the area stays the one the layer was opened over.
+  const current =
+    isStackOf(stack, pathname) || (stack && layerOf(pathname))
       ? stack!.area
       : (root ?? areaOf(pathname));
 
   useEffect(() => {
+    // Always here, the navigation hears of every address first.
+    trackAddress();
     if (root) enterArea(root);
   }, [root, pathname]);
 

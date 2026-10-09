@@ -1,4 +1,4 @@
-import { type AreaId, areaById } from "./areas";
+import { type AreaId, areaById, type LayerId, layerById } from "./areas";
 
 /**
  * The navigation stack (UX-IA-009–011): the area the user started in and
@@ -79,35 +79,26 @@ export const returnToArea = (
       }
     : areaStack(area);
 
+/** Where the user is in a stack, and what the browser's forward leads to. */
+interface Steps {
+  readonly entries: readonly StackEntry[];
+  readonly forward: readonly StackEntry[];
+}
+
 /**
- * The stack once the user has arrived at `place`. Something already in the
- * stack is gone back to rather than opened again (UX-IA-009), and the
- * browser's back and forward move within it; following a link adds to the
- * stack the user is in; anything else builds the stack from the rule,
- * never from history (UX-IA-011).
+ * The steps once the user has arrived at `entry`. Something already in them
+ * is gone back to rather than opened again (UX-IA-009), and the browser's
+ * back and forward move within them; following a link adds to them and
+ * ends the way forward. None when history leads outside them.
  */
-export function arrive(
-  previous: Stack | null,
-  place: Place,
-  how: Arrival,
-  via: DirectEntry | null = null,
-): Stack {
-  const entry = { href: place.href, label: place.label };
-
-  if (how === "direct" || previous === null) return ruleStack(place, via);
-
+function step(previous: Steps, entry: StackEntry, how: Arrival): Steps | null {
   const at = (entries: readonly StackEntry[]) =>
-    entries.findIndex(({ href }) => samePlace(href, place.href));
+    entries.findIndex(({ href }) => samePlace(href, entry.href));
   const index = at(previous.entries);
 
   if (index >= 0) {
-    const current = index === previous.entries.length - 1;
     return {
-      area: previous.area,
       entries: [...previous.entries.slice(0, index), entry],
-      // Still on the page the entry led to, as after a reload.
-      via: current ? previous.via : null,
-      // Following a link ends what the browser's forward would lead to.
       forward:
         how === "history"
           ? [...previous.entries.slice(index + 1), ...previous.forward]
@@ -116,27 +107,45 @@ export function arrive(
   }
 
   if (how === "push") {
-    return {
-      area: previous.area,
-      entries: [...previous.entries, entry],
-      via: null,
-      forward: [],
-    };
+    return { entries: [...previous.entries, entry], forward: [] };
   }
 
   const ahead = at(previous.forward);
   return ahead >= 0
     ? {
-        area: previous.area,
         entries: [
           ...previous.entries,
           ...previous.forward.slice(0, ahead),
           entry,
         ],
-        via: null,
         forward: previous.forward.slice(ahead + 1),
       }
-    : ruleStack(place, null);
+    : null;
+}
+
+/**
+ * The stack once the user has arrived at `place`: a step within the stack
+ * the user is in (`step`), or, for anything else, the stack built from the
+ * rule, never from history (UX-IA-011).
+ */
+export function arrive(
+  previous: Stack | null,
+  place: Place,
+  how: Arrival,
+  via: DirectEntry | null = null,
+): Stack {
+  if (how === "direct" || previous === null) return ruleStack(place, via);
+
+  const moved = step(previous, { href: place.href, label: place.label }, how);
+  if (moved === null) return ruleStack(place, null);
+
+  const current = previous.entries.at(-1);
+  return {
+    area: previous.area,
+    ...moved,
+    // Still on the page the entry led to, as after a reload.
+    via: current && samePlace(current.href, place.href) ? previous.via : null,
+  };
 }
 
 /** Whether `stack` is the stack of the page at `href`. */
@@ -156,3 +165,61 @@ export const trail = (stack: Stack): readonly StackEntry[] => {
 
 /** The one step back, named after where it leads («‹ Kari Nordmann»). */
 export const backOf = (stack: Stack): StackEntry => trail(stack).at(-2)!;
+
+/**
+ * A layer's own stack (UX-IA-020): the pages opened in it, in order, and
+ * the screen under it that «Lukk» returns to. A layer is never a step in
+ * an area's stack.
+ */
+export interface LayerStack extends Steps {
+  readonly layer: LayerId;
+  /**
+   * The screen the layer was opened over, and its place in the browser's
+   * history when known; none when the layer was reached from outside.
+   */
+  readonly under: {
+    readonly href: string;
+    readonly index: number | null;
+  } | null;
+}
+
+/**
+ * The layer's stack once the user has arrived at `entry` in it. Opening the
+ * layer from the app keeps the screen under it; anything else from outside
+ * starts it over from the rule, with nothing to return to.
+ */
+export function arriveInLayer(
+  previous: LayerStack | null,
+  layer: LayerId,
+  entry: StackEntry,
+  how: Arrival,
+  under: LayerStack["under"],
+): LayerStack {
+  if (previous === null || previous.layer !== layer || how === "direct") {
+    // By the rule, a page in a layer lies under the layer's first page.
+    const { href, label } = layerById(layer);
+    return {
+      layer,
+      entries: samePlace(href, entry.href) ? [entry] : [{ href, label }, entry],
+      forward: [],
+      // From outside there is nothing under it; back or forward into it
+      // still finds the screen it was opened over.
+      under: how === "direct" ? null : under,
+    };
+  }
+
+  return {
+    ...previous,
+    ...(step(previous, entry, how) ?? { entries: [entry], forward: [] }),
+  };
+}
+
+/** The step back within the layer, if the current page is not its first. */
+export const layerBackOf = (stack: LayerStack, href: string) =>
+  isLayerStackOf(stack, href) ? (stack.entries.at(-2) ?? null) : null;
+
+/** Whether `stack` is the layer stack of the page at `href`. */
+export const isLayerStackOf = (stack: LayerStack | null, href: string) =>
+  stack !== null &&
+  stack.entries.length > 0 &&
+  samePlace(stack.entries.at(-1)!.href, href);
