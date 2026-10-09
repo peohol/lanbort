@@ -51,7 +51,7 @@ Når spørsmålet er avgjort:
 
 ## Status før UI-arbeidet
 
-Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
+Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. Gjennomgangen av kjerneflyt 5 (samtaler og enheter) samme dag avdekket [OD-0043](#od-0043--varsler-om-nye-meldinger-i-privat-chat), [OD-0044](#od-0044--når-gjenopprettingsnøkkelen-for-privat-chat-tilbys) og [OD-0045](#od-0045--én-privat-samtale-per-person-eller-per-lån), som ble avgjort samme dag. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
 
 ## Åpne
 
@@ -193,6 +193,21 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Anbefaling:** Start alle inngrep fra en sak i plattformkøen, slik at begrunnelse, habilitet og historikk følger saken (PS-TRUST-016, PS-ADM-014), og vis ingen forvalterhandlinger på ordinære person- og miljøsider.
 
 ## Avklart
+
+### OD-0045 — Én privat samtale per person eller per lån
+- **Lag:** Produktspesifikasjon / UX
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [PS-COM-017](product-spec/05-kommunikasjon-varsler-og-saker.md). Én privat samtale per personpar, med lenker til og fra lånene; logistikk-kanalen ved blokkering er egen per lån. Én samtale per par er bygget (WP-43); lenkene er ikke bygget ennå.
+
+### OD-0043 — Varsler om nye meldinger i privat chat
+- **Lag:** Produktspesifikasjon / UX
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [PS-COM-018](product-spec/05-kommunikasjon-varsler-og-saker.md) og ADR-0010 punkt 12. Ett samlet informasjonsvarsel per samtale i appen, med navn og antall, uten innhold eller lån; e-post av som standard og generisk. Ikke bygget ennå.
+
+### OD-0044 — Når gjenopprettingsnøkkelen for privat chat tilbys
+- **Lag:** UX
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [PS-COM-019](product-spec/05-kommunikasjon-varsler-og-saker.md). Én gang etter at privat chat er slått på, varig i Mine enheter, og én diskret påminnelse etter at brukeren har begynt å utveksle meldinger. Ikke bygget ennå.
 
 ### OD-0027 — Formen profilbildet vises i
 - **Lag:** UX
