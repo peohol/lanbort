@@ -39,9 +39,10 @@ export const notificationConsumerName = "notifications.generate";
  * docs/architecture/07, «Varsler»). Who is told is decided from the event's
  * ids and the current state. Nobody is told about what they did themselves,
  * unless the rule says it leaves them something to do (`tellsActor`).
- * Notifications are keyed by their event, so a redelivery makes nothing
- * twice. Who is told and the notifications are one transaction, so a rule
- * can hold still what it decided on until they are stored. A failure here is
+ * Notifications are keyed by their event (or by what the rule says several
+ * events announce together, `source`), so a redelivery makes nothing twice.
+ * Who is told and the notifications are one transaction, so a rule can hold
+ * still what it decided on until they are stored. A failure here is
  * retried on its own and never touches the domain change that recorded the
  * event (PS-COM-002).
  */
@@ -73,7 +74,7 @@ export function notificationGenerator({
 
           await recordNotifications(
             tx,
-            `event:${event.id}`,
+            rule.source(event),
             event.occurredAt,
             rule.tellsActor
               ? drafts

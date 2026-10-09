@@ -25,6 +25,7 @@ import {
   offerResponsibility,
 } from "../loans/responsibility";
 import { reportReturn } from "../loans/return";
+import { respondToLoanReview, submitLoanReview } from "../reviews/commands";
 import { inviteCoOwner, withdrawCoOwnerInvitation } from "../objects/co-owners";
 import { updateObject } from "../objects/commands";
 import { ConsumerRegistry, type StoredEvent } from "../outbox/consumer";
@@ -841,5 +842,76 @@ describe("environments and co-ownership", () => {
     };
     expect((await told(admin)).at(-1)).toEqual(proposed);
     expect((await told(colleague)).at(-1)).toEqual(proposed);
+  });
+});
+
+// Last in the file: the deadline case moves the clock 15 days ahead.
+describe("reviews (PS-TRUST-003)", () => {
+  /** A loan the borrower cancelled: both parties review communication. */
+  async function cancelledLoan() {
+    const setup = await reservedLoan(2, 4);
+    await run(cancelLoan, setup.borrower, { loanId: setup.loanId });
+
+    return setup;
+  }
+
+  const review = (actor: UserActor, loanId: string) =>
+    run(submitLoanReview, actor, {
+      loanId,
+      scores: [{ dimension: "communication", score: 4 }],
+    });
+
+  const visible = (loanId: string) => ({
+    kind: "loan_review.published",
+    level: "information",
+    detail: null,
+    target: { type: "loan_reviews", id: loanId },
+  });
+
+  const aboutReviews = async (actor: UserActor) =>
+    (await told(actor)).filter((item) => item.kind === "loan_review.published");
+
+  /** What waits to go out by e-mail about the loan's reviews. */
+  const emails = (loanId: string) =>
+    db
+      .selectFrom("app.notification_deliveries as delivery")
+      .innerJoin(
+        "app.notifications as notification",
+        "notification.id",
+        "delivery.notification_id",
+      )
+      .select("delivery.id")
+      .where("notification.target_id", "=", loanId)
+      .where("notification.kind", "=", "loan_review.published")
+      .execute();
+
+  it("tells each party once when both reviews are published together, and nobody before", async () => {
+    const { owner, borrower, loanId } = await cancelledLoan();
+
+    await review(borrower, loanId);
+    expect(await aboutReviews(owner)).toEqual([]);
+    expect(await aboutReviews(borrower)).toEqual([]);
+
+    // Both reviews are published at once: two events, one notification
+    // each, also for the lender whose review completed the pair.
+    await review(owner, loanId);
+    expect(await aboutReviews(owner)).toEqual([visible(loanId)]);
+    expect(await aboutReviews(borrower)).toEqual([visible(loanId)]);
+    // In the app only: no e-mail unless the user chose it.
+    expect(await emails(loanId)).toEqual([]);
+  });
+
+  it("tells both parties once when the deadline publishes the only review", async () => {
+    const { owner, borrower, loanId } = await cancelledLoan();
+
+    await review(borrower, loanId);
+    expect(await aboutReviews(owner)).toEqual([]);
+
+    // After the 14 days, the lender's response closes the window first and
+    // publishes the borrower's review as of its deadline (PS-TRUST-005).
+    kit.advanceDays(15);
+    await run(respondToLoanReview, owner, { loanId, text: "Takk!" });
+    expect(await aboutReviews(owner)).toEqual([visible(loanId)]);
+    expect(await aboutReviews(borrower)).toEqual([visible(loanId)]);
   });
 });

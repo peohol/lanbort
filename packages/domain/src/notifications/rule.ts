@@ -28,6 +28,14 @@ export interface NotificationRule {
    * themselves or concerns something other than what they acted on.
    */
   readonly tellsActor: boolean;
+  /**
+   * What the notifications are keyed by (`recordNotifications`): normally
+   * the event, so a redelivery makes nothing twice. A rule for something
+   * several events announce together, such as both reviews of a loan
+   * published at once, keys them by that one thing instead, so each
+   * recipient is told once.
+   */
+  source(event: StoredEvent): string;
   drafts(
     input: Omit<RuleInput<unknown>, "payload">,
   ): Promise<NotificationDraft[]>;
@@ -38,11 +46,20 @@ export function notifyOn<P>(
   drafts: (
     input: RuleInput<P>,
   ) => Promise<readonly NotificationDraft[]> | readonly NotificationDraft[],
-  { tellsActor = false }: { readonly tellsActor?: boolean } = {},
+  {
+    tellsActor = false,
+    once,
+  }: {
+    readonly tellsActor?: boolean;
+    /** One source for every event that announces the same thing. */
+    readonly once?: (payload: P) => string;
+  } = {},
 ): NotificationRule {
   return {
     eventType: event.type,
     tellsActor,
+    source: (stored) =>
+      once ? once(event.payload.parse(stored.payload)) : `event:${stored.id}`,
     drafts: async (input) => [
       ...(await drafts({
         ...input,

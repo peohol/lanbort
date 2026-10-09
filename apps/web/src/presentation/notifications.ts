@@ -75,6 +75,8 @@ const named: Partial<
     thing &&
     person &&
     `${person} har meldt skade, mangel eller tap på ${thing}`,
+  "loan_review.published": ({ thing }) =>
+    thing && `Anmeldelsene etter lånet av ${thing} er synlige`,
   "social.friend_request": ({ person }) =>
     person && `${person} vil bli venn med deg`,
   "social.friend_request_accepted": ({ person }) =>
@@ -219,6 +221,7 @@ const contexts: Record<
   { readonly label: string; readonly icon: IconName }
 > = {
   loan: { label: "Lån", icon: "loans" },
+  loan_reviews: { label: "Lån", icon: "loans" },
   loan_request: { label: "Lån", icon: "loans" },
   user: { label: "Personer", icon: "person" },
   environment: { label: "Miljø", icon: "environment" },

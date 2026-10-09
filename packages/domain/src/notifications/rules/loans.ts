@@ -28,6 +28,7 @@ import {
 } from "../../loans/events";
 import { loadLenderScope, visibleToLender } from "../../loans/store";
 import { objectReverted, objectUpdated } from "../../objects/events";
+import { loanReviewPublished } from "../../reviews/events";
 import { type Db, notifyOn, type RuleInput, tell } from "../rule";
 
 interface Parties {
@@ -386,5 +387,35 @@ export const loanRules = [
       "loan.responsibility_withdrawn",
       loanTarget(event.resourceId),
     ),
+  ),
+  // PS-TRUST-003: when the reviews become visible, each party is told once,
+  // the one whose review completed the pair too; it leads to the reviews on
+  // the loan. Both reviews published at once are one publication, and a
+  // loan's reviews are published only once (its window never opens again),
+  // so the notification is keyed by the loan, not by each review's event.
+  // Nothing is told before: a hidden review has no notification.
+  notifyOn(
+    loanReviewPublished,
+    async ({ db, payload }) => {
+      // The window's parties, who may read the reviews: after a reopened
+      // loan changed lender, they are no longer the loan's.
+      const window = await db
+        .selectFrom("app.loan_review_periods")
+        .select(["borrower_user_id", "lender_user_id"])
+        .where("loan_id", "=", payload.loanId)
+        .executeTakeFirst();
+
+      return window
+        ? tell(
+            [window.borrower_user_id, window.lender_user_id],
+            "loan_review.published",
+            { type: "loan_reviews", id: payload.loanId },
+          )
+        : [];
+    },
+    {
+      tellsActor: true,
+      once: ({ loanId }) => `loan_review_publication:${loanId}`,
+    },
   ),
 ];
