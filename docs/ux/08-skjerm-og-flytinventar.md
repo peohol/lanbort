@@ -631,3 +631,8 @@ Til en beslutning finnes, viser UI-et ikke funksjonen den gjelder.
 | OD-0023    | Plattformkø og alle plattformforvalterflater              | Vises ikke                                                         |
 | OD-0025    | Medlemmer og utestengelse                                 | Ingen handling for å fjerne et aktivt medlem                       |
 | OD-0026    | Inngrep på kontoer, inngrep i et miljø                    | Ingen flate                                                        |
+| OD-0038    | Sakens side for en part, miljøets sakskø                  | Lukking krever ingen melding; partene ser det behandleren skrev    |
+| OD-0039    | Miljøets sakskø, plattformrapport og tiltak               | Den som rammes, ser bare publiseringsstatusen; ingen varsel        |
+| OD-0040    | Sakens side for en part                                   | Bare saksbehandleren lukker en sak                                 |
+| OD-0041    | Miljøets sakskø, lånets side i avvik                      | Meklingen står åpen til administratoren lukker den                 |
+| OD-0042    | Rapportere og kontakte administratorene                   | Rapport til Lånbort kan sendes og venter på behandling             |

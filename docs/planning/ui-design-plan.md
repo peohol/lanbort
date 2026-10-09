@@ -160,7 +160,7 @@ Målet er et lite, konsistent system som dekker reelle behov. Nye komponentvaria
 
 ## Fase 6 — Utvid ordinær brukerflate
 
-**Status:** Pågår. Gjeldende prototyper i `design/` dekker registrering av ting (kjerneflyt 2), finne/bli med i miljø (3), Hjem/varsler (4), Samtaler/enheter (5, ennå ikke godkjent) og Personer, venner og tillit (6, WP-86, ennå ikke godkjent). Se `design/README.md` for eksakte aktive filnavn og status.
+**Status:** Pågår. Gjeldende prototyper i `design/` dekker registrering av ting (kjerneflyt 2), finne/bli med i miljø (3), Hjem/varsler (4), Samtaler/enheter (5, ennå ikke godkjent), Personer, venner og tillit (6, WP-86, ennå ikke godkjent) og Rapportering, saker og konfliktløsning (8, WP-88, til gjennomgang; tar også med administratorenes saksbehandling fra fase 7). Se `design/README.md` for eksakte aktive filnavn og status.
 
 Deretter designes resten av sluttbrukeropplevelsen med gjenbruk av de etablerte mønstrene.
 

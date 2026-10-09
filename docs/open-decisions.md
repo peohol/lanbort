@@ -192,6 +192,51 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Avklares før:** plattformforvalterens flater designes og vises (etter OD-0023). Til da finnes ingen slik flate i appen.
 - **Anbefaling:** Start alle inngrep fra en sak i plattformkøen, slik at begrunnelse, habilitet og historikk følger saken (PS-TRUST-016, PS-ADM-014), og vis ingen forvalterhandlinger på ordinære person- og miljøsider.
 
+### OD-0038 — Hva den som rapporterte, får vite når saken lukkes
+- **Lag:** Produktspesifikasjon / UX
+- **Status:** Åpen
+- **Berører:** PS-COM-011, PS-TRUST-010, PS-TRUST-016, [visjon 07](vision/07-tillit-anmeldelser-og-moderering.md) («Rapportering»), [designet for kjerneflyt 8](../design/Lånbort%20-%20Rapportering,%20saker%20og%20konfliktløsning%20v1.html)
+- **Spørsmål:** Skal den som rapporterte eller ba om mekling, få et utfall når saken lukkes, og hvor mye? I dag får partene varselet «En sak du er med i er lukket» og ser bare det saksbehandleren eventuelt valgte å skrive til dem. Lukkingen krever ingen melding, og tiltak mot en annen vises aldri for melderen.
+- **Avhenger av:** Produktvurdering av personvernet til den som er rapportert.
+- **Avklares før:** sakens side for partene implementeres i Tomat-designet. Til da virker lukking som i dag.
+- **Anbefaling:** «Lukk saken» ber om en kort avslutningsmelding til partene i rapporter og meklinger, som vises som siste innlegg. Tiltak mot andre beskrives ikke for melderen.
+
+### OD-0039 — Hva den et modereringstiltak rammer, får vite
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-TRUST-013–016, PS-OBJ-017, PS-COM-003
+- **Spørsmål:** Skal den som eier en ting, har skrevet en anmeldelse eller et tilsvar, få beskjed når et tiltak rammer innholdet deres, og med hva? I dag ser eieren bare at publiseringen står som avvist eller sperret, uten varsel og uten grunn, og forfatteren får ingen beskjed når en anmeldelse, teksten, én vurdering eller et tilsvar fjernes. Rapporten selv og melderen skal uansett ikke røpes.
+- **Avhenger av:** Produktvurdering og varslingsnivåer (PS-COM-003).
+- **Avklares før:** tiltak i miljøet og på plattformnivå tas i bruk med ekte brukere.
+- **Anbefaling:** Et påkrevd varsel som sier hva som ble gjort og hvor, for eksempel «Publiseringen av gassflasken i Borettslaget Lia er sperret». Aldri hvem som rapporterte eller at det fantes en rapport. Varselet lenker til «Kontakt administratorene» for lokale tiltak.
+
+### OD-0040 — Om den som åpnet en sak, kan trekke den
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-COM-010, PS-COM-011, UX-IA-007
+- **Spørsmål:** Skal den som kontaktet administratorene eller sendte en rapport, kunne trekke saken selv? I dag kan bare saksbehandleren lukke en sak. Gjelder det også den som ba om mekling, når den andre parten også er part?
+- **Avhenger av:** Produktvurdering.
+- **Avklares før:** kan vente. Dagens regel (bare saksbehandleren lukker) er trygg å designe etter.
+- **Anbefaling:** Den som tok kontakt eller rapporterte, kan trekke saken så lenge den er åpen. Den lukkes da med «Trukket av den som åpnet saken», og saksbehandleren får beskjed. En mekling trekkes ikke av én part; den lukkes av administratoren.
+
+### OD-0041 — Åpen mekling når partene selv avklarer lånet
+- **Lag:** Produktspesifikasjon / UX
+- **Status:** Åpen
+- **Berører:** PS-LOAN-013, PS-LOAN-014, PS-LOAN-017, PS-COM-011, [visjon 05](vision/05-laneforlop.md)
+- **Spørsmål:** Hva skal skje med en åpen meklingssak når partene selv registrerer en avklaring av lånet, for eksempel at begge bekrefter returen? I dag står saken åpen til administratoren lukker den, og ingenting i saken viser at lånet er avklart.
+- **Avhenger av:** Produktvurdering.
+- **Avklares før:** sakens side for administratorer implementeres i Tomat-designet.
+- **Anbefaling:** Ikke lukk automatisk. Saken viser «Lånet er avklart av partene», og den står øverst i køen med «Lukk saken» som neste steg.
+
+### OD-0042 — Rapporter til Lånbort før plattformforvalterne kan behandle dem
+- **Lag:** Produktspesifikasjon / UX
+- **Status:** Åpen
+- **Berører:** PS-TRUST-013, PS-OBJ-017, UX-EXC-009, OD-0023, [skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md#plattformkø)
+- **Spørsmål:** Rapporter til Lånbort, og rapporter administratorer sender videre, kan sendes i dag. Plattformforvalternes handlinger avvises til WebAuthn er bygget (OD-0023), og køen deres vises ikke, så ingen kan behandle disse sakene i appen. Saken sier likevel «Venter på at Lånbort tar saken». Skal muligheten vises før det, og hva skal brukeren få vite?
+- **Avhenger av:** OD-0023 og hvordan rapporter følges opp i piloten utenfor appen.
+- **Avklares før:** rapportskjemaene implementeres i Tomat-designet, og senest før appen åpnes for et eksternt testpanel (Port D).
+- **Anbefaling:** Behold muligheten, men si ærlig før og etter innsending at Lånbort ikke behandler rapporter i appen ennå (UX-EXC-009), og pek på miljøets administratorer der det passer.
+
 ## Avklart
 
 ### OD-0027 — Formen profilbildet vises i
