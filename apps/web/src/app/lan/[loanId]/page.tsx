@@ -630,7 +630,7 @@ export default async function LoanPage({
   const other = loan.role === "lender" ? "borrower" : "lender";
 
   return (
-    <main className={styles.page}>
+    <main className="main-wide">
       <PageHeader
         kind="Lån"
         title={loanTitle(loan)}
