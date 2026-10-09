@@ -98,7 +98,7 @@ Dette sjekkes av hver klient for hvert medlem som legges til, hver nøkkeloppdat
 4. Den eksisterende enheten signerer enhetssertifikatet og krypterer en pakke til den nye enhetens HPKE-nøkkel med kontonøkkelen og, hvis brukeren velger det, nøkkelen til et historikkarkiv (punkt 8). Pakken går via serveren, som bare ser ciphertext. Fordi den offentlige nøkkelen kom direkte fra skjermen, kan serveren ikke bytte den ut.
 5. Den nye enheten legges til i kontoens samtaler (punkt 4) og ser meldinger fra nå av. Gammel historikk får den bare hvis brukeren valgte å overføre den i steg 4.
 
-Koblingsforespørselen utløper etter kort tid og kan brukes én gang.
+Koblingsforespørselen utløper etter kort tid og kan brukes én gang. En fullført godkjenning utløser dessuten sikkerhetsvarsel til kontoeieren både i app og på verifisert e-post, uavhengig av hvem som godkjente koblingen (PS-COM-016). Varselet leder til «Mine enheter», der ukjente enheter kan tilbakekalles; det inneholder ikke chatinnhold eller nøkkelmateriale.
 
 ## 6. Nøkkelbytte
 

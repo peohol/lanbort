@@ -348,6 +348,44 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
     ).toMatchObject({ linkRequestId, package: "c2VhbGVk" });
     await run(finishChatLink, laptop, { linkRequestId });
 
+    // An approved device always alerts its owner, even though the owner
+    // authorized it. Redelivering the outbox cannot create another notice.
+    await deliverAll(db, consumers);
+    await deliverAll(db, consumers);
+    const security = await db
+      .selectFrom("app.notifications")
+      .select(["kind", "level", "target_type", "target_id"])
+      .where("recipient_id", "=", alice.actor.userId)
+      .where("kind", "=", "chat.device_linked")
+      .execute();
+    expect(security).toEqual([
+      {
+        kind: "chat.device_linked",
+        level: "required",
+        target_type: "chat_device",
+        target_id: deviceId,
+      },
+    ]);
+    const unrelated = await db
+      .selectFrom("app.notifications")
+      .select("id")
+      .where("recipient_id", "=", bob.actor.userId)
+      .where("kind", "=", "chat.device_linked")
+      .execute();
+    expect(unrelated).toEqual([]);
+    const queuedEmail = await db
+      .selectFrom("app.notification_deliveries as delivery")
+      .innerJoin(
+        "app.notifications as notice",
+        "notice.id",
+        "delivery.notification_id",
+      )
+      .select("delivery.channel")
+      .where("notice.recipient_id", "=", alice.actor.userId)
+      .where("notice.kind", "=", "chat.device_linked")
+      .execute();
+    expect(queuedEmail).toEqual([{ channel: "email" }]);
+
     const own = await executeQuery(tick(), readOwnChatDevices, {
       actor: laptop,
       input: {},
@@ -689,11 +727,13 @@ describe("revoking and resetting (ADR-0010 §7–8)", () => {
     await deliverAll(db, consumers);
     expect(await sessionLives(phone)).toBe(true);
 
-    // The account is told, by the app and by e-mail (ADR-0010 §8).
+    // The key reset gets its own alert, in addition to the earlier notice
+    // about linking a new device (PS-COM-016, ADR-0010 §8).
     const told = await db
       .selectFrom("app.notifications")
       .select(["kind", "level"])
       .where("recipient_id", "=", phone.userId)
+      .where("kind", "=", "chat.account_key_reset")
       .execute();
     expect(told).toEqual([
       { kind: "chat.account_key_reset", level: "required" },

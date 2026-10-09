@@ -43,15 +43,29 @@ describe("notification e-mails (WP-41)", () => {
     ).toContain("slå det av i varslingsvalgene");
   });
 
-  it("say why a security notice came", () => {
-    expect(
-      composeNotificationEmail({
-        kind: "chat.account_key_reset",
+  it("say why security notices came, including new chat devices", () => {
+    for (const kind of [
+      "chat.account_key_reset",
+      "chat.device_linked",
+    ] as const) {
+      const email = composeNotificationEmail({
+        kind,
         level: "required",
         notificationId,
         appUrl: "https://lanbort.example",
-      }).text,
-    ).toContain("sikkerhetsvarsler om kontoen din alltid sendes på e-post");
+      });
+      expect(email.text).toContain(
+        "sikkerhetsvarsler om kontoen din alltid sendes på e-post",
+      );
+    }
+    expect(
+      composeNotificationEmail({
+        kind: "chat.device_linked",
+        level: "required",
+        notificationId,
+        appUrl: "https://lanbort.example",
+      }).subject,
+    ).toBe("En ny enhet er koblet til privat chat");
   });
 
   it("escape what goes into the markup", () => {

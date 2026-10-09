@@ -1,4 +1,4 @@
-import { chatAccountKeyReset } from "../../chat/events";
+import { chatAccountKeyReset, chatDeviceLinked } from "../../chat/events";
 import { notifyOn, tell } from "../rule";
 
 /**
@@ -8,6 +8,27 @@ import { notifyOn, tell } from "../rule";
  * that every device was shut out.
  */
 export const chatRules = [
+  // The account owner is informed when another chat device is approved,
+  // including when they personally approved it (PS-COM-016). The event
+  // refers to that device, so only its actual account is notified.
+  notifyOn(
+    chatDeviceLinked,
+    async ({ db, event }) => {
+      const device = await db
+        .selectFrom("app.chat_devices")
+        .select("user_id")
+        .where("id", "=", event.resourceId)
+        .executeTakeFirst();
+
+      return device
+        ? tell([device.user_id], "chat.device_linked", {
+            type: "chat_device",
+            id: event.resourceId,
+          })
+        : [];
+    },
+    { tellsActor: true },
+  ),
   notifyOn(
     chatAccountKeyReset,
     async ({ db, event }) => {
