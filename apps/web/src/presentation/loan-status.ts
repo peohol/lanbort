@@ -698,9 +698,28 @@ export function loanSteps(loan: Loan): {
     path: `${api}/return`,
     body: { agreementVersion, outcome },
   }));
-  const undo = actions.undoReturn
-    ? [{ label: "Angre", path: `${api}/return/undo`, body: {} }]
-    : [];
+  const { pending } = loan.return;
+  // While the lender's receipt waits, they may also end the loan at once
+  // instead of waiting out the undo time (PS-LOAN-016, KF7).
+  const undo =
+    actions.undoReturn && pending
+      ? [
+          { label: "Angre", path: `${api}/return/undo`, body: {} },
+          ...(pending.outcome === "received"
+            ? [
+                {
+                  label: "Avslutt lånet nå",
+                  path: `${api}/return`,
+                  body: {
+                    agreementVersion,
+                    outcome: pending.outcome,
+                    immediately: true,
+                  },
+                },
+              ]
+            : []),
+        ]
+      : [];
   const control = actions.confirmControl
     ? [
         {

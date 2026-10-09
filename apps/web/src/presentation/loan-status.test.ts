@@ -413,6 +413,32 @@ describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
     ]);
   });
 
+  it("lets the lender end the loan at once while the receipt waits", () => {
+    const waiting = (outcome: "returned" | "received") =>
+      loanSteps(
+        loan({
+          status: "awaiting_return",
+          role: outcome === "received" ? "lender" : "borrower",
+          return: {
+            borrower: null,
+            lender: null,
+            pending: { outcome, effectiveAt: at },
+          },
+          actions: { ...noActions, undoReturn: true },
+        }),
+      ).primary;
+
+    expect(waiting("received")).toEqual([
+      { label: "Angre", path: `/api/loans/${id}/return/undo`, body: {} },
+      {
+        label: "Avslutt lånet nå",
+        path: `/api/loans/${id}/return`,
+        body: { agreementVersion: 2, outcome: "received", immediately: true },
+      },
+    ]);
+    expect(waiting("returned").map(({ label }) => label)).toEqual(["Angre"]);
+  });
+
   it("answers the open proposal and transfer by their own ids", () => {
     const transferId = "00000000-0000-4000-8000-000000000002";
     const steps = loanSteps(

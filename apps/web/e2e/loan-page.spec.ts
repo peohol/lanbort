@@ -259,3 +259,46 @@ test("a borrower changes, cancels and reviews a loan on its page (WP-87)", async
 
   expect(problems).toEqual([]);
 });
+
+test("the lender ends the loan at once instead of waiting out the undo time (PS-LOAN-016)", async ({
+  page,
+  playwright,
+  baseURL,
+}) => {
+  const problems = collectBrowserProblems(page);
+  const anna = page.request;
+  await registerThroughApi(anna, undefined, "Anna Berg");
+  const annaId = await accountId(anna);
+  const bo = await playwright.request.newContext({
+    baseURL: baseURL!,
+    extraHTTPHeaders: { origin: baseURL! },
+  });
+  await registerThroughApi(bo, undefined, "Bo Dahl");
+  await postCommand(anna, "/api/social/friend-requests", {
+    userId: await accountId(bo),
+  });
+  await postCommand(bo, "/api/social/friend-requests/accept", {
+    userId: annaId,
+  });
+  const loanId = await agreeLoan(anna, bo, "Stige");
+  await postCommand(anna, `/api/loans/${loanId}/handover`, {
+    agreementVersion: 1,
+    outcome: "handed_over",
+  });
+  await postCommand(bo, `/api/loans/${loanId}/return`, {
+    agreementVersion: 1,
+    outcome: "returned",
+    immediately: true,
+  });
+
+  await page.goto(`/lan/${loanId}`);
+  const status = page.getByRole("region", { name: "Status" });
+  await status
+    .getByRole("button", { name: "Jeg har fått tilbake Stige" })
+    .click();
+  await expect(status).toContainText("Du kan angre til");
+  await status.getByRole("button", { name: "Avslutt lånet nå" }).click();
+  await expect(status).toContainText("Lånet er avsluttet");
+  await expect(status.getByRole("button", { name: "Angre" })).toHaveCount(0);
+  expect(problems).toEqual([]);
+});
