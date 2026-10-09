@@ -7,9 +7,7 @@ import { ActionButton } from "@/components/action-button";
 import { ConfirmAction } from "@/components/confirm-action";
 import { MoreActions } from "@/components/more-actions";
 import { PageHeader } from "@/components/page-header";
-import { PersonName } from "@/components/person-name";
 import { StatusCard } from "@/components/status-card";
-import { ContextTag, Tag } from "@/components/tag";
 import { loansHref } from "@/navigation/areas";
 import { loanHref, objectHref } from "@/navigation/routes";
 import {
@@ -19,12 +17,17 @@ import {
 } from "@/presentation/dates";
 import {
   describeLoanRequest,
-  requestOriginLabel,
+  requestProgress,
   responsibilityDeclaration,
 } from "@/presentation/loan-requests";
 import { personName } from "@/presentation/loan-status";
-import { formatDesiredPeriod, loanRoleLabels } from "@/presentation/loans";
+import { formatDesiredPeriod } from "@/presentation/loans";
 import { pageQueryOrNotFound, requirePageAccount } from "@/server/session";
+import styles from "../../_parts/loan.module.css";
+import { OriginTag } from "../../_parts/origin-tag";
+import { Party } from "../../_parts/party";
+import { Progress } from "../../_parts/progress";
+import { writeHref } from "../../_parts/write-href";
 
 export const metadata: Metadata = { title: "Forespørsel – Lånbort" };
 
@@ -168,11 +171,12 @@ function approvalNote(request: LoanRequestDetail): ReactNode {
 }
 
 /**
- * One loan request for one of its parties (WP-83, UX-JRN-004–006): what it
- * waits for and from whom, and the next step first. The borrower can
- * withdraw it and confirm new terms; a lender sees the period, the terms
- * and what it collides with, and approves with a button that names the
- * agreement. Approving leads to the loan's own page.
+ * One loan request for one of its parties (WP-83, UX-JRN-004–006, KF1 v2):
+ * where it is on the loan's way, what it waits for and from whom, and the
+ * next step first. The borrower can withdraw it and confirm new terms; a
+ * lender sees the period, the terms and what it collides with, and
+ * approves with a button that names the agreement. Approving leads to the
+ * loan's own page.
  */
 export default async function LoanRequestPage({
   params,
@@ -192,62 +196,89 @@ export default async function LoanRequestPage({
         }
       : { kind: "direct" as const };
   const declaration = request.responsibility;
+  const title = request.object?.title ?? "Tingen finnes ikke lenger";
 
   return (
     <main>
       <PageHeader
-        title={request.object?.title ?? "Tingen finnes ikke lenger"}
-        back={{ href: loansHref, label: "Lån" }}
-        context={
-          <>
-            <ContextTag label="Gjennom">
-              {requestOriginLabel(request)}
-            </ContextTag>
-            <Tag>{loanRoleLabels[request.role]}</Tag>
-          </>
+        kind="Forespørsel"
+        title={
+          lender && request.object
+            ? `${title} til ${personName(request.borrower)}`
+            : title
         }
+        back={{ href: loansHref, label: "Lån" }}
+        context={<OriginTag origin={request.origin} />}
       />
-      <StatusCard
-        status={status.text}
-        tone={status.tone}
-        actions={<Steps request={request} />}
-      >
-        {approvalNote(request)}
-      </StatusCard>
-      {request.pendingTerms && (
-        <section aria-labelledby="nye-vilkar">
-          <h2 id="nye-vilkar">Nye vilkår</h2>
-          <p className="message-text">
-            {terms(request.pendingTerms.loanTerms)}
+      <Progress progress={requestProgress(request)} />
+      <div className={styles.column}>
+        <StatusCard
+          label={status.label}
+          status={status.text}
+          tone={status.tone}
+          actions={<Steps request={request} />}
+        >
+          {status.body && <p>{status.body}</p>}
+          {approvalNote(request)}
+        </StatusCard>
+        {request.pendingTerms && (
+          <section className={styles.flat} aria-labelledby="nye-vilkar">
+            <h2 id="nye-vilkar">Nye vilkår</h2>
+            <p className="message-text">
+              {terms(request.pendingTerms.loanTerms)}
+            </p>
+          </section>
+        )}
+        <section className={styles.flat} aria-label="Forespørselen">
+          <dl className="facts">
+            <dt>Ønsket periode</dt>
+            <dd>{formatDesiredPeriod(request.start, request.end)}</dd>
+            <dt>{lender ? "Melding" : "Din melding"}</dt>
+            <dd className="message-text">
+              {request.message ? `«${request.message}»` : "Ingen melding"}
+            </dd>
+            <dt>Vilkår</dt>
+            <dd className="message-text">
+              {terms(request.confirmedTerms?.loanTerms)}
+            </dd>
+            <dt>Sendt</dt>
+            <dd>{formatTime(request.createdAt)}</dd>
+          </dl>
+          <p className="help">
+            Bare dere som er parter i lånet ser meldingen. Den er ikke
+            ende-til-ende-kryptert; videre samtale skjer i privat chat.
           </p>
         </section>
-      )}
-      <section aria-labelledby="foresporselen">
-        <h2 id="foresporselen">Forespørselen</h2>
-        <dl className="facts">
-          {lender && (
-            <>
-              <dt>Fra</dt>
-              <dd>
-                <PersonName person={request.borrower} role="borrower" />
-              </dd>
-            </>
-          )}
-          <dt>Ønsket tid</dt>
-          <dd>{formatDesiredPeriod(request.start, request.end)}</dd>
-          <dt>Melding</dt>
-          <dd className="message-text">{request.message ?? "Ingen melding"}</dd>
-          <dt>Vilkår</dt>
-          <dd className="message-text">
-            {terms(request.confirmedTerms?.loanTerms)}
-          </dd>
-          <dt>Sendt</dt>
-          <dd>{formatTime(request.createdAt)}</dd>
-        </dl>
-        <p className="help">
-          Bare dere som er parter i lånet ser meldingen. Den er ikke
-          ende-til-ende-kryptert; videre samtale skjer i privat chat.
-        </p>
+        {lender && (
+          <Party
+            person={request.borrower}
+            role="borrower"
+            writeHref={writeHref(
+              request.role,
+              request.borrowerUserId,
+              request.id,
+            )}
+          />
+        )}
+        {declaration && open(request) && (
+          <section className={styles.flat} aria-labelledby="ansvar">
+            <h2 id="ansvar">Ansvarserklæring</h2>
+            <p>Lånet er direkte mellom venner. Begge må godta dette:</p>
+            <ul>
+              {responsibilityDeclaration.map((point) => (
+                <li key={point}>{point}</li>
+              ))}
+            </ul>
+            <p>
+              {declaration.acceptedByBorrower
+                ? "Låntakeren har godtatt."
+                : "Låntakeren har ikke godtatt ennå."}{" "}
+              {declaration.acceptedByLender
+                ? "Eieren har godtatt."
+                : "Eieren har ikke godtatt ennå."}
+            </p>
+          </section>
+        )}
         {request.objectId && request.object && (
           <p className="link-row">
             <Link
@@ -257,26 +288,7 @@ export default async function LoanRequestPage({
             </Link>
           </p>
         )}
-      </section>
-      {declaration && open(request) && (
-        <section aria-labelledby="ansvar">
-          <h2 id="ansvar">Ansvarserklæring</h2>
-          <p>Lånet er direkte mellom venner. Begge må godta dette:</p>
-          <ul>
-            {responsibilityDeclaration.map((point) => (
-              <li key={point}>{point}</li>
-            ))}
-          </ul>
-          <p>
-            {declaration.acceptedByBorrower
-              ? "Låntakeren har godtatt."
-              : "Låntakeren har ikke godtatt ennå."}{" "}
-            {declaration.acceptedByLender
-              ? "Eieren har godtatt."
-              : "Eieren har ikke godtatt ennå."}
-          </p>
-        </section>
-      )}
+      </div>
     </main>
   );
 }
