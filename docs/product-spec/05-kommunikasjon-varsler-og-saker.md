@@ -79,6 +79,11 @@ Faktiske korrigeringer og endret vurdering registreres som nye saks-/revisjonshe
 
 Meldingen skal ikke automatisk endre konto, lån eller tilgang. Bare autoriserte plattformforvaltere skal behandle verifikasjonen.
 
+### PS-COM-016 — Nye godkjente chat-enheter utløser sikkerhetsvarsel
+**Forankring:** UX-P08; PS-COM-003, PS-COM-005; ADR-0010 §5
+
+Når en eksisterende, godkjent enhet godkjenner kobling av en ny chat-enhet til kontoen, skal kontoeieren få ett påkrevd varsel i appen og en sikkerhetsmelding til sin verifiserte e-postadresse. Hendelsen varsles også når kontoeieren selv utførte godkjenningen: en uventet ny enhet kan bety at kontoen er kompromittert. Varselet viser bare at en enhet er koblet til, forklarer at den kan motta nye meldinger, men ikke automatisk tidligere historikk, og leder til «Samtaler › Mine enheter», slik at en ukjent enhet kan tilbakekalles. Det skal ikke inneholde private nøkler, chatinnhold eller annen sensitiv samtaleinformasjon. Varsling opprettes fra den allerede registrerte `chat.device_linked`-hendelsen gjennom den idempotente varslingsmotoren, slik at samme kobling ikke gir duplikater. Et mislykket varsel må ikke rulle tilbake en gyldig enhetskobling.
+
 ## Kanalstandard for pilot
 
 Alle relevante hendelser representeres i appens varslingssenter. Verifisert e-post brukes som reservekanal for sikkerhets-/kontohendelser og tidskritiske hendelser i allerede godkjente lån. Vanlige handlings- og informasjonsvarsler skal kunne konfigureres uten at dette endrer systemtilstand. Web push kan legges til når teknisk støtte og samtykke er på plass.
