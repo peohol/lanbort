@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { areaAt, areaOf, areas } from "@/navigation/areas";
-import { isStackOf } from "@/navigation/stack";
+import { accountHref, areaAt, areaOf, areas } from "@/navigation/areas";
+import { isStackOf, samePlace } from "@/navigation/stack";
 import { Icon } from "./icon";
 import { enterArea, useStack } from "./navigation-stack";
 
@@ -20,9 +20,12 @@ export function MainNavigation() {
   const pathname = usePathname();
   const stack = useStack();
   const root = areaAt(pathname);
-  const current = isStackOf(stack, pathname)
-    ? stack!.area
-    : (root ?? areaOf(pathname));
+  // The account is no area (UX-IA-003), whatever stack it lies in.
+  const current = samePlace(pathname, accountHref)
+    ? null
+    : isStackOf(stack, pathname)
+      ? stack!.area
+      : (root ?? areaOf(pathname));
 
   useEffect(() => {
     if (root) enterArea(root);

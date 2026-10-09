@@ -139,6 +139,40 @@ test("Home asks for what waits, and leads to where it is answered", async ({
   expect(problems).toEqual([]);
 });
 
+test("the way back follows the path taken, also through the browser's back and forward", async ({
+  page,
+  playwright,
+  baseURL,
+}) => {
+  const problems = collectBrowserProblems(page);
+  await befriended(page, await otherUser(playwright, baseURL!));
+  const title = page.getByRole("heading", { level: 1 });
+  const steps = page
+    .getByRole("navigation", { name: "Du er her" })
+    .getByRole("listitem");
+
+  await page.goto("/");
+  await page.getByRole("link", { name: /^Konto og innstillinger/ }).click();
+  await expect(title).toHaveText("Konto");
+  await page.getByRole("link", { name: "Bo Dahl" }).click();
+  await expect(title).toHaveText("Bo Dahl");
+  await expect(steps).toHaveText(["Hjem", "Konto", "Bo Dahl"]);
+
+  await page.goBack();
+  await expect(steps).toHaveText(["Hjem", "Konto"]);
+  await page.goForward();
+  await expect(title).toHaveText("Bo Dahl");
+  await expect(steps).toHaveText(["Hjem", "Konto", "Bo Dahl"]);
+
+  // A form is a bounded task: only «Avbryt» leads out of it (UX-IA-013).
+  await page.goto("/ting/ny");
+  await expect(page.getByRole("link", { name: "Avbryt" })).toBeVisible();
+  for (const name of ["Lånbort", "Hjem"]) {
+    await expect(page.getByRole("link", { name, exact: true })).toBeHidden();
+  }
+  expect(problems).toEqual([]);
+});
+
 test("a notification's e-mail link leads to its context and marks it read", async ({
   browser,
   page,

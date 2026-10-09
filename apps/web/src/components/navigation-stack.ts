@@ -8,6 +8,7 @@ import {
   arrive,
   type DirectEntry,
   type Place,
+  returnToArea,
   ruleStack,
   type Stack,
 } from "@/navigation/stack";
@@ -37,7 +38,9 @@ const listeners = new Set<() => void>();
 if (typeof window !== "undefined") {
   try {
     const stored = sessionStorage.getItem(storageKey);
-    stack = stored ? (JSON.parse(stored) as Stack) : null;
+    const value = stored ? (JSON.parse(stored) as Stack) : null;
+    // A stack kept from before forward was remembered has none.
+    stack = value && { ...value, forward: value.forward ?? [] };
   } catch {
     stack = null;
   }
@@ -97,8 +100,9 @@ export function enterTask(from: Place) {
 
 /** The user has arrived at an area's own page. */
 export function enterArea(area: AreaId) {
+  const { how } = next;
   next = { how: "push", via: null };
-  set(areaStack(area));
+  set(returnToArea(stack, area, how));
 }
 
 function subscribe(listener: () => void) {

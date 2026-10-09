@@ -5,6 +5,7 @@ import {
   backOf,
   isStackOf,
   type Place,
+  returnToArea,
   ruleStack,
   trail,
 } from "./stack";
@@ -51,6 +52,7 @@ describe("the navigation stack (UX-IA-009–011)", () => {
       area: "loans",
       entries: [{ href: "/lan/1", label: "Stige" }],
       via: "varsel",
+      forward: [],
     });
     // «‹ Lån» always means the overview of Lån.
     expect(backOf(stack)).toEqual({ href: "/lan", label: "Lån" });
@@ -90,6 +92,30 @@ describe("the navigation stack (UX-IA-009–011)", () => {
     );
 
     expect(stack).toEqual(ruleStack(thing, null));
+  });
+
+  it("moves back and forward in the stack with the browser", () => {
+    const deep = arrive(
+      arrive(arrive(areaStack("find"), thing, "push"), person, "push"),
+      loan,
+      "push",
+    );
+    const labels = (stack: ReturnType<typeof arrive>) =>
+      trail(stack).map(({ label }) => label);
+
+    const back = arrive(deep, person, "history");
+    expect(labels(back)).toEqual(["Finn", "Stige", "Kari"]);
+    expect(arrive(back, loan, "history")).toEqual(deep);
+
+    // Back to the area's own page, then forward two steps at once.
+    const area = returnToArea(back, "find", "history");
+    expect(area.entries).toEqual([]);
+    expect(labels(arrive(area, person, "history"))).toEqual(labels(back));
+
+    // Following a link ends the way forward.
+    const elsewhere = arrive(back, { ...loan, href: "/lan/9" }, "push");
+    expect(arrive(elsewhere, loan, "history")).toEqual(ruleStack(loan, null));
+    expect(returnToArea(back, "find", "push")).toEqual(areaStack("find"));
   });
 
   it("knows whether a stack belongs to the page", () => {

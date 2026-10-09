@@ -1003,9 +1003,10 @@ button:disabled,
   pointer-events: auto;
 }
 
-/* A form is a bounded task (UX-IA-013): no areas and no bell, only the way
-   out. */
-.app-shell:has(.page-header[data-task]) :is(.main-navigation, .header-actions) {
+/* A form is a bounded task (UX-IA-013): no areas, no bell and no way home
+   by the name, only the way out. */
+.app-shell:has(.page-header[data-task])
+  :is(.brand, .main-navigation, .header-actions) {
   display: none;
 }
 

@@ -21,6 +21,8 @@ export interface Stack {
   readonly entries: readonly StackEntry[];
   /** Set while the user is still where a direct entry led (UX-IA-011). */
   readonly via: DirectEntry | null;
+  /** What the browser's forward leads back into, nearest first. */
+  readonly forward: readonly StackEntry[];
 }
 
 /** What a page says about its place: the facts the rule builds from. */
@@ -50,6 +52,7 @@ export const ruleStack = (place: Place, via: DirectEntry | null): Stack => ({
     { href: place.href, label: place.label },
   ],
   via,
+  forward: [],
 });
 
 /** An area's own page starts its stack over (UX-IA-009). */
@@ -57,13 +60,31 @@ export const areaStack = (area: AreaId): Stack => ({
   area,
   entries: [],
   via: null,
+  forward: [],
 });
 
 /**
+ * The stack once the user is on an area's own page. Back to it keeps what
+ * the browser's forward leads into again; anything else starts over.
+ */
+export const returnToArea = (
+  previous: Stack | null,
+  area: AreaId,
+  how: Arrival,
+): Stack =>
+  how === "history" && previous?.area === area
+    ? {
+        ...areaStack(area),
+        forward: [...previous.entries, ...previous.forward],
+      }
+    : areaStack(area);
+
+/**
  * The stack once the user has arrived at `place`. Something already in the
- * stack is gone back to rather than opened again (UX-IA-009); following a
- * link adds to the stack the user is in; anything else builds the stack
- * from the rule, never from history (UX-IA-011).
+ * stack is gone back to rather than opened again (UX-IA-009), and the
+ * browser's back and forward move within it; following a link adds to the
+ * stack the user is in; anything else builds the stack from the rule,
+ * never from history (UX-IA-011).
  */
 export function arrive(
   previous: Stack | null,
@@ -75,9 +96,9 @@ export function arrive(
 
   if (how === "direct" || previous === null) return ruleStack(place, via);
 
-  const index = previous.entries.findIndex(({ href }) =>
-    samePlace(href, place.href),
-  );
+  const at = (entries: readonly StackEntry[]) =>
+    entries.findIndex(({ href }) => samePlace(href, place.href));
+  const index = at(previous.entries);
 
   if (index >= 0) {
     const current = index === previous.entries.length - 1;
@@ -86,11 +107,35 @@ export function arrive(
       entries: [...previous.entries.slice(0, index), entry],
       // Still on the page the entry led to, as after a reload.
       via: current ? previous.via : null,
+      // Following a link ends what the browser's forward would lead to.
+      forward:
+        how === "history"
+          ? [...previous.entries.slice(index + 1), ...previous.forward]
+          : [],
     };
   }
 
-  return how === "push"
-    ? { area: previous.area, entries: [...previous.entries, entry], via: null }
+  if (how === "push") {
+    return {
+      area: previous.area,
+      entries: [...previous.entries, entry],
+      via: null,
+      forward: [],
+    };
+  }
+
+  const ahead = at(previous.forward);
+  return ahead >= 0
+    ? {
+        area: previous.area,
+        entries: [
+          ...previous.entries,
+          ...previous.forward.slice(0, ahead),
+          entry,
+        ],
+        via: null,
+        forward: previous.forward.slice(ahead + 1),
+      }
     : ruleStack(place, null);
 }
 
