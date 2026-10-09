@@ -1050,6 +1050,50 @@ export const coOwnerLoanListSchema = z.strictObject({
   items: z.array(coOwnerLoanSchema),
 });
 
+/**
+ * UX-PRIV-013: a loan as a co-owner who is not its party sees it: one who
+ * owned the object when the loan was approved and still owns it, or one
+ * who has been asked to become its responsible lender. Only its status,
+ * period, object, agreed terms and parties, and what the caller may do
+ * themselves. Never the request's message, the private chat, the parties'
+ * statements and explanations, the timeline or the reviews.
+ */
+export const coOwnerLoanViewSchema = z.strictObject({
+  id: loanIdSchema,
+  objectId: objectIdSchema,
+  status: loanStatusSchema,
+  /** How and when it ended; null while it lasts. */
+  ending: z
+    .strictObject({
+      reason: loanEndReasonSchema,
+      endedAt: z.iso.datetime(),
+    })
+    .nullable(),
+  /** The period of the current agreement. */
+  period: loanPeriodSchema,
+  /** The object as agreed, and the agreed terms. */
+  title: z.string(),
+  categoryId: objectCategoryIdSchema,
+  loanTerms: z.string().nullable(),
+  /** The borrower and the responsible lender, by name (UX-INT-004). */
+  parties: z.strictObject({
+    borrower: loanPersonSchema,
+    lender: loanPersonSchema,
+  }),
+  /** The open offer of the responsible lender's role to the caller, if any. */
+  responsibilityTransfer: responsibilityTransferSchema.nullable(),
+  /** What the caller may do themselves; the commands decide again. */
+  actions: z.strictObject({
+    /**
+     * The caller's answers to the offer (PS-LOAN-009): an account that is
+     * not active may only decline (PS-ADM-002).
+     */
+    responsibility: z.array(answerSchema),
+    /** The caller may confirm having the object back (PS-LOAN-019). */
+    confirmControl: z.boolean(),
+  }),
+});
+
 export type LoanRequestOrigin = z.infer<typeof loanRequestOriginSchema>;
 export type DesiredStart = z.infer<typeof desiredStartSchema>;
 export type DesiredEnd = z.infer<typeof desiredEndSchema>;
@@ -1107,3 +1151,4 @@ export type ResponsibilityTransferResult = z.infer<
 >;
 export type CoOwnerLoan = z.infer<typeof coOwnerLoanSchema>;
 export type CoOwnerLoanList = z.infer<typeof coOwnerLoanListSchema>;
+export type CoOwnerLoanView = z.infer<typeof coOwnerLoanViewSchema>;

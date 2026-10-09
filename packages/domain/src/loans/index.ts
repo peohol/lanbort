@@ -15,4 +15,5 @@ export * from "./responsibility";
 export { loanHomeItem, loanRequestHomeItem } from "./home";
 export * from "./unresolved";
 export * from "./logistics";
+export * from "./co-owner-view";
 export * from "./condition";
