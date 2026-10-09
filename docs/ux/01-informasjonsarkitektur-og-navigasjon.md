@@ -107,7 +107,7 @@ Flater som ikke står i tabellen, får hjemområde når de designes.
 **Forankring:** UX-P02, UX-P08, UX-P11; PS-NFR-002
 
 - Varsel, e-postlenke, delt lenke og push (når det finnes, OD-0004) er direkte innganger. De bygger stabelen fra regelen, aldri fra historikk: hjemområdet, eventuelt en fast beholder, og målet. Fast beholder brukes bare når målet ligger i en kø, for eksempel en innmelding i Innmeldinger.
-- Tilbake og brødsmuler følger den bygde stabelen. «‹ Lån» betyr alltid Lån-oversikten, uansett hvor brukeren var før.
+- Tilbake og brødsmuler følger den bygde stabelen, ett ledd om gangen. Fra Hjem › Innmeldinger › innmeldingen går tilbake til Innmeldinger. «‹ Lån» betyr alltid Lån-oversikten, uansett hvor brukeren var før.
 - Målet merkes «Åpnet fra varsel» eller «Åpnet fra e-post» til brukeren navigerer videre.
 - Varslingssenteret er et lag, ikke et steg i stabelen (UX-IA-002). Å velge et varsel er en direkte inngang, og varslene åpnes igjen fra indikatoren.
 - Varslingssenteret kan åpnes fra varselindikatoren, som har samme plassering i alle fem hovedområder og i detaljer i stabelen; indikatoren skjules bare i avgrensede oppgaver (UX-IA-013).
@@ -155,6 +155,7 @@ Hver detalj har en typeetikett (Ting, Forespørsel, Lån, Person, Miljø, Samtal
 
 - Rekkefølgen er «Venter på deg» → «Kommer» → «Uavklart» → «Som administrator» → «Dine miljøer».
 - En seksjon uten innhold vises ikke, heller ikke som overskrift.
+- På større skjermer kan seksjonene fordeles over flere kolonner, men lese- og tastaturrekkefølgen følger den faste seksjonsrekkefølgen.
 - «Venter på deg» viser det brukeren selv skal gjøre, med antall.
 - «Kommer» viser avtalte overleveringer og returer der ingen handling er påkrevd ennå.
 - «Uavklart» viser viktige forhold der brukeren foreløpig venter på andre: avvik, forsinkelse, mekling og saker som står på vent.
@@ -172,7 +173,7 @@ Hver detalj har en typeetikett (Ting, Forespørsel, Lån, Person, Miljø, Samtal
 **Forankring:** UX-P08, UX-P16
 
 - Mange oppgaver av samme type kan samles i én rad med antall og inngang til hver enkelt oppgave.
-- Oppgaver med frist eller avtale i dag står alltid alene og samles aldri.
+- Oppgaver med frist eller avtale i dag vises alltid som egne, fullverdige kort og samles aldri.
 - I varslingssenteret kan eldre, leste varsler fra samme låneforløp samles til én rad med siste hendelse. Nye og påkrevde varsler om forløpet står alltid for seg.
 
 ### UX-IA-019 — Lest er ikke det samme som håndtert
