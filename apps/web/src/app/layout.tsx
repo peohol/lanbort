@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { preload } from "react-dom";
 import { countUnreadNotifications } from "@lanbort/domain";
 import { Announcer } from "@/components/announcer";
 import { AppShell } from "@/components/app-shell";
@@ -13,9 +14,19 @@ export const metadata: Metadata = {
   description: "Lån ting av mennesker du stoler på.",
 };
 
+/** The text and heading fonts' common subset, fetched with the page. */
+const fonts = [
+  "/fonts/atkinson-hyperlegible-next-latin.woff2",
+  "/fonts/quicksand-latin.woff2",
+];
+
 export default async function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
+  for (const font of fonts) {
+    preload(font, { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
+  }
+
   const account = await getPageAccount();
   // An account that is not active keeps the frame: it still has loans,
   // cases and notifications to see to (PS-ADM-002).

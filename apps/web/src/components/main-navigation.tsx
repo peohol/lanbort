@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { areaOf, areas } from "@/navigation/areas";
-import { AreaIcon } from "./area-icon";
+import { Icon } from "./icon";
 
 /**
  * UX-IA-001: the five areas. One list for every screen size: at the bottom
@@ -23,7 +23,7 @@ export function MainNavigation() {
               href={area.href}
               aria-current={area.id === current ? "page" : undefined}
             >
-              <AreaIcon area={area.id} />
+              <Icon name={area.id} />
               <span>{area.label}</span>
             </Link>
           </li>

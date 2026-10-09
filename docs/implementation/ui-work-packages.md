@@ -37,6 +37,16 @@ Etter WP-80 kan WP-81–WP-88 og serverdelen av WP-27 gå samtidig; WP-89 kommer
 
 Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å registrere en ting, publisere den i et miljø, bli funnet, få en forespørsel og gjennomføre lånet.
 
+## Tomat i appen — felles designgrunnlag
+
+Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) er lagt inn i appens felles grunnlag. Sporene som tar over sider til Tomat, bruker dette og lager ikke egne varianter. Mangler en byggestein, legges den til her først.
+
+- **Stil og tokens:** `apps/web/src/app/globals.css`. Farger (`--color-*`, lys og mørk modus med AA-kontrast), avstander (`--space-*`), radier (`--radius-*`), tekststørrelser (`--text-*`) og skriftene Atkinson Hyperlegible Next og Quicksand (selvhostet i `public/fonts/`). Kort er `.card`, rader er `.entries`/`.entry`, filtre er `.filters`.
+- **Knapper:** vanlig knapp er nøytral; `.button-primary` er neste steg (UX-INT-001), `.button-secondary` er et mildere steg ved siden av, `.button-danger` er destruktiv i omriss og fylles bare i bekreftelsen (`ConfirmAction`), og `.button-quiet` er en stille lenke som «Flere valg».
+- **Ikoner:** `Icon` (`components/icon.tsx`) med ikonene fra prototypene. Ikoner står alltid ved tekst.
+- **Status og kontekst:** `Tag` med tonene `attention` («Venter på deg»), `waiting` (venter på andre), `positive`, `warning`, `danger` og `neutral`; tonen gir farge og ikon, ordene bærer meningen. `ContextTag` med ikon for kontekst («Via Borettslaget Lia»).
+- **Sider:** `PageHeader` (tilbake, typeetikett med `kind`, tittel, kontekst), `StatusCard` («Nå»-kortet), `EmptyState`, `MoreActions`, `ConfirmAction` (ark fra bunnen på mobil), `Field`, `CommandForm`, `PersonName`.
+
 ## WP-80 — Felles UI-grunnlag
 
 **Leverer:**
