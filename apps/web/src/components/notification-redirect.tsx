@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { postJson } from "./api-client";
 import { announceDataChanged } from "./data-changed";
+import { expectDirectEntry } from "./navigation-stack";
 
 /**
  * Where a notification's e-mail leads (UX-INT-010): the notification is
@@ -27,7 +28,11 @@ export function NotificationRedirect({
       notificationIds: [notificationId],
     })
       .then(announceDataChanged)
-      .finally(() => router.replace(href));
+      .finally(() => {
+        // A direct entry, marked as opened from an e-mail (UX-IA-011).
+        expectDirectEntry("epost");
+        router.replace(href);
+      });
   }, [notificationId, href, router]);
 
   return (

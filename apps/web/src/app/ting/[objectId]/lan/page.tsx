@@ -55,6 +55,8 @@ export default async function RequestPage({
       <PageHeader
         title={`Be om å låne ${object.title}`}
         back={{ href: back, label: object.title }}
+        home="find"
+        task
         context={<ContextTag label="Gjennom">{originLabel}</ContextTag>}
       >
         {object.availableForNewLoans

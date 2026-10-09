@@ -31,7 +31,7 @@ export default async function NewObjectPage({
   if (!takesNewActivity(account.status)) {
     return (
       <main>
-        <PageHeader title="Registrer en ting" back={back} />
+        <PageHeader title="Registrer en ting" back={back} task />
         <EmptyState action={<Link href={thingsHref}>Til Mine ting</Link>}>
           Du kan ikke registrere nye ting mens kontoen din ikke er aktiv.
         </EmptyState>
@@ -48,7 +48,7 @@ export default async function NewObjectPage({
 
   return (
     <main>
-      <PageHeader title="Registrer en ting" back={back}>
+      <PageHeader title="Registrer en ting" back={back} task>
         Tingen blir din, og du velger selv hvor den vises.
       </PageHeader>
       <ObjectForm

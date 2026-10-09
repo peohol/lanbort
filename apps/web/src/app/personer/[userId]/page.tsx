@@ -22,7 +22,7 @@ import {
   pageQueryOrNotFound,
   requirePageAccount,
 } from "@/server/session";
-import { friendsHref, RelationActions } from "./relation-actions";
+import { RelationActions } from "./relation-actions";
 import { reviewsKey, TrustProfile } from "./trust-profile";
 
 export const metadata: Metadata = { title: "Person – Lånbort" };
@@ -90,7 +90,7 @@ export default async function PersonPage({
             />
           )
         }
-        back={{ href: friendsHref, label: "Venner" }}
+        home="home"
         context={relation.tag && <Tag tone={relation.tone}>{relation.tag}</Tag>}
       />
       <StatusCard

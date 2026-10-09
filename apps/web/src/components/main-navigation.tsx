@@ -2,17 +2,31 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { areaOf, areas } from "@/navigation/areas";
+import { useEffect } from "react";
+import { areaAt, areaOf, areas } from "@/navigation/areas";
+import { isStackOf } from "@/navigation/stack";
 import { Icon } from "./icon";
+import { enterArea, useStack } from "./navigation-stack";
 
 /**
  * UX-IA-001: the five areas. One list for every screen size: at the bottom
  * on a narrow screen, at the side on a wide one (globals.css), with the
- * same labels and order (UX-A11Y-001). The current area is marked for
- * assistive technology too, not only by its look.
+ * same labels and order (UX-A11Y-001). The marked area is the one the user
+ * started in, which a detail's stack carries (UX-IA-009): a person opened
+ * from a thing in Finn lies in Finn. It is marked for assistive technology
+ * too, not only by its look. An area's own page starts its stack over.
  */
 export function MainNavigation() {
-  const current = areaOf(usePathname());
+  const pathname = usePathname();
+  const stack = useStack();
+  const root = areaAt(pathname);
+  const current = isStackOf(stack, pathname)
+    ? stack!.area
+    : (root ?? areaOf(pathname));
+
+  useEffect(() => {
+    if (root) enterArea(root);
+  }, [root, pathname]);
 
   return (
     <nav className="main-navigation" aria-label="Hovedmeny">

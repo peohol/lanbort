@@ -38,7 +38,7 @@ export default async function EditObjectPage({
 
   return (
     <main>
-      <PageHeader title="Rediger tingen" back={back} />
+      <PageHeader title="Rediger tingen" back={back} home="things" task />
       {takesNewActivity(account.status) ? (
         <ObjectForm
           mode="edit"

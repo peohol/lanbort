@@ -1,0 +1,103 @@
+import { describe, expect, it } from "vitest";
+import {
+  arrive,
+  areaStack,
+  backOf,
+  isStackOf,
+  type Place,
+  ruleStack,
+  trail,
+} from "./stack";
+
+const loan: Place = { href: "/lan/1", label: "Stige", home: "loans" };
+const person: Place = { href: "/personer/2", label: "Kari", home: "home" };
+const thing: Place = { href: "/ting/3?miljo=4", label: "Stige", home: "find" };
+const queue = { href: "/miljoer/4/administrer", label: "Innmeldinger" };
+
+describe("the navigation stack (UX-IA-009–011)", () => {
+  it("adds what the user opens to the stack they are in", () => {
+    const stack = arrive(
+      arrive(areaStack("find"), thing, "push"),
+      person,
+      "push",
+    );
+
+    // A person opened from a thing in Finn lies in Finn.
+    expect(stack.area).toBe("find");
+    expect(trail(stack).map(({ label }) => label)).toEqual([
+      "Finn",
+      "Stige",
+      "Kari",
+    ]);
+    expect(backOf(stack)).toEqual({ href: thing.href, label: "Stige" });
+  });
+
+  it("goes back to what is already in the stack instead of a loop", () => {
+    const deep = arrive(
+      arrive(arrive(areaStack("find"), thing, "push"), person, "push"),
+      loan,
+      "push",
+    );
+    const again = arrive(deep, { ...thing, href: "/ting/3" }, "push");
+
+    expect(again.entries.map(({ label }) => label)).toEqual(["Stige"]);
+  });
+
+  it("builds a direct entry from the rule, never from history", () => {
+    const before = arrive(areaStack("find"), thing, "push");
+    const stack = arrive(before, loan, "direct", "varsel");
+
+    expect(stack).toEqual({
+      area: "loans",
+      entries: [{ href: "/lan/1", label: "Stige" }],
+      via: "varsel",
+    });
+    // «‹ Lån» always means the overview of Lån.
+    expect(backOf(stack)).toEqual({ href: "/lan", label: "Lån" });
+  });
+
+  it("puts a queue's fixed container between the area and the target", () => {
+    const stack = ruleStack(
+      {
+        href: "/miljoer/4/innmelding/5",
+        label: "Ola",
+        home: "home",
+        container: queue,
+      },
+      "epost",
+    );
+
+    expect(trail(stack).map(({ label }) => label)).toEqual([
+      "Hjem",
+      "Innmeldinger",
+      "Ola",
+    ]);
+    expect(backOf(stack)).toEqual(queue);
+  });
+
+  it("keeps the mark of a direct entry only until the user moves on", () => {
+    const opened = arrive(null, loan, "direct", "epost");
+
+    expect(arrive(opened, loan, "history").via).toBe("epost");
+    expect(arrive(opened, person, "push").via).toBeNull();
+  });
+
+  it("builds from the rule when history leads outside the stack", () => {
+    const stack = arrive(
+      arrive(areaStack("loans"), loan, "push"),
+      thing,
+      "history",
+    );
+
+    expect(stack).toEqual(ruleStack(thing, null));
+  });
+
+  it("knows whether a stack belongs to the page", () => {
+    const stack = arrive(areaStack("loans"), loan, "push");
+
+    expect(isStackOf(stack, "/lan/1?historikk=1")).toBe(true);
+    expect(isStackOf(stack, "/lan")).toBe(false);
+    expect(isStackOf(areaStack("loans"), "/lan")).toBe(false);
+    expect(isStackOf(null, "/lan/1")).toBe(false);
+  });
+});
