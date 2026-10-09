@@ -168,6 +168,14 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 
 **Avhenger av:** WP-80.
 
+**Gjenstår etter beslutningene 9. oktober 2026** (designreferanse: [Lånets side og anmeldelser v1](../../design/L%C3%A5nbort%20-%20L%C3%A5nets%20side%20og%20anmeldelser%20v1.html)). Bygges i det vertikale sporet, ikke i designarbeidet:
+
+- **Skade, mangel og tap (PS-LOAN-023).** Ny lånehendelse med kort beskrivelse, registrert av en part ved returen eller senere, uten frist. Motpartens uenighet eller forklaring er en egen hendelse som peker på den første; ingenting overskrives. Registreringen endrer ikke lånets status, hindrer ikke avslutning og påvirker ingen tillitsskår. Tester: begge parter kan registrere og svare, andre kan ikke (negativ test), og statusen står uendret.
+- **Medeierens avgrensede innsyn (UX-PRIV-013).** I dag gir `loan.read` og `loan.read_history` bare partene tilgang, så en medeier som får varsel om ansvarsoverføring eller retur, får «finnes ikke». Det trengs en egen lesemodell for medeiere i eierkretsen ved godkjenning eller den som er spurt om ansvaret, med bare feltene regelen nevner, og ingen tilgang til tidslinje, forespørselsmelding, samtale, forklaringer eller anmeldelser. Tester: medeier ser bare den avgrensede modellen, andre medeiere og tidligere medeiere ser ingenting, og partenes fulle visning er uendret.
+- **Varsel når anmeldelser blir synlige (PS-TRUST-003).** Ny regel for informasjonsvarsel på hendelsen `loan_review.published`, ett varsel per part og publisering, bare i appen som standard. Tester: ingen varsel før publisering og ingen duplikat når begge publiseres samtidig.
+- **Tilsvar uten fritekst (PS-TRUST-005).** Appen tillater allerede dette; ingenting skal bygges.
+- **Øvrige avvik i designreferansen:** «Kanseller» erstatter «Avlys» i appens tekster; «Avslutt lånet nå» under angrefristen (domenet støtter det); ny overleveringsdag under overleveringsavklaringen (UX-INT-001, domenet avviser i dag); en ventende ansvarsoverføring vises bare til utlåneren og medeieren.
+
 ## WP-88 — Saker og arbeidskø
 
 **Leverer:** Saker i sin kontekst for partene og som arbeidskø for dem som har behandlingsansvar (UX-IA-007, PS-COM-010–015).

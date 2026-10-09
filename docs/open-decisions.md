@@ -51,7 +51,7 @@ Når spørsmålet er avgjort:
 
 ## Status før UI-arbeidet
 
-Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. Designet for lånets side og anmeldelser avdekket [OD-0033](#od-0033--hvordan-skade-mangel-eller-tap-registreres-på-et-lån)–[OD-0036](#od-0036--varsel-når-anmeldelsene-blir-synlige), som bare berører de delene av lånets side de gjelder. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
+Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. Designet for lånets side og anmeldelser avdekket [OD-0033](#od-0033--hvordan-skade-mangel-eller-tap-registreres-på-et-lån)–[OD-0036](#od-0036--varsel-når-anmeldelsene-blir-synlige), som ble avgjort samme dag. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
 
 ## Åpne
 
@@ -192,47 +192,27 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Avklares før:** plattformforvalterens flater designes og vises (etter OD-0023). Til da finnes ingen slik flate i appen.
 - **Anbefaling:** Start alle inngrep fra en sak i plattformkøen, slik at begrunnelse, habilitet og historikk følger saken (PS-TRUST-016, PS-ADM-014), og vis ingen forvalterhandlinger på ordinære person- og miljøsider.
 
-### OD-0033 — Hvordan skade, mangel eller tap registreres på et lån
+## Avklart
 
+### OD-0033 — Hvordan skade, mangel eller tap registreres på et lån
 - **Lag:** Produktspesifikasjon / UX
-- **Status:** Åpen
-- **Berører:** PS-LOAN-017, UX-EXC-010, [visjon 05](vision/05-laneforlop.md) («Skade og tap»), VP-13, [prototypen for lånets side](<../design/Lånbort - Lånets side og anmeldelser v1.html>)
-- **Spørsmål:** Visjonen sier at skade og tap registreres som hendelser eller avvik på lånet, ikke som egne statuser, men ingen regel sier hvem som kan registrere det, når, og hva det gjør med lånet. I dag kan utlåneren bare bekrefte returen og gi lav skår for tilstand. Skal begge parter kunne registrere skade, mangel eller tap ved og etter returen, skal det stoppe avslutningen av lånet, og kan den andre si seg uenig?
-- **Avhenger av:** Produktvurdering. Lånbort tar uansett ikke stilling til ansvar eller erstatning (VP-13).
-- **Avklares før:** registrering av skade og tap bygges. Til da vises ingen slik handling.
-- **Anbefaling:** Ved og etter returen kan begge si «Den er skadet eller mangler noe» med en kort beskrivelse. Det blir en hendelse som begge ser, og lånet avsluttes som vanlig. Er den andre uenig, sier den det, og i et miljølån kan partene be om mekling.
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [PS-LOAN-023](product-spec/04-laneforlop.md). Begge parter kan registrere skade, mangel eller tap ved returen og senere, som en sporbar hendelse med hvem som opplyste hva. Motparten kan si seg uenig eller legge til sin forklaring. Det er ingen lånestatus og hindrer ikke avslutning når returen er avklart. Ikke bygget.
 
 ### OD-0034 — Hva en medeier som ikke er part, ser av et lån
-
 - **Lag:** UX
-- **Status:** Åpen
-- **Berører:** UX-JRN-011, PS-LOAN-009, WP-87
-- **Spørsmål:** UX-JRN-011 sier at medeiere bare får handlingene de har rett til, men ikke hva de ser. I appen kan bare partene åpne lånets side, så en medeier som blir spurt om å ta over ansvaret eller bekrefte en retur, kommer ikke inn fra varselet. Hva skal en medeier som ikke er part, se av lånet?
-- **Avhenger av:** Produktvurdering av personvernet mellom låntaker og medeiere.
-- **Avklares før:** medeiere skal kunne svare på ansvarsoverføring fra lånets side.
-- **Anbefaling:** Status, periode, vilkår, hvem som låner og hvem som er ansvarlig utlåner, og bare medeierens egne handlinger. Ikke meldingen fra forespørselen, samtalen, tidslinjen eller anmeldelsene.
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [UX-PRIV-013](ux/05-kontekst-roller-og-personvern.md) og [UX-JRN-011](ux/02-sentrale-brukerreiser.md). Avgrenset innsyn for medeiere i eierkretsen ved godkjenning eller spurt om ansvaret, håndhevet på serveren. Ikke bygget; i dag kan bare partene åpne lånet.
 
 ### OD-0035 — Tilsvar på en anmeldelse uten tekst
-
 - **Lag:** Produktspesifikasjon
-- **Status:** Åpen
-- **Berører:** PS-TRUST-005, [visjon 07](vision/07-tillit-anmeldelser-og-moderering.md) («Redigering og tilsvar»)
-- **Spørsmål:** Visjonen sier at den anmeldte kan gi ett tilsvar til en publisert *fritekstanmeldelse*. PS-TRUST-005 og appen lar den anmeldte svare på enhver publisert anmeldelse, også en som bare har skår. Skal tilsvar også gis til anmeldelser uten tekst? Det gjelder bare skår 3–5, fordi 1–2 alltid har tekst.
-- **Avhenger av:** Produktvurdering.
-- **Avklares før:** anmeldelser og tilsvar får sitt endelige UI (WP-87).
-- **Anbefaling:** Ja, på alle publiserte anmeldelser, slik appen gjør i dag. En middels skår uten forklaring kan være like viktig å kunne svare på som en tekst.
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [PS-TRUST-005](product-spec/06-tillit-anmeldelser-og-moderering.md). Ett tilsvar til alle publiserte anmeldelser, også uten fritekst. Slik virker appen allerede.
 
 ### OD-0036 — Varsel når anmeldelsene blir synlige
-
 - **Lag:** Produktspesifikasjon / UX
-- **Status:** Åpen
-- **Berører:** PS-TRUST-003, PS-TRUST-005, PS-COM-003, OD-0004
-- **Spørsmål:** Anmeldelsen står som en oppgave på Hjem til fristen, men ingen får beskjed når anmeldelsene publiseres. Den anmeldte oppdager anmeldelsen og muligheten til å svare bare ved å åpne lånet eller sin egen side. Skal partene få et varsel når anmeldelsene blir synlige, og skal de få en påminnelse før fristen?
-- **Avhenger av:** Produktvurdering og varslingskanaler (OD-0004).
-- **Avklares før:** anmeldelser og tilsvar får sitt endelige UI (WP-87).
-- **Anbefaling:** Et informasjonsvarsel til begge når anmeldelsene blir synlige, som åpner anmeldelsene på lånets side. Ingen påminnelse før fristen; oppgaven på Hjem er nok.
-
-## Avklart
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [PS-TRUST-003](product-spec/06-tillit-anmeldelser-og-moderering.md). Ett informasjonsvarsel i appen til hver part når anmeldelser blir synlige, uten duplikater, e-post eller påminnelse som standard. Ikke bygget.
 
 ### OD-0027 — Formen profilbildet vises i
 - **Lag:** UX

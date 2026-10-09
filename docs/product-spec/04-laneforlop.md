@@ -118,6 +118,11 @@ Når et objekt allerede er overlevert, skal nødvendig strukturert retur-/mottak
 
 Begge parter kan registrere utfallet av overleveringen. Når én part har registrert «overlevert» og den andre ikke har sagt noe annet, er lånet **utlånt**; den andre parten trenger ikke bekrefte. Den andre parten kan fortsatt registrere at overleveringen ikke skjedde, også etter at lånet er utlånt. Motstridende registreringer gir **usikker/uenighet** (PS-LOAN-013). Regelen gjelder både på overleveringsdagen og under overleveringsavklaringen (PS-LOAN-012). (Produkteier, 7. oktober 2026.)
 
+### PS-LOAN-023 — Skade, mangel og tap registreres som sporbare opplysninger
+**Forankring:** VP-13, VP-15; [Skade og tap](../vision/05-laneforlop.md)
+
+Begge parter kan registrere en konkret skade, mangel eller et tap med en kort faktabeskrivelse, både ved returen og senere fra lånets historikk. Registreringen er en sporbar hendelse som viser hvem som opplyste hva. Den er ikke en lånestatus, en anklage, et erstatningskrav eller en tillitsskår. Motparten ser registreringen og kan si seg uenig eller legge til sin egen forklaring, uten at originalen overskrives. Når selve tilbakeleveringen er avklart, hindrer en slik registrering ikke at lånet avsluttes. Er det uenighet om tingen faktisk er levert tilbake, gjelder vanlig **usikker/uenighet** (PS-LOAN-017). Mekling tilbys bare i miljølån; i et direkte vennelån avgjør Lånbort ikke skyld eller erstatning. Ingen frist sperrer en senere registrering. (Produkteier, 9. oktober 2026.)
+
 ## Tilstander
 
 ### Før godkjenning
