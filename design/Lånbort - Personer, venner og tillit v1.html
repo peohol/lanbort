@@ -201,7 +201,7 @@ button:disabled{cursor:default}
 
 <section style="display:flex;flex-direction:column;gap:16px" aria-labelledby="h-live">
 <div class="gh"><span class="hq" style="font-size:24px" id="h-live">Prøv relasjonen: Kari og Ola samtidig</span><span class="s">Kari ser Ola fra lånet av høytrykksspyleren, og Ola ser Kari fra det samme lånet. Begge er med i Borettslaget Lia. Trykk i hvilken som helst av telefonene. Den andre oppdateres med en gang, og kolonnen til høyre viser hva hver av dem faktisk får beskjed om.</span></div>
-<div class="ctrl"><label class="tg"><input type="checkbox" id="opt-off"><span class="sw" aria-hidden="true"></span>Uten nett</label><button class="bn sm" id="reset" type="button">Start på nytt</button><span class="s2">Med «Uten nett» på får neste handling ukjent utfall. Slå av igjen for å se at appen sjekker før du kan prøve på nytt (UX-INT-006).</span></div>
+<div class="ctrl"><label class="tg"><input type="checkbox" id="opt-off"><span class="sw" aria-hidden="true"></span>Uten nett</label><button class="bn sm" id="reset" type="button">Start på nytt</button><span class="s2">Med «Uten nett» på får neste handling ukjent utfall, og begge telefonene venter. Slå av igjen for å se at appen sjekker før du kan prøve på nytt (UX-INT-006).</span></div>
 <div class="live" id="live"></div>
 </section>
 
@@ -354,7 +354,7 @@ function personPage(c) {
   const trust = blocked ? '' : c.noTrust
     ? `<span class="s2" style="padding:6px 6px 0">Anmeldelser fra lån vises for venner og for medlemmer av et felles miljø.</span>`
     : trustSummary(c.who, c.first, { k2:c.k2 });
-  const more = blocked ? '' : `<button class="q" type="button"${c.live ? ` data-act="more" data-who="${c.live}"` : ''}>Flere valg</button>`;
+  const more = blocked ? '' : `<button class="q" type="button"${c.live ? ` data-act="more" data-who="${c.live}"` : ''}${c.busy ? ' disabled' : ''}>Flere valg</button>`;
   return `${backbar(c.back, { from:c.from, n:c.n || 0, close:c.close })}
 <div class="scr" style="gap:10px">
 <div class="phd">${av(c.who, 'big')}<div class="f1"><span class="ty">PERSON</span><div class="hq" style="font-size:24px;line-height:1.15">${p.name}</div></div></div>
@@ -415,7 +415,7 @@ const notFound = (backTo, area) => `${backbar('Hjem')}<div class="scr" style="ga
 <div class="cd" style="gap:10px"><span class="hq now">Vi finner ikke denne siden</span><span class="s">Den kan være fjernet, eller den er ikke tilgjengelig for deg lenger.</span><span class="btn2">Tilbake til ${backTo}</span></div></div>${nav(area)}`;
 
 /* ---------- Live: Kari og Ola deler én relasjon ---------- */
-const LIVE0 = () => ({ fr:'none', by:null, block:{ kari:false, ola:false }, sheet:{ kari:null, ola:null }, flash:{ kari:'', ola:'' }, busy:null, log:{ kari:[], ola:[] }, clock:19 * 60 + 30 });
+const LIVE0 = () => ({ focus:null, fr:'none', by:null, block:{ kari:false, ola:false }, sheet:{ kari:null, ola:null }, flash:{ kari:'', ola:'' }, busy:null, log:{ kari:[], ola:[] }, clock:19 * 60 + 30 });
 let S = LIVE0();
 const other = v => v === 'kari' ? 'ola' : 'kari';
 const hhmm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}.${String(m % 60).padStart(2, '0')}`;
@@ -447,7 +447,7 @@ function liveScreen(v) {
     : sh === 'remove' ? removeSheet(o, { live:v, env:'Borettslaget Lia' })
     : sh === 'block' ? blockSheet(o, { live:v, env:'Borettslaget Lia', friends:rel === 'friends', loan:'Lånet av høytrykksspyleren fortsetter. Det praktiske om returen avtaler dere i en egen kanal for lånet.' })
     : sh === 'unblock' ? unblockSheet(o, { live:v }) : '';
-  return personPage({ who:o, rel, state:busy ? 'unknown' : rel, live:v, busy, flash:S.flash[v], back:'Høytrykksspyler', area:'lan',
+  return personPage({ who:o, rel, state:busy ? 'unknown' : rel, live:v, busy:!!S.busy, flash:S.flash[v], back:'Høytrykksspyler', area:'lan',
     n:S.log[v].filter(x => !x.read && !x.gone).length, env:shared ? 'Borettslaget Lia' : '',
     why:shared ? `Du ser ${PEOPLE[o].first} fordi dere begge er med i Borettslaget Lia${rel === 'friends' ? ' og er venner' : ''}.` : '',
     between:[[v === 'kari' ? 'Høytrykksspyler' : 'Høytrykksspyler fra Kari', v === 'kari' ? 'Ola låner · tilbake man. 12. okt.' : 'Du låner · tilbake man. 12. okt.']],
@@ -466,9 +466,27 @@ function renderLive() {
   const focusKey = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.act + '|' + document.activeElement.dataset.who : null;
   root.innerHTML = ['kari', 'ola'].map(v => `<div><div class="who"><span class="num">${v === 'kari' ? 'K' : 'O'}</span>${PEOPLE[v].name} ser ${PEOPLE[other(v)].name}</div><div class="ph" role="group" aria-label="${PEOPLE[v].name} sin telefon">${sb(hhmm(S.clock).replace('.', ':'))}${liveScreen(v)}</div></div>`).join('')
     + `<div class="stack">${logCol('kari')}${logCol('ola')}</div>`;
-  if (focusKey) { const el = root.querySelector(`[data-act][data-who]`); const all = [...root.querySelectorAll('[data-act]')]; const hit = all.find(e => e.dataset.act + '|' + e.dataset.who === focusKey); (hit || null)?.focus(); }
+  /* Fokus: inn i arket som nettopp åpnet (Avbryt i bekreftelser), ellers tilbake til samme kontroll, ellers til «Flere valg». */
+  const v = S.focus, dlg = v && S.sheet[v] && root.querySelector(`[role="dialog"] [data-who="${v}"]`)?.closest('[role="dialog"]');
+  const hit = dlg ? (S.sheet[v] === 'more' ? dlg.querySelector('[data-act]') : dlg.querySelector('[data-act="close"]'))
+    : focusKey && [...root.querySelectorAll('[data-act]')].find(e => e.dataset.act + '|' + e.dataset.who === focusKey && !e.disabled)
+      || (v && (root.querySelector(`[data-act="more"][data-who="${v}"]`) || root.querySelector(`[data-act][data-who="${v}"]:not([disabled])`)));
+  if (focusKey || v) hit?.focus();
+  S.focus = null;
 }
+/* Tab holdes inne i et åpent ark, og Escape lukker det. */
+document.getElementById('live').addEventListener('keydown', e => {
+  const dlg = e.target.closest('[role="dialog"]');
+  if (!dlg) return;
+  if (e.key === 'Escape') { e.preventDefault(); act('close', dlg.querySelector('[data-who]').dataset.who); return; }
+  if (e.key !== 'Tab') return;
+  const f = [...dlg.querySelectorAll('button:not([disabled])')], first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
 function act(a, v) {
+  if (S.busy) return; /* ukjent utfall: ingen ny handling før appen har sjekket (UX-INT-006) */
+  S.focus = v;
   S.flash[v] = ''; S.flash[other(v)] = '';
   if (a === 'more' || a === 'remove' || a === 'block' || a === 'unblock') { S.sheet[v] = a; return renderLive(); }
   if (a === 'close') { S.sheet[v] = null; return renderLive(); }
@@ -478,7 +496,7 @@ function act(a, v) {
 }
 document.getElementById('live').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b && !b.disabled) act(b.dataset.act, b.dataset.who); });
 document.getElementById('opt-off').addEventListener('change', e => {
-  if (!e.target.checked && S.busy) { const { v, a } = S.busy; S.busy = null; S.clock += 1; S.flash[v] = ACTIONS[a](v) || 'Blokkeringen er registrert.'; S.flash[v] = `Vi sjekket: ${S.flash[v].charAt(0).toLowerCase()}${S.flash[v].slice(1)}`; }
+  if (!e.target.checked && S.busy) { const { v, a } = S.busy; S.busy = null; S.clock += 1; S.flash[v] = ACTIONS[a](v) || 'Blokkeringen er registrert.'; S.flash[v] = `Vi sjekket: ${S.flash[v].charAt(0).toLowerCase()}${S.flash[v].slice(1)}`; S.focus = v; }
   renderLive();
 });
 document.getElementById('reset').addEventListener('click', () => { S = LIVE0(); document.getElementById('opt-off').checked = false; renderLive(); });
