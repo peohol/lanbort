@@ -11,7 +11,7 @@ export function OwnerNames({ owners }: { owners: readonly ShownOwner[] }) {
   return owners.map((owner, index) => (
     <Fragment key={index}>
       {listSeparator(index, owners.length)}
-      <PersonName person={owner} />
+      <PersonName person={owner} role="lender" />
     </Fragment>
   ));
 }

@@ -367,7 +367,10 @@ function Agreement({ loan }: { loan: Loan }) {
       <dl className="facts">
         <dt>{lender ? "Du låner bort til" : "Du låner av"}</dt>
         <dd>
-          <PersonName person={loan.parties[lender ? "borrower" : "lender"]} />
+          <PersonName
+            person={loan.parties[lender ? "borrower" : "lender"]}
+            role={lender ? "borrower" : "lender"}
+          />
         </dd>
         <dt>Periode</dt>
         <dd>{formatPeriod(loan.period)}</dd>

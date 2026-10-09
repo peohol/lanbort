@@ -5,6 +5,7 @@ import {
   describeRelation,
   dimensionLabel,
   personName,
+  rolesInOrder,
 } from "./people";
 
 const person = (relation: Person["relation"]): Person => ({
@@ -18,10 +19,12 @@ const person = (relation: Person["relation"]): Person => ({
 const relation = (
   friendship: NonNullable<Person["relation"]>["friendship"],
   blockedByMe = false,
+  canRequest = friendship === "none" && !blockedByMe,
 ) => ({
   userId: "00000000-0000-4000-8000-000000000001",
   friendship,
   blockedByMe,
+  canRequest,
 });
 
 describe("people", () => {
@@ -42,11 +45,28 @@ describe("people", () => {
     expect(describeRelation(person(relation("outgoing_pending"))).status).toBe(
       "Venter på svar fra Kari.",
     );
-    expect(describeRelation(person(relation("none"))).tag).toBeNull();
+    expect(describeRelation(person(relation("none")))).toEqual({
+      tag: null,
+      tone: "neutral",
+      status: "Dere er ikke venner.",
+    });
+    // A request that cannot be sent now is said without a reason (PS-USR-012).
+    expect(describeRelation(person(relation("none", false, false)))).toEqual({
+      tag: null,
+      tone: "neutral",
+      status:
+        "Dere er ikke venner. Du kan ikke sende Kari en venneforespørsel nå.",
+    });
     expect(describeRelation(person(relation("none", true)))).toMatchObject({
       tag: "Blokkert",
       tone: "danger",
     });
+  });
+
+  it("puts the role the page is opened in first, and keeps both (UX-PRIV-012)", () => {
+    expect(rolesInOrder(null)).toEqual(["borrower", "lender"]);
+    expect(rolesInOrder("borrower")).toEqual(["borrower", "lender"]);
+    expect(rolesInOrder("lender")).toEqual(["lender", "borrower"]);
   });
 
   it("labels known dimensions and falls back to the code", () => {

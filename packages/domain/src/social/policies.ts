@@ -35,13 +35,21 @@ const otherIsVisible: PairRule = ({ resource }) =>
 const notBlockedByActor: PairRule = ({ resource }) =>
   resource.blockedByActor ? deny("forbidden") : allow;
 
+/**
+ * After a declined request, the recipient has to ask next (PS-USR-012). The
+ * refusal is the same as for the actor's own block, so it never tells the
+ * actor that their request was declined.
+ */
+const notHeldBack: PairRule = ({ resource }) =>
+  resource.requestHeldBack ? deny("forbidden") : allow;
+
 /** The actor's own pair with a user they can see. */
 export const visiblePair = [actorIsParty, otherIsVisible] as const;
 
 export const sendFriendRequestPolicy = definePolicy<SocialPair, void>({
   action: "friendship.request",
   actor: [requireActiveAccount],
-  resource: [...visiblePair, notBlockedByActor],
+  resource: [...visiblePair, notBlockedByActor, notHeldBack],
 });
 
 /** Answering, withdrawing and ending act on the pair's open relation. */

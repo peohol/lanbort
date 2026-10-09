@@ -429,6 +429,7 @@ export interface AppFriendships {
   ended_at: Timestamp | null;
   ended_by_user_id: string | null;
   id: Generated<string>;
+  position: Generated<Int8>;
   requested_at: Generated<Timestamp>;
   requester_id: string;
   status: Generated<string>;

@@ -1,5 +1,6 @@
 import type { DimensionTrust, Person, ProfileReview } from "@lanbort/contracts";
 import type { Tone } from "@/components/tag";
+import type { PersonRole } from "@/navigation/routes";
 
 /** A deleted account in shared history (UX-PRIV-010). */
 export const formerUser = "Tidligere bruker";
@@ -54,7 +55,14 @@ export function describeRelation(person: Person): RelationText {
         status: `Venter på svar fra ${realName}.`,
       };
     case "none":
-      return { tag: null, tone: "neutral", status: "Dere er ikke venner." };
+      // Never why a request cannot be sent now (PS-USR-012).
+      return {
+        tag: null,
+        tone: "neutral",
+        status: relation.canRequest
+          ? "Dere er ikke venner."
+          : `Dere er ikke venner. Du kan ikke sende ${realName} en venneforespørsel nå.`,
+      };
   }
 }
 
@@ -77,6 +85,21 @@ export const subjectRoleLabels: Record<ProfileReview["subjectRole"], string> = {
   borrower: "Som låntaker",
   lender: "Som utlåner",
 };
+
+/** The roles of a trust profile when nothing puts one first (OD-0032). */
+const standardRoleOrder: readonly PersonRole[] = ["borrower", "lender"];
+
+/**
+ * A trust profile's roles, `first` at the top when the person's page was
+ * opened in that role, otherwise in the standard order. Both are always
+ * there (UX-PRIV-012).
+ */
+export const rolesInOrder = (
+  first: PersonRole | null,
+): readonly PersonRole[] =>
+  first
+    ? [first, ...standardRoleOrder.filter((role) => role !== first)]
+    : standardRoleOrder;
 
 const meanFormat = new Intl.NumberFormat("nb-NO", {
   minimumFractionDigits: 1,

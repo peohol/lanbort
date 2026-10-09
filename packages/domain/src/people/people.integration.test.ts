@@ -8,6 +8,7 @@ import { readLoan } from "../loans/queries";
 import { deactivateAccount } from "../account/lifecycle";
 import {
   blockUser,
+  declineFriendRequest,
   liftUserBlock,
   sendFriendRequest,
 } from "../social/commands";
@@ -41,7 +42,8 @@ const relation = (
   subject: UserActor,
   friendship: string,
   blockedByMe = false,
-) => ({ userId: subject.userId, friendship, blockedByMe });
+  canRequest = friendship === "none" && !blockedByMe,
+) => ({ userId: subject.userId, friendship, blockedByMe, canRequest });
 
 describe("a person's page (WP-86)", () => {
   it("shows the reader themselves, with their trust profile", async () => {
@@ -87,6 +89,19 @@ describe("a person's page (WP-86)", () => {
     expect(await personOf(anna, bo)).toMatchObject({
       relation: relation(bo, "outgoing_pending"),
       trustProfile: false,
+    });
+  });
+
+  it("says only that a declined sender cannot ask now (PS-USR-012)", async () => {
+    const { admin, borrower } = await published();
+    await run(sendFriendRequest, borrower, { userId: admin.userId });
+    await run(declineFriendRequest, admin, { userId: borrower.userId });
+
+    expect(await personOf(borrower, admin)).toMatchObject({
+      relation: relation(admin, "none", false, false),
+    });
+    expect(await personOf(admin, borrower)).toMatchObject({
+      relation: relation(borrower, "none", false, true),
     });
   });
 

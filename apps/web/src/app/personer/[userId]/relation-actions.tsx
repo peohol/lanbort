@@ -82,7 +82,7 @@ export function RelationActions({ person }: { person: Person }) {
   }
 
   const steps = {
-    none: (
+    none: relation.canRequest && (
       <ActionButton
         label="Send venneforespørsel"
         path={social("friend-requests")}

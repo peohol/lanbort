@@ -222,7 +222,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0029 — Ny venneforespørsel etter avslag
 - **Lag:** Produktspesifikasjon
 - **Status:** Avklart (produkteier, 9. oktober 2026)
-- **Beslutning:** Se [PS-USR-012](product-spec/01-brukere-kontoer-og-relasjoner.md). Avsenderen kan ikke sende på nytt før mottakeren selv tar initiativ, vist nøytralt og håndhevet på serveren. Ikke bygget ennå; kravene står under WP-86 i [UI-arbeidspakkene](implementation/ui-work-packages.md#wp-86--personer-venner-og-tillit).
+- **Beslutning:** Se [PS-USR-012](product-spec/01-brukere-kontoer-og-relasjoner.md). Avsenderen kan ikke sende på nytt før mottakeren selv tar initiativ, vist nøytralt og håndhevet på serveren. Bygget 9. oktober 2026 (se WP-86 i [UI-arbeidspakkene](implementation/ui-work-packages.md#wp-86--personer-venner-og-tillit)).
 
 ### OD-0030 — Aktivitetstall på personens side
 - **Lag:** Produktspesifikasjon
