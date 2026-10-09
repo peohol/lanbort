@@ -1039,8 +1039,15 @@ export class ChatEngine {
   async #resendUnsent() {
     for (const name of await this.store.names("history:")) {
       const id = name.slice("history:".length);
-      for (const entry of await this.history(id)) {
-        if (entry.unsent && (await this.#group(id))) {
+      const waiting = (await this.history(id)).filter((entry) => entry.unsent);
+      if (waiting.length === 0 || !(await this.#group(id))) continue;
+
+      // A contact may have enabled chat since the last poll. Refresh group
+      // membership before resending; otherwise unsent messages may remain
+      // stranded until the sender reloads the conversation page.
+      await this.#maintain(id).catch(() => undefined);
+      for (const entry of waiting) {
+        if (await this.#group(id)) {
           await this.#deliver(id, entry).catch(() => undefined);
         }
       }
