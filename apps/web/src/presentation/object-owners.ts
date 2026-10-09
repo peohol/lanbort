@@ -386,3 +386,18 @@ export function shownPlaces(
       })),
   ];
 }
+
+/**
+ * Whether `me` may show the thing somewhere new, in an environment or to
+ * friends: it is active and not frozen (PS-OBJ-009), and no other owner
+ * has stopped every new loan (PS-OBJ-008). The owner who did can lift it.
+ */
+export const mayPublish = (
+  object: Pick<OwnObject, "status" | "frozenForNewLoans" | "restrictions">,
+  me: string,
+) =>
+  object.status === "active" &&
+  !object.frozenForNewLoans &&
+  !object.restrictions.some(
+    ({ period, setByUserId }) => period === null && setByUserId !== me,
+  );

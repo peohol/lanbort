@@ -51,6 +51,7 @@ import {
   coOwnerLoanSteps,
   describeCoOwnerLoan,
   describeNextLoan,
+  mayPublish,
   nextLoan,
   ownerStatus,
   personName,
@@ -423,8 +424,8 @@ function WhereShownSection({
   environments: readonly EnvironmentSummary[];
   friends: boolean;
 }) {
-  const { object, api } = owned;
-  const open = object.status === "active" && !object.frozenForNewLoans;
+  const { object, me, api } = owned;
+  const open = mayPublish(object, me);
   const places = shownPlaces(publications, environments);
 
   return (

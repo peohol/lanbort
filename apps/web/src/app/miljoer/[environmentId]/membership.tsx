@@ -89,8 +89,36 @@ export function Membership({
   );
 }
 
-/** Steps taken directly on the card: withdrawing or declining. */
+/**
+ * Steps taken directly on the card: withdrawing or declining, and for an
+ * administrator the way to administration whatever their own next step is
+ * (new requirements do not take the role away).
+ */
 function StepActions({
+  environment,
+  step,
+}: {
+  environment: Environment;
+  step: MembershipStep;
+}) {
+  return (
+    <>
+      <StepAction environment={environment} step={step} />
+      {environment.roles.includes("administrator") && (
+        // WP-85's page, built alongside this one: not fetched ahead.
+        <Link
+          className="button"
+          href={environmentAdminHref(environment.id)}
+          prefetch={false}
+        >
+          Administrer miljøet
+        </Link>
+      )}
+    </>
+  );
+}
+
+function StepAction({
   environment,
   step,
 }: {
@@ -100,17 +128,6 @@ function StepActions({
   const body = { environmentId: environment.id };
 
   switch (step.kind) {
-    case "member":
-      // WP-85's page, built alongside this one: not fetched ahead.
-      return environment.roles.includes("administrator") ? (
-        <Link
-          className="button"
-          href={environmentAdminHref(environment.id)}
-          prefetch={false}
-        >
-          Administrer miljøet
-        </Link>
-      ) : null;
     case "accept_invitation":
       return (
         <ActionButton label="Avslå invitasjonen" path={leavePath} body={body} />

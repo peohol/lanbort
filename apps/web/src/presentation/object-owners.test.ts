@@ -9,6 +9,7 @@ import type {
 import { describe, expect, it } from "vitest";
 import {
   coOwnerLoanSteps,
+  mayPublish,
   nextLoan,
   ownerStatus,
   personName,
@@ -95,6 +96,17 @@ describe("the owners' view of a thing", () => {
     expect(
       ownerStatus(thing({ availability: [] }), me, "2026-10-04"),
     ).toMatchObject({ status: "Kan ikke lånes ut ennå" });
+  });
+
+  it("lets an owner publish unless it is frozen, archived or vetoed by another owner (PS-OBJ-008)", () => {
+    const veto = (setByUserId: string) => ({
+      restrictions: [{ id: gone, setByUserId, period: null, createdAt: at }],
+    });
+    expect(mayPublish(thing(), me)).toBe(true);
+    expect(mayPublish(thing(veto(me)), me)).toBe(true);
+    expect(mayPublish(thing(veto(kari)), me)).toBe(false);
+    expect(mayPublish(thing({ frozenForNewLoans: true }), me)).toBe(false);
+    expect(mayPublish(thing({ status: "archived" }), me)).toBe(false);
   });
 
   it("says a restriction's reach in words", () => {
