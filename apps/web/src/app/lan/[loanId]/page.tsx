@@ -1,5 +1,6 @@
 import {
   type Loan,
+  type LoanConditionReports,
   type LoanLogisticsChannel,
   type LoanLogisticsCloseReason,
   type LoanReview,
@@ -324,13 +325,14 @@ function LoanStatus({
  */
 function LoanMoreActions({
   loan,
-  mayReport,
+  condition,
 }: {
   loan: Loan;
-  /** The reader may register damage, deficiency or loss (PS-LOAN-023). */
-  mayReport: boolean;
+  /** What was registered as damage, deficiency or loss (PS-LOAN-023). */
+  condition: LoanConditionReports | null;
 }) {
   const { secondary } = loanSteps(loan);
+  const mayReport = condition?.mayReport ?? false;
   const { actions } = loan;
 
   if (
@@ -348,8 +350,11 @@ function LoanMoreActions({
       <Steps steps={secondary} />
       <ProposeAmendment loan={loan} />
       <OfferResponsibility loan={loan} />
-      {mayReport && (
+      {condition?.mayReport && (
         <ReportCondition
+          // Each report is a new command with its own idempotency key:
+          // the form starts over once the page shows the last one.
+          key={condition.reports.length}
           path={loanApi(loan.id)}
           loanId={loan.id}
           other={otherParty(loan)}
@@ -636,10 +641,7 @@ export default async function LoanPage({
                 : writeHref(loan.role, loan.borrowerUserId, loan.requestId)
             }
           />
-          <LoanMoreActions
-            loan={loan}
-            mayReport={condition?.mayReport ?? false}
-          />
+          <LoanMoreActions loan={loan} condition={condition} />
           {reviews && <Reviews loan={loan} reviews={reviews} />}
         </div>
         <div className={styles.column}>

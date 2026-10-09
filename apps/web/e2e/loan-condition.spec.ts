@@ -46,6 +46,14 @@ test("a party reports damage and the other disagrees, on the loan's page", async
   const reports = page.getByRole("region", { name: "Skade, mangel eller tap" });
   await expect(reports).toContainText("Du opplyste");
   await expect(reports).toContainText("Munnstykket mangler.");
+  // Another report is a new one, not a replay of the first.
+  await page.getByText("Meld skade, mangel eller tap").click();
+  await page
+    .getByLabel("Hva er skadet, mangler eller borte?")
+    .fill("Slangen har en sprekk.");
+  await page.getByRole("button", { name: "Meld det" }).click();
+  await expect(reports).toContainText("Slangen har en sprekk.");
+  await expect(reports).toContainText("Munnstykket mangler.");
   // The loan goes on as before.
   await expect(page.getByRole("list", { name: "Lånets steg" })).toContainText(
     "Utlånt",
@@ -57,12 +65,15 @@ test("a party reports damage and the other disagrees, on the loan's page", async
   await ola.goto(`/lan/${loanId}`);
   const seen = ola.getByRole("region", { name: "Skade, mangel eller tap" });
   await expect(seen).toContainText("Kari Nordmann opplyste");
-  await seen.getByText("Jeg er uenig").click();
-  await seen.getByLabel("Hva er du uenig i?").fill("Det lå i lokket.");
-  await seen.getByRole("button", { name: "Send svaret" }).click();
-  await expect(seen).toContainText("Du er uenig");
-  await expect(seen).toContainText("Det lå i lokket.");
-  await expect(seen.getByText("Legg til min forklaring")).toHaveCount(0);
+  const first = seen.locator("div", { hasText: "Munnstykket mangler." });
+  await first.getByText("Jeg er uenig").click();
+  await first.getByLabel("Hva er du uenig i?").fill("Det lå i lokket.");
+  await first.getByRole("button", { name: "Send svaret" }).click();
+  await expect(first).toContainText("Du er uenig");
+  await expect(first).toContainText("Det lå i lokket.");
+  await expect(first.getByText("Legg til min forklaring")).toHaveCount(0);
+  // The other report can still be answered.
+  await expect(seen.getByText("Legg til min forklaring")).toHaveCount(1);
 
   await page.reload();
   await expect(reports).toContainText("Ola Hansen er uenig");
