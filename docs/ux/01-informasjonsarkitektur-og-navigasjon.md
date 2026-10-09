@@ -74,7 +74,7 @@ Områdene:
 - **Finn:** søk etter ting eller miljøer, med filtrene «Venner» og område. Treff viser ledighet og kontekst.
 - **Lån:** én liste med filtrene «Alle», «Låner» og «Låner bort», gruppert i «Venter på deg», «Pågår og kommende» og «Venter på andre», med avsluttede lån bak en egen rad (UX-IA-006).
 - **Mine ting:** egne og medeide ting med nåstatus og hvem de er synlige for, «Registrer» og arkiverte ting bak en egen rad.
-- **Samtaler:** én privat samtale per person, med lenker til lånene mellom dere (UX-IA-014), lånelogistikk-kanaler etter blokkering, én per lån (PS-COM-007), og «Mine enheter».
+- **Samtaler:** samtaler med hva de gjelder («Om lånet: Stige» eller «Privat samtale») og «Mine enheter».
 
 ### UX-IA-009 — Detaljer legges i en stabel i området brukeren startet i
 **Forankring:** UX-P02, UX-P05, UX-P12, UX-P13

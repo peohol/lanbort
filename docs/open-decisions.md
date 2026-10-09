@@ -51,7 +51,7 @@ Når spørsmålet er avgjort:
 
 ## Status før UI-arbeidet
 
-Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. Gjennomgangen av kjerneflyt 5 (samtaler og enheter) samme dag avdekket [OD-0043](#od-0043--varsler-om-nye-meldinger-i-privat-chat) og [OD-0044](#od-0044--når-gjenopprettingsnøkkelen-for-privat-chat-tilbys), som bare gjelder privat chat. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
+Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. Gjennomgangen av kjerneflyt 5 (samtaler og enheter) samme dag avdekket [OD-0043](#od-0043--varsler-om-nye-meldinger-i-privat-chat), [OD-0044](#od-0044--når-gjenopprettingsnøkkelen-for-privat-chat-tilbys) og [OD-0045](#od-0045--én-privat-samtale-per-person-eller-per-lån), som bare gjelder privat chat. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
 
 ## Åpne
 
@@ -209,6 +209,15 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Avhenger av:** Produktvurdering av hvor mye brukeren skal oppfordres til å lage nøkkelen, mot hvor mye det forstyrrer.
 - **Avklares før:** gjenopprettingsnøkkelen bygges. Den er ikke bygget, og tilbakestilling er i dag eneste vei når alle enheter er borte.
 - **Anbefaling:** Tilby den én gang rett etter «Slå på privat chat», med «Ikke nå», og ha den varig i Mine enheter. Ingen påminnelser.
+
+### OD-0045 — Én privat samtale per person eller per lån
+- **Lag:** Produktspesifikasjon / UX
+- **Status:** Åpen
+- **Berører:** PS-COM-005, PS-COM-007, UX-IA-014, [skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md#samtaler), [kjerneflyt 5](../design/README.md) (01–04)
+- **Spørsmål:** Har to personer én privat samtale uansett hvor mange lån de har sammen, eller én samtale per lån i tillegg til en eventuell privat samtale? Spesifikasjonen sier bare at det finnes privat samtale rundt et konkret lån og at lånet og samtalen lenker til hverandre (UX-IA-014). Koden fra WP-43 har én privat samtale per par ([serverens grense](implementation/server-boundary.md)), og lånelogistikk-kanalen etter blokkering er uansett én per lån (PS-COM-007). Valget er tatt i koden, ikke av produkteier.
+- **Avhenger av:** Produktvurdering.
+- **Avklares før:** lenkene mellom lånet og samtalen bygges.
+- **Anbefaling:** Én privat samtale per person, med lenker til de pågående lånene mellom dere og fra hvert lån til samtalen. Det er slik appen allerede virker, og brukeren slipper å lete i flere samtaler med samme person.
 
 ## Avklart
 

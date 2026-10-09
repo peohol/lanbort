@@ -219,7 +219,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 #### Samtaler
 
 - **Oppgave:** snakke privat med en annen part, særlig om et konkret lån.
-- **Tilstander:** privat samtale, én per person, med lenker til lånene mellom dere; strukturert første kontakt mottatt, der mottakeren kan åpne for fri samtale; smal logistikk-kanal etter blokkering; ingen lesebekreftelser; enheten er ikke koblet; skjult fra egen liste; ingen samtaler.
+- **Tilstander:** privat samtale; strukturert første kontakt mottatt, der mottakeren kan åpne for fri samtale; samtale om et lån; smal logistikk-kanal etter blokkering; ingen lesebekreftelser; enheten er ikke koblet; skjult fra egen liste; ingen samtaler.
 - **Ser / handler:** deltakerne. Ved første kontakt mellom ikke-venner er det bare mottakeren av den strukturerte henvendelsen som kan åpne fri samtale.
 - **Regler:** UX-IA-001, UX-EXC-004, PS-COM-001, PS-COM-004–007, PS-COM-009, PS-USR-005.
 - **Forløp:** begge.
@@ -633,3 +633,4 @@ Til en beslutning finnes, viser UI-et ikke funksjonen den gjelder.
 | OD-0026    | Inngrep på kontoer, inngrep i et miljø                    | Ingen flate                                                        |
 | OD-0043    | Samtaler, varslingssenteret, varslingsvalg                | Ingen varsler om nye meldinger                                     |
 | OD-0044    | Gjenopprettingsnøkkel for privat chat                     | Ikke bygget; tilbakestilling er eneste vei når alle enheter er borte |
+| OD-0045    | Samtaler, lånets side                                     | Appen har én privat samtale per par; lånene lenkes ikke ennå        |
