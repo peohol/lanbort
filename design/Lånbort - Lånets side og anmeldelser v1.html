@@ -910,7 +910,7 @@ function act(a, v, arg) {
   if (a === 'score') { const [k, n] = arg.split(':'); const d = S.ui.draft[v] || (S.rev[role(v)] ? { ...S.rev[role(v)].scores } : {}); d[k] = +n; S.ui.draft[v] = d; return renderLive(); }
   if (!ACTIONS[a]) return;
   S.min += 2;
-  if (document.getElementById('opt-off').checked) { S.busy = { v, a }; S.ui.sheet[v] = null; return renderLive(); }
+  if (document.getElementById('opt-off').checked) { S.busy = { v, a, at:Date.now() }; S.ui.sheet[v] = null; return renderLive(); }
   run(a, v);
 }
 function run(a, v) {
@@ -934,9 +934,13 @@ live.addEventListener('keydown', e => {
 document.getElementById('opt-off').addEventListener('change', e => {
   /* Sjekken etter ukjent utfall: «Simulert utfall» bestemmer om handlingen nådde serveren. */
   if (!e.target.checked && S.busy) {
-    const { v, a } = S.busy, done = document.getElementById('opt-outcome').value === 'done';
+    const { v, a, at } = S.busy, done = document.getElementById('opt-outcome').value === 'done';
     S.busy = null; S.focus = v;
-    if (done) { const r = ACTIONS[a](v); S.ui.flash[v] = r ? `Vi sjekket: ${r.charAt(0).toLowerCase()}${r.slice(1)}` : 'Vi sjekket: det gikk gjennom.'; }
+    if (done) {
+      const r = ACTIONS[a](v);
+      /* Angrefristen regnes fra da handlingen nådde serveren, ikke fra sjekken (PS-LOAN-016). */
+      if (a === 'received' && S.pending) { S.pending.until = at + 30000; if (S.pending.until <= Date.now()) finalizeReceipt(); }
+      S.ui.flash[v] = r ? `Vi sjekket: ${r.charAt(0).toLowerCase()}${r.slice(1)}` : 'Vi sjekket: det gikk gjennom.'; }
     else S.ui.flash[v] = 'Vi sjekket: det gikk ikke gjennom. Ingenting er endret, og du kan prøve på nytt.';
   }
   renderLive();
@@ -1009,7 +1013,7 @@ ${note('Steget forteller, statuskortet forklarer', '<span class="s" style="color
         cap:'Bare dager som kan godtas, kan velges. Torsdag 15. er lovet til et annet lån og står som «Ikke ledig», uten å si til hvem. Før overleveringen kan hele perioden flyttes, etterpå bare returdagen, slik appen gjør.' }),
       phone({ num:'05', label:'Ola · venter på Kari', time:'12:02', body:page(mk({ ...OUT, day:11, min:12 * 60 + 2, amend:{ by:'borrower', kind:'return', s:10, e:14 } }), 'ola', { flash:'Forslaget er sendt.' }),
         cap:'Kortet sier hvem det ventes på (UX-INT-004). Avtalen under står uendret til Kari godtar. «Trekk forslaget» er sekundær og utføres direkte.' }),
-      phone({ num:'06', label:'Kari · svarer, åpnet fra varselet', time:'12:30', body:page(mk({ ...OUT, day:11, min:12 * 60 + 30, amend:{ by:'borrower', kind:'return', s:10, e:14 } }), 'kari', { back:'Hjem', from:'Åpnet fra varsel', area:'hjem' }),
+      phone({ num:'06', label:'Kari · svarer, åpnet fra varselet', time:'12:30', body:page(mk({ ...OUT, day:11, min:12 * 60 + 30, amend:{ by:'borrower', kind:'return', s:10, e:14 } }), 'kari', { back:'Lån', from:'Åpnet fra varsel' }),
         cap:'Knappen navngir det Kari sier ja til (UX-INT-003), og «Behold man. 12. okt.» er likeverdig hvit. Forslaget er et påkrevd varsel, også på e-post, og en oppgave på Hjem.' }),
       phone({ num:'07', label:'Kari · forslaget kan ikke godtas lenger', time:'20:10', body:page(mk({ day:9, min:20 * 60 + 10, amend:{ by:'borrower', kind:'period', s:11, e:13, ok:false } }), 'kari'),
         cap:'Har noe endret seg siden forslaget kom, for eksempel at Jonas har godkjent et annet lån i perioden, vises bare «Si nei», med grunnen. Appen tilbyr allerede bare svar som vil lykkes.' }),
@@ -1024,7 +1028,7 @@ ${note(`Ny overleveringsdag under avklaring ${NB()}`, '<span class="s" style="co
     items:[
       phone({ num:'08', label:'Kari · kansellere?', time:'20:02', body:withSheet(mk({ day:9, min:20 * 60 + 2 }), 'kari', 'cancel', { focus:true }),
         cap:'Rødt er det som forsvinner, blått det som består, grått hva Ola får vite. Knappen er signalrød fordi det ikke kan angres og rammer en annen. Fokus starter på knappen, og «Behold lånet» er like stor.' }),
-      phone({ num:'09', label:'Ola · kansellert, fra varselet', time:'20:04', body:page(mk({ day:9, min:20 * 60 + 4, status:'ended', end:'cancelled', endBy:'lender', endDay:9, revDue:23, tl:[...T0, ev(9, 20, 3, 'kari', 'kansellerte lånet')] }), 'ola', { back:'Hjem', from:'Åpnet fra varsel', area:'hjem' }),
+      phone({ num:'09', label:'Ola · kansellert, fra varselet', time:'20:04', body:page(mk({ day:9, min:20 * 60 + 4, status:'ended', end:'cancelled', endBy:'lender', endDay:9, revDue:23, tl:[...T0, ev(9, 20, 3, 'kari', 'kansellerte lånet')] }), 'ola', { back:'Lån', from:'Åpnet fra varsel' }),
         cap:'Ola ser hvem som kansellerte og at perioden er ledig. Ingen grunn kreves eller vises. Han kan anmelde kommunikasjonen fram til nå, men ikke noe som forutsetter at lånet fant sted (PS-TRUST-001).' }),
       phone({ num:'10', label:'Ola · stanset av plattformen', time:'08:15', body:page(mk({ day:10, min:8 * 60 + 15, status:'ended', end:'stopped', endDay:10, tl:[...T0, ev(10, 8, 10, null, 'Lånet ble stoppet før overleveringen på grunn av en plattformbegrensning')] }), 'ola'),
         cap:'En plattformstans vises aldri som kansellering eller som at noen uteble, og sier ikke mer om grunnen enn nødvendig (UX-EXC-007). Teksten er den appen allerede bruker.' }),
@@ -1040,9 +1044,9 @@ ${note('Ordet', '<span class="s" style="color:#1E2733">Prototypen bruker «Kanse
         cap:'Listen har bare medeiere som kan ta over nå, slik appen allerede filtrerer. Teksten sier hva som ikke endres.' }),
       phone({ num:'12', label:'Kari · venter på Jonas', time:'11:21', body:page(mk({ ...OUT, day:11, min:11 * 60 + 21, transfer:{ from:'kari', to:'jonas', late:false, accepted:false, consent:null } }), 'kari', { flash:'Ansvaret er tilbudt Jonas.' }),
         cap:'Kari er ansvarlig til Jonas har godtatt. Ola ser ingen endring før ansvaret faktisk er flyttet, fordi ingenting endres for ham før det. Appen viser i dag ventingen også for Ola.' }),
-      phone({ num:'13', label:`Jonas · lånet som medeier ${OD(34)}`, time:'11:40', body:page(mk({ ...OUT, day:11, min:11 * 60 + 40, transfer:{ from:'kari', to:'jonas', late:false, accepted:false, consent:null } }), 'jonas', { back:'Hjem', from:'Åpnet fra varsel', area:'hjem' }),
+      phone({ num:'13', label:`Jonas · lånet som medeier ${OD(34)}`, time:'11:40', body:page(mk({ ...OUT, day:11, min:11 * 60 + 40, transfer:{ from:'kari', to:'jonas', late:false, accepted:false, consent:null } }), 'jonas', { back:'Lån', from:'Åpnet fra varsel' }),
         cap:'Anbefalingen i OD-0034: medeieren ser status, periode, vilkår og partene, og bare sine egne handlinger. Ikke samtalen, tidslinjen eller anmeldelsene. I dag kan bare partene åpne lånets side, så Jonas kommer ikke inn fra varselet.' }),
-      phone({ num:'14', label:'Ola · variant: ny medeier må godtas', time:'12:05', body:page(mk({ ...OUT, day:11, min:12 * 60 + 5, transfer:{ from:'kari', to:'jonas', late:true, accepted:true, consent:null } }), 'ola', { back:'Hjem', from:'Åpnet fra varsel', area:'hjem' }),
+      phone({ num:'14', label:'Ola · variant: ny medeier må godtas', time:'12:05', body:page(mk({ ...OUT, day:11, min:12 * 60 + 5, transfer:{ from:'kari', to:'jonas', late:true, accepted:true, consent:null } }), 'ola', { back:'Lån', from:'Åpnet fra varsel' }),
         cap:'Ble Jonas medeier etter at lånet ble godkjent, må Ola godta byttet (PS-LOAN-009). Ellers får Ola bare beskjed. Å si nei er like enkelt som å si ja.' }),
       phone({ num:'15', label:'Ola · Jonas er ansvarlig', time:'12:06', body:page(mk({ ...OUT, day:11, min:12 * 60 + 6, lender:'jonas', tl:[...TL_OUT, ev(11, 12, 5, null, 'Jonas Vik ble ansvarlig utlåner')] }), 'ola', { why:'Jonas Vik er ansvarlig utlåner fra i dag. Avtalen er den samme.' }),
         cap:'Ola får påkrevd varsel om byttet. Tittelen, statuskortet og raden for den andre parten viser nå Jonas, og «Skriv til» går til ham. Linjen øverst forsvinner neste gang siden åpnes.' }),
@@ -1054,17 +1058,17 @@ ${note('Overtakelse uten samtykke', '<span class="s" style="color:#1E2733">At en
 
   { h:'Når noe ikke går som avtalt', s:'Avvik skjer på samme side. Overskriften sier nøytralt hva som er uavklart, og svarene står side om side uten at noe er fremhevet (UX-EXC-001–003). Taushet gjør ingen skyldig.',
     items:[
-      phone({ num:'16', label:'Kari · overleveringen avklares', time:'09:05', body:page(mk({ day:11, min:9 * 60 + 5, status:'awaiting_handover', tl:[...T0, ev(11, 0, 0, null, 'Overleveringsdagen passerte uten at overleveringen var registrert')] }), 'kari', { back:'Hjem', from:'Åpnet fra varsel', area:'hjem' }),
+      phone({ num:'16', label:'Kari · overleveringen avklares', time:'09:05', body:page(mk({ day:11, min:9 * 60 + 5, status:'awaiting_handover', tl:[...T0, ev(11, 0, 0, null, 'Overleveringsdagen passerte uten at overleveringen var registrert')] }), 'kari', { back:'Lån', from:'Åpnet fra varsel' }),
         cap:'Begge får varsel når dagen har passert. De to svarene er likeverdige og sier hva som skjedde. En ny dag er ikke et svar, men et forslag, og står for seg (UX-INT-001).' }),
       phone({ num:'17', label:'Kari · venter på Ola', time:'09:20', body:page(mk({ day:11, min:9 * 60 + 20, status:'awaiting_handover', ho:{ lender:'not', borrower:null }, hoDue:14, hoMin:9 * 60 + 20, tl:[...T0, ev(11, 9, 20, 'kari', 'sa at høytrykksspyleren ikke ble overlevert')] }), 'kari', { flash:'Registrert.' }),
         cap:'Svarfristen er 72 timer (PS-LOAN-012). Sier Ola at han fikk den, er lånet utlånt hvis Kari ikke sier noe annet, ellers uenighet.' }),
       phone({ num:'18', label:'Ola · ikke gjennomført', time:'09:22', body:page(mk({ day:14, min:9 * 60 + 22, status:'ended', end:'not_completed', endBy:'lender', basis:'unanswered', endDay:14, revDue:28, tl:[...T0, ev(11, 9, 20, 'kari', 'sa at høytrykksspyleren ikke ble overlevert'), ev(14, 9, 20, null, 'Lånet ble ikke gjennomført. Fristen for å svare om overleveringen gikk ut')] }), 'ola'),
         cap:'Teksten sier hva som skjedde, ikke at Ola uteble. Anmeldelsen gjelder bare overleveringen og kommunikasjonen.' }),
-      phone({ num:'19', label:'Kari · returen avklares', time:'09:10', body:page(mk({ ...OUT, day:13, min:9 * 60 + 10, status:'awaiting_return', retSince:13, tl:[...TL_OUT, ev(13, 0, 0, null, 'Returdagen passerte uten at returen var bekreftet')] }), 'kari', { back:'Hjem', from:'Åpnet fra varsel', area:'hjem' }),
+      phone({ num:'19', label:'Kari · returen avklares', time:'09:10', body:page(mk({ ...OUT, day:13, min:9 * 60 + 10, status:'awaiting_return', retSince:13, tl:[...TL_OUT, ev(13, 0, 0, null, 'Returdagen passerte uten at returen var bekreftet')] }), 'kari', { back:'Lån', from:'Åpnet fra varsel' }),
         cap:'Returdagen passerte uten bekreftelse. Det gjør ikke lånet forsinket (PS-LOAN-014). Begge blir spurt, og svarene er likeverdige.' }),
       phone({ num:'20', label:'Ola · forsinket', time:'09:30', body:page(mk({ ...OUT, day:13, min:9 * 60 + 30, status:'late', ret:{ lender:null, borrower:'still_has' }, tl:[...TL_OUT, ev(13, 0, 0, null, 'Returdagen passerte uten at returen var bekreftet'), ev(13, 9, 28, 'ola', 'sa at han fortsatt har høytrykksspyleren')] }), 'ola'),
         cap:'«Forsinket» brukes bare fordi Ola selv har sagt at han har den. Merket er lys primærfarge, ikke signalrødt, fordi det ikke er en destruktiv handling. En ny returdag Kari godtar, gjør lånet utlånt igjen.' }),
-      phone({ num:'21', label:'Ola · uenighet om returen', time:'18:30', body:page(mk({ ...OUT, day:13, min:18 * 60 + 30, status:'disputed', dispute:'return', retSince:12, ret:{ lender:'not_received', borrower:'returned' }, tl:[...TL_OUT, ev(12, 16, 52, 'ola', 'meldte høytrykksspyleren returnert'), ev(13, 18, 25, 'kari', 'sa at hun ikke har fått tilbake høytrykksspyleren'), ev(13, 18, 25, null, 'Dere sa ulike ting om returen')] }), 'ola', { back:'Hjem', from:'Åpnet fra varsel', area:'hjem' }),
+      phone({ num:'21', label:'Ola · uenighet om returen', time:'18:30', body:page(mk({ ...OUT, day:13, min:18 * 60 + 30, status:'disputed', dispute:'return', retSince:12, ret:{ lender:'not_received', borrower:'returned' }, tl:[...TL_OUT, ev(12, 16, 52, 'ola', 'meldte høytrykksspyleren returnert'), ev(13, 18, 25, 'kari', 'sa at hun ikke har fått tilbake høytrykksspyleren'), ev(13, 18, 25, null, 'Dere sa ulike ting om returen')] }), 'ola', { back:'Lån', from:'Åpnet fra varsel' }),
         cap:'Begge utsagnene står side om side. Ingen versjon vinner fordi den kom først (UX-EXC-003). I et miljølån tilbys mekling med en gang.' }),
       phone({ num:'22', label:'Ola · be miljøet om hjelp', time:'18:34', body:withSheet(withUi(mk({ ...OUT, day:13, min:18 * 60 + 34, status:'disputed', dispute:'return', ret:{ lender:'not_received', borrower:'returned' } }), { text:{ ola:'Jeg leverte høytrykksspyleren i boden til Kari mandag kl. 16.50, slik vi avtalte i samtalen.' } }), 'ola', 'mediate'),
         cap:'Arket sier hva mekling er og ikke er (vision 05), at forklaringene holdes adskilt (PS-COM-012), og at samtalen ikke følger med (PS-COM-013). Teksten går inn i saken fra kjerneflyt 8.' }),
@@ -1072,7 +1076,7 @@ ${note('Overtakelse uten samtykke', '<span class="s" style="color:#1E2733">At en
         cap:'Meklingen er en egen rad under statuskortet og åpner saken (kjerneflyt 8). Lånet står som uavklart til partene sier noe nytt eller meklingen er over.' }),
       phone({ num:'24', label:'Kari · noe stemmer ikke etter returen', time:'10:15', body:withSheet(mk({ ...BACK, day:14, min:10 * 60 + 15 }), 'kari', 'problem'),
         cap:'Etter angrefristen kan bekreftelsen ikke endres. Det som er feil, blir en ny hendelse, og den gamle står (UX-EXC-010, PS-LOAN-017). Skade og mangler er et åpent valg (OD-0033).' }),
-      phone({ num:'25', label:'Ola · lånet er åpnet igjen', time:'10:20', body:page(mk({ ...BACK, day:14, min:10 * 60 + 20, status:'disputed', dispute:'return', reopened:true, end:null, paused:true, ret:{ lender:'not_received', borrower:'returned' }, rev:{ lender:null, borrower:REV_OLA }, tl:[...TL_BACK, ev(14, 10, 16, 'kari', 'sa at hun ikke har fått tilbake høytrykksspyleren'), ev(14, 10, 16, null, 'Lånet ble åpnet igjen. Returen er uavklart')] }), 'ola', { back:'Hjem', from:'Åpnet fra varsel', area:'hjem' }),
+      phone({ num:'25', label:'Ola · lånet er åpnet igjen', time:'10:20', body:page(mk({ ...BACK, day:14, min:10 * 60 + 20, status:'disputed', dispute:'return', reopened:true, end:null, paused:true, ret:{ lender:'not_received', borrower:'returned' }, rev:{ lender:null, borrower:REV_OLA }, tl:[...TL_BACK, ev(14, 10, 16, 'kari', 'sa at hun ikke har fått tilbake høytrykksspyleren'), ev(14, 10, 16, null, 'Lånet ble åpnet igjen. Returen er uavklart')] }), 'ola', { back:'Lån', from:'Åpnet fra varsel' }),
         cap:'Begge hendelsene står i tidslinjen. Olas skjulte anmeldelse venter og publiseres ikke mens returen er uavklart (PS-TRUST-008).' }),
       phone({ num:'26', label:'Kari · uenighet i et vennelån', time:'18:40', body:page(mk({ ...OUT, env:false, day:13, min:18 * 60 + 40, status:'disputed', dispute:'return', ret:{ lender:'not_received', borrower:'returned' } }), 'kari'),
         cap:'Et direkte lån mellom venner har ingen mekling (vision 05). Siden sier det rett ut i stedet for å vise en knapp som ikke finnes (UX-EXC-009).' }),
