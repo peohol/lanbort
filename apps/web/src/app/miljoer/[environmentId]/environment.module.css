@@ -1,0 +1,16 @@
+/* An environment's pages (Tomat kjerneflyt 3): what it is, as cards. */
+.card {
+  margin-block: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-m);
+}
+
+.card > h2 {
+  margin-top: 0;
+}
+
+.card > p {
+  margin-bottom: 0;
+}

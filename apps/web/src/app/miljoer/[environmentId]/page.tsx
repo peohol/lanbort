@@ -1,26 +1,22 @@
 import {
   calendarDate,
   getEnvironment,
-  listEnvironmentMembers,
   listEnvironmentObjects,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
+import { MenuList, MenuRow } from "@/components/menu-list";
 import { PageHeader } from "@/components/page-header";
-import { ContextTag, Tag } from "@/components/tag";
-import { findHref, homeHref } from "@/navigation/areas";
-import { environmentHref } from "@/navigation/routes";
-import {
-  environmentTypeNames,
-  membershipStep,
-  roleName,
-} from "@/presentation/environments";
+import { Tag } from "@/components/tag";
+import { environmentAboutHref, environmentHref } from "@/navigation/routes";
+import { membershipStep, roleName } from "@/presentation/environments";
 import {
   pageQuery,
   pageQueryOrNotFound,
   requirePageAccount,
 } from "@/server/session";
-import { About, Requirements } from "./about";
-import { Members, Things } from "./member-content";
+import { About, MembersOnly } from "./about";
+import { environmentBack } from "./back";
+import { Things } from "./member-content";
 import { Membership } from "./membership";
 
 export const metadata: Metadata = { title: "Miljøet – Lånbort" };
@@ -29,11 +25,12 @@ export const metadata: Metadata = { title: "Miljøet – Lånbort" };
 const afterParam = "etter";
 
 /**
- * An environment as a context (UX-IA-004, WP-84): what it is and what it
- * asks of members before joining (UX-JRN-002), the way in, and for active
- * members its things, its other members and the administrators. What the
- * caller may see is decided by each query's own policy; a hidden
- * environment looks like nothing at all to outsiders (UX-PRIV-002).
+ * An environment as a context (UX-IA-004, WP-84, Tomat kjerneflyt 3):
+ * before joining, what it is and what it asks of members (UX-JRN-002) and
+ * the way in; for active members its things, with the rest («Om miljøet
+ * og medlemmer») a page away. What the caller may see is decided by each
+ * query's own policy; a hidden environment looks like nothing at all to
+ * outsiders (UX-PRIV-002).
  */
 export default async function EnvironmentPage({
   params,
@@ -50,35 +47,25 @@ export default async function EnvironmentPage({
   const step = membershipStep(environment);
   const active = environment.membership?.state === "active";
   const after = query[afterParam];
-  const [things, members] = active
-    ? await Promise.all([
-        pageQuery(listEnvironmentObjects, {
-          environmentId,
-          ...(typeof after === "string" ? { cursor: after } : {}),
-        }),
-        pageQuery(listEnvironmentMembers, { environmentId }),
-      ])
-    : [null, null];
+  const things = active
+    ? await pageQuery(listEnvironmentObjects, {
+        environmentId,
+        ...(typeof after === "string" ? { cursor: after } : {}),
+      })
+    : null;
   const role = roleName(environment.roles);
+  const member = environment.membership !== null;
 
   return (
     <main>
       <PageHeader
         title={environment.name}
-        back={
-          environment.membership
-            ? { href: homeHref, label: "Hjem" }
-            : { href: `${findHref}?vis=miljoer`, label: "Finn" }
-        }
-        context={
-          <>
-            <ContextTag label="Miljøtype">
-              {environmentTypeNames[environment.type]}
-            </ContextTag>
-            {role && <Tag>Du er {role.toLowerCase()}</Tag>}
-          </>
-        }
-      />
+        kind="Miljø"
+        back={environmentBack(environment)}
+        context={role && <Tag>Du er {role.toLowerCase()}</Tag>}
+      >
+        {environment.location}
+      </PageHeader>
       <Membership environment={environment} step={step} />
       {things && (
         <Things
@@ -91,9 +78,22 @@ export default async function EnvironmentPage({
           paged={typeof after === "string"}
         />
       )}
-      {members && <Members members={members.members} />}
-      <About environment={environment} />
-      {active && <Requirements requirements={environment.requirements} />}
+      {member ? (
+        <MenuList>
+          <MenuRow
+            href={environmentAboutHref(environmentId)}
+            icon="people"
+            label={
+              active ? "Om miljøet og medlemmer" : "Om miljøet og medlemskapet"
+            }
+          />
+        </MenuList>
+      ) : (
+        <>
+          <About environment={environment} />
+          <MembersOnly />
+        </>
+      )}
     </main>
   );
 }

@@ -60,6 +60,10 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
   },
   { name: "Miljøet", path: ({ environmentId }) => `/miljoer/${environmentId}` },
   {
+    name: "Om miljøet",
+    path: ({ environmentId }) => `/miljoer/${environmentId}/om`,
+  },
+  {
     name: "Be om å låne",
     path: ({ ladder, environmentId }) =>
       `/ting/${ladder}/lan?miljo=${environmentId}`,

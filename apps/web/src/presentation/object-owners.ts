@@ -337,3 +337,67 @@ export function whereShown(list: {
     friends: list.friends !== null,
   };
 }
+
+/** One place the thing can be shown, as the owners' «Hvor den vises» lists it. */
+export interface ShownPlace {
+  readonly key: string;
+  /** Null when the owners no longer share a membership there. */
+  readonly environment: { readonly id: string; readonly name: string } | null;
+  /** The latest publication there; null where it never was. */
+  readonly publication: ObjectPublication | null;
+  /** The user may publish it here now (PS-OBJ-006, PS-OBJ-017). */
+  readonly publishable: boolean;
+}
+
+/**
+ * Every environment the thing is or was published in, and every other one
+ * the user may publish it in, one row each: the latest publication per
+ * environment comes from the API, so nothing is listed twice.
+ */
+export function shownPlaces(
+  publications: readonly ObjectPublication[],
+  environments: readonly EnvironmentSummary[],
+): ShownPlace[] {
+  const open = new Set(
+    publishableEnvironments(environments, publications).map(({ id }) => id),
+  );
+  const listed = new Set(
+    publications.flatMap(({ environment }) =>
+      environment ? [environment.id] : [],
+    ),
+  );
+
+  return [
+    ...publications.map((publication) => ({
+      key: publication.id,
+      environment: publication.environment,
+      publication,
+      publishable:
+        publication.environment !== null &&
+        open.has(publication.environment.id),
+    })),
+    ...environments
+      .filter(({ id }) => open.has(id) && !listed.has(id))
+      .map(({ id, name }) => ({
+        key: id,
+        environment: { id, name },
+        publication: null,
+        publishable: true,
+      })),
+  ];
+}
+
+/**
+ * Whether `me` may show the thing somewhere new, in an environment or to
+ * friends: it is active and not frozen (PS-OBJ-009), and no other owner
+ * has stopped every new loan (PS-OBJ-008). The owner who did can lift it.
+ */
+export const mayPublish = (
+  object: Pick<OwnObject, "status" | "frozenForNewLoans" | "restrictions">,
+  me: string,
+) =>
+  object.status === "active" &&
+  !object.frozenForNewLoans &&
+  !object.restrictions.some(
+    ({ period, setByUserId }) => period === null && setByUserId !== me,
+  );

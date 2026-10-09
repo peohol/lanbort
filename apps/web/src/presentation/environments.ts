@@ -145,6 +145,33 @@ export function describeMembership(
   }
 }
 
+/** The membership in a word or two, above its status (Tomat kjerneflyt 3). */
+export function membershipLabel(
+  environment: Environment,
+  step: MembershipStep,
+): string {
+  switch (step.kind) {
+    case "closed_to_new":
+      return "Avvikles";
+    case "join":
+    case "apply":
+      return environmentTypeNames[environment.type];
+    case "accept_invitation":
+      return "Invitert";
+    case "awaiting_review":
+      return "Venter på administratorene";
+    case "information_requested":
+    case "confirm":
+      return "Venter på deg";
+    case "passive":
+      return "Passivt medlem";
+    case "transition":
+      return "Nye krav";
+    case "member":
+      return "Medlem";
+  }
+}
+
 /** The command, its heading and its button for a step that sends answers. */
 export function answerCommand(
   environment: Environment,

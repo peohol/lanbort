@@ -117,19 +117,24 @@ test("an environment is created, applied to, used and left in the browser", asyn
   await expect(
     bo.page.getByRole("link", { name: "Registrer en ting her" }),
   ).toHaveAttribute("href", `/ting/ny?miljo=${environmentId}`);
+
+  // About the environment and its members, a page away.
+  await bo.page.getByRole("link", { name: "Om miljøet og medlemmer" }).click();
+  await expect(bo.page.getByRole("heading", { level: 1 })).toHaveText(
+    `Om ${name}`,
+  );
   await expect(
     bo.page
       .getByRole("region", { name: /Medlemmer/ })
       .getByRole("link", { name: "Anna Berg" }),
   ).toHaveAttribute("href", `/personer/${annaId}`);
   await expect(
-    bo.page.getByRole("heading", { name: "Kontakt administratorene" }),
-  ).toBeVisible();
+    bo.page.getByRole("link", { name: "Kontakt administratorene" }),
+  ).toHaveAttribute("href", `/saker/ny?kontakt=${environmentId}`);
   await expect(bo.page.getByText("Hvilken leilighet bor du i?")).toBeVisible();
   await expect(bo.page.getByText("H0201")).toHaveCount(0);
 
   // Leaving says what goes and what stays before it happens.
-  await bo.page.getByText("Flere valg").click();
   await bo.page.getByRole("button", { name: "Forlat miljøet" }).click();
   const dialog = bo.page.getByRole("dialog");
   await expect(
@@ -182,7 +187,9 @@ test("an invitation to a hidden environment is accepted on its page, and members
     .getByRole("button", { name: `Godta invitasjonen til ${name}` })
     .click();
   await expect(bo.page.getByText("Du er medlem.")).toBeVisible();
+  await bo.page.getByRole("link", { name: "Om miljøet og medlemmer" }).click();
   await expect(bo.page.getByRole("link", { name: "Eva Eier" })).toBeVisible();
+  await bo.page.goto(`/miljoer/${environmentId}`);
 
   // A weaker type is each member's own choice (UX-PRIV-008): hidden →
   // closed is a vote, and those without a yes are removed if it passes.

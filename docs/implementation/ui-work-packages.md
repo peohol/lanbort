@@ -95,6 +95,8 @@ Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) er la
 
 **Avhenger av:** WP-80. Lenken «Rediger» går til WP-81s side.
 
+**I Tomat (kjerneflyt 2), 10. oktober 2026:** Siden har tingens bilde og «Din ting» over navnet. «Hvor den vises» har én rad per miljø brukeren kan publisere i og én for «Venner», med status og steget som endrer det (publiser, trekk tilbake, vis eller skjul for venner, PS-OBJ-020). Ser bare eierne tingen, sier statuskortet det og leder til «Velg hvor den vises». «Om tingen» viser ledighet og vilkår først.
+
 ## WP-83 — Objekt for lånere og låneforespørsel
 
 **Leverer:** Hele veien fra en funnet ting til en sendt, besvart og godkjent forespørsel, likt for miljølån og vennelån (UX-JRN-004, UX-JRN-005, UX-JRN-006, PS-LOAN-001).
@@ -126,6 +128,8 @@ Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) er la
 - Hjem lenker «Dine miljøer» og miljøvarsler til siden, og miljøtreff i Finn lenker hit.
 
 **Avhenger av:** WP-80. Typeendringen skjult→lukket for medlemmer også av serverdelen av WP-85; resten av pakken venter ikke på den.
+
+**I Tomat (kjerneflyt 3), 10. oktober 2026:** Siden er «Miljø» med sted under navnet, og medlemskapet er statuskortet med typen eller «Medlem» over. Medlemmer ser tingene, «Registrer en ting her» og en rad til «Om miljøet og medlemmer» (`/miljoer/[id]/om`): beskrivelsen, medlemslisten, reglene, «Kontakt administratorene» (saksskjemaet) og «Forlat miljøet». Før man er med, står det hva miljøet er og hva bare medlemmer ser. Gjenstår fra designreferansen: søknaden som egen avgrenset side, «Velkommen» ved første besøk, søk i miljøet og omtrentlig medlemstall (OD-0048).
 
 ## WP-85 — Miljøadministrasjon
 
