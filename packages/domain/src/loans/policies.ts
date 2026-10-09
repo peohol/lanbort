@@ -550,6 +550,43 @@ export const listCoOwnerLoansPolicy = definePolicy<unknown, void>({
 });
 
 /**
+ * A loan with whether the caller, who is not its party, may see its
+ * restricted view (UX-PRIV-013): they own the object now and owned it when
+ * the loan was approved, or the responsible lender's role is offered to
+ * them. Owning the object alone is not enough.
+ */
+export interface CoOwnerViewResource extends LoanResource {
+  readonly seesAsCoOwner: boolean;
+}
+
+/**
+ * UX-PRIV-013: the co-owner's restricted view of a loan. The parties learn
+ * that it is not theirs (they read the loan itself); to anyone else, a
+ * later or former co-owner included, the loan does not exist.
+ */
+const asCoOwner: ResourceRule<CoOwnerViewResource, void> = ({
+  actor,
+  resource,
+}) => {
+  if (loanRoleOf(actor, resource) !== null) {
+    return deny("forbidden");
+  }
+
+  return resource.seesAsCoOwner ? allow : deny("not_found");
+};
+
+/**
+ * Seeing it needs only the standing that keeps what an existing loan needs
+ * (PS-ADM-002): a co-owner whose account is not active may still decline an
+ * offered role or confirm having the object back.
+ */
+export const readLoanAsCoOwnerPolicy = definePolicy<CoOwnerViewResource, void>({
+  action: "loan.read_as_co_owner",
+  actor: [requireLoanStanding],
+  resource: [asCoOwner],
+});
+
+/**
  * The caller's own loans. Like reading one, it needs only the standing that
  * keeps what an existing loan needs (PS-LOAN-021).
  */
@@ -703,6 +740,7 @@ export const loanRequestPolicies = [
   declineResponsibilityTransferPolicy,
   withdrawResponsibilityTransferPolicy,
   listCoOwnerLoansPolicy,
+  readLoanAsCoOwnerPolicy,
   listLoansPolicy,
   requestLoanMediationPolicy,
   endLoanUnresolvedPolicy,

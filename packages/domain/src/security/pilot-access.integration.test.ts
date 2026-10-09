@@ -581,6 +581,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     declarationVersion: 1,
   }),
   "loan.read": (ids) => ({ loanId: ids.loanId }),
+  "loan.read_as_co_owner": (ids) => ({ loanId: ids.loanId }),
   "loan.list": (ids) => ({ state: "current", objectId: ids.objectId }),
   "loan.read_history": (ids) => ({ loanId: ids.loanId }),
   "loan.read_logistics": (ids) => ({ loanId: ids.loanId }),
@@ -973,11 +974,13 @@ async function everythingRead(world: World, actor: UserActor) {
 /** The lender's chat with the borrower is theirs, wherever either is now. */
 const chatReads = ["chat.read_conversation", "chat.read_directory"];
 
+// A party learns that the co-owner's view is not theirs (`forbidden`).
 const loanReads = [
   "loan_request.read",
   "loan_review.read",
   "loan.list",
   "loan.read",
+  "loan.read_as_co_owner",
   "loan.read_condition_reports",
   "loan.read_history",
   "loan.read_logistics",
@@ -1057,6 +1060,19 @@ describe("co-owner boundaries", () => {
     expect(await everythingRead(world, late)).not.toContain(
       world.ids.requestId,
     );
+  });
+
+  // UX-PRIV-013: the co-owner owned the object when the loan was approved
+  // and is offered the lender's role. They see the request as an owner, as
+  // before, and the loan only through the restricted view.
+  it("gives a co-owner of the circle the restricted view of the loan, never the parties' reads", async () => {
+    const world = await hiddenWorld();
+
+    const reached = await reachable(world, world.actors.coOwner, reads);
+    expect(reached.filter((name) => loanReads.includes(name))).toEqual([
+      "loan_request.read",
+      "loan.read_as_co_owner",
+    ]);
   });
 
   it("leaves a co-owner who stepped out nothing", async () => {
