@@ -397,13 +397,20 @@ export const loanRules = [
   notifyOn(
     loanReviewPublished,
     async ({ db, payload }) => {
-      const parties = await loanParties(db, payload.loanId);
+      // The window's parties, who may read the reviews: after a reopened
+      // loan changed lender, they are no longer the loan's.
+      const window = await db
+        .selectFrom("app.loan_review_periods")
+        .select(["borrower_user_id", "lender_user_id"])
+        .where("loan_id", "=", payload.loanId)
+        .executeTakeFirst();
 
-      return parties
-        ? tell([parties.borrower, parties.lender], "loan_review.published", {
-            type: "loan_reviews",
-            id: payload.loanId,
-          })
+      return window
+        ? tell(
+            [window.borrower_user_id, window.lender_user_id],
+            "loan_review.published",
+            { type: "loan_reviews", id: payload.loanId },
+          )
         : [];
     },
     {
