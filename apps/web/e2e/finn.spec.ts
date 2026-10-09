@@ -205,6 +205,10 @@ test("Finn explains what to change instead of searching", async ({ page }) => {
     "role",
     "alert",
   );
+  // «Bruk der jeg er» sets only the point; the place stays in view.
+  await expect(
+    page.locator("details", { hasText: "Avgrens søket" }),
+  ).toHaveAttribute("open", "");
 });
 
 test("search needs a signed-in user", async ({ request }) => {

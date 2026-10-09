@@ -179,7 +179,9 @@ async function ObjectSearch({
       <form role="search" action="/finn" method="get" className={styles.form}>
         <SearchField label="Hva leter du etter?" form={form} />
         <MoreFilters
-          chosen={Boolean(form.category || form.from || form.to || form.place)}
+          chosen={Boolean(
+            form.category || form.from || form.to || placeChosen(form),
+          )}
         >
           <label htmlFor="finn-kategori">Kategori</label>
           <select
@@ -282,7 +284,7 @@ async function EnvironmentSearch({
           label="Navn, sted eller hva miljøet handler om"
           form={form}
         />
-        <MoreFilters chosen={Boolean(form.type || form.place)}>
+        <MoreFilters chosen={Boolean(form.type) || placeChosen(form)}>
           <label htmlFor="finn-type">Type</label>
           <select id="finn-type" name="type" defaultValue={form.type}>
             <option value="">Åpne og lukkede</option>
@@ -394,6 +396,9 @@ function SearchField({ label, form }: { label: string; form: FinnForm }) {
     </div>
   );
 }
+
+/** A place to search near, named or where the user is («Bruk der jeg er»). */
+const placeChosen = ({ place, point }: FinnForm) => Boolean(place || point);
 
 /** The rest of the search, folded away until it is used. */
 function MoreFilters({
