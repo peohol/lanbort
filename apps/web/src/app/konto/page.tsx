@@ -158,7 +158,7 @@ export default async function AccountPage() {
 
   return (
     <main>
-      <PageHeader title="Konto" />
+      <PageHeader title="Konto" home="home" />
       <section aria-labelledby="profil">
         <h2 id="profil">Profil</h2>
         <p>{account.realName}</p>

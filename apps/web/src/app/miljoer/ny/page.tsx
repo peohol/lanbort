@@ -18,7 +18,7 @@ export default async function NewEnvironmentPage() {
   if (!takesNewActivity(account.status)) {
     return (
       <main>
-        <PageHeader title="Opprett et miljø" back={back} />
+        <PageHeader title="Opprett et miljø" back={back} task />
         <p className="quiet">
           Du kan ikke opprette miljøer mens kontoen ikke er aktiv.
         </p>
@@ -28,7 +28,7 @@ export default async function NewEnvironmentPage() {
 
   return (
     <main>
-      <PageHeader title="Opprett et miljø" back={back}>
+      <PageHeader title="Opprett et miljø" back={back} task>
         Et miljø er en gruppe som låner ut til hverandre, for eksempel et
         borettslag, et nabolag eller en forening. Du blir eier og administrator.
       </PageHeader>

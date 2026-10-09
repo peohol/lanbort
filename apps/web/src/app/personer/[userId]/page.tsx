@@ -26,7 +26,7 @@ import {
 } from "@/server/session";
 import { Between, FriendThings } from "./between";
 import styles from "./person.module.css";
-import { friendsHref, PersonMoreActions, RelationCard } from "./relation";
+import { PersonMoreActions, RelationCard } from "./relation";
 import { roleIn } from "./role";
 import { TrustSummary } from "./trust";
 
@@ -121,7 +121,7 @@ export default async function PersonPage({
         kind="Person"
         title={person.realName}
         picture={picture}
-        back={{ href: friendsHref, label: "Venner" }}
+        home="home"
         context={context}
       />
       {why && (
