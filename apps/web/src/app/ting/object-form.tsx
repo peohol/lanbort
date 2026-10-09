@@ -45,7 +45,11 @@ import {
   rebaseDraft,
 } from "@/presentation/object-form";
 import { ownImageHref } from "@/presentation/object-images";
-import { categoryLabel, formatInterval } from "@/presentation/objects";
+import {
+  availabilityLine,
+  categoryLabel,
+  formatInterval,
+} from "@/presentation/objects";
 import { type FormImage } from "./object-form-fields";
 import {
   AboutStep,
@@ -595,9 +599,7 @@ export function ObjectForm(props: ObjectFormProps) {
               "Ledig",
               content.availability.length === 0
                 ? "Ingen perioder. Den kan ikke lånes ut før du legger inn en."
-                : isAnytime(draft.availability, today)
-                  ? `Når som helst, ${formatInterval(content.availability[0]!).toLowerCase()}`
-                  : content.availability.map(formatInterval).join(", "),
+                : availabilityLine(content.availability, today),
             ],
             [
               "Vilkår",
