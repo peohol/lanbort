@@ -162,7 +162,7 @@ test("two friends chat end to end, and a new device is linked with its code", as
 test("a message waits until the friend has turned chat on", async ({
   browser,
 }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(150_000);
   const anna = await person(browser, "Dag Fjeld");
   const bo = await person(browser, "Eli Gran");
   await postCommand(anna.context.request, "/api/social/friend-requests", {
@@ -184,11 +184,11 @@ test("a message waits until the friend has turned chat on", async ({
   ).toBeVisible();
   await expect(anna.page.getByText("ikke sendt ennå")).toBeVisible();
 
-  // Once Eli turns chat on, Dag's device adds Eli's and sends the message.
+  // When Eli enables chat, Dag's next background sync must add the new
+  // device and send the waiting message without a page reload.
   await turnOnChat(bo.page);
-  await anna.page.reload();
   await expect(anna.page.getByText("ikke sendt ennå")).toHaveCount(0, {
-    timeout: 30_000,
+    timeout: 45_000,
   });
   await bo.page.goto("/samtaler");
   await bo.page.getByRole("link", { name: "Dag Fjeld" }).click();
