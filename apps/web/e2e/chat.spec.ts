@@ -126,7 +126,14 @@ test("two friends chat end to end, and a new device is linked with its code", as
   await expect(chatChoices.getByLabel("Nye meldinger i appen")).toBeChecked();
   const email = chatChoices.getByLabel("Nye meldinger på e-post");
   await expect(email).not.toBeChecked();
+  // The box is ticked before the choice is saved; reload only after that.
+  const saved = bo.page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/notifications/preferences") &&
+      response.ok(),
+  );
   await email.check();
+  await saved;
   await bo.page.reload();
   await expect(email).toBeChecked();
   await bo.page.goto(conversation);
