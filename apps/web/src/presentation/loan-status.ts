@@ -1,7 +1,9 @@
 import type {
   HandoverOutcome,
   Loan,
+  LoanEndReason,
   LoanRequestRole,
+  LoanStatus,
   ReturnOutcome,
 } from "@lanbort/contracts";
 import type { Tone } from "@/components/tag";
@@ -26,7 +28,7 @@ export const otherParty = (loan: Loan) =>
   personName(loan.parties[otherSide(loan.role)]);
 
 /** A sentence starts with a capital, whatever the thing is called. */
-const sentence = (text: string) =>
+export const sentence = (text: string) =>
   text.charAt(0).toLocaleUpperCase("nb-NO") + text.slice(1);
 
 /**
@@ -77,6 +79,22 @@ export interface LoanSituation {
   readonly body: readonly string[];
 }
 
+/** How an ended loan is tagged, whoever reads it. */
+export const endingLabels: Record<
+  LoanEndReason,
+  Pick<LoanSituation, "label" | "tone">
+> = {
+  returned: { label: "Avsluttet", tone: "positive" },
+  cancelled: { label: "Kansellert", tone: "neutral" },
+  stopped: { label: "Stanset", tone: "neutral" },
+  not_completed: { label: "Ikke gjennomført", tone: "neutral" },
+  unresolved: { label: "Avsluttet uavklart", tone: "neutral" },
+};
+
+/** What an unresolved ending means, and what it does not (UX-EXC-002). */
+export const unresolvedNote =
+  "Lånet ble avsluttet uten avklaring. Det sier ingenting om hva som skjedde, eller om hvem som har rett.";
+
 const handoverPhrases: Record<HandoverOutcome, (title: string) => string> = {
   handed_over: (title) => `${title} ble overlevert`,
   not_handed_over: () => "overleveringen ikke skjedde",
@@ -123,8 +141,7 @@ function endedSituation(loan: Loan): LoanSituation | null {
   switch (ending.reason) {
     case "returned":
       return {
-        label: "Avsluttet",
-        tone: "positive",
+        ...endingLabels.returned,
         headline: "Lånet er avsluttet",
         body: [
           `${by ?? "En medeier"} bekreftet ${formatTime(ending.endedAt)} at ${title} er tilbake.`,
@@ -132,8 +149,7 @@ function endedSituation(loan: Loan): LoanSituation | null {
       };
     case "cancelled":
       return {
-        label: "Kansellert",
-        tone: "neutral",
+        ...endingLabels.cancelled,
         headline: by ? `${by} kansellerte lånet` : "Lånet er kansellert",
         body: [
           `${sentence(title)} ble ikke overlevert, og ${formatPeriod(loan.period)} er ledig igjen.`,
@@ -141,8 +157,7 @@ function endedSituation(loan: Loan): LoanSituation | null {
       };
     case "stopped":
       return {
-        label: "Stanset",
-        tone: "neutral",
+        ...endingLabels.stopped,
         headline: "Lånet kan ikke gjennomføres",
         body: [
           "Lånet er stoppet på grunn av en plattformbegrensning. Ingen av dere har kansellert det, og det teller ikke som at noen uteble.",
@@ -150,8 +165,7 @@ function endedSituation(loan: Loan): LoanSituation | null {
       };
     case "not_completed":
       return {
-        label: "Ikke gjennomført",
-        tone: "neutral",
+        ...endingLabels.not_completed,
         headline: "Lånet ble ikke gjennomført",
         body: [
           "Overleveringen skjedde ikke, så lånet ble aldri aktivt. Tidslinjen viser hva hver av dere sa.",
@@ -159,9 +173,7 @@ function endedSituation(loan: Loan): LoanSituation | null {
       };
     case "unresolved": {
       const waiting = loan.control?.confirmedAt === null;
-      const body = [
-        "Lånet ble avsluttet uten avklaring. Det sier ingenting om hva som skjedde, eller om hvem som har rett.",
-      ];
+      const body = [unresolvedNote];
 
       if (waiting && own === "lender") {
         return {
@@ -176,8 +188,9 @@ function endedSituation(loan: Loan): LoanSituation | null {
       }
 
       return {
-        label: waiting ? `Venter på ${other}` : "Avsluttet uavklart",
-        tone: waiting ? "waiting" : "neutral",
+        ...(waiting
+          ? { label: `Venter på ${other}`, tone: "waiting" as const }
+          : endingLabels.unresolved),
         headline: "Lånet er avsluttet uten avklaring",
         body: waiting
           ? [...body, `Venter på at ${other} bekrefter å ha ${title} igjen.`]
@@ -528,27 +541,46 @@ const atStage = (
   label: string = loanStages[current] ?? "",
 ): LoanProgress => ({ current, label });
 
-export function loanProgress(loan: Loan): LoanProgress {
-  switch (loan.ending?.reason) {
+/**
+ * What a loan's progress is read from. `aboutReturn` says whether what is
+ * unsettled is the return rather than the handover; null when the reader
+ * is not told (a co-owner, UX-PRIV-013), and then such a loan has no step.
+ */
+interface ProgressFacts {
+  readonly status: LoanStatus;
+  readonly endReason: LoanEndReason | null;
+  readonly aboutReturn: boolean | null;
+  readonly pendingReturn: boolean;
+}
+
+/** On the handover's or the return's step, as far as the reader knows. */
+const unsettled = (aboutReturn: boolean | null, label: string) =>
+  aboutReturn === null ? null : atStage(aboutReturn ? 3 : 1, label);
+
+export function progressOf({
+  status,
+  endReason,
+  aboutReturn,
+  pendingReturn,
+}: ProgressFacts): LoanProgress | null {
+  switch (endReason) {
     case "returned":
       return atStage(4);
     case "cancelled":
-      return atStage(1, "Kansellert");
     case "stopped":
-      return atStage(1, "Stanset");
     case "not_completed":
-      return atStage(1, "Ikke gjennomført");
+      return atStage(1, endingLabels[endReason].label);
     case "unresolved":
       // Never at the end of the way: the handover or the return it was
       // about was not settled.
-      return atStage(aboutReturn(loan) ? 3 : 1, "Avsluttet uavklart");
-    case undefined:
+      return unsettled(aboutReturn, endingLabels.unresolved.label);
+    case null:
       break;
   }
 
-  if (loan.return.pending) return atStage(3);
+  if (pendingReturn) return atStage(3);
 
-  switch (loan.status) {
+  switch (status) {
     case "reserved":
       return atStage(1);
     case "awaiting_handover":
@@ -556,17 +588,26 @@ export function loanProgress(loan: Loan): LoanProgress {
     case "active":
       return atStage(2);
     case "awaiting_return":
-      return atStage(3, aboutReturn(loan) ? "Retur" : "Retur avklares");
+      return atStage(
+        3,
+        aboutReturn === false ? "Retur avklares" : loanStages[3],
+      );
     case "late":
       return atStage(3, "Forsinket");
     case "disputed":
-      return aboutReturn(loan)
-        ? atStage(3, "Uenighet")
-        : atStage(1, "Uenighet");
+      return unsettled(aboutReturn, "Uenighet");
     case "ended":
       return atStage(4, "Avsluttet");
   }
 }
+
+export const loanProgress = (loan: Loan): LoanProgress | null =>
+  progressOf({
+    status: loan.status,
+    endReason: loan.ending?.reason ?? null,
+    aboutReturn: aboutReturn(loan),
+    pendingReturn: loan.return.pending !== null,
+  });
 
 /** A step the caller can take, as one API command (UX-INT-001). */
 export interface LoanStep {
@@ -575,6 +616,8 @@ export interface LoanStep {
   readonly body: object;
   /** The page's main step, filled; the others are drawn alike. */
   readonly primary?: boolean;
+  /** Where to go once done, when the page no longer applies after it. */
+  readonly next?: string;
 }
 
 const returnLabels: Record<ReturnOutcome, (title: string) => string> = {

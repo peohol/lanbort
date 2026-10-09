@@ -5,9 +5,12 @@ import styles from "./loan.module.css";
  * The loan's five steps from request to done (KF1 v2, KF7). The step it is
  * at carries its word, which names a deviation where there is one
  * («Overlevering avklares», «Kansellert»); the status card says the rest
- * (UX-EXC-001). Each step says whether it is done, now or ahead.
+ * (UX-EXC-001). Each step says whether it is done, now or ahead. A loan
+ * whose step the reader is not told has none.
  */
-export function Progress({ progress }: { progress: LoanProgress }) {
+export function Progress({ progress }: { progress: LoanProgress | null }) {
+  if (!progress) return null;
+
   return (
     <ol className={styles.progress} aria-label="Lånets steg">
       {loanStages.map((stage, index) => {
