@@ -22,6 +22,18 @@
 
 **Foreslått neste designbolk:** Kjerneflyt 6 – **Personer, venner og tillit** (WP-86), med personprofil, venneforespørsler, fjerning/blokkering og kontekstuell tillitsinformasjon.
 
+## Konkrete stilankre
+
+Disse verdiene kommer fra de siste Tomat-prototypene. De er utgangspunkt for videre konsistent design, ikke en erstatning for å studere skjermene:
+
+- Typografi: **Atkinson Hyperlegible Next** i brødtekst og **Quicksand** i overskrifter.
+- Primærfarge **`#B0563A`**, mørk primær **`#8A3E26`**, lys primær **`#FBE8DF`**.
+- Destruktiv handling **`#C4122F`** (tydelig forskjellig fra primærfargen).
+- Tekst **`#1E2733`**, sekundærtekst **`#56606E`**, bakgrunn **`#F3F4F7`**, skillelinje **`#DEE1E8`**, fokusmarkering **`#2B4A8A`**.
+- Myke kortflater, tydelige ikoner, store berøringsmål og konsekvent mobilnavigasjon. Ikke gjeninnfør dekorativ indikatorprikk under aktivt menypunkt.
+
+De eksporterte HTML-filene er innpakket som selvstendige bundles. Designets faktiske HTML/CSS ligger inne i `<script type="__bundler/template">` som en JSON-kodet streng; et verktøy må lese/parse denne før visuelle regler hentes ut. Ikke trekk slutninger fra bare innpakningen eller den komprimerte ressursmanifesten.
+
 ## Regel for designagenter
 
 1. Les denne filen, de aktuelle prototypene og `docs/planning/ui-design-plan.md` **før** ny design lages. Bruk de siste kjerneflytene som primær kilde til komponent- og skjermuttrykk; bruk Fase 2/Fase 4 for grunnretningen.
