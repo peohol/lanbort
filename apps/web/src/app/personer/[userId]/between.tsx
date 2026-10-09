@@ -1,8 +1,7 @@
-import type { ReactNode } from "react";
 import type { FriendObjectList, LoanList } from "@lanbort/contracts";
 import Link from "next/link";
 import { EntryDetail } from "@/components/entry-detail";
-import { Icon, type IconName } from "@/components/icon";
+import { MenuList, MenuRow } from "@/components/menu-list";
 import { ContextTag } from "@/components/tag";
 import { loansHref } from "@/navigation/areas";
 import { loanHref, objectHref } from "@/navigation/routes";
@@ -10,32 +9,6 @@ import { formatShortPeriod } from "@/presentation/dates";
 import { loanRoleLabels, loanStatusLabels } from "@/presentation/loans";
 import { describeAvailability } from "@/presentation/objects";
 import styles from "./person.module.css";
-
-/** A row that leads on: what it is, a line about it, and a chevron. */
-function Row({
-  icon,
-  href,
-  title,
-  children,
-}: {
-  icon: IconName;
-  href: string;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <li className={styles.row}>
-      <span className={styles.lead}>
-        <Icon name={icon} />
-      </span>
-      <div className={styles.rowText}>
-        <Link href={href}>{title}</Link>
-        {children}
-      </div>
-      <Icon name="chevron" className={`icon ${styles.chevron}`} />
-    </li>
-  );
-}
 
 /**
  * «Mellom dere nå»: the reader's loans with the person that have not ended,
@@ -48,24 +21,25 @@ export function Between({ loans }: { loans: LoanList }) {
   return (
     <section aria-labelledby="mellom-dere" className={styles.section}>
       <h2 id="mellom-dere">Mellom dere nå</h2>
-      <ul className={styles.rows}>
+      <MenuList label="mellom-dere">
         {loans.loans.map((loan) => (
-          <Row
+          <MenuRow
             key={loan.id}
             icon="things"
             href={loanHref(loan.id)}
-            title={loan.agreement.title}
-          >
-            <EntryDetail
-              parts={[
-                loanRoleLabels[loan.role],
-                loanStatusLabels[loan.status],
-                formatShortPeriod(loan.period),
-              ]}
-            />
-          </Row>
+            label={loan.agreement.title}
+            detail={
+              <EntryDetail
+                parts={[
+                  loanRoleLabels[loan.role],
+                  loanStatusLabels[loan.status],
+                  formatShortPeriod(loan.period),
+                ]}
+              />
+            }
+          />
         ))}
-      </ul>
+      </MenuList>
       {loans.nextCursor && (
         <p className="link-row">
           <Link href={loansHref}>Alle lånene dine</Link>
@@ -97,21 +71,24 @@ export function FriendThings({
       {things.length === 0 ? (
         <p className="quiet">{name} har ingen ting synlige for venner nå.</p>
       ) : (
-        <ul className={styles.rows}>
+        <MenuList label="venners-ting">
           {things.map((thing) => (
-            <Row
+            <MenuRow
               key={thing.objectId}
               icon="things"
               href={objectHref(thing.objectId, { kind: "direct" })}
-              title={thing.title}
-            >
-              <span>{describeAvailability(thing, today)}</span>
-              <ContextTag label="Synlig" icon="people">
-                Direkte mellom venner
-              </ContextTag>
-            </Row>
+              label={thing.title}
+              detail={
+                <>
+                  {describeAvailability(thing, today)}{" "}
+                  <ContextTag label="Synlig" icon="people">
+                    Direkte mellom venner
+                  </ContextTag>
+                </>
+              }
+            />
           ))}
-        </ul>
+        </MenuList>
       )}
       {more && (
         <p className="link-row">

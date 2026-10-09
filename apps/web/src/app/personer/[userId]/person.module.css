@@ -34,19 +34,10 @@
   color: var(--color-muted);
 }
 
-/* Rows in one card, each leading on with a chevron. The row's link covers
-   the whole row, so the finger needs no aim (UX-A11Y-006). */
-.rows {
-  display: grid;
-  margin: 0;
-  padding: var(--space-1) var(--space-4);
-  list-style: none;
-  background: var(--color-surface);
-  border-radius: var(--radius-l);
-  box-shadow: var(--shadow-raised);
-}
-
-.row {
+/* A role's heading row. On a phone its link covers the whole row, so the
+   finger needs no aim (UX-A11Y-006); the places to go elsewhere on the page
+   are `MenuList` rows. */
+.roleHead {
   position: relative;
   display: flex;
   align-items: center;
@@ -55,53 +46,32 @@
   padding: var(--space-3) 0;
 }
 
-.row + .row {
-  border-top: 1px solid var(--color-border);
-}
-
-.row a {
+.roleHead a {
   font-weight: 700;
   color: var(--color-text);
   text-decoration: none;
 }
 
-.row a::after {
+.roleHead a::after {
   content: "";
   position: absolute;
   inset: 0;
 }
 
-.row:has(a):hover a {
+.roleHead:has(a):hover a {
   text-decoration: underline;
 }
 
-.rowText {
+.roleText {
   flex: 1;
   min-width: 0;
   display: grid;
   gap: 0.125rem;
 }
 
-.rowText > span {
+.roleText > span {
   font-size: var(--text-s);
   color: var(--color-muted);
-}
-
-/* A thing without its picture: a soft square with the thing's icon. */
-.lead {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: var(--radius-s);
-  color: var(--color-muted);
-  background: linear-gradient(
-    135deg,
-    var(--color-image-from),
-    var(--color-image-to)
-  );
 }
 
 .chevron {
@@ -170,7 +140,7 @@
   }
 
   /* Unfolded, the row is a heading and the link is in the text. */
-  .role .row a::after {
+  .roleHead a::after {
     content: none;
   }
 

@@ -173,8 +173,8 @@ export function TrustSummary({
               aria-labelledby={`rolle-${each}`}
               className={styles.role}
             >
-              <div className={styles.row}>
-                <div className={styles.rowText}>
+              <div className={styles.roleHead}>
+                <div className={styles.roleText}>
                   <h3 id={`rolle-${each}`} className={styles.title}>
                     {trust.reviews > 0 ? (
                       <Link href={href}>{heading}</Link>
