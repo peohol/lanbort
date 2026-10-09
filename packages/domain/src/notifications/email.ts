@@ -65,6 +65,7 @@ export const notificationEmailSubjects = {
   "object.available": "Et objekt du abonnerer på er tilgjengelig igjen",
   "chat.account_key_reset":
     "Privat chat på kontoen din er tilbakestilt, og tidligere enheter er stengt ute",
+  "chat.device_linked": "En ny enhet er koblet til privat chat",
 } as const satisfies Record<NotificationKind, string>;
 
 /** Why the recipient gets the e-mail at all (PS-COM-003). */
@@ -80,6 +81,8 @@ const reasons = {
 /** Kinds that always go out by e-mail for another reason than a loan. */
 const kindReasons: Partial<Record<NotificationKind, string>> = {
   "chat.account_key_reset":
+    "Du får denne e-posten fordi sikkerhetsvarsler om kontoen din alltid sendes på e-post.",
+  "chat.device_linked":
     "Du får denne e-posten fordi sikkerhetsvarsler om kontoen din alltid sendes på e-post.",
 };
 
