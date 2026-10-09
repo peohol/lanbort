@@ -2,10 +2,15 @@
 
 import { useEffect } from "react";
 
-/** The bars that stay in view, and the property their height is kept in. */
+/**
+ * The bars that stay in view, the property their size is kept in, and
+ * which size: the bar's buttons are measured across, so a page's first row
+ * leaves room for them (globals.css).
+ */
 const bars = [
-  [".app-header", "--header-covers"],
-  [".main-navigation", "--nav-covers"],
+  [".app-header", "--header-covers", "offsetHeight"],
+  [".main-navigation", "--nav-covers", "offsetHeight"],
+  [".header-actions", "--actions-covers", "offsetWidth"],
 ] as const;
 
 /**
@@ -22,10 +27,10 @@ export function StickyBars() {
     const root = document.documentElement.style;
     const observer = new ResizeObserver((entries) => {
       for (const { target } of entries) {
-        const [, property] = bars.find(([selector]) =>
+        const [, property, size] = bars.find(([selector]) =>
           target.matches(selector),
         )!;
-        root.setProperty(property, `${(target as HTMLElement).offsetHeight}px`);
+        root.setProperty(property, `${(target as HTMLElement)[size]}px`);
       }
     });
 

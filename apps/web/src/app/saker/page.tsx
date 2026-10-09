@@ -7,7 +7,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
-import { accountHref } from "@/navigation/areas";
 import { environmentCasesHref } from "@/navigation/cases";
 import {
   morePagesHref,
@@ -56,7 +55,7 @@ export default async function CasesPage({
 
   return (
     <main>
-      <PageHeader title="Saker" back={{ href: accountHref, label: "Konto" }}>
+      <PageHeader title="Saker" home="home">
         Kontakt med administratorer, meklinger og rapporter du er part i.
         Private samtaler er aldri en del av en sak.
       </PageHeader>

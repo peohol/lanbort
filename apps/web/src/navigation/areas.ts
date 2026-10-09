@@ -34,3 +34,10 @@ export function areaOf(pathname: string): AreaId | null {
 
   return area?.id ?? null;
 }
+
+/** The area whose own start page `pathname` is, if any. */
+export function areaAt(pathname: string): AreaId | null {
+  return areas.find(({ href }) => href === pathname)?.id ?? null;
+}
+
+export const areaById = (id: AreaId) => areas.find((area) => area.id === id)!;

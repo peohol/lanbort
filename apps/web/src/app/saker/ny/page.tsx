@@ -114,6 +114,7 @@ export default async function NewCasePage({
       <PageHeader
         title={titleOf(start, thing)}
         back={{ href: casesHref, label: "Saker" }}
+        task
         context={
           <ContextTag label="Til">
             {environment ? `Administratorene i ${environment.name}` : "Lånbort"}
