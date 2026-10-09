@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { ConversationView } from "@/chat/conversation-view";
-import { loansBetween } from "../loans-between";
+import { ConversationAbout } from "@/chat/conversation-about";
+import { loansBetween } from "../../loans-between";
 
-export const metadata: Metadata = { title: "Samtale – Lånbort" };
+export const metadata: Metadata = { title: "Om samtalen – Lånbort" };
 
-/** One private conversation, read and written on this device (ADR-0010). */
-export default async function ConversationPage({
+/** «Om samtalen»: the loans, the security code and the personal choices. */
+export default async function ConversationAboutPage({
   params,
 }: {
   params: Promise<{ conversationId: string }>;
@@ -20,7 +20,7 @@ export default async function ConversationPage({
 
   return (
     <main>
-      <ConversationView
+      <ConversationAbout
         id={conversationId.toLowerCase()}
         loans={await loansBetween()}
       />

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { z } from "zod";
 import { ChatHome, type ChatInvitation } from "@/chat/chat-home";
 import { pageQuery } from "@/server/session";
+import { loansBetween } from "./loans-between";
 
 export const metadata: Metadata = { title: "Samtaler – Lånbort" };
 
@@ -32,7 +33,10 @@ export default async function ConversationsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const social = await pageQuery(getSocialOverview, {});
+  const [social, loans] = await Promise.all([
+    pageQuery(getSocialOverview, {}),
+    loansBetween(),
+  ]);
   const invitation = invitationSchema.safeParse(await searchParams);
   const friends = (social?.friends ?? []).map(
     ({ userId, realName, pictureId }) => ({ userId, realName, pictureId }),
@@ -43,6 +47,7 @@ export default async function ConversationsPage({
       <h1>Samtaler</h1>
       <ChatHome
         friends={friends}
+        loans={loans}
         {...(invitation.success ? { invitation: invitation.data } : {})}
       />
     </main>

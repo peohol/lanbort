@@ -115,6 +115,7 @@ const records = {
   group: (id: string) => `group:${id}`,
   conversation: (id: string) => `conversation:${id}`,
   history: (id: string) => `history:${id}`,
+  seen: (id: string) => `seen:${id}`,
 };
 
 const certificateWire = (c: DeviceCertificate): DeviceCertificateWire =>
@@ -143,8 +144,11 @@ const encodeBody = (id: string, text: string) =>
  * Whether `text` fits in one padding block once encrypted: a loan logistics
  * conversation takes nothing longer (WP-44), and the server refuses it.
  */
-export const fitsShortMessage = (text: string) =>
-  encodeBody(crypto.randomUUID(), text).length <= SHORT_MESSAGE_BYTES;
+export const fitsShortMessage = (text: string) => shortMessageRoom(text) >= 0;
+
+/** How many bytes are left in that block after `text`; below zero, too long. */
+export const shortMessageRoom = (text: string) =>
+  SHORT_MESSAGE_BYTES - encodeBody(crypto.randomUUID(), text).length;
 
 function readBody(plaintext: Uint8Array): MessageBody | undefined {
   try {
@@ -578,6 +582,21 @@ export class ChatEngine {
     return (
       (await this.store.getJson<HistoryEntry[]>(records.history(id))) ?? []
     );
+  }
+
+  /**
+   * The last message this device has shown of a conversation, so newer
+   * ones are marked as new here, and only here (PS-COM-004).
+   */
+  async seen(id: string): Promise<string | null> {
+    return (await this.store.getJson<string>(records.seen(id))) ?? null;
+  }
+
+  /** Remembers that the conversation has been read up to `entryId`. */
+  async markSeen(id: string, entryId: string): Promise<void> {
+    if ((await this.seen(id)) !== entryId) {
+      await this.store.putJson(records.seen(id), entryId);
+    }
   }
 
   async #updateHistory(

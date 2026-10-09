@@ -10,6 +10,9 @@ export const chatApproveLinkHref = `${chatDevicesHref}/koble`;
 export const chatLinkHref = `${chatHref}/koble`;
 export const chatConversationHref = (conversationId: string) =>
   `${chatHref}/${conversationId}`;
+/** «Om samtalen»: the loans, the security code and the personal choices. */
+export const chatAboutHref = (conversationId: string) =>
+  `${chatConversationHref(conversationId)}/om`;
 
 /** Whether a path is one of the chat pages. */
 export const isChatPage = (pathname: string) =>
