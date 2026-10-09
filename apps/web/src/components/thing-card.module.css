@@ -4,6 +4,7 @@
    it and stay their own targets. */
 .cards {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-2);
   margin: 0;
   padding: 0;
@@ -12,7 +13,7 @@
 
 @media (min-width: 48rem) {
   .cards {
-    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
   }
 }
 
@@ -25,11 +26,6 @@
   background: var(--color-surface);
   border-radius: var(--radius-m);
   box-shadow: var(--shadow-low);
-}
-
-.card:has(.title:focus-visible) {
-  outline: 3px solid var(--color-focus);
-  outline-offset: 2px;
 }
 
 .card:target {
@@ -60,10 +56,6 @@ img.image {
   font-weight: 700;
   color: var(--color-text);
   text-decoration: none;
-}
-
-.title:focus-visible {
-  outline: none;
 }
 
 .title::after {
