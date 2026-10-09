@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   type FormEvent,
   type KeyboardEvent,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -345,6 +346,16 @@ function Conversation({
   const shown = useRef(0);
   // Whether the reader was at the newest message before more came.
   const atEnd = useRef(true);
+  const newest = useRef<string | undefined>(undefined);
+
+  // Read up to the newest message once the reader has it in view, on this
+  // device only: a message that came while they were further up stays new.
+  const readToEnd = useCallback(() => {
+    const last = newest.current;
+    if (last && document.visibilityState === "visible") {
+      void engine.markSeen(id, last);
+    }
+  }, [engine, id]);
 
   useEffect(() => {
     chatApi
@@ -378,37 +389,37 @@ function Conversation({
     };
   }, [engine, id, version]);
 
-  // Read up to the newest message while the page is in view, on this
-  // device only.
-  useEffect(() => {
-    const last = history?.at(-1);
-    if (last && document.visibilityState === "visible") {
-      void engine.markSeen(id, last.id);
-    }
-  }, [engine, id, history]);
-
   // Opens at the newest message; new ones keep the reader there if they
   // were already, or offer the way down instead of moving them.
   useLayoutEffect(() => {
     if (!history) return;
     const count = history.length;
+    newest.current = history.at(-1)?.id;
     if (shown.current === 0 || history.at(-1)?.own || atEnd.current) {
       end.current?.scrollIntoView({ block: "end" });
       setJump(false);
+      readToEnd();
     } else if (count > shown.current) {
       setJump(true);
     }
     shown.current = count;
-  }, [history]);
+  }, [history, readToEnd]);
 
   useEffect(() => {
     const settle = () => {
       atEnd.current = nearEnd();
-      if (atEnd.current) setJump(false);
+      if (atEnd.current) {
+        setJump(false);
+        readToEnd();
+      }
     };
     window.addEventListener("scroll", settle, { passive: true });
-    return () => window.removeEventListener("scroll", settle);
-  }, []);
+    document.addEventListener("visibilitychange", settle);
+    return () => {
+      window.removeEventListener("scroll", settle);
+      document.removeEventListener("visibilitychange", settle);
+    };
+  }, [readToEnd]);
 
   async function send(message: string) {
     setError(null);
