@@ -99,8 +99,9 @@ test("a member frames a picture that fellow members see beside the name", async 
     height: 384,
   });
 
-  // Bo sees it beside her name among the members, and on her page.
-  await bo.page.goto(`/miljoer/${environmentId}`);
+  // Bo sees it beside her name among the members («Om miljøet»), and on
+  // her page.
+  await bo.page.goto(`/miljoer/${environmentId}/om`);
   expect(await loaded(bo.page, "Anna Berg")).toBeGreaterThan(0);
   await bo.page.goto(`/personer/${anna.id}`);
   await expect(bo.page.locator(".page-picture img")).toBeVisible();
@@ -118,7 +119,7 @@ test("a member frames a picture that fellow members see beside the name", async 
   );
   await anna.page.getByLabel("Bare deg").check();
   await saved;
-  await bo.page.goto(`/miljoer/${environmentId}`);
+  await bo.page.goto(`/miljoer/${environmentId}/om`);
   await expect(
     bo.page.getByRole("link", { name: "Anna Berg" }).locator("img"),
   ).toHaveCount(0);
