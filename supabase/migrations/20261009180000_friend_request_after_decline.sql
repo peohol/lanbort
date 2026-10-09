@@ -11,14 +11,37 @@
 -- under the pair lock, in the transaction that inserts the request; the
 -- trigger below keeps the same rule for any other writer.
 
--- The order a pair's relations were created in. `requested_at` comes from
--- the app's clock in milliseconds, so two quick relations can share it; the
--- position settles which came last.
+-- The order relations were created in, given by the database. `requested_at`
+-- comes from the app's clock, so it can tie or, between servers, be out of
+-- order. Existing rows are numbered in `requested_at` order; the guard
+-- trigger, which refuses any change to ended rows, is paused for that one
+-- update inside this migration's transaction.
+alter table app.friendships add column position bigint;
+
+alter table app.friendships disable trigger friendships_forward_only;
+
+update app.friendships as friendship
+set position = numbered.position
+from (
+  select id, row_number() over (order by requested_at, id) as position
+  from app.friendships
+) as numbered
+where numbered.id = friendship.id;
+
+alter table app.friendships enable trigger friendships_forward_only;
+
 alter table app.friendships
-  add column position bigint generated always as identity;
+  alter column position set not null,
+  alter column position add generated always as identity;
+
+select setval(
+  pg_get_serial_sequence('app.friendships', 'position'),
+  coalesce((select max(position) from app.friendships), 0) + 1,
+  false
+);
 
 create index friendships_pair_history_idx
-  on app.friendships (user_low_id, user_high_id, requested_at desc, position desc);
+  on app.friendships (user_low_id, user_high_id, position desc);
 
 -- Whether `requester` has to wait for `addressee` to ask first. Internal:
 -- never returned to the one held back as a reason (PS-USR-012).
@@ -33,7 +56,7 @@ as $$
     from app.friendships as latest
     where latest.user_low_id = least(requester, addressee)
       and latest.user_high_id = greatest(requester, addressee)
-    order by latest.requested_at desc, latest.position desc
+    order by latest.position desc
     limit 1
   ), false);
 $$;

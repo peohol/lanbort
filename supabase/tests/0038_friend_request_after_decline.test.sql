@@ -14,7 +14,7 @@ insert into app.users (id, status, adult_confirmed_at) values
   ('00000000-0000-4000-8000-0000000000b1', 'active', now()),
   ('00000000-0000-4000-8000-0000000000c1', 'active', now());
 
--- Every row of the test shares one time, so only the position orders them.
+-- Every row of the test shares one time: the position alone orders them.
 insert into app.friendships (requester_id, addressee_id, requested_at, status, ended_at, ended_by_user_id, end_reason)
 values (
   '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000b1',
@@ -52,11 +52,12 @@ select ok(
   'a lifted block does not lift the hold'
 );
 
--- The recipient's request, even withdrawn, lifts it.
+-- The recipient's request, even withdrawn, lifts it, also when a server's
+-- clock gave it an earlier time.
 insert into app.friendships (requester_id, addressee_id, requested_at, status, ended_at, ended_by_user_id, end_reason)
 values (
   '00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-0000000000a1',
-  '2026-10-09 12:00+00', 'ended', '2026-10-09 12:00+00',
+  '2026-10-09 11:00+00', 'ended', '2026-10-09 11:00+00',
   '00000000-0000-4000-8000-0000000000b1', 'withdrawn'
 );
 
@@ -65,7 +66,7 @@ select lives_ok(
     insert into app.friendships (requester_id, addressee_id, requested_at)
     values ('00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000b1', '2026-10-09 12:00+00')
   $$,
-  'the recipient''s own request lifts the hold, even once withdrawn'
+  'the recipient''s later request lifts the hold, even once withdrawn and whatever its time'
 );
 
 -- Withdrawn and removed relations hold nothing back.
