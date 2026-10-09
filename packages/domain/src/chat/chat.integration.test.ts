@@ -727,11 +727,13 @@ describe("revoking and resetting (ADR-0010 §7–8)", () => {
     await deliverAll(db, consumers);
     expect(await sessionLives(phone)).toBe(true);
 
-    // The account is told, by the app and by e-mail (ADR-0010 §8).
+    // The key reset gets its own alert, in addition to the earlier notice
+    // about linking a new device (PS-COM-016, ADR-0010 §8).
     const told = await db
       .selectFrom("app.notifications")
       .select(["kind", "level"])
       .where("recipient_id", "=", phone.userId)
+      .where("kind", "=", "chat.account_key_reset")
       .execute();
     expect(told).toEqual([
       { kind: "chat.account_key_reset", level: "required" },
