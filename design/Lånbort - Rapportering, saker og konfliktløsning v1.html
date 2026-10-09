@@ -398,7 +398,7 @@ const LIVE0 = () => ({
   entries:[{ id:1, by:'kari', cap:'party', aud:'parties', body:TXT.kari1, at:'09.12' }], next:2,
   may:{ kari:false, per:true }, assignee:null, recused:false, sharedUpTo:null, closed:false,
   sheet:{ kari:null, per:null, tone:null }, flash:{ kari:'', per:'', tone:'' }, aud:'parties',
-  draft:{ kari:TXT.kari2, per:TXT.per1, tone:TXT.toneAll }, busy:null, focus:null, clock:9 * 60 + 20,
+  draft:{ kari:TXT.kari2, per:TXT.per1, tone:TXT.toneAll, fix:'' }, busy:null, focus:null, clock:9 * 60 + 20,
   log:{ kari:[], per:[{ k:'opened', at:'09.12' }], tone:[{ k:'waiting', at:'09.12' }] }
 });
 let S = LIVE0();
@@ -441,6 +441,13 @@ const ACTIONS = {
   release() { S.assignee = null; return 'Saken er tilbake i køen.'; },
   transfer() { S.assignee = 'ingrid'; tell(['kari', 'per'], 'assigned'); return 'Saken er gitt til Ingrid Berg.'; },
   dorecuse() { S.recused = true; if (S.assignee === 'tone') S.assignee = null; return ''; },
+  fix() {
+    const own = S.entries.filter(e => e.by === 'tone'), old = own[own.length - 1];
+    S.entries.push({ id:S.next++, by:'tone', cap:'handler', aud:old.aud, to:old.to, body:S.draft.fix.trim() || '…', at:hhmm(S.clock), fix:old.at });
+    tell(old.aud === 'parties' ? ['kari', 'per'] : old.aud === 'party' ? [old.to] : [], 'entry');
+    S.draft.fix = '';
+    return 'Rettingen er lagt til. Det opprinnelige innlegget står som det var.';
+  },
   doclose() { S.closed = true; S.may.kari = S.may.per = false; tell(['kari', 'per'], 'closed'); return 'Saken er lukket.'; }
 };
 const CONFIRM = ['share', 'round', 'close', 'recuse', 'more'];
@@ -459,6 +466,7 @@ ${write}
 }
 
 function queueScreen(o = {}) {
+  const others = o.others === false ? [] : [mr({ lead:tic('sam'), t:'Henvendelse fra Lars Moe', s:'Ingrid Berg har den' })];
   const rows = [
     ...(o.withCase ? [mr({ lead:tic('scale'), t:'Mekling om sykkelhenger', s:'Kari Nordmann og Per Lien · i dag 09.12' })] : []),
     mr({ lead:tic('flag'), t:'Rapport om «Gassflaske 11 kg»', s:'Meldt av Kari Nordmann · i går' })
@@ -467,14 +475,15 @@ function queueScreen(o = {}) {
 <div style="padding:0 4px"><span class="ty">MILJØ</span><div class="hq" style="font-size:24px;line-height:1.15">Saker</div><div class="ctx" style="margin-top:3px">${ic('house')}${ENV}</div></div>
 ${roleStrip()}
 ${o.flash ? `<span class="flash" role="status">${ic('check')}${o.flash}</span>` : ''}
-<div class="tabs" role="tablist"><span class="sg on" role="tab" aria-selected="true">Åpne · ${rows.length + 1}</span><span class="sg" role="tab" aria-selected="false">Lukkede</span></div>
+<div class="tabs" role="tablist"><span class="sg on" role="tab" aria-selected="true">Åpne · ${rows.length + 1 + others.length}</span><span class="sg" role="tab" aria-selected="false">Lukkede</span></div>
 ${sec(`Ingen har tatt · ${rows.length}`)}<div class="cd" style="padding:2px 4px;gap:0">${rows.join('')}</div>
 ${sec('Du har · 1')}<div class="cd" style="padding:2px 4px;gap:0">${mr({ lead:tic('sam'), t:'Henvendelse fra Ola Hansen', s:'Nytt innlegg fra Ola i går' })}</div>
+${others.length ? `${sec(`Andre har · ${others.length}`)}<div class="cd" style="padding:2px 4px;gap:0">${others.join('')}</div>` : ''}
 ${o.note || ''}</div>${nav('hjem')}`;
 }
 
 function handlerScreen() {
-  if (S.recused) return queueScreen({ flash:ingrid() ? 'Du er inhabil i meklingen om sykkelhengeren. Den er tilbake i køen for de andre administratorene.' : 'Du er inhabil i meklingen om sykkelhengeren.', note:`<span class="s2" style="padding:0 6px">Saken står ikke lenger i køen din, og du kan ikke åpne den. Du får ingen varsler om den.</span>` });
+  if (S.recused) return queueScreen({ others:ingrid(), flash:ingrid() ? 'Du er inhabil i meklingen om sykkelhengeren. Den er tilbake i køen for de andre administratorene.' : 'Du er inhabil i meklingen om sykkelhengeren.', note:`<span class="s2" style="padding:0 6px">Saken står ikke lenger i køen din, og du kan ikke åpne den. Du får ingen varsler om den.</span>` });
   const busy = !!S.busy, mine = S.assignee === 'tone';
   const list = S.entries.map(e => ({ ...e, shared:shared(e) }));
   const unshared = list.some(e => e.cap === 'party' && !e.shared);
@@ -494,6 +503,11 @@ function handlerScreen() {
 <span class="hint">${S.aud === 'handlers' ? 'Bare administratorene ser notatet.' : 'Partene ser innlegget som fra «administratorene i Borettslaget Lia», ikke fra deg.'}</span>
 ${b('btn2', S.aud === 'handlers' ? 'Lagre notatet' : 'Send innlegget', 'send')}
 ${sec('Behandling')}<div class="cd" style="padding:2px 4px;gap:0">${mr({ lead:tic('pen', 'n'), t:'Be om nytt innlegg', s:'Fra én eller begge parter', act:` data-act="round" data-who="tone"` })}${unshared && !both ? mr({ lead:tic('ppl', 'n'), t:'Del forklaringene', s:'Det som er skrevet så langt', act:` data-act="share" data-who="tone"` }) : ''}${mr({ lead:tic('check', 'n'), t:'Lukk saken', end:'', act:` data-act="close" data-who="tone"` })}</div>` : '';
+  const lastOwn = [...list].reverse().find(e => e.by === 'tone');
+  const correct = S.closed && lastOwn && !busy ? `${sec('Rett en feil')}
+${field('Retting av innlegget ditt fra ' + lastOwn.at, S.draft.fix, 'Skriv hva som er riktig', ' data-draft="fix"')}
+<span class="hint">Saken åpnes ikke igjen. Rettingen blir et nytt innlegg som peker på det gamle, og de som så det gamle, ser rettingen.</span>
+${b('btn2', 'Legg til rettingen', 'fix', 'pen')}` : '';
   return `${backbar('Saker', { n:S.log.tone.length })}<div class="scr" style="gap:10px">
 ${caseHead('mediation', 'Mekling om sykkelhenger')}
 ${roleStrip()}
@@ -501,6 +515,7 @@ ${handlingCard(h, { flash:S.flash.tone, mineS:next, hqS:'Kari ba om mekling i da
 ${facts([['Lån', 'Sykkelhenger, 1.–4. okt.'], ['Status', 'Returen er uavklart'], ['Parter', mayWrite]])}
 ${entries(list, { as:'handler', me:'tone', separate:true })}
 ${handling}
+${correct}
 ${!S.closed ? `<button class="q" type="button" data-act="more" data-who="tone"${busy ? ' disabled' : ''}>Flere valg</button>` : ''}
 </div>${nav('hjem')}${S.sheet.tone || ''}`;
 }
@@ -735,7 +750,7 @@ ${sec('Behandling')}<div class="cd" style="padding:2px 4px;gap:0">${mr({ lead:ti
       `<div class="stack">
 ${note('Ingrid har saken', `<span class="s" style="color:#1E2733">Tone ser saken og innleggene, men ingen behandlingshandlinger. Kortet sier «Ingrid Berg har saken». Under «Flere valg» kan hun bare erklære seg inhabil.</span>`)}
 ${note('Tilbake i køen av seg selv', '<span class="s" style="color:#1E2733">Mister den som har saken rollen, medlemskapet eller kontoen, eller blir involvert, går saken tilbake i køen. Historikken sier hvorfor, og de andre administratorene får beskjed. Partene merker bare at saken venter igjen.</span>')}
-${note('Lukkede saker', '<span class="s" style="color:#1E2733">Fanen «Lukkede» i køen viser saker som er ferdige, med samme side, bare uten handlinger.</span>')}
+${note('Lukkede saker', '<span class="s" style="color:#1E2733">Fanen «Lukkede» i køen viser saker som er ferdige, med samme side, uten behandlingshandlinger. Behandleren kan fortsatt rette sine egne innlegg; rettingen blir et nytt innlegg og åpner ikke saken igjen. Partene skriver ikke etter lukking, slik saker virker i dag.</span>')}
 </div>`
     ] },
 
