@@ -67,6 +67,10 @@ const named: Partial<
       : null,
   "loan.possession_uncertain": ({ thing }) =>
     thing && `Det er uklart hvem som har ${thing}`,
+  "loan.condition_reported": ({ thing, person }) =>
+    thing &&
+    person &&
+    `${person} har meldt skade, mangel eller tap på ${thing}`,
   "social.friend_request": ({ person }) =>
     person && `${person} vil bli venn med deg`,
   "social.friend_request_accepted": ({ person }) =>
