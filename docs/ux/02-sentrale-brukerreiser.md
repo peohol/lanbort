@@ -112,7 +112,7 @@ Etter vurderingsberettiget avslutning viser systemet bare dimensjoner som faktis
 ### UX-JRN-011 — Medeierskap skal ikke gi falsk kontroll over eksisterende lån
 **Forankring:** PS-OBJ-007, PS-LOAN-008
 
-Mine ting viser hvem som medeier objektet og eventuelle begrensninger. På eksisterende lån vises ansvarlig utlåner tydelig; andre medeiere får bare handlinger de faktisk har rett til.
+Mine ting viser hvem som medeier objektet og eventuelle begrensninger. På eksisterende lån vises ansvarlig utlåner tydelig; andre medeiere får bare handlinger de faktisk har rett til, og ser lånet bare avgrenset (UX-PRIV-013).
 
 ## Administrator
 

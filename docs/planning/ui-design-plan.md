@@ -1,6 +1,6 @@
 # Plan for UI-designfasen
 
-> **Status:** Vedtatt arbeidsplan. Fase 1–3 er fullført; kjerneflyt 1–4 har gjeldende HTML-prototyper, kjerneflyt 5 («Samtaler og enheter») er til sluttgodkjenning etter produktbeslutningene 9. oktober 2026 (OD-0043–OD-0045), og kjerneflyt 6 («Personer, venner og tillit») er til siste gjennomgang etter produktbeslutningene 9. oktober 2026. Prototypene er ennå ikke implementert som samlet UI i appen. Se [gjeldende designreferanser](../../design/README.md). Planen innfører ikke nye produktkrav eller UX-regler.
+> **Status:** Vedtatt arbeidsplan. Fase 1–3 er fullført; kjerneflyt 1–4 har gjeldende HTML-prototyper, kjerneflyt 5 («Samtaler og enheter») er til sluttgodkjenning etter produktbeslutningene 9. oktober 2026 (OD-0043–OD-0045), og kjerneflyt 6 («Personer, venner og tillit») er til siste gjennomgang etter produktbeslutningene 9. oktober 2026. Kjerneflyt 7 («Lånets side og anmeldelser») er til gjennomgang etter produktbeslutningene 9. oktober 2026 (OD-0033–OD-0036). Prototypene er ennå ikke implementert som samlet UI i appen. Se [gjeldende designreferanser](../../design/README.md). Planen innfører ikke nye produktkrav eller UX-regler.
 
 ## Formål
 
