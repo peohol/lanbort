@@ -4,7 +4,6 @@ import type {
   LoanRequestRole,
   ReturnOutcome,
 } from "@lanbort/contracts";
-import type { IconName } from "@/components/icon";
 import type { Tone } from "@/components/tag";
 import {
   formatDay,
@@ -74,8 +73,6 @@ export interface LoanSituation {
   /** «Venter på deg», «Avtalt», «Hos Ola»: said beside the tone's icon. */
   readonly label: string;
   readonly tone: Tone;
-  /** Another icon than the tone's (`Tag`), or none. */
-  readonly icon?: IconName | null;
   readonly headline: string;
   readonly body: readonly string[];
 }
@@ -137,7 +134,6 @@ function endedSituation(loan: Loan): LoanSituation | null {
       return {
         label: "Kansellert",
         tone: "neutral",
-        icon: "close",
         headline: by ? `${by} kansellerte lånet` : "Lånet er kansellert",
         body: [
           `${sentence(title)} ble ikke overlevert, og ${formatPeriod(loan.period)} er ledig igjen.`,
@@ -147,7 +143,6 @@ function endedSituation(loan: Loan): LoanSituation | null {
       return {
         label: "Stanset",
         tone: "neutral",
-        icon: "info",
         headline: "Lånet kan ikke gjennomføres",
         body: [
           "Lånet er stoppet på grunn av en plattformbegrensning. Ingen av dere har kansellert det, og det teller ikke som at noen uteble.",
@@ -157,7 +152,6 @@ function endedSituation(loan: Loan): LoanSituation | null {
       return {
         label: "Ikke gjennomført",
         tone: "neutral",
-        icon: "info",
         headline: "Lånet ble ikke gjennomført",
         body: [
           "Overleveringen skjedde ikke, så lånet ble aldri aktivt. Tidslinjen viser hva hver av dere sa.",
@@ -315,7 +309,6 @@ function handoverSituation(loan: Loan, today: string): LoanSituation {
       return {
         label: "I dag",
         tone: "attention",
-        icon: "calendar",
         headline: lender
           ? `I dag gir du ${title} til ${other}`
           : `I dag henter du ${title}`,
@@ -469,7 +462,6 @@ export function describeLoanStatus(loan: Loan, today: string): LoanSituation {
         : {
             label: "Hos deg",
             tone: "neutral",
-            icon: "clock",
             headline: `${sentence(title)} er hos deg til ${end}`,
             body: [
               `Når du har levert tilbake, melder du ${title} returnert. ${other} bekrefter når ${title} er tilbake.`,

@@ -290,7 +290,6 @@ function LoanStatus({
 }) {
   const situation = describeLoanStatus(loan, calendarDay());
   const { primary } = loanSteps(loan);
-  const waits = situation.tone === "attention" || situation.tone === "waiting";
   const review =
     reviews?.window?.status === "open" && !reviews.own ? reviews : null;
 
@@ -298,7 +297,7 @@ function LoanStatus({
     <StatusCard
       status={situation.headline}
       tone={situation.tone}
-      who={waits ? situation.label : undefined}
+      label={situation.label}
       actions={
         primary.length > 0 && (
           <div className={styles.answers}>
