@@ -614,7 +614,7 @@ test("reduced motion is respected", async ({ browser }) => {
   });
   const page = await context.newPage();
   await page.goto(`/lan/${world.loanId}`);
-  await page.getByText("Historikk", { exact: true }).click();
+  await page.getByText("Tidslinje", { exact: true }).click();
 
   expect(
     await page.evaluate(

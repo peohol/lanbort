@@ -111,7 +111,7 @@ function Steps({ request }: { request: LoanRequestDetail }) {
             stays: [
               `${name} låner ${title} ${formatPeriod(period)}, og perioden holdes av`,
               `Vilkår: ${terms(request.confirmedTerms?.loanTerms)}`,
-              "Dere kan begge avlyse før overleveringen",
+              "Dere kan begge kansellere før overleveringen",
             ],
             gone:
               others > 0
@@ -153,7 +153,7 @@ function approvalNote(request: LoanRequestDetail): ReactNode {
     return (
       <p>
         Tingen er ikke ledig i hele tiden som er ønsket. Du kan avslå
-        forespørselen, eller vente om noe annet blir avlyst.
+        forespørselen, eller vente om noe annet blir kansellert.
       </p>
     );
   }

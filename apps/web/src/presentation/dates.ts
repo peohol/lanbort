@@ -28,6 +28,20 @@ export function formatDay(date: string): string {
   return dayFormat.format(new Date(`${date}T00:00:00Z`));
 }
 
+const shortTimeFormat = new Intl.DateTimeFormat("nb-NO", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: productTimeZone,
+});
+
+/** A moment in few words, for a timeline: «lør. 10. okt., 10:14». */
+export function formatShortTime(at: string): string {
+  return shortTimeFormat.format(new Date(at));
+}
+
 /** A moment in the product's time zone: «fredag 10. oktober kl. 14:00». */
 export function formatTime(at: string): string {
   return timeFormat.format(new Date(at));

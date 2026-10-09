@@ -2,8 +2,9 @@ import type { Loan, LoanActions } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import {
   describeLoanStatus,
+  loanProgress,
   loanSteps,
-  loanTone,
+  loanTitle,
   personName,
 } from "./loan-status";
 
@@ -63,49 +64,137 @@ function loan(changes: Partial<Loan> = {}): Loan {
   };
 }
 
-const textOf = (changes: Partial<Loan>) =>
-  describeLoanStatus(loan(changes)).text;
+/** A day well before the example period, and its handover day. */
+const before = "2026-10-01";
 
-describe("the loan's status (UX-INT-004)", () => {
+const situation = (changes: Partial<Loan>, today = before) =>
+  describeLoanStatus(loan(changes), today);
+
+const headline = (changes: Partial<Loan>, today = before) =>
+  situation(changes, today).headline;
+
+describe("the loan's situation (UX-INT-004, KF7)", () => {
+  it("names the loan from the reader's side", () => {
+    expect(loanTitle(loan())).toBe("Tilhenger fra Kari");
+    expect(loanTitle(loan({ role: "lender" }))).toBe("Tilhenger til Ola");
+  });
+
+  it("says what is agreed, and what the handover day asks", () => {
+    expect(situation({})).toMatchObject({
+      label: "Avtalt",
+      tone: "positive",
+      headline: "Tilhenger er reservert for deg",
+      body: [expect.stringMatching(/^Du henter Tilhenger mandag 5\. oktober/)],
+    });
+    expect(situation({ role: "lender" }, "2026-10-05")).toMatchObject({
+      label: "I dag",
+      tone: "attention",
+      headline: "I dag gir du Tilhenger til Ola",
+    });
+  });
+
   it("names who the loan waits for, from the caller's side", () => {
-    const said = { outcome: "handed_over", reportedAt: at } as const;
+    const notHanded = {
+      outcome: "not_handed_over",
+      reportedAt: at,
+    } as const;
+    const due = "2026-10-09T10:00:00.000Z";
 
     expect(
-      textOf({
+      situation({
         status: "awaiting_handover",
-        handover: { borrower: said, lender: null, answerDueAt: null },
+        handover: { borrower: notHanded, lender: null, answerDueAt: due },
       }),
-    ).toBe("Venter på at Kari forteller om overleveringen");
+    ).toMatchObject({
+      label: "Venter på Kari",
+      tone: "waiting",
+      headline: "Venter på at Kari forteller om overleveringen",
+    });
     expect(
-      textOf({
+      situation({
+        role: "lender",
+        status: "awaiting_handover",
+        handover: { borrower: notHanded, lender: null, answerDueAt: due },
+      }),
+    ).toMatchObject({
+      label: "Venter på deg",
+      tone: "attention",
+      headline: "Ola sier at overleveringen ikke skjedde",
+    });
+    expect(headline({ status: "awaiting_handover" })).toBe(
+      "Ble Tilhenger overlevert?",
+    );
+    expect(
+      situation({
         role: "lender",
         status: "awaiting_return",
         return: {
-          borrower: null,
-          lender: { outcome: "received", reportedAt: at, reportedAs: "party" },
+          borrower: {
+            outcome: "returned",
+            reportedAt: at,
+            reportedAs: "party",
+          },
+          lender: null,
           pending: null,
         },
       }),
-    ).toBe("Venter på at Ola forteller om returen");
-    expect(textOf({ status: "awaiting_handover" })).toBe(
-      "Fortell om Tilhenger ble overlevert",
-    );
+    ).toMatchObject({
+      label: "Venter på deg",
+      headline: "Ola har meldt Tilhenger returnert",
+    });
   });
 
   it("puts an open proposal first, and says who answers it", () => {
     const amendment = {
       id,
-      period: { start: "2026-10-06", end: "2026-10-08" },
+      period: { start: "2026-10-05", end: "2026-10-08" },
       proposedBy: "borrower" as const,
       proposedAt: at,
     };
 
-    expect(textOf({ status: "active", amendment })).toMatch(
-      /^Venter på at Kari svarer på forslaget om ny periode/,
+    expect(situation({ status: "active", amendment })).toMatchObject({
+      label: "Venter på Kari",
+      headline: "Du har foreslått ny returdag: torsdag 8. oktober",
+    });
+    expect(
+      situation({
+        role: "lender",
+        amendment: {
+          ...amendment,
+          period: { start: "2026-10-06", end: "2026-10-08" },
+        },
+        actions: { ...noActions, amendment: ["accept", "decline"] },
+      }),
+    ).toMatchObject({
+      label: "Venter på deg",
+      tone: "attention",
+      headline: expect.stringMatching(/^Ola foreslår ny periode: tirsdag 6/),
+    });
+  });
+
+  it("shows a change of lender to the borrower only when they must answer", () => {
+    const transfer = {
+      id,
+      kind: "voluntary" as const,
+      fromUserId: id,
+      toUserId: id,
+      needsBorrowerConsent: false,
+      recipientAccepted: false,
+      borrowerConsented: false,
+      proposedAt: at,
+    };
+
+    expect(headline({ responsibilityTransfer: transfer })).toBe(
+      "Tilhenger er reservert for deg",
     );
-    expect(textOf({ role: "lender", amendment })).toMatch(
-      /^Ola foreslår ny periode/,
+    expect(headline({ role: "lender", responsibilityTransfer: transfer })).toBe(
+      "Du har spurt en medeier om å bli ansvarlig utlåner",
     );
+    expect(
+      headline({
+        responsibilityTransfer: { ...transfer, needsBorrowerConsent: true },
+      }),
+    ).toBe("Kari vil gi ansvaret for lånet til en medeier");
   });
 
   it("says a waiting confirmation can still be undone, while it can", () => {
@@ -119,17 +208,12 @@ describe("the loan's status (UX-INT-004)", () => {
     };
 
     expect(
-      describeLoanStatus(
-        loan({ ...waiting, actions: { ...noActions, undoReturn: true } }),
-      ),
-    ).toEqual({
-      text: "Du har bekreftet returen",
-      when: expect.stringMatching(/^Du kan angre til /),
+      situation({ ...waiting, actions: { ...noActions, undoReturn: true } }),
+    ).toMatchObject({
+      headline: "Du har meldt Tilhenger returnert",
+      body: [expect.stringMatching(/^Du kan angre til /)],
     });
-    expect(describeLoanStatus(loan(waiting))).toEqual({
-      text: "Du har bekreftet returen",
-      when: null,
-    });
+    expect(situation(waiting).body).toEqual([]);
   });
 
   it("tells who ended it, and what an unresolved loan still waits for", () => {
@@ -139,26 +223,57 @@ describe("the loan's status (UX-INT-004)", () => {
       endedAt: at,
     };
 
-    expect(textOf({ status: "ended", ending })).toBe(
-      "Avlyst før overlevering av Kari",
-    );
+    expect(situation({ status: "ended", ending })).toMatchObject({
+      label: "Kansellert",
+      headline: "Kari kansellerte lånet",
+    });
     const unresolved = {
       status: "ended" as const,
       ending: { reason: "unresolved" as const, endedBy: null, endedAt: at },
       control: { confirmedAt: null },
     };
-    expect(textOf({ ...unresolved, role: "lender" })).toBe(
-      "Avsluttet uten avklaring. Bekreft når du har Tilhenger igjen",
+    expect(headline({ ...unresolved, role: "lender" })).toBe(
+      "Bekreft når du har Tilhenger igjen",
     );
-    expect(textOf(unresolved)).toBe(
-      "Avsluttet uten avklaring. Venter på at Kari bekrefter å ha Tilhenger igjen",
+    expect(situation(unresolved).body).toContain(
+      "Venter på at Kari bekrefter å ha Tilhenger igjen.",
     );
+  });
+
+  it("retells a disagreement without taking sides (UX-EXC-002)", () => {
+    expect(
+      situation({
+        status: "disputed",
+        return: {
+          borrower: {
+            outcome: "returned",
+            reportedAt: at,
+            reportedAs: "party",
+          },
+          lender: {
+            outcome: "not_received",
+            reportedAt: at,
+            reportedAs: "party",
+          },
+          pending: null,
+        },
+      }),
+    ).toEqual({
+      label: "Uenighet",
+      tone: "warning",
+      headline: "Dere har sagt ulike ting om returen",
+      body: [
+        "Du sa at Tilhenger er levert tilbake.",
+        "Kari sa at Tilhenger ikke er kommet tilbake.",
+        "Lånbort tar ikke stilling til hvem som har rett.",
+      ],
+    });
   });
 
   it("never names a deleted account (UX-PRIV-010)", () => {
     expect(personName({ realName: null })).toBe("Tidligere bruker");
     expect(
-      textOf({
+      headline({
         status: "active",
         role: "lender",
         parties: {
@@ -166,7 +281,7 @@ describe("the loan's status (UX-INT-004)", () => {
           lender: { realName: "Kari", profileId: null, pictureId: null },
         },
       }),
-    ).toBe("Utlånt til Tidligere bruker");
+    ).toBe("Tilhenger er hos Tidligere bruker til onsdag 7. oktober");
   });
 
   it("never shows an internal status", () => {
@@ -180,13 +295,72 @@ describe("the loan's status (UX-INT-004)", () => {
     ] as const;
 
     for (const status of statuses) {
-      expect(textOf({ status })).not.toMatch(/_/);
+      const { label, headline: text, body } = situation({ status });
+      expect([label, text, ...body].join(" ")).not.toMatch(/_/);
     }
   });
 });
 
+describe("the loan's steps (KF7)", () => {
+  it("names the step it is at, and a deviation by its own word", () => {
+    expect(loanProgress(loan())).toEqual({ current: 1, label: "Reservert" });
+    expect(loanProgress(loan({ status: "awaiting_handover" }))).toEqual({
+      current: 1,
+      label: "Overlevering avklares",
+    });
+    expect(loanProgress(loan({ status: "late" }))).toEqual({
+      current: 3,
+      label: "Forsinket",
+    });
+    expect(
+      loanProgress(
+        loan({
+          status: "ended",
+          ending: { reason: "returned", endedBy: "lender", endedAt: at },
+        }),
+      ),
+    ).toEqual({ current: 4, label: "Gjennomført" });
+    expect(
+      loanProgress(
+        loan({
+          status: "ended",
+          ending: { reason: "cancelled", endedBy: "lender", endedAt: at },
+        }),
+      ),
+    ).toEqual({ current: 1, label: "Kansellert" });
+  });
+
+  it("keeps an unresolved loan at the step that was not settled", () => {
+    const unresolved = {
+      status: "ended" as const,
+      ending: { reason: "unresolved" as const, endedBy: null, endedAt: at },
+    };
+
+    expect(loanProgress(loan(unresolved))).toEqual({
+      current: 1,
+      label: "Avsluttet uavklart",
+    });
+    expect(
+      loanProgress(
+        loan({
+          ...unresolved,
+          return: {
+            borrower: {
+              outcome: "returned",
+              reportedAt: at,
+              reportedAs: "party",
+            },
+            lender: null,
+            pending: null,
+          },
+        }),
+      ),
+    ).toEqual({ current: 3, label: "Avsluttet uavklart" });
+  });
+});
+
 describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
-  it("turns what the domain offers into commands on the current agreement", () => {
+  it("offers a clarification's answers alike, on the current agreement", () => {
     const steps = loanSteps(
       loan({
         status: "awaiting_handover",
@@ -196,12 +370,12 @@ describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
 
     expect(steps.primary).toEqual([
       {
-        label: "Tilhenger er overlevert",
+        label: "Jeg har fått Tilhenger",
         path: `/api/loans/${id}/handover`,
         body: { agreementVersion: 2, outcome: "handed_over" },
       },
       {
-        label: "Tilhenger ble ikke overlevert",
+        label: "Overleveringen skjedde ikke",
         path: `/api/loans/${id}/handover`,
         body: { agreementVersion: 2, outcome: "not_handed_over" },
       },
@@ -220,11 +394,11 @@ describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
         },
       }),
     );
-    expect(active.primary.map(({ label }) => label)).toEqual([
-      "Jeg har levert tilbake Tilhenger",
+    expect(active.primary).toEqual([
+      expect.objectContaining({ label: "Meld returnert", primary: true }),
     ]);
     expect(active.secondary.map(({ label }) => label)).toEqual([
-      "Tilhenger ble ikke overlevert",
+      "Overleveringen skjedde ikke",
     ]);
 
     const ended = loanSteps(
@@ -273,7 +447,29 @@ describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
       `/api/loans/${id}/responsibility/${transferId}/accept`,
       `/api/loans/${id}/responsibility/${transferId}/decline`,
     ]);
-    expect(steps.primary[0]?.label).toBe("Behold avtalt periode");
+    expect(steps.primary[0]?.label).toBe("Si nei til forslaget");
+  });
+
+  it("names the day a proposal is accepted for, and the one kept", () => {
+    const steps = loanSteps(
+      loan({
+        status: "active",
+        amendment: {
+          id,
+          period: { start: "2026-10-05", end: "2026-10-09" },
+          proposedBy: "lender",
+          proposedAt: at,
+        },
+        actions: { ...noActions, amendment: ["accept", "decline"] },
+      }),
+    );
+
+    expect(steps.primary.map(({ label, primary }) => [label, primary])).toEqual(
+      [
+        ["Godta ny returdag 9. oktober", true],
+        ["Behold 7. oktober", false],
+      ],
+    );
   });
 
   it("keeps taking one's own proposal or offer back among the rarer steps", () => {
@@ -308,15 +504,30 @@ describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
     expect(steps.primary).toEqual([]);
     expect(steps.secondary).toEqual([
       {
-        label: "Trekk forslaget om ny periode",
+        label: "Trekk forslaget",
         path: `/api/loans/${id}/amendments/${id}/withdraw`,
         body: {},
       },
       {
-        label: "Trekk tilbudet om å bli ansvarlig utlåner",
+        label: "Trekk tilbudet om ansvaret",
         path: `/api/loans/${id}/responsibility/${transferId}/withdraw`,
         body: {},
       },
+    ]);
+  });
+
+  it("leaves an early return to the lender among the rarer steps", () => {
+    const steps = loanSteps(
+      loan({
+        role: "lender",
+        status: "active",
+        actions: { ...noActions, return: ["received"] },
+      }),
+    );
+
+    expect(steps.primary).toEqual([]);
+    expect(steps.secondary.map(({ label }) => label)).toEqual([
+      "Jeg har fått tilbake Tilhenger",
     ]);
   });
 
@@ -325,29 +536,5 @@ describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
       primary: [],
       secondary: [],
     });
-  });
-});
-
-describe("the status's tone (UX-A11Y-005)", () => {
-  it("warns only when something is known not to go as agreed", () => {
-    expect(loanTone(loan())).toBe("positive");
-    expect(loanTone(loan({ status: "awaiting_return" }))).toBe("waiting");
-    expect(loanTone(loan({ status: "late" }))).toBe("warning");
-    expect(loanTone(loan({ status: "disputed" }))).toBe("warning");
-  });
-
-  it("is neutral once ended, unless the object is not confirmed back", () => {
-    const ending = {
-      reason: "unresolved",
-      endedBy: null,
-      endedAt: at,
-    } as const;
-
-    expect(loanTone(loan({ status: "ended", ending }))).toBe("neutral");
-    expect(
-      loanTone(
-        loan({ status: "ended", ending, control: { confirmedAt: null } }),
-      ),
-    ).toBe("warning");
   });
 });

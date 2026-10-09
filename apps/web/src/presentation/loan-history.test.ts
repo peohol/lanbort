@@ -58,7 +58,7 @@ describe("the timeline in words (UX-INT-008)", () => {
     ).toBe("En medeier bekreftet å ha fått tilbake Tilhenger");
     expect(
       text({ event: "cancelled", actor: { ...kari, realName: null } }),
-    ).toBe("Tidligere bruker avlyste lånet");
+    ).toBe("Tidligere bruker kansellerte lånet");
     expect(
       text({
         event: "responsibility_proposed",

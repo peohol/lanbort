@@ -97,7 +97,7 @@ test("a member asks to borrow a thing in the environment, and the owner approves
 
   await expect(page).toHaveURL(/\/lan\/[0-9a-f-]{36}$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    `Stige ${word}`,
+    `Stige ${word} til Bo Dahl`,
   );
   expect(problems).toEqual([]);
   expect(boProblems).toEqual([]);
