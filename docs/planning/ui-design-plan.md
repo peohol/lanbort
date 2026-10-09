@@ -1,6 +1,6 @@
 # Plan for UI-designfasen
 
-> **Status:** Vedtatt arbeidsplan for UI-designet. Fase 1 og 2 er ferdige; neste er fase 3, alternative visuelle retninger. Planen beskriver rekkefølgen for UI-arbeidet og innfører ikke nye produktkrav eller UX-regler.
+> **Status:** Vedtatt arbeidsplan. Fase 1–3 er fullført; kjerneflyt 1–4 har gjeldende HTML-prototyper, og kjerneflyt 5 («Samtaler og enheter») er et arbeidsutkast med åpne produktspørsmål (9. oktober 2026). Prototypene er ennå ikke implementert som samlet UI i appen. Se [gjeldende designreferanser](../../design/README.md). Planen innfører ikke nye produktkrav eller UX-regler.
 
 ## Formål
 
@@ -30,8 +30,8 @@ En mockup eller prototype er aldri i seg selv kilde til ny produktlogikk.
 
 ### Roller i arbeidsflyten
 
-- **Claude Design** brukes primært til informasjonsutforming, visuell retning, skjermdesign, komponentuttrykk og prototyping.
-- **Claude Code** brukes til implementering av godkjente designbolker i den faktiske appen.
+- **Claude Design eller Claude Code Projects** kan lage og revidere designprototyper. Begge skal følge gjeldende designreferanser i `design/README.md`, slik at tidligere designbeslutninger videreføres.
+- **Claude Code** kan også implementere godkjente designbolker i den faktiske appen, men designprototyper og produksjonsimplementering er separate oppgaver.
 - **Repoets kanoniske dokumentasjon** er kilde til produktatferd, tilstander, roller, personvern og avvikshåndtering.
 - **Produktgodkjenning** skjer på nivåer der ulike valg faktisk gir vesentlig forskjellig brukeropplevelse eller produktatferd.
 
@@ -71,7 +71,7 @@ Inventaret finnes i [skjerm- og flytinventaret](../ux/08-skjerm-og-flytinventar.
 
 ## Fase 2 — Visuell informasjonsarkitektur og navigasjon
 
-**Status:** Ferdig 7. oktober 2026. Strukturen er låst i [skjermstruktur og navigasjon](../ux/01-informasjonsarkitektur-og-navigasjon.md#skjermstruktur-og-navigasjon) (UX-IA-009–015): den konsoliderte retningen, navigasjonsstabelen, hjemområdene, direkte innganger og oppgaver som åpner arbeidsflaten direkte. Designreferansen er `design/Fase 2 IA-retninger iterasjon 3.html`, særlig 3a og 3b; de tidligere iterasjonene i `design/` er arbeidshistorikk. Ukjent nettverksutfall og ansvarserklæringen ved vennelån er fortsatt krav, men endrer ikke strukturen og designes i fase 4.
+**Status:** Ferdig 7. oktober 2026. Strukturen er låst i [skjermstruktur og navigasjon](../ux/01-informasjonsarkitektur-og-navigasjon.md#skjermstruktur-og-navigasjon) (UX-IA-009–015): den konsoliderte retningen, navigasjonsstabelen, hjemområdene, direkte innganger og oppgaver som åpner arbeidsflaten direkte. Designreferansen er `design/Fase 2 IA-retninger iterasjon 3.html`, særlig 3a og 3b. Eldre iterasjoner er bevart i git-historikken, men fjernet fra aktivt designgrunnlag. Ukjent nettverksutfall og ansvarserklæringen ved vennelån er fortsatt krav, men endrer ikke strukturen og designes i fase 4.
 
 Den vedtatte informasjonsarkitekturen og navigasjonsmodellen oversettes til konkret skjermstruktur.
 
@@ -92,7 +92,7 @@ Ingen detaljert visuell stil låses før denne strukturen fungerer.
 
 ## Fase 3 — Alternative visuelle retninger
 
-**Status:** Neste. Retningene bygger på den låste strukturen fra fase 2 og endrer den ikke; de skiller seg i visuelt uttrykk og informasjonsbehandling innenfor den.
+**Status:** Fullført. Retningen «Lune flater» (1B) ble valgt som grunnlag, med ikonbruk fra de andre foretrukne retningene. Den ble videreutviklet til en lysere, varmere og dempet Tomat-palett. Den aktive stilreferansen er `design/Fase 4 Tomat finjustering.html`; tidligere visuelle alternativer finnes i git-historikken.
 
 Claude Design lager et lite antall tydelig forskjellige visuelle retninger for representative skjermer.
 
@@ -118,6 +118,8 @@ Vi vurderer blant annet:
 Én retning velges og videreutvikles før resten av appen designes.
 
 ## Fase 4 — Én komplett kjerneflyt
+
+**Status:** Prototypet i `design/Lånbort Kjerneflyt v2.html`. Designet er ikke i seg selv implementert i appen.
 
 Den valgte retningen brukes først på én sammenhengende ende-til-ende-flyt:
 
@@ -157,6 +159,8 @@ Dette omfatter etter behov:
 Målet er et lite, konsistent system som dekker reelle behov. Nye komponentvarianter skal ha en konkret grunn.
 
 ## Fase 6 — Utvid ordinær brukerflate
+
+**Status:** Pågår. Gjeldende prototyper i `design/` dekker registrering av ting (kjerneflyt 2), finne/bli med i miljø (3), Hjem/varsler (4) og Samtaler/enheter (5, ennå ikke godkjent). Neste naturlige designbolk er «Personer, venner og tillit» (WP-86). Se `design/README.md` for eksakte aktive filnavn og status.
 
 Deretter designes resten av sluttbrukeropplevelsen med gjenbruk av de etablerte mønstrene.
 
