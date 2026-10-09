@@ -19,8 +19,9 @@
 | Kjerneflyt 3 – finne og bli med i miljø | [Lånbort - Finne og bli med i et miljø v2.html](<Lånbort - Finne og bli med i et miljø v2.html>) | Siste finjusterte v2 (tidligere eksportert som `v2 (2)`) |
 | Kjerneflyt 4 – Hjem og varsler | [Lånbort - Hjem og varsler v3.html](<Lånbort - Hjem og varsler v3.html>) | Gjeldende v3; siste rydding og UX-lenkekorreksjon i [PR #80](https://github.com/peohol/lanbort/pull/80) |
 | Kjerneflyt 5 – Samtaler og enheter | [Lånbort - Samtaler og enheter v2.html](<Lånbort - Samtaler og enheter v2.html>) | **Arbeidsutkast, ikke godkjent produktatferd.** U1–U11 i prototypen er forslag som må avklares mot kanoniske regler / beslutningsregisteret |
+| Kjerneflyt 6 – Personer, venner og tillit | [Lånbort - Personer, venner og tillit v1.html](<Lånbort - Personer, venner og tillit v1.html>) | **Arbeidsutkast til vurdering, ikke godkjent produktatferd.** Dekker WP-86 (personens side, tillit i rollen, venneforespørsler, fjerning, blokkering og Konto-visningene). U1–U3 er åpne produktspørsmål og K1–K2 forslag som må godkjennes; OD-0027 (profilbildets form) er fortsatt åpen. Skrevet som vanlig HTML, ikke som bundle |
 
-**Foreslått neste designbolk:** Kjerneflyt 6 – **Personer, venner og tillit** (WP-86), med personprofil, venneforespørsler, fjerning/blokkering og kontekstuell tillitsinformasjon.
+**Foreslått neste designbolk:** Avklar først U1–U3 og K1–K2 i kjerneflyt 6. Neste bolk velges deretter etter fase 6 i `docs/planning/ui-design-plan.md`.
 
 ## Konkrete stilankre
 
