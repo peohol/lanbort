@@ -47,11 +47,11 @@ function StartChat() {
  * device needs: start chat, be linked, or recover (ADR-0010 §5, §8).
  */
 export function ReadyChat({
-  title,
+  header,
   children,
 }: {
-  /** The page's heading while it waits for the device; the page sets its own after. */
-  title?: string;
+  /** The page's top while it waits for the device; the page sets its own after. */
+  header?: ReactNode;
   children: (engine: ChatEngine) => ReactNode;
 }) {
   const { state } = useChat();
@@ -60,7 +60,7 @@ export function ReadyChat({
     children(state.engine)
   ) : (
     <>
-      {title && <h1>{title}</h1>}
+      {header}
       <Setup />
     </>
   );

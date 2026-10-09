@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
+import { PageHeader } from "@/components/page-header";
 import { Icon } from "@/components/icon";
 import { chatConversationHref, chatHref } from "@/navigation/chat";
 import { personHref } from "@/navigation/routes";
@@ -176,10 +177,7 @@ function About({
 
   return (
     <>
-      <Link className="back-link" href={chatConversationHref(id)}>
-        <Icon name="back" /> {info ? name : "Samtalen"}
-      </Link>
-      <h1>Om samtalen</h1>
+      <AboutHeader id={id} name={info ? name : "Samtalen"} />
       <ErrorText>{error}</ErrorText>
 
       {info && (
@@ -234,6 +232,15 @@ function About({
   );
 }
 
+/** It lies in the conversation it is about (UX-IA-011). */
+const AboutHeader = ({ id, name }: { id: string; name: string }) => (
+  <PageHeader
+    title="Om samtalen"
+    back={{ href: chatConversationHref(id), label: name }}
+    home="conversations"
+  />
+);
+
 /** «Om samtalen» (04), from ⋯ in the conversation. */
 export function ConversationAbout({
   id,
@@ -243,7 +250,7 @@ export function ConversationAbout({
   loans: ChatLoans;
 }) {
   return (
-    <ReadyChat title="Om samtalen">
+    <ReadyChat header={<AboutHeader id={id} name="Samtalen" />}>
       {(engine) => <About engine={engine} id={id} loans={loans} />}
     </ReadyChat>
   );

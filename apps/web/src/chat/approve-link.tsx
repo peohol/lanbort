@@ -241,7 +241,7 @@ export function ApproveLink() {
   if (!loaded) return null;
 
   return (
-    <ReadyChat title="Godkjenn en ny enhet">
+    <ReadyChat header={<h1>Godkjenn en ny enhet</h1>}>
       {(engine) => <Approve engine={engine} />}
     </ReadyChat>
   );

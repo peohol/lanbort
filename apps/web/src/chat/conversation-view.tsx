@@ -14,6 +14,8 @@ import {
 import { announce } from "@/components/announcer";
 import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
+import { PageHeader } from "@/components/page-header";
+import { PlaceBar } from "@/components/place-bar";
 import { Icon } from "@/components/icon";
 import { Tag } from "@/components/tag";
 import { chatAboutHref, chatHref } from "@/navigation/chat";
@@ -437,26 +439,28 @@ function Conversation({
 
   return (
     <>
-      <Link className="back-link" href={chatHref}>
-        <Icon name="back" /> Samtaler
-      </Link>
-      <header className={styles.head}>
-        <Picture people={others} />
-        <div className={styles.headText}>
-          <p className="page-kind">
-            {logistics
-              ? `Lånelogistikk${loan ? ` · ${loan.title}` : ""}`
-              : "Samtale"}
-          </p>
-          <h1>{info ? name : "Samtale"}</h1>
+      <header className="page-header">
+        <PlaceBar
+          place={{ label: info ? name : "Samtale", home: "conversations" }}
+        />
+        <div className={styles.head}>
+          <Picture people={others} />
+          <div className={styles.headText}>
+            <p className="page-kind">
+              {logistics
+                ? `Lånelogistikk${loan ? ` · ${loan.title}` : ""}`
+                : "Samtale"}
+            </p>
+            <h1>{info ? name : "Samtale"}</h1>
+          </div>
+          <Link
+            href={chatAboutHref(id)}
+            className={styles.moreLink}
+            aria-label="Om samtalen"
+          >
+            <ChatIcon name="more" />
+          </Link>
         </div>
-        <Link
-          href={chatAboutHref(id)}
-          className={styles.moreLink}
-          aria-label="Om samtalen"
-        >
-          <ChatIcon name="more" />
-        </Link>
       </header>
 
       {between && between.length > 0 && <LoansBetween loans={between} />}
@@ -621,7 +625,14 @@ export function ConversationView({
   loans: ChatLoans;
 }) {
   return (
-    <ReadyChat title="Samtale">
+    <ReadyChat
+      header={
+        <PageHeader
+          title="Samtale"
+          back={{ href: chatHref, label: "Samtaler" }}
+        />
+      }
+    >
       {(engine) => <Split engine={engine} id={id} loans={loans} />}
     </ReadyChat>
   );
@@ -636,13 +647,15 @@ function Split({
   id: string;
   loans: ChatLoans;
 }) {
-  const wideScreen = useWide();
-  return (
+  const conversation = <Conversation engine={engine} id={id} loans={loans} />;
+  // On a phone the conversation is the page, and its first row shares the
+  // bar at the top.
+  return useWide() ? (
     <div className={styles.split}>
-      {wideScreen && <SideList engine={engine} id={id} loans={loans} />}
-      <div>
-        <Conversation engine={engine} id={id} loans={loans} />
-      </div>
+      <SideList engine={engine} id={id} loans={loans} />
+      <div>{conversation}</div>
     </div>
+  ) : (
+    conversation
   );
 }
