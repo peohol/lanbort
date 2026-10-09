@@ -6,7 +6,7 @@ import type {
   DesiredStart,
   LoanRequestOrigin,
   LoanRequestResult,
-  LoanRequest,
+  LoanOrigin,
   ShownOwner,
 } from "@lanbort/contracts";
 import { useEffect, useId, useRef, useState } from "react";
@@ -63,7 +63,7 @@ export function RequestForm({
   title: string;
   origin: LoanRequestOrigin;
   /** Where the request is made, as the reader sees it. */
-  shownOrigin: LoanRequest["origin"];
+  shownOrigin: LoanOrigin;
   /** Through an environment, the owners asked; empty between friends. */
   owners: readonly ShownOwner[];
   termsVersion: number;

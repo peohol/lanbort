@@ -3,7 +3,7 @@ import {
   getEnvironment,
   previewLoanRequest,
 } from "@lanbort/domain";
-import type { LoanRequest } from "@lanbort/contracts";
+import type { LoanOrigin } from "@lanbort/contracts";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
@@ -50,7 +50,7 @@ export default async function RequestPage({
   const today = calendarDate(new Date());
   const back = objectHref(objectId, origin);
 
-  const shownOrigin: LoanRequest["origin"] = environment
+  const shownOrigin: LoanOrigin = environment
     ? { kind: "environment", environment }
     : { kind: "direct" };
 

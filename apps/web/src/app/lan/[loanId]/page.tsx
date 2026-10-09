@@ -10,7 +10,6 @@ import {
   readLoan,
   readLoanHistory,
   readLoanLogistics,
-  readLoanRequest,
   readLoanReviews,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
@@ -564,7 +563,7 @@ export default async function LoanPage({
   const { loanId } = await params;
   const query = await searchParams;
   const loan = await pageQueryOrNotFound(readLoan, { loanId });
-  const [history, logistics, reviews, request] = await Promise.all([
+  const [history, logistics, reviews] = await Promise.all([
     collectPages(
       (cursor) => pageQuery(readLoanHistory, { loanId, cursor }),
       ({ entries }) => entries,
@@ -578,9 +577,6 @@ export default async function LoanPage({
       : undefined,
     // The reviews are their reviewers': after a change of lender, the former.
     pageQueryIfAllowed(readLoanReviews, { loanId }),
-    // The request names where the loan came from (UX-PRIV-003), while the
-    // reader may still see it.
-    pageQueryIfAllowed(readLoanRequest, { requestId: loan.requestId }),
   ]);
   const other = loan.role === "lender" ? "borrower" : "lender";
 
@@ -590,7 +586,7 @@ export default async function LoanPage({
         kind="Lån"
         title={loanTitle(loan)}
         back={{ href: loansHref, label: "Lån" }}
-        context={request && <OriginTag origin={request.origin} />}
+        context={<OriginTag origin={loan.origin} />}
       />
       <Progress progress={loanProgress(loan)} />
       <div className={styles.layout}>

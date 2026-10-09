@@ -1,4 +1,5 @@
 import type {
+  LoanOrigin,
   LoanRequest,
   LoanRequestEndReason,
   LoanRequestRole,
@@ -143,7 +144,7 @@ export function requestProgress(request: LoanRequest): LoanProgress {
  * Gården» or «Direkte mellom venner». An environment the reader may no
  * longer see is not named (PS-ENV-009).
  */
-export function originLabel(origin: LoanRequest["origin"]): string {
+export function originLabel(origin: LoanOrigin): string {
   return origin.kind === "direct"
     ? "Direkte mellom venner"
     : `Via ${origin.environment?.name ?? "et miljø"}`;
