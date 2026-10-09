@@ -613,7 +613,6 @@ Disse flatene følger av spesifikasjonen og UX-modellen, men ingen pakke i UI-pl
 - **Plattformforvalterens inngrep** på kontoer og miljøer. Venter på OD-0023 og OD-0026.
 - **Varsel før utlogging på en enhet med privat chat** (ADR-0010 punkt 7). Konto-sidens «Logg ut» har ikke dette varselet ennå; «Fjern denne enheten» i Mine enheter sier hva enheten mister.
 - **Gjenopprettingsnøkkel og overføring av gammel historikk** for privat chat (ADR-0010 punkt 5 og 8, PS-COM-019). Begge er vedtatt som valgfrie for brukeren, men ikke bygget; til da er kobling fra en annen enhet eller tilbakestilling de eneste veiene.
-- **Varsler om nye meldinger** i privat chat og lånelogistikk-kanalen (PS-COM-018). Vedtatt, men ikke bygget; i dag gir nye meldinger ingen varsler.
 - Presentasjon og synlighet for andre profilfelt, og demping og arkivering av lånesamtalen, står allerede under «Senere» i UI-planen.
 
 ### Åpne beslutninger som berører flatene

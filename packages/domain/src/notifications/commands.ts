@@ -4,6 +4,7 @@ import {
   type NotificationPreferences,
   notificationPreferencesSchema,
   notificationReadResultSchema,
+  preferenceSubject,
   setNotificationPreferenceSchema,
 } from "@lanbort/contracts";
 import { sql } from "kysely";
@@ -101,7 +102,8 @@ export const markAllNotificationsRead = defineCommand({
 });
 
 /**
- * PS-COM-002/003: turns one configurable channel of one level on or off.
+ * PS-COM-002/003: turns one configurable channel of one level, or of one
+ * kind with its own choices (PS-COM-018), on or off.
  * It only decides how the caller is told from now on: no loan, case or
  * security status reads it, and required and action notifications stay in
  * the app whatever is chosen (the input and the database refuse anything
@@ -126,7 +128,7 @@ export const setNotificationPreference = defineCommand({
       .insertInto("app.notification_preferences")
       .values({
         user_id: userId,
-        level: input.level,
+        level: preferenceSubject(input),
         channel: input.channel,
         enabled: input.enabled,
         updated_at: now,

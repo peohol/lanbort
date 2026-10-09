@@ -225,6 +225,15 @@ export const chatConversationTargetSchema = z.strictObject({
   conversationId: chatConversationIdSchema,
 });
 
+/**
+ * Mutes or unmutes notifications of new messages in one conversation, for
+ * the caller only (PS-COM-018). Required notifications are never muted.
+ */
+export const muteChatConversationSchema = z.strictObject({
+  conversationId: chatConversationIdSchema,
+  muted: z.boolean(),
+});
+
 export const chatConversationStartedSchema = z.strictObject({
   conversationId: chatConversationIdSchema,
 });
@@ -259,6 +268,8 @@ export const chatConversationSchema = z.strictObject({
   joined: z.boolean(),
   /** The caller's device has messages it has not fetched yet. */
   waiting: z.boolean(),
+  /** The caller gets no notifications of its messages (PS-COM-018). */
+  muted: z.boolean(),
   lastActivityAt: z.iso.datetime(),
 });
 

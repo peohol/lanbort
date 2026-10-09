@@ -676,8 +676,19 @@ button:disabled,
   gap: var(--space-2);
 }
 
+/* A person's picture beside the kind and title (kjerneflyt 6). */
+.page-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.page-title-row > div:last-child {
+  min-width: 0;
+}
+
 .page-picture {
-  margin-bottom: var(--space-3);
+  flex: none;
 }
 
 /* The picture editor: the page stays put while fingers move the photo. */
@@ -850,6 +861,12 @@ button:disabled,
   .account-notice {
     width: min(48rem, 100%);
     margin-left: 0;
+  }
+
+  /* A page laid out in columns on a wide screen, as a person's page with
+     its trust beside what is between the two (kjerneflyt 6). */
+  .app-content > main.main-wide {
+    width: min(72rem, 100%);
   }
 
   h1 {
@@ -1141,6 +1158,7 @@ body:has(> .layer) .app-shell .layer {
 .menu-text {
   display: grid;
   flex: 1;
+  gap: 0.125rem;
   min-width: 0;
 }
 
@@ -1149,8 +1167,30 @@ body:has(> .layer) .app-shell .layer {
 }
 
 .menu-detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
   font-size: var(--text-s);
   color: var(--color-muted);
+}
+
+/* A thing without its picture: a soft square with the thing's icon. */
+.menu-lead {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  overflow: hidden;
+  color: var(--color-muted);
+  background: linear-gradient(
+    135deg,
+    var(--color-image-from),
+    var(--color-image-to)
+  );
+  border-radius: var(--radius-s);
 }
 
 .menu-chevron {

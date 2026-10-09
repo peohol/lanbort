@@ -107,6 +107,11 @@ export const chatApi = {
   directory: (id: string) =>
     get<ChatDirectory>(`${conversation(id)}/directory`),
   hide: (id: string) => post(`${conversation(id)}/hide`, {}),
+  mute: (id: string, muted: boolean) =>
+    post(`${conversation(id)}/mute`, { muted }),
+  /** Opened: its notification of new messages is read (PS-COM-018). */
+  readNotifications: (id: string) =>
+    post(`${conversation(id)}/notifications/read`, {}, { harmless: true }),
   claimKeyPackages: (id: string) =>
     post<ChatClaimedKeyPackages>(`${conversation(id)}/key-packages`, {}),
   commit: (

@@ -30,6 +30,33 @@ describe("what a notification says", () => {
     expect(detail).toContain("Mine enheter");
   });
 
+  it("names who wrote and how many new messages, never what (PS-COM-018)", () => {
+    const about = { thing: null, person: "Aisha Rahman", place: null };
+
+    expect(
+      notificationWords({
+        kind: "chat.new_messages",
+        detail: "messages_1",
+        about,
+      }).title,
+    ).toBe("Ny melding fra Aisha Rahman");
+    expect(
+      notificationWords({
+        kind: "chat.new_messages",
+        detail: "messages_3",
+        about,
+      }).title,
+    ).toBe("3 nye meldinger fra Aisha Rahman");
+    // Someone the reader may no longer see goes unnamed.
+    expect(
+      notificationWords({
+        kind: "chat.new_messages",
+        detail: "messages_2",
+        about: { ...about, person: null },
+      }).title,
+    ).toBe("2 nye meldinger i privat chat");
+  });
+
   it("says what the other party said, where the detail tells", () => {
     expect(
       notificationWords({ kind: "loan.return_reported", detail: "still_has" }),
@@ -177,5 +204,16 @@ describe("the notification centre's order (UX-IA-018–019)", () => {
     ]);
     expect(olderText(earlier[0]!)).toBe("Og 2 eldre varsler om dette lånet");
     expect(olderText(earlier[1]!)).toBeNull();
+  });
+
+  it("gathers older read notifications per conversation", () => {
+    const latest = notification("chat_conversation", "3", true);
+    const { earlier } = arrangeNotifications([
+      latest,
+      notification("chat_conversation", "3", true),
+    ]);
+
+    expect(earlier).toEqual([{ notification: latest, older: 1 }]);
+    expect(olderText(earlier[0]!)).toBe("Og 1 eldre varsel om denne samtalen");
   });
 });

@@ -190,6 +190,30 @@ async function invitationAbout(
   };
 }
 
+/**
+ * The other one in the reader's own conversation, by name only while the
+ * reader may see them (PS-COM-018: the name and a count, nothing written).
+ */
+async function conversationAbout(
+  reading: Reading,
+  conversationId: string,
+): Promise<Described> {
+  const other = await reading.db
+    .selectFrom("app.chat_participants as own")
+    .innerJoin(
+      "app.chat_participants as other",
+      "other.conversation_id",
+      "own.conversation_id",
+    )
+    .select("other.user_id")
+    .where("own.conversation_id", "=", conversationId)
+    .where("own.user_id", "=", reading.userId)
+    .where("other.user_id", "<>", reading.userId)
+    .executeTakeFirst();
+
+  return other ? personAbout(reading, other.user_id) : nobody;
+}
+
 const describers: Partial<
   Record<
     Notification["target"]["type"],
@@ -201,6 +225,7 @@ const describers: Partial<
   user: personAbout,
   environment: environmentAbout,
   object_invitation: invitationAbout,
+  chat_conversation: conversationAbout,
 };
 
 /**

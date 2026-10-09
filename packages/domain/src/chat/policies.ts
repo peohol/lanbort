@@ -215,6 +215,12 @@ export const readChatDirectoryPolicy = conversationReadPolicy<
 export const hideChatConversationPolicy = conversationReadPolicy(
   "chat.hide_conversation",
 );
+export const muteChatConversationPolicy = conversationReadPolicy(
+  "chat.mute_conversation",
+);
+export const readChatMessageNotificationsPolicy = conversationReadPolicy(
+  "chat.read_message_notifications",
+);
 
 /** The caller's own list; each entry is theirs by construction. */
 export const listChatConversationsPolicy = definePolicy<unknown, void>({
@@ -279,6 +285,8 @@ export const chatPolicies = [
   readChatConversationPolicy,
   readChatDirectoryPolicy,
   hideChatConversationPolicy,
+  muteChatConversationPolicy,
+  readChatMessageNotificationsPolicy,
   listChatConversationsPolicy,
   claimChatKeyPackagesPolicy,
   submitChatCommitPolicy,

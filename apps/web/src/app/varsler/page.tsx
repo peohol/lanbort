@@ -4,7 +4,7 @@ import {
   readNotificationCentre,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
-import Link from "next/link";
+import { MenuList, MenuRow } from "@/components/menu-list";
 import { PageHeader } from "@/components/page-header";
 import {
   morePagesHref,
@@ -67,9 +67,13 @@ export default async function NotificationsPage({
           </a>
         </p>
       )}
-      <p className="link-row">
-        <Link href={notificationChoicesHref}>Varslingsvalg</Link>
-      </p>
+      <MenuList>
+        <MenuRow
+          href={notificationChoicesHref}
+          icon="bell"
+          label="Varslingsvalg"
+        />
+      </MenuList>
     </main>
   );
 }

@@ -275,6 +275,15 @@ describe("preferences (PS-COM-002–003)", () => {
           ],
         },
       ],
+      kinds: [
+        {
+          kind: "chat.new_messages",
+          channels: [
+            { channel: "in_app", enabled: true, configurable: true },
+            { channel: "email", enabled: false, configurable: true },
+          ],
+        },
+      ],
     });
   });
 
