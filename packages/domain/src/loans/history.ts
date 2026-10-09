@@ -19,6 +19,8 @@ import {
   loanAmendmentProposed,
   loanAmendmentWithdrawn,
   loanCancelled,
+  loanConditionAnswered,
+  loanConditionReported,
   loanControlConfirmed,
   loanEndedUnresolved,
   loanHandedOver,
@@ -151,6 +153,16 @@ const timelineEvents: readonly TimelineEvent[] = [
   timelineEvent(loanResponsibilityWithdrawn, "responsibility_withdrawn"),
   timelineEvent(loanEndedUnresolved, "ended_unresolved"),
   timelineEvent(loanControlConfirmed, "control_confirmed"),
+  // PS-LOAN-023: that a party reported damage or answered a report, never
+  // what they wrote; the parties read that in the reports themselves.
+  timelineEvent(loanConditionReported, "condition_reported", ({ role }) => ({
+    side: role,
+  })),
+  timelineEvent(
+    loanConditionAnswered,
+    "condition_answered",
+    ({ role, kind }) => ({ side: role, answerKind: kind }),
+  ),
 ];
 
 const byType = new Map(

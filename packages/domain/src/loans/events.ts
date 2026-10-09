@@ -1,5 +1,6 @@
 import {
   handoverOutcomeSchema,
+  loanConditionAnswerKindSchema,
   loanRequestEndReasonSchema,
   loanRequestRoleSchema,
   responsibilityTransferKindSchema,
@@ -259,6 +260,45 @@ export const loanEndedUnresolved = loanEvent("ended_unresolved", {
  * its loan ended unresolved, so it may take new loans again.
  */
 export const loanControlConfirmed = loanEvent("control_confirmed", {});
+
+const conditionReportId = z.uuid();
+
+/**
+ * Like {@link loanEvent}, but a report may come after an ended loan's object
+ * was deleted, so its object may be gone (null).
+ */
+const conditionEvent = <Shape extends z.ZodRawShape>(
+  type: string,
+  extra: Shape,
+) =>
+  defineEvent({
+    type: `loan.${type}`,
+    version: 1,
+    kind: "domain",
+    resourceType: "loan",
+    payload: z.strictObject({ objectId: z.uuid().nullable(), ...extra }),
+  });
+
+/**
+ * PS-LOAN-023: a party (the actor) registered damage, deficiency or loss for
+ * their side. Never the description: what was said stays with the parties.
+ * It changes nothing on the loan, its ending or anyone's trust.
+ */
+export const loanConditionReported = conditionEvent("condition_reported", {
+  reportId: conditionReportId,
+  role: loanRequestRoleSchema,
+});
+
+/**
+ * PS-LOAN-023: the other party (the actor) answered that report, disagreeing
+ * or adding their explanation, as a statement of its own.
+ */
+export const loanConditionAnswered = conditionEvent("condition_answered", {
+  reportId: conditionReportId,
+  answerId: conditionReportId,
+  role: loanRequestRoleSchema,
+  kind: loanConditionAnswerKindSchema,
+});
 
 /**
  * PS-COM-007: the loan's logistics channel was closed early, for good, as a

@@ -56,6 +56,7 @@ export const notificationKinds = {
   "loan.responsibility_transferred": "required",
   "loan.responsibility_declined": "action",
   "loan.responsibility_withdrawn": "action",
+  "loan.condition_reported": "action",
   "social.friend_request": "action",
   "social.friend_request_accepted": "information",
   "environment.membership_invited": "action",

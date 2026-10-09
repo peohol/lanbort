@@ -10,6 +10,7 @@ import {
   loanAmendmentProposed,
   loanAmendmentWithdrawn,
   loanCancelled,
+  loanConditionReported,
   loanHandoverDisputed,
   loanHandoverReported,
   loanNotCompleted,
@@ -272,6 +273,12 @@ export const loanRules = [
   notifyOn(
     loanCancelled,
     toSides("loan.cancelled", ({ role }) => [otherSide(role)]),
+  ),
+  // The other party sees what was registered and may answer (PS-LOAN-023,
+  // KF7). Their answer tells nobody: it ends the exchange.
+  notifyOn(
+    loanConditionReported,
+    toSides("loan.condition_reported", ({ role }) => [otherSide(role)]),
   ),
   notifyOn(
     loanAmendmentProposed,
