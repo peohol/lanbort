@@ -10,7 +10,6 @@ import {
   readLoan,
   readLoanHistory,
   readLoanLogistics,
-  readLoanRequest,
   readLoanReviews,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
@@ -24,8 +23,7 @@ import { describedBy, Field } from "@/components/field";
 import { MoreActions } from "@/components/more-actions";
 import { PageHeader } from "@/components/page-header";
 import { StatusCard } from "@/components/status-card";
-import { ContextTag } from "@/components/tag";
-import { chatConversationHref, chatHref } from "@/navigation/chat";
+import { chatConversationHref } from "@/navigation/chat";
 import {
   morePagesHref,
   pagesShown,
@@ -35,7 +33,6 @@ import { loansHref } from "@/navigation/areas";
 import { loanHref } from "@/navigation/routes";
 import { hrefFor } from "@/navigation/targets";
 import { addDays, calendarDay, formatPeriod } from "@/presentation/dates";
-import { requestOriginLabel } from "@/presentation/loan-requests";
 import {
   describeLoanStatus,
   loanApi,
@@ -55,7 +52,9 @@ import {
   requirePageAccount,
 } from "@/server/session";
 import styles from "../_parts/loan.module.css";
+import { OriginTag } from "../_parts/origin-tag";
 import { Party } from "../_parts/party";
+import { writeHref } from "../_parts/write-href";
 import { Progress } from "../_parts/progress";
 import { Timeline } from "../_parts/timeline";
 import { ReviewForm } from "./review-form";
@@ -410,25 +409,6 @@ function Agreement({ loan }: { loan: Loan }) {
   );
 }
 
-/**
- * Where «Skriv til» leads (KF7, PS-COM-006): the lender may start a private
- * conversation with the borrower from the request they received; the
- * borrower finds it among their conversations once it exists. Private chat
- * is off for real users until Port C.
- */
-function writeHref(loan: Loan): string | null {
-  if (!chatEnabled() || loan.role !== "lender") {
-    return null;
-  }
-
-  const query = new URLSearchParams({
-    med: loan.borrowerUserId,
-    foresporsel: loan.requestId,
-  });
-
-  return `${chatHref}?${query.toString()}`;
-}
-
 /** A review as its parties see it, with its one response (PS-TRUST-005). */
 function Review({
   review,
@@ -583,7 +563,7 @@ export default async function LoanPage({
   const { loanId } = await params;
   const query = await searchParams;
   const loan = await pageQueryOrNotFound(readLoan, { loanId });
-  const [history, logistics, reviews, request] = await Promise.all([
+  const [history, logistics, reviews] = await Promise.all([
     collectPages(
       (cursor) => pageQuery(readLoanHistory, { loanId, cursor }),
       ({ entries }) => entries,
@@ -597,9 +577,6 @@ export default async function LoanPage({
       : undefined,
     // The reviews are their reviewers': after a change of lender, the former.
     pageQueryIfAllowed(readLoanReviews, { loanId }),
-    // The request names where the loan came from (UX-PRIV-003), while the
-    // reader may still see it.
-    pageQueryIfAllowed(readLoanRequest, { requestId: loan.requestId }),
   ]);
   const other = loan.role === "lender" ? "borrower" : "lender";
 
@@ -609,18 +586,7 @@ export default async function LoanPage({
         kind="Lån"
         title={loanTitle(loan)}
         back={{ href: loansHref, label: "Lån" }}
-        context={
-          request && (
-            <ContextTag
-              label="Gjennom"
-              icon={request.origin.kind === "direct" ? "people" : "environment"}
-            >
-              {request.origin.kind === "direct"
-                ? requestOriginLabel(request)
-                : `Via ${requestOriginLabel(request)}`}
-            </ContextTag>
-          )
-        }
+        context={<OriginTag origin={loan.origin} />}
       />
       <Progress progress={loanProgress(loan)} />
       <div className={styles.layout}>
@@ -634,7 +600,9 @@ export default async function LoanPage({
             writeHref={
               // An open logistics channel means a block has closed
               // ordinary chat between them (WP-44).
-              logistics?.closedAt === null ? null : writeHref(loan)
+              logistics?.closedAt === null
+                ? null
+                : writeHref(loan.role, loan.borrowerUserId, loan.requestId)
             }
           />
           <LoanMoreActions loan={loan} />

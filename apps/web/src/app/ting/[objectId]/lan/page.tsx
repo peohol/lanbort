@@ -3,11 +3,12 @@ import {
   getEnvironment,
   previewLoanRequest,
 } from "@lanbort/domain";
+import type { LoanOrigin } from "@lanbort/contracts";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
-import { ContextTag } from "@/components/tag";
+import { OriginTag } from "@/app/lan/_parts/origin-tag";
 import {
   environmentParam,
   objectHref,
@@ -46,38 +47,42 @@ export default async function RequestPage({
   const origin: ObjectOrigin = environment
     ? { kind: "environment", environmentId: environment.id }
     : { kind: "direct" };
-  const originLabel = environment?.name ?? "Direkte mellom venner";
   const today = calendarDate(new Date());
   const back = objectHref(objectId, origin);
 
+  const shownOrigin: LoanOrigin = environment
+    ? { kind: "environment", environment }
+    : { kind: "direct" };
+
   return (
     <main>
-      <PageHeader
-        title={`Be om å låne ${object.title}`}
-        back={{ href: back, label: object.title }}
-        home="find"
-        task
-        context={<ContextTag label="Gjennom">{originLabel}</ContextTag>}
-      >
-        {object.availableForNewLoans
-          ? `${describeAvailability(object, today)}. Ledig: ${object.effectiveAvailability.map(formatInterval).join(", ")}.`
-          : undefined}
-      </PageHeader>
       {object.availableForNewLoans ? (
         <RequestForm
           objectId={object.objectId}
           title={object.title}
           origin={origin}
-          originLabel={originLabel}
+          shownOrigin={shownOrigin}
+          owners={object.owners}
           termsVersion={object.termsVersion}
           loanTerms={object.loanTerms}
           declarationVersion={object.responsibilityDeclarationVersion}
+          availability={`${describeAvailability(object, today)}. Ledig: ${object.effectiveAvailability.map(formatInterval).join(", ")}.`}
+          from={{ href: back, label: object.title }}
           today={today}
         />
       ) : (
-        <EmptyState action={<Link href={back}>Tilbake til tingen</Link>}>
-          Tingen kan ikke lånes akkurat nå.
-        </EmptyState>
+        <>
+          <PageHeader
+            kind="Be om å låne"
+            title={object.title}
+            back={{ href: back, label: object.title }}
+            home="find"
+            context={<OriginTag origin={shownOrigin} />}
+          />
+          <EmptyState action={<Link href={back}>Tilbake til tingen</Link>}>
+            Tingen kan ikke lånes akkurat nå.
+          </EmptyState>
+        </>
       )}
     </main>
   );

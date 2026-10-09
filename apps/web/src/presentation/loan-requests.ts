@@ -1,10 +1,11 @@
 import type {
+  LoanOrigin,
   LoanRequest,
   LoanRequestEndReason,
   LoanRequestRole,
 } from "@lanbort/contracts";
 import type { Tone } from "@/components/tag";
-import { personName } from "./loan-status";
+import { type LoanProgress, loanStages, personName } from "./loan-status";
 
 /**
  * The responsibility declaration both parties of a direct friend loan
@@ -18,9 +19,12 @@ export const responsibilityDeclaration = [
   "Lånbort mekler ikke og avgjør ikke slike uenigheter. Trusler, svindel og annet misbruk kan du likevel alltid melde fra om.",
 ] as const;
 
-/** What the message field says about who sees it (PS-LOAN-004, OD-0015). */
-export const requestMessageHelp =
-  "Valgfritt. Meldingen vises for eieren sammen med forespørselen og er ikke ende-til-ende-kryptert. Videre samtale skjer i privat chat.";
+/**
+ * What the message field says about who sees it (PS-LOAN-004, OD-0015),
+ * naming who reads it: «Kari», or «Eieren».
+ */
+export const requestMessageHelp = (reader: string) =>
+  `${reader} ser meldingen i forespørselen. Den er ikke ende-til-ende-kryptert. Videre prat tar dere i den private samtalen.`;
 
 /**
  * Why a request ended. The neutral reasons never say who did what
@@ -49,8 +53,12 @@ const endedBecause: Record<
 };
 
 export interface LoanRequestStatusText {
+  /** «Venter på deg», «Avtalt»: who or what it waits on, in a word or two. */
+  readonly label: string;
   readonly text: string;
   readonly tone: Tone;
+  /** What to know about it, when there is more to say. */
+  readonly body?: string;
 }
 
 /**
@@ -67,8 +75,14 @@ export function describeLoanRequest(
   switch (request.status) {
     case "requested":
       if (borrower)
-        return { text: "Venter på svar fra eieren", tone: "waiting" };
+        return {
+          label: "Venter på eieren",
+          text: "Venter på svar fra eieren",
+          tone: "waiting",
+          body: "Du får varsel når eieren svarer. Ingenting er avtalt før eieren godkjenner.",
+        };
       return {
+        label: "Venter på deg",
         text:
           request.responsibility && !request.responsibility.acceptedByYou
             ? `${name} vil låne. Godta ansvarserklæringen før du svarer`
@@ -78,31 +92,60 @@ export function describeLoanRequest(
     case "awaiting_terms_confirmation":
       return borrower
         ? {
+            label: "Venter på deg",
             text: "Vilkårene er endret. Bekreft de nye vilkårene før eieren kan svare",
             tone: "warning",
           }
         : {
+            label: `Venter på ${name}`,
             text: `Venter på at ${name} bekrefter de nye vilkårene`,
             tone: "waiting",
           };
     case "on_hold":
       return {
+        label: "På vent",
         text: "Satt på vent av miljøet. Den kan besvares når miljøet åpner for det igjen",
         tone: "neutral",
       };
     case "approved":
-      return { text: "Godkjent. Lånet er avtalt", tone: "positive" };
+      return {
+        label: "Avtalt",
+        text: "Godkjent. Lånet er avtalt",
+        tone: "positive",
+      };
     case "ended":
       return {
+        label: "Avsluttet",
         text: endedBecause[request.endReason ?? "access_lost"](request.role),
         tone: "neutral",
       };
   }
 }
 
-/** Where the request came from, as its context (UX-PRIV-003). */
-export function requestOriginLabel(request: LoanRequest): string {
-  return request.origin.kind === "direct"
+/**
+ * Where the request is on the loan's way (KF1 v2): asked for until an
+ * answer; once approved, the loan it became is reserved.
+ */
+export function requestProgress(request: LoanRequest): LoanProgress {
+  switch (request.status) {
+    case "approved":
+      return { current: 1, label: loanStages[1] };
+    case "ended":
+      return { current: 0, label: "Avsluttet" };
+    case "on_hold":
+      return { current: 0, label: "På vent" };
+    default:
+      return { current: 0, label: loanStages[0] };
+  }
+}
+
+/**
+ * Where a request or loan came from, as its context (UX-PRIV-003): «Via
+ * Gården» or «Direkte mellom venner». An environment the reader may no
+ * longer see is not named (PS-ENV-009).
+ */
+export function originLabel(origin: LoanOrigin): string {
+  return origin.kind === "direct"
     ? "Direkte mellom venner"
-    : (request.origin.environment?.name ?? "Et miljø");
+    : `Via ${origin.environment?.name ?? "et miljø"}`;
 }
