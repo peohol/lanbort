@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
-import { type Tone, toneClass } from "./tag";
+import { Icon } from "./icon";
+import { type Tone, toneClass, toneIcons } from "./tag";
 
 /**
  * The status card (UX-INT-001, UX-INT-004, UX-IA-008): a short human
  * status, the time it is about, who has to act, the next step and a way to
- * more. Only what is relevant is shown. The tone is a bar beside the words,
- * never instead of them (UX-A11Y-005).
+ * more. Only what is relevant is shown. The tone is an icon beside the
+ * words, never instead of them (UX-A11Y-005).
  */
 export function StatusCard({
   id = "status",
@@ -32,6 +33,8 @@ export function StatusCard({
   more?: ReactNode;
   children?: ReactNode;
 }) {
+  const icon = toneIcons[tone];
+
   return (
     <section
       className={`status-card ${toneClass(tone)}`.trim()}
@@ -40,7 +43,10 @@ export function StatusCard({
       <h2 id={id} className="visually-hidden">
         {heading}
       </h2>
-      <p className="status-text">{status}</p>
+      <p className="status-text">
+        {icon && <Icon name={icon} />}
+        <span>{status}</span>
+      </p>
       {when && <p className="status-meta">{when}</p>}
       {who && <p className="waiting">{who}</p>}
       {children}

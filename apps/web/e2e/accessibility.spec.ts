@@ -626,3 +626,101 @@ test("reduced motion is respected", async ({ browser }) => {
   ).toBe(0);
   await context.close();
 });
+
+/**
+ * WCAG 2.4.3: a confirmation is read and tabbed in the order it is shown,
+ * stacked on a phone and side by side on a larger screen.
+ */
+test("a confirmation's buttons are tabbed in the order they are shown", async ({
+  browser,
+}) => {
+  for (const viewport of Object.values(viewports)) {
+    const { page } = await open(
+      browser,
+      viewport,
+      `/personer/${world.friendId}`,
+    );
+    await page.getByText("Flere valg", { exact: true }).click();
+    await page.getByRole("button", { name: "Fjern som venn" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+
+    const buttons = dialog.locator(".dialog-actions button");
+    const shown = await buttons.evaluateAll((elements) =>
+      elements
+        .map((element, index) => ({
+          index,
+          box: element.getBoundingClientRect(),
+        }))
+        .sort((a, b) => a.box.top - b.box.top || a.box.left - b.box.left)
+        .map(({ index }) => index),
+    );
+    expect(shown).toEqual([...shown].sort((a, b) => a - b));
+
+    // Tab moves through them in that order.
+    const names = await buttons.allTextContents();
+    await buttons.first().focus();
+    for (const name of names.slice(1)) {
+      await page.keyboard.press("Tab");
+      await expect(page.locator(":focus")).toHaveText(name);
+    }
+    await page.context().close();
+  }
+});
+
+/**
+ * WCAG 1.4.11: a filter that is not chosen is still seen as a control, by
+ * an outline of at least 3:1 against the page, light and dark.
+ */
+test("filters keep a visible outline in both colour schemes", async ({
+  browser,
+}) => {
+  for (const scheme of ["light", "dark"] as const) {
+    const { page } = await open(browser, viewports.phone, "/lan", scheme);
+    const ratios = await page
+      .locator(".filters a:not([aria-current])")
+      .evaluateAll((links) => {
+        const rgb = (color: string) =>
+          (color.match(/\d+(\.\d+)?/g) ?? []).slice(0, 3).map(Number);
+        const luminance = (color: string) => {
+          const [r, g, b] = rgb(color).map((value) => {
+            const channel = value / 255;
+            return channel <= 0.04045
+              ? channel / 12.92
+              : ((channel + 0.055) / 1.055) ** 2.4;
+          });
+          return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+        };
+        const background = (element: Element): string => {
+          for (
+            let at: Element | null = element.parentElement;
+            at;
+            at = at.parentElement
+          ) {
+            const color = getComputedStyle(at).backgroundColor;
+            if (
+              !color.startsWith("rgba(0, 0, 0, 0)") &&
+              color !== "transparent"
+            ) {
+              return color;
+            }
+          }
+          return "rgb(255, 255, 255)";
+        };
+
+        return links.map((link) => {
+          const outline =
+            getComputedStyle(link).boxShadow.match(/rgba?\([^)]*\)/)![0];
+          const [lighter, darker] = [
+            luminance(outline),
+            luminance(background(link)),
+          ].sort((a, b) => b - a);
+          return (lighter! + 0.05) / (darker! + 0.05);
+        });
+      });
+
+    expect(ratios.length).toBeGreaterThan(0);
+    for (const ratio of ratios) expect(ratio).toBeGreaterThanOrEqual(3);
+    await page.context().close();
+  }
+});

@@ -11,10 +11,10 @@ import { StickyBars } from "./sticky-bars";
 /**
  * The frame around every page of a signed-in user (UX-IA-001–003): the
  * five areas, the notification indicator, the account behind the user's
- * own picture or initials, and, while the account is not active, why. It decides
- * nothing about access; it only shows the way. The navigation comes first
- * for the keyboard, after the skip link, while a phone shows it at the
- * bottom (globals.css).
+ * own picture or initials, and, while the account is not active, why. It
+ * decides nothing about access; it only shows the way. The app's name heads
+ * the side of a wide screen. The navigation comes first for the keyboard,
+ * after the skip link, while a phone shows it at the bottom (globals.css).
  */
 export function AppShell({
   realName,
@@ -35,10 +35,10 @@ export function AppShell({
       <a className="skip-link" href="#innhold">
         Hopp til innholdet
       </a>
+      <Link href="/" className="brand">
+        Lånbort
+      </Link>
       <header className="app-header">
-        <Link href="/" className="brand">
-          Lånbort
-        </Link>
         <div className="header-actions">
           <NotificationIndicator unread={unread} />
           <Link

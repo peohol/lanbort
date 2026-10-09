@@ -1,19 +1,24 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Icon } from "./icon";
 
 /**
- * The top of a page (WP-80): the way back to where it belongs, its title,
- * the context it is seen in (UX-PRIV-003, as `ContextTag`s) and a short
- * lead. Areas' own pages need no way back; detail pages do.
+ * The top of a page (WP-80, UX-IA-015): the way back, what kind of page it
+ * is («Ting», «Person»), its title, the context it is seen in
+ * (UX-PRIV-003, as `ContextTag`s) and a short lead. Areas' own pages need
+ * no way back; detail pages do.
  */
 export function PageHeader({
   title,
+  kind,
   picture,
   back,
   context,
   children,
 }: {
   title: ReactNode;
+  /** The type of a detail, such as «Lån» or «Person» (UX-IA-015). */
+  kind?: string;
   /** The picture of the person the page is about. */
   picture?: ReactNode;
   back?: { href: string; label: string };
@@ -25,10 +30,11 @@ export function PageHeader({
     <header className="page-header">
       {back && (
         <Link className="back-link" href={back.href}>
-          <span aria-hidden="true">‹</span> {back.label}
+          <Icon name="back" /> {back.label}
         </Link>
       )}
       {picture && <div className="page-picture">{picture}</div>}
+      {kind && <p className="page-kind">{kind}</p>}
       <h1>{title}</h1>
       {context && <div className="tags">{context}</div>}
       {children && <p className="page-lead">{children}</p>}
