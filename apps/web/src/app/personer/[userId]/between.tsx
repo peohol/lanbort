@@ -79,12 +79,12 @@ export function FriendThings({
               href={objectHref(thing.objectId, { kind: "direct" })}
               label={thing.title}
               detail={
-                <>
-                  {describeAvailability(thing, today)}{" "}
+                <span className={styles.lines}>
+                  <span>{describeAvailability(thing, today)}</span>
                   <ContextTag label="Synlig" icon="people">
                     Direkte mellom venner
                   </ContextTag>
-                </>
+                </span>
               }
             />
           ))}

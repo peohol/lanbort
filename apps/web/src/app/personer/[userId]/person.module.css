@@ -34,6 +34,14 @@
   color: var(--color-muted);
 }
 
+/* A row's detail on lines of its own, such as a thing's availability over
+   where it is seen. */
+.lines {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-1);
+}
+
 /* A role's heading row. On a phone its link covers the whole row, so the
    finger needs no aim (UX-A11Y-006); the places to go elsewhere on the page
    are `MenuList` rows. */
