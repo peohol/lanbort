@@ -13,6 +13,9 @@ function byTime(a: string | null, b: string | null): number {
   return a < b ? -1 : 1;
 }
 
+/** The day an item is about: its own, or the first day it asks for. */
+const dayOf = (item: HomeItem) => item.day ?? item.period?.start ?? null;
+
 /**
  * Orders Home (UX-IA-005): each item in its kind's section, the sections in
  * Home's order. Within a section, what must be done soonest comes first:
@@ -39,7 +42,7 @@ export function arrangeHome(
       .sort(
         (a, b) =>
           byTime(a.dueAt, b.dueAt) ||
-          byTime(a.day, b.day) ||
+          byTime(dayOf(a), dayOf(b)) ||
           (a.title ?? "").localeCompare(b.title ?? "", "nb") ||
           a.target.id.localeCompare(b.target.id),
       ),

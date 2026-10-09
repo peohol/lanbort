@@ -85,10 +85,13 @@ test("the five areas are the main navigation, and the current one is marked", as
   await expect(
     mainNavigation(page).getByRole("link", { name: "Hjem" }),
   ).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Hei, Kari Nordmann",
-  );
-  await expect(page.getByText("Ingenting venter på deg nå.")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hjem");
+  await expect(
+    page.getByRole("link", {
+      name: "Konto og innstillinger for Kari Nordmann",
+    }),
+  ).toBeVisible();
+  await expect(page.getByText("Ingenting venter på deg")).toBeVisible();
 
   for (const [label, heading] of [
     ["Finn", "Finn"],
@@ -126,16 +129,18 @@ test("Home asks for what waits, and leads to where it is answered", async ({
   await befriended(page, await otherUser(playwright, baseURL!));
   await page.goto("/");
 
-  const waiting = page.getByRole("region", { name: /Venter på deg/ });
-  await waiting
-    .getByRole("link", { name: "Bo Dahl vil bli venn med deg" })
-    .click();
+  // The only task is a full card, with the step that opens it (UX-IA-018).
+  const waiting = page.getByRole("region", { name: "1 venter på deg" });
+  const task = waiting.getByRole("article", {
+    name: "Bo Dahl vil bli venn med deg",
+  });
+  await task.getByRole("link", { name: "Se forespørselen" }).click();
   await expect(page).toHaveURL(personPage);
   await page.getByRole("button", { name: "Godta" }).click();
   await expect(page.getByRole("button", { name: "Godta" })).toHaveCount(0);
 
   await mainNavigation(page).getByRole("link", { name: "Hjem" }).click();
-  await expect(page.getByText("Ingenting venter på deg nå.")).toBeVisible();
+  await expect(page.getByText("Ingenting venter på deg")).toBeVisible();
   expect(problems).toEqual([]);
 });
 
@@ -192,9 +197,10 @@ test("a notification's e-mail link leads to its context and marks it read", asyn
   await registerThroughApi(strangers.request, undefined, "Cleo Eng");
   const stranger = await strangers.newPage();
   await stranger.goto(`/?varsel=${notification.id}`);
-  await expect(stranger.getByRole("heading", { level: 1 })).toHaveText(
-    "Hei, Cleo Eng",
-  );
+  await expect(stranger.getByRole("heading", { level: 1 })).toHaveText("Hjem");
+  await expect(
+    stranger.getByRole("link", { name: "Konto og innstillinger for Cleo Eng" }),
+  ).toBeVisible();
   await strangers.close();
   expect(
     (await (await page.request.get("/api/notifications/unread")).json())

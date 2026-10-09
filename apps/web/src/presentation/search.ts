@@ -53,6 +53,9 @@ export function readFinnForm(params: Params): FinnForm {
   };
 }
 
+/** Finn's tab for environments, where a new member starts (UX-IA-004). */
+export const findEnvironmentsHref = "/finn?vis=miljoer";
+
 /**
  * The address of the form with some fields changed, as the form itself
  * would submit it.
