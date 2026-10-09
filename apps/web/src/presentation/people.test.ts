@@ -6,6 +6,7 @@ import {
   dimensionLabel,
   personName,
   rolesInOrder,
+  whyVisible,
 } from "./people";
 
 const person = (relation: Person["relation"]): Person => ({
@@ -13,6 +14,8 @@ const person = (relation: Person["relation"]): Person => ({
   realName: "Kari",
   pictureId: null,
   relation,
+  relationSince: null,
+  sharedEnvironments: [],
   trustProfile: true,
 });
 
@@ -34,33 +37,70 @@ describe("people", () => {
   });
 
   it("says the relation as a situation, a block before anything else", () => {
-    expect(describeRelation(person(null)).tag).toBe("Deg");
+    expect(describeRelation(person(null)).tag?.text).toBe("Deg");
     expect(describeRelation(person(relation("friends")))).toMatchObject({
-      tag: "Venner",
-      tone: "positive",
+      tag: { text: "Venn", tone: "positive" },
+      status: "Dere er venner",
+      detail: "Dere kan låne direkte av hverandre.",
     });
-    expect(describeRelation(person(relation("incoming_pending"))).status).toBe(
-      "Kari vil bli venn med deg.",
-    );
-    expect(describeRelation(person(relation("outgoing_pending"))).status).toBe(
-      "Venter på svar fra Kari.",
-    );
-    expect(describeRelation(person(relation("none")))).toEqual({
+    expect(
+      describeRelation({
+        ...person(relation("friends")),
+        relationSince: "2026-03-14T10:00:00Z",
+      }).detail,
+    ).toBe("Siden 14. mars 2026. Dere kan låne direkte av hverandre.");
+    expect(
+      describeRelation(person(relation("incoming_pending"))),
+    ).toMatchObject({ tone: "attention", status: "Kari vil bli venn med deg" });
+    expect(
+      describeRelation(person(relation("outgoing_pending"))),
+    ).toMatchObject({
+      tone: "waiting",
+      status: "Venneforespørselen er sendt",
+      detail:
+        "Kari finner den i Hjem og i varslene. Dere blir venner når Kari godtar.",
+    });
+    expect(describeRelation(person(relation("none")))).toMatchObject({
       tag: null,
-      tone: "neutral",
-      status: "Dere er ikke venner.",
+      status: "Dere er ikke venner",
     });
     // A request that cannot be sent now is said without a reason (PS-USR-012).
-    expect(describeRelation(person(relation("none", false, false)))).toEqual({
-      tag: null,
-      tone: "neutral",
-      status:
-        "Dere er ikke venner. Du kan ikke sende Kari en venneforespørsel nå.",
-    });
+    const held = describeRelation(person(relation("none", false, false)));
+    expect(held.detail).toBe("Du kan ikke sende Kari en venneforespørsel nå.");
+    expect(JSON.stringify(held)).not.toMatch(/avsl/i);
     expect(describeRelation(person(relation("none", true)))).toMatchObject({
-      tag: "Blokkert",
-      tone: "danger",
+      tag: { text: "Blokkert", tone: "danger" },
+      status: "Du har blokkert Kari",
     });
+  });
+
+  it("says why the reader sees the person, never for a block", () => {
+    const shared = (names: string[]) =>
+      names.map((name, index) => ({
+        id: `00000000-0000-4000-8000-00000000000${index}`,
+        name,
+      }));
+
+    expect(
+      whyVisible({
+        ...person(relation("friends")),
+        sharedEnvironments: shared(["Lia", "Tåsen"]),
+      }),
+    ).toBe("Du ser Kari fordi dere er venner og begge er med i Lia og Tåsen.");
+    expect(
+      whyVisible({
+        ...person(relation("none")),
+        sharedEnvironments: shared(["Lia"]),
+      }),
+    ).toBe("Du ser Kari fordi dere begge er med i Lia.");
+    expect(whyVisible(person(relation("friends")))).toBe(
+      "Du ser Kari fordi dere er venner.",
+    );
+    expect(whyVisible(person(relation("incoming_pending")))).toBe(
+      "Du ser Kari fordi Kari vil bli venn med deg.",
+    );
+    expect(whyVisible(person(relation("none", true)))).toBeNull();
+    expect(whyVisible(person(null))).toBeNull();
   });
 
   it("puts the role the page is opened in first, and keeps both (UX-PRIV-012)", () => {
@@ -110,5 +150,18 @@ describe("people", () => {
         setAside: 0,
       }),
     ).toEqual({ summary: "Ingen vurderinger ennå", spread: null, note: null });
+    // Said once for the role, not again for each dimension.
+    expect(
+      describeDimension(
+        {
+          dimension: "communication",
+          count: 2,
+          mean: 4.5,
+          distribution: [0, 0, 0, 1, 1],
+          setAside: 0,
+        },
+        { fewSaid: true },
+      ).note,
+    ).toBeNull();
   });
 });

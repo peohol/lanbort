@@ -11,7 +11,12 @@ import { inSnapshot } from "../objects/state";
 import { relationOf } from "../social/pair";
 import { hasProfileAccess } from "../trust/policies";
 import { pictureVisible, personVisible, readPersonPolicy } from "./policies";
-import { loadPeople, type PersonRelation, profileAccessOf } from "./store";
+import {
+  loadPeople,
+  loadSharedEnvironments,
+  type PersonRelation,
+  profileAccessOf,
+} from "./store";
 
 /** What `viewerId` is shown of people's pages and pictures, by user id. */
 export type PersonLinks = ReadonlyMap<string, PersonLink>;
@@ -55,9 +60,10 @@ export const linkIn = (links: PersonLinks, userId: string): PersonLink =>
   links.get(userId) ?? unlinked;
 
 /**
- * A person's page (WP-86): their name, the caller's relation to them, and
- * whether the caller may read their trust profile. Someone the caller may
- * not see is `not_found`, exactly like someone who does not exist.
+ * A person's page (WP-86): their name, the caller's relation to them and
+ * since when, the environments they share now, and whether the caller may
+ * read their trust profile. Someone the caller may not see is `not_found`,
+ * exactly like someone who does not exist.
  */
 export const readPerson = defineQuery({
   name: "person.read",
@@ -69,12 +75,28 @@ export const readPerson = defineQuery({
       return null;
     }
 
-    const people = await inSnapshot(db, (tx) =>
-      loadPeople(tx, actor.userId, [input.userId], now),
-    );
-    const person = people.get(input.userId);
+    return inSnapshot(db, async (tx) => {
+      const person = (
+        await loadPeople(tx, actor.userId, [input.userId], now)
+      ).get(input.userId);
 
-    return person ? { resource: person, context: undefined } : null;
+      return person
+        ? {
+            resource: {
+              ...person,
+              sharedEnvironments: person.pair?.blockedByActor
+                ? []
+                : await loadSharedEnvironments(
+                    tx,
+                    actor.userId,
+                    input.userId,
+                    now,
+                  ),
+            },
+            context: undefined,
+          }
+        : null;
+    });
   },
   present: ({ resource }): Person => {
     if (resource.realName === null) {
@@ -86,6 +108,8 @@ export const readPerson = defineQuery({
       realName: resource.realName,
       pictureId: personLinkOf(resource).pictureId,
       relation: resource.pair && relationOf(resource.pair),
+      relationSince: resource.relationSince?.toISOString() ?? null,
+      sharedEnvironments: resource.pair ? resource.sharedEnvironments : [],
       trustProfile: hasProfileAccess(
         resource.viewerId,
         profileAccessOf(resource),

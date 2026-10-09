@@ -22,6 +22,8 @@ export interface PersonRelation {
   /** Null once the account is deleted (PS-ADM-006). */
   readonly realName: string | null;
   readonly pair: SocialPair | null;
+  /** When the open friendship began, or its pending request was sent. */
+  readonly relationSince: Date | null;
   readonly shareEnvironment: boolean;
   /** The current profile picture, if any (PS-USR-002). */
   readonly picture: {
@@ -84,6 +86,9 @@ export async function loadPeople(
       "friendship.id as friendshipId",
       "friendship.status as friendshipStatus",
       "friendship.requester_id as requesterId",
+      sql<Date | null>`coalesce(friendship.accepted_at, friendship.requested_at)`.as(
+        "relationSince",
+      ),
       sql<boolean>`exists (
         select 1 from app.user_blocks as block
         where block.lifted_at is null
@@ -138,6 +143,7 @@ export async function loadPeople(
                 blockedByOther: row.blockedByPerson,
                 requestHeldBack: row.requestHeldBack,
               },
+        relationSince: row.relationSince,
         shareEnvironment: row.shareEnvironment,
         picture:
           row.pictureId && row.pictureVisibility
@@ -149,6 +155,38 @@ export async function loadPeople(
       },
     ]),
   );
+}
+
+/**
+ * The environments `viewerId` and `userId` are both active members of now,
+ * by name: those where each is in the other's member list (WP-84).
+ */
+export function loadSharedEnvironments(
+  db: Db,
+  viewerId: string,
+  userId: string,
+  now: Date,
+): Promise<{ id: string; name: string }[]> {
+  return db
+    .selectFrom("app.environment_memberships as own")
+    .innerJoin(
+      "app.environment_memberships as theirs",
+      "theirs.environment_id",
+      "own.environment_id",
+    )
+    .innerJoin(
+      "app.environments as environment",
+      "environment.id",
+      "own.environment_id",
+    )
+    .select(["environment.id", "environment.name"])
+    .where("own.user_id", "=", viewerId)
+    .where("theirs.user_id", "=", userId)
+    .where(activeMember("own", now))
+    .where(activeMember("theirs", now))
+    .orderBy("environment.name")
+    .orderBy("environment.id")
+    .execute();
 }
 
 /** What decides the viewer's access to the person's profile. */

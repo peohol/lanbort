@@ -87,6 +87,10 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
     path: ({ environmentId }) => `/saker/ny?kontakt=${environmentId}`,
   },
   { name: "Person", path: ({ friendId }) => `/personer/${friendId}` },
+  {
+    name: "Person som låntaker",
+    path: ({ friendId }) => `/personer/${friendId}/som-laantaker`,
+  },
 ];
 
 let world: World;
@@ -641,7 +645,7 @@ test("a confirmation's buttons are tabbed in the order they are shown", async ({
       `/personer/${world.friendId}`,
     );
     await page.getByText("Flere valg", { exact: true }).click();
-    await page.getByRole("button", { name: "Fjern som venn" }).click();
+    await page.getByRole("button", { name: /^Fjern .+ som venn$/ }).click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
 

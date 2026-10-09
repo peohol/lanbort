@@ -802,6 +802,11 @@ export const loanListQuerySchema = z.strictObject({
   role: loanRequestRoleSchema.optional(),
   /** Only the loans of this object. */
   objectId: objectIdSchema.optional(),
+  /** Only the loans with this person on the other side. */
+  counterpartId: z
+    .uuid()
+    .transform((id) => id.toLowerCase())
+    .optional(),
   cursor: loanIdSchema.optional(),
 });
 
