@@ -51,7 +51,7 @@ Når spørsmålet er avgjort:
 
 ## Status før UI-arbeidet
 
-Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. Gjennomgangen av kjerneflyt 5 (samtaler og enheter) samme dag avdekket [OD-0043](#od-0043--varsler-om-nye-meldinger-i-privat-chat), [OD-0044](#od-0044--når-gjenopprettingsnøkkelen-for-privat-chat-tilbys) og [OD-0045](#od-0045--én-privat-samtale-per-person-eller-per-lån), som ble avgjort samme dag. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
+Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. Gjennomgangen av kjerneflyt 5 (samtaler og enheter) samme dag avdekket [OD-0043](#od-0043--varsler-om-nye-meldinger-i-privat-chat), [OD-0044](#od-0044--når-gjenopprettingsnøkkelen-for-privat-chat-tilbys) og [OD-0045](#od-0045--én-privat-samtale-per-person-eller-per-lån), som ble avgjort samme dag. Designet for rapportering, saker og konfliktløsning avdekket OD-0038–OD-0042, som også ble avgjort samme dag. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
 
 ## Åpne
 
@@ -192,52 +192,32 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Avklares før:** plattformforvalterens flater designes og vises (etter OD-0023). Til da finnes ingen slik flate i appen.
 - **Anbefaling:** Start alle inngrep fra en sak i plattformkøen, slik at begrunnelse, habilitet og historikk følger saken (PS-TRUST-016, PS-ADM-014), og vis ingen forvalterhandlinger på ordinære person- og miljøsider.
 
+## Avklart
+
 ### OD-0038 — Hva den som rapporterte, får vite når saken lukkes
 - **Lag:** Produktspesifikasjon / UX
-- **Status:** Åpen
-- **Berører:** PS-COM-011, PS-TRUST-010, PS-TRUST-016, [visjon 07](vision/07-tillit-anmeldelser-og-moderering.md) («Rapportering»), [designet for kjerneflyt 8](../design/Lånbort%20-%20Rapportering,%20saker%20og%20konfliktløsning%20v1.html)
-- **Spørsmål:** Skal den som rapporterte eller ba om mekling, få et utfall når saken lukkes, og hvor mye? I dag får partene varselet «En sak du er med i er lukket» og ser bare det saksbehandleren eventuelt valgte å skrive til dem. Lukkingen krever ingen melding, og tiltak mot en annen vises aldri for melderen.
-- **Avhenger av:** Produktvurdering av personvernet til den som er rapportert.
-- **Avklares før:** sakens side for partene implementeres i Tomat-designet. Til da virker lukking som i dag.
-- **Anbefaling:** «Lukk saken» ber om en kort avslutningsmelding til partene i rapporter og meklinger, som vises som siste innlegg. Tiltak mot andre beskrives ikke for melderen.
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [PS-COM-020](product-spec/05-kommunikasjon-varsler-og-saker.md). En rapport eller mekling lukkes med en kort avslutningsmelding til partene, uten konfidensielle vurderinger, tiltak mot andre, andres beskyttede opplysninger eller hvem som rapporterte. En mekling kan få en nøytral oppsummering av om partene ble enige. Ikke bygget ennå; kravene står under WP-88 i [UI-arbeidspakkene](implementation/ui-work-packages.md#wp-88--saker-og-arbeidskø).
 
 ### OD-0039 — Hva den et modereringstiltak rammer, får vite
 - **Lag:** Produktspesifikasjon
-- **Status:** Åpen
-- **Berører:** PS-TRUST-013–016, PS-OBJ-017, PS-COM-003
-- **Spørsmål:** Skal den som eier en ting, har skrevet en anmeldelse eller et tilsvar, få beskjed når et tiltak rammer innholdet deres, og med hva? I dag ser eieren bare at publiseringen står som avvist eller sperret, uten varsel og uten grunn, og forfatteren får ingen beskjed når en anmeldelse, teksten, én vurdering eller et tilsvar fjernes. Rapporten selv og melderen skal uansett ikke røpes.
-- **Avhenger av:** Produktvurdering og varslingsnivåer (PS-COM-003).
-- **Avklares før:** tiltak i miljøet og på plattformnivå tas i bruk med ekte brukere.
-- **Anbefaling:** Et påkrevd varsel som sier hva som ble gjort og hvor, for eksempel «Publiseringen av gassflasken i Borettslaget Lia er sperret». Aldri hvem som rapporterte eller at det fantes en rapport. Varselet lenker til «Kontakt administratorene» for lokale tiltak.
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [PS-TRUST-018](product-spec/06-tillit-anmeldelser-og-moderering.md). Et påkrevd varsel med tiltaket, omfanget, en kort begrunnelse og en vei til ny vurdering, uten å røpe rapporten, melderen eller saksinnhold. Ikke bygget ennå; kravene står under WP-88.
 
 ### OD-0040 — Om den som åpnet en sak, kan trekke den
 - **Lag:** Produktspesifikasjon
-- **Status:** Åpen
-- **Berører:** PS-COM-010, PS-COM-011, UX-IA-007
-- **Spørsmål:** Skal den som kontaktet administratorene eller sendte en rapport, kunne trekke saken selv? I dag kan bare saksbehandleren lukke en sak. Gjelder det også den som ba om mekling, når den andre parten også er part?
-- **Avhenger av:** Produktvurdering.
-- **Avklares før:** kan vente. Dagens regel (bare saksbehandleren lukker) er trygg å designe etter.
-- **Anbefaling:** Den som tok kontakt eller rapporterte, kan trekke saken så lenge den er åpen. Den lukkes da med «Trukket av den som åpnet saken», og saksbehandleren får beskjed. En mekling trekkes ikke av én part; den lukkes av administratoren.
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [PS-COM-021](product-spec/05-kommunikasjon-varsler-og-saker.md). En henvendelse kan avsluttes av den som tok kontakt. En rapport kan trekkes, men det sletter ikke innsendte opplysninger og stanser ikke en nødvendig vurdering. En mekling lukkes bare av en habil administrator. Ikke bygget ennå; kravene står under WP-88.
 
 ### OD-0041 — Åpen mekling når partene selv avklarer lånet
 - **Lag:** Produktspesifikasjon / UX
-- **Status:** Åpen
-- **Berører:** PS-LOAN-013, PS-LOAN-014, PS-LOAN-017, PS-COM-011, [visjon 05](vision/05-laneforlop.md)
-- **Spørsmål:** Hva skal skje med en åpen meklingssak når partene selv registrerer en avklaring av lånet, for eksempel at begge bekrefter returen? I dag står saken åpen til administratoren lukker den, og ingenting i saken viser at lånet er avklart.
-- **Avhenger av:** Produktvurdering.
-- **Avklares før:** sakens side for administratorer implementeres i Tomat-designet.
-- **Anbefaling:** Ikke lukk automatisk. Saken viser «Lånet er avklart av partene», og den står øverst i køen med «Lukk saken» som neste steg.
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [PS-COM-022](product-spec/05-kommunikasjon-varsler-og-saker.md). Ingen automatisk lukking. Saken viser lånets status og at partene har avklart det, med «Lukk saken» som neste steg, uten å gå foran tidskritiske saker i køen. Appen lukker allerede ikke automatisk; visningen er ikke bygget.
 
 ### OD-0042 — Rapporter til Lånbort før plattformforvalterne kan behandle dem
 - **Lag:** Produktspesifikasjon / UX
-- **Status:** Åpen
-- **Berører:** PS-TRUST-013, PS-OBJ-017, UX-EXC-009, OD-0023, [skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md#plattformkø)
-- **Spørsmål:** Rapporter til Lånbort, og rapporter administratorer sender videre, kan sendes i dag. Plattformforvalternes handlinger avvises til WebAuthn er bygget (OD-0023), og køen deres vises ikke, så ingen kan behandle disse sakene i appen. Saken sier likevel «Venter på at Lånbort tar saken». Skal muligheten vises før det, og hva skal brukeren få vite?
-- **Avhenger av:** OD-0023 og hvordan rapporter følges opp i piloten utenfor appen.
-- **Avklares før:** rapportskjemaene implementeres i Tomat-designet, og senest før appen åpnes for et eksternt testpanel (Port D).
-- **Anbefaling:** Behold muligheten, men si ærlig før og etter innsending at Lånbort ikke behandler rapporter i appen ennå (UX-EXC-009), og pek på miljøets administratorer der det passer.
-
-## Avklart
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [UX-EXC-011](ux/03-avvik-konflikter-og-unntaksforlop.md). Anbefalingen ble avvist. Til plattformforvalterne kan behandle saker (OD-0023), tilbyr appen ingen aktiv flyt for rapport til Lånbort; den sier ærlig at det ikke er tilgjengelig ennå og tilbyr miljøets administratorer der de har mandat. Før piloten åpnes, må sikkerhetskritiske meldinger ha en reell, betjent kanal. Appen tilbyr flyten i dag; endringen i brukerflaten står under WP-88, og data og tilgangsregler på serveren er uendret.
 
 ### OD-0045 — Én privat samtale per person eller per lån
 - **Lag:** Produktspesifikasjon / UX

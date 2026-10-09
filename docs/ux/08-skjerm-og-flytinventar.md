@@ -351,18 +351,18 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 #### Rapportere og kontakte administratorene
 
 - **Oppgave:** si fra om en person, en ting eller en anmeldelse, eller kontakte miljøets administratorer som funksjon.
-- **Tilstander:** velg hvor rapporten går (miljøet eller plattformen); hva som skjer videre; sendt; saken følges fra Konto; ingen administrator kan behandle nå.
-- **Ser / handler:** aktive medlemmer rapporterer i miljøet og kontakter administratorene; alle innloggede kan rapportere til plattformen.
-- **Regler:** UX-IA-007, UX-EXC-009, PS-COM-010, PS-TRUST-010, PS-TRUST-013, PS-ENV-014, [visjon 07](../vision/07-tillit-anmeldelser-og-moderering.md) («Rapportering»).
+- **Tilstander:** hvor rapporten går (miljøet; rapport til Lånbort vises som ikke tilgjengelig ennå); hva som skjer videre; sendt; saken følges fra Konto; ingen administrator kan behandle nå.
+- **Ser / handler:** aktive medlemmer rapporterer i miljøet og kontakter administratorene. Rapport til Lånbort tilbys ikke før plattformforvalterne kan behandle saker (UX-EXC-011, OD-0023).
+- **Regler:** UX-IA-007, UX-EXC-009, UX-EXC-011, PS-COM-010, PS-TRUST-010, PS-TRUST-013, PS-ENV-014, [visjon 07](../vision/07-tillit-anmeldelser-og-moderering.md) («Rapportering»).
 - **Forløp:** avvik.
 - **UI-pakke:** WP-88.
 
 #### Sakens side for en part
 
 - **Oppgave:** følge en sak man er part i, skrive når det er ens tur, og sende inn dokumentasjon.
-- **Tilstander:** venter på behandler; din tur; egen forklaring levert og skjult for den andre parten; forklaringer delt; ingen behandler tilgjengelig; lukket; kopi av private meldinger valgt og sendt inn.
-- **Ser / handler:** partene og den som meldte saken.
-- **Regler:** UX-IA-007, UX-EXC-003, UX-PRIV-003, PS-COM-011–014.
+- **Tilstander:** venter på behandler; din tur; egen forklaring levert og skjult for den andre parten; forklaringer delt; ingen behandler tilgjengelig; lukket med avslutningsmelding; henvendelse avsluttet eller rapport trukket av den som åpnet den; kopi av private meldinger valgt og sendt inn.
+- **Ser / handler:** partene og den som meldte saken. Den som tok kontakt, kan avslutte henvendelsen, og den som rapporterte, kan trekke rapporten; en mekling lukkes bare av en habil administrator.
+- **Regler:** UX-IA-007, UX-EXC-003, UX-PRIV-003, PS-COM-011–014, PS-COM-020, PS-COM-021.
 - **Forløp:** avvik.
 - **UI-pakke:** WP-88.
 
@@ -490,9 +490,9 @@ Miljøadministrator omfatter miljøets eier, som også er administrator, og admi
 #### Miljøets sakskø og saksbehandling
 
 - **Oppgave:** behandle kontakt, rapporter og mekling i miljøet.
-- **Tilstander:** felles kø; tatt av meg eller en annen; tilbake i køen fordi behandleren mistet rollen; inhabil; forklaringsrunde åpen; forklaringer delt; tiltak på en publisering; tatt videre til plattformen; lukket. Sakstyper: kontakt med administratorene, rapport i miljøet, mekling i et miljølån.
+- **Tilstander:** felles kø; tatt av meg eller en annen; tilbake i køen fordi behandleren mistet rollen; inhabil; forklaringsrunde åpen; forklaringer delt; tiltak på en publisering, med varsel til eieren; rapporten trukket av den som meldte den; lånet avklart av partene, med «Lukk saken» som neste steg; lukket med avslutningsmelding. Å sende en rapport videre til Lånbort tilbys ikke før plattformforvalterne kan behandle saker (UX-EXC-011). Sakstyper: kontakt med administratorene, rapport i miljøet, mekling i et miljølån.
 - **Ser / handler:** habile administratorer. Privat chat åpnes ikke for behandleren.
-- **Regler:** UX-IA-007, UX-PRIV-006, UX-EXC-003, UX-EXC-009, PS-COM-010–014, PS-USR-009, PS-TRUST-013, PS-TRUST-016.
+- **Regler:** UX-IA-007, UX-PRIV-006, UX-EXC-003, UX-EXC-009, UX-EXC-011, PS-COM-010–014, PS-COM-020–022, PS-USR-009, PS-TRUST-013, PS-TRUST-016, PS-TRUST-018.
 - **Forløp:** avvik.
 - **UI-pakke:** WP-88; administrativ avslutning av et lån som uavklart vises ikke før OD-0017.
 
@@ -512,7 +512,7 @@ Plattformforvalter er en eksplisitt global rolle, ikke det samme som systemutvik
 #### Plattformkø
 
 - **Oppgave:** se plattformsaker som venter og ta dem.
-- **Tilstander:** rapporter til plattformen; rapporter tatt videre fra et miljø; verifiseringssaker om mulig dødsfall; tatt eller ikke; inhabil.
+- **Tilstander:** rapporter til plattformen og rapporter tatt videre fra et miljø (tilbys ikke før forvalterne kan behandle dem, UX-EXC-011); verifiseringssaker om mulig dødsfall; tatt eller ikke; inhabil.
 - **Ser / handler:** habile plattformforvaltere.
 - **Regler:** UX-IA-005, UX-IA-007, UX-PRIV-005, UX-PRIV-006, PS-USR-008, PS-USR-009, PS-NFR-003.
 - **Forløp:** avvik.
@@ -523,7 +523,7 @@ Plattformforvalter er en eksplisitt global rolle, ikke det samme som systemutvik
 - **Oppgave:** vurdere en rapport og treffe et begrunnet, sporbart tiltak.
 - **Tilstander:** sperre en ting for nye lån overalt og oppheve det; fjerne en anmeldelse, teksten, én skår eller et tilsvar; ingen tiltak; lukket. Tiltaket viser hvem det gjelder, omfang, begrunnelse, hvem som besluttet og når.
 - **Ser / handler:** habile plattformforvaltere.
-- **Regler:** UX-INT-008, PS-TRUST-013–016, PS-OBJ-017, PS-OBJ-019, scenario 15 i [UX-scenariovalideringen](07-scenariovalidering.md).
+- **Regler:** UX-INT-008, PS-TRUST-013–016, PS-TRUST-018, PS-OBJ-017, PS-OBJ-019, scenario 15 i [UX-scenariovalideringen](07-scenariovalidering.md).
 - **Forløp:** avvik.
 - **UI-pakke:** WP-88, skjult til OD-0023.
 
@@ -632,8 +632,3 @@ Til en beslutning finnes, viser UI-et ikke funksjonen den gjelder.
 | OD-0023    | Plattformkø og alle plattformforvalterflater              | Vises ikke                                                         |
 | OD-0025    | Medlemmer og utestengelse                                 | Ingen handling for å fjerne et aktivt medlem                       |
 | OD-0026    | Inngrep på kontoer, inngrep i et miljø                    | Ingen flate                                                        |
-| OD-0038    | Sakens side for en part, miljøets sakskø                  | Lukking krever ingen melding; partene ser det behandleren skrev    |
-| OD-0039    | Miljøets sakskø, plattformrapport og tiltak               | Den som rammes, ser bare publiseringsstatusen; ingen varsel        |
-| OD-0040    | Sakens side for en part                                   | Bare saksbehandleren lukker en sak                                 |
-| OD-0041    | Miljøets sakskø, lånets side i avvik                      | Meklingen står åpen til administratoren lukker den                 |
-| OD-0042    | Rapportere og kontakte administratorene                   | Rapport til Lånbort kan sendes og venter på behandling             |

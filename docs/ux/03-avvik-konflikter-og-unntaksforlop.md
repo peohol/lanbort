@@ -51,3 +51,8 @@ Ventende administrativ prosess skal tydelig vise at ingen autorisert saksbehandl
 **Forankring:** UX-P09; PS-LOAN-017
 
 Etter at angrebufferen er utløpt tilbys «Rapporter problem» fremfor å endre eller slette den historiske bekreftelsen.
+
+### UX-EXC-011 — Rapport til Lånbort tilbys ikke før noen kan behandle den
+**Forankring:** UX-EXC-009; PS-TRUST-013; OD-0023, OD-0042
+
+Så lenge plattformforvalterne ikke kan behandle saker (OD-0023), tilbyr appen ingen aktiv flyt for å sende en rapport til Lånbort, verken fra brukere eller videre fra miljøets administratorer, fordi den ville endt i en kø ingen behandler. Der muligheten ellers ville stått, sier appen ærlig at rapportering til Lånbort ikke er tilgjengelig ennå, og tilbyr miljøets administratorer der de har mandat til å behandle saken. Appen lover ingen oppfølging og viser ingen kontaktadresse som ikke finnes. Før piloten åpnes, må sikkerhetskritiske meldinger ha en reell, betjent kanal.

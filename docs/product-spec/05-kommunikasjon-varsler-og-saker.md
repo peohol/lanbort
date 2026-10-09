@@ -99,6 +99,21 @@ Nye meldinger i en samtale gir ett samlet informasjonsvarsel i appens varslingss
 
 Gjenopprettingsnøkkelen for privat chat tilbys én gang rett etter at privat chat er slått på, med «Ikke nå», og kan alltid lages fra «Mine enheter». Den som takket nei, får én diskret påminnelse i Samtaler som ikke hindrer bruk, etter at hen faktisk har begynt å utveksle meldinger, og bare så lenge ingen gjenopprettingsnøkkel finnes. Det gis ingen gjentatte dialoger eller regelmessige påminnelser. Tekster om gjenoppretting lover bare at sikkerhetskopierte meldinger kan hentes tilbake. (Produkteier, 9. oktober 2026, OD-0044.)
 
+### PS-COM-020 — En rapport eller mekling lukkes med en kort avslutningsmelding
+**Forankring:** VP-15, VP-16; PS-COM-011, PS-TRUST-013; OD-0038
+
+Når en rapport eller en mekling lukkes, skriver behandleren en kort, forståelig avslutningsmelding til partene. Den sier at saken er avsluttet og eventuelt hvor prosessen står, men røper ikke konfidensielle vurderinger, tiltak mot andre, andre parters beskyttede opplysninger eller hvem som rapporterte. En mekling kan avsluttes med en nøytral oppsummering av om partene ble enige. Administratoren avgjør aldri privatrettslig skyld (PS-TRUST-013). Meldingen blir sakens siste innlegg.
+
+### PS-COM-021 — Den som åpnet en sak, kan trekke den, men ikke stanse en nødvendig vurdering
+**Forankring:** VP-16, VP-17; PS-COM-010, PS-COM-011; OD-0040
+
+Den som tok kontakt med administratorene, kan selv avslutte henvendelsen mens den er åpen. Den som sendte en rapport, kan trekke rapporten. Det sletter ikke opplysningene som er sendt inn, og stanser ikke en nødvendig sikkerhets- eller modereringsvurdering: en autorisert behandler kan videreføre vurderingen og et eventuelt tiltak. En mekling kan ikke lukkes ensidig av én part, bare av en habil administrator. Forskjellen vises tydelig der handlingen tilbys.
+
+### PS-COM-022 — En mekling lukkes ikke automatisk når partene avklarer lånet
+**Forankring:** PS-LOAN-013, PS-LOAN-014, PS-LOAN-017, PS-COM-011; OD-0041
+
+Når partene selv avklarer et lån som har en åpen mekling, står saken åpen. Den viser lånets gjeldende status og at partene har avklart lånet, og behandleren får «Lukk saken» som neste steg. Dette er en oppryddingsoppgave og skal ikke gå foran tidskritiske saker i køen.
+
 ## Kanalstandard for pilot
 
 Alle relevante hendelser representeres i appens varslingssenter. Verifisert e-post brukes som reservekanal for sikkerhets-/kontohendelser og tidskritiske hendelser i allerede godkjente lån. Vanlige handlings- og informasjonsvarsler skal kunne konfigureres uten at dette endrer systemtilstand. Web push kan legges til når teknisk støtte og samtykke er på plass.

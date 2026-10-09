@@ -146,9 +146,6 @@ button:disabled{cursor:default}
 @media (prefers-reduced-motion:reduce){.L .sw:after{transition:none}}
 
 /* ny: kjerneflyt 8 – saker. Bygger på klassene over; bare det som mangler, er lagt til. */
-.L .od{font:700 11px ui-monospace,Menlo,monospace;color:#fff;background:#8A3E26;border-radius:4px;padding:2px 6px;white-space:nowrap;align-self:flex-start;flex:none;letter-spacing:0}
-.L.nomark .od{display:none}
-.L .uq .od{display:inline-block}
 /* Rollestripe: hvem du handler som (UX-PRIV-005) */
 .L .role{display:flex;gap:8px;align-items:center;background:#E3EAF8;color:#2B4A8A;border-radius:14px;padding:9px 12px;font-size:14px;font-weight:700;line-height:1.3}
 .L .role .ic{width:18px;height:18px;stroke-width:2}
@@ -203,8 +200,8 @@ button:disabled{cursor:default}
 
 <div class="doc">
 <div class="row" style="gap:12px;align-items:baseline;flex-wrap:wrap"><span style="font:600 11px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1E2733;color:#fff;border-radius:4px;white-space:nowrap;flex:none">Fase 6 · kjerneflyt 8 · v1</span><span class="hq" style="font-size:28px">Rapportering, saker og konfliktløsning</span></div>
-<p class="s" style="margin:0;max-width:1100px;color:#1E2733">Hvordan man sier fra om en person, en ting eller en anmeldelse, kontakter administratorene i et miljø og ber om mekling når et lån er uavklart, og hvordan administratorene behandler sakene: kø, sakens side, forklaringsrunder, deling, tiltak, habilitet, å sende videre og å lukke. Personene er de samme som i kjerneflyt 1–6. Kari Nordmann har lånt ut sykkelhengeren til Per Lien via Borettslaget Lia, og de har oppgitt ulike ting om returen (samme sak som på Hjem i kjerneflyt 4). Tone Vik og Ingrid Berg er administratorer i Borettslaget Lia. Produktatferden følger PS-COM-001, -010–014, PS-TRUST-010, -013–016, PS-USR-008–009, PS-ENV-014, PS-LOAN-012–019, PS-OBJ-017, -019, UX-IA-005, -007–009, UX-EXC-001–003, -009–010, UX-INT-001–008, UX-PRIV-003, -005–006, UX-JRN-012, visjon 05–07 og inventaret «Rapportere og kontakte administratorene», «Sakens side for en part» og «Miljøets sakskø og saksbehandling» (WP-88). Det meste er allerede bygget i appen i dag; prototypen gir det Tomat-uttrykket og samme navigasjon som resten. Datoene ligger rundt lørdag 10. oktober. Navn og tekster er eksempler.</p>
-<p class="s" style="margin:0;max-width:1100px">Vedtatt atferd som ikke er bygget ennå, er merket <span class="nb">IKKE BYGGET</span>. Uavklarte produktvalg er merket med beslutningsnummeret, for eksempel <span class="od">OD-0038</span>, og vist slik appen virker i dag; anbefalingen står i listen under og i beslutningsregisteret. Øverst kan du prøve en hel mekling med tre telefoner som deler samme sak.</p>
+<p class="s" style="margin:0;max-width:1100px;color:#1E2733">Hvordan man sier fra om en person, en ting eller en anmeldelse, kontakter administratorene i et miljø og ber om mekling når et lån er uavklart, og hvordan administratorene behandler sakene: kø, sakens side, forklaringsrunder, deling, tiltak, habilitet og å lukke. Personene er de samme som i kjerneflyt 1–6. Kari Nordmann har lånt ut sykkelhengeren til Per Lien via Borettslaget Lia, og de har oppgitt ulike ting om returen (samme sak som på Hjem i kjerneflyt 4). Tone Vik og Ingrid Berg er administratorer i Borettslaget Lia. Produktatferden følger PS-COM-001, -010–014, -020–022, PS-TRUST-010, -013–016, -018, PS-USR-008–009, PS-ENV-014, PS-LOAN-012–019, PS-OBJ-017, -019, UX-IA-005, -007–009, UX-EXC-001–003, -009–011, UX-INT-001–008, UX-PRIV-003, -005–006, UX-JRN-012, visjon 05–07 og inventaret «Rapportere og kontakte administratorene», «Sakens side for en part» og «Miljøets sakskø og saksbehandling» (WP-88). Det meste er allerede bygget i appen i dag; prototypen gir det Tomat-uttrykket og samme navigasjon som resten. Datoene ligger rundt lørdag 10. oktober. Navn og tekster er eksempler.</p>
+<p class="s" style="margin:0;max-width:1100px">Vedtatt atferd som ikke er bygget ennå, er merket <span class="nb">IKKE BYGGET</span>. Produktvalgene fra første utkast er avgjort og står i listen under. Øverst kan du prøve en hel mekling med tre telefoner som deler samme sak.</p>
 <div class="rules">
 <div class="rule"><span class="ty">1 · SAKEN BOR DER DEN GJELDER</span><span class="s" style="font-size:14.5px;color:#1E2733">Du rapporterer fra personen, tingen eller anmeldelsen, ber om mekling fra lånet og kontakter administratorene fra miljøet. Saken åpnes i stabelen du står i. Administratorene får i tillegg en kø, fra Hjem og miljøet. Saker blandes aldri med privat chat.</span></div>
 <div class="rule"><span class="ty">2 · EN FUNKSJON, IKKE EN PERSON</span><span class="s" style="font-size:14.5px;color:#1E2733">Partene skriver til «administratorene i Borettslaget Lia» eller «Lånbort», og svaret kommer derfra. Hvem som har saken, ser bare administratorene. Mister noen rollen, går saken tilbake i køen uten at noe av den forsvinner.</span></div>
@@ -212,7 +209,7 @@ button:disabled{cursor:default}
 <div class="rule"><span class="ty">4 · INGEN SNARVEIER</span><span class="s" style="font-size:14.5px;color:#1E2733">Den som er part eller rapportert, får ingen behandlingshandlinger. Finnes ingen som kan behandle, står det rett ut, uten en knapp til plattformen. Privat chat åpnes aldri for saksbehandleren; partene sender selv inn det de vil.</span></div>
 </div>
 <div style="max-width:1500px;display:flex;flex-direction:column">
-<div class="row" style="gap:10px;padding-bottom:4px;flex-wrap:wrap"><span class="t" style="font-size:16px">Åpne produktvalg</span><span class="s" style="font-size:14px">Ført i beslutningsregisteret som OD-0038–OD-0042, med anbefaling. Ikke avgjort; prototypen viser appen slik den virker i dag, og forslaget der det er nødvendig for å forstå valget.</span></div>
+<div class="row" style="gap:10px;padding-bottom:4px;flex-wrap:wrap"><span class="t" style="font-size:16px">Besluttet 9. oktober 2026</span><span class="s" style="font-size:14px">Avgjort av produkteier etter første utkast (OD-0038–OD-0042). Reglene står i produktspesifikasjonen og UX-dokumentene.</span></div>
 <div class="uqs" id="uqs"></div>
 </div>
 <p class="s2" style="margin:0;max-width:1100px"><b style="color:#1E2733">Ikke med her:</b> plattformforvalternes kø og deres behandling av rapporter (vises ikke før WebAuthn er bygget, OD-0023), forvalterens inngrep på kontoer og miljøer (OD-0026), melding om mulig dødsfall (ingen UI-pakke, OD-0003), administrativ avslutning av et lån som uavklart (OD-0017), innmeldinger og godkjenning av ting (miljøadministrasjon, WP-85) og selve lånets side (kjerneflyt 7), som bare vises der meklingen starter.</p>
@@ -253,16 +250,16 @@ const P = {
 const ic = (k, st = '') => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"${st ? ` style="${st}"` : ''}><path d="${P[k]}"></path>${k === 'target' ? '<circle cx="12" cy="12" r="3" fill="currentColor"></circle>' : ''}</svg>`;
 const tag = (cls, t) => `<span class="${cls}">${t}</span>`;
 const NB = t => tag('nb', t || 'IKKE BYGGET');
-const OD = n => tag('od', `OD-00${n}`);
+const BS = t => tag('bs', t);
 const RED = '#C4122F', BLUE = '#2B4A8A', GREY = '#4F5967';
 
-/* ---------- Åpne produktvalg (samme tekst som i docs/open-decisions.md) ---------- */
+/* ---------- Beslutninger (samme innhold som reglene i docs/) ---------- */
 const DECISIONS = [
-  [38, 'Hva den som rapporterte, får vite når saken lukkes.', 'I dag får melderen bare «Saken er lukket» og det administratoren eventuelt skrev til partene. <b>Anbefaling:</b> «Lukk saken» ber om en kort avslutningsmelding til partene i rapporter og meklinger, som vises som siste innlegg. Tiltak mot andre beskrives ikke for melderen.'],
-  [39, 'Hva den et tiltak rammer, får vite.', 'Eieren ser i dag bare at publiseringen er avvist eller sperret, og forfatteren av en anmeldelse får ingen beskjed når teksten fjernes. <b>Anbefaling:</b> et påkrevd varsel som sier hva som ble gjort og hvor (for eksempel «Publiseringen av gassflasken i Borettslaget Lia er sperret»), aldri hvem som rapporterte eller at det fantes en rapport, og med lenke for å kontakte administratorene.'],
-  [40, 'Om den som åpnet en sak, kan trekke den.', 'I dag kan bare saksbehandleren lukke. <b>Anbefaling:</b> den som tok kontakt eller rapporterte, kan trekke saken så lenge den er åpen; den lukkes da med «Trukket av den som åpnet saken». En mekling trekkes ikke av én part, fordi den andre også er part; den lukkes av administratoren.'],
-  [41, 'Hva som skjer med en åpen mekling når partene selv avklarer lånet.', 'I dag står saken åpen til administratoren lukker den. <b>Anbefaling:</b> ikke lukk automatisk; saken viser «Lånet er avklart av partene», og den står øverst i køen med «Lukk saken» som neste steg.'],
-  [42, 'Rapporter til Lånbort før plattformforvalterne kan behandle dem.', 'Rapporter til Lånbort kan sendes i dag, men ingen kan behandle dem i appen før WebAuthn finnes (OD-0023), og saken sier bare «Venter på at Lånbort tar saken». <b>Anbefaling:</b> behold rapporten, men si ærlig før og etter innsending at Lånbort ikke behandler rapporter i appen ennå, og pek på miljøets administratorer der det passer (UX-EXC-009).']
+  ['PS-COM-020', 'En rapport eller mekling lukkes med en kort avslutningsmelding.', 'Den sier at saken er avsluttet og eventuelt hvor prosessen står, men aldri vurderinger, tiltak mot andre, andres beskyttede opplysninger eller hvem som rapporterte. En mekling kan få en nøytral oppsummering av om partene ble enige. Administratoren avgjør aldri hvem som har skylden.', false],
+  ['PS-TRUST-018', 'Den et tiltak rammer, får beskjed.', 'Et påkrevd varsel til eieren eller forfatteren med tiltaket, hvor det virker, en kort, saklig begrunnelse og en vei til ny vurdering. Aldri at det fantes en rapport, hvem som sendte den, eller annet fra saken.', false],
+  ['PS-COM-021', 'Den som åpnet en sak, kan trekke den, men ikke stanse en vurdering.', 'En henvendelse kan avsluttes av den som tok kontakt. En rapport kan trekkes, men det som er sendt inn, slettes ikke, og administratorene kan fullføre vurderingen og et tiltak. En mekling lukkes bare av en habil administrator.', false],
+  ['PS-COM-022', 'En mekling lukkes ikke av seg selv når partene avklarer lånet.', 'Saken viser lånets status og at partene har avklart det, og «Lukk saken» blir neste steg. Den går ikke foran saker som haster i køen.', false],
+  ['UX-EXC-011', 'Ingen rapport til Lånbort før noen kan behandle den.', 'Til plattformforvalterne kan behandle saker (OD-0023), står det ærlig at rapportering til Lånbort ikke er tilgjengelig ennå, og administratorene i miljøet tilbys der de har mandat. Ingen kontaktadresse og ingen lovnad om oppfølging. Før piloten åpnes, må sikkerhetskritiske meldinger ha en reell, betjent kanal.', false]
 ];
 
 /* ---------- Personer (eksempler) ---------- */
@@ -293,7 +290,8 @@ const stl = rows => `<div style="display:flex;flex-direction:column;gap:12px;pad
 const groupLabel = t => `<span class="ty" style="padding-top:2px">${t}</span>`;
 const pill = (cls, i, t) => `<span class="pill ${cls}">${ic(i)}${t}</span>`;
 
-function phone({ num, label, time, body, height, cap = '', aria }) {
+let PN = 0;
+function phone({ num = String(++PN).padStart(2, '0'), label, time, body, height, cap = '', aria }) {
   return `<div><div class="who"><span class="num">${num}</span>${label}</div>
 <div class="ph" role="group" aria-label="${aria || label}"${height ? ` style="min-height:${height}px"` : ''}>${sb(time)}${body}</div>
 ${cap ? `<p class="cap">${cap}</p>` : ''}</div>`;
@@ -354,6 +352,7 @@ function entry(e, v) {
   const pms = e.pm ? `<div class="pm"><span class="ea">${ic('sam')}${e.pm.length} ${e.pm.length === 1 ? 'privat melding' : 'private meldinger'} sendt inn</span>${e.pm.map(([who, t, at]) => `<span class="s2" style="color:#1E2733"><b>${PEOPLE[who].first}</b> · ${at}<br>${t}</span>`).join('')}<span class="s2">En kopi ${e.by === v.me ? 'du' : 'parten'} selv valgte å sende inn. Lånbort kan ikke bekrefte at den er lik meldingen i samtalen.</span></div>` : '';
   return `<div class="en ${handler ? 'hd' : ''} ${e.aud === 'handlers' ? 'nt' : ''}">
 <div class="eh">${lead}<b>${author}</b><time>${e.at}</time></div>
+${e.closing ? `<span class="ea">${ic('check')}Avslutningsmelding</span>` : ''}
 ${e.fix ? `<span class="ea">${ic('pen')}Retter innlegget ${e.by === v.me ? 'ditt' : ''} fra ${e.fix}</span>` : ''}
 <div class="eb">${e.body}</div>${pms}${aud ? `<span class="ea">${aud}</span>` : ''}</div>`;
 }
@@ -379,7 +378,8 @@ const TXT = {
   tonePer:'Hei Per. Husker du omtrent hva klokken var da du satte den inn?',
   toneNote:'Vaktmester bekrefter at det er to boder, A og B.',
   kari2:'Vi fant den i boden i oppgang B. Den står der nå og ser fin ut.',
-  per2:'Bekrefter. Den står i bod B.'
+  per2:'Bekrefter. Den står i bod B.',
+  closing:'Takk for forklaringene. Vi avgjør ikke hvem som har rett, og saken er nå avsluttet. Lånet går videre etter det dere selv registrerer på lånet.'
 };
 const DRAFT = { parties:TXT.toneAll, kari:TXT.toneKari, per:TXT.tonePer, handlers:TXT.toneNote };
 
@@ -391,14 +391,14 @@ const NOTE = {
   entry:['doc', 'Det er skrevet noe nytt i en sak', 'Handlingsvarsel. Varselet sier aldri hva som er skrevet.'],
   turn:['pen', 'Det er din tur til å skrive i en sak', 'Handlingsvarsel, og en oppgave i «Venter på deg» på Hjem.'],
   shared:['ppl', 'Innleggene i en sak er delt', 'Informasjonsvarsel. Nå ser dere hverandres forklaringer.'],
-  closed:['check', 'En sak du er med i er lukket', 'Informasjonsvarsel.'],
+  closed:['check', 'En sak du er med i er lukket', 'Informasjonsvarsel. Avslutningsmeldingen står i saken.'],
   given:['inbox', 'En sak er gitt videre til deg', 'Handlingsvarsel.']
 };
 const LIVE0 = () => ({
   entries:[{ id:1, by:'kari', cap:'party', aud:'parties', body:TXT.kari1, at:'09.12' }], next:2,
   may:{ kari:false, per:true }, assignee:null, recused:false, sharedUpTo:null, closed:false,
   sheet:{ kari:null, per:null, tone:null }, flash:{ kari:'', per:'', tone:'' }, aud:'parties',
-  draft:{ kari:TXT.kari2, per:TXT.per1, tone:TXT.toneAll, fix:'' }, busy:null, focus:null, clock:9 * 60 + 20,
+  draft:{ kari:TXT.kari2, per:TXT.per1, tone:TXT.toneAll, fix:'', closing:TXT.closing }, busy:null, focus:null, clock:9 * 60 + 20,
   log:{ kari:[], per:[{ k:'opened', at:'09.12' }], tone:[{ k:'waiting', at:'09.12' }] }
 });
 let S = LIVE0();
@@ -448,7 +448,9 @@ const ACTIONS = {
     S.draft.fix = '';
     return 'Rettingen er lagt til. Det opprinnelige innlegget står som det var.';
   },
-  doclose() { S.closed = true; S.may.kari = S.may.per = false; tell(['kari', 'per'], 'closed'); return 'Saken er lukket.'; }
+  doclose() {
+    S.entries.push({ id:S.next++, by:'tone', cap:'handler', aud:'parties', closing:true, body:S.draft.closing.trim() || '…', at:hhmm(S.clock) });
+    S.closed = true; S.may.kari = S.may.per = false; tell(['kari', 'per'], 'closed'); return 'Saken er lukket.'; }
 };
 const CONFIRM = ['share', 'round', 'close', 'recuse', 'more'];
 
@@ -534,7 +536,7 @@ const liveSheets = {
     ['doc', BLUE, 'Alt som er skrevet, blir stående.'],
     ['lan', BLUE, 'Lukkingen avgjør ingenting om lånet eller kontoene. Lånet går videre etter det partene selv registrerer.'],
     ['bell', GREY, 'Kari og Per får beskjed om at saken er lukket.']],
-    body:`<div class="row" style="gap:8px">${OD(38)}<span class="s2">Forslag: en kort avslutningsmelding til partene. Ikke bygget, ikke vedtatt.</span></div>`,
+    body:`${field('Avslutningsmelding til partene', S.draft.closing, '', ' data-draft="closing"')}<span class="hint">Blir sakens siste innlegg. Skriv ikke vurderinger, tiltak mot andre eller hvem som sa hva. Du kan si nøytralt om partene ble enige.</span>${NB()}`,
     actions:`<button class="btn" type="button" data-act="doclose" data-who="tone">Lukk saken</button><button class="bn" type="button" data-act="cancel" data-who="tone">Avbryt</button>` }),
   recuse:() => sheet({ over:'Mekling om sykkelhenger', title:'Erklære deg inhabil?', rows:[
     ['block', RED, 'Du kan ikke behandle denne saken igjen, og du ser den ikke lenger.'],
@@ -630,68 +632,71 @@ ${field(label, value)}
 <span class="hint">Skriv bare det som trengs for saken. Private samtaler blir ikke en del av saken, men du kan sende inn meldinger fra dem senere.</span>
 ${extra}<span class="btn">${submit}</span>${hint}</div>`;
 
-const choiceEnvPlatform = (sel, what = 'miljøets regler og tingene her') => option(sel === 'env', ADM, `For det som gjelder ${what}. Én av dem tar saken.`) + option(sel === 'platform', 'Lånbort', 'For alvorlige brudd: ulovlige eller farlige ting, trusler, trakassering, svindel eller falsk identitet.', `<span style="display:flex;gap:6px;margin-top:6px">${OD(42)}</span>`);
+/* Lånbort kan ikke ta imot rapporter før plattformforvalterne kan behandle dem (UX-EXC-011). */
+const notYetLanbort = `<div class="opt" aria-disabled="true" style="opacity:.72"><span class="rd" style="visibility:hidden"></span><span class="f1"><span class="t2" style="display:block">Lånbort</span><span class="s2" style="display:block">Ikke tilgjengelig ennå. Lånbort kan ikke ta imot rapporter i appen ennå.</span><span style="display:flex;gap:6px;margin-top:6px">${NB()}</span></span></div>`;
+const choiceEnvPlatform = (what = 'miljøets regler og tingene her') => option(true, ADM, `For det som gjelder ${what}. Én av dem tar saken.`) + notYetLanbort;
 
 const S_SECTIONS = [
   { h:'Rapportere', s:'Kari sier fra om Mats Dahl, om en ting i Borettslaget Lia og om en anmeldelse av henne. Rapporten starter fra det den gjelder (UX-IA-007) og blir en sak hun følger fra Konto › Saker.',
     items:[
-      phone({ num:'01', label:'Mats · Flere valg', time:'14:02', body:personMini('mats', sheet({ over:'Mats Dahl', title:'Flere valg', body:`<div class="cd ol" style="padding:2px 4px;gap:0">${mr({ lead:ic('block'), t:'Blokker Mats', end:'', danger:true })}${mr({ lead:ic('flag'), t:'Rapporter Mats', s:'Si fra til miljøet eller Lånbort', end:chev })}</div>`, actions:'<span class="bn">Lukk</span>' })),
+      phone({ label:'Mats · Flere valg', time:'14:02', body:personMini('mats', sheet({ over:'Mats Dahl', title:'Flere valg', body:`<div class="cd ol" style="padding:2px 4px;gap:0">${mr({ lead:ic('block'), t:'Blokker Mats', end:'', danger:true })}${mr({ lead:ic('flag'), t:'Rapporter Mats', s:'Si fra til administratorene i miljøet', end:chev })}</div>`, actions:'<span class="bn">Lukk</span>' })),
         cap:'Samme ark som i kjerneflyt 6, nå med en virkende rad. Rapportere og blokkere er to ting: du kan gjøre begge, og ingen av dem endrer lån dere har sammen.' }),
-      phone({ num:'02', label:'Rapporter Mats · velg hvem', time:'14:03', body:reportForm({ back:'Mats Dahl', title:'Rapporter Mats Dahl', choice:choiceEnvPlatform('env', 'oppførsel i miljøet'), value:'Mats har tre ganger sendt meg meldinger om at jeg må låne ham drillen, også etter at jeg har sagt nei.', submit:'Send rapporten til administratorene', hint:`<span class="hint" style="padding-top:4px">Gjelder det et lån som ikke er levert tilbake? Det avklares på lånet, ikke med en rapport.</span>` }),
-        cap:'Miljøet er valgt fordi Kari kom fra Borettslaget Lia. Valget sier hva hvert sted er for, og knappen sier hvor rapporten går (UX-INT-003). Manglende retur er et låneavvik, ikke en rapport (visjon 07).' }),
-      phone({ num:'03', label:'Rapporten er sendt', time:'14:04', body:`${backbar('Mats Dahl')}<div class="scr" style="gap:10px">${caseHead('report', 'Rapport om Mats Dahl')}
+      phone({ label:'Rapporter Mats · velg hvem', time:'14:03', body:reportForm({ back:'Mats Dahl', title:'Rapporter Mats Dahl', choice:choiceEnvPlatform('oppførsel i miljøet'), value:'Mats har tre ganger sendt meg meldinger om at jeg må låne ham drillen, også etter at jeg har sagt nei.', submit:'Send rapporten til administratorene', hint:`<span class="hint" style="padding-top:4px">Gjelder det et lån som ikke er levert tilbake? Det avklares på lånet, ikke med en rapport.</span>` }),
+        cap:'Miljøet er valgt fordi Kari kom fra Borettslaget Lia, og knappen sier hvor rapporten går (UX-INT-003). Lånbort står som ikke tilgjengelig ennå i stedet for å ta imot en rapport ingen kan behandle (UX-EXC-011). Manglende retur er et låneavvik, ikke en rapport (visjon 07).' }),
+      phone({ label:'Rapporten er sendt', time:'14:04', body:`${backbar('Mats Dahl')}<div class="scr" style="gap:10px">${caseHead('report', 'Rapport om Mats Dahl')}
 ${handlingCard('queued', { flash:'Rapporten er sendt.', queuedS:'Administratorene vurderer rapporten. Mats får ikke vite om den gjennom saken. Du får beskjed når noen har tatt den, og når saken er lukket.' })}
 ${entries([{ by:'kari', cap:'party', aud:'parties', body:'Mats har tre ganger sendt meg meldinger om at jeg må låne ham drillen, også etter at jeg har sagt nei.', at:'14.04' }], { as:'party', me:'kari' })}
 <span class="s2" style="padding:0 6px">Du kan skrive igjen når administratorene ber om mer.</span></div>${nav('hjem')}`,
         cap:'Resultatet vises på saken selv (UX-INT-005), i samme stabel: Hjem › Borettslaget Lia › Mats › rapporten. Saken finnes også under Konto › Saker.' }),
-      phone({ num:'04', label:'Rapporter en ting · til Lånbort', time:'15:20', body:reportForm({ back:'Gassflaske 11 kg', title:'Rapporter «Gassflaske 11 kg»', head:objHead('TING', 'Gassflaske 11 kg', `Publisert i ${ENV} av Jonas Vik`), choice:choiceEnvPlatform('platform'), value:'Flasken er fylt med propan. Slike kan ikke lånes ut gjennom Lånbort.', submit:'Send rapporten til Lånbort' }),
-        cap:'Fylte gassflasker står på listen over det som ikke kan lånes ut (PS-OBJ-019). Administratorene kan avvise eller sperre publiseringen i Borettslaget Lia; bare Lånbort kan sperre tingen overalt (PS-OBJ-017).' }),
-      phone({ num:'05', label:'Rapporter en anmeldelse', time:'16:10', body:reportForm({ back:'Kari som utlåner', title:'Rapporter anmeldelsen', to:'Lånbort', head:`<div class="cd" style="padding:14px 16px;gap:6px"><span class="s2" style="color:#1E2733">Fra Erik Sund · Gjennomført lån, 26. sep.</span><div class="msg">Grei utlåner, men naboen hennes sier at hun …</div></div>`,
-        intro:'Anmeldelser vurderes av Lånbort. Lånbort kan fjerne tekst som nevner andre, avslører noe privat eller bryter reglene. En vurdering som er gyldig, kan bli stående.', label:'Hva er galt med anmeldelsen', value:'Teksten forteller hva en nabo skal ha sagt om meg.', submit:'Send rapporten til Lånbort',
-        hint:`<span class="hint" style="padding-top:4px">Er du bare uenig i vurderingen? Du kan svare med ett tilsvar på anmeldelsen i stedet.</span><span style="display:flex;gap:6px;padding:0 4px">${OD(42)}</span>` }),
-        cap:'Du kan rapportere en anmeldelse av deg, og et tilsvar på en anmeldelse du skrev (PS-TRUST-015). Inngangen er «Rapporter» på anmeldelsen i kjerneflyt 7.' }),
+      phone({ label:'Rapporter en ting', time:'15:20', body:reportForm({ back:'Gassflaske 11 kg', title:'Rapporter «Gassflaske 11 kg»', head:objHead('TING', 'Gassflaske 11 kg', `Publisert i ${ENV} av Jonas Vik`), choice:choiceEnvPlatform(), value:'Flasken er fylt med propan. Slike kan ikke lånes ut gjennom Lånbort.', submit:'Send rapporten til administratorene' }),
+        cap:'Fylte gassflasker står på listen over det som ikke kan lånes ut (PS-OBJ-019). Administratorene kan avvise eller sperre publiseringen i Borettslaget Lia, og det har de mandat til. Å sperre tingen overalt kan bare Lånbort, og det tilbys ikke før forvalterne kan behandle saker (PS-OBJ-017, UX-EXC-011).' }),
+      phone({ label:'Rapporter en anmeldelse', time:'16:10', body:`${backbar('Kari som utlåner')}<div class="scr" style="gap:12px">
+<div style="padding:0 4px"><span class="ty">RAPPORT</span><div class="hq" style="font-size:24px;line-height:1.15">Rapporter anmeldelsen</div></div>
+<div class="cd" style="padding:14px 16px;gap:6px"><span class="s2" style="color:#1E2733">Fra Erik Sund · Gjennomført lån, 26. sep.</span><div class="msg">Grei utlåner, men naboen hennes sier at hun …</div></div>
+<div class="cd" role="status">${pill('p-wt', 'info', 'Ikke tilgjengelig ennå')}<span class="hq now">Du kan ikke rapportere anmeldelser ennå</span><span class="s">Anmeldelser vurderes av Lånbort, og Lånbort kan ikke ta imot rapporter i appen ennå.</span><span class="s2" style="color:#1E2733">Er du uenig i vurderingen, kan du svare med ett tilsvar på anmeldelsen.</span><span class="bn">Skriv et tilsvar</span>${NB()}</div></div>${nav('hjem')}`,
+        cap:'Bare Lånbort kan vurdere anmeldelser (PS-TRUST-015), så her finnes ingen annen vei før forvalterne kan behandle saker. Ingen knapp sender noe, og ingenting lover oppfølging (UX-EXC-011). Inngangen er «Rapporter» på anmeldelsen i kjerneflyt 7.' }),
       `<div class="stack">
-${note('Hvem kan rapportere hva', '<span class="s" style="color:#1E2733">Til miljøet: aktive medlemmer, om et annet medlem eller en ting som er publisert der, men ikke sin egen ting.</span><span class="s" style="color:#1E2733">Til Lånbort: alle innloggede, om en person de har eller har hatt en forbindelse til, en ting de har sett eller bedt om å låne, en anmeldelse av seg selv eller et tilsvar til sin egen anmeldelse.</span><span class="s2">Slik virker appen i dag. Valget i 02 vises bare når begge steder er mulige.</span>')}
+${note('Hvem kan rapportere hva', '<span class="s" style="color:#1E2733">Til miljøet: aktive medlemmer, om et annet medlem eller en ting som er publisert der, men ikke sin egen ting.</span><span class="s" style="color:#1E2733">Til Lånbort: ikke tilgjengelig før forvalterne kan behandle saker. Når det åpnes: alle innloggede, om en person de har eller har hatt en forbindelse til, en ting de har sett eller bedt om å låne, en anmeldelse av seg selv eller et tilsvar til sin egen anmeldelse.</span><span class="s2">Appen tar i dag imot rapporter til Lånbort; det endres i brukerflaten, mens data og tilgangsregler på serveren er uendret.</span>')}
 ${note('Den som blir rapportert', '<span class="s" style="color:#1E2733">Får ikke vite om rapporten gjennom saken, ser den ikke under Saker, og får ingen varsler om den. Antall rapporter blir aldri et tillitssignal (PS-TRUST-010).</span>')}
 ${note('Har allerede en åpen rapport', '<span class="s" style="color:#1E2733">Rapporterer Kari Mats på nytt mens den første er åpen, havner teksten som et nytt innlegg i samme sak. Hun trenger ikke begynne på nytt.</span>')}
-${note('Trekke en rapport', `<div class="row" style="gap:8px">${OD(40)}</div><span class="s" style="color:#1E2733">I dag kan bare administratoren lukke saken. Forslaget er «Trekk rapporten» under «Flere valg» på saken.</span>`)}
+${note('Trekke en rapport', `<span class="s" style="color:#1E2733">Kari kan trekke rapporten under «Flere valg» på saken (se «Egne saker i Konto»). Det hun har sendt inn, blir stående, og administratorene kan fullføre vurderingen (PS-COM-021).</span>${NB()}`)}
 </div>`
     ] },
 
   { h:'Mekling om et lån, for partene', s:'Kari og Per har oppgitt ulike ting om returen. Kari ber Borettslaget Lia om mekling fra lånets side. Begge skriver sin forklaring hver for seg, og administratoren deler dem når det passer (PS-COM-012). Administratoren mekler og avgjør ikke hvem som har rett (visjon 05).',
     items:[
-      phone({ num:'06', label:'Lånets side · returen er uavklart', time:'09:05', body:`${backbar('Lån')}<div class="scr" style="gap:12px">${objHead('LÅN', 'Sykkelhenger til Per')}
+      phone({ label:'Lånets side · returen er uavklart', time:'09:05', body:`${backbar('Lån')}<div class="scr" style="gap:12px">${objHead('LÅN', 'Sykkelhenger til Per')}
 <div class="cd">${pill('p-wt', 'info', 'Uavklart')}<span class="hq now">Dere har oppgitt ulike ting om returen</span><span class="s">Per har meldt den returnert søndag 4. oktober. Du har svart at den ikke er kommet tilbake.</span><span class="bn">${ic('scale')}Be ${ENV} om mekling</span></div>
 <span class="q">Tidslinje og flere valg</span></div>${nav('lan')}`,
         cap:'Utsnitt; lånets side er kjerneflyt 7. Knappen finnes bare for lån som kom via et miljø, mens returen eller overleveringen er uavklart eller lånet pågår. Etter at saken er åpnet, står lenken «Meklingen» her.' }),
-      phone({ num:'07', label:'Be om mekling', time:'09:06', body:`${backbar('Sykkelhenger')}<div class="scr" style="gap:12px">
+      phone({ label:'Be om mekling', time:'09:06', body:`${backbar('Sykkelhenger')}<div class="scr" style="gap:12px">
 <div style="padding:0 4px"><span class="ty">MEKLING</span><div class="hq" style="font-size:24px;line-height:1.15">Be ${ENV} om mekling</div></div>
 ${stl([['scale', BLUE, 'Administratorene hjelper dere å finne ut hva som skjedde. De avgjør ikke hvem som har rett, og kan ikke pålegge noen å betale.'], ['eyeoff', BLUE, 'Per skriver sin egen forklaring. Dere ser ikke hverandres første forklaring før administratoren deler dem.'], ['lock', GREY, 'Administratorene får ikke tilgang til samtalene deres. Du kan selv sende inn meldinger.'], ['lan', GREY, 'Lånet endres ikke av at du ber om mekling.']])}
 ${compose({ label:'Din forklaring', value:TXT.kari1, help:'Skriv hva som skjedde, så konkret du kan: når, hvor og hva du så. Etter at du har sendt, venter du til administratoren ber om mer.', submit:`Be ${ENV} om mekling`, extra:attachRow('Per') })}
 </div>`,
         cap:'Konsekvensene står før skjemaet, fordi Per blir part i saken (UX-INT-007). Knappen navngir hva som skjer (UX-INT-003). Saken åpnes i lånets stabel: Lån › Sykkelhenger › Meklingen.' }),
-      phone({ num:'08', label:'Kari · forklaringen er sendt', time:'09:12', body:`${backbar('Sykkelhenger')}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om sykkelhenger')}
+      phone({ label:'Kari · forklaringen er sendt', time:'09:12', body:`${backbar('Sykkelhenger')}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om sykkelhenger')}
 ${handlingCard('queued', { flash:'Forklaringen er sendt.', turn:'Du har skrevet forklaringen din. Du kan skrive igjen når administratoren ber om mer.' })}
 ${entries([E.kari1], V_KARI)}<span class="q">Gå til lånet</span></div>${nav('lan')}`,
         cap:'Merket under innlegget sier hvem som ikke ser det ennå. Hjem viser saken under «Uavklart» med «Venter på administratorene» (kjerneflyt 4).' }),
-      phone({ num:'09', label:'Per · din tur', time:'10:35', body:`${backbar('Hjem', { from:'Åpnet fra varsel' })}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om sykkelhenger')}
+      phone({ label:'Per · din tur', time:'10:35', body:`${backbar('Hjem', { from:'Åpnet fra varsel' })}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om sykkelhenger')}
 ${handlingCard('assigned', { turn:'Skriv din forklaring. Du ser ikke Karis før administratoren deler dem.' })}
 ${entries([], V_PER)}
 ${compose({ label:'Din forklaring', value:TXT.per1, help:'Skriv bare det som trengs. Etter at du har sendt, venter du til administratoren ber om mer.', submit:'Send forklaringen', extra:attachRow('Kari') })}</div>${nav('hjem')}`,
         cap:'Per ble part da saken ble åpnet og fikk varselet «En sak du er part i er åpnet». Han ser ikke Karis forklaring, bare at saken finnes. Stabelen fra varselet er Hjem › saken.' }),
-      phone({ num:'10', label:'Kari · forklaringene er delt', time:'11:06', body:`${backbar('Sykkelhenger')}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om sykkelhenger')}
+      phone({ label:'Kari · forklaringene er delt', time:'11:06', body:`${backbar('Sykkelhenger')}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om sykkelhenger')}
 ${handlingCard('assigned', { turn:'Du kan skrive et nytt innlegg nå. Etter det venter du til administratoren ber om mer.' })}
 ${entries([{ ...E.kari1, shared:true }, { ...E.per1, shared:true }, E.toneAll], V_KARI)}
 ${compose({ label:'Nytt innlegg', value:TXT.kari2, submit:'Send innlegget' })}</div>${nav('lan')}`,
         cap:'Administratorens innlegg står med en rød kant og som «administratorene i Borettslaget Lia», aldri med navn (PS-COM-010). Hvem som har saken, ser bare administratorene.' }),
-      phone({ num:'11', label:'Send inn meldinger fra samtalen', time:'11:10', body:`${backbar('Meklingen', { close:false })}<div class="scr" style="gap:10px">
+      phone({ label:'Send inn meldinger fra samtalen', time:'11:10', body:`${backbar('Meklingen', { close:false })}<div class="scr" style="gap:10px">
 <div style="padding:0 4px"><span class="ty">SAMTALE MED PER</span><div class="hq" style="font-size:22px;line-height:1.15">Velg meldinger</div></div>
 <span class="s" style="padding:0 4px">Bare meldingene du velger, sendes som en kopi til saken. Resten av samtalen blir ikke med, og administratorene får ingen tilgang til den.</span>
 ${[['per', 'Hengeren står i boden nå 👍', 'søn. 4. okt. 16.12', true], ['kari', 'Takk! I hvilken bod?', 'søn. 4. okt. 16.30', true], ['per', 'Den ved inngangen', 'søn. 4. okt. 16.41', false]].map(([w, t, at, on]) => `<div class="pick ${w === 'kari' ? 'me' : ''}"><span class="cb ${on ? 'on' : ''}" role="checkbox" aria-checked="${on}">${on ? ic('check') : ''}</span><div class="bub ${w === 'kari' ? 'me' : ''}">${t}<div class="s2" style="font-size:12px">${at}</div></div></div>`).join('')}
 <span class="hint">Lånbort kan ikke bekrefte at kopien er lik meldingen i samtalen. Du står inne for den.</span>
 <span class="btn">Legg ved 2 meldinger</span><span style="display:flex;gap:6px;flex-wrap:wrap">${NB('PRIVAT CHAT ER AV TIL PORT C')}</span></div>`,
         cap:'Utvalget skjer på enheten, der samtalen allerede er dekryptert. Saken får bare kopien (PS-COM-013, ADR-0010). Bygget, men vises først når privat chat slås på.' }),
-      phone({ num:'12', label:'Rette et innlegg', time:'11:20', body:`${backbar('Sykkelhenger')}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om sykkelhenger')}
+      phone({ label:'Rette et innlegg', time:'11:20', body:`${backbar('Sykkelhenger')}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om sykkelhenger')}
 ${entries([{ ...E.kari1, shared:true }, { by:'kari', cap:'party', aud:'parties', body:'Hengeren var lånt ut 1.–4. oktober, ikke 2.–4. som jeg skrev først.', at:'11.20', fix:'09.12', shared:false }], V_KARI)}</div>${nav('lan')}`,
         cap:'En retting er et nytt innlegg som peker på det gamle. Det opprinnelige står som det var (PS-COM-014). «Retter innlegget ditt» velges i skrivefeltet når du har skrevet før.' }),
       `<div class="stack">
@@ -699,22 +704,25 @@ ${note('Direkte vennelån', '<span class="s" style="color:#1E2733">Har ingen kna
 ${note('Blokkering under meklingen', '<span class="s" style="color:#1E2733">Saken fortsetter. Begge beholder det saksrollen gir, men saken blir ingen vei til fri kontakt: dere skriver til administratorene, ikke til hverandre.</span>')}
 ${note('Part som har forlatt miljøet', '<span class="s" style="color:#1E2733">Kan fortsatt be om og bruke meklingen for et lån som kom via miljøet, uten å få tilbake medlemsadgangen.</span>')}
 ${note('Ny ansvarlig utlåner', '<span class="s" style="color:#1E2733">Blir part i den åpne meklingen og kan skrive sin første forklaring. Den forrige er fortsatt part.</span>')}
-${note('Lånet avklares underveis', `<div class="row" style="gap:8px">${OD(41)}</div><span class="s" style="color:#1E2733">Bekrefter Kari og Per selv returen, står saken i dag åpen til administratoren lukker den.</span>`)}
+${note('Lånet avklares underveis', `<span class="s" style="color:#1E2733">Bekrefter Kari og Per selv returen, står saken åpen. Administratoren ser at partene har avklart lånet, og «Lukk saken» blir neste steg (PS-COM-022, se «Saksbehandling»).</span>`)}
+${note('Ingen av partene lukker', `<span class="s" style="color:#1E2733">I en mekling har partene ingen «Lukk» eller «Trekk». «Flere valg» sier: «Bare administratorene kan lukke en mekling, fordi dere begge er parter.» (PS-COM-021)</span>${NB()}`)}
 </div>`
     ] },
 
   { h:'Kontakt administratorene', s:'Ola skriver til administratorene i Borettslaget Lia som gruppe, fra miljøets side. En henvendelse har ingen runder: Ola og administratorene skriver fritt til saken er lukket.',
     items:[
-      phone({ num:'13', label:'Kontakt administratorene', time:'18:40', body:`${backbar(ENV)}<div class="scr" style="gap:12px">
+      phone({ label:'Kontakt administratorene', time:'18:40', body:`${backbar(ENV)}<div class="scr" style="gap:12px">
 <div style="padding:0 4px"><span class="ty">HENVENDELSE</span><div class="hq" style="font-size:24px;line-height:1.15">Kontakt administratorene</div><div class="ctx" style="margin-top:3px">${ic('house')}${ENV}</div></div>
 <span class="s" style="padding:0 4px">Du skriver til administratorene som gruppe. Én av dem tar saken, og svaret kommer her. Saken er ikke en privat samtale.</span>
 ${compose({ label:'Melding', value:'Kan vi få en felles stige i sykkelboden? Flere her har spurt om å låne min.', submit:'Send til administratorene' })}</div>${nav('hjem')}`,
         cap:'Inngangen ligger på miljøets side for aktive medlemmer (WP-84). Har Ola allerede en åpen henvendelse, fortsetter den.' }),
-      phone({ num:'14', label:'Henvendelsen · svar', time:'20:15', body:`${backbar(ENV)}<div class="scr" style="gap:10px">${caseHead('contact', 'Henvendelse til administratorene')}
+      phone({ label:'Henvendelsen · svar', time:'20:15', body:`${backbar(ENV)}<div class="scr" style="gap:10px">${caseHead('contact', 'Henvendelse til administratorene')}
 ${handlingCard('assigned')}
 ${entries([{ by:'ola', cap:'party', aud:'parties', body:'Kan vi få en felles stige i sykkelboden? Flere her har spurt om å låne min.', at:'18.40' }, { by:'tone', cap:'handler', aud:'parties', body:'God idé. Vi tar det opp på styremøtet torsdag og svarer deg her.', at:'20.10' }], { as:'party', me:'ola', fn:ADM })}
 ${compose({ label:'Skriv i saken', ph:'Svar administratorene', submit:'Send' })}</div>${nav('hjem')}`,
         cap:'Henvendelsen tilhører funksjonen. Mister den som har den rollen, går den tilbake i køen og fortsetter der, med hele historikken (PS-COM-010).' }),
+      phone({ label:'Henvendelsen · Flere valg', time:'20:20', body:`${backbar(ENV)}<div class="scr"></div>${sheet({ over:'Henvendelse til administratorene', title:'Flere valg', body:`<div class="cd ol" style="padding:2px 4px;gap:0">${mr({ lead:ic('check'), t:'Avslutt henvendelsen', s:'Saken lukkes, og alt som er skrevet, blir stående', end:'' })}</div>${NB()}`, actions:'<span class="bn">Lukk</span>' })}`,
+        cap:'Den som tok kontakt, kan selv avslutte henvendelsen mens den er åpen (PS-COM-021). Administratorene får beskjed. Ingen bekreftelse trengs, fordi ingenting forsvinner.' }),
       `<div class="stack">
 ${note('Ingen kan behandle', `${pill('p-wt', 'info', 'Står på vent')}<span class="s" style="color:#1E2733">«Det finnes ingen i Borettslaget Lia som kan ta saken akkurat nå. Den blir liggende trygt til noen kan.» Ingen knapp til Lånbort (UX-EXC-009, PS-ENV-014).</span>`)}
 ${note('Uten nett', `${pill('p-wt', 'offline', 'Vet ikke ennå')}<span class="s" style="color:#1E2733">Etter «Send» uten nett viser saken at vi ikke vet om innlegget kom fram. Skrivefeltet beholder teksten, og «Send» kommer tilbake først når appen har sjekket (UX-INT-006).</span>`)}
@@ -723,29 +731,35 @@ ${note('Uten nett', `${pill('p-wt', 'offline', 'Vet ikke ennå')}<span class="s"
 
   { h:'Saksbehandling for administratorene', s:'Tone Vik er administrator i Borettslaget Lia. Sakene kommer som oppgaver på Hjem og i miljøets kø (UX-JRN-012). Rollestripen sier hva hun handler som (UX-PRIV-005), og bare det neste steget er en primærknapp (UX-INT-001).',
     items:[
-      phone({ num:'15', label:'Tone · Hjem', time:'09:30', body:`${topBar('Hjem', 2, 'tone')}<div class="scr">
+      phone({ label:'Tone · Hjem', time:'09:30', body:`${topBar('Hjem', 2, 'tone')}<div class="scr">
 ${sec('3 som administrator')}<div class="cd" style="padding:6px 4px;gap:0"><div class="row" style="padding:8px 10px 4px"><div class="f1"><div class="t2">${ENV}</div><div class="s2">Du er administrator</div></div></div>${mr({ lead:tic('scale'), t:'Mekle om 1 lån', s:'Ingen har tatt den ennå' })}${mr({ lead:tic('flag'), t:'Vurder 1 rapport', s:'Ingen har tatt den ennå' })}${mr({ lead:tic('sam'), t:'Svar på 1 henvendelse', s:'Du har den' })}</div>
 ${sec('Dine miljøer')}<div class="cd" style="padding:2px 4px;gap:0">${mr({ t:ENV, s:'Administrator' })}</div></div>${nav('hjem')}`,
         cap:'Samme seksjon som i kjerneflyt 4. Radene har handlingsverb og åpner køen eller saken; de gjør aldri noe selv (UX-IA-012). Saker der Tone er part eller rapportert, telles ikke her.' }),
-      phone({ num:'16', label:'Miljøets kø', time:'09:31', body:queueScreen({ withCase:true, note:`<span class="s2" style="padding:0 6px">Køen viser ikke saker der du er part eller rapportert, og sier ikke at de finnes.</span>` }),
+      phone({ label:'Miljøets kø', time:'09:31', body:queueScreen({ withCase:true, note:`<span class="s2" style="padding:0 6px">Køen viser ikke saker der du er part eller rapportert, og sier ikke at de finnes.</span>` }),
         cap:'Stabelen er Hjem › Borettslaget Lia › Saker. Køen er delt i hvem som har saken, ikke i sakstyper, fordi det er det som avgjør hva Tone skal gjøre.' }),
-      phone({ num:'17', label:'Mekling · før deling', time:'10:45', body:`${backbar('Saker')}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om sykkelhenger')}${roleStrip()}
+      phone({ label:'Mekling · før deling', time:'10:45', body:`${backbar('Saker')}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om sykkelhenger')}${roleStrip()}
 ${handlingCard('mine', { mineS:'Begge har skrevet. Neste steg er å dele forklaringene.', actions:`<span class="btn">${ic('ppl')}Del forklaringene med partene</span>` })}
 ${facts([['Lån', 'Sykkelhenger, 1.–4. okt.'], ['Status', 'Returen er uavklart'], ['Parter', 'Kari · venter på ny runde<br>Per · venter på ny runde']])}
 ${entries([E.kari1, E.per1, E.note], V_TONE)}
 ${timeline([['09.12', 'Kari ba om mekling'], ['10.32', 'Tone tok saken'], ['10.40', 'Per skrev sin forklaring']])}
 <span class="q">Flere valg</span></div>${nav('hjem')}`,
         cap:'Tone ser begge forklaringene med merket «Ikke delt ennå». Internt notat har stiplet kant. Historikken er lukket til hun åpner den (UX-IA-008).' }),
-      phone({ num:'18', label:'Dele forklaringene?', time:'11:00', body:`${backbar('Saker')}<div class="scr"></div>${liveSheets.share()}`,
+      phone({ label:'Dele forklaringene?', time:'11:00', body:`${backbar('Saker')}<div class="scr"></div>${liveSheets.share()}`,
         cap:'Blått er det som deles, grått det som ikke gjør det. Ikke signalrød, fordi ingenting slettes.' }),
-      phone({ num:'19', label:'Skriv til partene', time:'11:04', body:`${backbar('Saker')}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om sykkelhenger')}${roleStrip()}
+      phone({ label:'Skriv til partene', time:'11:04', body:`${backbar('Saker')}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om sykkelhenger')}${roleStrip()}
 ${sec('Skriv i saken')}<div class="seg">${[['Begge parter', 'ppl', 1], ['Bare Kari', 'eye'], ['Bare Per', 'eye'], ['Internt notat', 'note']].map(([t, i, on]) => `<span class="sg ${on ? 'on' : ''}">${ic(i)}${t}</span>`).join('')}</div>
 <textarea class="ta" aria-label="Innlegg">${TXT.toneAll}</textarea><span class="hint">Partene ser innlegget som fra «administratorene i Borettslaget Lia», ikke fra deg.</span><span class="btn2">Send innlegget</span>
 ${sec('Behandling')}<div class="cd" style="padding:2px 4px;gap:0">${mr({ lead:tic('pen', 'n'), t:'Be om nytt innlegg', s:'Fra én eller begge parter' })}${mr({ lead:tic('check', 'n'), t:'Lukk saken', end:'' })}</div></div>${nav('hjem')}`,
         cap:'Mottakeren velges før teksten, og knappen bytter til «Lagre notatet» for interne notater. Å be om nytt innlegg gir partene varselet «Det er din tur».' }),
-      phone({ num:'20', label:'Lukke saken?', time:'15:30', body:`${backbar('Saker')}<div class="scr"></div>${liveSheets.close()}`,
+      phone({ label:'Lukke saken?', time:'15:30', body:`${backbar('Saker')}<div class="scr"></div>${liveSheets.close()}`,
         cap:'Lukking avgjør ingenting om lånet: det går videre etter det partene registrerer, og administrativ avslutning som uavklart vises ikke før OD-0017 er avgjort.' }),
-      phone({ num:'21', label:'Flere valg', time:'15:31', body:`${backbar('Saker')}<div class="scr"></div>${sheet({ over:'Mekling om sykkelhenger', title:'Flere valg', body:`<div class="cd ol" style="padding:2px 4px;gap:0">${mr({ lead:ic('out'), t:'Legg saken tilbake i køen', end:'' })}${mr({ lead:ic('ppl'), t:'Gi saken til Ingrid Berg', end:'' })}${mr({ lead:ic('block'), t:'Erklær deg inhabil', end:'', danger:true })}</div>`, actions:'<span class="bn">Lukk</span>' })}`,
+      phone({ label:'Mekling · lånet er avklart', time:'14:10', body:`${backbar('Saker')}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om sykkelhenger')}${roleStrip()}
+${handlingCard('mine', { mineH:'Lånet er avklart av partene', mineS:'Kari og Per har begge bekreftet returen på lånet. Neste steg er å lukke saken.', actions:`<span class="btn">${ic('check')}Lukk saken</span>${NB()}` })}
+${facts([['Lån', 'Sykkelhenger, 1.–4. okt.'], ['Status', 'Returnert, bekreftet av begge 10. okt.'], ['Parter', 'Kari · venter på ny runde<br>Per · venter på ny runde']])}
+${timeline([['09.12', 'Kari ba om mekling'], ['11.01', 'Tone delte forklaringene'], ['14.02', 'Partene bekreftet returen på lånet']])}
+<span class="q">Flere valg</span></div>${nav('hjem')}`,
+        cap:'Saken lukkes ikke av seg selv (PS-COM-022). Statusen kommer fra lånet, og «Lukk saken» er neste steg. I køen går den ikke foran saker som haster.' }),
+      phone({ label:'Flere valg', time:'15:31', body:`${backbar('Saker')}<div class="scr"></div>${sheet({ over:'Mekling om sykkelhenger', title:'Flere valg', body:`<div class="cd ol" style="padding:2px 4px;gap:0">${mr({ lead:ic('out'), t:'Legg saken tilbake i køen', end:'' })}${mr({ lead:ic('ppl'), t:'Gi saken til Ingrid Berg', end:'' })}${mr({ lead:ic('block'), t:'Erklær deg inhabil', end:'', danger:true })}</div>`, actions:'<span class="bn">Lukk</span>' })}`,
         cap:'Det sjeldne ligger samlet. «Gi saken til» viser bare dem som kan behandle den nå. Inhabilitet er signalrød, fordi den ikke kan angres.' }),
       `<div class="stack">
 ${note('Ingrid har saken', `<span class="s" style="color:#1E2733">Tone ser saken og innleggene, men ingen behandlingshandlinger. Kortet sier «Ingrid Berg har saken». Under «Flere valg» kan hun bare erklære seg inhabil.</span>`)}
@@ -756,64 +770,70 @@ ${note('Lukkede saker', '<span class="s" style="color:#1E2733">Fanen «Lukkede»
 
   { h:'Rapport og tiltak', s:'Ingrid Berg behandler Karis rapport om gassflasken i Borettslaget Lia. Et tiltak gjelder det rapporten handler om, har en begrunnelse og virker bare i miljøet (PS-TRUST-013, -016, PS-OBJ-017).',
     items:[
-      phone({ num:'22', label:'Rapporten · velg tiltak', time:'16:00', body:`${backbar('Saker')}<div class="scr" style="gap:10px">${caseHead('report', 'Rapport om «Gassflaske 11 kg»')}${roleStrip()}
+      phone({ label:'Rapporten · velg tiltak', time:'16:00', body:`${backbar('Saker')}<div class="scr" style="gap:10px">${caseHead('report', 'Rapport om «Gassflaske 11 kg»')}${roleStrip()}
 ${handlingCard('mine', { mineS:'Vurder om publiseringen skal avvises eller sperres i miljøet. Saken kan også lukkes uten tiltak.' })}
 ${facts([['Gjelder', 'Gassflaske 11 kg, publisert av Jonas Vik'], ['Meldt av', 'Kari Nordmann'], ['Åpnet', 'fre. 9. okt. 15.20']])}
 ${entries([{ by:'kari', cap:'party', aud:'parties', body:'Flasken er fylt med propan. Slike kan ikke lånes ut gjennom Lånbort.', at:'15.20' }], { as:'handler', me:'ingrid' })}
 ${sec('Tiltak i miljøet')}<div class="stack" role="radiogroup" style="gap:8px">${option(false, 'Avvis publiseringen', 'Tingen vises ikke i Borettslaget Lia. Eieren kan publisere den på nytt.')}${option(true, 'Sperr publiseringen', 'Tingen kan ikke publiseres i Borettslaget Lia igjen før en administrator opphever sperren.')}</div>
-${field('Begrunnelse', 'Fylt gassflaske står på listen over det som ikke kan lånes ut.')}<span class="hint">Lagres med tiltaket og vises bare for administratorene.</span>
+${field('Begrunnelse', 'Fylt gassflaske står på listen over det som ikke kan lånes ut.')}<span class="hint">Lagres med tiltaket. Jonas får den i varselet om tiltaket, uten at rapporten eller den som meldte den, nevnes.</span>
 <span class="btn">Sperr publiseringen i ${ENV}</span>
 <span class="q">Flere valg</span></div>${nav('hjem')}`,
         cap:'Tiltakene som passer for en ting i miljøet, og ingen andre. Knappen navngir tiltaket og stedet (UX-INT-003). Lån som allerede er godkjent, går som før.' }),
-      phone({ num:'23', label:'Send videre til Lånbort?', time:'16:02', body:`${backbar('Saker')}<div class="scr"></div>${sheet({ over:'Rapport om «Gassflaske 11 kg»', title:'Sende rapporten videre til Lånbort?', rows:[
-        ['doc', BLUE, 'Rapporten her fortsetter som før, og tiltak i miljøet gjelder fortsatt bare her.'],
-        ['up', GREY, 'Lånbort får en egen rapport om samme ting, med det du skriver. Du står som den som meldte den.']],
-        body:`${field('Hva Lånbort bør vite', 'Ulovlig å låne ut. Bør sperres overalt.')}<div class="row" style="gap:8px">${OD(42)}<span class="s2">Lånbort behandler ikke rapporter i appen ennå.</span></div>`,
-        actions:'<span class="btn">Send til Lånbort</span><span class="bn">Avbryt</span>' })}`,
-        cap:'For det som gjelder hele Lånbort, som ulovlige ting. Et lokalt tiltak får aldri global virkning uten en egen vurdering (PS-TRUST-016). Ligger under «Flere valg».' }),
-      phone({ num:'24', label:'Etter tiltaket', time:'16:05', body:`${backbar('Saker')}<div class="scr" style="gap:10px">${caseHead('report', 'Rapport om «Gassflaske 11 kg»')}${roleStrip()}
+      phone({ label:'Flere valg på rapporten', time:'16:02', body:`${backbar('Saker')}<div class="scr"></div>${sheet({ over:'Rapport om «Gassflaske 11 kg»', title:'Flere valg', body:`<div class="cd ol" style="padding:2px 4px;gap:0">${mr({ lead:ic('out'), t:'Legg saken tilbake i køen', end:'' })}<div aria-disabled="true" style="opacity:.62">${mr({ lead:ic('up'), t:'Send videre til Lånbort', s:'Ikke tilgjengelig ennå. Lånbort kan ikke ta imot rapporter i appen ennå.', end:'' })}</div>${mr({ lead:ic('block'), t:'Erklær deg inhabil', end:'', danger:true })}</div>${NB()}`, actions:'<span class="bn">Lukk</span>' })}`,
+        cap:'Å sende videre til Lånbort tilbys ikke før forvalterne kan behandle saker (UX-EXC-011). Raden er nedtonet og sier hvorfor, så ingen tror at noe er sendt. Et lokalt tiltak får aldri global virkning uten en egen vurdering (PS-TRUST-016).' }),
+      phone({ label:'Etter tiltaket', time:'16:05', body:`${backbar('Saker')}<div class="scr" style="gap:10px">${caseHead('report', 'Rapport om «Gassflaske 11 kg»')}${roleStrip()}
 ${handlingCard('mine', { flash:'Publiseringen er sperret i Borettslaget Lia.', mineS:'Skriv gjerne til Kari før du lukker saken.' })}
 ${sec('Tiltak')}<div class="cd" style="padding:14px 16px;gap:4px"><span class="t2">Sperr publiseringen i miljøet</span><span class="s2">Ingrid Berg · fre. 9. okt. 16.05</span><span class="s" style="color:#1E2733">Fylt gassflaske står på listen over det som ikke kan lånes ut.</span></div>
 ${timeline([['15.20', 'Kari Nordmann rapporterte'], ['15.58', 'Ingrid tok saken'], ['16.05', 'Ingrid sperret publiseringen i miljøet']])}</div>${nav('hjem')}`,
-        cap:'Tiltaket viser hva, omfang, begrunnelse, hvem og når (PS-TRUST-016). Kari får ikke vite hvilket tiltak som ble gjort (se OD-0038).' }),
+        cap:'Tiltaket viser hva, omfang, begrunnelse, hvem og når (PS-TRUST-016). Kari får ikke vite hvilket tiltak som ble gjort (PS-COM-020).' }),
+      phone({ label:'Jonas · varselet om tiltaket', time:'16:06', body:`${backbar('Varsler')}<div class="scr" style="gap:12px">${objHead('TING', 'Gassflaske 11 kg', 'Din ting')}
+<div class="cd" role="status">${pill('p-dg', 'block', `Sperret i ${ENV}`)}<span class="hq now">Publiseringen er sperret i ${ENV}</span><span class="s">Tingen kan ikke publiseres i ${ENV} igjen før en administrator opphever sperren. Andre steder gjelder den ikke, og lån som allerede er godkjent, går som før.</span>
+<span class="s2" style="color:#1E2733"><b>Begrunnelse:</b> Fylt gassflaske står på listen over det som ikke kan lånes ut.</span>
+<span class="bn">Be om ny vurdering</span>${NB()}</div></div>${nav('ting')}`,
+        cap:'Påkrevd varsel med tiltaket, hvor det virker, en kort begrunnelse og en vei til ny vurdering, som åpner «Kontakt administratorene» i miljøet (PS-TRUST-018). Ingenting sier at det fantes en rapport eller hvem som meldte den.' }),
       `<div class="stack">
-${note('Det Jonas ser', `<div class="row" style="gap:8px">${OD(39)}</div><span class="s" style="color:#1E2733">I dag: på tingens side står publiseringen i Borettslaget Lia som «Sperret», uten varsel og uten grunn. Han får aldri vite at det fantes en rapport eller hvem som meldte den.</span>`)}
-${note('Rapport om en person', '<span class="s" style="color:#1E2733">Har ingen tiltak i miljøet. Administratoren kan skrive til den som rapporterte, sende rapporten videre til Lånbort eller lukke saken. Å fjerne et aktivt medlem venter på OD-0025.</span>')}
+${note('Rapport om en person', '<span class="s" style="color:#1E2733">Har ingen tiltak i miljøet. Administratoren kan skrive til den som rapporterte eller lukke saken. Å sende den videre til Lånbort tilbys ikke ennå. Å fjerne et aktivt medlem venter på OD-0025.</span>')}
 ${note('Rapport om en anmeldelse', '<span class="s" style="color:#1E2733">Behandles bare av Lånbort: fjerne hele anmeldelsen, bare teksten, én vurdering eller et tilsvar (PS-TRUST-014–015). Vises ikke før OD-0023.</span>')}
 </div>`
     ] },
 
   { h:'Habilitet og manglende behandlingsevne', s:'Tone har lånt ut stigen sin til Ola via Borettslaget Lia, og returen er uavklart. Hun er part og kan ikke behandle meklingen (PS-USR-009). I dette eksempelet er hun eneste administrator, slik det kan være i et lite miljø, så ingen kan behandle saken.',
     items:[
-      phone({ num:'25', label:'Ola · ingen kan behandle', time:'12:00', body:`${backbar('Stige fra Tone')}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om stige')}
+      phone({ label:'Ola · ingen kan behandle', time:'12:00', body:`${backbar('Stige fra Tone')}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om stige')}
 ${handlingCard('unavailable', { turn:'Du har skrevet forklaringen din.' })}
 ${entries([{ by:'ola', cap:'party', aud:'parties', body:'Jeg leverte stigen i garasjen til Tone fredag kveld.', at:'11.50' }], { as:'party', me:'ola', other:'tone', separate:true })}
 <span class="q">Gå til lånet</span></div>${nav('lan')}`,
         cap:'Ærlig om at ingen kan behandle saken, uten en knapp til Lånbort (UX-EXC-009). Saken ligger til en habil administrator finnes. Lånet går videre etter det partene registrerer.' }),
-      phone({ num:'26', label:'Tone · som part i sin egen sak', time:'12:05', body:`${backbar('Stige til Ola')}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om stige')}
+      phone({ label:'Tone · som part i sin egen sak', time:'12:05', body:`${backbar('Stige til Ola')}<div class="scr" style="gap:10px">${caseHead('mediation', 'Mekling om stige')}
 ${handlingCard('unavailable', { turn:'Skriv din forklaring. Du ser ikke Olas før administratoren deler dem.' })}
 ${compose({ label:'Din forklaring', ph:'Hva skjedde?', submit:'Send forklaringen' })}</div>${nav('lan')}`,
         cap:'Ingen rollestripe og ingen behandlingshandlinger: Tone ser saken bare som part, fra lånet (UX-PRIV-006). Den står ikke i køen hennes.' }),
-      phone({ num:'27', label:'Erklære seg inhabil', time:'09:40', body:`${backbar('Saker')}<div class="scr"></div>${liveSheets.recuse()}`,
+      phone({ label:'Erklære seg inhabil', time:'09:40', body:`${backbar('Saker')}<div class="scr"></div>${liveSheets.recuse()}`,
         cap:'Tilbake i sykkelhengersaken, der Ingrid også er administrator. For når systemet ikke ser at Tone er involvert, for eksempel når hun kjenner en av partene godt. Er hun part eller rapportert, er hun utelukket av seg selv.' }),
       `<div class="stack">
-${note('Ingen kan behandle en henvendelse', '<span class="s" style="color:#1E2733">Samme kort som i 25, med «Det finnes ingen i Borettslaget Lia som kan ta saken akkurat nå.» Hjem viser den under «Uavklart» for den som venter.</span>')}
-${note('Rapporten gjelder en administrator', '<span class="s" style="color:#1E2733">Den rapporterte administratoren ser ikke rapporten i køen. Er alle administratorene involvert, står den på vent som i 25. Melderen kan velge Lånbort i stedet når det passer.</span>')}
+${note('Ingen kan behandle en henvendelse', '<span class="s" style="color:#1E2733">Samme kort som hos Ola, med «Det finnes ingen i Borettslaget Lia som kan ta saken akkurat nå.» Hjem viser den under «Uavklart» for den som venter.</span>')}
+${note('Rapporten gjelder en administrator', '<span class="s" style="color:#1E2733">Den rapporterte administratoren ser ikke rapporten i køen. Er alle administratorene involvert, står den på vent som Olas sak over. Rapport til Lånbort er ikke tilgjengelig ennå (UX-EXC-011).</span>')}
 </div>`
     ] },
 
   { h:'Egne saker i Konto', s:'Konto › Saker samler sakene du er part i eller har åpnet. Den er en inngang til de samme sidene, ikke en egen innboks (PS-COM-001).',
     items:[
-      phone({ num:'28', label:'Konto › Saker', time:'19:00', body:`${backbar('Konto', { close:true })}<div class="scr" style="gap:10px">
+      phone({ label:'Konto › Saker', time:'19:00', body:`${backbar('Konto', { close:true })}<div class="scr" style="gap:10px">
 <span class="hq" style="font-size:26px;padding:0 4px">Saker</span>
-${sec('Åpne · 3')}<div class="cd" style="padding:2px 4px;gap:0">${mr({ lead:tic('scale'), t:'Mekling om sykkelhenger', s:'En administrator har saken · Borettslaget Lia', end:`<span class="pill p-me">${ic('target')}Din tur</span>${chev}` })}${mr({ lead:tic('flag'), t:'Rapport om Mats Dahl', s:'Venter på at administratorene tar saken' })}${mr({ lead:tic('flag'), t:'Rapport om en anmeldelse', s:'Venter på at Lånbort tar saken' })}</div>
+${sec('Åpne · 3')}<div class="cd" style="padding:2px 4px;gap:0">${mr({ lead:tic('scale'), t:'Mekling om sykkelhenger', s:'En administrator har saken · Borettslaget Lia', end:`<span class="pill p-me">${ic('target')}Din tur</span>${chev}` })}${mr({ lead:tic('flag'), t:'Rapport om Mats Dahl', s:'Venter på at administratorene tar saken' })}${mr({ lead:tic('sam'), t:'Henvendelse til administratorene', s:'En administrator har saken · Borettslaget Lia' })}</div>
 ${sec('Lukkede')}<div class="cd" style="padding:2px 4px;gap:0">${mr({ lead:tic('flag', 'n'), t:'Rapport om «Gassflaske 11 kg»', s:'Lukket lør. 10. okt.' })}${mr({ lead:tic('sam', 'n'), t:'Kontakt med administratorene', s:'Lukket 2. okt.' })}</div></div>`,
         cap:'Konto er et fullskjerms lag (UX-IA-020). «Din tur» er samme oppgave som på Hjem, ikke en ny. Rapporter om deg står aldri her.' }),
-      phone({ num:'29', label:'Lukket rapport, sett fra Kari', time:'19:01', body:`${backbar('Saker', { close:true })}<div class="scr" style="gap:10px">${caseHead('report', 'Rapport om «Gassflaske 11 kg»')}
+      phone({ label:'Lukket rapport, sett fra Kari', time:'19:01', body:`${backbar('Saker', { close:true })}<div class="scr" style="gap:10px">${caseHead('report', 'Rapport om «Gassflaske 11 kg»')}
 ${handlingCard('closed', { closedS:'Alt som er skrevet, blir stående.' })}
-${entries([{ by:'kari', cap:'party', aud:'parties', body:'Flasken er fylt med propan. Slike kan ikke lånes ut gjennom Lånbort.', at:'fre. 15.20' }, { by:'ingrid', cap:'handler', aud:'parties', body:'Takk for at du sa fra. Vi har sett på rapporten og gjort det vi mener er riktig i miljøet.', at:'lør. 10.02' }], { as:'party', me:'kari', fn:ADM })}
-<div class="row" style="gap:8px;padding:0 4px">${OD(38)}<span class="s2">I dag får Kari bare det administratoren valgte å skrive.</span></div></div>`,
-        cap:'Melderen får ikke vite hvilket tiltak som ble gjort mot en annen. Om lukkingen skal kreve en avslutningsmelding, er OD-0038.' }),
+${entries([{ by:'kari', cap:'party', aud:'parties', body:'Flasken er fylt med propan. Slike kan ikke lånes ut gjennom Lånbort.', at:'fre. 15.20' }, { by:'ingrid', cap:'handler', aud:'parties', closing:true, body:'Takk for at du sa fra. Vi har vurdert rapporten, og saken er avsluttet. Vi kan ikke si noe om hva som er gjort overfor andre.', at:'lør. 10.02' }], { as:'party', me:'kari', fn:ADM })}
+<span style="padding:0 4px">${NB()}</span></div>`,
+        cap:'Avslutningsmeldingen er sakens siste innlegg (PS-COM-020). Den sier at saken er avsluttet, men ikke hvilket tiltak som ble gjort mot en annen eller hvem som meldte den.' }),
+      phone({ label:'Trekke rapporten?', time:'19:05', body:`${backbar('Saker', { close:true })}<div class="scr"></div>${sheet({ over:'Rapport om Mats Dahl', title:'Trekke rapporten?', rows:[
+        ['doc', BLUE, 'Det du har skrevet, blir stående i saken og slettes ikke.'],
+        ['shield', GREY, 'Administratorene kan likevel fullføre vurderingen og gjøre tiltak hvis det trengs.'],
+        ['bell', GREY, 'Administratorene får beskjed om at du har trukket rapporten.']],
+        body:NB(), actions:'<span class="btn">Trekk rapporten</span><span class="bn">Avbryt</span>' })}`,
+        cap:'Ligger under «Flere valg» på rapporten. Arket sier rett ut at trekking ikke sletter noe og ikke stanser en nødvendig vurdering (PS-COM-021). En henvendelse avsluttes uten et slikt ark, og en mekling kan ikke lukkes av én part.' }),
       `<div class="stack">
 ${note('Ingen saker', '<span class="s" style="color:#1E2733">«Du har ingen saker.» Raden «Saker» på Konto står likevel, så den er lett å finne.</span>')}
 ${note('Kontoen er deaktivert', '<span class="s" style="color:#1E2733">Saker du er part i, kan fortsatt leses og avsluttes. Nye saker kan ikke åpnes før kontoen er tatt i bruk igjen.</span>')}
@@ -823,7 +843,7 @@ ${note('Kontoen er deaktivert', '<span class="s" style="color:#1E2733">Saker du 
   { h:'Lånbort som saksbehandler', s:'Plattformforvalterne behandler rapporter til Lånbort og rapporter som administratorer har sendt videre. Handlingene deres krever WebAuthn, som ikke er bygget før OD-0023 er avgjort. Derfor er det ingen skjermer for dem her.',
     items:[
       `<div class="stack" style="flex-direction:row;flex-wrap:wrap;gap:18px">
-${note('Det brukeren ser i dag', `<span class="s" style="color:#1E2733">Rapporten kan sendes, og saken står som «Venter på at Lånbort tar saken».</span><div class="row" style="gap:8px">${OD(42)}</div><span class="s2">Anbefaling: si ærlig at Lånbort ikke behandler rapporter i appen ennå.</span>`)}
+${note('Til forvalterne kan behandle saker', `<span class="s" style="color:#1E2733">Ingen aktiv rapport til Lånbort. Skjemaene sier at det ikke er tilgjengelig ennå, og tilbyr administratorene i miljøet der de har mandat (UX-EXC-011). Ingen kontaktadresse og ingen lovnad om oppfølging.</span><span class="s2">Appen tar i dag imot slike rapporter; det endres i brukerflaten, mens data og tilgangsregler på serveren er uendret. Før piloten åpnes, må sikkerhetskritiske meldinger ha en reell, betjent kanal.</span>${NB()}`)}
 ${note('Når forvalterflaten designes (fase 7)', '<span class="s" style="color:#1E2733">Samme sakside, kø og tiltaksmønster som for administratorene, med rollestripen «Du behandler for Lånbort», habilitet som her, og tiltakene sperre en ting overalt og fjerne en anmeldelse, teksten, én vurdering eller et tilsvar.</span><span class="s2">Inngrep på kontoer og miljøer venter på OD-0026.</span>')}
 ${note('Melding om mulig dødsfall', '<span class="s" style="color:#1E2733">En egen, fortrolig sak hos Lånbort. Har ingen UI-pakke ennå, og representanttilgang finnes ikke i piloten (OD-0003).</span>')}
 </div>`
@@ -850,7 +870,7 @@ ${timeline([['09.12', 'Kari ba om mekling'], ['10.32', 'Tone tok saken'], ['11.0
 }
 
 function renderSections() {
-  document.getElementById('uqs').innerHTML = DECISIONS.map(([n, q, t]) => `<div class="uq">${OD(n)}<span><b>${q}</b> ${t}</span></div>`).join('');
+  document.getElementById('uqs').innerHTML = DECISIONS.map(([id, q, t, built]) => `<div class="uq">${BS(id)}<span><b>${q}</b> ${t}${built ? '' : ` ${NB()}`}</span></div>`).join('');
   document.getElementById('sections').innerHTML = S_SECTIONS.map(x => `<section style="display:flex;flex-direction:column;gap:16px"><div class="gh"><span class="hq" style="font-size:24px">${x.h}</span><span class="s">${x.s}</span></div><div class="lane">${x.items.join('')}</div></section>`).join('')
     + `<section style="display:flex;flex-direction:column;gap:16px"><div class="gh"><span class="hq" style="font-size:24px">Større skjerm</span><span class="s">Samme innhold og regler. Innleggene får bred kolonne til venstre, og status, fakta og behandling står samlet til høyre. Brødsmulene er stabelen. Lese- og tastaturrekkefølgen er den samme som på mobil.</span></div><div class="dkw">${desktop()}</div></section>`;
 }

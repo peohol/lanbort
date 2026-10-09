@@ -178,6 +178,14 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 
 **Avhenger av:** WP-80.
 
+**Gjenstår etter beslutningene 9. oktober 2026** (designreferanse: [Rapportering, saker og konfliktløsning v1](../../design/L%C3%A5nbort%20-%20Rapportering%2C%20saker%20og%20konfliktl%C3%B8sning%20v1.html)). Bygges i det vertikale sporet, ikke i designarbeidet:
+
+- **Avslutningsmelding (PS-COM-020).** «Lukk saken» i rapporter og meklinger krever en kort melding til partene, som blir sakens siste innlegg. Den skal ikke røpe vurderinger, tiltak mot andre, andres beskyttede opplysninger eller hvem som rapporterte. Lukking tar i dag ingen melding.
+- **Varsel til den et tiltak rammer (PS-TRUST-018).** Et påkrevd varsel til eieren eller forfatteren med tiltaket, hvor det virker, en kort begrunnelse og en vei til ny vurdering: «Kontakt administratorene» for et lokalt tiltak, Lånbort for et plattformtiltak. Det skal ikke røpe rapporten, melderen eller saksinnhold. Tiltak gir i dag ingen varsel. Tester: varselet går ut for hvert tiltak, og verken varselet eller lesemodellen røper rapporten eller melderen.
+- **Trekke en sak (PS-COM-021).** Den som tok kontakt, kan avslutte henvendelsen. Den som rapporterte, kan trekke rapporten; det registreres i saken, og behandleren får beskjed, men innsendte opplysninger slettes ikke, og en autorisert behandler kan videreføre vurderingen og et tiltak. En part kan ikke lukke en mekling. Finnes ikke i dag; negativ test for at en part ikke kan lukke en mekling.
+- **Mekling når lånet er avklart (PS-COM-022).** Saken viser lånets status og «Lånet er avklart av partene», og behandleren får «Lukk saken» som neste steg. Køen sorterer den ikke foran tidskritiske saker. Appen lukker allerede ikke automatisk; visningen finnes ikke.
+- **Ingen aktiv rapport til Lånbort (UX-EXC-011).** Rapportskjemaene og «Send videre til Lånbort» tilbys i dag. Til plattformforvalterne kan behandle saker (OD-0023), skal brukerflaten vise at rapportering til Lånbort ikke er tilgjengelig ennå, og tilby miljøets administratorer der de har mandat. Data og tilgangsregler på serveren endres ikke av dette. Før piloten åpnes, må sikkerhetskritiske meldinger ha en reell, betjent kanal.
+
 ## WP-89 — Eiere på tingene i et miljø
 
 **Leverer:** Eierens navn på tingene i et miljø, slik at medlemmer ser hvem de låner av og kan nå personen (PS-ENV-015, OD-0024).
