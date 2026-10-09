@@ -202,7 +202,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0034 — Hva en medeier som ikke er part, ser av et lån
 - **Lag:** UX
 - **Status:** Avklart (produkteier, 9. oktober 2026)
-- **Beslutning:** Se [UX-PRIV-013](ux/05-kontekst-roller-og-personvern.md) og [UX-JRN-011](ux/02-sentrale-brukerreiser.md). Avgrenset innsyn for medeiere i eierkretsen ved godkjenning eller spurt om ansvaret, håndhevet på serveren. Ikke bygget; i dag kan bare partene åpne lånet.
+- **Beslutning:** Se [UX-PRIV-013](ux/05-kontekst-roller-og-personvern.md) og [UX-JRN-011](ux/02-sentrale-brukerreiser.md). Avgrenset innsyn for medeiere i eierkretsen ved godkjenning eller spurt om ansvaret, håndhevet på serveren. Bygget 9. oktober 2026 (#94 og lånets side).
 
 ### OD-0035 — Tilsvar på en anmeldelse uten tekst
 - **Lag:** Produktspesifikasjon
