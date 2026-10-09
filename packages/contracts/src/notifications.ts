@@ -57,6 +57,7 @@ export const notificationKinds = {
   "loan.responsibility_declined": "action",
   "loan.responsibility_withdrawn": "action",
   "loan.condition_reported": "action",
+  "loan_review.published": "information",
   "social.friend_request": "action",
   "social.friend_request_accepted": "information",
   "environment.membership_invited": "action",
@@ -118,7 +119,9 @@ export const notificationKindSchema = z.enum(
  * handlers can open. An `object_subscription` target is the recipient's own
  * subscription, so opening it checks again that they still find the object.
  * A `chat_device` is one of the recipient's own chat devices, and a
- * `chat_conversation` one of their private conversations.
+ * `chat_conversation` one of their private conversations. A `loan_reviews`
+ * target is the reviews on the loan with that id, which only its parties can
+ * open (PS-TRUST-003).
  */
 export const notificationTargetTypes = [
   "loan",
@@ -131,6 +134,7 @@ export const notificationTargetTypes = [
   "object_subscription",
   "chat_device",
   "chat_conversation",
+  "loan_reviews",
 ] as const;
 export const notificationTargetTypeSchema = z.enum(notificationTargetTypes);
 

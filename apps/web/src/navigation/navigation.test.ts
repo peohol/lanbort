@@ -36,6 +36,9 @@ describe("where notifications and Home lead (UX-IA-002)", () => {
     );
     expect(hrefFor({ type: "user", id })).toBe(`/personer/${id}`);
     expect(hrefFor({ type: "environment", id })).toBe(`/miljoer/${id}`);
+    expect(hrefFor({ type: "loan_reviews", id })).toBe(
+      `/lan/${id}#anmeldelser`,
+    );
   });
 
   it("leads nowhere while no page shows the target", () => {

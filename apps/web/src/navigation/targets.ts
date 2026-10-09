@@ -44,6 +44,10 @@ const targetPages: Record<NotificationTargetType, Place | null> = {
     href: chatConversationHref,
     anchor: (id) => `samtale-${id}`,
   },
+  loan_reviews: {
+    href: (id) => `${loanHref(id)}#anmeldelser`,
+    anchor: (id) => `anmeldelser-${id}`,
+  },
 };
 
 export function hrefFor(target: NotificationTarget): string | null {
