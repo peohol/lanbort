@@ -202,7 +202,9 @@ export function arriveInLayer(
       layer,
       entries: samePlace(href, entry.href) ? [entry] : [{ href, label }, entry],
       forward: [],
-      under: how === "push" ? under : null,
+      // From outside there is nothing under it; back or forward into it
+      // still finds the screen it was opened over.
+      under: how === "direct" ? null : under,
     };
   }
 

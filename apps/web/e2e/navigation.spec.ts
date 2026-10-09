@@ -175,6 +175,38 @@ test("Konto is a layer with its own stack, and Lukk returns to exactly the scree
   expect(problems).toEqual([]);
 });
 
+test("a layer keeps the screen under it through the browser's history, and a reloaded one is replaced", async ({
+  page,
+}) => {
+  const problems = collectBrowserProblems(page);
+  await registerThroughApi(page.request, undefined, "Kari Nordmann");
+  const account = page.getByRole("dialog", { name: "Konto" });
+  const close = account.getByRole("button", { name: "Lukk Konto" });
+
+  await page.goto("/lan?side=borrower");
+  await page.getByRole("link", { name: /^Konto og innstillinger/ }).click();
+  await expect(account.getByRole("heading", { level: 1 })).toHaveText("Konto");
+  await close.click();
+  await expect(page).toHaveURL("/lan?side=borrower");
+
+  // Forward into the layer again: it still lies over the same screen.
+  await page.goForward();
+  await expect(account.getByRole("heading", { level: 1 })).toHaveText("Konto");
+  await close.click();
+  await expect(account).toHaveCount(0);
+  await expect(page).toHaveURL("/lan?side=borrower");
+
+  // Konto reached from outside is the page; what it opens takes its place
+  // instead of lying on top, and closes to Hjem.
+  await page.goto("/konto");
+  await page.getByRole("link", { name: /Venner/ }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Venner");
+  await expect(page.locator(".layer:visible")).toHaveCount(1);
+  await close.click();
+  await expect(page).toHaveURL("/");
+  expect(problems).toEqual([]);
+});
+
 test("Home asks for what waits, and leads to where it is answered", async ({
   page,
   playwright,

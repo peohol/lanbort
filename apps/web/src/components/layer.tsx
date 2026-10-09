@@ -63,6 +63,8 @@ export function Layer({
       if (
         event.key !== "Escape" ||
         event.defaultPrevented ||
+        // A layer covered by another (`globals.css`) leaves it to that one.
+        !panel.current?.checkVisibility() ||
         (event.target instanceof Element && event.target.closest("dialog"))
       ) {
         return;
@@ -137,7 +139,9 @@ export function Layer({
 
   return (
     <LayerContext value={layer}>
-      <div className="layer-backdrop" aria-hidden="true" onClick={close} />
+      {over && (
+        <div className="layer-backdrop" aria-hidden="true" onClick={close} />
+      )}
       <div
         ref={panel}
         className="layer"

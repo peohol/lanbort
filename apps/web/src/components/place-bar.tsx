@@ -19,6 +19,7 @@ import {
   enterLayerPlace,
   enterPlace,
   enterTask,
+  screenUnder,
   useLayerStack,
   useStack,
 } from "./navigation-stack";
@@ -40,7 +41,11 @@ function useOwnAddress() {
   const search = useSearchParams().toString();
   const address = `${pathname}${search ? `?${search}` : ""}`;
   const covered = layerOf(pathname) !== null;
-  const [own, setOwn] = useState(address);
+  // A page first shown under a layer, as after the browser's back into it,
+  // is the screen the layer lies over.
+  const [own, setOwn] = useState(() =>
+    covered ? (screenUnder()?.href ?? address) : address,
+  );
 
   if (!covered && own !== address) setOwn(address);
 
@@ -153,7 +158,8 @@ export function TaskBar({ from }: { from: Place }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    enterTask(from);
+    // Under a layer the form stays where it was.
+    if (layerOf(pathname) === null) enterTask(from);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, from.href]);
 

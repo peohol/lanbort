@@ -170,9 +170,10 @@ describe("a layer's own stack (UX-IA-020)", () => {
     expect(direct.under).toBeNull();
     expect(direct.entries).toEqual([account, friends]);
     expect(layerBackOf(direct, friends.href)).toEqual(account);
+    // Back or forward into it still knows the screen it lies over.
     expect(
       arriveInLayer(null, "account", friends, "history", under).under,
-    ).toBeNull();
+    ).toEqual(under);
   });
 
   it("opens people and own cases inside the account", () => {

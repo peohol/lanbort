@@ -49,10 +49,17 @@ interface State {
 const storageKey = "lanbort.navigation";
 
 let state: State = { stack: null, layer: null, outside: null };
-let next: { how: Arrival; via: DirectEntry | null } = {
+/**
+ * How the next page arrives. `seen` is set once the app has shown a new
+ * address; a value no page took by the address after that is stale, as
+ * after the browser's back to a page without a place (`trackAddress`).
+ */
+let next: { how: Arrival; via: DirectEntry | null; seen: boolean } = {
   how: "push",
   via: null,
+  seen: false,
 };
+const following = () => ({ how: "push" as const, via: null, seen: true });
 const listeners = new Set<() => void>();
 
 /** The Navigation API, where the browser has it: the history's entries. */
@@ -81,10 +88,11 @@ if (typeof window !== "undefined") {
         ? "history"
         : "direct",
     via: null,
+    seen: false,
   };
 
   window.addEventListener("popstate", () => {
-    next = { how: "history", via: null };
+    next = { how: "history", via: null, seen: false };
   });
 }
 
@@ -101,15 +109,33 @@ function set(change: Partial<State>) {
 /** How the page now arrived, which is then used up. */
 function take() {
   const arrival = next;
-  next = { how: "push", via: null };
+  next = following();
   return arrival;
 }
 
 const here = () => `${location.pathname}${location.search}`;
 
+/** The address now, unless it is in a layer: then the screen under it. */
+const outsideNow = () =>
+  layerOf(location.pathname) === null ? here() : state.outside;
+
+/**
+ * The app shows a new address (from the always present main navigation,
+ * before the page says where it is). Outside a layer it is what a layer
+ * opened now lies over, and reached by the browser's back or forward it
+ * ends any layer. How the previous address arrived is used up by now.
+ */
+export function trackAddress() {
+  if (next.seen) next = following();
+  next = { ...next, seen: true };
+
+  if (layerOf(location.pathname) !== null) return;
+  set({ outside: here(), ...(next.how === "history" && { layer: null }) });
+}
+
 /** The next page is a direct entry, such as a chosen notification. */
 export function expectDirectEntry(via: DirectEntry) {
-  next = { how: "direct", via };
+  next = { how: "direct", via, seen: false };
 }
 
 /** The user has arrived at a detail page. */
@@ -133,7 +159,7 @@ export function enterPlace(place: Place) {
 export function enterTask(from: Place) {
   const { how } = take();
   const fromLayer = state.layer !== null;
-  const change = { layer: null, outside: here() };
+  const change = { layer: null, outside: outsideNow() };
 
   if (how === "push" && state.stack !== null && !fromLayer) {
     set(change);
@@ -150,23 +176,39 @@ export function enterArea(area: AreaId) {
   set({
     stack: returnToArea(state.stack, area, how),
     layer: null,
-    outside: here(),
+    outside: outsideNow(),
   });
+}
+
+/**
+ * The screen a layer lies over: the nearest earlier entry in the browser's
+ * history that is not in a layer, so also after the browser's back or
+ * forward into the layer; where that history is not known, the last screen
+ * outside a layer.
+ */
+export function screenUnder(): LayerStack["under"] {
+  const history = browserHistory();
+  const current = history?.currentEntry?.index ?? null;
+
+  if (history && current !== null) {
+    const entries = history.entries();
+    for (let index = current - 1; index >= 0; index -= 1) {
+      const url = entries[index]?.url;
+      if (!url) break;
+      const { pathname, search } = new URL(url);
+      if (layerOf(pathname) === null) {
+        return { href: `${pathname}${search}`, index };
+      }
+    }
+  }
+
+  return state.outside ? { href: state.outside, index: null } : null;
 }
 
 /** The user has arrived at a page in a layer, such as Konto or Varsler. */
 export function enterLayerPlace(layer: LayerId, entry: StackEntry) {
   const { how } = take();
-  const index = browserHistory()?.currentEntry?.index ?? null;
-  const under = state.outside
-    ? {
-        href: state.outside,
-        // The screen under a layer is the entry before its first page.
-        index: index === null ? null : index - 1,
-      }
-    : null;
-
-  set({ layer: arriveInLayer(state.layer, layer, entry, how, under) });
+  set({ layer: arriveInLayer(state.layer, layer, entry, how, screenUnder()) });
 }
 
 /**
@@ -190,7 +232,7 @@ export function closeLayer(open: (href: string) => void) {
     }
   }
 
-  next = { how: "history", via: null };
+  next = { how: "history", via: null, seen: false };
   open(under?.href ?? homeHref);
 }
 

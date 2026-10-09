@@ -1055,6 +1055,12 @@ button:disabled,
   outline: none;
 }
 
+/* A layer opened from a layer reached from outside (a link in a reloaded
+   Konto) replaces it rather than lying on top of it. */
+body:has(> .layer) .app-shell .layer {
+  display: none;
+}
+
 /* Konto reached from outside is the page itself: nothing beside it, and
    nothing to skip past. */
 .app-shell:has(.layer)
