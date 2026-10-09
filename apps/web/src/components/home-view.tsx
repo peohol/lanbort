@@ -67,7 +67,7 @@ function Via({ item }: { item: HomeItem }) {
 function TaskCard({ item, today }: { item: HomeItem; today: string }) {
   const card = homeCard(item, today);
   const href = hrefOf(item);
-  const id = `oppgave-${item.target.id}`;
+  const id = `oppgave-${item.kind.replace(".", "-")}-${item.target.id}`;
 
   return (
     <article className={`card ${styles.card}`} aria-labelledby={id}>
