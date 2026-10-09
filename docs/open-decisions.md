@@ -51,7 +51,7 @@ Når spørsmålet er avgjort:
 
 ## Status før UI-arbeidet
 
-Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
+Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. Gjennomgangen av kjerneflyt 5 (samtaler og enheter) samme dag avdekket [OD-0043](#od-0043--varsler-om-nye-meldinger-i-privat-chat) og [OD-0044](#od-0044--når-gjenopprettingsnøkkelen-for-privat-chat-tilbys), som bare gjelder privat chat. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
 
 ## Åpne
 
@@ -191,6 +191,24 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Avhenger av:** Fase 7 i [planen for UI-designfasen](planning/ui-design-plan.md) og OD-0023.
 - **Avklares før:** plattformforvalterens flater designes og vises (etter OD-0023). Til da finnes ingen slik flate i appen.
 - **Anbefaling:** Start alle inngrep fra en sak i plattformkøen, slik at begrunnelse, habilitet og historikk følger saken (PS-TRUST-016, PS-ADM-014), og vis ingen forvalterhandlinger på ordinære person- og miljøsider.
+
+### OD-0043 — Varsler om nye meldinger i privat chat
+- **Lag:** Produktspesifikasjon / UX
+- **Status:** Åpen
+- **Berører:** PS-COM-003, PS-COM-004, PS-COM-007, [ADR-0010](architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md) punkt 12, OD-0004, [kjerneflyt 5](../design/README.md) (N1–N2)
+- **Spørsmål:** Skal en ny melding i privat chat eller lånelogistikk-kanalen gi varsel i bjellen, og skal det kunne gå på e-post? Hvilket varslingsnivå er det, står avsenderens navn i varselet i appen, og samles flere meldinger i én samtale til ett varsel? ADR-0010 sier bare at varselet ikke viser innhold. I dag gir nye meldinger ingen varsler. «Demp samtalen» i logistikk-kanalen (PS-COM-007) har derfor ingen virkning før dette er avgjort.
+- **Avhenger av:** Produktvurdering. Sending er ikke en domenehendelse (ADR-0010 punkt 12), så varselet trenger en egen kilde uten meldingsinnhold.
+- **Avklares før:** varsler for privat chat bygges. Blokkerer ikke annet, siden privat chat er av for ekte brukere til Port C.
+- **Anbefaling:** Informasjonsvarsel i appen, på som standard: ett varsel per samtale med avsenderens navn og antall nye meldinger, uten innhold eller lån, som regnes som lest når samtalen åpnes. E-post av som standard; slått på sier den bare «Du har en ny melding i Lånbort», uten navn. Én samtale kan dempes.
+
+### OD-0044 — Når gjenopprettingsnøkkelen for privat chat tilbys
+- **Lag:** UX
+- **Status:** Åpen
+- **Berører:** [ADR-0010](architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md) punkt 8, [Port C](implementation/quality-gates.md), [kjerneflyt 5](../design/README.md) (R1–R3)
+- **Spørsmål:** ADR-0010 vedtar gjenopprettingsnøkkelen som valgfri og sier at den tilbys brukeren, men ikke når eller hvor ofte. Skal den tilbys rett etter at privat chat er slått på, bare ligge i Mine enheter, eller også minnes om senere (for eksempel ved kobling av ny enhet eller etter en tid)?
+- **Avhenger av:** Produktvurdering av hvor mye brukeren skal oppfordres til å lage nøkkelen, mot hvor mye det forstyrrer.
+- **Avklares før:** gjenopprettingsnøkkelen bygges. Den er ikke bygget, og tilbakestilling er i dag eneste vei når alle enheter er borte.
+- **Anbefaling:** Tilby den én gang rett etter «Slå på privat chat», med «Ikke nå», og ha den varig i Mine enheter. Ingen påminnelser.
 
 ## Avklart
 
