@@ -16,15 +16,18 @@ import { expectDirectEntry } from "./navigation-stack";
 export function NotificationLink({
   href,
   notificationId,
+  className,
   children,
 }: {
   href: string;
   notificationId: string | null;
+  className?: string;
   children: ReactNode;
 }) {
   return (
     <Link
       href={href}
+      className={className}
       onClick={() => {
         expectDirectEntry("varsel");
         if (notificationId) {

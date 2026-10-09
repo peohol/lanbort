@@ -1,28 +1,25 @@
 import {
   collectPages,
   countUnreadNotifications,
-  listNotifications,
+  readNotificationCentre,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
-import { ActionButton } from "@/components/action-button";
-import { NotificationLink } from "@/components/notification-link";
+import Link from "next/link";
+import { accountHref } from "@/navigation/areas";
 import {
   morePagesHref,
   pagesShown,
   type SearchParams,
 } from "@/navigation/list-pages";
-import { hrefFor } from "@/navigation/targets";
-import { formatTime } from "@/presentation/dates";
-import {
-  notificationLevelLabels,
-  notificationText,
-} from "@/presentation/notifications";
 import { pageQuery, requirePageAccount } from "@/server/session";
+import { NotificationList } from "./notification-list";
+import styles from "./notifications.module.css";
 
 export const metadata: Metadata = { title: "Varsler – Lånbort" };
 
 const pagesKey = "sider";
 const listId = "varselliste";
+const preferencesHref = `${accountHref}#varslingsvalg`;
 
 /**
  * The notification centre (UX-IA-002, PS-COM-001): a layer opened from the
@@ -38,60 +35,30 @@ export default async function NotificationsPage({
   const params = await searchParams;
   const [{ items: notifications, nextCursor }, unread] = await Promise.all([
     collectPages(
-      (cursor) => pageQuery(listNotifications, { cursor }),
+      (cursor) => pageQuery(readNotificationCentre, { cursor }),
       (page) => page.notifications,
       pagesShown(params, pagesKey),
     ),
     pageQuery(countUnreadNotifications, {}),
   ]);
-  const newest = notifications[0];
 
   return (
-    <main>
+    <main className={styles.page}>
       <h1>Varsler</h1>
-      {newest && (unread?.unreadCount ?? 0) > 0 && (
-        <div className="actions">
-          <ActionButton
-            label="Merk alle som lest"
-            path="/api/notifications/read-all"
-            body={{ through: newest.id }}
-            idempotent={false}
-          />
-        </div>
-      )}
       {notifications.length === 0 ? (
-        <p className="quiet">Du har ingen varsler.</p>
+        <div className={styles.empty}>
+          <h2>Ingen varsler</h2>
+          <p>
+            Du får varsel når noe trenger deg, eller når noe endrer seg i lånene
+            og miljøene dine.
+          </p>
+        </div>
       ) : (
-        <ul className="entries" id={listId}>
-          {notifications.map((notification) => {
-            const text = notificationText(notification);
-            const href = hrefFor(notification.target);
-            const unread = notification.readAt === null;
-
-            return (
-              <li
-                key={notification.id}
-                className={unread ? "entry unread" : "entry"}
-              >
-                <span className="entry-detail">
-                  {unread && <strong>Ny · </strong>}
-                  {notificationLevelLabels[notification.level]} ·{" "}
-                  {formatTime(notification.occurredAt)}
-                </span>
-                {href ? (
-                  <NotificationLink
-                    href={href}
-                    notificationId={unread ? notification.id : null}
-                  >
-                    {text}
-                  </NotificationLink>
-                ) : (
-                  <span>{text}</span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <NotificationList
+          id={listId}
+          notifications={notifications}
+          unreadCount={unread?.unreadCount ?? 0}
+        />
       )}
       {nextCursor !== null && (
         <p className="link-row">
@@ -100,6 +67,9 @@ export default async function NotificationsPage({
           </a>
         </p>
       )}
+      <p className="link-row">
+        <Link href={preferencesHref}>Varslingsvalg</Link>
+      </p>
     </main>
   );
 }

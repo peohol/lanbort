@@ -25,6 +25,7 @@ export * from "./people";
 export * from "./social";
 export * from "./notifications";
 export * from "./home";
+export * from "./notification-centre";
 export * from "./cases";
 export * from "./subscriptions";
 export * from "./questions";

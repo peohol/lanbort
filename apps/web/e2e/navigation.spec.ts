@@ -257,11 +257,34 @@ test("the indicator counts unread notifications until they are read", async ({
   await page.goto("/");
 
   await page.getByRole("link", { name: "Varsler, 1 uleste" }).click();
-  await expect(page.getByText("Du har fått en venneforespørsel")).toBeVisible();
-  await page.getByRole("button", { name: "Merk alle som lest" }).click();
+  await expect(
+    page
+      .getByRole("region", { name: "Uleste · 1" })
+      .getByRole("link", { name: /Bo Dahl vil bli venn med deg/ }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Marker alle som lest" }).click();
   await expect(
     page.getByRole("link", { name: "Varsler, ingen uleste" }),
   ).toBeVisible();
+  // Read is not handled: the notification stays, among the earlier ones,
+  // and says the task still waits on Home (UX-IA-019).
+  await expect(
+    page
+      .getByRole("region", { name: "Tidligere" })
+      .getByRole("link", { name: /Bo Dahl vil bli venn med deg/ }),
+  ).toContainText("oppgaven står på Hjem");
+});
+
+test("an empty notification centre says what will come, and leads to the choices", async ({
+  page,
+}) => {
+  await registerThroughApi(page.request);
+  await page.goto("/varsler");
+  await expect(
+    page.getByRole("heading", { name: "Ingen varsler" }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Varslingsvalg" }).click();
+  await expect(page).toHaveURL(/\/konto#varslingsvalg$/);
 });
 
 test("Lån shows further pages of a list in place", async ({
