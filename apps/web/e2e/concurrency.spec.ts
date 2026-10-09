@@ -217,12 +217,10 @@ test("a double click on a loan's next step acts once", async ({
 
   await page.goto(`/lan/${loanId}`);
   const status = page.getByRole("region", { name: "Status" });
-  await status.getByRole("button", { name: "Stige er overlevert" }).dblclick();
-  await expect(status).toContainText("Du har lånt Stige av Anna Berg");
-  await status
-    .getByRole("button", { name: "Jeg har levert tilbake Stige" })
-    .dblclick();
-  await expect(status).toContainText("Du har bekreftet returen");
+  await status.getByRole("button", { name: "Jeg har fått Stige" }).dblclick();
+  await expect(status).toContainText("Stige er hos deg til");
+  await status.getByRole("button", { name: "Meld returnert" }).dblclick();
+  await expect(status).toContainText("Du har meldt Stige returnert");
 
   // One request per step, each with its key, and one statement each in the
   // history.

@@ -1,15 +1,41 @@
 "use client";
 
+import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
-import { chatLinkHref } from "@/navigation/chat";
+import { Icon } from "@/components/icon";
+import { SignOutButton } from "@/components/sign-out-button";
+import { chatLinkHref, chatResetHref } from "@/navigation/chat";
+import styles from "./chat.module.css";
+import { ChatIcon } from "./chat-icon";
 import { useChat } from "./chat-provider";
 import { EncryptionSheet } from "./encryption";
-import { ChatReset } from "./chat-reset";
 import { type ChatEngine, createChat } from "./engine";
 import { chatErrorMessage } from "./messages";
+import { Notice } from "./notice";
+import { Points } from "./points";
 
+/** The card a first step on a device stands in (05, 08). */
+function Intro({
+  icon,
+  title,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className={`card ${styles.intro}`} aria-label={title}>
+      <span className={styles.introIcon}>{icon}</span>
+      <h2>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+/** Slå på privat chat (05): one explanation, one button. */
 function StartChat() {
   const { userId, started } = useChat();
   const [busy, setBusy] = useState(false);
@@ -19,7 +45,7 @@ function StartChat() {
     setBusy(true);
     setError(null);
     try {
-      started(await createChat(userId, false));
+      started(await createChat(userId, false), "started");
     } catch (problem) {
       setBusy(false);
       setError(chatErrorMessage(problem));
@@ -27,18 +53,53 @@ function StartChat() {
   }
 
   return (
-    <>
-      <p>
-        Med privat chat kan du skrive med venner, og med folk du låner av eller
-        til, uten at noen andre kan lese det. Slå det på her, så blir denne
-        enheten den første som kan lese samtalene dine.
+    <Intro
+      icon={<Icon name="lock" />}
+      title="Skriv privat med dem du låner av og til"
+    >
+      <p className="quiet">
+        Meldingene er ende-til-ende-kryptert. Bare du og den du skriver med kan
+        lese dem. Lånbort kan ikke.
       </p>
-      <BusyButton type="button" busy={busy} onClick={() => void start()}>
+      <Points
+        points={[
+          {
+            icon: "device",
+            text: "Samtalene lagres på denne enheten. Andre enheter godkjenner du herfra, og de ser meldinger som sendes etter at de er koblet til.",
+          },
+          {
+            icon: "hidden",
+            text: "Ingen får vite om du har lest en melding.",
+          },
+        ]}
+      />
+      <BusyButton
+        type="button"
+        className="button-primary"
+        busy={busy}
+        onClick={() => void start()}
+      >
         Slå på privat chat
       </BusyButton>
       <ErrorText>{error}</ErrorText>
-      <EncryptionSheet />
-    </>
+      <div className={styles.centered}>
+        <EncryptionSheet />
+      </div>
+    </Intro>
+  );
+}
+
+/** For someone without another device with chat: the last way (17). */
+function NoOtherDevice() {
+  return (
+    <details className={styles.disclosure}>
+      <summary>Har du ingen annen enhet med privat chat?</summary>
+      <p>
+        Da kan du tilbakestille privat chat på denne enheten. Meldinger fra før
+        kan ikke leses her etterpå.
+      </p>
+      <Link href={chatResetHref}>Tilbakestill privat chat</Link>
+    </details>
   );
 }
 
@@ -66,7 +127,8 @@ export function ReadyChat({
   );
 }
 
-function Setup() {
+/** What the device needs before it can chat, or why it cannot yet. */
+export function Setup() {
   const { state, reload } = useChat();
 
   switch (state.status) {
@@ -74,59 +136,74 @@ function Setup() {
       return <p role="status">Henter privat chat …</p>;
     case "elsewhere":
       return (
-        <p>
-          Privat chat er allerede åpen i en annen fane eller et annet vindu i
-          denne nettleseren. Lukk den og last siden på nytt.
-        </p>
+        <Notice tag="Åpen i en annen fane" icon="info" role="status">
+          <p>
+            Privat chat er allerede åpen i en annen fane. Bruk den, eller lukk
+            den og prøv igjen her.
+          </p>
+          <button type="button" className="button-secondary" onClick={reload}>
+            Prøv igjen her
+          </button>
+        </Notice>
       );
     case "failed":
       return (
-        <>
-          <ErrorText>{chatErrorMessage(state.code)}</ErrorText>
-          <button type="button" onClick={reload}>
+        <Notice tag="Ikke åpnet" icon="info" role="alert">
+          <p>Vi fikk ikke åpnet privat chat. {chatErrorMessage(state.code)}</p>
+          <button type="button" className="button-secondary" onClick={reload}>
             Prøv igjen
           </button>
-        </>
+        </Notice>
       );
     case "new":
       return <StartChat />;
     case "link":
       return (
         <>
-          <p>
-            Du har privat chat på en annen enhet. Denne enheten må godkjennes
-            fra en av dem før den kan lese samtalene dine, og den ser bare det
-            som sendes etter det.
-          </p>
-          {/* A full page load: the link page has its own security headers. */}
-          <p className="link-row">
-            <a href={chatLinkHref}>Koble til denne enheten</a>
-          </p>
-          <ChatResetOffer />
+          <Intro
+            icon={<ChatIcon name="device" />}
+            title="Koble til denne enheten"
+          >
+            <p className="quiet">
+              Privat chat er på en annen enhet du har. For å lese og skrive her
+              godkjenner du denne enheten derfra.
+            </p>
+            <Points
+              points={[
+                {
+                  icon: "clock",
+                  text: "Denne enheten får meldinger som sendes etter at den er koblet til.",
+                },
+              ]}
+            />
+            {/* A full page load: the link page has its own security headers. */}
+            <a className="button button-primary" href={chatLinkHref}>
+              Koble til denne enheten
+            </a>
+          </Intro>
+          <NoOtherDevice />
         </>
       );
     case "lost":
       return (
         <>
-          <p>
-            Denne enheten har mistet nøklene til chatten, for eksempel fordi
-            nettleserdataene er slettet. Logg ut og inn igjen, og koble den til
-            fra en annen enhet du har chat på.
-          </p>
-          <ChatResetOffer />
+          <Notice
+            tag="Må kobles på nytt"
+            icon="info"
+            title="Privat chat er borte fra denne enheten"
+          >
+            <p className="quiet">
+              Det skjer for eksempel når nettleserdataene for Lånbort er
+              slettet. Logg ut og inn igjen, og koble til enheten på nytt fra en
+              annen enhet du har privat chat på. Meldinger som lå her, kan ikke
+              hentes tilbake hit.
+            </p>
+            <SignOutButton />
+          </Notice>
+          <NoOtherDevice />
         </>
       );
     case "ready":
       return null;
   }
-}
-
-/** For someone who has lost every device with chat. */
-function ChatResetOffer() {
-  return (
-    <details>
-      <summary>Jeg har ingen annen enhet med chat</summary>
-      <ChatReset />
-    </details>
-  );
 }

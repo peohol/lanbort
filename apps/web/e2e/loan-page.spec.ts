@@ -85,38 +85,46 @@ test("a borrower follows a loan from its page, and nobody else sees it", async (
   await page.goto("/lan");
   await page.getByRole("link", { name: "Stige" }).click();
   await expect(page).toHaveURL(`/lan/${loanId}`);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Stige");
-
-  // The status names the other party; the next step is the handover.
-  const status = page.getByRole("region", { name: "Status" });
-  await expect(status).toContainText("Avtalt: du låner Stige av Anna Berg");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Stige fra Anna Berg",
+  );
+  await expect(page.getByText("Direkte mellom venner")).toBeVisible();
   await expect(
-    page.getByRole("region", { name: "Avtalen" }).getByText("Anna Berg"),
+    page
+      .getByRole("list", { name: "Lånets steg" })
+      .locator('[aria-current="step"]'),
+  ).toHaveText("Reservert");
+
+  // The status says what today asks; the other party has a row of their own.
+  const status = page.getByRole("region", { name: "Status" });
+  await expect(status).toContainText("I dag henter du Stige");
+  await expect(
+    page
+      .getByRole("region", { name: "Ansvarlig utlåner" })
+      .getByText("Anna Berg"),
   ).toBeVisible();
 
-  // History is secondary: closed until asked for.
-  const history = page.getByRole("list", { name: "Historikk, nyeste først" });
+  // The timeline is secondary: closed until asked for.
+  const history = page.getByRole("list", { name: "Tidslinje, nyeste først" });
   await expect(history).toBeHidden();
 
-  await status.getByRole("button", { name: "Stige er overlevert" }).click();
-  await expect(status).toContainText("Du har lånt Stige av Anna Berg");
+  await status.getByRole("button", { name: "Jeg har fått Stige" }).click();
+  await expect(status).toContainText("Stige er hos deg til");
 
   // A return confirmation waits, and can be undone.
-  await status
-    .getByRole("button", { name: "Jeg har levert tilbake Stige" })
-    .click();
-  await expect(status).toContainText("Du har bekreftet returen");
-  await status.getByRole("button", { name: "Angre bekreftelsen" }).click();
-  await expect(status).toContainText("Du har lånt Stige av Anna Berg");
+  await status.getByRole("button", { name: "Meld returnert" }).click();
+  await expect(status).toContainText("Du har meldt Stige returnert");
+  await status.getByRole("button", { name: "Angre" }).click();
+  await expect(status).toContainText("Stige er hos deg til");
 
-  await page.getByText("Historikk", { exact: true }).click();
+  await page.getByText("Tidslinje", { exact: true }).click();
   await expect(history.getByRole("listitem")).toHaveText([
-    /^Stige ble lånt ut/,
-    /^Du sa at Stige ble overlevert/,
-    /^Anna Berg godkjente lånet/,
-    /^Anna Berg godtok ansvarserklæringen/,
-    /^Du godtok ansvarserklæringen/,
-    /^Du sendte forespørselen/,
+    /Stige ble lånt ut$/,
+    /Du sa at Stige ble overlevert$/,
+    /Anna Berg godkjente lånet$/,
+    /Anna Berg godtok ansvarserklæringen$/,
+    /Du godtok ansvarserklæringen$/,
+    /Du sendte forespørselen$/,
   ]);
 
   // The same timeline over the API, for the lender too.
@@ -179,9 +187,10 @@ test("a borrower changes, cancels and reviews a loan on its page (WP-87)", async
 
   await page.goto(`/lan/${loanId}`);
   const status = page.getByRole("region", { name: "Status" });
+  const moreActions = page.getByRole("group", { name: "Flere valg" });
   // «Flere valg» stays as the user left it when the page reads again.
   const more = async () => {
-    const details = status.locator("details.more-actions");
+    const details = page.locator("details.more-actions");
     if (!(await details.evaluate((element) => element.hasAttribute("open")))) {
       await details.getByText("Flere valg", { exact: true }).click();
     }
@@ -189,29 +198,31 @@ test("a borrower changes, cancels and reviews a loan on its page (WP-87)", async
 
   // A new return day is only a proposal until Anna accepts it.
   await more();
-  await status.getByText("Foreslå ny periode", { exact: true }).click();
-  await status.getByLabel("Leveres tilbake").fill(after(today(), 3));
-  await status.getByRole("button", { name: "Send forslaget" }).click();
-  await expect(status).toContainText(
-    "Venter på at Anna Berg svarer på forslaget om ny periode",
-  );
+  await moreActions.getByText("Foreslå ny periode", { exact: true }).click();
+  await moreActions.getByLabel("Leveres tilbake").fill(after(today(), 3));
+  await moreActions.getByRole("button", { name: "Send forslaget" }).click();
+  await expect(status).toContainText("Du har foreslått ny returdag");
+  await expect(status).toContainText("Venter på Anna Berg");
 
   await more();
-  await status
-    .getByRole("button", { name: "Trekk forslaget om ny periode" })
-    .click();
-  await expect(status).toContainText("Avtalt: du låner Stige av Anna Berg");
+  await moreActions.getByRole("button", { name: "Trekk forslaget" }).click();
+  await expect(status).toContainText("I dag henter du Stige");
 
   // Cancelling shows what it means first.
   await more();
-  await status.getByRole("button", { name: "Avlys lånet" }).click();
-  const dialog = page.getByRole("dialog", { name: "Avlyse lånet av Stige?" });
+  await moreActions.getByRole("button", { name: "Kanseller lånet" }).click();
+  const dialog = page.getByRole("dialog", { name: "Kansellere lånet?" });
   await expect(dialog).toContainText("Perioden blir ledig for andre lån.");
   await expect(dialog).toContainText(
-    "Anna Berg får beskjed om at du har avlyst.",
+    "Anna Berg får varsel om at du har kansellert.",
   );
-  await dialog.getByRole("button", { name: "Avlys lånet" }).click();
-  await expect(status).toContainText("Avlyst før overlevering av deg");
+  await dialog.getByRole("button", { name: "Kanseller lånet" }).click();
+  await expect(status).toContainText("Du kansellerte lånet");
+  await expect(
+    page
+      .getByRole("list", { name: "Lånets steg" })
+      .locator('[aria-current="step"]'),
+  ).toHaveText("Kansellert");
 
   // Only what could be assessed is asked, and the review stays hidden.
   const reviews = page.getByRole("region", { name: "Anmeldelser" });
@@ -226,7 +237,7 @@ test("a borrower changes, cancels and reviews a loan on its page (WP-87)", async
   expect(await axeViolations(page)).toEqual([]);
   await reviews.getByRole("button", { name: "Send anmeldelsen" }).click();
   await expect(
-    reviews.getByRole("article", { name: "Din anmeldelse" }),
+    reviews.getByRole("article", { name: "Din anmeldelse av Anna Berg" }),
   ).toContainText("4 av 5");
 
   // Once Anna has reviewed, both appear, and Bo answers once.

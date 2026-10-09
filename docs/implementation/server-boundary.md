@@ -119,6 +119,13 @@ Route Handler (route.user / route.public / route.scheduler)
 - Bare partene kan uttale seg. Vennskap, medlemskap og blokkering sjekkes ikke (PS-LOAN-002, PS-LOAN-021, scenario 81). Hendelsene (`loan.return_reported`, `loan.returned`, `loan.return_disputed`) har bare ID-er, versjoner og koder.
 - Administrativ uavklart avslutning og eiers bekreftelse av kontroll før nye lån (PS-LOAN-018–019) er beskrevet under WP-45. Varsler om returdag og om uenighet til andre godkjente lån: se «Varsler (WP-40)».
 
+## Skade, mangel og tap (PS-LOAN-023)
+
+- Hver part registrerer en konkret skade, mangel eller et tap med en kort faktabeskrivelse (`loan.report_condition`, `POST /api/loans/[loanId]/condition`). Motparten svarer én gang, uenig (`disagreement`) eller med sin forklaring (`explanation`), som et eget utsagn som peker på registreringen (`loan.answer_condition`, `POST /api/loans/[loanId]/condition/[reportId]/answer`). Ingenting overskrives: alt er uforanderlige rader i `app.loan_condition_reports`. Partene leser registreringer og svar med `loan.read_condition_reports` (`GET /api/loans/[loanId]/condition`), eldst først, med `answerable` og `mayReport`.
+- Registrering kan skje når tingen har vært hos låntakeren: `active`, `awaiting_return`, `late`, `return_disputed`, og etter avslutning som returnert eller administrativt uavklart, uten frist (`conditionReportable`, i databasen `app.loan_condition_reportable`). Ikke før overleveringen, under uenighet om overleveringen, eller etter et kansellert, stanset eller ikke gjennomført lån. Et svar kan gis så lenge registreringen ikke har svar, uansett lånets status.
+- Det er ingen lånestatus: registreringen endrer ikke lånet, hindrer ikke avslutning og påvirker ingen tillit. Bare partene nå kan registrere, svare og lese, også med inaktiv konto (`requireLoanStanding`); andre, medeiere inkludert, får `not_found`. Den som registrerte, får `forbidden` på å svare selv. Databasen sjekker part, side, lånets tilstand og at et svar gjelder motpartens registrering på samme lån.
+- Hendelsene `loan.condition_reported` og `loan.condition_answered` har bare ID-er, side og svarets art, aldri teksten, og vises i lånets tidslinje. Motparten får et handlingsvarsel (`loan.condition_reported`) når noe meldes, slik det godkjente designet for lånets side sier (KF7); svaret varsler ingen.
+
 ## Ansvarlig utlåner og minimumstilgang (WP-35)
 
 - Et lån har alltid én ansvarlig utlåner (`responsible_lender_id`). Rollen flyttes bare gjennom en overføring i `app.loan_lender_transfers` (append-only når den er avgjort), og databasen sjekker ved commit at ansvarlig utlåner er mottakeren av siste fullførte overføring, ellers godkjenneren. Rollen går aldri tilbake av seg selv.

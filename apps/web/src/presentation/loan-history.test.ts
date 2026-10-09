@@ -58,7 +58,7 @@ describe("the timeline in words (UX-INT-008)", () => {
     ).toBe("En medeier bekreftet å ha fått tilbake Tilhenger");
     expect(
       text({ event: "cancelled", actor: { ...kari, realName: null } }),
-    ).toBe("Tidligere bruker avlyste lånet");
+    ).toBe("Tidligere bruker kansellerte lånet");
     expect(
       text({
         event: "responsibility_proposed",
@@ -97,5 +97,25 @@ describe("the timeline in words (UX-INT-008)", () => {
         transfer: { kind: "voluntary", from: kari, to: { ...you } },
       }),
     ).toBe("Du ble ansvarlig utlåner");
+  });
+
+  it("tells damage reports and answers without what was written (PS-LOAN-023)", () => {
+    expect(
+      text({ event: "condition_reported", actor: you, side: "borrower" }),
+    ).toBe("Du meldte skade, mangel eller tap");
+    expect(
+      text({
+        event: "condition_answered",
+        side: "lender",
+        answerKind: "disagreement",
+      }),
+    ).toBe("Kari var uenig i meldingen om skade, mangel eller tap");
+    expect(
+      text({
+        event: "condition_answered",
+        side: "lender",
+        answerKind: "explanation",
+      }),
+    ).toBe("Kari la til en forklaring på meldingen om skade, mangel eller tap");
   });
 });

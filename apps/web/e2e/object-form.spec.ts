@@ -31,9 +31,7 @@ test("a thing is registered from an environment, with a photo, and published the
   ).json();
 
   await page.goto("/mine-ting");
-  await expect(
-    page.getByText("Du har ingen ting registrert ennå."),
-  ).toBeVisible();
+  await expect(page.getByText("Du har ingen ting ennå.")).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Registrer en ting" }),
   ).toHaveAttribute("href", "/ting/ny");

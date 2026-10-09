@@ -1,43 +1,20 @@
 "use client";
 
-import { Icon, type IconName } from "@/components/icon";
+import { Icon } from "@/components/icon";
 import styles from "./chat.module.css";
+import { type Point, Points } from "./points";
 import { Sheet } from "./sheet";
 
-const protects = [
+const protects: readonly Point[] = [
   "Lånbort, administratorene i miljøene eller noen som får tak i lagrede data, leser meldingene",
   "Noen som logger inn på kontoen din, leser meldinger fra før",
-];
+].map((text) => ({ icon: "check" as const, text }));
 
-const doesNotProtect = [
+const doesNotProtect: readonly Point[] = [
   "At den du skriver med, tar skjermbilde eller sender videre",
   "Skadelig programvare eller utvidelser i nettleseren din, eller at selve appen er blitt endret av noen",
   "At Lånbort ser hvem du skriver med og når, men ikke hva",
-];
-
-function Points({
-  heading,
-  icon,
-  points,
-}: {
-  heading: string;
-  icon: IconName;
-  points: readonly string[];
-}) {
-  return (
-    <>
-      <h3 className={styles.pointsHeading}>{heading}</h3>
-      <ul className={styles.points}>
-        {points.map((point) => (
-          <li key={point}>
-            <Icon name={icon} />
-            {point}
-          </li>
-        ))}
-      </ul>
-    </>
-  );
-}
+].map((text) => ({ icon: "info" as const, text }));
 
 /**
  * «Om krypteringen» (06): what the product may promise about encryption,
@@ -55,12 +32,8 @@ export function EncryptionSheet() {
           Meldinger i privat chat krypteres på enheten din og kan bare åpnes på
           enhetene til deg og den du skriver med.
         </p>
-        <Points heading="Beskytter mot at" icon="check" points={protects} />
-        <Points
-          heading="Beskytter ikke mot"
-          icon="info"
-          points={doesNotProtect}
-        />
+        <Points heading="Beskytter mot at" points={protects} />
+        <Points heading="Beskytter ikke mot" points={doesNotProtect} />
         <p className="quiet">
           Meldingen i en låneforespørsel er en del av forespørselen og er ikke
           ende-til-ende-kryptert. Ingen får vite om du har lest en melding.

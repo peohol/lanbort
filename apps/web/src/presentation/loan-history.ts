@@ -64,7 +64,7 @@ const texts: Record<
   responsibility_accepted: (entry) =>
     `${subject(entry.actor)} godtok ansvarserklæringen`,
   reserved: (entry) => `${subject(entry.actor)} godkjente lånet`,
-  cancelled: (entry) => `${subject(entry.actor)} avlyste lånet`,
+  cancelled: (entry) => `${subject(entry.actor)} kansellerte lånet`,
   stopped: () =>
     "Lånet ble stoppet før overleveringen på grunn av en plattformbegrensning",
   amendment_proposed: (entry) =>
@@ -124,6 +124,12 @@ const texts: Record<
   ended_unresolved: () => "Lånet ble avsluttet uten avklaring",
   control_confirmed: (entry, title) =>
     `${subject(entry.actor)} bekreftet å ha ${title} igjen`,
+  condition_reported: (entry) =>
+    `${speaker(entry)} meldte skade, mangel eller tap`,
+  condition_answered: (entry) =>
+    entry.answerKind === "disagreement"
+      ? `${speaker(entry)} var uenig i meldingen om skade, mangel eller tap`
+      : `${speaker(entry)} la til en forklaring på meldingen om skade, mangel eller tap`,
 };
 
 /** The entry in words, for the loan whose title is `title`. */

@@ -19,7 +19,7 @@ export const loanStatusLabels: Record<LoanStatus, string> = {
 };
 
 export const loanEndReasonLabels: Record<LoanEndReason, string> = {
-  cancelled: "Avlyst før overlevering",
+  cancelled: "Kansellert før overlevering",
   not_completed: "Ikke gjennomført",
   returned: "Levert tilbake",
   unresolved: "Avsluttet uten avklaring",

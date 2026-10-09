@@ -1,6 +1,8 @@
+import type { OwnObject } from "@lanbort/contracts";
 import {
   calendarDate,
   listCoOwnerInvitations,
+  listObjectPublications,
   listOwnObjects,
   takesNewActivity,
 } from "@lanbort/domain";
@@ -8,40 +10,93 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ActionButton } from "@/components/action-button";
 import { EmptyState } from "@/components/empty-state";
+import { Icon } from "@/components/icon";
 import { PageHeader } from "@/components/page-header";
 import { PilotObjectPolicy } from "@/components/pilot-object-policy";
 import { Tag } from "@/components/tag";
+import { ThingCard, ThingCards } from "@/components/thing-card";
 import { newObjectHref, objectHref } from "@/navigation/routes";
 import { anchorFor } from "@/navigation/targets";
+import { firstImageHref, ownImageHref } from "@/presentation/object-images";
+import { whereShown } from "@/presentation/object-owners";
 import { ownThingStatus } from "@/presentation/objects";
 import { pageQuery, requirePageAccount } from "@/server/session";
+import { whereShownLines } from "../ting/where-shown";
+import styles from "./mine-ting.module.css";
 
 export const metadata: Metadata = { title: "Mine ting – Lånbort" };
 
 /**
- * Mine ting (UX-IA-001): the things the user owns or co-owns, each with a
- * short status, invitations to co-own, and the way to register another.
+ * Mine ting (UX-IA-001, Tomat kjerneflyt 2): the things the user owns or
+ * co-owns, each with where it is shown and a short status, invitations to
+ * co-own, the way to register another as the area's one primary step, the
+ * archived ones apart, and the pilot's limit (PS-OBJ-019).
  */
 export default async function ThingsPage() {
   const account = await requirePageAccount();
+  const active = takesNewActivity(account.status);
   const [owned, invited] = await Promise.all([
     pageQuery(listOwnObjects, {}),
     pageQuery(listCoOwnerInvitations, {}),
   ]);
   const objects = owned?.objects ?? [];
   const invitations = invited?.invitations ?? [];
+  // Where each thing is shown is read through its own policy, which only an
+  // active account passes; others see the things without it.
+  const shown = new Map(
+    active
+      ? await Promise.all(
+          objects.map(
+            async ({ id }) =>
+              [
+                id,
+                await pageQuery(listObjectPublications, { objectId: id }),
+              ] as const,
+          ),
+        )
+      : [],
+  );
   const today = calendarDate(new Date());
+  const current = objects.filter(({ status }) => status !== "archived");
+  const archived = objects.filter(({ status }) => status === "archived");
   // Registering is new activity (PS-ADM-002).
-  const register = takesNewActivity(account.status) && (
-    <Link className="button button-primary" href={newObjectHref()}>
-      Registrer en ting
+  const register = active && (
+    <Link
+      className={`button button-primary ${styles.register}`}
+      href={newObjectHref()}
+    >
+      <Icon name="plus" /> Registrer en ting
     </Link>
   );
+
+  const card = (object: OwnObject) => {
+    const status = ownThingStatus(object, today);
+    const publications = shown.get(object.id);
+    const shared = object.owners.length > 1;
+
+    return (
+      <ThingCard
+        key={object.id}
+        href={objectHref(object.id)}
+        title={object.title}
+        image={firstImageHref(object.images, (imageId) =>
+          ownImageHref(object.id, imageId),
+        )}
+        details={[
+          ...(publications
+            ? whereShownLines(whereShown(publications), shared)
+            : []),
+          shared && `Dere er ${object.owners.length} eiere`,
+        ]}
+        status={<Tag tone={status.tone}>{status.label}</Tag>}
+      />
+    );
+  };
 
   return (
     <main>
       <PageHeader title="Mine ting" />
-      {register && <div className="actions">{register}</div>}
+      {register}
       {invitations.length > 0 && (
         <section aria-labelledby="invitasjoner">
           <h2 id="invitasjoner">Invitasjoner til medeierskap</h2>
@@ -65,7 +120,7 @@ export default async function ThingsPage() {
                   aria-labelledby={`tittel-${invitation.id}`}
                 >
                   {/* Becoming an owner is new; declining is not (PS-ADM-002). */}
-                  {takesNewActivity(account.status) && (
+                  {active && (
                     <ActionButton
                       label="Bli medeier"
                       path="/api/object-invitations/accept"
@@ -84,41 +139,30 @@ export default async function ThingsPage() {
         </section>
       )}
       <section aria-labelledby="ting">
-        <h2 id="ting">Dine ting</h2>
-        {objects.length === 0 ? (
+        <h2 id="ting">
+          Dine ting <span className="count">({current.length})</span>
+        </h2>
+        {current.length === 0 ? (
           <EmptyState>
-            Du har ingen ting registrert ennå. Registrer noe du kan låne ut, så
-            kan du velge hvem som får se det.
+            {archived.length === 0
+              ? "Du har ingen ting ennå. Registrer noe du kan låne bort. Du bestemmer selv hvem som kan se det."
+              : "Du har ingen ting ute nå. De arkiverte ligger under."}
           </EmptyState>
         ) : (
-          <ul className="entries">
-            {objects.map((object) => {
-              const status = ownThingStatus(object, today);
-
-              return (
-                <li key={object.id} className="entry">
-                  <strong>
-                    <Link href={objectHref(object.id)}>{object.title}</Link>
-                  </strong>
-                  <span className="tags">
-                    <Tag tone={status.tone}>{status.label}</Tag>
-                    {object.owners.length > 1 && (
-                      <span className="entry-detail">
-                        Dere er {object.owners.length} eiere
-                      </span>
-                    )}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+          <ThingCards>{current.map(card)}</ThingCards>
         )}
       </section>
+      {archived.length > 0 && (
+        <details className={styles.more}>
+          <summary>Arkiverte ting ({archived.length})</summary>
+          <ThingCards label="Arkiverte ting">{archived.map(card)}</ThingCards>
+        </details>
+      )}
       {/* PS-OBJ-019: the pilot's limit, where things are managed. */}
-      <section aria-labelledby="pilotgrense">
-        <h2 id="pilotgrense">Hva kan lånes ut?</h2>
+      <details className={styles.more}>
+        <summary>Hva kan lånes ut gjennom Lånbort?</summary>
         <PilotObjectPolicy />
-      </section>
+      </details>
     </main>
   );
 }

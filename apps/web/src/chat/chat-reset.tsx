@@ -1,22 +1,31 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { type ApiFailureCode, postJson } from "@/components/api-client";
 import { BusyButton } from "@/components/busy-button";
 import { ErrorText, fieldErrorProps } from "@/components/error-text";
+import { Icon } from "@/components/icon";
+import { PageHeader } from "@/components/page-header";
+import { chatDevicesHref, chatHref, chatLinkHref } from "@/navigation/chat";
 import { ChatApiError } from "./api";
+import styles from "./chat.module.css";
 import { useChat } from "./chat-provider";
+import { Setup } from "./chat-setup";
 import { createChat } from "./engine";
 import { chatErrorMessage } from "./messages";
+import { Points } from "./points";
 
 /**
- * Reset (ADR-0010 §8): a new account key on this device, every other device
- * shut out and old history unreadable on new devices. The server asks for
- * the identity to be proven again just before, so the user confirms with a
- * new code from their e-mail, and the account is told by e-mail afterwards.
+ * Tilbakestill privat chat (17–18, ADR-0010 §8): a new account key on this
+ * device, every other device shut out and old history unreadable on new
+ * devices. The server asks for the identity to be proven again just
+ * before, so the user confirms with a new code from their e-mail, and the
+ * account is told by e-mail afterwards.
  */
 export function ChatReset() {
-  const { userId, started } = useChat();
+  const { state, userId, started } = useChat();
+  const router = useRouter();
   const [step, setStep] = useState<"start" | "code">("start");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -50,7 +59,8 @@ export function ChatReset() {
       return;
     }
     try {
-      started(await createChat(userId, true));
+      started(await createChat(userId, true), "reset");
+      router.push(chatHref);
     } catch (problem) {
       setBusy(false);
       setError(
@@ -59,26 +69,44 @@ export function ChatReset() {
     }
   }
 
-  return (
-    <>
-      <p>
-        Du kan tilbakestille chatten. Da får denne enheten nye nøkler, alle
-        andre enheter stenges ute fra chatten, og meldinger du har fått før kan
-        ikke leses på nye enheter. De du skriver med, får beskjed om at
-        sikkerhetskoden din er endret. Du får en e-post om tilbakestillingen.
-      </p>
-      {step === "start" ? (
-        <>
-          <BusyButton type="button" busy={busy} onClick={() => void sendCode()}>
-            Tilbakestill chatten
-          </BusyButton>
-          <ErrorText>{error && chatErrorMessage(error)}</ErrorText>
-        </>
-      ) : (
-        <form onSubmit={(event) => void confirm(event)} aria-busy={busy}>
-          <p role="status">
-            Vi har sendt en kode til e-postadressen din. Skriv den inn for å
-            tilbakestille chatten.
+  const resettable =
+    state.status === "ready" ||
+    state.status === "link" ||
+    state.status === "lost";
+  // A bounded task, from Mine enheter or from Samtaler (UX-IA-013).
+  const header = (title: string) => (
+    <PageHeader
+      title={title}
+      back={
+        state.status === "ready"
+          ? { href: chatDevicesHref, label: "Mine enheter" }
+          : { href: chatHref, label: "Samtaler" }
+      }
+      home="conversations"
+      task
+    />
+  );
+
+  if (!resettable) {
+    return (
+      <>
+        {header("Tilbakestill privat chat")}
+        <Setup />
+      </>
+    );
+  }
+
+  if (step === "code") {
+    return (
+      <>
+        {header("Bekreft at det er deg")}
+        <form
+          onSubmit={(event) => void confirm(event)}
+          aria-busy={busy}
+          className={styles.stack}
+        >
+          <p role="status" className="quiet">
+            Vi har sendt en kode til e-postadressen din.
           </p>
           <label htmlFor="chat-reset-code">Kode fra e-posten</label>
           <input
@@ -93,27 +121,79 @@ export function ChatReset() {
             value={code}
             onChange={(event) => setCode(event.target.value.trim())}
           />
-          <BusyButton type="submit" busy={busy}>
-            Tilbakestill chatten nå
-          </BusyButton>
-          <div className="secondary-actions">
-            <BusyButton
-              type="button"
-              busy={busy}
-              onClick={() => {
-                setStep("start");
-                setCode("");
-                setError(null);
-              }}
-            >
-              Avbryt
-            </BusyButton>
-          </div>
           <ErrorText id="chat-reset-error">
             {error && chatErrorMessage(error)}
           </ErrorText>
+          <BusyButton
+            type="submit"
+            className="button-danger button-confirm"
+            busy={busy}
+          >
+            <Icon name="trash" />
+            Tilbakestill privat chat
+          </BusyButton>
+          <div>
+            <BusyButton
+              type="button"
+              className="button-quiet"
+              busy={busy}
+              onClick={() => void sendCode()}
+            >
+              Send ny kode
+            </BusyButton>
+          </div>
         </form>
-      )}
+      </>
+    );
+  }
+
+  return (
+    <>
+      {header("Tilbakestill privat chat")}
+      <div className={styles.stack}>
+        <p className="quiet">
+          Gjør dette bare hvis du ikke har noen enhet med privat chat igjen.
+        </p>
+        <section className="card" aria-label="Hva som skjer">
+          <Points
+            points={[
+              {
+                icon: "device",
+                text: "Privat chat starter på nytt på denne enheten.",
+              },
+              { icon: "lock", text: "Alle andre enheter stenges ute." },
+              {
+                icon: "conversations",
+                text: "Meldinger fra før kan ikke leses her eller på nye enheter.",
+              },
+              {
+                icon: "shield",
+                text: "De du skriver med, får beskjed om at sikkerhetskoden din er endret.",
+              },
+            ]}
+          />
+          <p className="quiet">
+            Du bekrefter med en kode vi sender til e-postadressen din, og du får
+            en e-post om tilbakestillingen.
+          </p>
+        </section>
+        <BusyButton
+          type="button"
+          className="button-danger"
+          busy={busy}
+          onClick={() => void sendCode()}
+        >
+          <Icon name="trash" />
+          Tilbakestill privat chat
+        </BusyButton>
+        <ErrorText>{error && chatErrorMessage(error)}</ErrorText>
+        {state.status === "link" && (
+          // A full page load: the link page has its own security headers.
+          <a href={chatLinkHref} className={styles.centered}>
+            Jeg har en annen enhet. Koble til i stedet
+          </a>
+        )}
+      </div>
     </>
   );
 }

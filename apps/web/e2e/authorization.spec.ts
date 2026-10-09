@@ -85,6 +85,7 @@ const probes: Record<string, (ids: Ids) => Record<string, string>> = {
     environmentId: ids.environmentId,
   }),
   "loans/[loanId]": () => ({}),
+  "loans/[loanId]/condition": () => ({}),
   "loans/[loanId]/history": () => ({}),
   "loans/[loanId]/logistics": () => ({}),
   "loans/[loanId]/reviews": () => ({}),
