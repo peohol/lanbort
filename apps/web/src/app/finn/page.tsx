@@ -18,6 +18,7 @@ import { NearMeButton } from "@/components/near-me-button";
 import { Icon } from "@/components/icon";
 import { ownersDetail } from "@/components/owner-names";
 import { ContextTag, Tag } from "@/components/tag";
+import { ThingCard, ThingCards } from "@/components/thing-card";
 import {
   defaultDistanceKm,
   distanceOptions,
@@ -29,9 +30,10 @@ import {
   newEnvironmentHref,
   objectHref,
 } from "@/navigation/routes";
-import { describeAvailability } from "@/presentation/objects";
+import { availabilityStatus } from "@/presentation/objects";
 import {
   describeFoundIn,
+  foundImage,
   type FinnForm,
   finnHref,
   foundOrigin,
@@ -224,35 +226,35 @@ async function ObjectSearch({
         empty="Ingen ting i miljøene dine passer med søket."
         hint="Søk etter ting i miljøene du er medlem av, med ord eller kategori."
       >
-        {result?.objects.map((object) => {
-          const availability = describeAvailability(object, today);
+        <ThingCards>
+          {result?.objects.map((object) => {
+            const status = availabilityStatus(object, today);
 
-          return (
-            <li key={object.objectId} className={styles.result}>
-              <Link
-                className={styles.name}
+            return (
+              <ThingCard
+                key={object.objectId}
                 href={objectHref(object.objectId, foundOrigin(object))}
-              >
-                {object.title}
-              </Link>
-              <EntryDetail
-                parts={[
-                  object.ownedByYou ? "Din ting" : ownersDetail(object.owners),
-                  labels.get(object.categoryId),
+                title={object.title}
+                image={foundImage(object)}
+                details={[
+                  <EntryDetail
+                    key="who"
+                    parts={[
+                      object.ownedByYou
+                        ? "Din ting"
+                        : ownersDetail(object.owners),
+                      labels.get(object.categoryId),
+                    ]}
+                  />,
+                  <ContextTag key="where" label="Kontekst" icon="environment">
+                    {describeFoundIn(object)}
+                  </ContextTag>,
                 ]}
+                status={<Tag tone={status.tone}>{status.label}</Tag>}
               />
-              <ContextTag label="Kontekst" icon="environment">
-                {describeFoundIn(object)}
-              </ContextTag>
-              <Tag
-                tone={availability === "Ledig nå" ? "positive" : "neutral"}
-                icon={availability === "Ledig nå" ? "check" : "clock"}
-              >
-                {availability}
-              </Tag>
-            </li>
-          );
-        })}
+            );
+          })}
+        </ThingCards>
       </Results>
     </>
   );
@@ -310,41 +312,43 @@ async function EnvironmentSearch({
           )
         }
       >
-        {result?.environments.map((environment) => (
-          <li key={environment.id} className={styles.result}>
-            <Link
-              className={styles.name}
-              href={environmentHref(environment.id)}
-            >
-              {environment.name}
-            </Link>
-            {environment.location && (
-              <ContextTag label="Sted" icon="environment">
-                {environment.location}
-              </ContextTag>
-            )}
-            {environment.description && (
-              <span className={styles.description}>
-                {environment.description}
-              </span>
-            )}
-            {environment.membershipState ? (
-              <Tag
-                tone={
-                  environment.membershipState === "active"
-                    ? "positive"
-                    : "waiting"
-                }
+        <ul className={styles.results}>
+          {result?.environments.map((environment) => (
+            <li key={environment.id} className={styles.result}>
+              <Link
+                className={styles.name}
+                href={environmentHref(environment.id)}
               >
-                {membershipLabels[environment.membershipState]}
-              </Tag>
-            ) : (
-              <Tag icon={environment.type === "open" ? "people" : "lock"}>
-                {joiningLabels[environment.type]}
-              </Tag>
-            )}
-          </li>
-        ))}
+                {environment.name}
+              </Link>
+              {environment.location && (
+                <ContextTag label="Sted" icon="environment">
+                  {environment.location}
+                </ContextTag>
+              )}
+              {environment.description && (
+                <span className={styles.description}>
+                  {environment.description}
+                </span>
+              )}
+              {environment.membershipState ? (
+                <Tag
+                  tone={
+                    environment.membershipState === "active"
+                      ? "positive"
+                      : "waiting"
+                  }
+                >
+                  {membershipLabels[environment.membershipState]}
+                </Tag>
+              ) : (
+                <Tag icon={environment.type === "open" ? "people" : "lock"}>
+                  {joiningLabels[environment.type]}
+                </Tag>
+              )}
+            </li>
+          ))}
+        </ul>
       </Results>
       <details className={styles.explained}>
         <summary>Hva betyr åpent og lukket?</summary>
@@ -505,6 +509,7 @@ function Results({
   empty: string;
   hint: string;
   map?: ReactNode;
+  /** The list of what was found. */
   children: ReactNode;
 }) {
   if (!prepared) {
@@ -521,11 +526,7 @@ function Results({
         {count === 0 ? "Ingen treff" : counted(count)}
       </h2>
       {location && <LocationNote form={form} location={location} />}
-      {count === 0 ? (
-        <p className="quiet">{empty}</p>
-      ) : (
-        <ul className={styles.results}>{children}</ul>
-      )}
+      {count === 0 ? <p className="quiet">{empty}</p> : children}
       {more && (
         <p className="quiet">
           Viser de beste treffene. Gjør søket mer presist for å finne flere.

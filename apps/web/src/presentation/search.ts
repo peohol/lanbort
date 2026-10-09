@@ -8,6 +8,12 @@ import {
   objectSearchQuerySchema,
 } from "@lanbort/contracts";
 import type { ObjectOrigin } from "@/navigation/routes";
+import {
+  environmentImageHref,
+  firstImageHref,
+  friendImageHref,
+  ownImageHref,
+} from "./object-images";
 
 type Params = Record<string, string | string[] | undefined>;
 
@@ -189,6 +195,19 @@ export function describeFoundIn(object: FoundObject): string {
   ]
     .filter(Boolean)
     .join(" · ");
+}
+
+/** The first photo of a thing they found, read the way `foundOrigin` sees it. */
+export function foundImage(object: FoundObject): string | null {
+  const place = object.foundIn[0];
+
+  return firstImageHref(object.images, (imageId) =>
+    object.ownedByYou
+      ? ownImageHref(object.objectId, imageId)
+      : place
+        ? environmentImageHref(place.environmentId, object.objectId, imageId)
+        : friendImageHref(object.objectId, imageId),
+  );
 }
 
 /** How the user sees a thing they found: through an environment, or as a friend. */

@@ -1,7 +1,7 @@
 /**
  * Where a thing's photos are read, each through the policy of the place the
- * reader sees the thing in (PS-OBJ-002): as one of its owners, or through
- * an environment it is published in.
+ * reader sees the thing in (PS-OBJ-002): as one of its owners, through an
+ * environment it is published in, or as a friend of an owner (PS-OBJ-020).
  */
 export const ownImageHref = (objectId: string, imageId: string) =>
   `/api/objects/${objectId}/images/${imageId}`;
@@ -12,6 +12,9 @@ export const environmentImageHref = (
   imageId: string,
 ) =>
   `/api/environments/objects/image?${new URLSearchParams({ environmentId, objectId, imageId })}`;
+
+export const friendImageHref = (objectId: string, imageId: string) =>
+  `/api/social/objects/image?${new URLSearchParams({ objectId, imageId })}`;
 
 /** The first photo of a thing, if it has one, for a card in a list. */
 export const firstImageHref = (
