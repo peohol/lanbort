@@ -13,6 +13,7 @@ import {
   ownerStatus,
   personName,
   publishableEnvironments,
+  shownPlaces,
   restrictionReach,
   revertible,
   whereShown,
@@ -146,6 +147,37 @@ describe("the owners' view of a thing", () => {
         ],
       ).map(({ id }) => id),
     ).toEqual(["free", "withdrawn"]);
+  });
+
+  it("lists each environment once, with where it can be published", () => {
+    const environment = (id: string, state = "active") =>
+      ({ id, name: id, membershipState: state }) as EnvironmentSummary;
+    const publication = (id: string, status: ObjectPublication["status"]) =>
+      ({
+        id: `p-${id}`,
+        status,
+        environment: { id, name: id },
+      }) as ObjectPublication;
+    expect(
+      shownPlaces(
+        [
+          publication("published", "active"),
+          publication("withdrawn", "unpublished"),
+          { ...publication("left", "unpublished"), environment: null },
+        ],
+        [
+          environment("free"),
+          environment("passive", "passive"),
+          environment("published"),
+          environment("withdrawn"),
+        ],
+      ).map(({ key, publishable }) => [key, publishable]),
+    ).toEqual([
+      ["p-published", false],
+      ["p-withdrawn", true],
+      ["p-left", false],
+      ["free", true],
+    ]);
   });
 
   it("says where a thing is shown: live or waiting, and friends", () => {

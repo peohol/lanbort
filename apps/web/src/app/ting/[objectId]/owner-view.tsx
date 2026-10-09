@@ -56,11 +56,11 @@ import {
   personName,
   publicationEndLabels,
   publicationStatusLabels,
-  publishableEnvironments,
   restrictionReach,
   revertible,
   revisionChangeLabels,
   revisionFieldLabels,
+  shownPlaces,
   withdrawable,
 } from "@/presentation/object-owners";
 import {
@@ -68,8 +68,10 @@ import {
   loanRequestStatusLabels,
   loanStatusLabels,
 } from "@/presentation/loans";
-import { categoryLabel, formatInterval } from "@/presentation/objects";
+import { ownImageHref } from "@/presentation/object-images";
+import { availabilityLine, categoryLabel } from "@/presentation/objects";
 import { pageQuery } from "@/server/session";
+import styles from "./owner-view.module.css";
 
 /*
  * Links to an environment's page (WP-84) are not prefetched: that page is
@@ -101,9 +103,6 @@ const forEveryOwner = (owned: Owned, text: string) =>
   shared(owned) ? [text] : [];
 
 const unchanged = "Lån som allerede er avtalt, fortsetter som avtalt.";
-
-const publishHelp =
-  "Medlemmene kan finne tingen og be om å låne den. Krever miljøet godkjenning, venter den først på administratorene.";
 
 const inviteHelp =
   "En medeier får de samme rettighetene som deg når hen godtar. Ingen eier kan gripe inn i lån en annen har avtalt.";
@@ -196,10 +195,13 @@ function OwnerStatus({
   owned,
   loans,
   today,
+  hidden,
 }: {
   owned: Owned;
   loans: readonly Loan[];
   today: string;
+  /** Nobody but the owners can see it yet (Tomat kjerneflyt 2). */
+  hidden: boolean;
 }) {
   const { object, me, active, api } = owned;
   const { status, tone, why } = ownerStatus(object, me, today);
@@ -221,9 +223,16 @@ function OwnerStatus({
             primary
           />
         ) : (
-          <Link className="button" href={editObjectHref(object.id)}>
-            Rediger
-          </Link>
+          <>
+            {hidden && (
+              <a className="button button-primary" href="#hvor">
+                Velg hvor den vises
+              </a>
+            )}
+            <Link className="button" href={editObjectHref(object.id)}>
+              Rediger tingen
+            </Link>
+          </>
         ))
       }
       more={
@@ -239,6 +248,12 @@ function OwnerStatus({
       }
     >
       {why && <p>{why}</p>}
+      {hidden && !archived && (
+        <p>
+          {onlyOwners(owned)}. Ingen andre kan se den ennå. Velg hvor den skal
+          vises når du er klar.
+        </p>
+      )}
     </StatusCard>
   );
 }
@@ -354,156 +369,196 @@ function Loans({
   );
 }
 
+/** What borrowers see of it: when, on what terms, and the description. */
 function About({
   object,
   categories,
+  today,
 }: {
   object: OwnObject;
   categories: readonly ObjectCategory[];
+  today: string;
 }) {
   return (
-    <section aria-labelledby="om-tingen">
+    <section aria-labelledby="om-tingen" className={styles.card}>
       <h2 id="om-tingen">Om tingen</h2>
       <dl className="facts">
-        <dt>Kategori</dt>
-        <dd>{categoryLabel(categories, object.categoryId)}</dd>
-        <dt>Beskrivelse</dt>
-        <dd className="message-text">{object.description}</dd>
+        <dt>Ledig</dt>
+        <dd>
+          {object.availability.length === 0
+            ? "Ingen perioder"
+            : availabilityLine(object.availability, today)}
+        </dd>
         <dt>Vilkår</dt>
         <dd className="message-text">
           {object.loanTerms ?? "Ingen egne vilkår"}
         </dd>
-        <dt>Tilgjengelighet</dt>
-        <dd>
-          {object.availability.length === 0
-            ? "Ikke satt"
-            : object.availability.map(formatInterval).join(", ")}
-        </dd>
+        <dt>Kategori</dt>
+        <dd>{categoryLabel(categories, object.categoryId)}</dd>
+        <dt>Beskrivelse</dt>
+        <dd className="message-text">{object.description}</dd>
       </dl>
     </section>
   );
 }
 
+/** The words for the owners, one or several (UX-PRIV-003). */
+const onlyOwners = (owned: Owned) =>
+  shared(owned) ? "Bare synlig for eierne" : "Bare synlig for deg";
+
 /**
- * Where the thing is published, one environment at a time (PS-OBJ-006,
- * PS-OBJ-017): publish it somewhere new, or take it back. An
- * administrator's rejection or block stands until they change it.
+ * Where the thing is shown, one place a row (PS-OBJ-006, PS-OBJ-017,
+ * PS-OBJ-020): each environment the user may publish in and «Venner»,
+ * with its state and the step that changes it. An administrator's
+ * rejection or block stands until they change it.
  */
-function Publications({
+function WhereShownSection({
   owned,
   publications,
   environments,
+  friends,
 }: {
   owned: Owned;
   publications: readonly ObjectPublication[];
   environments: readonly EnvironmentSummary[];
+  friends: boolean;
 }) {
   const { object, api } = owned;
-  const choices = publishableEnvironments(environments, publications);
+  const open = object.status === "active" && !object.frozenForNewLoans;
+  const places = shownPlaces(publications, environments);
 
   return (
-    <section aria-labelledby="miljoer">
-      <h2 id="miljoer">Miljøer</h2>
-      {publications.length === 0 ? (
-        <p className="quiet">
-          Tingen er ikke publisert i noen miljøer. Bare eierne ser den.
-        </p>
-      ) : (
-        <ul className="entries">
-          {publications.map((publication) => {
-            const { label, tone } = publicationStatusLabels[publication.status];
-            const place = publication.environment;
-            const name = place?.name ?? "Et miljø du ikke er medlem av";
+    <section aria-labelledby="hvor" className={styles.card}>
+      <h2 id="hvor">Hvor den vises</h2>
+      <ul className={styles.places}>
+        {places.map(({ key, environment, publication, publishable }) => {
+          const name = environment?.name ?? "Et miljø du ikke er medlem av";
+          const state = publication
+            ? publicationStatusLabels[publication.status]
+            : notPublished;
 
-            return (
-              <li key={publication.id} className="entry">
-                <strong id={`publisering-${publication.id}`}>
-                  {place ? (
-                    <Link href={environmentHref(place.id)} prefetch={false}>
-                      {name}
-                    </Link>
-                  ) : (
-                    name
-                  )}
-                </strong>
-                <span>
-                  <Tag tone={tone}>{label}</Tag>
+          return (
+            <li key={key}>
+              <span className={styles.place} id={`hvor-${key}`}>
+                {environment ? (
+                  <Link href={environmentHref(environment.id)} prefetch={false}>
+                    {name}
+                  </Link>
+                ) : (
+                  name
+                )}
+              </span>
+              <Tag tone={state.tone}>{state.label}</Tag>
+              {publication?.endReason && (
+                <span className="entry-detail">
+                  {publicationEndLabels[publication.endReason]}
                 </span>
-                {publication.endReason && (
-                  <span className="entry-detail">
-                    {publicationEndLabels[publication.endReason]}
-                  </span>
-                )}
-                {(publication.status === "rejected" ||
-                  publication.status === "blocked") && (
-                  <span className="entry-detail">
-                    Avgjørelsen står til administratorene endrer den.
-                  </span>
-                )}
-                {withdrawable(publication) && (
-                  <div
-                    className="actions"
-                    role="group"
-                    aria-labelledby={`publisering-${publication.id}`}
-                  >
-                    <ConfirmAction
-                      label="Trekk tilbake"
-                      title={`Trekke ${object.title} tilbake?`}
-                      confirmLabel={`Trekk tilbake fra ${place?.name ?? "miljøet"}`}
-                      path={`${api}/publications/withdraw`}
-                      body={{ publicationId: publication.id }}
-                      consequences={{
-                        gone: [
-                          "Medlemmene finner ikke tingen der lenger.",
-                          "Åpne forespørsler derfra avsluttes.",
-                        ],
-                        stays: [unchanged],
-                        affects: forEveryOwner(
-                          owned,
-                          "Tingen trekkes tilbake for alle eierne.",
-                        ),
-                      }}
-                    />
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      {object.status === "active" &&
-        (choices.length === 0 ? (
-          <p className="quiet">
-            Du er ikke aktivt medlem av flere miljøer der tingen kan publiseres.
-          </p>
-        ) : (
-          <CommandForm
-            path={`${api}/publications`}
-            submitLabel="Publiser i miljøet"
-            secondary
-          >
-            <Field
-              id="publiser-miljo"
-              label="Publiser i et miljø"
-              help={publishHelp}
-            >
-              <select
-                id="publiser-miljo"
-                name="environmentId"
-                {...describedBy("publiser-miljo", publishHelp)}
+              )}
+              {(publication?.status === "rejected" ||
+                publication?.status === "blocked") && (
+                <span className="entry-detail">
+                  Avgjørelsen står til administratorene endrer den.
+                </span>
+              )}
+              {publication?.status === "pending" && (
+                <span className="entry-detail">
+                  Medlemmene ser den når administratorene har godkjent den.
+                </span>
+              )}
+              <div
+                className={styles.placeActions}
+                role="group"
+                aria-labelledby={`hvor-${key}`}
               >
-                {choices.map((environment) => (
-                  <option key={environment.id} value={environment.id}>
-                    {environment.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          </CommandForm>
-        ))}
+                {open && publishable && environment && (
+                  <ActionButton
+                    label={`Publiser i ${environment.name}`}
+                    path={`${api}/publications`}
+                    body={{ environmentId: environment.id }}
+                  />
+                )}
+                {publication && withdrawable(publication) && (
+                  <ConfirmAction
+                    label="Trekk tilbake"
+                    title={`Trekke ${object.title} tilbake?`}
+                    confirmLabel={`Trekk tilbake fra ${environment?.name ?? "miljøet"}`}
+                    path={`${api}/publications/withdraw`}
+                    body={{ publicationId: publication.id }}
+                    consequences={{
+                      gone: [
+                        "Medlemmene finner ikke tingen der lenger.",
+                        "Åpne forespørsler derfra avsluttes.",
+                      ],
+                      stays: [unchanged],
+                      affects: forEveryOwner(
+                        owned,
+                        "Tingen trekkes tilbake for alle eierne.",
+                      ),
+                    }}
+                  />
+                )}
+              </div>
+            </li>
+          );
+        })}
+        <li>
+          <span className={styles.place} id="hvor-venner">
+            Venner
+          </span>
+          <Tag tone={friends ? "positive" : "neutral"}>
+            {friends ? "Synlig for venner" : "Ikke synlig"}
+          </Tag>
+          <span className="entry-detail">
+            {shared(owned)
+              ? "Vennene til eierne ser den og kan be om å låne direkte."
+              : "Vennene dine ser den på profilen din og kan be om å låne direkte."}
+          </span>
+          <div
+            className={styles.placeActions}
+            role="group"
+            aria-labelledby="hvor-venner"
+          >
+            {friends ? (
+              <ConfirmAction
+                label="Skjul for venner"
+                title={`Skjule ${object.title} for venner?`}
+                confirmLabel="Skjul for venner"
+                path={`${api}/friends/withdraw`}
+                body={{}}
+                consequences={{
+                  gone: [
+                    "Vennene finner ikke tingen lenger.",
+                    "Åpne forespørsler fra venner avsluttes.",
+                  ],
+                  stays: [unchanged],
+                  affects: forEveryOwner(
+                    owned,
+                    "Tingen skjules for alle eiernes venner.",
+                  ),
+                }}
+              />
+            ) : (
+              open && (
+                <ActionButton
+                  label="Vis for venner"
+                  path={`${api}/friends`}
+                  body={{}}
+                />
+              )
+            )}
+          </div>
+        </li>
+      </ul>
+      {places.length === 0 && (
+        <p className="quiet">
+          Du er ikke aktivt medlem av noen miljøer der tingen kan publiseres.
+        </p>
+      )}
     </section>
   );
 }
+
+const notPublished = { label: "Ikke publisert", tone: "neutral" } as const;
 
 /**
  * The owners and those invited (PS-OBJ-007, PS-OBJ-010): every owner has
@@ -872,11 +927,30 @@ export async function OwnerView({
       .map(coOwnerEntry),
   ];
 
+  const friends = published?.friends != null;
+  const hidden =
+    published !== null &&
+    !friends &&
+    !published.publications.some(withdrawable);
+  const [cover] = object.images;
+
   return (
     <main>
       <PageHeader
         title={object.title}
+        kind={shared(owned) ? "Deres ting" : "Din ting"}
         back={{ href: thingsHref, label: "Mine ting" }}
+        picture={
+          cover && (
+            // The API's own address; nothing to optimize.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              className={styles.cover}
+              src={ownImageHref(object.id, cover.id)}
+              alt=""
+            />
+          )
+        }
         context={
           <>
             <ContextTag label="Kategori">
@@ -886,16 +960,22 @@ export async function OwnerView({
           </>
         }
       />
-      <OwnerStatus owned={owned} loans={loans.items} today={today} />
+      <OwnerStatus
+        owned={owned}
+        loans={loans.items}
+        today={today}
+        hidden={hidden}
+      />
       <Loans owned={owned} entries={entries} />
-      <About object={object} categories={categories} />
       {published && (
-        <Publications
+        <WhereShownSection
           owned={owned}
           publications={published.publications}
           environments={environments ?? []}
+          friends={friends}
         />
       )}
+      <About object={object} categories={categories} today={today} />
       <Owners owned={owned} friends={social?.friends ?? null} />
       <Restrictions owned={owned} />
       {history && <Versions owned={owned} history={history} />}

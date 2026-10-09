@@ -65,11 +65,16 @@ test("the owners manage a thing from its page", async ({
   await page.goto(`/ting/${objectId}`);
   await expect(page.getByText("Ledig nå")).toBeVisible();
   await expect(
-    page.getByText("Tingen er ikke publisert i noen miljøer."),
+    page.getByText("Bare synlig for deg. Ingen andre kan se den ennå."),
   ).toBeVisible();
-  await page.getByLabel("Publiser i et miljø").selectOption(environmentId);
-  await page.getByRole("button", { name: "Publiser i miljøet" }).click();
-  await expect(page.getByText("Synlig for medlemmene")).toBeVisible();
+  const where = page.getByRole("region", { name: "Hvor den vises" });
+  await where
+    .getByRole("button", { name: `Publiser i Gården ${word}` })
+    .click();
+  await expect(where.getByText("Synlig for medlemmene")).toBeVisible();
+  await where.getByRole("button", { name: "Vis for venner" }).click();
+  await expect(where.getByText("Synlig for venner")).toBeVisible();
+  await expect(page.getByText("Ingen andre kan se den ennå.")).toHaveCount(0);
 
   // A request through the environment shows up with what it asks of Anna.
   const preview = await (
@@ -145,6 +150,18 @@ test("the owners manage a thing from its page", async ({
   // Taken out of the environment, with the reason said.
   await confirm(page, "Trekk tilbake", `Trekk tilbake fra Gården ${word}`);
   await expect(page.getByText("Trukket tilbake av en eier")).toBeVisible();
+  await expect(
+    where.getByRole("button", { name: `Publiser i Gården ${word}` }),
+  ).toBeVisible();
+  await confirm(page, "Skjul for venner");
+  await expect(where.getByText("Ikke synlig")).toBeVisible();
+  expect(
+    (
+      await (
+        await page.request.get(`/api/objects/${objectId}/publications`)
+      ).json()
+    ).friends,
+  ).toBeNull();
 
   // Anna, the only owner again, deletes it.
   await page.getByText("Flere valg").click();

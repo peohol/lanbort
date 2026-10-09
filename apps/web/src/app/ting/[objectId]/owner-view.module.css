@@ -1,0 +1,67 @@
+/* The owners' view of a thing (Tomat kjerneflyt 2): its photo above its
+   name, and where it is shown and what borrowers see as cards. */
+.cover {
+  display: block;
+  width: 4.5rem;
+  height: 4.5rem;
+  object-fit: cover;
+  background: var(--color-sunken);
+  border-radius: var(--radius-m);
+}
+
+.card {
+  margin-block: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-m);
+}
+
+.card > h2 {
+  margin-top: 0;
+}
+
+.places {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.places > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  padding-block: var(--space-3);
+}
+
+.places > li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.places :global(.entry-detail) {
+  flex-basis: 100%;
+}
+
+.place {
+  font-weight: 700;
+}
+
+.place a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+}
+
+.placeActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  flex-basis: 100%;
+}
+
+.placeActions:empty {
+  display: none;
+}
