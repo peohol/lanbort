@@ -71,6 +71,12 @@ export const socialOverviewSchema = z.strictObject({
   blocked: z.array(socialContactSchema),
 });
 
+/** An environment named on a person's page. */
+export const sharedEnvironmentSchema = z.strictObject({
+  id: z.uuid(),
+  name: z.string(),
+});
+
 /**
  * A person as the caller may see them (WP-86): their real name, the
  * caller's relation to them (null on the caller's own page), and whether
@@ -82,6 +88,17 @@ export const personSchema = z.strictObject({
   realName: z.string(),
   pictureId: pictureIdSchema,
   relation: socialRelationSchema.nullable(),
+  /**
+   * When the friendship began, or when the pending request between them
+   * was sent; null when there is neither.
+   */
+  relationSince: z.iso.datetime().nullable(),
+  /**
+   * The environments both are active members of now, by name: where they
+   * see each other (UX-PRIV-003). Empty while the caller blocks the person,
+   * as they are then hidden from each other there.
+   */
+  sharedEnvironments: z.array(sharedEnvironmentSchema),
   trustProfile: z.boolean(),
 });
 
@@ -90,5 +107,6 @@ export type FriendshipState = z.infer<typeof friendshipStateSchema>;
 export type SocialRelation = z.infer<typeof socialRelationSchema>;
 export type SocialContact = z.infer<typeof socialContactSchema>;
 export type SocialOverview = z.infer<typeof socialOverviewSchema>;
+export type SharedEnvironment = z.infer<typeof sharedEnvironmentSchema>;
 export type Person = z.infer<typeof personSchema>;
 export type PersonLink = z.infer<typeof personLinkSchema>;

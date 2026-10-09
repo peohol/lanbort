@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   notificationLinkHref,
   personHref,
+  personRoleHref,
   registrationHref,
   returnPath,
   signInHref,
@@ -49,5 +50,8 @@ describe("person addresses", () => {
     expect(personHref("abc")).toBe("/personer/abc");
     expect(personHref("abc", "borrower")).toBe("/personer/abc?rolle=laantaker");
     expect(personHref("abc", "lender")).toBe("/personer/abc?rolle=utlaaner");
+    expect(personRoleHref("abc", "borrower")).toBe(
+      "/personer/abc/som-laantaker",
+    );
   });
 });

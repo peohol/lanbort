@@ -4,7 +4,8 @@ import type { UserActor } from "../actor";
 import { executeQuery } from "../commands/query";
 import { leaveEnvironment } from "../environment/membership-commands";
 import { approveLoanRequest } from "../loans/approval";
-import { readLoan } from "../loans/queries";
+import { listLoans, readLoan } from "../loans/queries";
+import { publishObject } from "../publications/commands";
 import { deactivateAccount } from "../account/lifecycle";
 import {
   blockUser,
@@ -54,12 +55,14 @@ describe("a person's page (WP-86)", () => {
       realName: name,
       pictureId: null,
       relation: null,
+      relationSince: null,
+      sharedEnvironments: [],
       trustProfile: true,
     });
   });
 
   it("shows friends and fellow members with their trust profile", async () => {
-    const { admin, owner, borrower } = await published();
+    const { admin, owner, borrower, environmentId } = await published();
     const friend = await user();
     await friends(owner, friend);
 
@@ -68,10 +71,15 @@ describe("a person's page (WP-86)", () => {
       realName: name,
       pictureId: null,
       relation: relation(friend, "friends"),
+      relationSince: expect.any(String),
+      sharedEnvironments: [],
       trustProfile: true,
     });
+    // The environments they share say where they see each other.
     expect(await personOf(borrower, admin)).toMatchObject({
       relation: relation(admin, "none"),
+      relationSince: null,
+      sharedEnvironments: [{ id: environmentId, name: expect.any(String) }],
       trustProfile: true,
     });
   });
@@ -84,6 +92,7 @@ describe("a person's page (WP-86)", () => {
       realName: name,
       pictureId: null,
       relation: relation(anna, "incoming_pending"),
+      relationSince: expect.any(String),
       trustProfile: false,
     });
     expect(await personOf(anna, bo)).toMatchObject({
@@ -119,11 +128,13 @@ describe("a person's page (WP-86)", () => {
   });
 
   it("keeps someone the reader blocks, and hides a reader's blocker", async () => {
-    const { owner, borrower } = await published();
+    const { owner, borrower, environmentId } = await published();
     await run(blockUser, owner, { userId: borrower.userId });
 
+    // A block hides them from each other in their environments too.
     expect(await personOf(owner, borrower)).toMatchObject({
       relation: relation(borrower, "none", true),
+      sharedEnvironments: [],
       trustProfile: false,
     });
     await expect(personOf(borrower, owner)).rejects.toMatchObject(notFound);
@@ -131,6 +142,7 @@ describe("a person's page (WP-86)", () => {
     // Lifting it leaves them fellow members again.
     await run(liftUserBlock, owner, { userId: borrower.userId });
     expect(await personOf(borrower, owner)).toMatchObject({
+      sharedEnvironments: [{ id: environmentId }],
       trustProfile: true,
     });
   });
@@ -149,6 +161,38 @@ describe("a person's page (WP-86)", () => {
       .where("user_id", "=", cleo.userId)
       .execute();
     await expect(personOf(anna, cleo)).rejects.toMatchObject(notFound);
+  });
+});
+
+describe("loans between the reader and a person", () => {
+  it("lists only the reader's current loans with that person", async () => {
+    const { environmentId, owner, borrower, objectId } = await published();
+    const other = await kit.member(environmentId, owner);
+    const second = await kit.create(owner, "Skal rengjøres.");
+    await run(publishObject, owner, { objectId: second, environmentId });
+    const loanWith = async (who: UserActor, thing: string) => {
+      const { requestId } = await kit.ask(
+        who,
+        thing,
+        kit.environmentOrigin(environmentId),
+        kit.dated(1, 2),
+      );
+      return (await run(approveLoanRequest, owner, { requestId })).loanId;
+    };
+    const withBorrower = await loanWith(borrower, objectId);
+    await loanWith(other, second);
+    const between = async (reader: UserActor, counterpart: UserActor) =>
+      (
+        await executeQuery(tick(), listLoans, {
+          actor: reader,
+          input: { state: "current", counterpartId: counterpart.userId },
+        })
+      ).loans.map((loan) => loan.id);
+
+    expect(await between(owner, borrower)).toEqual([withBorrower]);
+    expect(await between(borrower, owner)).toEqual([withBorrower]);
+    // Nobody sees loans between two others.
+    expect(await between(other, borrower)).toEqual([]);
   });
 });
 

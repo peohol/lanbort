@@ -897,9 +897,10 @@ export const readLoan = defineQuery({
 
 /**
  * The caller's own loans as borrower or responsible lender (UX-IA-006),
- * most recently approved first, each exactly as `loan.read` shows it. The
- * loans of objects they only co-own are not theirs to see
- * (`loan.list_for_co_owner` has what they may act on).
+ * optionally only those with one other person, most recently approved
+ * first, each exactly as `loan.read` shows it. The loans of objects they
+ * only co-own are not theirs to see (`loan.list_for_co_owner` has what they
+ * may act on).
  */
 export const listLoans = defineQuery({
   name: "loan.list",
@@ -919,15 +920,25 @@ export const listLoans = defineQuery({
         .select("loan.id")
         .where((eb) =>
           eb.or(
-            sides.map((side) =>
-              eb(
+            sides.map((side) => {
+              const [own, other] =
                 side === "borrower"
-                  ? "loan.borrower_user_id"
-                  : "loan.responsible_lender_id",
-                "=",
-                actor.userId,
-              ),
-            ),
+                  ? ([
+                      "loan.borrower_user_id",
+                      "loan.responsible_lender_id",
+                    ] as const)
+                  : ([
+                      "loan.responsible_lender_id",
+                      "loan.borrower_user_id",
+                    ] as const);
+
+              return eb.and([
+                eb(own, "=", actor.userId),
+                ...(input.counterpartId === undefined
+                  ? []
+                  : [eb(other, "=", input.counterpartId)]),
+              ]);
+            }),
           ),
         )
         .where(

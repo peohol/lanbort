@@ -71,6 +71,14 @@ export const personRoleValues: Record<PersonRole, string> = {
 export const personHref = (id: string, role?: PersonRole) =>
   `/personer/${id}${query({ [personRoleParam]: role && personRoleValues[role] })}`;
 
+/** The last part of the address of a person's page for one role. */
+export const personRoleSegment = (role: PersonRole) =>
+  `som-${personRoleValues[role]}`;
+
+/** What others said about a person in one role, with the reviews (WP-86). */
+export const personRoleHref = (id: string, role: PersonRole) =>
+  `/personer/${id}/${personRoleSegment(role)}`;
+
 export const caseHref = (id: string) => `/saker/${id}`;
 
 /** Own cases and, for those who handle cases, their queues. */

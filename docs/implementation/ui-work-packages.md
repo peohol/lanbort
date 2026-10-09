@@ -157,6 +157,8 @@ Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) er la
 - **Konto som lag (UX-IA-020).** I dag er Konto en vanlig side (`/konto`). Den blir et fullskjerms lag med egen stabel og «Lukk» som returnerer til forrige skjerm med tilstanden. Bygges sammen med stabelen fra UI-designets fase 2 (se «Senere»).
 - **Rollen fra inngangen først (UX-PRIV-012).** Bygget 9. oktober 2026. Lenker fra et lån, en forespørsel, en ting og en anmeldelse gir rollen i adressen (`?rolle=laantaker|utlaaner`), og tillitsprofilen viser den rollen først. Andre innganger gir standardrekkefølgen. Nye innganger med en rolle gir den til `PersonName`.
 - **Ingen aktivitetstall (PS-TRUST-017).** Appen viser ingen i dag; ingenting skal bygges.
+- **Personens side i Tomat.** Bygget 9. oktober 2026 etter designreferansen: hvorfor du ser personen (felles miljøer og vennskap), kortet «Dere to» med bare neste steg, «Mellom dere nå» (lånene dere har sammen som ikke er avsluttet), erfaringene per rolle med egen side per rolle (`/personer/[id]/som-laantaker|som-utlaaner`) med fordelingsstriper og anmeldelser, tingene en venn har gjort synlige for venner (UI-delen av WP-27 for profilen), og fjern, blokker og rapporter under «Flere valg». Avslag, tilbaketrekking og fjerning blir på siden når et felles miljø fortsatt gir tilgang.
+- **Venner og Blokkerte i Konto.** Gjenstår: egne sider i Konto-laget (designreferansen skjerm 18–20), bygges når Konto er et lag (UX-IA-020).
 
 ## WP-87 — Lånets side og anmeldelser
 
