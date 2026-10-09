@@ -48,12 +48,12 @@ Disse tilstandene og mønstrene gjelder alle flater nedenfor og gjentas ikke for
 
 ### Varslingssenteret og varselslenker
 
-**Eksempel på påkrevd sikkerhetsvarsel ved ny enhet for privat chat** (PS-COM-003; ADR-0010 punkt 5): Tittel «En ny enhet er koblet til privat chat». Tekst «Enheten kan motta nye meldinger fra nå av. Den får ikke tidligere meldinger automatisk. Var det ikke deg, fjern den i Mine enheter.» Varselet leder til stabelen Samtaler › Mine enheter.
+**Påkrevd sikkerhetsvarsel ved godkjent ny enhet for privat chat** (PS-COM-003, PS-COM-016; ADR-0010 punkt 5): Tittel «En ny enhet er koblet til privat chat». Tekst «Enheten kan motta nye meldinger fra nå av. Den får ikke tidligere meldinger automatisk. Var det ikke deg, fjern den i Mine enheter.» Varselet leder til stabelen Samtaler › Mine enheter.
 
 - **Oppgave:** se hva som krever oppmerksomhet, forstå hvorfor, og komme til konteksten.
 - **Tilstander:** ulest og lest; markert som lest uten at oppgaven er gjort; handling allerede gjort et annet sted; eldre, leste varsler fra samme låneforløp samlet; nivå (påkrevd, handling, informasjon); varsel om noe brukeren ikke lenger har tilgang til; ingen varsler; lenke fra e-post; åpnet fra hvilket som helst hovedområde og lukket tilbake til samme skjerm, stabel, filter og rulleposisjon.
 - **Ser / handler:** mottakeren.
-- **Regler:** UX-IA-002, UX-IA-011, UX-IA-018, UX-IA-019, UX-INT-010, UX-P08, PS-COM-001–003, PS-OBJ-014.
+- **Regler:** UX-IA-002, UX-IA-011, UX-IA-018, UX-IA-019, UX-INT-010, UX-P08, PS-COM-001–003, PS-COM-016, PS-OBJ-014.
 - **Forløp:** normal.
 - **UI-pakke:** WP-80, og hver pakke peker varsler til sin side.
 
