@@ -277,6 +277,7 @@ const reportTarget = (overrides: Partial<ReportTarget> = {}): ReportTarget => ({
   openFriendship: null,
   blockedByActor: false,
   blockedByOther: false,
+  requestHeldBack: false,
   related: true,
   ...overrides,
 });

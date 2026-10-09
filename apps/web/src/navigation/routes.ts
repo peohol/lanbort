@@ -56,7 +56,20 @@ export const environmentAdminHref = (id: string) =>
 
 export const newEnvironmentHref = "/miljoer/ny";
 
-export const personHref = (id: string) => `/personer/${id}`;
+/**
+ * The role a person has where their page is opened from, which their trust
+ * profile shows first (UX-PRIV-012), and its value in the address.
+ */
+export type PersonRole = "borrower" | "lender";
+export const personRoleParam = "rolle";
+export const personRoleValues: Record<PersonRole, string> = {
+  borrower: "laantaker",
+  lender: "utlaaner",
+};
+
+/** A person, from a loan, a request or a thing in the `role` they have there. */
+export const personHref = (id: string, role?: PersonRole) =>
+  `/personer/${id}${query({ [personRoleParam]: role && personRoleValues[role] })}`;
 
 export const caseHref = (id: string) => `/saker/${id}`;
 

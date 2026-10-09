@@ -165,6 +165,7 @@ const profile = (overrides: Partial<SocialPair> = {}) => ({
     },
     blockedByActor: false,
     blockedByOther: false,
+    requestHeldBack: false,
     ...overrides,
   },
 });

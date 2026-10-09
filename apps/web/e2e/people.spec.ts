@@ -81,6 +81,48 @@ test("members befriend each other on their pages, and a block hides the blocker"
   expect(problems.filter((problem) => !problem.includes("404"))).toEqual([]);
 });
 
+test("a declined sender only learns that they cannot ask now, and the entry's role comes first", async ({
+  browser,
+  baseURL,
+}) => {
+  const anna = await signedIn(browser, baseURL!, "Anna Berg");
+  const bo = await signedIn(browser, baseURL!, "Bo Dahl");
+  const { environmentId } = await (
+    await postCommand(anna.page.request, "/api/environments", {
+      name: `Gården ${randomUUID().slice(0, 8)}`,
+      type: "open",
+    })
+  ).json();
+  await postCommand(bo.page.request, "/api/environments/membership/join", {
+    environmentId,
+    answers: [],
+  });
+  await postCommand(bo.page.request, "/api/social/friend-requests", {
+    userId: anna.id,
+  });
+  await anna.page.goto(`/personer/${bo.id}`);
+  await anna.page.getByRole("button", { name: "Avslå" }).click();
+  await expect(anna.page).toHaveURL(/\/konto/);
+
+  // PS-USR-012: Bo sees no way to ask again, and nothing says why.
+  await bo.page.goto(`/personer/${anna.id}`);
+  await expect(status(bo.page)).toContainText(
+    "Dere er ikke venner. Du kan ikke sende Anna Berg en venneforespørsel nå.",
+  );
+  await expect(
+    bo.page.getByRole("button", { name: "Send venneforespørsel" }),
+  ).toHaveCount(0);
+  await expect(bo.page.getByText(/avslått|avslo|avslag/i)).toHaveCount(0);
+
+  // UX-PRIV-012: the role the page is opened in comes first; both stay.
+  const roles = bo.page
+    .getByRole("region", { name: "Erfaringer fra lån" })
+    .getByRole("heading", { level: 3, name: /^Som / });
+  await expect(roles).toHaveText(["Som låntaker", "Som utlåner"]);
+  await bo.page.goto(`/personer/${anna.id}?rolle=utlaaner`);
+  await expect(roles).toHaveText(["Som utlåner", "Som låntaker"]);
+});
+
 test("a stranger's page does not exist for the reader", async ({
   browser,
   baseURL,

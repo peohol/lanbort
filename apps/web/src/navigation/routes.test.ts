@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   notificationLinkHref,
+  personHref,
   registrationHref,
   returnPath,
   signInHref,
@@ -40,5 +41,13 @@ describe("sign-in addresses", () => {
     );
     expect(signInHref("//example.com")).toBe("/logg-inn");
     expect(signInHref()).toBe("/logg-inn");
+  });
+});
+
+describe("person addresses", () => {
+  it("carry the role the person has where they are named (UX-PRIV-012)", () => {
+    expect(personHref("abc")).toBe("/personer/abc");
+    expect(personHref("abc", "borrower")).toBe("/personer/abc?rolle=laantaker");
+    expect(personHref("abc", "lender")).toBe("/personer/abc?rolle=utlaaner");
   });
 });

@@ -40,6 +40,7 @@ test("two users become friends, and a block hides the blocker", async ({
     userId: bo,
     friendship: "outgoing_pending",
     blockedByMe: false,
+    canRequest: false,
   });
   const retried = await command(request, "friend-requests", bo, key);
   expect(retried.headers()["idempotent-replayed"]).toBe("true");
@@ -56,6 +57,7 @@ test("two users become friends, and a block hides the blocker", async ({
     userId: bo,
     friendship: "none",
     blockedByMe: true,
+    canRequest: false,
   });
 
   // To Bo, Anna now answers exactly like an account that does not exist.
@@ -88,7 +90,55 @@ test("two users become friends, and a block hides the blocker", async ({
   await command(request, "blocks/lift", bo);
   expect(
     await (await request.get(`/api/social/relation?userId=${bo}`)).json(),
-  ).toEqual({ userId: bo, friendship: "none", blockedByMe: false });
+  ).toEqual({
+    userId: bo,
+    friendship: "none",
+    blockedByMe: false,
+    canRequest: true,
+  });
+
+  await other.dispose();
+});
+
+test("after a declined request only the recipient can ask, and nothing says why", async ({
+  request,
+  playwright,
+  baseURL,
+}) => {
+  await registerThroughApi(request, undefined, "Anna Berg");
+  const anna = await accountId(request);
+  const other = await playwright.request.newContext({
+    baseURL: baseURL!,
+    extraHTTPHeaders: { origin: baseURL! },
+  });
+  await registerThroughApi(other, undefined, "Bo Dahl");
+  const bo = await accountId(other);
+
+  await command(request, "friend-requests", bo);
+  await command(other, "friend-requests/decline", anna);
+
+  // A direct call is refused exactly like a request to someone Anna blocks
+  // (PS-USR-012): the same status and body, and no reason.
+  const again = await command(request, "friend-requests", bo);
+  expect(again.status()).toBe(403);
+  expect(await again.json()).toEqual({ error: { code: "forbidden" } });
+  expect(
+    await (await request.get(`/api/social/relation?userId=${bo}`)).json(),
+  ).toEqual({
+    userId: bo,
+    friendship: "none",
+    blockedByMe: false,
+    canRequest: false,
+  });
+
+  // Bo can ask, and that lifts the hold even once Bo withdraws.
+  expect(
+    await (await command(other, "friend-requests", anna)).json(),
+  ).toMatchObject({ friendship: "outgoing_pending" });
+  await command(other, "friend-requests/withdraw", anna);
+  expect(
+    await (await command(request, "friend-requests", bo)).json(),
+  ).toMatchObject({ friendship: "outgoing_pending" });
 
   await other.dispose();
 });
