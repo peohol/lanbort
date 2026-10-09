@@ -5,6 +5,7 @@ import { deleteOwnAccount } from "../account/deletion";
 import { systemActor, type UserActor } from "../actor";
 import { executeCommand } from "../commands/command";
 import { executeQuery } from "../commands/query";
+import { readNotificationCentre } from "../notification-centre/queries";
 import { setNotificationPreference } from "../notifications/commands";
 import { notificationGenerator } from "../notifications/generator";
 import { chatMessageEmailDelayMs } from "../notifications/store";
@@ -920,6 +921,28 @@ describe("notifications of new messages (PS-COM-018)", () => {
     const after = await messageNotifications(bob.actor.userId, conversationId);
     expect(after).toHaveLength(2);
     expect(after[1]).toMatchObject({ detail: "messages_1", read_at: null });
+  });
+
+  it("is named by the one who wrote in the reader's centre, never by what", async () => {
+    const { alice, bob, conversationId } = await pairInConversation();
+
+    await send(alice, conversationId, 1);
+    await send(alice, conversationId, 1);
+    const { notifications } = await executeQuery(
+      tick(),
+      readNotificationCentre,
+      { actor: bob.actor, input: {} },
+    );
+
+    expect(
+      notifications.filter(({ kind }) => kind === "chat.new_messages"),
+    ).toEqual([
+      expect.objectContaining({
+        detail: "messages_2",
+        target: { type: "chat_conversation", id: conversationId },
+        about: { thing: null, person: expect.any(String), place: null },
+      }),
+    ]);
   });
 
   it("tells no one who muted the conversation, until they unmute it", async () => {
