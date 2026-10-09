@@ -1,9 +1,11 @@
 "use client";
 
 import { objectImageMaxCount } from "@lanbort/contracts";
-import { type ChangeEvent, useState } from "react";
+import { type ChangeEvent, type ReactNode, useState } from "react";
 import { describedBy, helpId } from "@/components/field";
+import { Icon } from "@/components/icon";
 import type { DraftInterval } from "@/presentation/object-form";
+import styles from "./object-form.module.css";
 import { prepareImage } from "./prepare-image";
 
 /** A photo in the form: one already saved, or one chosen to upload. */
@@ -33,7 +35,7 @@ export function ImagesField({
 }) {
   const [problem, setProblem] = useState<string | null>(null);
   const room = objectImageMaxCount - images.length;
-  const help = `Du kan legge til opptil ${objectImageMaxCount} bilder. Bildene lagres uten posisjon og andre opplysninger fra kameraet.`;
+  const help = `Valgfritt, inntil ${objectImageMaxCount} bilder. Bildene lagres uten posisjon og andre opplysninger fra kameraet.`;
 
   async function choose(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
@@ -63,36 +65,71 @@ export function ImagesField({
     onAdd(added);
   }
 
+  const picker = (label: ReactNode) => (
+    <label className={styles.picker}>
+      <input
+        type="file"
+        accept="image/*"
+        multiple
+        className={styles.file}
+        {...describedBy("bilder", help)}
+        onChange={(event) => void choose(event)}
+      />
+      <Icon name="plus" />
+      {label}
+    </label>
+  );
+
   return (
     <div className="field">
-      {images.length > 0 && (
-        <ul className="image-list" aria-label="Bilder">
-          {images.map((image, index) => (
-            <li key={image.id}>
-              {/* The API's own address or a local preview; nothing to optimize. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={image.src} alt={`Bilde ${index + 1}`} />
-              <button type="button" onClick={() => onRemove(image)}>
-                Fjern bilde {index + 1}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {room > 0 && (
-        <>
-          <label htmlFor="bilder">Legg til bilder</label>
+      {images.length === 0 ? (
+        <div className={styles.dropzone}>
+          <p className={styles.dropzoneTitle}>Vis fram tingen</p>
+          <p className="help">
+            Et bilde gjør det lettere å se hva det er og hvilken stand den er i.
+          </p>
+          {picker("Legg til bilder")}
           <p id={helpId("bilder")} className="help">
             {help}
           </p>
-          <input
-            id="bilder"
-            type="file"
-            accept="image/*"
-            multiple
-            {...describedBy("bilder", help)}
-            onChange={(event) => void choose(event)}
-          />
+        </div>
+      ) : (
+        <>
+          <p className={styles.imagesLabel}>
+            Bilder{" "}
+            <span className="help">
+              (valgfritt, inntil {objectImageMaxCount})
+            </span>
+          </p>
+          <ul className={styles.images} aria-label="Bilder">
+            {images.map((image, index) => (
+              <li key={image.id}>
+                {/* The API's own address or a local preview; nothing to optimize. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={image.src} alt={`Bilde ${index + 1}`} />
+                {index === 0 && <span className={styles.main}>Hovedbilde</span>}
+                <button
+                  type="button"
+                  className="button-quiet"
+                  onClick={() => onRemove(image)}
+                >
+                  Fjern bilde {index + 1}
+                </button>
+              </li>
+            ))}
+            {room > 0 && (
+              <li>
+                {picker(
+                  <>
+                    Legg til<span className="visually-hidden"> bilder</span>
+                  </>,
+                )}
+              </li>
+            )}
+          </ul>
+          <p id={helpId("bilder")} className="help">
+            {help}
+          </p>
         </>
       )}
       {problem && (
@@ -105,9 +142,10 @@ export function ImagesField({
 }
 
 /**
- * When the thing can be lent (PS-OBJ-003): one or more periods, each from a
- * day and with or without an end. Periods that share a day are pointed out
- * here; the API refuses them too.
+ * When the thing can be lent, in given periods (PS-OBJ-003): one or more,
+ * each from a day and with or without an end. Periods that share a day are
+ * pointed out here; the API refuses them too. With none, nobody can ask to
+ * borrow it until the owner adds one.
  */
 export function PeriodsField({
   periods,
@@ -128,63 +166,78 @@ export function PeriodsField({
 
   return (
     <>
-      {periods.map((period, index) => {
-        const number = index + 1;
-        const invalid = overlapping.includes(index);
-        const errorProps = invalid
-          ? { "aria-invalid": true, "aria-describedby": overlapId }
-          : {};
+      {periods.length > 0 && (
+        <ol className={styles.periods}>
+          {periods.map((period, index) => {
+            const number = index + 1;
+            const invalid = overlapping.includes(index);
+            const errorProps = invalid
+              ? { "aria-invalid": true, "aria-describedby": overlapId }
+              : {};
 
-        return (
-          <fieldset key={index}>
-            <legend>Periode {number}</legend>
-            <div className="field">
-              <label htmlFor={`fra-${index}`}>Fra</label>
-              <input
-                id={`fra-${index}`}
-                type="date"
-                required
-                value={period.start}
-                {...errorProps}
-                onChange={(event) =>
-                  update(index, { start: event.target.value })
-                }
-              />
-            </div>
-            <div className="field">
-              <label htmlFor={`til-${index}`}>Til (valgfritt)</label>
-              <input
-                id={`til-${index}`}
-                type="date"
-                min={period.start || undefined}
-                value={period.end}
-                {...errorProps}
-                onChange={(event) => update(index, { end: event.target.value })}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => onChange(periods.filter((_, at) => at !== index))}
-            >
-              Fjern periode {number}
-            </button>
-          </fieldset>
-        );
-      })}
+            return (
+              <li key={index}>
+                <fieldset>
+                  <legend>Periode {number}</legend>
+                  <div className="field">
+                    <label htmlFor={`fra-${index}`}>Fra</label>
+                    <input
+                      id={`fra-${index}`}
+                      type="date"
+                      required
+                      value={period.start}
+                      {...errorProps}
+                      onChange={(event) =>
+                        update(index, { start: event.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor={`til-${index}`}>Til (valgfritt)</label>
+                    <input
+                      id={`til-${index}`}
+                      type="date"
+                      min={period.start || undefined}
+                      value={period.end}
+                      {...errorProps}
+                      onChange={(event) =>
+                        update(index, { end: event.target.value })
+                      }
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="button-quiet"
+                    onClick={() =>
+                      onChange(periods.filter((_, at) => at !== index))
+                    }
+                  >
+                    Fjern periode {number}
+                  </button>
+                </fieldset>
+              </li>
+            );
+          })}
+        </ol>
+      )}
       {overlapping.length > 0 && (
         <p id={overlapId} role="alert" className="error">
           Periodene {overlapping.map((index) => index + 1).join(" og ")} har
           dager felles. Slå dem sammen eller endre datoene.
         </p>
       )}
-      <div className="actions">
-        <button
-          type="button"
-          onClick={() => onChange([...periods, { start: "", end: "" }])}
-        >
-          Legg til periode
-        </button>
-      </div>
+      {periods.length === 0 && (
+        <p className="help">
+          Ingen perioder ennå. Den kan ikke lånes ut før du legger inn en.
+        </p>
+      )}
+      <button
+        type="button"
+        className="button-secondary"
+        onClick={() => onChange([...periods, { start: "", end: "" }])}
+      >
+        <Icon name="plus" /> Legg til periode
+      </button>
     </>
   );
 }

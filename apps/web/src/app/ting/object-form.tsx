@@ -21,38 +21,58 @@ import { BusyButton } from "@/components/busy-button";
 import { announceDataChanged } from "@/components/data-changed";
 import { errorMessage } from "@/components/error-messages";
 import { ErrorText } from "@/components/error-text";
-import { describedBy, Field, helpId } from "@/components/field";
-import { PilotObjectPolicy } from "@/components/pilot-object-policy";
+import { Icon } from "@/components/icon";
+import { PageHeader } from "@/components/page-header";
+import type { AreaId } from "@/navigation/areas";
 import { objectHref } from "@/navigation/routes";
 import {
+  type AvailabilityMode,
   changedFields,
   changedTermsNotice,
   contentOf,
+  type DraftInterval,
   draftOf,
   editOf,
+  type FormStep,
+  formStepNames,
+  formSteps,
+  isAnytime,
   newDraft,
   type ObjectDraft,
   objectFieldLabels,
   overlappingPeriods,
+  publishLabel,
+  publishOutcome,
   rebaseDraft,
 } from "@/presentation/object-form";
 import { ownImageHref } from "@/presentation/object-images";
-import { categoryLabel, formatInterval } from "@/presentation/objects";
 import {
-  type FormImage,
-  ImagesField,
-  PeriodsField,
-} from "./object-form-fields";
+  availabilityLine,
+  categoryLabel,
+  formatInterval,
+} from "@/presentation/objects";
+import { type FormImage } from "./object-form-fields";
+import {
+  AboutStep,
+  type PublishTarget,
+  ReviewGroup,
+  WhenStep,
+  WhoStep,
+} from "./object-form-steps";
+import styles from "./object-form.module.css";
 
-/** An environment the user may publish in: one they are an active member of. */
-export interface PublishTarget {
-  readonly id: string;
-  readonly name: string;
-}
+export type { PublishTarget } from "./object-form-steps";
 
 export type ObjectFormProps = {
   readonly categories: readonly ObjectCategory[];
   readonly today: string;
+  /** Where the form was started, which «Avbryt» leads back to (UX-IA-013). */
+  readonly from: {
+    readonly href: string;
+    readonly label: string;
+    /** Its home area, when `href` is not an area's own page. */
+    readonly home?: AreaId;
+  };
 } & (
   | {
       readonly mode: "create";
@@ -110,16 +130,27 @@ function useSteps() {
   };
 }
 
+/** The question each step asks, as its heading (Tomat kjerneflyt 2). */
+const questions: Record<FormStep, { create: string; edit: string }> = {
+  about: { create: "Hva vil du låne bort?", edit: "Om tingen" },
+  when: { create: "Når kan den lånes?", edit: "Når kan den lånes?" },
+  who: { create: "Hvem kan låne den?", edit: "Hvem kan låne den?" },
+  review: { create: "Se over og publiser", edit: "Se over og lagre" },
+};
+
 /**
  * One way to register and edit a thing, wherever the user starts
- * (UX-JRN-003): title and category, description and photos, when it can be
- * lent, optional terms, where it is shown, then a review before anything is
- * saved. Editing a thing others co-own finds out if someone saved in the
- * meantime and shows what they saved before the user decides (PS-OBJ-013).
+ * (UX-JRN-003), as a bounded task in short steps (UX-IA-013, Tomat
+ * kjerneflyt 2): about the thing, when and on what terms, who can borrow
+ * it, and a review before anything is saved, where each group leads back
+ * to its step. Editing leaves where it is shown to the thing's page, and a
+ * thing others co-own finds out if someone saved in the meantime and shows
+ * what they saved before the user decides (PS-OBJ-013).
  */
 export function ObjectForm(props: ObjectFormProps) {
-  const { categories, today } = props;
+  const { categories, today, from } = props;
   const editing = props.mode === "edit" ? props.object : null;
+  const order = formSteps[props.mode];
   const router = useRouter();
   const steps = useSteps();
   const [base, setBase] = useState<Base | null>(
@@ -127,6 +158,13 @@ export function ObjectForm(props: ObjectFormProps) {
   );
   const [draft, setDraft] = useState<ObjectDraft>(
     editing ? draftOf(editing) : newDraft(today),
+  );
+  const modeOf = (availability: readonly DraftInterval[]): AvailabilityMode =>
+    isAnytime(availability, today) ? "anytime" : "periods";
+  const [mode, setMode] = useState(modeOf(draft.availability));
+  // The periods last given, kept while «any time» is chosen.
+  const [periods, setPeriods] = useState<readonly DraftInterval[]>(
+    mode === "periods" ? draft.availability : [],
   );
   const [images, setImages] = useState<FormImage[]>(
     editing ? savedImages(editing) : [],
@@ -138,27 +176,61 @@ export function ObjectForm(props: ObjectFormProps) {
       ? [props.preselected!]
       : [],
   );
-  const [reviewing, setReviewing] = useState(false);
+  const [friends, setFriends] = useState(false);
+  const [at, setAt] = useState(0);
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<ApiFailureCode | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
   const [newer, setNewer] = useState<OwnObject | null>(null);
-  const reviewHeading = useRef<HTMLHeadingElement>(null);
   const titleField = useRef<HTMLInputElement>(null);
-  const shownStep = useRef(reviewing);
+  const discard = useRef<HTMLDialogElement>(null);
+  const shownStep = useRef(at);
+  const step = order[at]!;
 
   const overlapping = overlappingPeriods(draft.availability);
   const changed = base ? changedFields(base.draft, draft) : [];
   const imagesChanged =
     removed.length > 0 || images.some((image) => image.kind === "new");
+  const dirty = editing
+    ? changed.length > 0 || imagesChanged
+    : changedFields(newDraft(today), draft).length > 0 || images.length > 0;
 
-  // Moving between filling in and reviewing moves focus with it.
+  // A new step is announced by moving focus to its heading.
   useEffect(() => {
-    if (shownStep.current === reviewing) return;
-    shownStep.current = reviewing;
-    (reviewing ? reviewHeading : titleField).current?.focus();
-  }, [reviewing]);
+    if (shownStep.current === at) return;
+    shownStep.current = at;
+    const heading = document.querySelector<HTMLElement>(".page-header h1");
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus();
+    }
+  }, [at]);
 
+  // «Avbryt» asks first when something would be lost (Tomat kjerneflyt 2).
+  const dirtyRef = useRef(dirty);
+  const pendingRef = useRef(pending);
+  useEffect(() => {
+    pendingRef.current = pending;
+  }, [pending]);
+  useEffect(() => {
+    dirtyRef.current = dirty;
+  }, [dirty]);
+  const leaveTo = useRef<string | null>(null);
+  useEffect(() => {
+    const guard = (event: MouseEvent) => {
+      const cancel = (event.target as Element | null)?.closest?.(
+        "a.task-cancel",
+      );
+      if (!cancel || !dirtyRef.current || pendingRef.current) return;
+      event.preventDefault();
+      event.stopPropagation();
+      leaveTo.current = cancel.getAttribute("href");
+      discard.current?.showModal();
+    };
+    document.addEventListener("click", guard, true);
+    return () => document.removeEventListener("click", guard, true);
+  }, []);
   // Local previews live as long as the form.
   const previews = useRef(images);
   useEffect(() => {
@@ -173,14 +245,38 @@ export function ObjectForm(props: ObjectFormProps) {
     [],
   );
 
-  const set = (change: Partial<ObjectDraft>) =>
+  const set = (change: Partial<ObjectDraft>) => {
     setDraft((current) => ({ ...current, ...change }));
+    if (change.availability && mode === "periods") {
+      setPeriods(change.availability);
+    }
+  };
 
-  function toReview(event: FormEvent) {
-    event.preventDefault();
-    if (overlapping.length > 0) return;
+  function chooseMode(next: AvailabilityMode) {
+    setMode(next);
+    // Not through `set`: the periods given stay remembered.
+    setDraft((current) => ({
+      ...current,
+      availability:
+        next === "anytime"
+          ? isAnytime(base?.draft.availability ?? [], today)
+            ? base!.draft.availability
+            : [{ start: today, end: "" }]
+          : periods.length > 0
+            ? periods
+            : [{ start: "", end: "" }],
+    }));
+  }
+
+  function go(to: number) {
     setFailure(null);
-    setReviewing(true);
+    setAt(to);
+  }
+
+  function next(event: FormEvent) {
+    event.preventDefault();
+    if (step === "when" && overlapping.length > 0) return;
+    go(at + 1);
   }
 
   function removeImage(image: FormImage) {
@@ -231,7 +327,15 @@ export function ObjectForm(props: ObjectFormProps) {
     return { ok: true, data: null };
   }
 
-  async function create(current: ObjectDraft): Promise<string | null> {
+  /**
+   * Registers the thing, its photos and, when `publish`, where the user
+   * chose to show it: each environment (PS-OBJ-006) and friends
+   * (PS-OBJ-020).
+   */
+  async function create(
+    current: ObjectDraft,
+    publish: boolean,
+  ): Promise<string | null> {
     const created = await steps.run<ObjectVersion>("create", (idempotencyKey) =>
       postJson("/api/objects", contentOf(current), { idempotencyKey }),
     );
@@ -241,6 +345,9 @@ export function ObjectForm(props: ObjectFormProps) {
 
     const saved = await saveImages(objectId);
     if (!saved.ok) return fail(saved.code);
+    if (!publish) return objectId;
+    // From here, saving without publishing would no longer be true.
+    setPublishing(true);
 
     for (const environmentId of published) {
       const result = await steps.run(
@@ -251,6 +358,13 @@ export function ObjectForm(props: ObjectFormProps) {
             { environmentId },
             { idempotencyKey },
           ),
+      );
+      if (!result.ok) return fail(result.code);
+    }
+
+    if (friends) {
+      const result = await steps.run("friends", (idempotencyKey) =>
+        postJson(`/api/objects/${objectId}/friends`, {}, { idempotencyKey }),
       );
       if (!result.ok) return fail(result.code);
     }
@@ -317,7 +431,11 @@ export function ObjectForm(props: ObjectFormProps) {
     return null;
   }
 
-  async function save(from: Base | null = base, current: ObjectDraft = draft) {
+  async function save({
+    from = base,
+    current = draft,
+    publish = true,
+  }: { from?: Base | null; current?: ObjectDraft; publish?: boolean } = {}) {
     if (pending) return;
     setPending(true);
     setFailure(null);
@@ -325,11 +443,13 @@ export function ObjectForm(props: ObjectFormProps) {
     const objectId =
       editing && from
         ? await update(editing, from, current)
-        : await create(current);
+        : await create(current, publish);
     setPending(false);
 
     if (objectId) {
-      announce(`Ferdig: ${submitLabel}`);
+      announce(
+        `Ferdig: ${editing ? "Endringene er lagret" : "Tingen er registrert"}`,
+      );
       announceDataChanged();
       router.push(objectHref(objectId));
     }
@@ -342,84 +462,201 @@ export function ObjectForm(props: ObjectFormProps) {
     const merged = base ? rebaseDraft(base.draft, saved, draft) : draft;
     setBase(rebased);
     setDraft(merged);
-    void save(rebased, merged);
+    void save({ from: rebased, current: merged });
   }
 
   /** Starts again from what is saved now. */
   function takeSaved(latest: OwnObject) {
-    setBase({ draft: draftOf(latest), version: latest.version });
-    setDraft(draftOf(latest));
+    const saved = draftOf(latest);
+    setBase({ draft: saved, version: latest.version });
+    setDraft(saved);
+    setMode(modeOf(saved.availability));
+    setPeriods(
+      modeOf(saved.availability) === "periods" ? saved.availability : [],
+    );
     setImages(savedImages(latest));
     setRemoved([]);
     setNewer(null);
-    setReviewing(false);
+    go(0);
   }
 
-  const submitLabel = editing
-    ? "Lagre endringene"
-    : published.length > 0
-      ? "Registrer og publiser"
-      : "Registrer tingen";
+  const content = contentOf(draft);
+  const choice = {
+    environments:
+      props.mode === "create"
+        ? props.environments
+            .filter(({ id }) => published.includes(id))
+            .map(({ name }) => name)
+        : [],
+    friends,
+  };
+  const publishAs = publishLabel(choice);
   const nothingToSave =
     editing !== null && changed.length === 0 && !imagesChanged;
-  const content = contentOf(draft);
-  const environmentNames =
-    props.mode === "create"
-      ? props.environments
-          .filter(({ id }) => published.includes(id))
-          .map(({ name }) => name)
-      : [];
+  const stepOf = (name: FormStep) => order.indexOf(name as never);
 
-  if (reviewing) {
+  const header = (
+    <PageHeader
+      title={questions[step][props.mode]}
+      kind={editing ? "Rediger tingen" : "Registrer en ting"}
+      back={from}
+      {...(from.home && { home: from.home })}
+      task
+    />
+  );
+
+  /** The way to the step before and how far the user has come. */
+  const progress = (
+    <div className={styles.progress}>
+      {at > 0 && (
+        <button
+          type="button"
+          className={styles.previous}
+          onClick={() => go(at - 1)}
+        >
+          <Icon name="back" /> {formStepNames[order[at - 1]!]}
+        </button>
+      )}
+      <p className={styles.count}>
+        Steg {at + 1} av {order.length}
+      </p>
+      <nav className={styles.steps} aria-label="Steg">
+        <ol>
+          {order.map((name, index) => (
+            <li
+              key={name}
+              aria-current={index === at ? "step" : undefined}
+              data-done={index < at || undefined}
+            >
+              {index < at ? (
+                <button type="button" onClick={() => go(index)}>
+                  <Icon name="check" /> {formStepNames[name]}
+                </button>
+              ) : (
+                <span>
+                  <span className={styles.number}>{index + 1}</span>{" "}
+                  {formStepNames[name]}
+                </span>
+              )}
+            </li>
+          ))}
+        </ol>
+      </nav>
+    </div>
+  );
+
+  const discardDialog = (
+    <dialog ref={discard} className="dialog" aria-labelledby="forkast-tittel">
+      <h2 id="forkast-tittel">
+        {editing
+          ? "Forkaste endringene?"
+          : `Forkaste ${content.title || "tingen"}?`}
+      </h2>
+      <p>
+        {editing
+          ? "Det du har endret, forsvinner. Tingen er som før."
+          : "Det du har skrevet og bildene du har lagt til, forsvinner. Ingenting er publisert."}
+      </p>
+      <div className="dialog-actions">
+        <button type="button" onClick={() => discard.current?.close()}>
+          {editing ? "Fortsett å redigere" : "Fortsett å registrere"}
+        </button>
+        <button
+          type="button"
+          className="button-danger"
+          onClick={() => {
+            discard.current?.close();
+            dirtyRef.current = false;
+            router.push(leaveTo.current ?? from.href);
+          }}
+        >
+          Forkast
+        </button>
+      </div>
+    </dialog>
+  );
+
+  if (step === "review") {
     return (
-      <section aria-labelledby="gjennomga">
-        <h2 id="gjennomga" ref={reviewHeading} tabIndex={-1}>
-          Se over før du {editing ? "lagrer" : "registrerer"}
-        </h2>
-        <dl className="facts">
-          <dt>Tittel</dt>
-          <dd>{content.title}</dd>
-          <dt>Kategori</dt>
-          <dd>{categoryLabel(categories, content.categoryId)}</dd>
-          <dt>Beskrivelse</dt>
-          <dd className="message-text">{content.description}</dd>
-          <dt>Bilder</dt>
-          <dd>{images.length === 0 ? "Ingen" : images.length}</dd>
-          <dt>Når den kan lånes</dt>
-          <dd>
-            {content.availability.length === 0
-              ? "Ingen perioder. Den kan ikke lånes ut før du legger inn en."
-              : content.availability.map(formatInterval).join(", ")}
-          </dd>
-          <dt>Vilkår</dt>
-          <dd className="message-text">
-            {content.loanTerms ?? "Ingen egne vilkår"}
-          </dd>
-          {props.mode === "create" && (
-            <>
-              <dt>Vises i</dt>
-              <dd>
-                {environmentNames.length === 0
-                  ? "Ingen miljøer ennå. Du kan publisere den senere."
-                  : environmentNames.join(", ")}
-              </dd>
-            </>
-          )}
-        </dl>
-        {editing && (
-          <p>
-            {nothingToSave
-              ? "Du har ikke endret noe."
-              : `Du endrer: ${[
-                  ...changed.map((field) => objectFieldLabels[field]),
-                  ...(imagesChanged ? ["Bilder"] : []),
-                ]
-                  .join(", ")
-                  .toLowerCase()}.`}
-          </p>
+      <div className={styles.form}>
+        {header}
+        {progress}
+        <ReviewGroup
+          heading={formStepNames.about}
+          onChange={() => go(stepOf("about"))}
+          rows={[
+            [objectFieldLabels.title, content.title],
+            [
+              objectFieldLabels.categoryId,
+              categoryLabel(categories, content.categoryId),
+            ],
+            ["Bilder", images.length === 0 ? "Ingen" : images.length],
+            [
+              objectFieldLabels.description,
+              <span key="beskrivelse" className="message-text">
+                {content.description}
+              </span>,
+            ],
+          ]}
+        />
+        <ReviewGroup
+          heading={formStepNames.when}
+          onChange={() => go(stepOf("when"))}
+          rows={[
+            [
+              "Ledig",
+              content.availability.length === 0
+                ? "Ingen perioder. Den kan ikke lånes ut før du legger inn en."
+                : availabilityLine(content.availability, today),
+            ],
+            [
+              "Vilkår",
+              <span key="vilkar" className="message-text">
+                {content.loanTerms ?? "Ingen egne vilkår"}
+              </span>,
+            ],
+          ]}
+        />
+        {props.mode === "create" && (
+          <ReviewGroup
+            heading={formStepNames.who}
+            onChange={() => go(stepOf("who"))}
+            rows={[
+              ...props.environments.map(
+                (environment) =>
+                  [
+                    environment.name,
+                    published.includes(environment.id)
+                      ? "Publiseres"
+                      : "Ikke valgt",
+                  ] as const,
+              ),
+              ["Venner", friends ? "Publiseres" : "Ikke valgt"] as const,
+            ]}
+          />
         )}
-        {changed.includes("loanTerms") && (
-          <p className="waiting">{changedTermsNotice}</p>
+        {editing ? (
+          <>
+            <p>
+              {nothingToSave
+                ? "Du har ikke endret noe."
+                : `Du endrer: ${[
+                    ...changed.map((field) => objectFieldLabels[field]),
+                    ...(imagesChanged ? ["Bilder"] : []),
+                  ]
+                    .join(", ")
+                    .toLowerCase()}.`}
+            </p>
+            {changed.includes("loanTerms") && (
+              <p className="waiting">{changedTermsNotice}</p>
+            )}
+          </>
+        ) : (
+          <p className={styles.outcome}>
+            {publishAs
+              ? publishOutcome(choice, content.title)
+              : "Ingen kan se den ennå. Uten miljø eller venner lagres tingen bare for deg. Du kan publisere den senere fra tingens side."}
+          </p>
         )}
         {newer && base && (
           <NewerVersion
@@ -431,26 +668,38 @@ export function ObjectForm(props: ObjectFormProps) {
             onTakeSaved={() => takeSaved(newer)}
           />
         )}
-        {!newer && (
-          <div className="actions">
-            {!nothingToSave && (
-              <BusyButton
-                type="button"
-                className="button-primary"
-                busy={pending}
-                onClick={() => void save()}
-              >
-                {submitLabel}
-              </BusyButton>
+        {!newer && !nothingToSave && (
+          <div className={styles.submit}>
+            <BusyButton
+              type="button"
+              className="button-primary"
+              busy={pending}
+              busyNote={editing ? "lagrer …" : "publiserer …"}
+              onClick={() => void save()}
+            >
+              {editing
+                ? "Lagre endringene"
+                : (publishAs ?? "Lagre uten å publisere")}
+            </BusyButton>
+            {!editing && publishAs && !publishing && (
+              <p className={styles.private}>
+                <button
+                  type="button"
+                  className="button-quiet"
+                  aria-describedby="bare-for-deg"
+                  onClick={() => void save({ publish: false })}
+                >
+                  Lagre uten å publisere
+                </button>
+                <span id="bare-for-deg" className="help">
+                  Da er den bare synlig for deg.
+                </span>
+              </p>
             )}
-            {createdId ? (
+            {createdId && failure && (
               <Link className="button" href={objectHref(createdId)}>
                 Gå til tingen
               </Link>
-            ) : (
-              <button type="button" onClick={() => setReviewing(false)}>
-                Endre
-              </button>
             )}
           </div>
         )}
@@ -460,145 +709,59 @@ export function ObjectForm(props: ObjectFormProps) {
               ? `Tingen er registrert, men ikke alt ble fullført. ${errorMessage(failure)}`
               : errorMessage(failure))}
         </ErrorText>
-      </section>
+        {discardDialog}
+      </div>
     );
   }
 
-  const categoryHelp = "kategori-grense";
-  const descriptionHelp =
-    "Skriv gjerne merke, modell, størrelse, tilstand og eventuelle mangler.";
-  const termsHelp = "For eksempel at den skal vaskes før den leveres tilbake.";
-  const periodsHelp =
-    "Legg inn én eller flere perioder. Uten sluttdato kan den lånes fra startdatoen og fram til du endrer det.";
-
   return (
-    <form onSubmit={toReview}>
-      <fieldset>
-        <legend>Tittel og kategori</legend>
-        <Field id="tittel" label="Tittel">
-          <input
-            id="tittel"
-            ref={titleField}
-            required
-            maxLength={120}
-            value={draft.title}
-            onChange={(event) => set({ title: event.target.value })}
+    <div className={styles.form}>
+      {header}
+      {progress}
+      <form onSubmit={next}>
+        {step === "about" && (
+          <AboutStep
+            draft={draft}
+            set={set}
+            categories={categories}
+            editing={editing !== null}
+            images={images}
+            onAddImages={(added) =>
+              setImages((current) => [...current, ...added])
+            }
+            onRemoveImage={removeImage}
+            titleField={titleField}
           />
-        </Field>
-        <Field id="kategori" label="Kategori">
-          <select
-            id="kategori"
-            required
-            aria-describedby={categoryHelp}
-            value={draft.categoryId}
-            onChange={(event) => set({ categoryId: event.target.value })}
-          >
-            <option value="">Velg kategori</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.label}
-              </option>
-            ))}
-            {editing &&
-              !categories.some(({ id }) => id === draft.categoryId) && (
-                <option value={draft.categoryId}>
-                  {categoryLabel(categories, draft.categoryId)}
-                </option>
-              )}
-          </select>
-        </Field>
-        <PilotObjectPolicy id={categoryHelp} />
-      </fieldset>
-
-      <fieldset>
-        <legend>Beskrivelse og bilder</legend>
-        <Field id="beskrivelse" label="Beskrivelse" help={descriptionHelp}>
-          <textarea
-            id="beskrivelse"
-            required
-            maxLength={5000}
-            {...describedBy("beskrivelse", descriptionHelp)}
-            value={draft.description}
-            onChange={(event) => set({ description: event.target.value })}
-          />
-        </Field>
-        <ImagesField
-          images={images}
-          onAdd={(added) => setImages((current) => [...current, ...added])}
-          onRemove={removeImage}
-        />
-      </fieldset>
-
-      <fieldset aria-describedby={helpId("perioder")}>
-        <legend>Når den kan lånes</legend>
-        <p id={helpId("perioder")} className="help">
-          {periodsHelp}
-        </p>
-        <PeriodsField
-          periods={draft.availability}
-          overlapping={overlapping}
-          onChange={(availability) => set({ availability })}
-        />
-      </fieldset>
-
-      <fieldset>
-        <legend>Vilkår</legend>
-        <Field id="vilkar" label="Vilkår for lån (valgfritt)" help={termsHelp}>
-          <textarea
-            id="vilkar"
-            maxLength={2000}
-            {...describedBy("vilkar", termsHelp)}
-            value={draft.loanTerms}
-            onChange={(event) => set({ loanTerms: event.target.value })}
-          />
-        </Field>
-        {changed.includes("loanTerms") && (
-          <p className="waiting">{changedTermsNotice}</p>
         )}
-      </fieldset>
-
-      {props.mode === "create" && (
-        <fieldset>
-          <legend>Hvor skal den vises?</legend>
-          {props.environments.length === 0 ? (
-            <p className="help">
-              Du er ikke med i noen miljøer ennå. Tingen blir registrert hos
-              deg, og du kan publisere den senere.
-            </p>
-          ) : (
-            <>
-              <p className="help">
-                Tingen er din uansett hvor den vises. Medlemmene i miljøene du
-                velger, kan finne den og be om å låne den.
-              </p>
-              {props.environments.map((environment) => (
-                <div key={environment.id} className="checkbox">
-                  <input
-                    id={`miljo-${environment.id}`}
-                    type="checkbox"
-                    checked={published.includes(environment.id)}
-                    onChange={(event) =>
-                      setPublished((current) =>
-                        event.target.checked
-                          ? [...current, environment.id]
-                          : current.filter((id) => id !== environment.id),
-                      )
-                    }
-                  />
-                  <label htmlFor={`miljo-${environment.id}`}>
-                    {environment.name}
-                  </label>
-                </div>
-              ))}
-            </>
-          )}
-        </fieldset>
-      )}
-
-      <div className="actions">
-        <button type="submit">Gå videre</button>
-      </div>
-    </form>
+        {step === "when" && (
+          <WhenStep
+            draft={draft}
+            set={set}
+            today={today}
+            mode={mode}
+            onMode={chooseMode}
+            overlapping={overlapping}
+            termsNotice={
+              changed.includes("loanTerms") ? changedTermsNotice : null
+            }
+          />
+        )}
+        {step === "who" && props.mode === "create" && (
+          <WhoStep
+            environments={props.environments}
+            published={published}
+            onPublished={setPublished}
+            friends={friends}
+            onFriends={setFriends}
+            preselected={props.preselected}
+          />
+        )}
+        <button type="submit" className={styles.next}>
+          Videre
+        </button>
+      </form>
+      {discardDialog}
+    </div>
   );
 }
 

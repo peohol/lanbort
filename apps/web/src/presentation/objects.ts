@@ -44,6 +44,22 @@ export function formatInterval({ start, end }: AvailabilityInterval): string {
     : `${formatDay(start)} – ${formatDay(end)}`;
 }
 
+/**
+ * When a thing can be lent, in one line: «Når som helst, fra 4. oktober»
+ * for one open period that has begun (Tomat kjerneflyt 2), else its
+ * periods. Empty when it has none.
+ */
+export function availabilityLine(
+  intervals: readonly AvailabilityInterval[],
+  today: string,
+): string {
+  const [only] = intervals;
+
+  return intervals.length === 1 && only!.end === null && only!.start <= today
+    ? `Når som helst, ${formatInterval(only!).toLowerCase()}`
+    : intervals.map(formatInterval).join(", ");
+}
+
 /** A category's name, or the id while the list does not have it. */
 export function categoryLabel(
   categories: readonly ObjectCategory[],
@@ -97,6 +113,12 @@ export function ownThingStatus(
 /** What goes before the item at `index` in a list said as «Anna, Bo og Cleo». */
 export const listSeparator = (index: number, count: number) =>
   index === 0 ? "" : index === count - 1 ? " og " : ", ";
+
+/** Words said as a list: «Lia», «Lia og Furu», «Lia, Furu og Nøste». */
+export const sayList = (words: readonly string[]) =>
+  words
+    .map((word, index) => listSeparator(index, words.length) + word)
+    .join("");
 
 /** The heading for a thing's owners, one or several. */
 export const ownersLabel = (owners: readonly ShownOwner[]) =>

@@ -1,8 +1,9 @@
 import type { AvailabilityInterval } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import {
-  categoryLabel,
+  availabilityLine,
   availabilityStatus,
+  categoryLabel,
   describeAvailability,
   formatInterval,
   listSeparator,
@@ -143,5 +144,26 @@ describe("owners of a thing in an environment (PS-ENV-015)", () => {
   it("heads one owner or several", () => {
     expect(ownersLabel([owner("Anna")])).toBe("Eier");
     expect(ownersLabel([owner("Anna"), owner("Bo")])).toBe("Eiere");
+  });
+});
+
+describe("availabilityLine", () => {
+  it("says «any time» for one open period that has begun", () => {
+    expect(
+      availabilityLine([{ start: "2026-10-01", end: null }], "2026-10-09"),
+    ).toBe("Når som helst, fra torsdag 1. oktober");
+  });
+
+  it("lists periods otherwise", () => {
+    expect(
+      availabilityLine(
+        [
+          { start: "2026-10-12", end: "2026-10-14" },
+          { start: "2026-11-01", end: null },
+        ],
+        "2026-10-09",
+      ),
+    ).toBe("mandag 12. oktober – onsdag 14. oktober, Fra søndag 1. november");
+    expect(availabilityLine([], "2026-10-09")).toBe("");
   });
 });

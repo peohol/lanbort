@@ -4,6 +4,7 @@ import type {
   ObjectChangeField,
   OwnObject,
 } from "@lanbort/contracts";
+import { sayList } from "./objects";
 
 /**
  * What the form for a thing holds (UX-JRN-003), as the user types it: text
@@ -151,10 +152,10 @@ export function overlappingPeriods(
 
 /** Names of the fields in the user's words, as the form shows them. */
 export const objectFieldLabels: Record<ObjectChangeField, string> = {
-  title: "Tittel",
+  title: "Navn",
   categoryId: "Kategori",
   description: "Beskrivelse",
-  loanTerms: "Vilkår for lån",
+  loanTerms: "Vilkår for lånet",
   availability: "Når den kan lånes",
 };
 
@@ -164,3 +165,77 @@ export const objectFieldLabels: Record<ObjectChangeField, string> = {
  */
 export const changedTermsNotice =
   "Når du endrer vilkårene, må de som har sendt en forespørsel som venter på svar, godta de nye vilkårene før forespørselen kan godkjennes.";
+
+/**
+ * How the thing can be lent (PS-OBJ-003), as the form asks it: from today
+ * on with no end, or only in the periods the user gives.
+ */
+export type AvailabilityMode = "anytime" | "periods";
+
+/** Whether `periods` say «any time»: one open period that has begun. */
+export const isAnytime = (
+  periods: readonly DraftInterval[],
+  today: string,
+): boolean =>
+  periods.length === 1 &&
+  periods[0]!.end === "" &&
+  periods[0]!.start !== "" &&
+  periods[0]!.start <= today;
+
+/**
+ * The steps of the form (UX-JRN-003, UX-IA-013), in order. Registering asks
+ * where the thing is shown; editing leaves that to the thing's page.
+ */
+export const formSteps = {
+  create: ["about", "when", "who", "review"],
+  edit: ["about", "when", "review"],
+} as const;
+
+export type FormStep = (typeof formSteps)[keyof typeof formSteps][number];
+
+/** Each step's name in the step list and on the way back to it. */
+export const formStepNames: Record<FormStep, string> = {
+  about: "Om tingen",
+  when: "Når og vilkår",
+  who: "Hvem kan låne",
+  review: "Se over",
+};
+
+/** Where the user chose to show a new thing (PS-OBJ-006, PS-OBJ-020). */
+export interface PublishChoice {
+  readonly environments: readonly string[];
+  readonly friends: boolean;
+}
+
+/**
+ * The button that publishes a new thing names where it becomes visible
+ * (Tomat kjerneflyt 2); null when nothing is chosen, so it is only saved.
+ */
+export function publishLabel({
+  environments,
+  friends,
+}: PublishChoice): string | null {
+  const places = [
+    environments.length === 1
+      ? `i ${environments[0]}`
+      : environments.length > 1
+        ? `i ${environments.length} miljøer`
+        : null,
+    friends ? "for venner" : null,
+  ].filter((place) => place !== null);
+
+  return places.length === 0 ? null : `Publiser ${places.join(" og ")}`;
+}
+
+/** Who can find a new thing once it is published, as a sentence. */
+export function publishOutcome(
+  { environments, friends }: PublishChoice,
+  title: string,
+): string {
+  const who = [
+    environments.length > 0 && `medlemmer i ${sayList(environments)}`,
+    friends && "vennene dine",
+  ].filter(Boolean);
+
+  return `Når du publiserer, kan ${who.join(" og ")} finne ${title} og be om å låne den. Du kan endre alt eller trekke publiseringen tilbake senere.`;
+}
