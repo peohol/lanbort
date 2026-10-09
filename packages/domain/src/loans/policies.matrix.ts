@@ -7,6 +7,7 @@ import {
   acceptLoanAmendmentPolicy,
   acceptResponsibilityPolicy,
   acceptResponsibilityTransferPolicy,
+  answerLoanConditionPolicy,
   approveLoanRequestPolicy,
   cancelLoanPolicy,
   concludeHandoversPolicy,
@@ -21,6 +22,7 @@ import {
   endLoanUnresolvedPolicy,
   handoverProcess,
   type LoanAmendmentResource,
+  type LoanConditionResource,
   type LoanControlResource,
   type LoanReceiptResource,
   type LoanReturnResource,
@@ -35,11 +37,13 @@ import {
   offerResponsibilityPolicy,
   previewLoanRequestPolicy,
   proposeLoanAmendmentPolicy,
+  readLoanConditionReportsPolicy,
   readLoanHistoryPolicy,
   readLoanLogisticsPolicy,
   readLoanPolicy,
   readLoanRequestPolicy,
   reportHandoverPolicy,
+  reportLoanConditionPolicy,
   reportReturnPolicy,
   requestLoanMediationPolicy,
   type ResponsibilityTransferResource,
@@ -491,6 +495,26 @@ const controlMatrix = policyMatrix(confirmLoanControlPolicy, [
   ...callerCases(controlLoan(true)),
 ]);
 
+/**
+ * PS-LOAN-023: on a report of damage by either side, only the other side
+ * answers it, also with an account that is not active.
+ */
+const conditionAnswerMatrix = policyMatrix(
+  answerLoanConditionPolicy,
+  (["borrower", "lender"] as const).flatMap((reporterRole) =>
+    loanCases<LoanConditionResource>(
+      { ...loan, reporterRole },
+      {
+        borrower: reporterRole === "lender",
+        lender: reporterRole === "borrower",
+      },
+    ).map((testCase) => ({
+      ...testCase,
+      name: `${testCase.name}, on the ${reporterRole}'s report`,
+    })),
+  ),
+);
+
 export const loanMatrices = [
   policyMatrix(createLoanRequestPolicy, targetCases),
   policyMatrix(previewLoanRequestPolicy, targetCases),
@@ -542,4 +566,7 @@ export const loanMatrices = [
   processMatrix(endLoanUnresolvedPolicy, unresolvedEndingProcess, loan),
   processMatrix(closeLoanLogisticsPolicy, logisticsSafetyProcess),
   controlMatrix,
+  loanPartyMatrix(reportLoanConditionPolicy),
+  conditionAnswerMatrix,
+  loanPartyMatrix(readLoanConditionReportsPolicy),
 ];

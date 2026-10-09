@@ -86,6 +86,7 @@ const resourceKeys = new Set([
   "loanId",
   "amendmentId",
   "transferId",
+  "reportId",
   "restrictionId",
   "imageId",
   "caseId",
@@ -254,6 +255,8 @@ async function hiddenWorld() {
       loanId,
       amendmentId,
       transferId,
+      // The loan is not handed over, so it has no report of damage yet.
+      reportId: randomUUID(),
       restrictionId,
       imageId,
       pictureId: pictureId!,
@@ -629,6 +632,14 @@ const probes: Record<string, (ids: WorldIds) => object> = {
   }),
   "loan.take_over_responsibility": (ids) => ({ loanId: ids.loanId }),
   "loan.request_mediation": (ids) => ({ loanId: ids.loanId, body: text }),
+  "loan.read_condition_reports": (ids) => ({ loanId: ids.loanId }),
+  "loan.report_condition": (ids) => ({ loanId: ids.loanId, description: text }),
+  "loan.answer_condition": (ids) => ({
+    loanId: ids.loanId,
+    reportId: ids.reportId,
+    kind: "explanation",
+    description: text,
+  }),
   "loan_review.read": (ids) => ({ loanId: ids.loanId }),
   "loan_review.submit": (ids) => ({
     loanId: ids.loanId,
@@ -967,6 +978,7 @@ const loanReads = [
   "loan_review.read",
   "loan.list",
   "loan.read",
+  "loan.read_condition_reports",
   "loan.read_history",
   "loan.read_logistics",
 ];

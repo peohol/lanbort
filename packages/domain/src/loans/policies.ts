@@ -640,6 +640,39 @@ export const confirmLoanControlPolicy = definePolicy<LoanControlResource, void>(
   },
 );
 
+/**
+ * PS-LOAN-023: either party registers damage, deficiency or loss, also once
+ * the loan has ended; other co-owners were not parties and do not see it.
+ * It keeps what an existing loan needs (`requireLoanStanding`).
+ */
+export const reportLoanConditionPolicy = loanPartyPolicy<LoanResource>(
+  "loan.report_condition",
+  bothSides,
+  requireLoanStanding,
+);
+
+/** A report of damage on a loan, with the side that made it. */
+export interface LoanConditionResource extends LoanResource {
+  readonly reporterRole: LoanRequestRole;
+}
+
+/**
+ * PS-LOAN-023: only the other party answers a report; nobody answers
+ * their own.
+ */
+export const answerLoanConditionPolicy = loanPartyPolicy<LoanConditionResource>(
+  "loan.answer_condition",
+  ({ reporterRole }) => [reporterRole === "borrower" ? "lender" : "borrower"],
+  requireLoanStanding,
+);
+
+/** PS-LOAN-023: the loan's reports and answers, for its parties now. */
+export const readLoanConditionReportsPolicy = loanPartyPolicy<LoanResource>(
+  "loan.read_condition_reports",
+  bothSides,
+  requireLoanStanding,
+);
+
 export const loanRequestPolicies = [
   createLoanRequestPolicy,
   previewLoanRequestPolicy,
@@ -674,4 +707,7 @@ export const loanRequestPolicies = [
   requestLoanMediationPolicy,
   endLoanUnresolvedPolicy,
   confirmLoanControlPolicy,
+  reportLoanConditionPolicy,
+  answerLoanConditionPolicy,
+  readLoanConditionReportsPolicy,
 ];
