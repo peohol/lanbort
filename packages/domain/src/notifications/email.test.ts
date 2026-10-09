@@ -44,7 +44,10 @@ describe("notification e-mails (WP-41)", () => {
   });
 
   it("say why security notices came, including new chat devices", () => {
-    for (const kind of ["chat.account_key_reset", "chat.device_linked"] as const) {
+    for (const kind of [
+      "chat.account_key_reset",
+      "chat.device_linked",
+    ] as const) {
       const email = composeNotificationEmail({
         kind,
         level: "required",
