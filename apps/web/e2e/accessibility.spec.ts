@@ -75,6 +75,8 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
   { name: "Samtaler", path: () => "/samtaler" },
   { name: "Varsler", path: () => "/varsler" },
   { name: "Konto", path: () => "/konto" },
+  { name: "Venner", path: () => "/konto/venner" },
+  { name: "Kontoen din", path: () => "/konto/kontoen" },
   { name: "Saker", path: () => "/saker" },
   { name: "Saken", path: ({ cases }) => `/saker/${cases.own}` },
   { name: "Saken å behandle", path: ({ cases }) => `/saker/${cases.handled}` },
@@ -556,16 +558,17 @@ test("an answer is announced, and the keyboard is not lost", async ({
   });
   await registerThroughApi(other, undefined, "Ola Hansen");
   await postCommand(other, "/api/social/friend-requests", { userId: kari });
-  await page.goto("/konto");
+  await page.goto("/konto/venner");
 
-  const friends = page.getByRole("region", { name: "Venner" });
-  await friends.getByRole("button", { name: "Godta" }).focus();
+  const accept = page.getByRole("button", { name: "Godta" });
+  await accept.focus();
   await page.keyboard.press("Enter");
 
+  // The request is gone with its part of the page: focus moves to the page.
   await expect(announcer(page)).toHaveText("Ferdig: Godta");
-  await expect(friends.getByRole("button", { name: "Godta" })).toHaveCount(0);
+  await expect(accept).toHaveCount(0);
   await expect(
-    friends.getByRole("heading", { name: "Venner", exact: true }),
+    page.getByRole("heading", { level: 1, name: "Venner" }),
   ).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.locator(":focus")).not.toHaveCount(0);

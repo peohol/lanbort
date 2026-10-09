@@ -66,9 +66,9 @@ test("members befriend each other on their pages, and a block hides the blocker"
   await expect(status(anna.page)).toContainText("Siden ");
 
   // The account lists the friend, linked to their page.
-  await bo.page.goto("/konto");
+  await bo.page.goto("/konto/venner");
   await bo.page.getByRole("link", { name: "Anna Berg" }).click();
-  await expect(bo.page).toHaveURL(`/personer/${anna.id}`);
+  await expect(bo.page).toHaveURL(`/konto/personer/${anna.id}`);
 
   // Blocking says what it ends and what stays before it happens.
   await anna.page.getByText("Flere valg").click();

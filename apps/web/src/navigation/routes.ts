@@ -6,6 +6,8 @@
  * a page exists, nothing leads to it (`targets.ts`).
  */
 
+import { accountHref } from "./areas";
+
 /** How a thing is seen: through one environment, or directly as a friend. */
 export type ObjectOrigin =
   | { readonly kind: "environment"; readonly environmentId: string }
@@ -83,6 +85,33 @@ export const caseHref = (id: string) => `/saker/${id}`;
 
 /** Own cases and, for those who handle cases, their queues. */
 export const casesHref = "/saker";
+
+/** The account's own pages (UX-IA-020), each a step in its stack. */
+export const friendsHref = `${accountHref}/venner`;
+export const blockedHref = `${accountHref}/blokkerte`;
+export const notificationChoicesHref = `${accountHref}/varslingsvalg`;
+export const accountStateHref = `${accountHref}/kontoen`;
+export const profilePictureHref = `${accountHref}/profilbilde`;
+
+/**
+ * Pages that open inside the account when they are reached from it, so
+ * they join its stack (UX-IA-020): people, and the user's own cases with
+ * a case from them. Each has a page of the same name under the account.
+ */
+const withinAccount = [
+  /^\/personer\/[^/?#]+$/,
+  /^\/saker$/,
+  /^\/saker\/(?!ny$)[^/?#]+$/,
+];
+
+/** Where `href` leads when it is followed from inside the account. */
+export function accountLayerHref(href: string): string | null {
+  const path = href.split(/[?#]/, 1)[0]!;
+
+  return withinAccount.some((pattern) => pattern.test(path))
+    ? `${accountHref}${href}`
+    : null;
+}
 
 /** The query parameter of the link in a notification's e-mail (WP-41). */
 export const notificationParam = "varsel";

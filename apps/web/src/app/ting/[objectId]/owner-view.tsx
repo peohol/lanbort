@@ -35,8 +35,13 @@ import { MoreActions } from "@/components/more-actions";
 import { PageHeader } from "@/components/page-header";
 import { StatusCard } from "@/components/status-card";
 import { ContextTag, Tag } from "@/components/tag";
-import { accountHref, thingsHref } from "@/navigation/areas";
-import { editObjectHref, environmentHref, loanHref } from "@/navigation/routes";
+import { thingsHref } from "@/navigation/areas";
+import {
+  editObjectHref,
+  environmentHref,
+  friendsHref,
+  loanHref,
+} from "@/navigation/routes";
 import { anchorFor, hrefFor } from "@/navigation/targets";
 import { formatPeriod, formatTime } from "@/presentation/dates";
 import { describeHomeItem } from "@/presentation/home-items";
@@ -564,7 +569,7 @@ function Owners({
         (candidates.length === 0 ? (
           <p className="quiet">
             Du kan invitere venner til å bli medeiere.{" "}
-            <Link href={`${accountHref}#venner`}>Se vennene dine</Link>
+            <Link href={friendsHref}>Se vennene dine</Link>
           </p>
         ) : (
           <CommandForm

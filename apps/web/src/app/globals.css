@@ -758,7 +758,7 @@ button:disabled,
   outline: none;
 }
 
-.app-content main {
+.app-content > main {
   padding: var(--space-2) 0 var(--space-5);
 }
 
@@ -846,7 +846,7 @@ button:disabled,
     padding: 0 var(--space-6) var(--space-6);
   }
 
-  .app-content main,
+  .app-content > main,
   .account-notice {
     width: min(48rem, 100%);
     margin-left: 0;
@@ -973,7 +973,7 @@ button:disabled,
    the prototypes: the way back or the area's title on the left, the bar's
    own buttons on the right. The row lies above the bar, so it stays in
    view, but lets clicks through where it is empty. */
-.app-content
+:is(.app-content, .layer-content)
   > main:first-child:has(
     > h1:first-child,
     > .page-header:first-child > :is(.place-bar, h1):first-child
@@ -981,8 +981,8 @@ button:disabled,
   margin-top: calc(-1 * var(--header-covers, var(--header-height)));
 }
 
-.app-content > main:first-child > h1:first-child,
-.app-content
+:is(.app-content, .layer-content) > main:first-child > h1:first-child,
+:is(.app-content, .layer-content)
   > main:first-child
   > .page-header:first-child
   > :is(.place-bar, h1):first-child {
@@ -995,12 +995,185 @@ button:disabled,
   pointer-events: none;
 }
 
-.app-content
+:is(.app-content, .layer-content)
   > main:first-child
   > .page-header:first-child
   > .place-bar:first-child
   > * {
   pointer-events: auto;
+}
+
+/* Konto and Varsler as layers (UX-IA-002, UX-IA-020, `Layer`): on a phone
+   the whole screen, the areas and the bell too; on a larger screen a panel
+   over the page. The layer's own bar holds «Lukk»; a page's first row
+   shares it, as in the app's frame. */
+.layer {
+  --header-covers: calc(var(--target) + 2 * var(--space-2));
+  --actions-covers: var(--target);
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-page);
+  scroll-padding-top: calc(var(--header-covers) + 0.5rem);
+}
+
+.layer-backdrop {
+  display: none;
+}
+
+.layer-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-2) var(--gutter);
+  background: var(--color-page);
+}
+
+.layer-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--target);
+  min-height: var(--target);
+  padding: 0;
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-low);
+}
+
+.layer-content main {
+  padding: var(--space-2) 0 var(--space-6);
+}
+
+/* The title a page in the layer is read from takes focus, not a marker. */
+.layer h1:focus {
+  outline: none;
+}
+
+/* A layer opened from a layer reached from outside (a link in a reloaded
+   Konto) replaces it rather than lying on top of it. */
+body:has(> .layer) .app-shell .layer {
+  display: none;
+}
+
+/* Konto reached from outside is the page itself: nothing beside it, and
+   nothing to skip past. */
+.app-shell:has(.layer)
+  :is(.skip-link, .brand, .main-navigation, .header-actions) {
+  display: none;
+}
+
+@media (min-width: 48rem) {
+  .layer {
+    left: auto;
+    width: min(34rem, 100%);
+    border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+    box-shadow: 0 0 2rem rgb(30 40 60 / 0.18);
+  }
+
+  .layer-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 19;
+    background: var(--color-backdrop);
+  }
+
+  .layer-header {
+    padding: var(--space-3) var(--space-5);
+  }
+
+  .layer-content main {
+    width: calc(100% - 2 * var(--space-5));
+  }
+
+  /* In a layer, the way back is one step on every screen. */
+  .place-bar .back-link.layer-back {
+    display: inline-flex;
+  }
+}
+
+/* A list of places to go, such as Konto's own pages (`MenuList`). */
+.menu {
+  display: grid;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  background: var(--color-surface);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-raised);
+}
+
+.menu li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 3.5rem;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  text-align: start;
+  color: var(--color-text);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-m);
+  box-shadow: none;
+}
+
+.menu-row:hover {
+  background: var(--color-sunken);
+}
+
+.menu-row > .icon:first-child {
+  color: var(--color-muted);
+}
+
+.menu-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.menu-label {
+  font-weight: 700;
+}
+
+.menu-detail {
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+.menu-chevron {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color-muted);
+}
+
+/* The user's own picture and name at the top of Konto. */
+.profile-card {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.profile-card p {
+  margin: 0;
+}
+
+.profile-name {
+  font-family: var(--font-heading);
+  font-size: var(--text-l);
+  font-weight: 700;
 }
 
 /* A form is a bounded task (UX-IA-013): no areas, no bell and no way home

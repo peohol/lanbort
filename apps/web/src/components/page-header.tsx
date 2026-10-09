@@ -50,9 +50,11 @@ export function PageHeader({
       {task && back ? (
         <TaskBar from={{ ...back, home: homeArea }} />
       ) : (
-        label &&
-        (back || home) && (
-          <PlaceBar place={{ label, home: homeArea, container }} />
+        label && (
+          <PlaceBar
+            place={{ label, home: homeArea, container }}
+            located={Boolean(back || home)}
+          />
         )
       )}
       {picture && <div className="page-picture">{picture}</div>}

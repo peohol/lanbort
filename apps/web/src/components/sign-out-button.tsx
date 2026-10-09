@@ -1,13 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { postJson } from "./api-client";
 import { BusyButton } from "./busy-button";
 import { errorMessage } from "./error-messages";
 import { ErrorText } from "./error-text";
 
-export function SignOutButton() {
+export function SignOutButton({
+  className,
+  children = "Logg ut",
+}: {
+  className?: string;
+  children?: ReactNode;
+}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,8 +34,13 @@ export function SignOutButton() {
 
   return (
     <>
-      <BusyButton type="button" onClick={() => void signOut()} busy={pending}>
-        Logg ut
+      <BusyButton
+        type="button"
+        className={className}
+        onClick={() => void signOut()}
+        busy={pending}
+      >
+        {children}
       </BusyButton>
       <ErrorText>{error}</ErrorText>
     </>

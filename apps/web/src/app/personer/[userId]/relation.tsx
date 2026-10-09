@@ -4,13 +4,10 @@ import { ActionButton } from "@/components/action-button";
 import { ConfirmAction } from "@/components/confirm-action";
 import { MoreActions } from "@/components/more-actions";
 import { StatusCard } from "@/components/status-card";
-import { accountHref } from "@/navigation/areas";
 import { newCaseHref } from "@/navigation/cases";
+import { friendsHref } from "@/navigation/routes";
 import { describeRelation, sharedNames } from "@/presentation/people";
 import styles from "./person.module.css";
-
-/** Where the account lists friends, requests and blocks. */
-export const friendsHref = `${accountHref}#venner`;
 
 const social = (path: string) => `/api/social/${path}`;
 

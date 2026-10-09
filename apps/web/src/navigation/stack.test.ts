@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { accountLayerHref } from "./routes";
 import {
   arrive,
+  arriveInLayer,
   areaStack,
   backOf,
   isStackOf,
+  layerBackOf,
   type Place,
   returnToArea,
   ruleStack,
@@ -125,5 +128,62 @@ describe("the navigation stack (UX-IA-009–011)", () => {
     expect(isStackOf(stack, "/lan")).toBe(false);
     expect(isStackOf(areaStack("loans"), "/lan")).toBe(false);
     expect(isStackOf(null, "/lan/1")).toBe(false);
+  });
+});
+
+describe("a layer's own stack (UX-IA-020)", () => {
+  const account = { href: "/konto", label: "Konto" };
+  const friends = { href: "/konto/venner", label: "Venner" };
+  const ola = { href: "/konto/personer/2", label: "Ola" };
+  const under = { href: "/lan?rolle=laaner", index: 3 };
+
+  it("keeps the screen it was opened over, and goes back within itself", () => {
+    const opened = arriveInLayer(null, "account", account, "push", under);
+    const stack = arriveInLayer(
+      arriveInLayer(opened, "account", friends, "push", null),
+      "account",
+      ola,
+      "push",
+      null,
+    );
+
+    expect(stack.under).toEqual(under);
+    expect(stack.entries.map(({ label }) => label)).toEqual([
+      "Konto",
+      "Venner",
+      "Ola",
+    ]);
+    expect(layerBackOf(stack, ola.href)).toEqual(friends);
+    expect(layerBackOf(opened, account.href)).toBeNull();
+
+    // Back to Venner, by the browser or the way back.
+    const back = arriveInLayer(stack, "account", friends, "history", null);
+    expect(back.entries).toEqual([account, friends]);
+    expect(back.under).toEqual(under);
+
+    // And forward again with the browser.
+    expect(arriveInLayer(back, "account", ola, "history", null)).toEqual(stack);
+  });
+
+  it("has nothing under it when reached from outside, and lies under its first page", () => {
+    const direct = arriveInLayer(null, "account", friends, "direct", under);
+    expect(direct.under).toBeNull();
+    expect(direct.entries).toEqual([account, friends]);
+    expect(layerBackOf(direct, friends.href)).toEqual(account);
+    // Back or forward into it still knows the screen it lies over.
+    expect(
+      arriveInLayer(null, "account", friends, "history", under).under,
+    ).toEqual(under);
+  });
+
+  it("opens people and own cases inside the account", () => {
+    expect(accountLayerHref("/personer/2?rolle=laantaker")).toBe(
+      "/konto/personer/2?rolle=laantaker",
+    );
+    expect(accountLayerHref("/saker")).toBe("/konto/saker");
+    expect(accountLayerHref("/saker/5")).toBe("/konto/saker/5");
+    expect(accountLayerHref("/saker/ny")).toBeNull();
+    expect(accountLayerHref("/saker/miljo/4")).toBeNull();
+    expect(accountLayerHref("/lan/1")).toBeNull();
   });
 });

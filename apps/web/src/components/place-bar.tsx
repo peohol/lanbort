@@ -2,18 +2,27 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
-import { areaById } from "@/navigation/areas";
+import { useEffect, useState } from "react";
+import { areaById, type LayerId, layerOf } from "@/navigation/areas";
 import {
   backOf,
   type DirectEntry,
   isStackOf,
+  layerBackOf,
   type Place,
   ruleStack,
   trail,
 } from "@/navigation/stack";
 import { Icon } from "./icon";
-import { enterPlace, enterTask, useStack } from "./navigation-stack";
+import { useLayer } from "./layer";
+import {
+  enterLayerPlace,
+  enterPlace,
+  enterTask,
+  screenUnder,
+  useLayerStack,
+  useStack,
+} from "./navigation-stack";
 
 const directEntryLabels: Record<DirectEntry, string> = {
   varsel: "Åpnet fra varsel",
@@ -24,28 +33,66 @@ const directEntryLabels: Record<DirectEntry, string> = {
 export type PagePlace = Omit<Place, "href">;
 
 /**
- * The way back along the navigation stack (UX-IA-009–011): on a phone one
- * step back, named after where it leads, and on a larger screen the whole
- * stack as breadcrumbs, each step a link. Until the browser knows the
- * stack, and for a page reached from outside, the stack is built from the
- * page's place by the rule. A direct entry is marked as one until the user
- * moves on.
+ * The page's own address. While a layer lies over the page, the browser
+ * shows the layer's address; the page stays where it was.
  */
-export function PlaceBar({ place }: { place: PagePlace }) {
+function useOwnAddress() {
   const pathname = usePathname();
   const search = useSearchParams().toString();
+  const address = `${pathname}${search ? `?${search}` : ""}`;
+  const covered = layerOf(pathname) !== null;
+  // A page first shown under a layer, as after the browser's back into it,
+  // is the screen the layer lies over.
+  const [own, setOwn] = useState(() =>
+    covered ? (screenUnder()?.href ?? address) : address,
+  );
+
+  if (!covered && own !== address) setOwn(address);
+
+  return { address: covered ? own : address, covered };
+}
+
+/**
+ * Where the page is (UX-IA-009–011, UX-IA-020). In a layer, a step in the
+ * layer's own stack; elsewhere, for a page that lies somewhere (`located`),
+ * the way back along the navigation stack.
+ */
+export function PlaceBar({
+  place,
+  located = true,
+}: {
+  place: PagePlace;
+  /** False for an area's own page, which lies nowhere but in a layer. */
+  located?: boolean;
+}) {
+  const layer = useLayer();
+
+  if (layer) return <LayerBar layer={layer} label={place.label} />;
+  return located ? <StackBar place={place} /> : null;
+}
+
+/**
+ * The way back along the navigation stack: on a phone one step back, named
+ * after where it leads, and on a larger screen the whole stack as
+ * breadcrumbs, each step a link. Until the browser knows the stack, and for
+ * a page reached from outside, the stack is built from the page's place by
+ * the rule. A direct entry is marked as one until the user moves on.
+ */
+function StackBar({ place }: { place: PagePlace }) {
+  const { address, covered } = useOwnAddress();
+  const path = address.split("?", 1)[0]!;
   const stack = useStack();
-  const shown = isStackOf(stack, pathname)
+  const shown = isStackOf(stack, path)
     ? stack!
-    : ruleStack({ ...place, href: pathname }, null);
+    : ruleStack({ ...place, href: path }, null);
   const back = backOf(shown);
   const steps = trail(shown);
 
   useEffect(() => {
-    enterPlace({ ...place, href: `${pathname}${search ? `?${search}` : ""}` });
+    if (!covered) enterPlace({ ...place, href: address });
     // The place's parts, not the object, decide whether the page changed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, search, place.label, place.home, place.container?.href]);
+  }, [address, covered, place.label, place.home, place.container?.href]);
 
   return (
     <div className="place-bar">
@@ -75,6 +122,33 @@ export function PlaceBar({ place }: { place: PagePlace }) {
 }
 
 /**
+ * A step in a layer's own stack (UX-IA-020): the way back within the
+ * layer, named after where it leads («‹ Venner»), on every screen size.
+ * The layer's first page has none; «Lukk» is the layer's own.
+ */
+function LayerBar({ layer, label }: { layer: LayerId; label: string }) {
+  const pathname = usePathname();
+  const search = useSearchParams().toString();
+  const href = `${pathname}${search ? `?${search}` : ""}`;
+  const stack = useLayerStack();
+  const back = stack && layerBackOf(stack, pathname);
+
+  useEffect(() => {
+    enterLayerPlace(layer, { href, label });
+  }, [layer, href, label]);
+
+  return (
+    back && (
+      <div className="place-bar">
+        <Link className="back-link layer-back" href={back.href}>
+          <Icon name="back" /> {back.label}
+        </Link>
+      </div>
+    )
+  );
+}
+
+/**
  * The way out of a form (UX-IA-013): «Avbryt» leads back to where the form
  * was started, which stays the top of the stack while the form is open. A
  * form opened from outside starts from `from`, its page by the rule.
@@ -84,7 +158,8 @@ export function TaskBar({ from }: { from: Place }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    enterTask(from);
+    // Under a layer the form stays where it was.
+    if (layerOf(pathname) === null) enterTask(from);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, from.href]);
 

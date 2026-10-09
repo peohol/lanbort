@@ -45,12 +45,18 @@ export function StickyBars() {
       const header = document.querySelector(".app-header");
       const navigation = document.querySelector(".main-navigation");
       if (!(event.target instanceof Element) || !header || !navigation) return;
-      if (navigation.contains(event.target) || header.contains(event.target)) {
+      // A layer covers the bars (UX-IA-020) and scrolls on its own.
+      if (
+        navigation.contains(event.target) ||
+        header.contains(event.target) ||
+        event.target.closest(".layer")
+      ) {
         return;
       }
 
-      // Only the bar at the bottom of a phone covers from below.
-      if (wide.matches) return;
+      // Only the bar at the bottom of a phone covers from below, and not
+      // where it is hidden, as in a form (UX-IA-013).
+      if (wide.matches || navigation.getClientRects().length === 0) return;
 
       const box = event.target.getBoundingClientRect();
       const top = header.getBoundingClientRect().bottom;
