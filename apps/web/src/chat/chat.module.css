@@ -292,6 +292,10 @@
   margin: 0;
 }
 
+.notice > :global(.tag) {
+  justify-self: start;
+}
+
 .notice h2 {
   margin: 0;
   font-size: var(--text-l);
@@ -538,6 +542,193 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--color-muted);
+}
+
+/* A first step on a device (05, 08) and a task that waits (10): one card,
+   one main button. */
+.intro {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.intro h2,
+.intro p {
+  margin: 0;
+}
+
+.intro > :global(.tag) {
+  justify-self: start;
+}
+
+.intro h2 {
+  font-size: var(--text-l);
+}
+
+/* A first step's heading reads as the page's one question (05, 08). */
+.introIcon + h2 {
+  font-size: var(--text-xl);
+}
+
+.introIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  color: var(--color-info-strong);
+  background: var(--color-info-soft);
+}
+
+.centered {
+  justify-self: center;
+  text-align: center;
+}
+
+/* A question with its answer behind it, such as «Har du ingen annen
+   enhet med privat chat?». */
+.disclosure {
+  margin-top: var(--space-4);
+}
+
+.disclosure summary {
+  min-height: var(--target);
+  color: var(--color-muted);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.disclosure[open] {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-raised);
+}
+
+.disclosure p {
+  margin: 0;
+}
+
+/* The new device's steps (09), numbered in circles. */
+.steps {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.steps li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  counter-increment: step;
+}
+
+.steps li::before {
+  content: counter(step);
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  border-radius: 50%;
+  background: var(--color-sunken);
+}
+
+.qr {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  text-align: center;
+}
+
+.qrStatus {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+}
+
+.qrStatus small {
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+/* The code to type where the other device cannot scan. */
+.typeCode {
+  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  text-align: center;
+  border-radius: var(--radius-l);
+  box-shadow: inset 0 0 0 1.5px var(--color-border);
+}
+
+.typeCode p {
+  margin: 0;
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+.typeCode :global(.link-code) {
+  margin-top: var(--space-2);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* One device: its icon, its name and when it came, and «Fjern» (14). */
+.deviceRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.deviceRow small {
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+/* A quiet word beside the way to act, such as on lost devices. */
+.hint {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-s);
+  color: var(--color-muted);
+  border-radius: var(--radius-l);
+  box-shadow: inset 0 0 0 1.5px var(--color-border);
+}
+
+.hint strong {
+  color: var(--color-text);
+}
+
+.hint p {
+  margin: var(--space-1) 0 0;
+}
+
+/* The camera, framed like the prototype's viewfinder (11). */
+.camera {
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--color-text);
+  border-radius: var(--radius-l);
+}
+
+.camera :global(.scanner) {
+  width: 100%;
+  max-width: 24rem;
+  aspect-ratio: 1;
+  object-fit: cover;
 }
 
 /* Wider screens: the list beside the open conversation (UX-IA-001). The

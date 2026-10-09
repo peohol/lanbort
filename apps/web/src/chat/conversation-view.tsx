@@ -18,7 +18,6 @@ import { ErrorText } from "@/components/error-text";
 import { PageHeader } from "@/components/page-header";
 import { PlaceBar } from "@/components/place-bar";
 import { Icon } from "@/components/icon";
-import { Tag } from "@/components/tag";
 import { chatAboutHref, chatHref } from "@/navigation/chat";
 import { loanHref } from "@/navigation/routes";
 import { ChatApiError, chatApi } from "./api";
@@ -43,6 +42,7 @@ import {
 } from "./engine";
 import type { ChatLoan, ChatLoans } from "./loans";
 import { chatErrorMessage } from "./messages";
+import { Notice } from "./notice";
 import { dayHeading, messageTime, sameDay } from "./time";
 import { firstUnseen } from "./unread";
 import { useConversations } from "./use-conversations";
@@ -116,15 +116,13 @@ function KeyChanged({
 }) {
   const name = person.realName ?? "Tidligere bruker";
   return (
-    <section
-      className={styles.notice}
+    <Notice
+      tag="Sikkerhetskode endret"
+      tone="warning"
+      icon="shield"
       role="alert"
-      aria-labelledby={`kode-${person.userId}`}
+      title={`Sikkerhetskoden til ${name} er endret`}
     >
-      <Tag tone="warning" icon="shield">
-        Sikkerhetskode endret
-      </Tag>
-      <h2 id={`kode-${person.userId}`}>Sikkerhetskoden til {name} er endret</h2>
       <p className="quiet">
         Det skjer når {name} har startet privat chat på nytt, for eksempel etter
         å ha mistet enhetene sine. Det kan også bety at noen andre prøver å utgi
@@ -142,7 +140,7 @@ function KeyChanged({
       <Link href={chatAboutHref(conversationId)} className="button-quiet">
         Sammenlign sikkerhetskoden
       </Link>
-    </section>
+    </Notice>
   );
 }
 
@@ -477,10 +475,7 @@ function Conversation({
       {between && between.length > 0 && <LoansBetween loans={between} />}
 
       {logistics && info && (
-        <section className={styles.notice} aria-label="Om lånelogistikk">
-          <Tag tone="neutral" icon="things">
-            Bare for å avslutte lånet
-          </Tag>
+        <Notice tag="Bare for å avslutte lånet" icon="things">
           <p>
             Vanlig chat med {name} er stengt. Her kan dere bare avtale
             overlevering eller retur{loan ? ` av ${loan.title}` : ""}: tid, sted
@@ -492,20 +487,17 @@ function Conversation({
               Gå til lånet
             </Link>
           )}
-        </section>
+        </Notice>
       )}
 
       {info && !info.open && (
-        <div className={styles.notice} role="status">
-          <Tag tone="neutral" icon="lock">
-            {logistics ? "Lukket" : "Stengt"}
-          </Tag>
+        <Notice tag={logistics ? "Lukket" : "Stengt"} icon="lock" role="status">
           <p>
             {logistics
               ? "Samtalen om lånet er lukket. Dere kan ikke sende flere meldinger her."
               : "Samtalen er stengt. Ingen av dere kan sende nye meldinger her."}
           </p>
-        </div>
+        </Notice>
       )}
 
       {!online && info?.open && (

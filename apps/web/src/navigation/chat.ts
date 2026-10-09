@@ -6,8 +6,12 @@ export const chatHref = "/samtaler";
 export const chatDevicesHref = `${chatHref}/enheter`;
 /** On an existing device: scan or type the code a new device shows. */
 export const chatApproveLinkHref = `${chatDevicesHref}/koble`;
+/** The same, starting with the field for the code instead of the camera. */
+export const chatApproveByCodeHref = `${chatApproveLinkHref}?kode`;
 /** On a new device: show the code and wait for approval. */
 export const chatLinkHref = `${chatHref}/koble`;
+/** When no device with chat is left: start chat anew (ADR-0010 §8). */
+export const chatResetHref = `${chatHref}/tilbakestill`;
 export const chatConversationHref = (conversationId: string) =>
   `${chatHref}/${conversationId}`;
 /** «Om samtalen»: the loans, the security code and the personal choices. */
