@@ -17,6 +17,8 @@ Et gjennomført lån gir ordinær anmeldelsesrett. Kansellert eller ikke gjennom
 
 Pilotstandard for anmeldelsesfrist er **14 dager** etter vurderingsberettiget avslutning. Inntil begge har levert eller fristen utløper er innsendt anmeldelse skjult og påvirker ikke synlige aggregater. Hvis begge leverer, publiseres begge samtidig.
 
+Når anmeldelser blir synlige, får hver part ett informasjonsvarsel i appen som åpner anmeldelsen på lånet. Varselet røper ikke den andres anmeldelse før publiseringen, sendes ikke dobbelt, og det sendes verken e-post eller påminnelse før fristen som standard. (Produkteier, 9. oktober 2026.)
+
 ### PS-TRUST-004 — Publisert anmeldelse er låst
 **Forankring:** VP-15; [Redigering og tilsvar](../vision/07-tillit-anmeldelser-og-moderering.md)
 
@@ -25,7 +27,7 @@ Forfatter kan redigere mens anmeldelsen fortsatt er skjult. Etter publisering ka
 ### PS-TRUST-005 — Den anmeldte kan gi ett tilsvar
 **Forankring:** [Redigering og tilsvar](../vision/07-tillit-anmeldelser-og-moderering.md)
 
-Tilsvaret vises med anmeldelsen, påvirker ikke skåren og åpner ikke en videre diskusjonstråd.
+Tilsvaret vises med anmeldelsen, påvirker ikke skåren og åpner ikke en videre diskusjonstråd. Retten gjelder alle publiserte anmeldelser, også de uten fritekst, uavhengig av skår. Skår og opprinnelig anmeldelse endres ikke. (Produkteier, 9. oktober 2026.)
 
 ### PS-TRUST-006 — Tillit er rolle- og kontekstspesifikk
 **Forankring:** VP-14

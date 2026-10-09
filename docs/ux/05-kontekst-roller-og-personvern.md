@@ -61,3 +61,8 @@ En representant ved død/varig utilgjengelighet skal aldri «logge inn som» bru
 **Forankring:** UX-P02, UX-P11; PS-TRUST-006; OD-0032
 
 Personens side viser erfaringene som låntaker og som utlåner hver for seg, og begge rollene er alltid tilgjengelige. Når inngangen gjelder et konkret lån, en forespørsel eller en ting, står rollen personen har der, først: «Som låntaker» når personen låner eller spør om å låne, «Som utlåner» når personen eier tingen eller låner den ut. Fra nøytrale innganger, som Konto, miljøets medlemsliste, en samtale uten lån, et varsel om vennskap eller en delt lenke, er rekkefølgen alltid den samme: «Som låntaker», så «Som utlåner».
+
+### UX-PRIV-013 — Medeier som ikke er part, ser et avgrenset lån
+**Forankring:** UX-P11; PS-LOAN-009; UX-JRN-011; OD-0034
+
+En medeier som ikke er part i lånet, ser lånet bare hvis vedkommende var i eierkretsen da lånet ble godkjent, eller er spurt om å bli ansvarlig utlåner. Visningen har status, periode, ting, avtalte vilkår, låntaker og ansvarlig utlåner, og bare handlingene medeieren selv kan gjøre. Den viser ikke meldingen i forespørselen, den private samtalen, partenes forklaringer, hele tidslinjen eller anmeldelsene. Serveren håndhever det samme avgrensede innsynet, så en lenke i et varsel gir aldri partenes fulle visning. (Produkteier, 9. oktober 2026.)

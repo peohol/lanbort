@@ -130,7 +130,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 
 - **Oppgave:** vite hva som er avtalt, hva som skjer nå, og gjøre neste praktiske steg.
 - **Tilstander:** reservert (tid, praktisk informasjon, bekreft overlevering (én part er nok), foreslå endring, kanseller); utlånt (returtid, foreslå forlengelse, meld returnert; for parten som ikke registrerte overleveringen også «ble ikke overlevert» som underordnet valg); venter på at utlåner bekrefter retur; retur bekreftet med 30 sekunders angremulighet; gjennomført; endringsforslag venter på svar; ansvarsoverføring tilbudt; opprinnelse som kontekstmerke; tidslinje.
-- **Ser / handler:** låntaker og ansvarlig utlåner. Andre medeiere ser lånet, men får bare handlinger de har rett til (UX-JRN-011).
+- **Ser / handler:** låntaker og ansvarlig utlåner. Andre medeiere ser en avgrenset visning og får bare handlinger de har rett til (UX-JRN-011, UX-PRIV-013).
 - **Regler:** UX-IA-014, UX-JRN-007, UX-JRN-008, UX-JRN-009, UX-INT-001, UX-INT-002, UX-IA-008, PS-LOAN-008–011, PS-LOAN-015, PS-LOAN-016, PS-LOAN-020, PS-LOAN-022, PS-COM-008.
 - **Forløp:** normal. Avvikene står [under](#lånets-side-i-avvik).
 - **UI-pakke:** WP-87.
@@ -138,7 +138,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 #### Anmeldelse og tilsvar
 
 - **Oppgave:** vurdere et avsluttet lån, og svare én gang på en anmeldelse av seg selv.
-- **Tilstander:** bare dimensjoner som kan vurderes; begrunnelse kreves ved 1–2; levert og skjult til begge har levert eller fristen går ut; publisert og låst; frist utløpt; satt på pause fordi lånet er gjenåpnet; tilsvar mulig eller gitt.
+- **Tilstander:** bare dimensjoner som kan vurderes; begrunnelse kreves ved 1–2; levert og skjult til begge har levert eller fristen går ut; publisert og låst; frist utløpt; satt på pause fordi lånet er gjenåpnet; tilsvar mulig eller gitt, også til anmeldelser uten tekst; varsel når anmeldelsene blir synlige (PS-TRUST-003, PS-TRUST-005).
 - **Ser / handler:** partene i lånet, også etter blokkering. Den anmeldte kan gi ett tilsvar.
 - **Regler:** UX-JRN-010, PS-TRUST-001–005, PS-TRUST-008, PS-TRUST-009.
 - **Forløp:** normal.
@@ -279,9 +279,9 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 #### Lånets side i avvik
 
 - **Oppgave:** forstå hva som er uavklart og finne veien videre, på samme side som lånet.
-- **Tilstander:** avventer overleveringsavklaring (72 timer); ikke gjennomført; avventer returavklaring; forsinket (bare når det er kjent at låntaker har tingen); usikker/uenighet; gjenåpnet fordi en tidligere retur er bestridt; avsluttet som administrativt uavklart; stanset av plattformen (skilt fra kansellering); rapporter problem etter angrefristen; be miljøet om mekling.
+- **Tilstander:** avventer overleveringsavklaring (72 timer); ikke gjennomført; avventer returavklaring; forsinket (bare når det er kjent at låntaker har tingen); usikker/uenighet; gjenåpnet fordi en tidligere retur er bestridt; avsluttet som administrativt uavklart; stanset av plattformen (skilt fra kansellering); rapporter problem etter angrefristen; skade, mangel eller tap registrert av en part, med motpartens svar (PS-LOAN-023); be miljøet om mekling.
 - **Ser / handler:** partene. I miljølån kan miljøets administratorer mekle gjennom en sak.
-- **Regler:** UX-EXC-001–003, UX-EXC-007, UX-EXC-010, UX-INT-001, UX-P23, PS-LOAN-011–014, PS-LOAN-017–019, PS-LOAN-022, PS-COM-012.
+- **Regler:** UX-EXC-001–003, UX-EXC-007, UX-EXC-010, UX-INT-001, UX-P23, PS-LOAN-011–014, PS-LOAN-017–019, PS-LOAN-022, PS-LOAN-023, PS-COM-012.
 - **Forløp:** avvik.
 - **UI-pakke:** WP-87; meklingssaken i WP-88.
 

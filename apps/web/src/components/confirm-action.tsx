@@ -5,6 +5,7 @@ import { BusyButton } from "./busy-button";
 import type { ErrorMessages } from "./error-messages";
 import { ErrorText } from "./error-text";
 import { fillHref } from "./form-body";
+import { Icon, type IconName } from "./icon";
 import { useCommand } from "./use-command";
 
 /** What a consequence view lists (UX-INT-007); empty lists are left out. */
@@ -62,6 +63,7 @@ export function ConfirmAction({
   path,
   body,
   danger = false,
+  icon,
   idempotent = true,
   messages,
   next,
@@ -75,6 +77,9 @@ export function ConfirmAction({
   path: string;
   body: object;
   danger?: boolean;
+  /** Drawn on the button that opens the dialog, as Tomat does for
+   * destructive steps («Blokker», «Slett»). */
+  icon?: IconName;
   idempotent?: boolean;
   /** What a failure means here, where the general words are not enough. */
   messages?: ErrorMessages;
@@ -102,6 +107,7 @@ export function ConfirmAction({
         className={danger ? "button-danger" : undefined}
         onClick={() => dialog.current?.showModal()}
       >
+        {icon && <Icon name={icon} />}
         {label}
       </button>
       <dialog ref={dialog} className="dialog" aria-labelledby={titleId}>

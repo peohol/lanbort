@@ -1,30 +1,109 @@
-/* Design tokens (WP-80). Every colour on a page comes from here, so light
-   and dark mode stay one design and keep WCAG 2.2 AA contrast: text tokens
-   reach 4.5:1 on both the page and a surface, and the strong border, which
-   outlines fields and buttons, reaches 3:1 (WCAG 1.4.11). A tone is never
-   the only signal: it always comes with words (UX-A11Y-005). */
+/* Lånbort's design system: Tomat (design/README.md, «Fase 4 Tomat
+   finjustering»). Every colour, size and shape on a page comes from the
+   tokens here, so light and dark mode stay one design and keep WCAG 2.2 AA
+   contrast: text tokens reach 4.5:1 on both the page and a surface, and
+   the strong border, which outlines fields, reaches 3:1 (WCAG 1.4.11).
+   Tomat is for buttons, the current area and the step that is now, never
+   for large surfaces. A tone is never the only signal: it always comes with
+   words and an icon (UX-A11Y-005). */
+
+/* Atkinson Hyperlegible Next for text and Quicksand for headings, served
+   by the app itself (SIL OFL 1.1, licences beside the files). */
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("/fonts/atkinson-hyperlegible-next-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("/fonts/atkinson-hyperlegible-next-latin-ext.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Quicksand";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("/fonts/quicksand-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Quicksand";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("/fonts/quicksand-latin-ext.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 :root {
   color-scheme: light dark;
-  font-family: system-ui, sans-serif;
-  line-height: 1.5;
 
-  --color-page: #f6f5f1;
+  --font-body: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --font-heading: "Quicksand", var(--font-body);
+
+  /* Surfaces and text. */
+  --color-page: #f3f4f7;
   --color-surface: #ffffff;
-  --color-sunken: #eceae4;
-  --color-text: #1c2421;
-  --color-muted: #55615c;
-  --color-border: #d6d9d3;
-  --color-border-strong: #737d78;
-  --color-accent: #0e6656;
-  --color-accent-hover: #0a5246;
+  --color-sunken: #e9ebf0;
+  --color-text: #1e2733;
+  --color-muted: #56606e;
+  --color-border: #dee1e8;
+  --color-border-strong: #7a8390;
+
+  /* Tomat: the primary action, the current area and the step that is now. */
+  --color-accent: #b0563a;
+  --color-accent-hover: #9a4930;
   --color-on-accent: #ffffff;
-  --color-link: #0e6656;
-  --color-focus: #1a5fd0;
-  --color-waiting: #24548a;
-  --color-positive: #1d6b3c;
-  --color-warning: #7f5300;
-  --color-danger: #a3241c;
+  --color-accent-strong: #8a3e26;
+  --color-accent-soft: #fbe8df;
+
+  /* Links, focus and what waits on the reader. */
+  --color-link: #2b4a8a;
+  --color-focus: #2b4a8a;
+  --color-info: #5b7fcf;
+  --color-info-strong: #2b4a8a;
+  --color-info-soft: #e3eaf8;
+
+  /* Status tones, each a text colour and a soft background. */
+  --color-waiting: #4f5967;
+  --color-waiting-soft: #e9ebf0;
+  --color-positive: #1f5e3a;
+  --color-positive-soft: #dff0e6;
+  --color-warning: #7a4b00;
+  --color-warning-soft: #fcefd6;
+  --color-danger: #c4122f;
+  --color-danger-soft: #fde4e6;
   --color-on-danger: #ffffff;
+
+  /* A thing without a photo. */
+  --color-image-from: #d4d9e2;
+  --color-image-to: #bec6d2;
+
+  --shadow-low: 0 1px 2px rgb(30 40 60 / 0.09);
+  --shadow-raised: 0 1px 3px rgb(30 40 60 / 0.09);
+  --color-backdrop: rgb(30 39 51 / 0.55);
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -32,40 +111,74 @@
   --space-4: 1rem;
   --space-5: 1.5rem;
   --space-6: 2rem;
-  --radius-s: 0.375rem;
-  --radius-m: 0.75rem;
+  --gutter: 1.125rem;
+
+  --radius-s: 0.5rem;
+  --radius-field: 0.875rem;
+  --radius-m: 1.125rem;
+  --radius-l: 1.375rem;
+  --radius-xl: 1.75rem;
   --radius-pill: 999px;
+
+  --text-xs: 0.8125rem;
   --text-s: 0.875rem;
-  --text-l: 1.125rem;
-  --text-xl: 1.5rem;
+  --text-m: 0.9375rem;
+  --text-l: 1.0625rem;
+  --text-xl: 1.3125rem;
+  --text-2xl: 1.75rem;
+
+  /* The smallest target a finger aims at (UX-A11Y-006), and the usual
+     height of a button and a field. */
   --target: 2.75rem;
-  --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.06), 0 2px 8px rgb(0 0 0 / 0.04);
+  --control: 3rem;
+  --control-primary: 3.25rem;
 
   /* Older names, kept for the modules that use them. */
   --surface: var(--color-surface);
   --muted-border: var(--color-border);
+
+  font-family: var(--font-body);
+  line-height: 1.5;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-page: #111513;
-    --color-surface: #1a1f1d;
-    --color-sunken: #232926;
-    --color-text: #e7ece9;
-    --color-muted: #a6b0ab;
-    --color-border: #343b38;
-    --color-border-strong: #7f8984;
-    --color-accent: #5fcfb3;
-    --color-accent-hover: #86dcc6;
-    --color-on-accent: #0a1d18;
-    --color-link: #6fd6bc;
-    --color-focus: #8ab4ff;
-    --color-waiting: #9ec5f2;
-    --color-positive: #7bd39b;
-    --color-warning: #f0c166;
-    --color-danger: #ff9a90;
-    --color-on-danger: #2a0805;
+    --color-page: #14171c;
+    --color-surface: #1e232a;
+    --color-sunken: #2a3038;
+    --color-text: #e8ebf0;
+    --color-muted: #a9b1bc;
+    --color-border: #353c46;
+    --color-border-strong: #7f8894;
+
+    --color-accent: #e39274;
+    --color-accent-hover: #eba68d;
+    --color-on-accent: #20120d;
+    --color-accent-strong: #f2b39c;
+    --color-accent-soft: #3e2a23;
+
+    --color-link: #a8c1f5;
+    --color-focus: #a8c1f5;
+    --color-info: #7d9bdd;
+    --color-info-strong: #b5cbf7;
+    --color-info-soft: #26334d;
+
+    --color-waiting: #c3cad4;
+    --color-waiting-soft: #2a3038;
+    --color-positive: #8fd5a8;
+    --color-positive-soft: #1d3627;
+    --color-warning: #f0c36a;
+    --color-warning-soft: #3a2c12;
+    --color-danger: #ff8f95;
+    --color-danger-soft: #3d1a1f;
+    --color-on-danger: #2a0508;
+
+    --color-image-from: #3a414c;
+    --color-image-to: #2c323b;
+
+    --shadow-low: none;
     --shadow-raised: none;
+    --color-backdrop: rgb(0 0 0 / 0.65);
   }
 }
 
@@ -82,9 +195,11 @@ body {
 
 a {
   color: var(--color-link);
-  text-underline-offset: 0.15em;
+  text-underline-offset: 0.2em;
 }
 
+/* Headings: the page's own title and the status that is now in Quicksand;
+   a section's heading is a quiet label above its cards. */
 h1,
 h2,
 h3 {
@@ -92,23 +207,42 @@ h3 {
 }
 
 h1 {
-  font-size: var(--text-xl);
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
   margin: 0 0 var(--space-4);
 }
 
 h2 {
-  font-size: var(--text-l);
-  margin: var(--space-6) 0 var(--space-3);
+  font-size: var(--text-m);
+  font-weight: 700;
+  color: var(--color-muted);
+  margin: var(--space-5) 0 var(--space-2);
 }
 
 h3 {
-  font-size: 1rem;
+  font-size: var(--text-l);
+  font-weight: 700;
   margin: var(--space-4) 0 var(--space-2);
+}
+
+/* The app's line icons (`Icon`), at the size of the text beside them. */
+.icon {
+  width: 1.375rem;
+  height: 1.375rem;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* A long word breaks rather than push the page sideways (UX-A11Y-007). */
 main {
-  width: min(42rem, calc(100% - 2rem));
+  width: min(42rem, calc(100% - 2 * var(--gutter)));
   margin: 0 auto;
   padding: 4rem 0;
   overflow-wrap: anywhere;
@@ -125,19 +259,19 @@ form {
 
 label,
 legend {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 input:not([type="checkbox"], [type="radio"]),
 select,
 textarea {
   font: inherit;
-  padding: var(--space-3);
-  min-height: var(--target);
+  padding: var(--space-3) 0.875rem;
+  min-height: var(--control);
   min-width: 0;
   max-width: 100%;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-s);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-field);
   background: var(--color-surface);
   color: inherit;
 }
@@ -153,20 +287,25 @@ textarea[aria-invalid="true"] {
   border: 2px solid var(--color-danger);
 }
 
-/* Buttons. A plain button is the secondary one; the step a page leads to is
-   `.button-primary` (UX-INT-001), and what cannot be undone is
-   `.button-danger`, set apart from the rest (UX-A11Y-006). */
+/* Buttons, all round. A plain button is the neutral one; the step a page
+   leads to is `.button-primary` (UX-INT-001), a gentler step beside it
+   `.button-secondary`, and what cannot be undone `.button-danger`: drawn in
+   outline with its icon, and filled only in the step that confirms it
+   (UX-A11Y-006, Tomat). A link can look like any of them with `.button`. */
 button,
 .button {
   font: inherit;
+  font-size: var(--text-m);
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  min-height: var(--target);
-  padding: 0.625rem 1rem;
-  border-radius: var(--radius-s);
-  border: 1px solid var(--color-border-strong);
+  min-height: var(--control);
+  padding: var(--space-2) 1.25rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1.5px var(--color-muted);
   cursor: pointer;
   text-align: center;
   text-decoration: none;
@@ -179,12 +318,21 @@ button:hover,
   background: var(--color-sunken);
 }
 
+button .icon,
+.button .icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  stroke-width: 2;
+}
+
 button[type="submit"],
 .button-primary {
-  font-weight: 600;
+  min-height: var(--control-primary);
+  padding-inline: 1.375rem;
+  font-size: 1rem;
   color: var(--color-on-accent);
   background: var(--color-accent);
-  border-color: var(--color-accent);
+  box-shadow: none;
 }
 
 button[type="submit"]:hover,
@@ -192,26 +340,69 @@ button[type="submit"]:hover,
   background: var(--color-accent-hover);
 }
 
+/* A step beside the main one, such as «Foreslå forlengelse»; also a submit
+   button that is not the page's main step. */
+.button-secondary,
+button[type="submit"].button-secondary {
+  min-height: var(--control);
+  font-size: var(--text-m);
+  color: var(--color-accent-strong);
+  background: var(--color-accent-soft);
+  box-shadow: none;
+}
+
+.button-secondary:hover,
+button[type="submit"].button-secondary:hover {
+  background: var(--color-accent-soft);
+  filter: brightness(0.96);
+}
+
 .button-danger,
 button[type="submit"].button-danger {
-  font-weight: 600;
-  color: var(--color-on-danger);
-  background: var(--color-danger);
-  border-color: var(--color-danger);
+  min-height: var(--control);
+  font-size: var(--text-m);
+  color: var(--color-danger);
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1.5px var(--color-danger);
 }
 
 .button-danger:hover,
 button[type="submit"].button-danger:hover {
+  background: var(--color-danger-soft);
+}
+
+/* The step that confirms what cannot be undone. */
+.dialog .button-danger,
+.button-danger.button-confirm {
+  min-height: var(--control-primary);
+  font-size: 1rem;
+  color: var(--color-on-danger);
+  background: var(--color-danger);
+  box-shadow: none;
+}
+
+.dialog .button-danger:hover,
+.button-danger.button-confirm:hover {
   background: var(--color-danger);
   filter: brightness(0.92);
 }
 
-/* A submit button that is not the page's main step. */
-button[type="submit"].button-secondary {
-  font-weight: inherit;
+/* A quiet way on, such as «Flere valg»: words, underlined. */
+.button-quiet {
+  min-height: var(--target);
+  padding: 0 var(--space-1);
+  font-weight: 400;
+  color: var(--color-muted);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  background: none;
+  box-shadow: none;
+  border-radius: var(--radius-s);
+}
+
+.button-quiet:hover {
   color: var(--color-text);
-  background: var(--color-surface);
-  border-color: var(--color-border-strong);
+  background: none;
 }
 
 button:disabled,
@@ -220,8 +411,10 @@ button:disabled,
   opacity: 0.75;
 }
 
-/* A field shows its focus however it got it; a date field's parts too. The
-   outline is the system's highlight where the system decides colours. */
+/* A field shows its focus however it got it; a date field's parts too.
+   The ring sits outside the element, never inside a filled button, where
+   it would be too faint (Tomat). The outline is the system's highlight
+   where the system decides colours. */
 :focus-visible,
 :is(input, select, textarea):is(:focus, :focus-within) {
   outline: 3px solid var(--color-focus);
@@ -232,6 +425,11 @@ button:disabled,
   :focus-visible,
   :is(input, select, textarea):is(:focus, :focus-within) {
     outline-color: Highlight;
+  }
+
+  button,
+  .button {
+    border: 1px solid ButtonText;
   }
 }
 
@@ -280,6 +478,7 @@ button:disabled,
 
 .help {
   margin: 0;
+  font-size: var(--text-m);
   color: var(--color-muted);
 }
 
@@ -297,7 +496,7 @@ button:disabled,
 }
 
 .error {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-danger);
   margin: 0;
 }
@@ -317,22 +516,23 @@ button:disabled,
 .network-status {
   margin: 0;
   padding: var(--space-3) var(--space-4);
-  font-weight: 600;
+  font-weight: 700;
   background: var(--color-surface);
   border-bottom: 3px solid currentColor;
 }
 
-/* App shell (UX-IA-001–003): header, five areas, content. Mobile first:
-   the areas sit at the bottom of a narrow screen and at the side of a wide
-   one, the same list in the same order (UX-A11Y-001). The navigation takes
-   its own place in the layout instead of a fixed one over the content, so
-   larger text makes it taller without hiding the end of the page
-   (UX-A11Y-007), and what gets focus is scrolled clear of the header and
-   the navigation (WCAG 2.4.11). */
+/* App shell (UX-IA-001–003): the bar with the notifications and the
+   account, the five areas, and the content. Mobile first: the areas sit at
+   the bottom of a narrow screen and at the side of a wide one, the same
+   list in the same order (UX-A11Y-001). The navigation takes its own place
+   in the layout instead of a fixed one over the content, so larger text
+   makes it taller without hiding the end of the page (UX-A11Y-007), and
+   what gets focus is scrolled clear of the bar and the navigation
+   (WCAG 2.4.11). */
 :root {
   --header-height: 3.75rem;
-  --nav-height: 4rem;
-  --nav-width: 13rem;
+  --nav-height: 3.75rem;
+  --nav-width: 15rem;
   scroll-padding: calc(var(--header-covers, var(--header-height)) + 0.5rem) 0
     calc(var(--nav-covers, var(--nav-height)) + 1rem);
 }
@@ -353,10 +553,23 @@ button:disabled,
   background: var(--color-surface);
   color: var(--color-text);
   border: 2px solid currentColor;
+  border-radius: var(--radius-s);
 }
 
 .skip-link:focus {
   top: var(--space-2);
+}
+
+/* The name of the app heads the side of a wide screen; a phone has the
+   areas at the bottom instead. */
+.brand {
+  display: none;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+  color: var(--color-accent-strong);
+  text-decoration: none;
 }
 
 .app-header {
@@ -366,19 +579,10 @@ button:disabled,
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2) var(--space-4);
+  gap: var(--space-2) var(--space-3);
   min-height: var(--header-height);
-  padding: var(--space-2) var(--space-4);
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.brand {
-  font-weight: 700;
-  font-size: 1.25rem;
-  color: var(--color-accent);
-  text-decoration: none;
+  padding: var(--space-2) var(--gutter);
+  background: var(--color-page);
 }
 
 .header-actions {
@@ -388,24 +592,45 @@ button:disabled,
   margin-left: auto;
 }
 
-/* Icons grow with the text next to them. */
-.header-actions svg,
-.main-navigation svg {
-  width: 1.5rem;
-  height: 1.5rem;
+/* The bell (UX-IA-002, UX-IA-019): the number of unread notifications in
+   words beside it, the same on every page. */
+.notification-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-width: var(--target);
+  min-height: var(--target);
+  padding: 0 0.8rem;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  font-size: var(--text-m);
+  color: var(--color-text);
+  text-decoration: none;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-low);
 }
 
-.notification-indicator,
+.notification-indicator[aria-current="page"] {
+  color: var(--color-accent-strong);
+}
+
+.unread-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-info);
+}
+
 .avatar {
-  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: var(--target);
   min-height: var(--target);
+  border-radius: 50%;
   color: inherit;
   text-decoration: none;
-  border-radius: var(--radius-pill);
 }
 
 /* A profile picture, or initials where none is shown, in the picture shape
@@ -429,7 +654,7 @@ button:disabled,
 }
 
 .profile-picture-medium {
-  --picture-size: 2.25rem;
+  --picture-size: 2.75rem;
 }
 
 .profile-picture-large {
@@ -440,8 +665,8 @@ button:disabled,
   font-size: calc(var(--picture-size) * 0.4);
   font-weight: 700;
   line-height: 1;
-  color: var(--color-on-accent);
-  background: var(--color-accent);
+  color: var(--color-accent-strong);
+  background: var(--color-accent-soft);
 }
 
 /* A name with the person's picture before it. */
@@ -468,27 +693,12 @@ button:disabled,
   background: var(--color-sunken);
 }
 
-.badge {
-  position: absolute;
-  top: 0;
-  right: 0;
-  min-width: 1.4rem;
-  padding: 0 0.3rem;
-  border-radius: var(--radius-pill);
-  font-size: 0.8rem;
-  font-weight: 700;
-  line-height: 1.4rem;
-  text-align: center;
-  background: var(--color-danger);
-  color: var(--color-on-danger);
-}
-
 .main-navigation {
   position: sticky;
   bottom: 0;
   order: 1;
   z-index: 5;
-  background: var(--color-surface);
+  background: var(--color-page);
   border-top: 1px solid var(--color-border);
 }
 
@@ -499,7 +709,7 @@ button:disabled,
   display: flex;
   flex-wrap: wrap;
   margin: 0;
-  padding: 0;
+  padding: 0 var(--space-1) var(--space-1);
   list-style: none;
 }
 
@@ -513,22 +723,29 @@ button:disabled,
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.15rem;
-  min-height: var(--nav-height);
+  gap: 0.2rem;
+  min-height: 3.5rem;
   padding: var(--space-1);
-  font-size: 0.8rem;
+  font-size: var(--text-xs);
+  font-weight: 500;
   text-align: center;
   overflow-wrap: anywhere;
   color: var(--color-muted);
   text-decoration: none;
+  border-radius: var(--radius-m);
 }
 
 /* The current area in words for assistive technology (aria-current), and
-   by colour, weight and a bar for the eye. */
+   for the eye by a filled icon, a heavier line and bold text, so it shows
+   in greyscale too. No dot under it (Tomat). */
 .main-navigation a[aria-current="page"] {
   font-weight: 700;
-  color: var(--color-accent);
-  box-shadow: inset 0 3px 0 var(--color-accent);
+  color: var(--color-accent-strong);
+}
+
+.main-navigation a[aria-current="page"] .icon {
+  fill: var(--color-accent-soft);
+  stroke-width: 2.1;
 }
 
 .app-content {
@@ -542,16 +759,15 @@ button:disabled,
 }
 
 .app-content main {
-  padding: var(--space-5) 0;
+  padding: var(--space-2) 0 var(--space-5);
 }
 
 /* Why the account is not active, above every page (PS-ADM-002). */
 .account-notice {
-  margin-top: var(--space-4);
+  width: min(42rem, calc(100% - 2 * var(--gutter)));
+  margin: var(--space-2) auto 0;
   padding: var(--space-3) var(--space-4);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-warning);
+  background: var(--color-warning-soft);
   border-radius: var(--radius-m);
 }
 
@@ -567,13 +783,22 @@ button:disabled,
   .app-shell {
     display: grid;
     grid-template:
-      "header header" auto
+      "brand header" auto
       "navigation content" 1fr
       / var(--nav-width) minmax(0, 1fr);
   }
 
+  .brand {
+    grid-area: brand;
+    display: flex;
+    align-items: center;
+    min-height: var(--header-height);
+    padding: var(--space-3) var(--space-5);
+  }
+
   .app-header {
     grid-area: header;
+    padding: var(--space-3) var(--space-6);
   }
 
   .main-navigation {
@@ -584,14 +809,13 @@ button:disabled,
     max-height: calc(100dvh - var(--header-covers, var(--header-height)));
     overflow-y: auto;
     border-top: 0;
-    border-right: 1px solid var(--color-border);
   }
 
   .main-navigation ul {
     flex-direction: column;
     flex-wrap: nowrap;
     gap: var(--space-1);
-    padding: var(--space-2);
+    padding: var(--space-2) var(--space-3);
   }
 
   .main-navigation li {
@@ -602,25 +826,39 @@ button:disabled,
     flex-direction: row;
     justify-content: flex-start;
     gap: var(--space-3);
-    min-height: var(--target);
-    padding: var(--space-2) var(--space-3);
+    min-height: var(--control);
+    padding: var(--space-2) var(--space-4);
     font-size: 1rem;
-    border-radius: var(--radius-s);
+    border-radius: var(--radius-pill);
+  }
+
+  .main-navigation a:hover {
+    color: var(--color-text);
   }
 
   .main-navigation a[aria-current="page"] {
-    background: var(--color-sunken);
-    box-shadow: inset 3px 0 0 var(--color-accent);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-low);
   }
 
   .app-content {
     grid-area: content;
-    padding-bottom: var(--space-6);
+    padding: 0 var(--space-6) var(--space-6);
+  }
+
+  .app-content main,
+  .account-notice {
+    width: min(48rem, 100%);
+    margin-left: 0;
+  }
+
+  h1 {
+    font-size: 2rem;
   }
 }
 
-/* Page header (PageHeader): the way back to the area, the title, what
-   context the page belongs to (UX-PRIV-003) and a short lead. */
+/* Page header (PageHeader): the way back, what kind of page it is, the
+   title, the context it belongs to (UX-PRIV-003, UX-IA-015) and a lead. */
 .page-header {
   margin-bottom: var(--space-5);
 }
@@ -629,12 +867,35 @@ button:disabled,
   margin-bottom: var(--space-2);
 }
 
+.page-kind {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* The way back: a small round button that names where it leads. */
 .back-link {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 0.125rem;
   min-height: var(--target);
-  margin-bottom: var(--space-1);
+  margin-bottom: var(--space-3);
+  padding: 0 0.875rem 0 0.5rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-m);
+  font-weight: 700;
+  color: var(--color-text);
+  text-decoration: none;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-low);
+}
+
+.back-link .icon {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .page-lead {
@@ -645,67 +906,98 @@ button:disabled,
 .tags {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-/* A short label for a status or a context, always in words. The tone adds
-   colour and a matching border; the words carry the meaning. */
+/* A short status in words with its icon (`Tag`). The tone adds a colour
+   and an icon; the words carry the meaning. */
 .tag {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: 0.125rem 0.625rem;
-  font-size: var(--text-s);
-  font-weight: 600;
-  border: 1px solid currentColor;
+  gap: 0.3rem;
+  padding: 0.1875rem 0.625rem;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 1.35;
   border-radius: var(--radius-pill);
-  color: var(--color-muted);
-  background: var(--color-surface);
+  color: var(--tone, var(--color-muted));
+  background: var(--tone-soft, var(--color-sunken));
+}
+
+.tag:has(.icon) {
+  padding-left: 0.4375rem;
+}
+
+.tag .icon {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2;
+}
+
+.tone-attention {
+  --tone: var(--color-info-strong);
+  --tone-soft: var(--color-info-soft);
 }
 
 .tone-waiting {
   --tone: var(--color-waiting);
+  --tone-soft: var(--color-waiting-soft);
 }
 
 .tone-positive {
   --tone: var(--color-positive);
+  --tone-soft: var(--color-positive-soft);
 }
 
 .tone-warning {
   --tone: var(--color-warning);
+  --tone-soft: var(--color-warning-soft);
 }
 
 .tone-danger {
   --tone: var(--color-danger);
+  --tone-soft: var(--color-danger-soft);
 }
 
-.tag[class*="tone-"] {
-  color: var(--tone);
+.tag.tone-danger {
+  box-shadow: inset 0 0 0 1.5px var(--color-danger);
 }
 
-/* A context, such as an environment or «Venner». */
+/* Where something is seen or comes from (`ContextTag`): a quiet line with
+   its icon, such as «Via Borettslaget Lia». */
 .tag-context {
-  font-weight: 400;
-  color: var(--color-text);
-  background: var(--color-sunken);
-  border-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--text-s);
+  color: var(--color-muted);
 }
 
-/* Status card (UX-INT standard): status, time, who acts, the next step,
-   and a way to more. Its tone is a bar at the side, beside the words. */
-.status-card {
+.tag-context .icon {
+  width: 1.0625rem;
+  height: 1.0625rem;
+}
+
+/* A card: the surface that holds one thing (Tomat). */
+.card,
+.status-card,
+.empty-state {
   display: grid;
   gap: var(--space-2);
-  margin: 0 0 var(--space-5);
-  padding: var(--space-4);
+  padding: 1.125rem;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-left: 6px solid var(--tone, var(--color-border-strong));
-  border-radius: var(--radius-m);
+  border-radius: var(--radius-l);
   box-shadow: var(--shadow-raised);
+}
+
+/* Status card («Nå», UX-INT standard): status, time, who acts, the next
+   step and a way to more. The tone is an icon beside the words. */
+.status-card {
+  margin: 0 0 var(--space-5);
 }
 
 .status-card h2 {
@@ -713,9 +1005,20 @@ button:disabled,
 }
 
 .status-text {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
   margin: 0;
-  font-size: var(--text-l);
-  font-weight: 600;
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.status-text .icon {
+  margin-top: 0.05em;
+  color: var(--tone, var(--color-muted));
+  stroke-width: 2;
 }
 
 .status-meta {
@@ -723,8 +1026,17 @@ button:disabled,
   color: var(--color-muted);
 }
 
+/* On a phone the next step spans the card; a wider screen keeps buttons
+   at their own width. */
 .status-card .actions {
+  display: grid;
   margin: var(--space-2) 0 0;
+}
+
+@media (min-width: 48rem) {
+  .status-card .actions {
+    display: flex;
+  }
 }
 
 /* «Flere valg» (UX-INT-009): the rarer steps, always in the same place. */
@@ -746,13 +1058,8 @@ button:disabled,
 
 /* When there is nothing yet, say so and offer the way to begin. */
 .empty-state {
-  display: grid;
   justify-items: start;
   gap: var(--space-3);
-  padding: var(--space-5) var(--space-4);
-  background: var(--color-surface);
-  border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-m);
 }
 
 .empty-state p {
@@ -760,24 +1067,39 @@ button:disabled,
   color: var(--color-muted);
 }
 
-/* A consequence view (UX-INT-007) opens as a modal dialog. */
+/* A consequence view (UX-INT-007): a sheet from the bottom of a phone, a
+   dialog in the middle of a wider screen. */
 .dialog {
   width: min(32rem, calc(100% - 2rem));
   max-height: calc(100dvh - 2rem);
   padding: var(--space-5);
   color: var(--color-text);
   background: var(--color-surface);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-m);
+  border: 0;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-raised);
   overflow-wrap: anywhere;
 }
 
+@media (max-width: 47.99rem) {
+  .dialog {
+    width: 100%;
+    max-width: 100%;
+    margin: auto 0 0;
+    padding: var(--space-5) 1.25rem 1.75rem;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+}
+
 .dialog::backdrop {
-  background: rgb(0 0 0 / 0.5);
+  background: var(--color-backdrop);
 }
 
 .dialog h2 {
   margin-top: 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  color: var(--color-text);
 }
 
 .consequences {
@@ -788,6 +1110,10 @@ button:disabled,
 
 .consequences h3 {
   margin: 0 0 var(--space-1);
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-muted);
 }
 
 .consequences ul {
@@ -795,17 +1121,26 @@ button:disabled,
   padding-left: 1.25rem;
 }
 
+/* The buttons keep the order they are reached in: «Avbryt», then the
+   confirming step, which lands nearest the thumb where they stack. */
 .dialog-actions {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex-direction: column;
   gap: var(--space-3);
 }
 
-/* Lists of things to look at or act on. */
+@media (min-width: 48rem) {
+  .dialog-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+/* Lists of things to look at or act on, one card each. */
 .entries {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -816,8 +1151,12 @@ button:disabled,
   gap: var(--space-1);
   padding: var(--space-3) var(--space-4);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-m);
+  box-shadow: var(--shadow-low);
+}
+
+.entry > a:first-child {
+  font-weight: 700;
 }
 
 .entry:target {
@@ -845,52 +1184,61 @@ button:disabled,
   color: var(--color-muted);
 }
 
+.entry-detail {
+  font-size: var(--text-m);
+}
+
+/* Unread: a card with a mark at its side; read ones are calmer. */
 .entry.unread {
-  border-left: 4px solid var(--color-accent);
+  box-shadow:
+    inset 4px 0 0 var(--color-info),
+    var(--shadow-low);
 }
 
 .waiting {
-  font-weight: 600;
-  color: var(--color-waiting);
+  font-weight: 700;
 }
 
 .actions,
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: var(--space-2) var(--space-3);
   margin: var(--space-1) 0 var(--space-4);
 }
 
+/* Filters, such as «Låner» and «Låner bort»: the chosen one is raised and
+   bold, not only coloured. */
 .filters a {
   display: inline-flex;
   align-items: center;
   min-height: var(--target);
   padding: 0 var(--space-4);
-  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-pill);
-  color: var(--color-text);
-  background: var(--color-surface);
+  font-weight: 500;
+  color: var(--color-muted);
   text-decoration: none;
+  box-shadow: inset 0 0 0 1.5px var(--color-border-strong);
 }
 
 .filters a[aria-current="page"] {
   font-weight: 700;
-  color: var(--color-on-accent);
-  background: var(--color-accent);
-  border-color: var(--color-accent);
+  color: var(--color-accent-strong);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-low);
 }
 
 /* Facts about one thing, such as a loan's agreement: label, then value. */
 .facts {
   display: grid;
+  align-items: baseline;
   grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
   gap: var(--space-2) var(--space-4);
   margin: 0 0 var(--space-4);
 }
 
 .facts dt {
-  font-weight: 600;
+  color: var(--color-muted);
 }
 
 .facts dd {
@@ -898,12 +1246,41 @@ button:disabled,
   overflow-wrap: anywhere;
 }
 
+/* What opens on request reads as a quiet way on, with a mark that turns. */
 details > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: fit-content;
   min-height: var(--target);
   cursor: pointer;
-  padding: var(--space-3) 0;
-  font-weight: 600;
-  color: var(--color-link);
+  padding: var(--space-1) var(--space-1);
+  list-style: none;
+  color: var(--color-muted);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  border-radius: var(--radius-s);
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+details > summary::after {
+  content: "";
+  width: 0.45em;
+  height: 0.45em;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-0.15em) rotate(45deg);
+}
+
+details[open] > summary::after {
+  transform: translateY(0.1em) rotate(-135deg);
+}
+
+details > summary:hover {
+  color: var(--color-text);
 }
 
 /* Like the form around it: never wider than the screen. */
@@ -913,8 +1290,9 @@ fieldset {
   min-width: 0;
   gap: var(--space-2);
   margin: 0 0 var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-s);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-m);
 }
 
 /* Photos of a thing in a form: a row of thumbnails, each with its own way
@@ -937,8 +1315,17 @@ fieldset {
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  border-radius: var(--radius-s);
+  border-radius: var(--radius-m);
   background: var(--color-sunken);
+}
+
+/* A thing without its own photo. */
+.image-placeholder {
+  background: linear-gradient(
+    160deg,
+    var(--color-image-from),
+    var(--color-image-to)
+  );
 }
 
 /* Private chat (WP-43): a message keeps its line breaks; a security code
