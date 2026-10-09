@@ -1121,10 +1121,11 @@ button:disabled,
   padding-left: 1.25rem;
 }
 
-/* The confirming step comes first where the buttons stack. */
+/* The buttons keep the order they are reached in: «Avbryt», then the
+   confirming step, which lands nearest the thumb where they stack. */
 .dialog-actions {
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   gap: var(--space-3);
 }
 
@@ -1217,7 +1218,7 @@ button:disabled,
   font-weight: 500;
   color: var(--color-muted);
   text-decoration: none;
-  box-shadow: inset 0 0 0 1.5px var(--color-border);
+  box-shadow: inset 0 0 0 1.5px var(--color-border-strong);
 }
 
 .filters a[aria-current="page"] {
