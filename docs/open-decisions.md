@@ -206,7 +206,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0033 — Hvordan skade, mangel eller tap registreres på et lån
 - **Lag:** Produktspesifikasjon / UX
 - **Status:** Avklart (produkteier, 9. oktober 2026)
-- **Beslutning:** Se [PS-LOAN-023](product-spec/04-laneforlop.md). Begge parter kan registrere skade, mangel eller tap ved returen og senere, som en sporbar hendelse med hvem som opplyste hva. Motparten kan si seg uenig eller legge til sin forklaring. Det er ingen lånestatus og hindrer ikke avslutning når returen er avklart. Ikke bygget.
+- **Beslutning:** Se [PS-LOAN-023](product-spec/04-laneforlop.md). Begge parter kan registrere skade, mangel eller tap ved returen og senere, som en sporbar hendelse med hvem som opplyste hva. Motparten kan si seg uenig eller legge til sin forklaring. Det er ingen lånestatus og hindrer ikke avslutning når returen er avklart. Bygget 9. oktober 2026 (#95 og lånets side).
 
 ### OD-0034 — Hva en medeier som ikke er part, ser av et lån
 - **Lag:** UX

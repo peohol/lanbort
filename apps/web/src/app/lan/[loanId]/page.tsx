@@ -10,6 +10,7 @@ import {
   collectPages,
   readLoan,
   readLoanAsCoOwner,
+  readLoanConditionReports,
   readLoanHistory,
   readLoanLogistics,
   readLoanReviews,
@@ -53,6 +54,7 @@ import {
   requirePageAccount,
 } from "@/server/session";
 import styles from "../_parts/loan.module.css";
+import { ConditionReports, ReportCondition } from "../_parts/condition";
 import { OriginTag } from "../_parts/origin-tag";
 import { Party } from "../_parts/party";
 import { writeHref } from "../_parts/write-href";
@@ -320,11 +322,19 @@ function LoanStatus({
  * The rarer steps (UX-INT-009), below the agreement and the other party
  * as in KF7: only what the loan offers now.
  */
-function LoanMoreActions({ loan }: { loan: Loan }) {
+function LoanMoreActions({
+  loan,
+  mayReport,
+}: {
+  loan: Loan;
+  /** The reader may register damage, deficiency or loss (PS-LOAN-023). */
+  mayReport: boolean;
+}) {
   const { secondary } = loanSteps(loan);
   const { actions } = loan;
 
   if (
+    !mayReport &&
     secondary.length === 0 &&
     actions.proposeAmendment === null &&
     !actions.cancel &&
@@ -338,6 +348,13 @@ function LoanMoreActions({ loan }: { loan: Loan }) {
       <Steps steps={secondary} />
       <ProposeAmendment loan={loan} />
       <OfferResponsibility loan={loan} />
+      {mayReport && (
+        <ReportCondition
+          path={loanApi(loan.id)}
+          loanId={loan.id}
+          other={otherParty(loan)}
+        />
+      )}
       <Cancel loan={loan} />
     </MoreActions>
   );
@@ -569,7 +586,7 @@ export default async function LoanPage({
       />
     );
   }
-  const [history, logistics, reviews] = await Promise.all([
+  const [history, logistics, reviews, condition] = await Promise.all([
     collectPages(
       (cursor) => pageQuery(readLoanHistory, { loanId, cursor }),
       ({ entries }) => entries,
@@ -583,6 +600,7 @@ export default async function LoanPage({
       : undefined,
     // The reviews are their reviewers': after a change of lender, the former.
     pageQueryIfAllowed(readLoanReviews, { loanId }),
+    pageQueryIfAllowed(readLoanConditionReports, { loanId }),
   ]);
   const other = loan.role === "lender" ? "borrower" : "lender";
 
@@ -598,6 +616,13 @@ export default async function LoanPage({
       <div className={styles.layout}>
         <div className={styles.column}>
           <LoanStatus loan={loan} reviews={reviews} />
+          {condition && (
+            <ConditionReports
+              path={loanApi(loan.id)}
+              loanId={loan.id}
+              condition={condition}
+            />
+          )}
           {logistics && <Logistics channel={logistics} />}
           <Agreement loan={loan} />
           <Party
@@ -611,7 +636,10 @@ export default async function LoanPage({
                 : writeHref(loan.role, loan.borrowerUserId, loan.requestId)
             }
           />
-          <LoanMoreActions loan={loan} />
+          <LoanMoreActions
+            loan={loan}
+            mayReport={condition?.mayReport ?? false}
+          />
           {reviews && <Reviews loan={loan} reviews={reviews} />}
         </div>
         <div className={styles.column}>
