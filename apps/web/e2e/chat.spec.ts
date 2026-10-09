@@ -120,8 +120,8 @@ test("two friends chat end to end, and a new device is linked with its code", as
   await laptop.page
     .getByRole("link", { name: "Koble til denne enheten" })
     .click();
-  await laptop.page.getByRole("button", { name: "Vis koden" }).click();
-  const code = (await laptop.page.locator(".link-code").textContent())!;
+  // The page makes the code as soon as it opens (09).
+  const code = (await laptop.page.locator("p.link-code").textContent())!;
   expect(await axeViolations(laptop.page)).toEqual([]);
   expect(code.replace(/\s/g, "").length).toBeGreaterThan(8);
 
@@ -130,10 +130,11 @@ test("two friends chat end to end, and a new device is linked with its code", as
     anna.page.getByRole("heading", { name: "Mine enheter" }),
   ).toBeVisible();
   expect(await axeViolations(anna.page)).toEqual([]);
-  await anna.page.getByRole("link", { name: "Godkjenn en ny enhet" }).click();
-  await expect(anna.page).toHaveURL(/\/samtaler\/enheter\/koble$/);
+  // The waiting device is the task on top (10); the camera is not used here.
+  await anna.page.getByRole("link", { name: /^Skriv inn koden/ }).click();
+  await expect(anna.page).toHaveURL(/\/samtaler\/enheter\/koble\?kode$/);
   await anna.page.getByLabel("Kode fra den nye enheten").fill(code);
-  await anna.page.getByRole("button", { name: "Finn enheten" }).click();
+  await anna.page.getByRole("button", { name: "Fortsett" }).click();
   await anna.page.getByRole("button", { name: "Godkjenn enheten" }).click();
   await expect(
     anna.page.getByText("Enheten er godkjent.").first(),
@@ -160,6 +161,20 @@ test("two friends chat end to end, and a new device is linked with its code", as
   await bo.page.getByRole("button", { name: "Send" }).click();
   await expectMessage(laptop.page, "Hent den når du vil.");
   await expectMessage(anna.page, "Hent den når du vil.");
+
+  // Anna removes the laptop from her phone: it is shut out of chat.
+  await anna.page.goto("/samtaler/enheter");
+  await anna.page.getByRole("button", { name: "Fjern", exact: true }).click();
+  const sheet = anna.page.getByRole("dialog");
+  await expect(sheet.getByRole("heading")).toHaveText(/^Fjerne Enhet /);
+  expect(await axeViolations(anna.page)).toEqual([]);
+  await sheet.getByRole("button", { name: "Fjern enheten" }).click();
+  await expect(
+    anna.page.getByText("er logget ut og kan ikke lese nye meldinger"),
+  ).toBeVisible();
+  await expect(
+    anna.page.getByRole("button", { name: "Fjern", exact: true }),
+  ).toHaveCount(0);
 
   for (const someone of [anna, bo, laptop]) {
     // A message encrypted before a device joined is refused and sent again

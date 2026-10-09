@@ -14,10 +14,12 @@ import { chatConversationHref, chatDevicesHref } from "@/navigation/chat";
 import { chatApi } from "./api";
 import styles from "./chat.module.css";
 import { ChatIcon } from "./chat-icon";
+import { type ChatStart, useChat } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";
 import type { ChatEngine } from "./engine";
 import { type ChatLoans, loansLine } from "./loans";
 import { chatErrorMessage } from "./messages";
+import { Notice } from "./notice";
 import { listTime } from "./time";
 import {
   type ConversationSummary,
@@ -214,13 +216,44 @@ export function NotUpdated({
   retry: () => void;
 }) {
   return (
-    <div className={styles.notice} role="alert">
-      <Tag tone="warning">Ikke oppdatert</Tag>
+    <Notice tag="Ikke oppdatert" tone="warning" role="alert">
       <p>Vi fikk ikke hentet samtalene. {error}</p>
       <button type="button" className="button-secondary" onClick={retry}>
         Prøv igjen
       </button>
-    </div>
+    </Notice>
+  );
+}
+
+const startNotes: Record<ChatStart, { tag: string; text: string }> = {
+  started: {
+    tag: "På",
+    text: "Privat chat er slått på for denne enheten.",
+  },
+  linked: {
+    tag: "Koblet til",
+    text: "Du kan lese og skrive her. Du ser meldinger som sendes fra nå av.",
+  },
+  reset: {
+    tag: "Tilbakestilt",
+    text: "Privat chat er startet på nytt på denne enheten. Meldinger fra før kan ikke leses her.",
+  },
+};
+
+/** Says once how the device just got chat (07, 13, 18). */
+function StartNote() {
+  const { state, settle } = useChat();
+  const [since] = useState(state.status === "ready" ? state.since : undefined);
+  useEffect(() => {
+    if (since) settle();
+  }, [since, settle]);
+
+  if (!since) return null;
+  const { tag, text } = startNotes[since];
+  return (
+    <Notice tag={tag} tone="positive" role="status">
+      <p>{text}</p>
+    </Notice>
   );
 }
 
@@ -250,6 +283,7 @@ function ConversationList({
 
   return (
     <>
+      <StartNote />
       {invitation && conversations && !talkingTo.has(invitation.userId) && (
         <section
           aria-labelledby="ny-samtale"

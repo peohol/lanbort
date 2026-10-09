@@ -14,19 +14,24 @@ import { isChatPage } from "@/navigation/chat";
 import { ChatApiError } from "./api";
 import { type ChatEngine, type ChatSetup, loadChat } from "./engine";
 
+/** How the device just got chat, to say so once (07, 13, 18). */
+export type ChatStart = "started" | "linked" | "reset";
+
 export type ChatState =
   | { status: "loading" }
   /** Another tab in this browser already runs this device's chat. */
   | { status: "elsewhere" }
   | { status: "failed"; code: ApiFailureCode }
   | { status: Exclude<ChatSetup, "ready"> }
-  | { status: "ready"; engine: ChatEngine };
+  | { status: "ready"; engine: ChatEngine; since?: ChatStart | undefined };
 
 interface ChatContextValue {
   userId: string;
   state: ChatState;
   /** After the device has started chat, been linked or reset. */
-  started(engine: ChatEngine): void;
+  started(engine: ChatEngine, since: ChatStart): void;
+  /** The device's start has been told; it is not told again. */
+  settle(): void;
   /** Reads where the device stands again, e.g. after it was revoked. */
   reload(): void;
 }
@@ -136,7 +141,15 @@ export function ChatProvider({
   }, [engine]);
 
   const started = useCallback(
-    (ready: ChatEngine) => setState({ status: "ready", engine: ready }),
+    (ready: ChatEngine, since: ChatStart) =>
+      setState({ status: "ready", engine: ready, since }),
+    [],
+  );
+  const settle = useCallback(
+    () =>
+      setState((current) =>
+        current.status === "ready" ? { ...current, since: undefined } : current,
+      ),
     [],
   );
   const reload = useCallback(() => {
@@ -145,7 +158,7 @@ export function ChatProvider({
   }, []);
 
   return (
-    <ChatContext.Provider value={{ userId, state, started, reload }}>
+    <ChatContext.Provider value={{ userId, state, started, settle, reload }}>
       {children}
     </ChatContext.Provider>
   );
