@@ -45,7 +45,12 @@ export function StickyBars() {
       const header = document.querySelector(".app-header");
       const navigation = document.querySelector(".main-navigation");
       if (!(event.target instanceof Element) || !header || !navigation) return;
-      if (navigation.contains(event.target) || header.contains(event.target)) {
+      // A layer covers the bars (UX-IA-020) and scrolls on its own.
+      if (
+        navigation.contains(event.target) ||
+        header.contains(event.target) ||
+        event.target.closest(".layer")
+      ) {
         return;
       }
 

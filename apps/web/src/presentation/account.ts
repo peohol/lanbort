@@ -18,6 +18,19 @@ const restingLabels: Partial<Record<Status, string>> = {
   closing: "Kontoen din er under avslutning.",
 };
 
+/** The account's state in a word or two, as on Konto's «Kontoen din». */
+const statusLabels: Record<Status, string> = {
+  pending_registration: "Ikke registrert ennå",
+  active: "Aktiv",
+  dormant: "I dvale",
+  deactivated: "Deaktivert",
+  suspended: "Stanset",
+  closing: "Under avslutning",
+  deleted: "Slettet",
+};
+
+export const accountStatusLabel = (status: Status) => statusLabels[status];
+
 /**
  * What to tell a signed-in user whose account is not active, or null for an
  * active one. Nothing about why the platform stopped it (UX-EXC-007).

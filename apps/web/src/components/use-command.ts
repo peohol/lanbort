@@ -6,6 +6,7 @@ import { announce } from "./announcer";
 import { type ApiFailureCode, postJson } from "./api-client";
 import { announceDataChanged } from "./data-changed";
 import { type ErrorMessages, errorMessage } from "./error-messages";
+import { scrollFor } from "./navigation-stack";
 
 /** Where the user goes after the command: the page read again, or another. */
 export type AfterCommand<T> = "refresh" | ((data: T) => string);
@@ -63,7 +64,8 @@ export function useCommand<T = unknown>({
     if (after === "refresh") {
       router.refresh();
     } else {
-      router.push(after(result.data));
+      const next = after(result.data);
+      router.push(next, scrollFor(next));
     }
 
     return true;

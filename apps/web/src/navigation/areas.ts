@@ -20,9 +20,31 @@ export const findHref = hrefOf("find");
 export const thingsHref = hrefOf("things");
 export const loansHref = hrefOf("loans");
 
-/** The account context and the notification layer, outside the five areas. */
-export const accountHref = "/konto";
-export const notificationsHref = "/varsler";
+/**
+ * The account context and the notification centre: layers over the screen
+ * the user is on, outside the five areas (UX-IA-002, UX-IA-020).
+ */
+export const layers = [
+  { id: "account", label: "Konto", href: "/konto" },
+  { id: "notifications", label: "Varsler", href: "/varsler" },
+] as const;
+
+export type LayerId = (typeof layers)[number]["id"];
+
+export const layerById = (id: LayerId) =>
+  layers.find((layer) => layer.id === id)!;
+
+export const accountHref = layerById("account").href;
+export const notificationsHref = layerById("notifications").href;
+
+/** The layer a path lies in, if any: its own page or anything below it. */
+export function layerOf(pathname: string): LayerId | null {
+  return (
+    layers.find(
+      ({ href }) => pathname === href || pathname.startsWith(`${href}/`),
+    )?.id ?? null
+  );
+}
 
 /** The area a path belongs to, if any: its own page or anything below it. */
 export function areaOf(pathname: string): AreaId | null {

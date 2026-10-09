@@ -20,9 +20,15 @@ const fonts = [
   "/fonts/quicksand-latin.woff2",
 ];
 
+/**
+ * Every page, in the app's frame for a signed-in user, and the `layer`
+ * slot: Konto or Varsler over the page when opened from the app
+ * (UX-IA-020, `@layer`).
+ */
 export default async function RootLayout({
   children,
-}: Readonly<{ children: ReactNode }>) {
+  layer,
+}: Readonly<{ children: ReactNode; layer: ReactNode }>) {
   for (const font of fonts) {
     preload(font, { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
   }
@@ -52,6 +58,7 @@ export default async function RootLayout({
         ) : (
           children
         )}
+        {layer}
         <Announcer />
       </body>
     </html>

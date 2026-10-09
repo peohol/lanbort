@@ -50,6 +50,7 @@ export function NotificationIndicator({ unread }: { unread: number }) {
   return (
     <Link
       href={notificationsHref}
+      scroll={false}
       className="notification-indicator"
       aria-label={label}
       aria-current={pathname === notificationsHref ? "page" : undefined}
