@@ -631,7 +631,11 @@ export default async function LoanPage({
           <Party
             person={loan.parties[other]}
             role={other}
-            writeHref={writeHref(loan)}
+            writeHref={
+              // An open logistics channel means a block has closed
+              // ordinary chat between them (WP-44).
+              logistics?.closedAt === null ? null : writeHref(loan)
+            }
           />
           <LoanMoreActions loan={loan} />
           {reviews && <Reviews loan={loan} reviews={reviews} />}

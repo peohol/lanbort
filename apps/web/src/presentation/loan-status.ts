@@ -539,7 +539,9 @@ export function loanProgress(loan: Loan): LoanProgress {
     case "not_completed":
       return atStage(1, "Ikke gjennomført");
     case "unresolved":
-      return atStage(aboutReturn(loan) ? 4 : 1, "Avsluttet uavklart");
+      // Never at the end of the way: the handover or the return it was
+      // about was not settled.
+      return atStage(aboutReturn(loan) ? 3 : 1, "Avsluttet uavklart");
     case undefined:
       break;
   }

@@ -328,6 +328,34 @@ describe("the loan's steps (KF7)", () => {
       ),
     ).toEqual({ current: 1, label: "Kansellert" });
   });
+
+  it("keeps an unresolved loan at the step that was not settled", () => {
+    const unresolved = {
+      status: "ended" as const,
+      ending: { reason: "unresolved" as const, endedBy: null, endedAt: at },
+    };
+
+    expect(loanProgress(loan(unresolved))).toEqual({
+      current: 1,
+      label: "Avsluttet uavklart",
+    });
+    expect(
+      loanProgress(
+        loan({
+          ...unresolved,
+          return: {
+            borrower: {
+              outcome: "returned",
+              reportedAt: at,
+              reportedAs: "party",
+            },
+            lender: null,
+            pending: null,
+          },
+        }),
+      ),
+    ).toEqual({ current: 3, label: "Avsluttet uavklart" });
+  });
 });
 
 describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
