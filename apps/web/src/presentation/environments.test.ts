@@ -4,6 +4,7 @@ import {
   answerCommand,
   describeTypeChange,
   leavingConsequences,
+  membershipLabel,
   membershipStep,
   roleName,
 } from "./environments";
@@ -141,6 +142,21 @@ describe("answerCommand", () => {
       label: "Godta invitasjonen til Gården",
     });
     expect(answerCommand(environment({}, {}), { kind: "member" })).toBeNull();
+  });
+});
+
+describe("membershipLabel", () => {
+  it("names the type before joining and the membership after", () => {
+    const outside = environment();
+    expect(membershipLabel(outside, membershipStep(outside))).toBe(
+      "Lukket miljø",
+    );
+    const waiting = environment({}, { state: "pending" });
+    expect(membershipLabel(waiting, membershipStep(waiting))).toBe(
+      "Venter på administratorene",
+    );
+    const member = environment({}, {});
+    expect(membershipLabel(member, membershipStep(member))).toBe("Medlem");
   });
 });
 

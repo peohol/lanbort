@@ -1,14 +1,12 @@
 import type { Environment } from "@lanbort/contracts";
 import Link from "next/link";
 import { ActionButton } from "@/components/action-button";
-import { CommandForm } from "@/components/command-form";
 import { ConfirmAction } from "@/components/confirm-action";
-import { describedBy, Field } from "@/components/field";
-import { MoreActions } from "@/components/more-actions";
 import { RequirementAnswers } from "@/components/requirement-answers";
 import { StatusCard } from "@/components/status-card";
 import type { Tone } from "@/components/tag";
-import { environmentAdminHref } from "@/navigation/routes";
+import { newCaseHref } from "@/navigation/cases";
+import { environmentAdminHref, environmentHref } from "@/navigation/routes";
 import { formatTime } from "@/presentation/dates";
 import {
   answerCommand,
@@ -16,14 +14,12 @@ import {
   describeTypeChange,
   environmentRoleNames,
   leavingConsequences,
+  membershipLabel,
   type MembershipStep,
   typeChangeAnswer,
 } from "@/presentation/environments";
 
 const leavePath = "/api/environments/membership/leave";
-
-const contactHelp =
-  "Administratorene svarer deg i en sak, og du får et varsel når de svarer.";
 
 const stepTones: Record<MembershipStep["kind"], Tone> = {
   closed_to_new: "neutral",
@@ -43,8 +39,8 @@ const stepTones: Record<MembershipStep["kind"], Tone> = {
  * joining, applying or accepting an invitation with the requirements that
  * apply now (PS-ENV-004–006), following an application, meeting new
  * requirements, answering a proposed weaker type (UX-PRIV-008), taking on
- * a role, writing to the administrators, and leaving with its consequences
- * shown (UX-INT-007).
+ * a role, and for administrators the way to their tasks. Contact and
+ * leaving are on «Om miljøet» (`YourMembership`).
  */
 export function Membership({
   environment,
@@ -55,11 +51,10 @@ export function Membership({
 }) {
   const { membership, continuity } = environment;
   const command = answerCommand(environment, step);
-  const body = { environmentId: environment.id };
-
   return (
     <>
       <StatusCard
+        label={membershipLabel(environment, step)}
         status={describeMembership(environment, step)}
         tone={stepTones[step.kind]}
         when={
@@ -75,7 +70,6 @@ export function Membership({
             : undefined
         }
         actions={<StepActions environment={environment} step={step} />}
-        more={<Leaving environment={environment} step={step} />}
       />
       {command && (
         <section aria-labelledby="medlemskap">
@@ -91,9 +85,6 @@ export function Membership({
       )}
       <TypeChange environment={environment} />
       <RoleInvitations environment={environment} />
-      {membership?.state === "active" && (
-        <Administration environment={environment} body={body} />
-      )}
     </>
   );
 }
@@ -109,6 +100,17 @@ function StepActions({
   const body = { environmentId: environment.id };
 
   switch (step.kind) {
+    case "member":
+      // WP-85's page, built alongside this one: not fetched ahead.
+      return environment.roles.includes("administrator") ? (
+        <Link
+          className="button"
+          href={environmentAdminHref(environment.id)}
+          prefetch={false}
+        >
+          Administrer miljøet
+        </Link>
+      ) : null;
     case "accept_invitation":
       return (
         <ActionButton label="Avslå invitasjonen" path={leavePath} body={body} />
@@ -122,53 +124,6 @@ function StepActions({
     default:
       return null;
   }
-}
-
-/**
- * Leaving, for active and passive members, with what goes and what stays.
- * Administrators hand over their role first (PS-ENV-003), and are told so.
- */
-function Leaving({
-  environment,
-  step,
-}: {
-  environment: Environment;
-  step: MembershipStep;
-}) {
-  const state = environment.membership?.state;
-
-  if (state !== "active" && state !== "passive") return null;
-
-  if (environment.roles.length > 0) {
-    return (
-      <p className="help">
-        Du må gi fra deg rollen som{" "}
-        {environment.roles.includes("owner")
-          ? "eier og administrator"
-          : "administrator"}{" "}
-        før du kan forlate miljøet.
-      </p>
-    );
-  }
-
-  return (
-    <MoreActions>
-      <ConfirmAction
-        label="Forlat miljøet"
-        title={`Forlate ${environment.name}?`}
-        consequences={leavingConsequences(environment)}
-        confirmLabel={`Forlat ${environment.name}`}
-        path={leavePath}
-        body={{ environmentId: environment.id }}
-        danger
-      />
-      {step.kind === "passive" && (
-        <p className="help">
-          Som passivt medlem er du fortsatt med i lån som allerede er avtalt.
-        </p>
-      )}
-    </MoreActions>
-  );
 }
 
 /**
@@ -270,47 +225,66 @@ function RoleInvitations({ environment }: { environment: Environment }) {
 }
 
 /**
- * The administrators as a function (PS-COM-010): members write to them;
- * administrators find their tasks on the administration page (UX-PRIV-006).
+ * The user's own membership, on «Om miljøet» (Tomat kjerneflyt 3): writing
+ * to the administrators as a group (PS-COM-010), and leaving with what
+ * goes and what stays (UX-INT-007). Administrators hand over their role
+ * first (PS-ENV-003), and are told so.
  */
-function Administration({
-  environment,
-  body,
-}: {
-  environment: Environment;
-  body: { environmentId: string };
-}) {
-  if (environment.roles.includes("administrator")) {
-    return (
-      <p className="link-row">
-        {/* WP-85's page, built alongside this one: not fetched ahead. */}
-        <Link href={environmentAdminHref(environment.id)} prefetch={false}>
-          Administrer miljøet
-        </Link>
-      </p>
-    );
-  }
+export function YourMembership({ environment }: { environment: Environment }) {
+  const state = environment.membership?.state;
+
+  if (state !== "active" && state !== "passive") return null;
+
+  const administrator = environment.roles.includes("administrator");
 
   return (
-    <section aria-labelledby="kontakt">
-      <h2 id="kontakt">Kontakt administratorene</h2>
-      <CommandForm
-        path="/api/environments/contact"
-        fixed={body}
-        submitLabel="Send til administratorene"
-        secondary
-      >
-        <Field id="kontakt-melding" label="Melding" help={contactHelp}>
-          <textarea
-            id="kontakt-melding"
-            name="body"
-            required
-            maxLength={4000}
-            rows={3}
-            {...describedBy("kontakt-melding", contactHelp)}
+    <section aria-labelledby="medlemskapet">
+      <h2 id="medlemskapet">Medlemskapet ditt</h2>
+      {state === "active" && !administrator && (
+        <div className="field">
+          <Link
+            className="button button-secondary"
+            href={newCaseHref({
+              kind: "contact",
+              environmentId: environment.id,
+            })}
+            aria-describedby="kontakt-hjelp"
+          >
+            Kontakt administratorene
+          </Link>
+          <p id="kontakt-hjelp" className="help">
+            Går til administratorene som gruppe, ikke til én person. Du får et
+            varsel når de svarer.
+          </p>
+        </div>
+      )}
+      {environment.roles.length > 0 ? (
+        <p className="help">
+          Du må gi fra deg rollen som{" "}
+          {environment.roles.includes("owner")
+            ? "eier og administrator"
+            : "administrator"}{" "}
+          før du kan forlate miljøet.
+        </p>
+      ) : (
+        <div className="actions">
+          <ConfirmAction
+            label="Forlat miljøet"
+            title={`Forlate ${environment.name}?`}
+            consequences={leavingConsequences(environment)}
+            confirmLabel={`Forlat ${environment.name}`}
+            path={leavePath}
+            body={{ environmentId: environment.id }}
+            danger
+            next={environmentHref(environment.id)}
           />
-        </Field>
-      </CommandForm>
+        </div>
+      )}
+      {state === "passive" && (
+        <p className="help">
+          Som passivt medlem er du fortsatt med i lån som allerede er avtalt.
+        </p>
+      )}
     </section>
   );
 }

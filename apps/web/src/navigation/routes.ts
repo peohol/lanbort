@@ -56,6 +56,9 @@ export const environmentHref = (id: string) => `/miljoer/${id}`;
 export const environmentAdminHref = (id: string) =>
   `${environmentHref(id)}/administrer`;
 
+/** «Om miljøet og medlemmer»: what it is, who is in it, your membership. */
+export const environmentAboutHref = (id: string) => `${environmentHref(id)}/om`;
+
 export const newEnvironmentHref = "/miljoer/ny";
 
 /**

@@ -5,6 +5,7 @@ import {
   environmentTypeExplanations,
   requirementKindNames,
 } from "@/presentation/environments";
+import styles from "./environment.module.css";
 
 /**
  * What the environment is, as far as the caller may see it (PS-ENV-001):
@@ -15,7 +16,7 @@ export function About({ environment }: { environment: Environment }) {
   const { description, audience, objectFocus, location, area } = environment;
 
   return (
-    <section aria-labelledby="om-miljoet">
+    <section aria-labelledby="om-miljoet" className={styles.card}>
       <h2 id="om-miljoet">Om miljøet</h2>
       <dl className="facts">
         <dt>Type</dt>
@@ -70,7 +71,7 @@ export function Requirements({
   if (requirements.length === 0) return null;
 
   return (
-    <section aria-labelledby="krav">
+    <section aria-labelledby="krav" className={styles.card}>
       <h2 id="krav">Regler og krav</h2>
       <dl className="facts">
         {requirements.map(({ id, kind, text }) => (
@@ -80,6 +81,16 @@ export function Requirements({
           </Fragment>
         ))}
       </dl>
+    </section>
+  );
+}
+
+/** What joining gives, said before it (Tomat kjerneflyt 3). */
+export function MembersOnly() {
+  return (
+    <section aria-labelledby="bare-medlemmer" className={styles.card}>
+      <h2 id="bare-medlemmer">Bare for medlemmer</h2>
+      <p>Tingene i miljøet, hvem som eier dem, og hvem som er med.</p>
     </section>
   );
 }
