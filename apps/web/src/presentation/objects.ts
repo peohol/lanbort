@@ -14,21 +14,27 @@ interface Availability {
 }
 
 /**
- * Whether the thing can be borrowed now, or from when, in words. It never
- * says what blocks it: others get a neutral answer (UX-PRIV-004, UX-EXC-006).
+ * Whether the thing can be borrowed now, or from when, in words and a tone.
+ * It never says what blocks it: others get a neutral answer (UX-PRIV-004,
+ * UX-EXC-006).
  */
-export function describeAvailability(
+export function availabilityStatus(
   object: Availability,
   today: string,
-): string {
+): { readonly label: string; readonly tone: Tone } {
   const next = object.effectiveAvailability[0];
 
   if (!object.availableForNewLoans || !next) {
-    return "Ikke ledig for nye lån nå";
+    return { label: "Ikke ledig for nye lån nå", tone: "neutral" };
   }
 
-  return next.start > today ? `Ledig fra ${formatDay(next.start)}` : "Ledig nå";
+  return next.start > today
+    ? { label: `Ledig fra ${formatDay(next.start)}`, tone: "waiting" }
+    : { label: "Ledig nå", tone: "positive" };
 }
+
+export const describeAvailability = (object: Availability, today: string) =>
+  availabilityStatus(object, today).label;
 
 /** One availability interval, open or bounded (PS-OBJ-003). */
 export function formatInterval({ start, end }: AvailabilityInterval): string {

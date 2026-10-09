@@ -18,6 +18,7 @@ import { acceptLoanAmendment, proposeLoanAmendment } from "../loans/amendments";
 import { approveLoanRequest } from "../loans/approval";
 import { cancelLoan } from "../loans/cancellation";
 import { confirmLoanTerms, declineLoanRequest } from "../loans/commands";
+import { answerLoanCondition, reportLoanCondition } from "../loans/condition";
 import { reportHandover } from "../loans/handover";
 import {
   acceptResponsibilityTransfer,
@@ -562,6 +563,41 @@ describe("loans", () => {
       "loan.approved",
       "loan.handover_reported",
     ]);
+  });
+
+  it("tell the other party of damage, deficiency or loss, and nobody of the answer", async () => {
+    const { owner, borrower, loanId } = await reservedLoan(0, 2);
+    await run(reportHandover, owner, {
+      loanId,
+      agreementVersion: 1,
+      outcome: "handed_over",
+    });
+    const before = (await told(owner)).length;
+    const { reportId } = await run(reportLoanCondition, borrower, {
+      loanId,
+      description: "Slangen har en sprekk.",
+    });
+
+    expect((await told(owner)).at(-1)).toEqual({
+      kind: "loan.condition_reported",
+      level: "action",
+      detail: null,
+      target: loan(loanId),
+    });
+    expect((await told(borrower)).map((item) => item.kind)).not.toContain(
+      "loan.condition_reported",
+    );
+
+    await run(answerLoanCondition, owner, {
+      loanId,
+      reportId,
+      kind: "disagreement",
+      description: "Den var der før.",
+    });
+    expect(await told(owner)).toHaveLength(before + 1);
+    expect((await told(borrower)).map((item) => item.kind)).not.toContain(
+      "loan.condition_reported",
+    );
   });
 
   it("tell the co-owner of an offered role, and the borrower clearly when it moved", async () => {

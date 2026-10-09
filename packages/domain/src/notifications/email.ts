@@ -39,6 +39,8 @@ export const notificationEmailSubjects = {
     "En forespørsel om å bli ansvarlig utlåner er avslått",
   "loan.responsibility_withdrawn":
     "En forespørsel om å bli ansvarlig utlåner er trukket tilbake",
+  "loan.condition_reported":
+    "Den andre parten har meldt skade, mangel eller tap",
   "social.friend_request": "Du har fått en venneforespørsel",
   "social.friend_request_accepted": "En venneforespørsel er godtatt",
   "environment.membership_invited": "Du er invitert til et miljø",

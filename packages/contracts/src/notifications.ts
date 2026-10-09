@@ -56,6 +56,7 @@ export const notificationKinds = {
   "loan.responsibility_transferred": "required",
   "loan.responsibility_declined": "action",
   "loan.responsibility_withdrawn": "action",
+  "loan.condition_reported": "action",
   "social.friend_request": "action",
   "social.friend_request_accepted": "information",
   "environment.membership_invited": "action",
@@ -159,6 +160,35 @@ export const notificationSchema = z.strictObject({
   readAt: z.iso.datetime().nullable(),
 });
 
+/**
+ * Whether a notification that asks for an answer still does (UX-IA-019):
+ * `open` while it waits for the reader, the reader's own answer once given
+ * anywhere, or `lapsed` when what it asked about no longer applies, without
+ * saying why (PS-USR-011).
+ */
+export const notificationStandings = [
+  "open",
+  "accepted",
+  "declined",
+  "lapsed",
+] as const;
+export const notificationStandingSchema = z.enum(notificationStandings);
+
+/**
+ * A notification as the notification centre shows it: what it is about,
+ * named as the reader may see it now, so a deleted person, a hidden
+ * environment or a deleted object simply goes unnamed (UX-PRIV-010), and
+ * for a notification that asks for an answer, whether it still does.
+ */
+export const describedNotificationSchema = notificationSchema.extend({
+  about: z.strictObject({
+    thing: z.string().nullable(),
+    person: z.string().nullable(),
+    place: z.string().nullable(),
+  }),
+  standing: notificationStandingSchema.nullable(),
+});
+
 /** Lists come newest first, a page at a time. */
 export const notificationPageSize = 50;
 
@@ -177,6 +207,10 @@ export const notificationListSchema = z.strictObject({
   unreadCount: z.int().nonnegative(),
   /** Pass as `cursor` for the next page; null on the last one. */
   nextCursor: notificationIdSchema.nullable(),
+});
+
+export const notificationCentrePageSchema = notificationListSchema.extend({
+  notifications: z.array(describedNotificationSchema),
 });
 
 export const markNotificationsReadSchema = z.strictObject({
@@ -330,6 +364,11 @@ export type NotificationTargetType = z.infer<
 export type NotificationTarget = z.infer<typeof notificationTargetSchema>;
 export type Notification = z.infer<typeof notificationSchema>;
 export type NotificationList = z.infer<typeof notificationListSchema>;
+export type NotificationStanding = z.infer<typeof notificationStandingSchema>;
+export type DescribedNotification = z.infer<typeof describedNotificationSchema>;
+export type NotificationCentrePage = z.infer<
+  typeof notificationCentrePageSchema
+>;
 export type NotificationReadResult = z.infer<
   typeof notificationReadResultSchema
 >;

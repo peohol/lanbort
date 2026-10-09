@@ -478,6 +478,18 @@ export interface AppLoanAmendments {
   status: Generated<string>;
 }
 
+export interface AppLoanConditionReports {
+  answer_kind: string | null;
+  description: string;
+  id: Generated<string>;
+  loan_id: string;
+  position: Generated<Int8>;
+  reported_at: Generated<Timestamp>;
+  reported_by_user_id: string;
+  reporter_role: string;
+  responds_to_id: string | null;
+}
+
 export interface AppLoanControlConfirmations {
   confirmed_at: Timestamp;
   confirmed_by_user_id: string;
@@ -998,6 +1010,7 @@ export interface DB {
   "app.idempotency_records": AppIdempotencyRecords;
   "app.loan_agreements": AppLoanAgreements;
   "app.loan_amendments": AppLoanAmendments;
+  "app.loan_condition_reports": AppLoanConditionReports;
   "app.loan_control_confirmations": AppLoanControlConfirmations;
   "app.loan_handover_reports": AppLoanHandoverReports;
   "app.loan_lender_transfers": AppLoanLenderTransfers;

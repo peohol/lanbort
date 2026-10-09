@@ -303,7 +303,7 @@ export default async function AccountPage() {
       <section aria-labelledby="varslingsvalg">
         <h2 id="varslingsvalg">Varslingsvalg</h2>
         <p className="help">
-          Viktige varsler og varsler som krever handling vises alltid i appen.
+          Påkrevde varsler og varsler som krever handling vises alltid i appen.
         </p>
         {preferences?.levels.map(({ level, channels }) => (
           <fieldset key={level}>

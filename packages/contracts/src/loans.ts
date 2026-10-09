@@ -865,6 +865,8 @@ export const loanHistoryEventSchema = z.enum([
   "responsibility_withdrawn",
   "ended_unresolved",
   "control_confirmed",
+  "condition_reported",
+  "condition_answered",
 ]);
 
 /**
@@ -912,6 +914,8 @@ export const loanHistoryEntrySchema = z.strictObject({
     .optional(),
   /** Who answered a proposed transfer: its recipient or the borrower. */
   answeredAs: z.enum(["recipient", "borrower"]).optional(),
+  /** How a party answered the other's report of damage (PS-LOAN-023). */
+  answerKind: z.enum(["disagreement", "explanation"]).optional(),
 });
 
 export const loanHistorySchema = z.strictObject({
@@ -919,6 +923,100 @@ export const loanHistorySchema = z.strictObject({
   /** Pass as `cursor` for older entries; null on the last page. */
   nextCursor: z.uuid().nullable(),
 });
+
+/**
+ * PS-LOAN-023: a short, factual description of a concrete damage,
+ * deficiency or loss, or of the other party's answer to one. Seen only by
+ * the parties; never part of events, notifications or logs.
+ */
+export const loanConditionTextSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(2000)
+  .regex(multilineText);
+
+export const loanConditionReportIdSchema = z.uuid();
+
+/**
+ * PS-LOAN-023: either party registers damage, deficiency or loss, from the
+ * handover on and at any time after, also once the loan has ended. It is a
+ * traceable statement of who said what: not a status, an accusation, a
+ * claim or a trust score, and it never changes or holds up the loan.
+ */
+export const reportLoanConditionSchema = z.strictObject({
+  loanId: loanIdSchema,
+  description: loanConditionTextSchema,
+});
+
+/** The other party disagrees, or adds their own explanation. */
+export const loanConditionAnswerKindSchema = z.enum([
+  "disagreement",
+  "explanation",
+]);
+
+/**
+ * PS-LOAN-023: the other party answers a report once, without changing it.
+ * Answering is possible whenever the report has no answer yet.
+ */
+export const answerLoanConditionSchema = z.strictObject({
+  loanId: loanIdSchema,
+  reportId: loanConditionReportIdSchema,
+  kind: loanConditionAnswerKindSchema,
+  description: loanConditionTextSchema,
+});
+
+export const loanConditionResultSchema = z.strictObject({
+  loanId: loanIdSchema,
+  /** The report: the new one, or the one answered. */
+  reportId: loanConditionReportIdSchema,
+  /** The new answer; null for a report. */
+  answerId: z.uuid().nullable(),
+});
+
+/**
+ * One party's statement: the side it was made for, and who made it (the
+ * caller, or the party by name; null once their account is deleted).
+ */
+const loanConditionStatementSchema = z.strictObject({
+  id: z.uuid(),
+  side: loanRequestRoleSchema,
+  you: z.boolean(),
+  realName: z.string().nullable(),
+  description: z.string(),
+  reportedAt: z.iso.datetime(),
+});
+
+export const loanConditionReportSchema = loanConditionStatementSchema.extend({
+  /** The other party's answer, if any; it never replaces the report. */
+  answer: loanConditionStatementSchema
+    .extend({ kind: loanConditionAnswerKindSchema })
+    .nullable(),
+  /** The caller may answer it: the other side, while it has no answer. */
+  answerable: z.boolean(),
+});
+
+/**
+ * PS-LOAN-023: the loan's reports of damage, deficiency or loss, oldest
+ * first, for its parties only.
+ */
+export const loanConditionReportsSchema = z.strictObject({
+  reports: z.array(loanConditionReportSchema),
+  /**
+   * The caller may register a new one now: the object has been with the
+   * borrower (handed over, or ended as returned or unresolved).
+   */
+  mayReport: z.boolean(),
+});
+
+export type ReportLoanCondition = z.infer<typeof reportLoanConditionSchema>;
+export type AnswerLoanCondition = z.infer<typeof answerLoanConditionSchema>;
+export type LoanConditionAnswerKind = z.infer<
+  typeof loanConditionAnswerKindSchema
+>;
+export type LoanConditionResult = z.infer<typeof loanConditionResultSchema>;
+export type LoanConditionReport = z.infer<typeof loanConditionReportSchema>;
+export type LoanConditionReports = z.infer<typeof loanConditionReportsSchema>;
 
 /**
  * A loan as a co-owner who is not its party sees it, only while there is
@@ -950,6 +1048,50 @@ export const coOwnerLoanSchema = z.strictObject({
 
 export const coOwnerLoanListSchema = z.strictObject({
   items: z.array(coOwnerLoanSchema),
+});
+
+/**
+ * UX-PRIV-013: a loan as a co-owner who is not its party sees it: one who
+ * owned the object when the loan was approved and still owns it, or one
+ * who has been asked to become its responsible lender. Only its status,
+ * period, object, agreed terms and parties, and what the caller may do
+ * themselves. Never the request's message, the private chat, the parties'
+ * statements and explanations, the timeline or the reviews.
+ */
+export const coOwnerLoanViewSchema = z.strictObject({
+  id: loanIdSchema,
+  objectId: objectIdSchema,
+  status: loanStatusSchema,
+  /** How and when it ended; null while it lasts. */
+  ending: z
+    .strictObject({
+      reason: loanEndReasonSchema,
+      endedAt: z.iso.datetime(),
+    })
+    .nullable(),
+  /** The period of the current agreement. */
+  period: loanPeriodSchema,
+  /** The object as agreed, and the agreed terms. */
+  title: z.string(),
+  categoryId: objectCategoryIdSchema,
+  loanTerms: z.string().nullable(),
+  /** The borrower and the responsible lender, by name (UX-INT-004). */
+  parties: z.strictObject({
+    borrower: loanPersonSchema,
+    lender: loanPersonSchema,
+  }),
+  /** The open offer of the responsible lender's role to the caller, if any. */
+  responsibilityTransfer: responsibilityTransferSchema.nullable(),
+  /** What the caller may do themselves; the commands decide again. */
+  actions: z.strictObject({
+    /**
+     * The caller's answers to the offer (PS-LOAN-009): an account that is
+     * not active may only decline (PS-ADM-002).
+     */
+    responsibility: z.array(answerSchema),
+    /** The caller may confirm having the object back (PS-LOAN-019). */
+    confirmControl: z.boolean(),
+  }),
 });
 
 export type LoanRequestOrigin = z.infer<typeof loanRequestOriginSchema>;
@@ -1009,3 +1151,4 @@ export type ResponsibilityTransferResult = z.infer<
 >;
 export type CoOwnerLoan = z.infer<typeof coOwnerLoanSchema>;
 export type CoOwnerLoanList = z.infer<typeof coOwnerLoanListSchema>;
+export type CoOwnerLoanView = z.infer<typeof coOwnerLoanViewSchema>;

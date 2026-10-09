@@ -36,6 +36,7 @@ import {
   overlappingPeriods,
   rebaseDraft,
 } from "@/presentation/object-form";
+import { ownImageHref } from "@/presentation/object-images";
 import { categoryLabel, formatInterval } from "@/presentation/objects";
 import {
   type FormImage,
@@ -68,14 +69,11 @@ interface Base {
   readonly version: number;
 }
 
-const imageSrc = (objectId: string, imageId: string) =>
-  `/api/objects/${objectId}/images/${imageId}`;
-
 const savedImages = (object: OwnObject): FormImage[] =>
   object.images.map(({ id }) => ({
     kind: "saved",
     id,
-    src: imageSrc(object.id, id),
+    src: ownImageHref(object.id, id),
   }));
 
 /**
@@ -207,7 +205,7 @@ export function ObjectForm(props: ObjectFormProps) {
         `remove:${imageId}`,
         (idempotencyKey) =>
           postJson(
-            imageSrc(objectId, imageId),
+            ownImageHref(objectId, imageId),
             {},
             { method: "DELETE", idempotencyKey },
           ),

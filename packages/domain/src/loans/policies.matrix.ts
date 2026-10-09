@@ -7,12 +7,14 @@ import {
   acceptLoanAmendmentPolicy,
   acceptResponsibilityPolicy,
   acceptResponsibilityTransferPolicy,
+  answerLoanConditionPolicy,
   approveLoanRequestPolicy,
   cancelLoanPolicy,
   concludeHandoversPolicy,
   concludeReturnsPolicy,
   confirmLoanControlPolicy,
   closeLoanLogisticsPolicy,
+  type CoOwnerViewResource,
   confirmLoanTermsPolicy,
   createLoanRequestPolicy,
   declineLoanAmendmentPolicy,
@@ -21,6 +23,7 @@ import {
   endLoanUnresolvedPolicy,
   handoverProcess,
   type LoanAmendmentResource,
+  type LoanConditionResource,
   type LoanControlResource,
   type LoanReceiptResource,
   type LoanReturnResource,
@@ -35,11 +38,14 @@ import {
   offerResponsibilityPolicy,
   previewLoanRequestPolicy,
   proposeLoanAmendmentPolicy,
+  readLoanAsCoOwnerPolicy,
+  readLoanConditionReportsPolicy,
   readLoanHistoryPolicy,
   readLoanLogisticsPolicy,
   readLoanPolicy,
   readLoanRequestPolicy,
   reportHandoverPolicy,
+  reportLoanConditionPolicy,
   reportReturnPolicy,
   requestLoanMediationPolicy,
   type ResponsibilityTransferResource,
@@ -449,6 +455,36 @@ const processMatrix = <R = void>(
   ]);
 
 /**
+ * UX-PRIV-013: a co-owner of the circle at approval, or one asked to take
+ * the lender's role, sees the restricted view; the parties read the loan
+ * itself, and nobody else learns that it exists.
+ */
+const coOwnerView = (seesAsCoOwner: boolean): CoOwnerViewResource => ({
+  ...loan,
+  seesAsCoOwner,
+});
+
+const coOwnerViewMatrix = policyMatrix(readLoanAsCoOwnerPolicy, [
+  expectCase(
+    "a co-owner of the circle, or one asked to take the role",
+    coOwner,
+    coOwnerView(true),
+    "allow",
+  ),
+  ...inactiveCases(coOwner, "co-owner", coOwnerView(true), "allow"),
+  expectCase(
+    "a later or former co-owner who was not asked",
+    coOwner,
+    coOwnerView(false),
+    "not_found",
+  ),
+  expectCase("the borrower", borrower, coOwnerView(false), "forbidden"),
+  expectCase("the responsible lender", owner, coOwnerView(false), "forbidden"),
+  expectCase("anyone else", stranger, coOwnerView(false), "not_found"),
+  ...callerCases(coOwnerView(true)),
+]);
+
+/**
  * PS-LOAN-019: any current owner confirms having the object back after the
  * loan ended unresolved; the borrower never does. On any other loan, only
  * its responsible lender learns that there is nothing to confirm.
@@ -490,6 +526,26 @@ const controlMatrix = policyMatrix(confirmLoanControlPolicy, [
   ...inactiveCases(coOwner, "co-owner", controlLoan(true), "allow"),
   ...callerCases(controlLoan(true)),
 ]);
+
+/**
+ * PS-LOAN-023: on a report of damage by either side, only the other side
+ * answers it, also with an account that is not active.
+ */
+const conditionAnswerMatrix = policyMatrix(
+  answerLoanConditionPolicy,
+  (["borrower", "lender"] as const).flatMap((reporterRole) =>
+    loanCases<LoanConditionResource>(
+      { ...loan, reporterRole },
+      {
+        borrower: reporterRole === "lender",
+        lender: reporterRole === "borrower",
+      },
+    ).map((testCase) => ({
+      ...testCase,
+      name: `${testCase.name}, on the ${reporterRole}'s report`,
+    })),
+  ),
+);
 
 export const loanMatrices = [
   policyMatrix(createLoanRequestPolicy, targetCases),
@@ -534,6 +590,7 @@ export const loanMatrices = [
     expectCase("a signed-in user", coOwner, undefined, "allow"),
     ...callerCases(undefined),
   ]),
+  coOwnerViewMatrix,
   policyMatrix(listLoansPolicy, [
     expectCase("a signed-in user", borrower, undefined, "allow"),
     ...callerCases(undefined),
@@ -542,4 +599,7 @@ export const loanMatrices = [
   processMatrix(endLoanUnresolvedPolicy, unresolvedEndingProcess, loan),
   processMatrix(closeLoanLogisticsPolicy, logisticsSafetyProcess),
   controlMatrix,
+  loanPartyMatrix(reportLoanConditionPolicy),
+  conditionAnswerMatrix,
+  loanPartyMatrix(readLoanConditionReportsPolicy),
 ];

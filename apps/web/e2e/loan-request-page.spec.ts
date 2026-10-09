@@ -65,18 +65,27 @@ test("a member asks to borrow a thing in the environment, and the owner approves
   await expect(bo).toHaveURL(
     new RegExp(`/ting/${objectId}/lan\\?miljo=${environmentId}`),
   );
+  // When first, in one step; then exactly what is sent.
+  const review = bo.getByRole("region", { name: "Forespørselen" });
+  await bo.getByLabel("Så snart som mulig").check();
+  await bo.getByLabel("Varighet").check();
   await bo.getByLabel("Antall dager").fill("2");
-  // The terms must be accepted before the request can be reviewed.
-  await bo.getByRole("button", { name: "Se over forespørselen" }).click();
   await expect(
-    bo.getByRole("heading", { name: "Se over forespørselen" }),
-  ).toHaveCount(0);
-  await bo.getByLabel("Jeg godtar vilkårene").check();
-  await bo.getByRole("button", { name: "Se over forespørselen" }).click();
-  const review = bo.getByRole("region", { name: "Se over forespørselen" });
+    bo.getByText("Valgt: Så snart som mulig i 2 dager"),
+  ).toBeVisible();
+  await expect(review).toHaveCount(0);
+  await bo.getByRole("button", { name: "Videre" }).click();
+  await expect(
+    bo.getByRole("heading", { level: 1, name: "Se over og send" }),
+  ).toBeVisible();
   await expect(review).toContainText("Så snart som mulig i 2 dager");
-  await expect(review).toContainText("Ingen melding");
-  await review.getByRole("button", { name: "Send forespørselen" }).click();
+  await expect(review).toContainText("Må vaskes etter bruk.");
+  await expect(bo.getByText("Ingenting er avtalt ennå.")).toBeVisible();
+  // Going back keeps what was filled in.
+  await bo.getByRole("button", { name: "Periode" }).click();
+  await expect(bo.getByLabel("Antall dager")).toHaveValue("2");
+  await bo.getByRole("button", { name: "Videre" }).click();
+  await bo.getByRole("button", { name: "Send forespørselen" }).click();
 
   await expect(bo).toHaveURL(/\/lan\/foresporsel\//);
   await expect(bo.getByText("Venter på svar fra eieren")).toBeVisible();
@@ -133,11 +142,18 @@ test("a friend asks directly, and both accept the declaration first", async ({
   await dan.goto(`/ting/${objectId}`);
   await expect(dan.getByText("Venner")).toBeVisible();
   await dan.getByRole("link", { name: "Be om å låne" }).click();
+  await dan.getByLabel("Varighet").check();
   await dan.getByLabel("Antall dager").fill("1");
-  await dan.getByLabel("Melding til eieren").fill("Trenger den til flytting.");
+  await dan.getByRole("button", { name: "Videre" }).click();
+  await dan
+    .getByLabel("Melding til eieren (valgfri)")
+    .fill("Trenger den til flytting.");
+  // The declaration must be accepted before the request is sent.
+  const send = dan.getByRole("button", { name: /^Send forespørsel / });
+  await send.click();
+  await expect(dan).toHaveURL(new RegExp(`/ting/${objectId}/lan`));
   await dan.getByLabel("Jeg godtar ansvarserklæringen for dette lånet").check();
-  await dan.getByRole("button", { name: "Se over forespørselen" }).click();
-  await dan.getByRole("button", { name: "Send forespørselen" }).click();
+  await send.click();
   await expect(dan.getByText("Venter på svar fra eieren")).toBeVisible();
   const requestUrl = dan.url();
   await friends.close();

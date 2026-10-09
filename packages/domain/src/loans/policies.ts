@@ -550,6 +550,43 @@ export const listCoOwnerLoansPolicy = definePolicy<unknown, void>({
 });
 
 /**
+ * A loan with whether the caller, who is not its party, may see its
+ * restricted view (UX-PRIV-013): they own the object now and owned it when
+ * the loan was approved, or the responsible lender's role is offered to
+ * them. Owning the object alone is not enough.
+ */
+export interface CoOwnerViewResource extends LoanResource {
+  readonly seesAsCoOwner: boolean;
+}
+
+/**
+ * UX-PRIV-013: the co-owner's restricted view of a loan. The parties learn
+ * that it is not theirs (they read the loan itself); to anyone else, a
+ * later or former co-owner included, the loan does not exist.
+ */
+const asCoOwner: ResourceRule<CoOwnerViewResource, void> = ({
+  actor,
+  resource,
+}) => {
+  if (loanRoleOf(actor, resource) !== null) {
+    return deny("forbidden");
+  }
+
+  return resource.seesAsCoOwner ? allow : deny("not_found");
+};
+
+/**
+ * Seeing it needs only the standing that keeps what an existing loan needs
+ * (PS-ADM-002): a co-owner whose account is not active may still decline an
+ * offered role or confirm having the object back.
+ */
+export const readLoanAsCoOwnerPolicy = definePolicy<CoOwnerViewResource, void>({
+  action: "loan.read_as_co_owner",
+  actor: [requireLoanStanding],
+  resource: [asCoOwner],
+});
+
+/**
  * The caller's own loans. Like reading one, it needs only the standing that
  * keeps what an existing loan needs (PS-LOAN-021).
  */
@@ -640,6 +677,39 @@ export const confirmLoanControlPolicy = definePolicy<LoanControlResource, void>(
   },
 );
 
+/**
+ * PS-LOAN-023: either party registers damage, deficiency or loss, also once
+ * the loan has ended; other co-owners were not parties and do not see it.
+ * It keeps what an existing loan needs (`requireLoanStanding`).
+ */
+export const reportLoanConditionPolicy = loanPartyPolicy<LoanResource>(
+  "loan.report_condition",
+  bothSides,
+  requireLoanStanding,
+);
+
+/** A report of damage on a loan, with the side that made it. */
+export interface LoanConditionResource extends LoanResource {
+  readonly reporterRole: LoanRequestRole;
+}
+
+/**
+ * PS-LOAN-023: only the other party answers a report; nobody answers
+ * their own.
+ */
+export const answerLoanConditionPolicy = loanPartyPolicy<LoanConditionResource>(
+  "loan.answer_condition",
+  ({ reporterRole }) => [reporterRole === "borrower" ? "lender" : "borrower"],
+  requireLoanStanding,
+);
+
+/** PS-LOAN-023: the loan's reports and answers, for its parties now. */
+export const readLoanConditionReportsPolicy = loanPartyPolicy<LoanResource>(
+  "loan.read_condition_reports",
+  bothSides,
+  requireLoanStanding,
+);
+
 export const loanRequestPolicies = [
   createLoanRequestPolicy,
   previewLoanRequestPolicy,
@@ -670,8 +740,12 @@ export const loanRequestPolicies = [
   declineResponsibilityTransferPolicy,
   withdrawResponsibilityTransferPolicy,
   listCoOwnerLoansPolicy,
+  readLoanAsCoOwnerPolicy,
   listLoansPolicy,
   requestLoanMediationPolicy,
   endLoanUnresolvedPolicy,
   confirmLoanControlPolicy,
+  reportLoanConditionPolicy,
+  answerLoanConditionPolicy,
+  readLoanConditionReportsPolicy,
 ];
