@@ -312,3 +312,28 @@ export function describeCoOwnerLoan(loan: CoOwnerLoan): string {
 
   return "Ansvarlig utlåner er ikke tilgjengelig, så du kan ta over eller bekrefte returen.";
 }
+
+/** Where a thing is shown now, as Mine ting says it (PS-OBJ-006, PS-OBJ-020). */
+export interface WhereShown {
+  /** The environments it is shown in, or waits for approval in. */
+  readonly environments: readonly string[];
+  readonly friends: boolean;
+}
+
+export function whereShown(list: {
+  readonly publications: readonly ObjectPublication[];
+  readonly friends: unknown;
+}): WhereShown {
+  return {
+    environments: list.publications.flatMap((publication) =>
+      withdrawable(publication) && publication.environment
+        ? [
+            publication.status === "pending"
+              ? `${publication.environment.name} (venter på godkjenning)`
+              : publication.environment.name,
+          ]
+        : [],
+    ),
+    friends: list.friends !== null,
+  };
+}

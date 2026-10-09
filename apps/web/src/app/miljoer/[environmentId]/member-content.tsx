@@ -5,17 +5,22 @@ import type {
 } from "@lanbort/contracts";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
-import { EntryDetail } from "@/components/entry-detail";
+import { Icon } from "@/components/icon";
 import { ownersDetail } from "@/components/owner-names";
 import { PersonName } from "@/components/person-name";
 import { Tag } from "@/components/tag";
+import { ThingCard, ThingCards } from "@/components/thing-card";
 import {
   environmentHref,
   newObjectHref,
   objectHref,
 } from "@/navigation/routes";
 import { roleName } from "@/presentation/environments";
-import { describeAvailability } from "@/presentation/objects";
+import {
+  environmentImageHref,
+  firstImageHref,
+} from "@/presentation/object-images";
+import { availabilityStatus } from "@/presentation/objects";
 
 /**
  * The things an active member finds in the environment (PS-OBJ-006), each
@@ -41,37 +46,52 @@ export function Things({
     kind: "environment",
     environmentId: environment.id,
   } as const;
-  const register =
+  const register = (primary: boolean) =>
     environment.state === "active" ? (
-      <Link href={newObjectHref(environment.id)}>Registrer en ting her</Link>
+      <Link
+        className={`button ${primary ? "button-primary" : "button-secondary"}`}
+        href={newObjectHref(environment.id)}
+      >
+        <Icon name="plus" /> Registrer en ting her
+      </Link>
     ) : null;
 
   return (
     <section aria-labelledby="ting">
       <h2 id="ting">Ting i miljøet</h2>
       {things.objects.length === 0 ? (
-        <EmptyState action={register}>
+        <EmptyState action={register(true)}>
           {paged ? "Ingen flere ting her." : "Ingen ting er delt her ennå."}
         </EmptyState>
       ) : (
         <>
-          <ul className="entries">
-            {things.objects.map((thing) => (
-              <li key={thing.publicationId} className="entry">
-                <Link href={objectHref(thing.objectId, origin)}>
-                  {thing.title}
-                </Link>
-                <EntryDetail
-                  parts={[
-                    describeAvailability(thing, today),
-                    thing.ownedByYou ? null : ownersDetail(thing.owners),
+          <ThingCards>
+            {things.objects.map((thing) => {
+              const status = availabilityStatus(thing, today);
+
+              return (
+                <ThingCard
+                  key={thing.publicationId}
+                  href={objectHref(thing.objectId, origin)}
+                  title={thing.title}
+                  image={firstImageHref(thing.images, (imageId) =>
+                    environmentImageHref(
+                      environment.id,
+                      thing.objectId,
+                      imageId,
+                    ),
+                  )}
+                  details={[
+                    thing.ownedByYou ? "Din ting" : ownersDetail(thing.owners),
                   ]}
+                  status={<Tag tone={status.tone}>{status.label}</Tag>}
                 />
-                {thing.ownedByYou && <Tag>Din</Tag>}
-              </li>
-            ))}
-          </ul>
-          {register && <p className="link-row">{register}</p>}
+              );
+            })}
+          </ThingCards>
+          {environment.state === "active" && (
+            <div className="actions">{register(false)}</div>
+          )}
         </>
       )}
       {(things.nextCursor || paged) && (

@@ -15,6 +15,7 @@ import {
   publishableEnvironments,
   restrictionReach,
   revertible,
+  whereShown,
 } from "./object-owners";
 
 const me = "00000000-0000-4000-8000-000000000001";
@@ -145,6 +146,29 @@ describe("the owners' view of a thing", () => {
         ],
       ).map(({ id }) => id),
     ).toEqual(["free", "withdrawn"]);
+  });
+
+  it("says where a thing is shown: live or waiting, and friends", () => {
+    const publication = (name: string, status: ObjectPublication["status"]) =>
+      ({ status, environment: { id: name, name } }) as ObjectPublication;
+    expect(
+      whereShown({
+        publications: [
+          publication("Lia", "active"),
+          publication("Furu", "pending"),
+          publication("Nøste", "rejected"),
+          publication("Tåsen", "unpublished"),
+        ],
+        friends: { publishedByUserId: me, publishedAt: at },
+      }),
+    ).toEqual({
+      environments: ["Lia", "Furu (venter på godkjenning)"],
+      friends: true,
+    });
+    expect(whereShown({ publications: [], friends: null })).toEqual({
+      environments: [],
+      friends: false,
+    });
   });
 
   it("brings back only an earlier version that differs (PS-OBJ-013)", () => {

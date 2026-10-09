@@ -1,0 +1,96 @@
+/* Things in a list (ThingCard): a photo, the name, context and status, and
+   a mark that it leads on. The name's link covers the whole card, so the
+   card is one large target (UX-A11Y-006); links in the context lie above
+   it and stay their own targets. */
+.cards {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 48rem) {
+  .cards {
+    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  }
+}
+
+.card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-low);
+}
+
+.card:has(.title:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.card:target {
+  outline: 3px solid var(--color-focus);
+}
+
+.image {
+  flex: none;
+  width: 4rem;
+  height: 4rem;
+  object-fit: cover;
+  border-radius: var(--radius-s);
+}
+
+img.image {
+  background: var(--color-sunken);
+}
+
+.body {
+  display: grid;
+  justify-items: start;
+  gap: 0.125rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.title {
+  font-weight: 700;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.title:focus-visible {
+  outline: none;
+}
+
+.title::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.title:hover {
+  text-decoration: underline;
+}
+
+.detail {
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+.detail a {
+  position: relative;
+  z-index: 1;
+}
+
+.status {
+  margin-top: var(--space-1);
+}
+
+.chevron {
+  color: var(--color-muted);
+}

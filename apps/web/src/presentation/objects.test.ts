@@ -2,6 +2,7 @@ import type { AvailabilityInterval } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import {
   categoryLabel,
+  availabilityStatus,
   describeAvailability,
   formatInterval,
   listSeparator,
@@ -38,6 +39,22 @@ describe("a thing in the user's words", () => {
     expect(
       describeAvailability(found({ effectiveAvailability: [] }), "2026-10-04"),
     ).toBe("Ikke ledig for nye lån nå");
+  });
+
+  it("gives availability a tone that matches its words", () => {
+    expect(availabilityStatus(found({}), "2026-10-04").tone).toBe("positive");
+    expect(
+      availabilityStatus(
+        found({
+          effectiveAvailability: [{ start: "2026-10-10", end: null }],
+        }),
+        "2026-10-04",
+      ).tone,
+    ).toBe("waiting");
+    expect(
+      availabilityStatus(found({ availableForNewLoans: false }), "2026-10-04")
+        .tone,
+    ).toBe("neutral");
   });
 
   it("says an interval as people say it, open or bounded", () => {

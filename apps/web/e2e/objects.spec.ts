@@ -265,6 +265,7 @@ test("Mine ting says what the pilot keeps out (PS-OBJ-018–019)", async ({
 
   await page.goto("/mine-ting");
   await expect(page.getByText("Levende dyr.")).toBeHidden();
+  await page.getByText("Hva kan lånes ut gjennom Lånbort?").click();
   await page.getByText("Kan ikke lånes ut gjennom Lånbort").click();
   await expect(page.getByText("Levende dyr.")).toBeVisible();
   await page.getByText("Venter til senere").click();

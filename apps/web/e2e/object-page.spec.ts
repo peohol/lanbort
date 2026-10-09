@@ -42,8 +42,12 @@ test("a thing has one page, seen by its owner or through an environment", async 
     environmentId,
   });
 
+  // Mine ting says where each thing is shown (PS-OBJ-006).
   await page.goto("/mine-ting");
-  await page.getByRole("link", { name: `Stige ${word}` }).click();
+  const card = page.getByRole("listitem").filter({ hasText: `Stige ${word}` });
+  await expect(card).toContainText(`Vises i: Gården ${word}`);
+  await expect(card).toContainText("Kan lånes ut");
+  await card.getByRole("link", { name: `Stige ${word}` }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     `Stige ${word}`,
   );
@@ -85,4 +89,38 @@ test("a thing has one page, seen by its owner or through an environment", async 
   expect(direct?.status()).toBe(404);
   await members.close();
   expect(problems).toEqual([]);
+});
+
+test("Mine ting keeps archived things apart and private ones marked", async ({
+  page,
+}) => {
+  await registerThroughApi(page.request);
+  const word = uniqueWord();
+  const thing = async (title: string) =>
+    (
+      await (
+        await postCommand(page.request, "/api/objects", {
+          title,
+          categoryId: "annet",
+          description: "Til utlån.",
+          availability: [{ start: today(), end: null }],
+        })
+      ).json()
+    ).objectId as string;
+  await thing(`Drill ${word}`);
+  const old = await thing(`Sag ${word}`);
+  await postCommand(page.request, `/api/objects/${old}/archive`, {});
+
+  await page.goto("/mine-ting");
+  const current = page
+    .getByRole("listitem")
+    .filter({ hasText: `Drill ${word}` });
+  await expect(current).toContainText("Bare synlig for deg");
+  await expect(page.getByRole("link", { name: `Sag ${word}` })).toBeHidden();
+  await page.getByText("Arkiverte ting (1)").click();
+  await expect(
+    page
+      .getByRole("list", { name: "Arkiverte ting" })
+      .getByRole("link", { name: `Sag ${word}` }),
+  ).toBeVisible();
 });
