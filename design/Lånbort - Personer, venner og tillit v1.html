@@ -201,7 +201,7 @@ button:disabled{cursor:default}
 
 <section style="display:flex;flex-direction:column;gap:16px" aria-labelledby="h-live">
 <div class="gh"><span class="hq" style="font-size:24px" id="h-live">Prøv relasjonen: Kari og Ola samtidig</span><span class="s">Kari ser Ola fra lånet av høytrykksspyleren, og Ola ser Kari fra det samme lånet. Begge er med i Borettslaget Lia. Trykk i hvilken som helst av telefonene. Den andre oppdateres med en gang, og kolonnen til høyre viser hva hver av dem faktisk får beskjed om.</span></div>
-<div class="ctrl"><label class="tg"><input type="checkbox" id="opt-off"><span class="sw" aria-hidden="true"></span>Uten nett</label><button class="bn sm" id="reset" type="button">Start på nytt</button><span class="s2">Med «Uten nett» på får neste handling ukjent utfall, og begge telefonene venter. Slå av igjen for å se at appen sjekker før du kan prøve på nytt (UX-INT-006).</span></div>
+<div class="ctrl"><label class="tg"><input type="checkbox" id="opt-off"><span class="sw" aria-hidden="true"></span>Uten nett</label><button class="bn sm" id="reset" type="button">Start på nytt</button><label class="s2" style="display:inline-flex;align-items:center;gap:8px;min-height:44px">Simulert utfall<select id="opt-outcome" style="font:inherit;min-height:36px;border-radius:8px;padding:0 6px"><option value="done">handlingen ble gjennomført</option><option value="lost">handlingen nådde ikke fram</option></select></label><span class="s2">Med «Uten nett» på får neste handling ukjent utfall, og begge telefonene venter. Slå av igjen for å se at appen sjekker før du kan prøve på nytt (UX-INT-006). Hva sjekken finner, velger du med «Simulert utfall».</span></div>
 <div class="live" id="live"></div>
 </section>
 
@@ -379,8 +379,8 @@ const blockSheet = (who, o = {}) => {
   const f = PEOPLE[who].first, n = PEOPLE[who].name, live = o.live ? ` data-who="${o.live}"` : '';
   return sheet({ over:n, title:`Blokkere ${n}?`, aria:`Blokkere ${n}`, body:
     groupLabel('DETTE STANSER') + [['block', RED, 'Dere kan ikke sende hverandre venneforespørsler, meldinger eller låneforespørsler.'], ['eyeoff', RED, `Dere ser ikke hverandre i ${o.env || 'miljøene'}, i Finn eller på tingene.`],
-      ...(o.friends ? [['pmin', RED, 'Vennskapet avsluttes.']] : []), ...(o.chat ? [['sam', RED, `Den private samtalen med ${f} stenges.`]] : [])].map(r => `<div class="stl">${ic(r[0], `color:${r[1]}`)}<span>${r[2]}</span></div>`).join('') +
-    groupLabel('DETTE BESTÅR') + [['ting', BLUE, o.loan || 'Lån dere allerede har avtalt.'], ['shield', BLUE, 'Saker dere har sammen, og anmeldelser dere har rett til å skrive.']].map(r => `<div class="stl">${ic(r[0], `color:${r[1]}`)}<span>${r[2]}</span></div>`).join('') +
+      ...(o.friends ? [['pmin', RED, 'Vennskapet avsluttes.']] : []), ...(o.chat ? [['sam', RED, `Nye meldinger i den private samtalen med ${f}.`]] : [])].map(r => `<div class="stl">${ic(r[0], `color:${r[1]}`)}<span>${r[2]}</span></div>`).join('') +
+    groupLabel('DETTE BESTÅR') + [['ting', BLUE, o.loan || 'Lån dere allerede har avtalt.'], ['shield', BLUE, 'Saker dere har sammen, og anmeldelser dere har rett til å skrive.'], ...(o.chat ? [['sam', BLUE, 'Meldingene dere allerede har skrevet, slettes ikke. Samtalen kan brukes igjen hvis blokkeringen oppheves.']] : [])].map(r => `<div class="stl">${ic(r[0], `color:${r[1]}`)}<span>${r[2]}</span></div>`).join('') +
     groupLabel(`DETTE FÅR ${f.toUpperCase()} VITE`) + `<div class="stl">${ic('info', `color:${GREY}`)}<span>Ingen beskjed om hvem som blokkerte. ${f} kan likevel merke at kontakten er borte.</span></div>`,
     actions:`<button class="bdf" type="button"${o.live ? ` data-act="doblock"${live}` : ''}${o.focus ? ' style="outline:3px solid #2B4A8A;outline-offset:2px"' : ''}>${ic('block')}Blokker ${n}</button><button class="bn" type="button"${o.live ? ` data-act="close"${live}` : ''}>Avbryt</button><span class="s2" style="text-align:center">Du trenger ikke oppgi noen grunn.</span>` });
 };
@@ -408,8 +408,15 @@ const moreSheet = (who, o = {}) => {
   return sheet({ over:PEOPLE[who].name, title:'Flere valg', body:`<div class="cd ol" style="padding:2px 4px;gap:0">${
     (o.friends ? mr({ lead:ic('pmin'), t:`Fjern ${f} som venn`, end:'', act:a('remove') }) : '') +
     mr({ lead:ic('block'), t:`Blokker ${f}`, end:'', act:a('block'), danger:true }) +
-    mr({ lead:ic('flag'), t:`Rapporter ${f}`, s:'Si fra til miljøet eller Lånbort', end:o.live ? '' : NB() })}</div>`,
+    mr({ lead:ic('flag'), t:`Rapporter ${f}`, s:'Si fra til miljøet eller Lånbort', end:NB('IKKE MED HER'), act:a('report') })}</div>`,
     actions:`<button class="bn" type="button"${a('close')}>Lukk</button>` });
+};
+const reportSheet = (who, o = {}) => {
+  const live = o.live ? ` data-act="close" data-who="${o.live}"` : '';
+  return sheet({ over:PEOPLE[who].name, title:`Rapporter ${PEOPLE[who].first}`, rows:[
+    ['info', GREY, 'Rapportskjemaet hører til saker (WP-88) og er ikke med i denne prototypen.'],
+    ['info', GREY, 'I appen åpner denne raden skjemaet der du sier fra til miljøet eller Lånbort.']],
+    actions:`<button class="bn" type="button"${live}>Lukk</button>` });
 };
 const notFound = (backTo, area) => `${backbar('Hjem')}<div class="scr" style="gap:12px;padding-top:8px">
 <div class="cd" style="gap:10px"><span class="hq now">Vi finner ikke denne siden</span><span class="s">Den kan være fjernet, eller den er ikke tilgjengelig for deg lenger.</span><span class="btn2">Tilbake til ${backTo}</span></div></div>${nav(area)}`;
@@ -446,7 +453,8 @@ function liveScreen(v) {
   const overlay = sh === 'more' ? moreSheet(o, { live:v, friends:rel === 'friends' })
     : sh === 'remove' ? removeSheet(o, { live:v, env:'Borettslaget Lia' })
     : sh === 'block' ? blockSheet(o, { live:v, env:'Borettslaget Lia', friends:rel === 'friends', loan:'Lånet av høytrykksspyleren fortsetter. Det praktiske om returen avtaler dere i en egen kanal for lånet.' })
-    : sh === 'unblock' ? unblockSheet(o, { live:v }) : '';
+    : sh === 'unblock' ? unblockSheet(o, { live:v })
+    : sh === 'report' ? reportSheet(o, { live:v }) : '';
   return personPage({ who:o, rel, state:busy ? 'unknown' : rel, live:v, busy:!!S.busy, flash:S.flash[v], back:'Høytrykksspyler', area:'lan',
     n:S.log[v].filter(x => !x.read && !x.gone).length, env:shared ? 'Borettslaget Lia' : '',
     why:shared ? `Du ser ${PEOPLE[o].first} fordi dere begge er med i Borettslaget Lia${rel === 'friends' ? ' og er venner' : ''}.` : '',
@@ -488,7 +496,7 @@ function act(a, v) {
   if (S.busy) return; /* ukjent utfall: ingen ny handling før appen har sjekket (UX-INT-006) */
   S.focus = v;
   S.flash[v] = ''; S.flash[other(v)] = '';
-  if (a === 'more' || a === 'remove' || a === 'block' || a === 'unblock') { S.sheet[v] = a; return renderLive(); }
+  if (['more', 'remove', 'block', 'unblock', 'report'].includes(a)) { S.sheet[v] = a; return renderLive(); }
   if (a === 'close') { S.sheet[v] = null; return renderLive(); }
   S.sheet[v] = null; S.clock += 1;
   if (document.getElementById('opt-off').checked) { S.busy = { v, a }; return renderLive(); }
@@ -496,10 +504,16 @@ function act(a, v) {
 }
 document.getElementById('live').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b && !b.disabled) act(b.dataset.act, b.dataset.who); });
 document.getElementById('opt-off').addEventListener('change', e => {
-  if (!e.target.checked && S.busy) { const { v, a } = S.busy; S.busy = null; S.clock += 1; S.flash[v] = ACTIONS[a](v) || 'Blokkeringen er registrert.'; S.flash[v] = `Vi sjekket: ${S.flash[v].charAt(0).toLowerCase()}${S.flash[v].slice(1)}`; S.focus = v; }
+  /* Sjekken etter ukjent utfall: «Simulert utfall» bestemmer om handlingen nådde serveren. */
+  if (!e.target.checked && S.busy) {
+    const { v, a } = S.busy, done = document.getElementById('opt-outcome').value === 'done';
+    S.busy = null; S.clock += 1; S.focus = v;
+    const r = done ? ACTIONS[a](v) || 'Blokkeringen er registrert.' : 'Det gikk ikke gjennom. Ingenting er endret, og du kan prøve på nytt.';
+    S.flash[v] = `Vi sjekket: ${r.charAt(0).toLowerCase()}${r.slice(1)}`;
+  }
   renderLive();
 });
-document.getElementById('reset').addEventListener('click', () => { S = LIVE0(); document.getElementById('opt-off').checked = false; renderLive(); });
+document.getElementById('reset').addEventListener('click', () => { S = LIVE0(); document.getElementById('opt-off').checked = false; document.getElementById('opt-outcome').value = 'done'; renderLive(); });
 document.getElementById('opt-mark').addEventListener('change', e => document.getElementById('L').classList.toggle('nomark', !e.target.checked));
 
 /* ---------- Statiske skjermer ---------- */
@@ -546,7 +560,7 @@ const S_SECTIONS = [
 ${note('Ingen anmeldelser ennå', '<span class="s" style="color:#1E2733">«Som utlåner · Ingen anmeldelser ennå» står uten pil. Det sier ingenting negativt om personen, og raden kan ikke åpnes.</span>')}
 ${note('Uten tilgang til tillitsprofilen', `<span class="s" style="color:#1E2733">Har dere bare en venneforespørsel mellom dere og ikke noe felles miljø, vises navn og «Dere to», men ikke anmeldelsene:</span><span class="s2">«Anmeldelser fra lån vises for venner og for medlemmer av et felles miljø.»</span><span class="s2">Et tidligere vennskap, medlemskap eller lån gir ikke tilgang.</span>`)}
 ${note('Anmeldelser fra et skjult miljø', '<span class="s" style="color:#1E2733">Teksten, forfatteren og miljøet vises bare for dem som selv er med i miljøet. Andre ser verken anmeldelsen eller noe tegn på at den finnes. Skårene kan inngå i snittet (PS-TRUST-007).</span>')}
-${note('Slik andre ser deg', '<span class="s" style="color:#1E2733">Fra Konto åpner Kari sin egen side med merket «Deg»: «Dette er deg, slik andre med tilgang ser deg.» Ingen handlinger, bare erfaringene og tingene for venner.</span>')}
+${note('Din egen side', '<span class="s" style="color:#1E2733">Fra Konto åpner Kari sin egen side med merket «Deg». Den viser alt som står om henne, uten handlinger. Andre ser ikke nødvendigvis det samme. Tingene for venner ser bare venner. Anmeldelsene ser venner og de som er med i et miljø sammen med henne nå. Anmeldelser fra et skjult miljø ser bare de som selv er med i det miljøet (PS-TRUST-007).</span>')}
 </div>`
     ] },
 
@@ -574,7 +588,7 @@ ${note('Uten nett', `<span class="pill p-wt">${ic('offline')}Vet ikke ennå</spa
   { h:'Fjerne en venn', s:'Kari fjerner Aisha. Valget ligger under «Flere valg» (UX-INT-009) og har en konsekvensvisning fordi det påvirker en annen (UX-INT-007).',
     items:[
       phone({ num:'08', label:'Flere valg', time:'19:44', body:personPage({ who:'aisha', rel:'friends', back:'Symaskin', area:'finn', env:'Nabodeling Lia og Tåsen', first:'lender', overlay:moreSheet('aisha', { friends:true }) }),
-        cap:'Fjern venn, blokker og rapporter står alltid samme sted. Blokker er signalrød fordi den stanser all kontakt. Rapporter åpner flyten som designes med saker (WP-88).' }),
+        cap:'Fjern venn, blokker og rapporter står alltid samme sted. Blokker er signalrød fordi den stanser all kontakt. Rapporter hører til saker (WP-88) og er ikke med i denne prototypen.' }),
       phone({ num:'09', label:'Fjerne Aisha som venn?', time:'19:44', body:personPage({ who:'aisha', rel:'friends', back:'Symaskin', area:'finn', first:'lender', overlay:removeSheet('aisha', { env:'Nabodeling Lia og Tåsen' }) }),
         cap:'Rødt er det som forsvinner, blått er det som består, grått er hva den andre får vite. Knappen er ikke signalrød, fordi ingenting slettes og dere kan bli venner igjen.' }),
       phone({ num:'10', label:'Fjernet', time:'19:45', body:personPage({ who:'aisha', rel:'none', back:'Symaskin', area:'finn', env:'Nabodeling Lia og Tåsen', why:'Du ser Aisha fordi dere begge er med i Nabodeling Lia og Tåsen.', first:'lender', flash:'Du fjernet Aisha som venn.' }),
@@ -624,7 +638,7 @@ ${note('Slettet konto', `<div class="row" style="gap:10px"><span class="av g xs"
   { h:'Konto: venner, forespørsler og blokkerte', s:'Konto åpnes fra profilbildet øverst i alle områder (UX-IA-003). Her samles relasjonene, slik de allerede finnes i appen, med lenker til personens side.',
     items:[
       phone({ num:'18', label:'Konto · åpnet fra Hjem', time:'19:50', body:`<div class="hdr"><span class="hi hq">Konto</span>${FS('K1')}<span class="xb" aria-label="Lukk Konto">${ic('x')}</span></div><div class="scr" style="gap:10px">
-<div class="cd" style="gap:10px"><div class="row">${av('kari', 'big')}<div class="f1"><div class="t">Kari Nordmann</div><div class="s2">Profilbildet ser alle som kan se deg</div></div></div><span class="q" style="min-height:36px">Se siden din slik andre ser den</span></div>
+<div class="cd" style="gap:10px"><div class="row">${av('kari', 'big')}<div class="f1"><div class="t">Kari Nordmann</div><div class="s2">Profilbildet ser alle som kan se deg</div></div></div><span class="q" style="min-height:36px">Se din egen side</span></div>
 ${sec('Folk')}<div class="cd" style="padding:2px 4px;gap:0">${mr({ lead:`<span class="tic">${ic('ppl')}</span>`, t:'Venner', s:'12 venner', end:`<span class="pill p-me">${ic('target')}1 venter</span>${chev}` })}${mr({ lead:`<span class="tic n">${ic('block')}</span>`, t:'Blokkerte', s:'1 person' })}</div>
 ${sec('Annet')}<div class="cd" style="padding:2px 4px;gap:0">${mr({ lead:`<span class="tic n">${ic('shield')}</span>`, t:'Saker' })}${mr({ lead:`<span class="tic n">${ic('bell')}</span>`, t:'Varslingsvalg' })}${mr({ lead:`<span class="tic n">${ic('info')}</span>`, t:'Kontoen din', s:'Aktiv' })}${mr({ lead:`<span class="tic n">${ic('out')}</span>`, t:'Logg ut', end:'' })}</div>
 </div>${nav('hjem')}`,
