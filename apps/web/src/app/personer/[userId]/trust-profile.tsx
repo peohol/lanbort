@@ -7,11 +7,13 @@ import type {
 import { EmptyState } from "@/components/empty-state";
 import { PersonName } from "@/components/person-name";
 import { ContextTag, Tag } from "@/components/tag";
+import type { PersonRole } from "@/navigation/routes";
 import { formatTime } from "@/presentation/dates";
 import { loanEndReasonLabels } from "@/presentation/loans";
 import {
   describeDimension,
   dimensionLabel,
+  rolesInOrder,
   subjectRoleLabels,
 } from "@/presentation/people";
 
@@ -69,6 +71,26 @@ function Role({
   );
 }
 
+/** The other role in a loan: who reviewed a person in `role`. */
+const otherRole: Record<PersonRole, PersonRole> = {
+  borrower: "lender",
+  lender: "borrower",
+};
+
+/** Each role's part of the profile (PS-TRUST-006). */
+const roleParts = {
+  borrower: {
+    id: "som-laantaker",
+    from: "utlånere",
+    trust: (profile: Profile) => profile.asBorrower,
+  },
+  lender: {
+    id: "som-utlaaner",
+    from: "låntakere",
+    trust: (profile: Profile) => profile.asLender,
+  },
+} as const;
+
 /** One review as the reader may see it (PS-TRUST-007). */
 function Review({ review }: { review: ProfileReview }) {
   const contested = review.scores.some((score) => score.contested);
@@ -85,7 +107,10 @@ function Review({ review }: { review: ProfileReview }) {
       <p>
         Fra{" "}
         {review.author ? (
-          <PersonName person={review.author} />
+          <PersonName
+            person={review.author}
+            role={otherRole[review.subjectRole]}
+          />
         ) : (
           "en tidligere bruker"
         )}
@@ -130,27 +155,27 @@ export function TrustProfile({
   profile,
   reviews,
   more,
+  role,
 }: {
   profile: Profile;
   reviews: readonly ProfileReview[];
   /** The address of the next page of reviews, if there is one. */
   more: string | null;
+  /** The person's role where the page was opened from, if it has one. */
+  role: PersonRole | null;
 }) {
   return (
     <section aria-labelledby="tillit">
       <h2 id="tillit">Erfaringer fra lån</h2>
-      <Role
-        id="som-laantaker"
-        heading="Som låntaker"
-        from="utlånere"
-        trust={profile.asBorrower}
-      />
-      <Role
-        id="som-utlaaner"
-        heading="Som utlåner"
-        from="låntakere"
-        trust={profile.asLender}
-      />
+      {rolesInOrder(role).map((each) => (
+        <Role
+          key={each}
+          id={roleParts[each].id}
+          heading={subjectRoleLabels[each]}
+          from={roleParts[each].from}
+          trust={roleParts[each].trust(profile)}
+        />
+      ))}
       <h3 id={reviewsKey}>Anmeldelser</h3>
       {reviews.length === 0 ? (
         <EmptyState>Ingen anmeldelser å vise.</EmptyState>

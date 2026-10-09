@@ -20,12 +20,15 @@ export const friendshipStateSchema = z.enum([
 
 /**
  * The caller's relation to one other user. Whether the other user blocks the
- * caller is never part of it (PS-USR-006).
+ * caller is never part of it (PS-USR-006). `canRequest` says whether the
+ * caller may send a friend request now, never why not, so it does not tell
+ * the caller that an earlier request was declined (PS-USR-012).
  */
 export const socialRelationSchema = z.strictObject({
   userId: z.uuid(),
   friendship: friendshipStateSchema,
   blockedByMe: z.boolean(),
+  canRequest: z.boolean(),
 });
 
 /**

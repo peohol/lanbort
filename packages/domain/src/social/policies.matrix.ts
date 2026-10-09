@@ -30,6 +30,7 @@ const pair = (overrides: Partial<SocialPair> = {}): SocialPair => ({
   openFriendship: null,
   blockedByActor: false,
   blockedByOther: false,
+  requestHeldBack: false,
   ...overrides,
 });
 
@@ -73,6 +74,11 @@ const situations: readonly {
   {
     name: "a user the actor blocks stays visible to the actor",
     resource: pair({ blockedByActor: true }),
+    expected: { request: "forbidden", relation: "allow", block: "allow" },
+  },
+  {
+    name: "a declined request the actor has to wait out (PS-USR-012)",
+    resource: pair({ requestHeldBack: true }),
     expected: { request: "forbidden", relation: "allow", block: "allow" },
   },
   {

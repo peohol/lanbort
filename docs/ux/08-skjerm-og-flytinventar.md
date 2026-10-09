@@ -219,9 +219,9 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 #### Samtaler
 
 - **Oppgave:** snakke privat med en annen part, særlig om et konkret lån.
-- **Tilstander:** privat samtale; strukturert første kontakt mottatt, der mottakeren kan åpne for fri samtale; samtale om et lån; smal logistikk-kanal etter blokkering; ingen lesebekreftelser; enheten er ikke koblet; skjult fra egen liste; ingen samtaler.
+- **Tilstander:** privat samtale, én per person, med de pågående lånene mellom dere (PS-COM-017); strukturert første kontakt mottatt, der mottakeren kan åpne for fri samtale; smal logistikk-kanal etter blokkering; ingen lesebekreftelser; enheten er ikke koblet; skjult fra egen liste; ingen samtaler.
 - **Ser / handler:** deltakerne. Ved første kontakt mellom ikke-venner er det bare mottakeren av den strukturerte henvendelsen som kan åpne fri samtale.
-- **Regler:** UX-IA-001, UX-EXC-004, PS-COM-001, PS-COM-004–007, PS-COM-009, PS-USR-005.
+- **Regler:** UX-IA-001, UX-EXC-004, PS-COM-001, PS-COM-004–007, PS-COM-009, PS-COM-017, PS-COM-018, PS-USR-005.
 - **Forløp:** begge.
 - **UI-pakke:** WP-80, med enhetene under [enheter for privat chat](#enheter-for-privat-chat); åpning av fri samtale fra strukturert kontakt, demping, arkivering og start fra personens side står under «Senere» i UI-planen.
 
@@ -612,7 +612,8 @@ Disse flatene følger av spesifikasjonen og UX-modellen, men ingen pakke i UI-pl
 - **Medlemmer og utestengelse** for administratorer, inkludert å oppheve at noen er stengt ute (PS-ENV-004). Fjerning av aktive medlemmer venter på OD-0025.
 - **Plattformforvalterens inngrep** på kontoer og miljøer. Venter på OD-0023 og OD-0026.
 - **Varsel før utlogging på en enhet med privat chat** (ADR-0010 punkt 7). Konto-sidens «Logg ut» har ikke dette varselet ennå; «Fjern denne enheten» i Mine enheter sier hva enheten mister.
-- **Gjenopprettingsnøkkel og overføring av gammel historikk** for privat chat (ADR-0010 punkt 5 og 8). Begge er vedtatt som valgfrie for brukeren, men ikke bygget; til da er kobling fra en annen enhet eller tilbakestilling de eneste veiene.
+- **Gjenopprettingsnøkkel og overføring av gammel historikk** for privat chat (ADR-0010 punkt 5 og 8, PS-COM-019). Begge er vedtatt som valgfrie for brukeren, men ikke bygget; til da er kobling fra en annen enhet eller tilbakestilling de eneste veiene.
+- **Varsler om nye meldinger** i privat chat og lånelogistikk-kanalen (PS-COM-018). Vedtatt, men ikke bygget; i dag gir nye meldinger ingen varsler.
 - Presentasjon og synlighet for andre profilfelt, og demping og arkivering av lånesamtalen, står allerede under «Senere» i UI-planen.
 
 ### Åpne beslutninger som berører flatene

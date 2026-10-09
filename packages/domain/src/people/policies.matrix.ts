@@ -33,6 +33,7 @@ const person = (
     openFriendship: null,
     blockedByActor: false,
     blockedByOther: false,
+    requestHeldBack: false,
     ...pair,
   },
   shareEnvironment: false,

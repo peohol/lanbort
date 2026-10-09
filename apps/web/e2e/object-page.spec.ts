@@ -69,7 +69,7 @@ test("a thing has one page, seen by its owner or through an environment", async 
   await expect(member.getByText("Eier: Anna Berg")).toBeVisible();
   await expect(member.getByRole("link", { name: "Anna Berg" })).toHaveAttribute(
     "href",
-    `/personer/${annaId}`,
+    `/personer/${annaId}?rolle=utlaaner`,
   );
   await member.getByRole("link", { name: `Stige ${word}` }).click();
   await expect(member).toHaveURL(new RegExp(`/ting/${objectId}\\?miljo=`));

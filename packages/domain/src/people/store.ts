@@ -1,7 +1,11 @@
 import type { ProfilePictureVisibility } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
-import type { OpenFriendship, SocialPair } from "../social/pair";
+import {
+  type OpenFriendship,
+  requestHeldBack,
+  type SocialPair,
+} from "../social/pair";
 import type { ProfileAccessResource } from "../trust/policies";
 
 type Db = Kysely<Database>;
@@ -92,6 +96,7 @@ export async function loadPeople(
           and block.blocker_id = person.id
           and block.blocked_id = ${viewerId}
       )`.as("blockedByPerson"),
+      requestHeldBack(viewerId, sql.ref("person.id")).as("requestHeldBack"),
       sql<boolean>`exists (
         select 1
         from app.environment_memberships as own
@@ -131,6 +136,7 @@ export async function loadPeople(
                     : null,
                 blockedByActor: row.blockedByViewer,
                 blockedByOther: row.blockedByPerson,
+                requestHeldBack: row.requestHeldBack,
               },
         shareEnvironment: row.shareEnvironment,
         picture:

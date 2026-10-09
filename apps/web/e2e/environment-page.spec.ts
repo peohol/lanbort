@@ -112,7 +112,7 @@ test("an environment is created, applied to, used and left in the browser", asyn
   await expect(things.getByText(/Eier: Anna Berg/)).toBeVisible();
   await expect(things.getByRole("link", { name: "Anna Berg" })).toHaveAttribute(
     "href",
-    `/personer/${annaId}`,
+    `/personer/${annaId}?rolle=utlaaner`,
   );
   await expect(
     bo.page.getByRole("link", { name: "Registrer en ting her" }),

@@ -106,11 +106,13 @@ describe("friendship (PS-USR-003)", () => {
       userId: bo.userId,
       friendship: "outgoing_pending",
       blockedByMe: false,
+      canRequest: false,
     });
     expect(await relation(bo, anna)).toEqual({
       userId: anna.userId,
       friendship: "incoming_pending",
       blockedByMe: false,
+      canRequest: false,
     });
     expect(ids((await overview(anna)).outgoingRequests)).toEqual([bo.userId]);
     expect((await overview(bo)).incomingRequests).toEqual([
@@ -171,19 +173,19 @@ describe("friendship (PS-USR-003)", () => {
       friendship: "none",
     });
     // The requester cannot decline, and the recipient cannot withdraw.
-    await run(sendFriendRequest, anna, bo);
-    await expect(run(declineFriendRequest, anna, bo)).rejects.toMatchObject({
+    await run(sendFriendRequest, bo, anna);
+    await expect(run(declineFriendRequest, bo, anna)).rejects.toMatchObject({
       code: "conflict",
     });
-    await expect(run(withdrawFriendRequest, bo, anna)).rejects.toMatchObject({
+    await expect(run(withdrawFriendRequest, anna, bo)).rejects.toMatchObject({
       code: "conflict",
     });
-    expect((await run(withdrawFriendRequest, anna, bo)).output).toMatchObject({
+    expect((await run(withdrawFriendRequest, bo, anna)).output).toMatchObject({
       friendship: "none",
     });
     // A friendship cannot be removed before it exists.
-    await run(sendFriendRequest, bo, anna);
-    await expect(run(removeFriend, bo, anna)).rejects.toMatchObject({
+    await run(sendFriendRequest, anna, bo);
+    await expect(run(removeFriend, anna, bo)).rejects.toMatchObject({
       code: "conflict",
     });
 
@@ -213,6 +215,134 @@ describe("friendship (PS-USR-003)", () => {
     await expect(
       run(sendFriendRequest, unfinished, anna),
     ).rejects.toMatchObject({ code: "registration_required" });
+  });
+});
+
+describe("a declined request (PS-USR-012)", () => {
+  /** The error a call fails with, as the caller gets it. */
+  const refusal = (call: Promise<unknown>) =>
+    call.then(
+      () => null,
+      (error: { code: string; message: string; fields: unknown }) => ({
+        code: error.code,
+        message: error.message,
+        fields: error.fields,
+      }),
+    );
+
+  it("holds the sender back, refused and shown like any request that cannot be sent now", async () => {
+    const [anna, bo, cleo] = await users();
+    await run(sendFriendRequest, anna, bo);
+    await run(declineFriendRequest, bo, anna);
+    const rows = await relationsBetween(anna, bo);
+    const events = await eventsFor(rows.map((row) => row.id));
+
+    // The same refusal as for a request to someone Anna blocks herself.
+    await run(blockUser, anna, cleo);
+    const toBlocked = await refusal(run(sendFriendRequest, anna, cleo));
+    expect(await refusal(run(sendFriendRequest, anna, bo))).toEqual(toBlocked);
+    expect(toBlocked).toMatchObject({ code: "forbidden" });
+
+    // Nothing changed or was recorded, and nothing names the decline.
+    expect(await relationsBetween(anna, bo)).toEqual(rows);
+    expect(await eventsFor(rows.map((row) => row.id))).toEqual(events);
+    expect(await relation(anna, bo)).toEqual({
+      userId: bo.userId,
+      friendship: "none",
+      blockedByMe: false,
+      canRequest: false,
+    });
+    expect(await overview(anna)).toEqual({
+      friends: [],
+      incomingRequests: [],
+      outgoingRequests: [],
+      blocked: [expect.objectContaining({ userId: cleo.userId })],
+    });
+
+    // Bo can still ask.
+    expect(await relation(bo, anna)).toMatchObject({ canRequest: true });
+    expect((await run(sendFriendRequest, bo, anna)).output).toMatchObject({
+      friendship: "outgoing_pending",
+    });
+  });
+
+  it("is lifted for good by the recipient's own request, even one that is withdrawn or declined", async () => {
+    const [anna, bo, cleo] = await users();
+
+    await run(sendFriendRequest, anna, bo);
+    await run(declineFriendRequest, bo, anna);
+    await run(sendFriendRequest, bo, anna);
+    await run(withdrawFriendRequest, bo, anna);
+    expect(await relation(anna, bo)).toMatchObject({ canRequest: true });
+    expect((await run(sendFriendRequest, anna, bo)).output).toMatchObject({
+      friendship: "outgoing_pending",
+    });
+
+    // Declining the recipient's request holds the recipient back, not Anna.
+    await run(sendFriendRequest, anna, cleo);
+    await run(declineFriendRequest, cleo, anna);
+    await run(sendFriendRequest, cleo, anna);
+    await run(declineFriendRequest, anna, cleo);
+    expect(await relation(cleo, anna)).toMatchObject({ canRequest: false });
+    expect((await run(sendFriendRequest, anna, cleo)).output).toMatchObject({
+      friendship: "outgoing_pending",
+    });
+  });
+
+  it("stays when either of them blocks and lifts the block", async () => {
+    const [anna, bo] = await users();
+    await run(sendFriendRequest, anna, bo);
+    await run(declineFriendRequest, bo, anna);
+
+    for (const [blocker, blocked] of [
+      [bo, anna],
+      [anna, bo],
+    ] as const) {
+      await run(blockUser, blocker, blocked);
+      await run(liftUserBlock, blocker, blocked);
+    }
+
+    await expect(run(sendFriendRequest, anna, bo)).rejects.toMatchObject({
+      code: "forbidden",
+    });
+    expect(await relation(anna, bo)).toMatchObject({ canRequest: false });
+  });
+
+  it("is not placed by a withdrawn request, a removed friendship or a request a block closed", async () => {
+    const [anna, bo, cleo] = await users();
+
+    await run(sendFriendRequest, anna, bo);
+    await run(withdrawFriendRequest, anna, bo);
+    await run(sendFriendRequest, anna, bo);
+    await run(acceptFriendRequest, bo, anna);
+    await run(removeFriend, bo, anna);
+    expect((await run(sendFriendRequest, anna, bo)).output).toMatchObject({
+      friendship: "outgoing_pending",
+    });
+
+    await run(sendFriendRequest, anna, cleo);
+    await run(blockUser, cleo, anna);
+    await run(liftUserBlock, cleo, anna);
+    expect((await run(sendFriendRequest, anna, cleo)).output).toMatchObject({
+      friendship: "outgoing_pending",
+    });
+  });
+
+  it("refuses every one of several simultaneous attempts", async () => {
+    const [anna, bo] = await users();
+    await run(sendFriendRequest, anna, bo);
+    await run(declineFriendRequest, bo, anna);
+
+    const attempts = await Promise.all(
+      [1, 2, 3].map(() => refusal(run(sendFriendRequest, anna, bo))),
+    );
+
+    expect(attempts.map((attempt) => attempt?.code)).toEqual([
+      "forbidden",
+      "forbidden",
+      "forbidden",
+    ]);
+    expect(await relationsBetween(anna, bo)).toHaveLength(1);
   });
 });
 
@@ -312,6 +442,7 @@ describe("retries, double taps and races", () => {
         userId: bo.userId,
         friendship: "none",
         blockedByMe: true,
+        canRequest: false,
       });
     }
   });
@@ -359,6 +490,7 @@ describe("blocking (PS-USR-006, PS-USR-007)", () => {
       userId: bo.userId,
       friendship: "none",
       blockedByMe: true,
+      canRequest: false,
     });
 
     expect((await overview(bo)).friends).toEqual([]);
@@ -465,6 +597,7 @@ describe("blocking (PS-USR-006, PS-USR-007)", () => {
       userId: anna.userId,
       friendship: "none",
       blockedByMe: true,
+      canRequest: false,
     });
 
     // Anna lifting her block leaves Bo's in force, and the reverse.
@@ -584,6 +717,7 @@ describe("manipulated calls", () => {
       userId: bo.userId,
       friendship: "outgoing_pending",
       blockedByMe: false,
+      canRequest: false,
     });
     expect(await relationsBetween(anna, bo)).toHaveLength(1);
   });

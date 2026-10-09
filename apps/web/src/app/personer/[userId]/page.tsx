@@ -10,7 +10,12 @@ import {
   pagesShown,
   type SearchParams,
 } from "@/navigation/list-pages";
-import { personHref } from "@/navigation/routes";
+import {
+  personHref,
+  type PersonRole,
+  personRoleParam,
+  personRoleValues,
+} from "@/navigation/routes";
 import { describeRelation } from "@/presentation/people";
 import {
   pageQuery,
@@ -39,6 +44,17 @@ async function trustOf(userId: string, query: SearchParams) {
   );
 
   return first.profile ? { profile: first.profile, ...reviews } : null;
+}
+
+/** The role the address opens the person in (UX-PRIV-012), if any. */
+function roleIn(query: SearchParams): PersonRole | null {
+  const value = query[personRoleParam];
+
+  return (
+    (Object.keys(personRoleValues) as PersonRole[]).find(
+      (role) => personRoleValues[role] === value,
+    ) ?? null
+  );
 }
 
 /**
@@ -88,6 +104,7 @@ export default async function PersonPage({
         <TrustProfile
           profile={trust.profile}
           reviews={trust.items}
+          role={roleIn(query)}
           more={
             trust.nextCursor === null
               ? null

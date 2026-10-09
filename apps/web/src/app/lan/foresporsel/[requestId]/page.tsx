@@ -229,7 +229,7 @@ export default async function LoanRequestPage({
             <>
               <dt>Fra</dt>
               <dd>
-                <PersonName person={request.borrower} />
+                <PersonName person={request.borrower} role="borrower" />
               </dd>
             </>
           )}

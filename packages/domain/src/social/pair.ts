@@ -1,6 +1,6 @@
 import type { FriendshipState, SocialRelation } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import { type Kysely, sql } from "kysely";
+import { type Kysely, type RawBuilder, sql } from "kysely";
 
 /**
  * Everything about one pair of users that the social policies decide on, seen
@@ -18,6 +18,12 @@ export interface SocialPair {
   readonly blockedByActor: boolean;
   /** Internal only: never returned to the actor (PS-USR-006). */
   readonly blockedByOther: boolean;
+  /**
+   * The other declined the actor's latest request and has not asked since,
+   * so the actor may not ask again (PS-USR-012). Internal only: the actor
+   * only ever learns that a request cannot be sent now.
+   */
+  readonly requestHeldBack: boolean;
 }
 
 export interface OpenFriendship {
@@ -25,6 +31,13 @@ export interface OpenFriendship {
   readonly status: "pending" | "active";
   readonly requesterId: string;
 }
+
+/** {@link SocialPair.requestHeldBack} for `actorId` asking `otherUserId`. */
+export const requestHeldBack = (
+  actorId: string | RawBuilder<unknown>,
+  otherUserId: string | RawBuilder<unknown>,
+) =>
+  sql<boolean>`app.friend_request_held_back(${actorId}::uuid, ${otherUserId}::uuid)`;
 
 /**
  * The pair in the order Postgres uses for the friendship's `user_low_id` and
@@ -66,7 +79,10 @@ export async function loadPair(
 
   const other = await db
     .selectFrom("app.users")
-    .select("status")
+    .select([
+      "status",
+      requestHeldBack(actorId, otherUserId).as("requestHeldBack"),
+    ])
     .where("id", "=", otherUserId)
     .executeTakeFirst();
 
@@ -113,6 +129,7 @@ export async function loadPair(
       : null,
     blockedByActor: blocks.some((block) => block.blocker_id === actorId),
     blockedByOther: blocks.some((block) => block.blocker_id === otherUserId),
+    requestHeldBack: other.requestHeldBack,
   };
 }
 
@@ -148,12 +165,24 @@ export function friendshipStateOf(pair: SocialPair): FriendshipState {
     : "incoming_pending";
 }
 
-/** The actor's view of the pair. Never says whether the other blocks them. */
+/**
+ * The actor may send the other a friend request now: no open relation, no
+ * block of their own, and no declined request to wait out (PS-USR-012).
+ */
+export function mayRequestFriendship(pair: SocialPair): boolean {
+  return !pair.openFriendship && !pair.blockedByActor && !pair.requestHeldBack;
+}
+
+/**
+ * The actor's view of the pair. Never says whether the other blocks them,
+ * or why a request cannot be sent now.
+ */
 export function relationOf(pair: SocialPair): SocialRelation {
   return {
     userId: pair.otherUserId,
     friendship: friendshipStateOf(pair),
     blockedByMe: pair.blockedByActor,
+    canRequest: mayRequestFriendship(pair),
   };
 }
 
