@@ -153,7 +153,7 @@ a.notification:hover .title {
 }
 
 @media (min-width: 64rem) {
-  :global(.app-content) main.page {
+  :global(.app-content) > main.page {
     width: min(44rem, 100%);
   }
 }
