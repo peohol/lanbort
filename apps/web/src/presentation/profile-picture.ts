@@ -2,13 +2,11 @@ import { profilePictureMaxSide } from "@lanbort/contracts";
 import type { CSSProperties } from "react";
 
 /**
- * The shape profile pictures are shown in (PS-USR-002), in one place:
- * whether it is a circle, a square, a square with rounded corners or
- * another rectangle is not decided yet (OD-0027). `aspectRatio` is width
- * to height; `cornerRadius` is the corners' radius as a share of the
- * shorter side, so 0.5 with a ratio of 1 is a circle and 0 a square. The
- * picture editor crops to the same frame, so what a person frames is
- * exactly what others see.
+ * The shape profile pictures are shown in (PS-USR-002), in one place: a
+ * circle (OD-0027). `aspectRatio` is width to height; `cornerRadius` is the
+ * corners' radius as a share of the shorter side, so 0.5 with a ratio of 1
+ * is a circle and 0 a square. The picture editor crops to the same frame,
+ * so what a person frames is exactly what others see.
  */
 export const pictureShape = { aspectRatio: 1, cornerRadius: 0.5 } as const;
 

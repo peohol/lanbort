@@ -210,9 +210,9 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 #### Personens side
 
 - **Oppgave:** forstå hvem en person er i en konkret situasjon, og styre relasjonen.
-- **Tilstander:** venn; ikke venn; venneforespørsel sendt eller mottatt; blokkert av deg; tillitsprofil per rolle med datagrunnlag og usikkerhet; få anmeldelser; tingene personen har gjort synlige for venner; ingen side for slettede eller blokkerende brukere.
+- **Tilstander:** venn; ikke venn; ikke venn, og forespørsel kan ikke sendes nå (etter avslag, vist nøytralt); venneforespørsel sendt eller mottatt; blokkert av deg; tillitsprofil per rolle med datagrunnlag og usikkerhet; få anmeldelser; tingene personen har gjort synlige for venner; ingen side for slettede eller blokkerende brukere.
 - **Ser / handler:** den som har legitim tilgang (venner, felles miljø, part i lån). Handlinger etter relasjon: send, trekk, godta eller avslå forespørsel, fjern venn, blokker og opphev blokkering.
-- **Regler:** UX-IA-010, UX-P15, UX-PRIV-007, UX-PRIV-010, PS-USR-002–007, PS-TRUST-006, PS-TRUST-007, PS-TRUST-010, PS-TRUST-011.
+- **Regler:** UX-IA-010, UX-IA-019, UX-P15, UX-PRIV-007, UX-PRIV-010, UX-PRIV-012, PS-USR-002–007, PS-USR-011, PS-USR-012, PS-TRUST-006, PS-TRUST-007, PS-TRUST-010, PS-TRUST-011, PS-TRUST-017.
 - **Forløp:** normal.
 - **UI-pakke:** WP-86; venners ting i WP-27.
 
@@ -270,9 +270,9 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 - **Oppgave:** forvalte egen konto, relasjoner, saker og varsler.
 - **Tilstander:** venner, forespørsler og blokkerte; egne saker; varslingsvalg per nivå; profilfelt og synlighet; slette konto, med hva som hindrer sletting.
 - **Ser / handler:** brukeren selv.
-- **Regler:** UX-IA-003, UX-PRIV-001, PS-USR-002, PS-COM-002, PS-COM-003, PS-ADM-004, PS-ADM-005, PS-ADM-012.
+- **Regler:** UX-IA-003, UX-IA-020, UX-PRIV-001, PS-USR-002, PS-COM-002, PS-COM-003, PS-ADM-004, PS-ADM-005, PS-ADM-012.
 - **Forløp:** begge.
-- **UI-pakke:** WP-80 (eksisterende varslingsvalg, kontostatus, deaktivering/reaktivering og sletting), WP-86 (relasjoner) og WP-88 (egne saker). Profilbildet, med beskjæring og synlighetsvalg, ligger på Konto; formen er OD-0027. Presentasjon og synlighetsvalg for andre profilfelt står under «Senere».
+- **UI-pakke:** WP-80 (eksisterende varslingsvalg, kontostatus, deaktivering/reaktivering og sletting), WP-86 (relasjoner) og WP-88 (egne saker). Profilbildet, med beskjæring og synlighetsvalg, ligger på Konto og vises som sirkel (PS-USR-002). Presentasjon og synlighetsvalg for andre profilfelt står under «Senere».
 
 ### Avvik og unntak
 
@@ -631,4 +631,3 @@ Til en beslutning finnes, viser UI-et ikke funksjonen den gjelder.
 | OD-0023    | Plattformkø og alle plattformforvalterflater              | Vises ikke                                                         |
 | OD-0025    | Medlemmer og utestengelse                                 | Ingen handling for å fjerne et aktivt medlem                       |
 | OD-0026    | Inngrep på kontoer, inngrep i et miljø                    | Ingen flate                                                        |
-| OD-0027    | Profilbildet overalt der det vises, beskjæringen          | Sirkel                                                             |

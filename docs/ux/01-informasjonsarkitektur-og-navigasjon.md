@@ -27,7 +27,7 @@ Varslingssenter åpnes fra en stabil varselindikator og er ikke et sjette innhol
 ### UX-IA-003 — Profil og innstillinger er konto-kontekst
 **Forankring:** UX-P05
 
-Profil, personvernvalg, konto, blokkeringer og varslingspreferanser åpnes fra brukeridentiteten/avataren og skal ikke oppta en permanent hovednavigasjonsplass.
+Profil, personvernvalg, konto, blokkeringer og varslingspreferanser åpnes fra brukeridentiteten/avataren og skal ikke oppta en permanent hovednavigasjonsplass. Konto er et eget lag over området brukeren er i (UX-IA-020).
 
 ### UX-IA-004 — Miljøer er kontekster, ikke et parallelt produkt
 **Forankring:** UX-P02; VP-04; PS-ENV-001
@@ -79,7 +79,7 @@ Områdene:
 ### UX-IA-009 — Detaljer legges i en stabel i området brukeren startet i
 **Forankring:** UX-P02, UX-P05, UX-P12, UX-P13
 
-- De fem områdene er alltid synlige, som bunnmeny på mobil og sidekolonne på større skjerm, og markerer området brukeren startet i. Unntaket er avgrensede oppgaver (UX-IA-013).
+- De fem områdene er alltid synlige, som bunnmeny på mobil og sidekolonne på større skjerm, og markerer området brukeren startet i. Unntakene er avgrensede oppgaver (UX-IA-013) og Konto (UX-IA-020).
 - Detaljer (ting, forespørsel, lån, person, miljø, samtale, administrativ kø og det som ligger i den) åpnes som en stabel innenfor det området. En person åpnet fra en ting i Finn ligger i Finn.
 - Tilbake navngir forrige ledd i stabelen («‹ Kari Nordmann»). På større skjerm er brødsmulene den samme stabelen, og hvert ledd er klikkbart.
 - Et trykk på et område går til områdets start. Åpner brukeren noe som allerede ligger i stabelen, går hen tilbake dit i stedet for å lage en løkke.
@@ -100,6 +100,7 @@ Hjemområdet bestemmer stabelen når en direkte inngang må bygge en ny (UX-IA-0
 | Oppdagbare miljøer brukeren ikke er medlem av       | Finn                                                         |
 | Administrative køer (for eksempel innmeldinger)     | Hjem                                                         |
 | Personer                                            | Hjem, bare når en direkte inngang må bygge en ny stabel      |
+| Konto og det som åpnes derfra                       | Ingen; Konto er et eget lag (UX-IA-020)                      |
 
 Flater som ikke står i tabellen, får hjemområde når de designes.
 
@@ -110,7 +111,7 @@ Flater som ikke står i tabellen, får hjemområde når de designes.
 - Tilbake og brødsmuler følger den bygde stabelen, ett ledd om gangen. Fra Hjem › Innmeldinger › innmeldingen går tilbake til Innmeldinger. «‹ Lån» betyr alltid Lån-oversikten, uansett hvor brukeren var før.
 - Målet merkes «Åpnet fra varsel» eller «Åpnet fra e-post» til brukeren navigerer videre.
 - Varslingssenteret er et lag, ikke et steg i stabelen (UX-IA-002). Å velge et varsel er en direkte inngang, og varslene åpnes igjen fra indikatoren.
-- Varslingssenteret kan åpnes fra varselindikatoren, som har samme plassering i alle fem hovedområder og i detaljer i stabelen; indikatoren skjules bare i avgrensede oppgaver (UX-IA-013).
+- Varslingssenteret kan åpnes fra varselindikatoren, som har samme plassering i alle fem hovedområder og i detaljer i stabelen; indikatoren skjules bare i avgrensede oppgaver (UX-IA-013) og i Konto (UX-IA-020).
 - Å lukke varslingssenteret returnerer til nøyaktig forrige skjerm, inkludert område, stabel, filter og rulleposisjon. Å velge et varsel bygger i stedet stabelen fra regelen, uavhengig av hvilken skjerm varslingssenteret ble åpnet fra.
 - Har brukeren ikke lenger tilgang, vises samme nøytrale «finnes ikke eller ingen tilgang» i hjemområdet (UX-PRIV-002).
 
@@ -183,6 +184,16 @@ Hver detalj har en typeetikett (Ting, Forespørsel, Lån, Person, Miljø, Samtal
 - Et varsel markeres som lest når brukeren åpner det eller velger «Marker som lest», uavhengig av om oppgaven er fullført.
 - En oppgave forsvinner fra Hjem først når den er håndtert og serveren har bekreftet den nye tilstanden.
 - Er handlingen allerede gjort et annet sted, viser varselet utfallet (for eksempel «Du godtok forespørselen») og oppfordrer ikke til handlingen igjen.
+- Gjelder varselet noe som ikke lenger finnes, for eksempel en venneforespørsel som er trukket, står varselet igjen og sier at det ikke lenger gjelder, uten grunn og uten handling (PS-USR-011).
+
+### UX-IA-020 — Konto er et fullskjerms lag med egen stabel
+**Forankring:** UX-P02, UX-P05, UX-P13; UX-IA-003; OD-0031
+
+- Konto åpnes fra profilbildet øverst, som har samme plassering i alle fem hovedområder og i detaljer i stabelen. På mobil dekker laget hele skjermen, også bunnmenyen.
+- Det som åpnes fra Konto, for eksempel Venner, Blokkerte, egne saker og personer åpnet derfra, legger seg i Kontos egen stabel. Tilbake navigerer innenfor Konto og navngir forrige ledd («‹ Venner»).
+- «Lukk» finnes på alle nivåer i Konto og returnerer til nøyaktig skjermen brukeren kom fra, inkludert område, stabel, filter, utfylte felt og rulleposisjon, som når varslingssenteret lukkes (UX-IA-011).
+- Konto er ikke et steg i områdets stabel, og varselindikatoren vises ikke i Konto. Områdene og varslene nås igjen med «Lukk».
+- Utformingen på større skjerm avgjøres i den visuelle retningen; navigasjonsreglene over gjelder uendret.
 
 ### Krav som ikke endrer strukturen
 
