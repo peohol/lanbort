@@ -209,35 +209,40 @@ export async function recordChatMessage(
       .forUpdate()
       .executeTakeFirst();
 
-    if (unread !== undefined) {
+    let id = unread?.id;
+
+    if (id !== undefined) {
       await db
         .updateTable("app.notifications")
         .set({
-          detail: chatMessageCountDetail(chatMessageCountOf(unread.detail) + 1),
+          detail: chatMessageCountDetail(
+            chatMessageCountOf(unread!.detail) + 1,
+          ),
           occurred_at: occurredAt,
           // A new position puts it at the top of the list.
           position: sql`default`,
         })
-        .where("id", "=", unread.id)
+        .where("id", "=", id)
         .execute();
-      continue;
+    } else {
+      ({ id } = await db
+        .insertInto("app.notifications")
+        .values({
+          recipient_id: recipientId,
+          kind: chatMessages,
+          level: levelOf(chatMessages),
+          detail: chatMessageCountDetail(1),
+          target_type: "chat_conversation",
+          target_id: conversationId,
+          source_key: `chat/${conversationId}/${input.messageKey}`,
+          occurred_at: occurredAt,
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow());
     }
 
-    const { id } = await db
-      .insertInto("app.notifications")
-      .values({
-        recipient_id: recipientId,
-        kind: chatMessages,
-        level: levelOf(chatMessages),
-        detail: chatMessageCountDetail(1),
-        target_type: "chat_conversation",
-        target_id: conversationId,
-        source_key: `chat/${conversationId}/${input.messageKey}`,
-        occurred_at: occurredAt,
-      })
-      .returning("id")
-      .executeTakeFirstOrThrow();
-
+    // One e-mail for the unread notification, also when e-mail was chosen
+    // after it was made; one already queued or sent stays the only one.
     if (sendsEmail(chatMessages, choices)) {
       await db
         .insertInto("app.notification_deliveries")
@@ -248,6 +253,9 @@ export async function recordChatMessage(
             occurredAt.getTime() + chatMessageEmailDelayMs,
           ),
         })
+        .onConflict((conflict) =>
+          conflict.columns(["notification_id", "channel"]).doNothing(),
+        )
         .execute();
     }
   }

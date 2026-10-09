@@ -1016,6 +1016,27 @@ describe("notifications of new messages (PS-COM-018)", () => {
     ]);
     await run(readChatMessageNotifications, bob.actor, { conversationId });
 
+    // Chosen while a notification waits unread: its e-mail comes too.
+    await run(setNotificationPreference, bob.actor, {
+      kind: "chat.new_messages",
+      channel: "email",
+      enabled: false,
+    });
+    await send(alice, conversationId, 1);
+    await run(setNotificationPreference, bob.actor, {
+      kind: "chat.new_messages",
+      channel: "email",
+      enabled: true,
+    });
+    await send(alice, conversationId, 1);
+    const waiting = (
+      await messageNotifications(bob.actor.userId, conversationId)
+    ).at(-1)!;
+    expect(await emails(waiting.id)).toEqual([
+      expect.objectContaining({ status: "pending" }),
+    ]);
+    await run(readChatMessageNotifications, bob.actor, { conversationId });
+
     // Off in the app: nothing at all.
     await run(setNotificationPreference, bob.actor, {
       kind: "chat.new_messages",

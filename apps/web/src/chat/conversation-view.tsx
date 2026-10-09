@@ -353,15 +353,17 @@ function Conversation({
   // The notification of new messages is read then too (PS-COM-018), once
   // for each newest message.
   const readToEnd = useCallback(() => {
+    if (document.visibilityState !== "visible") return;
     const last = newest.current;
-    if (last && document.visibilityState === "visible") {
-      void engine.markSeen(id, last);
-      if (notified.current !== last) {
-        notified.current = last;
-        chatApi.readNotifications(id).then(announceDataChanged, () => {
-          notified.current = undefined;
-        });
-      }
+    if (last) void engine.markSeen(id, last);
+    // Also with nothing here yet, as on a newly linked device: the
+    // notification is the account's, not this device's.
+    const seen = last ?? "";
+    if (notified.current !== seen) {
+      notified.current = seen;
+      chatApi.readNotifications(id).then(announceDataChanged, () => {
+        notified.current = undefined;
+      });
     }
   }, [engine, id]);
 
