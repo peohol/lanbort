@@ -15,6 +15,8 @@ import { notificationEmailSubjects } from "@lanbort/domain";
 const refinements: Partial<
   Record<NotificationKind, (detail: string | null) => string | undefined>
 > = {
+  "chat.device_linked": () =>
+    "En ny enhet er koblet til privat chat. Enheten kan motta nye meldinger fra nå av. Den får ikke tidligere meldinger automatisk. Var det ikke deg, fjern den i Mine enheter.",
   "loan.handover_reported": (detail) =>
     detail === "not_handed_over"
       ? "Den andre parten sier at overleveringen ikke skjedde"
