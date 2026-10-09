@@ -1,4 +1,8 @@
-import type { AccountBinding, SocialContact } from "@lanbort/contracts";
+import type {
+  AccountBinding,
+  NotificationPreferences,
+  SocialContact,
+} from "@lanbort/contracts";
 import {
   getAccountDeletionCheck,
   getSocialOverview,
@@ -24,12 +28,53 @@ import {
   restingNotice,
 } from "@/presentation/account";
 import { notificationLevelLabels } from "@/presentation/notifications";
+import { chatEnabled } from "@/server/env";
 import { pageQuery, requirePageAccount } from "@/server/session";
 import { ProfilePictureSettings } from "./profile-picture-settings";
 
 export const metadata: Metadata = { title: "Konto – Lånbort" };
 
 const channelLabels = { in_app: "I appen", email: "På e-post" } as const;
+
+/** New messages in private chat are chosen on their own (PS-COM-018). */
+const chatMessageChoices = {
+  in_app: { label: "Nye meldinger i appen", help: "I bjellen, uten innhold" },
+  email: { label: "Nye meldinger på e-post", help: "Uten navn og innhold" },
+} as const;
+
+function ChatMessageChoices({
+  preferences,
+}: {
+  preferences: NotificationPreferences;
+}) {
+  const channels =
+    preferences.kinds.find(({ kind }) => kind === "chat.new_messages")
+      ?.channels ?? [];
+
+  return (
+    <fieldset>
+      <legend>Privat chat</legend>
+      {channels.map(({ channel, enabled }) => (
+        <PreferenceSwitch
+          key={channel}
+          subject={{ kind: "chat.new_messages" }}
+          channel={channel}
+          {...chatMessageChoices[channel]}
+          enabled={enabled}
+        />
+      ))}
+      <p className="help">
+        Sikkerhet for privat chat er påkrevd: varsler om ny enhet og
+        tilbakestilling kan ikke slås av.
+      </p>
+      <p className="help">
+        Å slå av varsler endrer ingenting i samtalene. Meldingene kommer
+        fortsatt, og ny melding markeres i Samtaler. Én samtale kan også dempes
+        fra «Om samtalen».
+      </p>
+    </fieldset>
+  );
+}
 
 function People({
   heading,
@@ -267,7 +312,7 @@ export default async function AccountPage() {
               configurable ? (
                 <PreferenceSwitch
                   key={channel}
-                  level={level}
+                  subject={{ level }}
                   channel={channel}
                   label={channelLabels[channel]}
                   enabled={enabled}
@@ -280,6 +325,9 @@ export default async function AccountPage() {
             )}
           </fieldset>
         ))}
+        {chatEnabled() && preferences && (
+          <ChatMessageChoices preferences={preferences} />
+        )}
       </section>
 
       <section aria-labelledby="kontoen">

@@ -1,6 +1,9 @@
-import type {
-  NotificationChannel,
-  NotificationLevel,
+import {
+  chatMessageCountDetail,
+  chatMessageCountOf,
+  type NotificationChannel,
+  type NotificationSubject,
+  subjectOf,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
@@ -35,7 +38,7 @@ export async function loadPreferences(db: Db, userIds: readonly string[]) {
         rows
           .filter((row) => row.user_id === userId)
           .map((row): PreferenceChoice => ({
-            level: row.level as NotificationLevel,
+            level: row.level as NotificationSubject,
             channel: row.channel as NotificationChannel,
             enabled: row.enabled,
           })),
@@ -79,7 +82,7 @@ export async function recordNotifications(
       choices !== undefined &&
       status !== undefined &&
       status !== "deleted" &&
-      shownInApp(levelOf(draft.kind), choices)
+      shownInApp(subjectOf(draft.kind), choices)
     );
   });
 
@@ -147,6 +150,123 @@ async function queueEmails(
     .onConflict((conflict) =>
       conflict.columns(["notification_id", "channel"]).doNothing(),
     )
+    .execute();
+}
+
+/**
+ * How long the e-mail about new messages waits, so one already read in the
+ * app is not sent at all (PS-COM-018).
+ */
+export const chatMessageEmailDelayMs = 10 * 60_000;
+
+const chatMessages = "chat.new_messages";
+
+/**
+ * PS-COM-018: tells the recipients of a new chat message, with one
+ * notification per conversation until it is read. A message before then
+ * counts in the unread one, which moves to the top of the list; its e-mail,
+ * waiting or sent, is the only one until it is read. Sending a message is
+ * not a domain event (ADR-0010 §12), so the chat command calls this itself,
+ * under the conversation's lock. Whoever muted the conversation is left out
+ * by the caller; the recipient's own choices for new messages apply.
+ */
+export async function recordChatMessage(
+  db: Db,
+  input: {
+    readonly conversationId: string;
+    /** The message's own key, such as its position. */
+    readonly messageKey: string;
+    readonly recipientIds: readonly string[];
+    readonly occurredAt: Date;
+  },
+): Promise<void> {
+  const { conversationId, recipientIds, occurredAt } = input;
+  const [preferences, statuses] = await Promise.all([
+    loadPreferences(db, recipientIds),
+    accountStatuses(db, recipientIds),
+  ]);
+
+  for (const recipientId of recipientIds) {
+    const choices = preferences.get(recipientId);
+    const status = statuses.get(recipientId);
+
+    if (
+      choices === undefined ||
+      status === undefined ||
+      status === "deleted" ||
+      !shownInApp(subjectOf(chatMessages), choices)
+    ) {
+      continue;
+    }
+
+    const unread = await db
+      .selectFrom("app.notifications")
+      .select(["id", "detail"])
+      .where("recipient_id", "=", recipientId)
+      .where("kind", "=", chatMessages)
+      .where("target_id", "=", conversationId)
+      .where("read_at", "is", null)
+      .forUpdate()
+      .executeTakeFirst();
+
+    if (unread !== undefined) {
+      await db
+        .updateTable("app.notifications")
+        .set({
+          detail: chatMessageCountDetail(chatMessageCountOf(unread.detail) + 1),
+          occurred_at: occurredAt,
+          // A new position puts it at the top of the list.
+          position: sql`default`,
+        })
+        .where("id", "=", unread.id)
+        .execute();
+      continue;
+    }
+
+    const { id } = await db
+      .insertInto("app.notifications")
+      .values({
+        recipient_id: recipientId,
+        kind: chatMessages,
+        level: levelOf(chatMessages),
+        detail: chatMessageCountDetail(1),
+        target_type: "chat_conversation",
+        target_id: conversationId,
+        source_key: `chat/${conversationId}/${input.messageKey}`,
+        occurred_at: occurredAt,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+
+    if (sendsEmail(chatMessages, choices)) {
+      await db
+        .insertInto("app.notification_deliveries")
+        .values({
+          notification_id: id,
+          channel: "email",
+          available_at: new Date(
+            occurredAt.getTime() + chatMessageEmailDelayMs,
+          ),
+        })
+        .execute();
+    }
+  }
+}
+
+/** The recipient opened the conversation: its messages are no longer new. */
+export async function markChatMessagesRead(
+  db: Db,
+  recipientId: string,
+  conversationId: string,
+  now: Date,
+): Promise<void> {
+  await db
+    .updateTable("app.notifications")
+    .set({ read_at: now })
+    .where("recipient_id", "=", recipientId)
+    .where("kind", "=", chatMessages)
+    .where("target_id", "=", conversationId)
+    .where("read_at", "is", null)
     .execute();
 }
 

@@ -240,6 +240,10 @@ export interface AppChatParticipants {
   conversation_id: string;
   hidden_at: Timestamp | null;
   joined_at: Generated<Timestamp>;
+  /**
+   * When the participant muted notifications of new messages here (PS-COM-018); null when not muted.
+   */
+  muted_at: Timestamp | null;
   user_id: string;
 }
 
@@ -680,6 +684,9 @@ export interface AppNotificationDeliveries {
 export interface AppNotificationPreferences {
   channel: string;
   enabled: boolean;
+  /**
+   * The level the choice is for, or a kind whose channels are chosen on their own (notificationKindChannelRules).
+   */
   level: string;
   updated_at: Generated<Timestamp>;
   user_id: string;

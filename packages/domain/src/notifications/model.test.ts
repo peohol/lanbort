@@ -1,6 +1,7 @@
 import {
   notificationKinds,
   setNotificationPreferenceSchema,
+  subjectOf,
 } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import { dueLoanDeadline } from "./deadlines";
@@ -33,6 +34,8 @@ describe("preferences (PS-COM-002–003)", () => {
       required: { in_app: true },
       action: { in_app: true, email: false },
       information: { in_app: true, email: false },
+      // New chat messages have choices of their own (PS-COM-018).
+      "chat.new_messages": { in_app: true, email: false },
     });
   });
 
@@ -50,10 +53,13 @@ describe("preferences (PS-COM-002–003)", () => {
       required: { in_app: true },
       action: { in_app: true, email: true },
       information: { in_app: false, email: false },
+      "chat.new_messages": { in_app: true, email: false },
     });
     expect(shownInApp("required", choices)).toBe(true);
     expect(shownInApp("action", choices)).toBe(true);
     expect(shownInApp("information", choices)).toBe(false);
+    // Information turned off leaves new chat messages to their own choice.
+    expect(shownInApp(subjectOf("chat.new_messages"), choices)).toBe(true);
   });
 
   it("refuse a choice for a channel that cannot be chosen", () => {
@@ -72,6 +78,12 @@ describe("preferences (PS-COM-002–003)", () => {
     expect(parse({ level: "action", channel: "in_app", enabled: false })).toBe(
       false,
     );
+    expect(
+      parse({ kind: "chat.new_messages", channel: "email", enabled: true }),
+    ).toBe(true);
+    expect(
+      parse({ kind: "chat.device_linked", channel: "email", enabled: false }),
+    ).toBe(false);
     expect(parse({ level: "required", channel: "email", enabled: false })).toBe(
       false,
     );

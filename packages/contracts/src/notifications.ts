@@ -77,6 +77,7 @@ export const notificationKinds = {
   "object.available": "information",
   "chat.account_key_reset": "required",
   "chat.device_linked": "required",
+  "chat.new_messages": "information",
 } as const satisfies Record<string, NotificationLevel>;
 
 export type NotificationKind = keyof typeof notificationKinds;
@@ -115,7 +116,8 @@ export const notificationKindSchema = z.enum(
  * `case` is an administrative case (WP-45), which only its participants and
  * handlers can open. An `object_subscription` target is the recipient's own
  * subscription, so opening it checks again that they still find the object.
- * A `chat_device` is one of the recipient's own chat devices.
+ * A `chat_device` is one of the recipient's own chat devices, and a
+ * `chat_conversation` one of their private conversations.
  */
 export const notificationTargetTypes = [
   "loan",
@@ -127,6 +129,7 @@ export const notificationTargetTypes = [
   "object_question",
   "object_subscription",
   "chat_device",
+  "chat_conversation",
 ] as const;
 export const notificationTargetTypeSchema = z.enum(notificationTargetTypes);
 
@@ -223,42 +226,103 @@ export const notificationChannelRules = {
   Partial<Record<NotificationChannel, ChannelRule>>
 >;
 
+/**
+ * Kinds whose channels are chosen on their own instead of with their level.
+ * New chat messages are information, but their own choice in the app and by
+ * e-mail (PS-COM-018), so turning information e-mail on does not send them
+ * too.
+ */
+export const notificationKindChannelRules = {
+  "chat.new_messages": {
+    in_app: { configurable: true, default: true },
+    email: { configurable: true, default: false },
+  },
+} as const satisfies Partial<
+  Record<NotificationKind, Partial<Record<NotificationChannel, ChannelRule>>>
+>;
+
+export type NotificationTopic = keyof typeof notificationKindChannelRules;
+export const notificationTopics = Object.keys(
+  notificationKindChannelRules,
+) as NotificationTopic[];
+export const notificationTopicSchema = z.enum(
+  notificationTopics as [NotificationTopic, ...NotificationTopic[]],
+);
+
+/** What a channel choice is for: a level, or a kind with its own choices. */
+export type NotificationSubject = NotificationLevel | NotificationTopic;
+
+export function subjectOf(kind: NotificationKind): NotificationSubject {
+  return kind in notificationKindChannelRules
+    ? (kind as NotificationTopic)
+    : notificationKinds[kind];
+}
+
+const subjectRules: Record<
+  NotificationSubject,
+  Partial<Record<NotificationChannel, ChannelRule>>
+> = { ...notificationChannelRules, ...notificationKindChannelRules };
+
+export function channelRules(
+  subject: NotificationSubject,
+): Partial<Record<NotificationChannel, ChannelRule>> {
+  return subjectRules[subject];
+}
+
 export function channelRule(
-  level: NotificationLevel,
+  subject: NotificationSubject,
   channel: NotificationChannel,
 ): ChannelRule | undefined {
-  return (
-    notificationChannelRules[level] as Partial<
-      Record<NotificationChannel, ChannelRule>
-    >
-  )[channel];
+  return subjectRules[subject][channel];
 }
+
+const presentedChannelsSchema = z.array(
+  z.strictObject({
+    channel: notificationChannelSchema,
+    enabled: z.boolean(),
+    configurable: z.boolean(),
+  }),
+);
 
 export const notificationPreferencesSchema = z.strictObject({
   levels: z.array(
     z.strictObject({
       level: notificationLevelSchema,
-      channels: z.array(
-        z.strictObject({
-          channel: notificationChannelSchema,
-          enabled: z.boolean(),
-          configurable: z.boolean(),
-        }),
-      ),
+      channels: presentedChannelsSchema,
+    }),
+  ),
+  kinds: z.array(
+    z.strictObject({
+      kind: notificationTopicSchema,
+      channels: presentedChannelsSchema,
     }),
   ),
 });
 
-/** Turns one configurable channel of one level on or off. */
+const choiceFields = {
+  channel: notificationChannelSchema,
+  enabled: z.boolean(),
+};
+
+/** Turns one configurable channel of one level, or of one topic, on or off. */
 export const setNotificationPreferenceSchema = z
-  .strictObject({
-    level: notificationLevelSchema,
-    channel: notificationChannelSchema,
-    enabled: z.boolean(),
-  })
-  .refine((input) => channelRule(input.level, input.channel)?.configurable, {
-    path: ["channel"],
-  });
+  .union([
+    z.strictObject({ level: notificationLevelSchema, ...choiceFields }),
+    z.strictObject({ kind: notificationTopicSchema, ...choiceFields }),
+  ])
+  .refine(
+    (input) =>
+      channelRule(preferenceSubject(input), input.channel)?.configurable,
+    { path: ["channel"] },
+  );
+
+export function preferenceSubject(
+  input:
+    | { readonly level: NotificationLevel }
+    | { readonly kind: NotificationTopic },
+): NotificationSubject {
+  return "level" in input ? input.level : input.kind;
+}
 
 export type NotificationTargetType = z.infer<
   typeof notificationTargetTypeSchema
@@ -275,3 +339,14 @@ export type NotificationPreferences = z.infer<
 export type SetNotificationPreference = z.infer<
   typeof setNotificationPreferenceSchema
 >;
+
+/**
+ * How many new messages a `chat.new_messages` notification counts, kept as
+ * its detail code (PS-COM-018): the count only, never who wrote or what.
+ */
+export const chatMessageCountDetail = (count: number) => `messages_${count}`;
+
+export function chatMessageCountOf(detail: string | null): number {
+  const match = /^messages_(\d+)$/.exec(detail ?? "");
+  return match ? Number(match[1]) : 1;
+}

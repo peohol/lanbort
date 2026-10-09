@@ -678,6 +678,13 @@ const probes: Record<string, (ids: WorldIds) => object> = {
   "chat.read_conversation": (ids) => ({ conversationId: ids.conversationId }),
   "chat.read_directory": (ids) => ({ conversationId: ids.conversationId }),
   "chat.hide_conversation": (ids) => ({ conversationId: ids.conversationId }),
+  "chat.mute_conversation": (ids) => ({
+    conversationId: ids.conversationId,
+    muted: true,
+  }),
+  "chat.read_message_notifications": (ids) => ({
+    conversationId: ids.conversationId,
+  }),
   "chat.claim_key_packages": (ids) => ({
     conversationId: ids.conversationId,
   }),
