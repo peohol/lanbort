@@ -1,6 +1,6 @@
 begin;
 
-select plan(10);
+select plan(11);
 
 -- PS-USR-012: after a declined request, its sender waits for the recipient.
 select ok(
@@ -94,6 +94,22 @@ select ok(
     '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000c1'
   ),
   'a removed friendship holds nothing back'
+);
+
+-- A later decline holds the sender back, also when a server's clock gave
+-- the request an earlier time than the history before it.
+insert into app.friendships (requester_id, addressee_id, requested_at, status, ended_at, ended_by_user_id, end_reason)
+values (
+  '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000c1',
+  '2000-01-01 12:00+00', 'ended', '2000-01-01 12:00+00',
+  '00000000-0000-4000-8000-0000000000c1', 'declined'
+);
+
+select ok(
+  app.friend_request_held_back(
+    '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000c1'
+  ),
+  'the latest decline holds the sender back, whatever its time'
 );
 
 select ok(
