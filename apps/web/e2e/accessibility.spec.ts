@@ -47,6 +47,7 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
     path: ({ place }) => `/finn?vis=miljoer&q=${place}`,
   },
   { name: "Lån", path: () => "/lan" },
+  { name: "Avsluttede lån", path: () => "/lan/avsluttede" },
   { name: "Lånet", path: ({ loanId }) => `/lan/${loanId}?historikk=1` },
   { name: "Mine ting", path: () => "/mine-ting" },
   { name: "Egen ting", path: ({ ownThing }) => `/ting/${ownThing}` },
