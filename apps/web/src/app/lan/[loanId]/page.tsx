@@ -49,6 +49,7 @@ import {
 } from "@/presentation/loan-status";
 import { loanImageHref } from "@/presentation/object-images";
 import { basisNote, hiddenUntil, scoreLines } from "@/presentation/reviews";
+import { chatContactLink } from "@/server/chat-contact";
 import { chatEnabled } from "@/server/env";
 import {
   pageQuery,
@@ -61,7 +62,6 @@ import { ConditionReports, ReportCondition } from "../_parts/condition";
 import { OriginTag } from "../_parts/origin-tag";
 import { PeriodFields } from "../_parts/period-fields";
 import { Party } from "../_parts/party";
-import { writeHref } from "../_parts/write-href";
 import { Progress } from "../_parts/progress";
 import { Steps } from "../_parts/steps";
 import { ThingPicture } from "../_parts/thing-picture";
@@ -610,7 +610,7 @@ export default async function LoanPage({
       />
     );
   }
-  const [history, logistics, reviews, condition] = await Promise.all([
+  const [history, logistics, reviews, condition, contact] = await Promise.all([
     collectPages(
       (cursor) => pageQuery(readLoanHistory, { loanId, cursor }),
       ({ entries }) => entries,
@@ -625,6 +625,12 @@ export default async function LoanPage({
     // The reviews are their reviewers': after a change of lender, the former.
     pageQueryIfAllowed(readLoanReviews, { loanId }),
     pageQueryIfAllowed(readLoanConditionReports, { loanId }),
+    // The server decides: a block closes it, and the logistics channel
+    // (WP-44) is the way left then.
+    chatContactLink(
+      loan.role === "lender" ? loan.borrowerUserId : loan.responsibleLenderId,
+      { kind: "loan_request", requestId: loan.requestId },
+    ),
   ]);
   const other = loan.role === "lender" ? "borrower" : "lender";
 
@@ -655,17 +661,7 @@ export default async function LoanPage({
           )}
           {logistics && <Logistics channel={logistics} />}
           <Agreement loan={loan} />
-          <Party
-            person={loan.parties[other]}
-            role={other}
-            writeHref={
-              // An open logistics channel means a block has closed
-              // ordinary chat between them (WP-44).
-              logistics?.closedAt === null
-                ? null
-                : writeHref(loan.role, loan.borrowerUserId, loan.requestId)
-            }
-          />
+          <Party person={loan.parties[other]} role={other} contact={contact} />
           <LoanMoreActions loan={loan} condition={condition} />
           {reviews && <Reviews loan={loan} reviews={reviews} />}
         </div>

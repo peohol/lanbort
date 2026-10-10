@@ -104,7 +104,7 @@ test("a borrower follows a loan from its page, and nobody else sees it", async (
   await expect(
     page
       .getByRole("region", { name: "Ansvarlig utlåner" })
-      .getByText("Anna Berg"),
+      .getByText("Anna Berg", { exact: true }),
   ).toBeVisible();
 
   // The timeline is secondary: closed until asked for.

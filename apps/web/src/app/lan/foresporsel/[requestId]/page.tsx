@@ -24,13 +24,13 @@ import {
 import { personName } from "@/presentation/loan-status";
 import { formatDesiredPeriod } from "@/presentation/loans";
 import { loanRequestImageHref } from "@/presentation/object-images";
+import { chatContactLink } from "@/server/chat-contact";
 import { pageQueryOrNotFound, requirePageAccount } from "@/server/session";
 import styles from "../../_parts/loan.module.css";
 import { OriginTag } from "../../_parts/origin-tag";
 import { Party } from "../../_parts/party";
 import { Progress } from "../../_parts/progress";
 import { ThingPicture } from "../../_parts/thing-picture";
-import { writeHref } from "../../_parts/write-href";
 
 export const metadata: Metadata = { title: "Forespørsel – Lånbort" };
 
@@ -200,6 +200,12 @@ export default async function LoanRequestPage({
         }
       : { kind: "direct" as const };
   const declaration = request.responsibility;
+  const contact = lender
+    ? await chatContactLink(request.borrowerUserId, {
+        kind: "loan_request",
+        requestId: request.id,
+      })
+    : null;
 
   return (
     <main>
@@ -255,15 +261,7 @@ export default async function LoanRequestPage({
           </p>
         </section>
         {lender && (
-          <Party
-            person={request.borrower}
-            role="borrower"
-            writeHref={writeHref(
-              request.role,
-              request.borrowerUserId,
-              request.id,
-            )}
-          />
+          <Party person={request.borrower} role="borrower" contact={contact} />
         )}
         {declaration && open(request) && (
           <section

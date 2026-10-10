@@ -292,6 +292,54 @@ test("a message waits until the friend has turned chat on", async ({
   }
 });
 
+test("a loan's page leads to the parties' conversation, or offers to start it (KF5 F2–F3)", async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const anna = await person(browser, "Gro Hauge");
+  const bo = await person(browser, "Ivar Lund");
+  await postCommand(anna.context.request, "/api/social/friend-requests", {
+    userId: bo.id,
+  });
+  await postCommand(bo.context.request, "/api/social/friend-requests/accept", {
+    userId: anna.id,
+  });
+  const loanId = await agreeLoan(
+    anna.context.request,
+    bo.context.request,
+    "Sag",
+  );
+  await turnOnChat(anna.page);
+  await turnOnChat(bo.page);
+
+  await bo.page.goto(`/lan/${loanId}`);
+  const lender = bo.page.getByRole("region", { name: "Ansvarlig utlåner" });
+  await lender.getByRole("link", { name: "Skriv til Gro Hauge" }).click();
+  await bo.page
+    .getByRole("button", { name: "Start samtalen", exact: true })
+    .click();
+  await expect(bo.page).toHaveURL(/\/samtaler\/[0-9a-f-]+$/);
+  const conversation = bo.page.url();
+
+  // Once it exists, both parties' pages of the loan lead to it.
+  await bo.page.goto(`/lan/${loanId}`);
+  await lender
+    .getByRole("link", { name: "Gå til samtalen med Gro Hauge" })
+    .click();
+  await expect(bo.page).toHaveURL(conversation);
+  await anna.page.goto(`/lan/${loanId}`);
+  await expect(
+    anna.page
+      .getByRole("region", { name: "Låntaker" })
+      .getByRole("link", { name: "Gå til samtalen med Ivar Lund" }),
+  ).toBeVisible();
+
+  for (const someone of [anna, bo]) {
+    expect(someone.problems).toEqual([]);
+    await someone.context.close();
+  }
+});
+
 test("after a block, a loan's parties write about the loan only, in short messages", async ({
   browser,
 }) => {
