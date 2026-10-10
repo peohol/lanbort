@@ -93,6 +93,8 @@ export const chatApi = {
     id: string,
     body: { certificate: DeviceCertificateWire; package: string },
   ) => post(`/api/chat/links/${id}/approve`, body),
+  declineLink: (id: string, deviceId: string) =>
+    post(`/api/chat/links/${id}/decline`, { deviceId }),
 
   /** History archives, for a device being linked or the backup (ADR-0010 §5, §8). */
   createArchive: (body: CreateChatArchive) =>

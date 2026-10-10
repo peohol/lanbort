@@ -5,7 +5,7 @@ import type {
   DeviceRevocationWire,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import { type Kysely, sql } from "kysely";
+import { type ExpressionBuilder, type Kysely, sql } from "kysely";
 import { takesNewActivity } from "../account/model";
 import { accountStatuses } from "../account/store";
 import type { Actor } from "../actor";
@@ -14,6 +14,18 @@ import { blockedWithAny } from "../social/pair";
 import { toBase64 } from "./signatures";
 
 type Db = Kysely<Database>;
+
+/**
+ * A link request that still waits for an answer (ADR-0010 §5): neither
+ * approved nor declined, and not expired.
+ */
+export const pendingLinkRequest =
+  (now: Date) => (eb: ExpressionBuilder<Database, "app.chat_link_requests">) =>
+    eb.and([
+      eb("approved_at", "is", null),
+      eb("declined_at", "is", null),
+      eb("expires_at", ">", now),
+    ]);
 
 export interface ChatDeviceRecord {
   readonly id: string;

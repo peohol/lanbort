@@ -241,6 +241,10 @@ export interface AppChatLinkRequests {
    */
   commitment: Buffer | null;
   created_at: Generated<Timestamp>;
+  /**
+   * When an existing device declined the request; it can no longer be approved (ADR-0010 §5).
+   */
+  declined_at: Timestamp | null;
   device_id: string;
   device_key: Buffer;
   expires_at: Timestamp;

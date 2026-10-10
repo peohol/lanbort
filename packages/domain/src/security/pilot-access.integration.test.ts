@@ -219,9 +219,10 @@ async function hiddenWorld() {
   });
 
   const chatAccount = testChatAccount(lender.userId);
+  const chatDevice = testChatDevice(chatAccount);
   await run(registerChatAccount, lender, {
     accountKey: chatAccount.accountKey,
-    certificate: testChatDevice(chatAccount).certificate,
+    certificate: chatDevice.certificate,
   });
   const { conversationId } = await run(startChatConversation, lender, {
     userId: borrower.userId,
@@ -282,6 +283,7 @@ async function hiddenWorld() {
       questionId,
       conversationId,
       linkRequestId,
+      chatDeviceId: chatDevice.deviceId,
       archiveId,
       channelId,
       notificationId: randomUUID(),
@@ -814,6 +816,11 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     linkRequestId: ids.linkRequestId,
     certificate: bystanderDevice.certificate,
     package: "AAECAw==",
+  }),
+  // The owner's device: it is looked up among the caller's devices only.
+  "chat.decline_link": (ids) => ({
+    linkRequestId: ids.linkRequestId,
+    deviceId: ids.chatDeviceId,
   }),
   "chat.create_archive": (ids) => ({
     purpose: "link",

@@ -179,6 +179,14 @@ export const chatLinkRequestTargetSchema = z.strictObject({
 });
 
 /**
+ * A decline names the device too: once linked, its request is gone, and
+ * the device is what says it was approved rather than expired.
+ */
+export const declineChatLinkSchema = chatLinkRequestTargetSchema.extend({
+  deviceId: chatDeviceIdSchema,
+});
+
+/**
  * An existing device approves: it certifies the new device and seals the
  * account key (and optionally a history archive key) to the link key.
  */
@@ -194,6 +202,11 @@ export const chatLinkStatusSchema = z.strictObject({
   expiresAt: z.iso.datetime(),
   /** The sealed package once an existing device has approved. */
   package: base64Bytes(chatLimits.linkPackageBytes).nullable(),
+  /**
+   * An existing device declined it; it may ask again with a new code. False
+   * in a stored answer from before declining existed, replayed on a retry.
+   */
+  declined: z.boolean().default(false),
 });
 
 // History archives

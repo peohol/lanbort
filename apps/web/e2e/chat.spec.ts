@@ -506,6 +506,177 @@ test("signing out on a device with chat says what it loses, then revokes it and 
   await anna.context.close();
 });
 
+test("a device that waits to be linked can be declined, and ask again", async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const anna = await person(browser, "Siri Dahl");
+  await turnOnChat(anna.page);
+  const laptop = await device(browser);
+  await signInThroughApi(laptop.context.request, anna.email);
+  // The waiting devices' names, oldest first, as the app shows them. The
+  // tablet's request is left waiting, so the newest is the last.
+  const waitingNames = async () =>
+    (
+      await (await anna.context.request.get("/api/chat/links")).json()
+    ).requests.map(
+      (r: { deviceId: string }) =>
+        `Enhet ${r.deviceId.slice(0, 4).toUpperCase()}`,
+    );
+  const newCode = async () => {
+    await laptop.page.goto("/samtaler/koble");
+    return (await laptop.page.locator("p.link-code").textContent())!;
+  };
+
+  // Two devices wait; each has its own «Avvis» in Mine enheter (10), and
+  // only the one chosen is declined. The list is oldest first.
+  await newCode();
+  const tablet = await device(browser);
+  await signInThroughApi(tablet.context.request, anna.email);
+  await tablet.page.goto("/samtaler/koble");
+  await expect(tablet.page.locator("p.link-code")).toBeVisible();
+  const [laptopName, tabletName] = await waitingNames();
+  await anna.page.goto("/samtaler/enheter");
+  await expect(
+    anna.page.getByRole("heading", {
+      name: "2 enheter vil koble til privat chat",
+    }),
+  ).toBeVisible();
+  await anna.page
+    .getByRole("group", { name: laptopName })
+    .getByRole("button", { name: "Avvis" })
+    .click();
+  const sheet = anna.page.getByRole("dialog", {
+    name: `Avvise ${laptopName}?`,
+  });
+  await expect(sheet.getByText("Ba ikke du om dette?")).toBeVisible();
+  expect(await axeViolations(anna.page)).toEqual([]);
+  await sheet.getByRole("button", { name: "Avvis enheten" }).click();
+  await expect(
+    anna.page.getByText(`${laptopName} fikk ikke tilgang til privat chat.`),
+  ).toBeVisible();
+  await expect(
+    anna.page.getByRole("heading", {
+      name: "En enhet vil koble til privat chat",
+    }),
+  ).toBeVisible();
+  await expect(
+    anna.page.getByRole("group", { name: tabletName }),
+  ).toBeVisible();
+
+  // The new device is told, instead of waiting for its code to run out;
+  // the other one still waits.
+  await expect(
+    laptop.page.getByRole("heading", { name: "Koblingen ble avvist" }),
+  ).toBeVisible({ timeout: 20_000 });
+  expect(await axeViolations(laptop.page)).toEqual([]);
+  await expect(tablet.page.locator("p.link-code")).toBeVisible();
+  await tablet.context.close();
+
+  // A new code; «Ikke godkjenn» after it was typed declines it too (12).
+  await laptop.page.getByRole("button", { name: "Lag ny kode" }).click();
+  const code = (await laptop.page.locator("p.link-code").textContent())!;
+  await anna.page.goto("/samtaler/enheter/koble?kode");
+  await anna.page.getByLabel("Kode fra den nye enheten").fill(code);
+  await anna.page.getByRole("button", { name: "Fortsett" }).click();
+  await anna.page.getByRole("button", { name: "Ikke godkjenn" }).click();
+  await anna.page
+    .getByRole("dialog", { name: /^Avvise Enhet \w{4}\?$/ })
+    .getByRole("button", { name: "Avvis enheten" })
+    .click();
+  await expect(anna.page).toHaveURL(
+    /\/samtaler\/enheter\?avvisning=declined&enhet=/,
+  );
+  await expect(
+    anna.page.getByText(/^Enhet \w{4} fikk ikke tilgang til privat chat\.$/),
+  ).toBeVisible();
+  await expect(
+    laptop.page.getByRole("heading", { name: "Koblingen ble avvist" }),
+  ).toBeVisible({ timeout: 20_000 });
+
+  // Asked again; a decline the server did not carry out is never shown as
+  // one. A request that ran out meanwhile says so (the server's not_found).
+  await laptop.page.getByRole("button", { name: "Lag ny kode" }).click();
+  const last = (await laptop.page.locator("p.link-code").textContent())!;
+  const again = (await waitingNames()).at(-1);
+  const openDecline = async (name: string) => {
+    await anna.page
+      .getByRole("group", { name })
+      .getByRole("button", { name: "Avvis" })
+      .click();
+    return anna.page.getByRole("dialog", { name: `Avvise ${name}?` });
+  };
+  await anna.page.goto("/samtaler/enheter");
+  const expired = "**/api/chat/links/*/decline";
+  await anna.page.route(expired, (route) =>
+    route.fulfill({ status: 404, json: { error: { code: "not_found" } } }),
+  );
+  await (
+    await openDecline(again)
+  )
+    .getByRole("button", { name: "Avvis enheten" })
+    .click();
+  await expect(
+    anna.page.getByText(
+      `Forespørselen fra ${again} gikk ut før den ble avvist.`,
+      {
+        exact: false,
+      },
+    ),
+  ).toBeVisible();
+  await expect(anna.page.getByText("Avvist", { exact: true })).toHaveCount(0);
+  await anna.page.unroute(expired);
+
+  // It was not declined, so it can still be approved.
+  await anna.page.goto("/samtaler/enheter/koble?kode");
+  await anna.page.getByLabel("Kode fra den nye enheten").fill(last);
+  await anna.page.getByRole("button", { name: "Fortsett" }).click();
+  await anna.page.getByRole("button", { name: "Godkjenn enheten" }).click();
+  await expect(
+    laptop.page.getByRole("heading", { name: "Dine samtaler" }),
+  ).toBeVisible({ timeout: 20_000 });
+
+  // Approved from the laptop while the sheet is open here: the decline
+  // comes too late, so the device is listed with «Fjern» and a warning.
+  const phone = await device(browser);
+  await signInThroughApi(phone.context.request, anna.email);
+  await phone.page.goto("/samtaler/koble");
+  const phoneCode = (await phone.page.locator("p.link-code").textContent())!;
+  const phoneName = (await waitingNames()).at(-1);
+  await anna.page.goto("/samtaler/enheter");
+  const late = await openDecline(phoneName);
+  await laptop.page.goto("/samtaler/enheter/koble?kode");
+  await laptop.page.getByLabel("Kode fra den nye enheten").fill(phoneCode);
+  await laptop.page.getByRole("button", { name: "Fortsett" }).click();
+  await laptop.page.getByRole("button", { name: "Godkjenn enheten" }).click();
+  await expect(
+    phone.page.getByRole("heading", { name: "Dine samtaler" }),
+  ).toBeVisible({ timeout: 20_000 });
+  await late.getByRole("button", { name: "Avvis enheten" }).click();
+  await expect(
+    anna.page.getByRole("alert").filter({ hasText: "Allerede godkjent" }),
+  ).toContainText(
+    `${phoneName} ble godkjent fra en annen av enhetene dine før den ble avvist`,
+  );
+  await expect(anna.page.getByText("Avvist", { exact: true })).toHaveCount(0);
+  await expect(
+    anna.page
+      .getByRole("group", { name: phoneName })
+      .getByRole("button", { name: "Fjern" }),
+  ).toBeVisible();
+  expect(await axeViolations(anna.page)).toEqual([]);
+  await phone.context.close();
+
+  expect(
+    unexpected([...anna.problems, ...laptop.problems]).filter(
+      (problem) => !problem.includes("404 (Not Found)"),
+    ),
+  ).toEqual([]);
+  for (const someone of [anna, laptop]) {
+    await someone.context.close();
+  }
+});
+
 test("a message waits until the friend has turned chat on", async ({
   browser,
 }) => {

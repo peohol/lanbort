@@ -36,9 +36,23 @@ export async function signInThroughUi(page: Page, email: string) {
   await enterEmailCode(page, email);
 }
 
+/**
+ * Local Auth sends one code per address a second (`max_frequency` in
+ * supabase/config.toml) and refuses the next with 429, so a second device
+ * signing in to the same account right after the first waits for its turn.
+ */
+const codeInterval = 1_100;
+const lastCode = new Map<string, number>();
+async function awaitCodeTurn(email: string) {
+  const wait = (lastCode.get(email) ?? 0) + codeInterval - Date.now();
+  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+  lastCode.set(email, Date.now());
+}
+
 /** The sign-in form's two steps, on a page that shows it. */
 export async function enterEmailCode(page: Page, email: string) {
   await page.getByLabel("E-postadresse").fill(email);
+  await awaitCodeTurn(email);
   const since = new Date();
   await page.getByRole("button", { name: "Send kode" }).click();
   await expect(page.getByRole("status")).toContainText(email);
@@ -53,6 +67,7 @@ export async function signInThroughApi(
   request: APIRequestContext,
   email: string,
 ) {
+  await awaitCodeTurn(email);
   const since = new Date();
   expect(
     (await request.post("/api/auth/email-code", { data: { email } })).status(),
