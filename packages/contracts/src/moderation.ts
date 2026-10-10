@@ -74,6 +74,15 @@ export const moderationMeasureKindSchema = z.enum([
   "review_response_removed",
 ]);
 
+/**
+ * The measures that lift an earlier one: they hit nobody, and those the
+ * earlier one hit are told, as plain information, that it no longer applies
+ * (PS-TRUST-018).
+ */
+export const liftingMeasureKinds: ReadonlySet<ModerationMeasureKind> = new Set([
+  "object_unblocked",
+]);
+
 export const moderationScopeSchema = z.enum(["environment", "platform"]);
 
 /** The reason a measure is taken on, recorded with it (PS-TRUST-016). */

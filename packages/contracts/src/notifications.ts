@@ -81,6 +81,7 @@ export const notificationKinds = {
   "case.contact_ended": "information",
   "case.report_withdrawn": "information",
   "moderation.measure_taken": "required",
+  "moderation.block_lifted": "information",
   "object.question_asked": "action",
   "object.question_replied": "information",
   "object.available": "information",

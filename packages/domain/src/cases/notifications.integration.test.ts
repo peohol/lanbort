@@ -19,6 +19,7 @@ import { ConsumerRegistry } from "../outbox/consumer";
 import { grantPlatformRole } from "../platform/commands";
 import {
   reportInEnvironment,
+  reportToPlatform,
   takeModerationMeasure,
 } from "../moderation/commands";
 import { readMeasureNotice } from "../moderation/notice";
@@ -475,5 +476,52 @@ describe("the notice to whoever a measure hits (PS-TRUST-018)", () => {
     for (const other of [requester, admin]) {
       await expect(notice(other)).rejects.toMatchObject({ code: "not_found" });
     }
+  });
+
+  it("tells the owners, as information, that a block on their thing is lifted", async () => {
+    const { owner, objectId, environmentId, admin } = await reservedLoan(1, 2);
+    const handler = await kit.steward();
+    const reporter = await member(environmentId, admin);
+    const { caseId } = await run(reportToPlatform, reporter, {
+      target: { kind: "object", objectId },
+      body: "Dette er et ulovlig våpen.",
+    });
+    await run(claimCase, handler, { caseId });
+    await run(takeModerationMeasure, handler, {
+      caseId,
+      measure: "object_blocked",
+      reason: "Ulovlig gjenstand.",
+    });
+    await told(owner);
+    await told(reporter);
+
+    const { measureId } = await run(takeModerationMeasure, handler, {
+      caseId,
+      measure: "object_unblocked",
+      reason: "Avklart: lovlig.",
+    });
+
+    expect(await told(owner)).toEqual([
+      {
+        kind: "moderation.block_lifted",
+        detail: "object_unblocked",
+        target: { type: "moderation_measure", id: measureId },
+      },
+    ]);
+    expect(await told(reporter)).toEqual([]);
+    const notice = (actor: UserActor) =>
+      executeQuery(tick(), readMeasureNotice, {
+        actor,
+        input: { measureId },
+      });
+    expect(await notice(owner)).toMatchObject({
+      kind: "object_unblocked",
+      scope: "platform",
+      objectId,
+      reason: "Avklart: lovlig.",
+    });
+    await expect(notice(reporter)).rejects.toMatchObject({
+      code: "not_found",
+    });
   });
 });

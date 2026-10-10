@@ -1,3 +1,4 @@
+import { liftingMeasureKinds } from "@lanbort/contracts";
 import { readMeasureNotice } from "@lanbort/domain";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -22,8 +23,9 @@ export const metadata: Metadata = { title: "Tiltak – Lånbort" };
  * what was done to their thing, review or response, where it applies, the
  * reason, and the way to ask for a new assessment: the environment's
  * administrators for a local measure. Lånbort cannot take requests in the
- * app yet (UX-EXC-011), and the page says so. Nothing on it tells that
- * there was a report or who sent it.
+ * app yet (UX-EXC-011), and the page says so. When a block is lifted, the
+ * owners are told the thing can be lent again, with nothing to ask about.
+ * Nothing on it tells that there was a report or who sent it.
  */
 export default async function MeasureNoticePage({
   params,
@@ -35,6 +37,8 @@ export default async function MeasureNoticePage({
   const notice = await pageQueryOrNotFound(readMeasureNotice, { measureId });
   const environment = await environmentName(notice.environmentId);
   const review = notice.objectId === null;
+  const lifted = liftingMeasureKinds.has(notice.kind);
+  const reassessment = !lifted && notice.scope;
 
   return (
     <main>
@@ -48,9 +52,9 @@ export default async function MeasureNoticePage({
       <StatusCard
         label={measureNoticeLabel(notice, environment)}
         status={measureNoticeHeading(notice, environment)}
-        tone="danger"
+        tone={lifted ? "positive" : "danger"}
         actions={
-          notice.scope === "environment" && notice.environmentId ? (
+          reassessment === "environment" && notice.environmentId ? (
             <Link
               className="button"
               href={newCaseHref({
@@ -67,7 +71,7 @@ export default async function MeasureNoticePage({
         <p>
           <strong>Begrunnelse:</strong> {notice.reason}
         </p>
-        {notice.scope === "platform" && (
+        {reassessment === "platform" && (
           <p className={styles.unavailable}>
             <strong>Be om ny vurdering</strong>
             Ikke tilgjengelig ennå. Lånbort kan ikke ta imot henvendelser i
