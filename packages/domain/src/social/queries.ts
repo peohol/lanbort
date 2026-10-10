@@ -85,9 +85,11 @@ export const getSocialOverview = defineQuery({
               ),
             ),
           )
+          .innerJoin("app.users as other", "other.id", "profile.user_id")
           .select([
             "friendship.status",
             "friendship.requester_id as requesterId",
+            "other.status as otherStatus",
             "profile.user_id as userId",
             "profile.real_name as realName",
             (eb) =>
@@ -131,17 +133,22 @@ export const getSocialOverview = defineQuery({
       },
     );
 
+    // A request waits only while both can answer it: one with an account
+    // that is not active comes back if the account does (PS-ADM-002).
+    const pending = relations.filter(
+      (r) => r.status === "pending" && r.otherStatus === "active",
+    );
     const overview: SocialOverview = {
       friends: contacts(
         relations.filter((r) => r.status === "active"),
         links,
       ),
       incomingRequests: contacts(
-        relations.filter((r) => r.status === "pending" && r.requesterId !== me),
+        pending.filter((r) => r.requesterId !== me),
         links,
       ),
       outgoingRequests: contacts(
-        relations.filter((r) => r.status === "pending" && r.requesterId === me),
+        pending.filter((r) => r.requesterId === me),
         links,
       ),
       blocked: contacts(blocks, links),

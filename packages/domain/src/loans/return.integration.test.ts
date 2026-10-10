@@ -9,6 +9,7 @@ import { systemActor, type UserActor } from "../actor";
 import { executeQuery } from "../commands/query";
 import { leaveEnvironment } from "../environment/membership-commands";
 import { calendarDate } from "../objects/availability";
+import { consentToObjectDeletion } from "../objects/deletion";
 import { setObjectRestriction } from "../objects/restrictions";
 import { blockUser, removeFriend } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
@@ -750,6 +751,25 @@ describe("a later problem with a confirmed return (PS-LOAN-017)", () => {
       ).rejects.toMatchObject(conflict);
     }
     expect(await statements(cancelled.loanId)).toEqual([]);
+  });
+
+  it("is not offered once the object is deleted, since it cannot be made", async () => {
+    const { owner, borrower, objectId, loanId } = await activeLoan(0, 4);
+    await sayNow(owner, loanId, "received");
+    expect((await loanOf(borrower, loanId)).actions.return).toEqual([
+      "still_has",
+    ]);
+
+    expect(
+      await run(consentToObjectDeletion, owner, { objectId }),
+    ).toMatchObject({ deleted: true });
+
+    for (const actor of [owner, borrower]) {
+      expect((await loanOf(actor, loanId)).actions.return).toEqual([]);
+    }
+    await expect(sayNow(borrower, loanId, "still_has")).rejects.toMatchObject(
+      conflict,
+    );
   });
 
   it("is not a statement before the handover", async () => {

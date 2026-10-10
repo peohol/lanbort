@@ -472,6 +472,11 @@ describe("voluntary transfer (PS-LOAN-009)", () => {
     });
     const { transferId } = await offer(owner, loanId, coOwner);
     await accept(coOwner, loanId, transferId);
+    // It stays on the lender's side, but it is not the new lender's own.
+    expect((await loanOf(coOwner, loanId)).amendment).toMatchObject({
+      proposedBy: "lender",
+      proposedByYou: false,
+    });
 
     // The lender's open proposal is the new lender's to withdraw.
     await expect(

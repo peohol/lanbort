@@ -17,6 +17,8 @@ import {
 } from "@/presentation/dates";
 import {
   describeLoanRequest,
+  requestedTimeHasPassed,
+  requestIsOpen,
   loanRequestTitle,
   requestProgress,
   responsibilityDeclaration,
@@ -36,12 +38,6 @@ import { Party } from "../../_parts/party";
 import { Progress } from "../../_parts/progress";
 
 export const metadata: Metadata = { title: "Forespørsel – Lånbort" };
-
-/** Requests that still wait for an answer or for the borrower. */
-const open = (request: LoanRequestDetail) =>
-  ["requested", "awaiting_terms_confirmation", "on_hold"].includes(
-    request.status,
-  );
 
 const terms = (loanTerms: string | null | undefined) =>
   loanTerms ?? "Ingen egne vilkår";
@@ -69,12 +65,13 @@ function Steps({ request }: { request: LoanRequestDetail }) {
     ) : null;
   }
 
-  if (!open(request)) return null;
+  if (!requestIsOpen(request)) return null;
 
   if (request.role === "borrower") {
     return (
       <>
-        {request.pendingTerms && (
+        {/* New terms for a time that has begun cannot lead to a loan. */}
+        {request.pendingTerms && !requestedTimeHasPassed(request) && (
           <ActionButton
             label="Bekreft de nye vilkårene"
             path={`${path}/confirm-terms`}
@@ -160,6 +157,15 @@ function Steps({ request }: { request: LoanRequestDetail }) {
 function approvalNote(request: LoanRequestDetail): ReactNode {
   if (request.role !== "lender" || request.status !== "requested") return null;
   const approval = request.approval;
+
+  if (!approval?.period && requestedTimeHasPassed(request)) {
+    return (
+      <p>
+        Tiden som er ønsket har begynt, så forespørselen kan ikke godkjennes
+        slik den er. Avslå den; låntakeren kan be om en ny tid.
+      </p>
+    );
+  }
 
   if (!approval?.period) {
     return (
@@ -271,7 +277,7 @@ export default async function LoanRequestPage({
         {lender && (
           <Party person={request.borrower} role="borrower" contact={contact} />
         )}
-        {declaration && open(request) && (
+        {declaration && requestIsOpen(request) && (
           <section
             className={`${styles.flat} ${styles.declaration}`}
             aria-labelledby="ansvar"

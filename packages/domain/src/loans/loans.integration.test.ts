@@ -885,6 +885,29 @@ describe("historical privacy (PS-ENV-009)", () => {
     });
   });
 
+  it("names a hidden environment to its lender only while a member", async () => {
+    const { environmentId, owner, borrower, objectId } = await published({
+      type: "hidden",
+    });
+    const { requestId } = await ask(
+      borrower,
+      objectId,
+      environmentOrigin(environmentId),
+      dated(2, 3),
+    );
+    await run(approveLoanRequest, owner, { requestId });
+    expect((await read(owner, requestId)).origin).toMatchObject({
+      environment: { id: environmentId },
+    });
+
+    // The approved loan stays the lender's; the hidden place does not.
+    await run(leaveEnvironment, owner, { environmentId });
+    expect((await read(owner, requestId)).origin).toEqual({
+      kind: "environment",
+      environment: null,
+    });
+  });
+
   it("names a hidden environment on the loan only while the party can see it", async () => {
     const { environmentId, owner, borrower, objectId } = await published({
       type: "hidden",
