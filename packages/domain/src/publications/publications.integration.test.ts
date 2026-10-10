@@ -55,7 +55,11 @@ import { ConsumerRegistry } from "../outbox/consumer";
 import { blockUser, liftUserBlock } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
-import { startTestVote, testVoteDays } from "../testing/type-changes";
+import {
+  serializeTypeChanges,
+  startTestVote,
+  testVoteDays,
+} from "../testing/type-changes";
 import {
   approvePublication,
   blockPublication,
@@ -960,6 +964,8 @@ describe("concurrency", () => {
 });
 
 describe("historical privacy (PS-ENV-009)", () => {
+  serializeTypeChanges(db);
+
   /** Lets every given member accept a proposal and decides it at its deadline. */
   async function adopt(
     environmentId: string,
