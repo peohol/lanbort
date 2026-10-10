@@ -58,3 +58,11 @@ export const caseStatementsShared = caseEvent("statements_shared", "audit", {});
 export const caseRecused = caseEvent("recused", "audit", {});
 
 export const caseClosed = caseEvent("closed", "audit", {});
+
+/**
+ * PS-COM-021: the member who contacted the administrators closed the
+ * contact; a reporter withdrew their report, which stays open.
+ */
+export const caseContactEnded = caseEvent("contact_ended", "domain", {});
+
+export const caseReportWithdrawn = caseEvent("report_withdrawn", "domain", {});

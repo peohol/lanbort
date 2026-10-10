@@ -2,6 +2,7 @@ import type {
   NotificationTarget,
   NotificationTargetType,
 } from "@lanbort/contracts";
+import { measureNoticeHref } from "./cases";
 import { chatConversationHref, chatDevicesHref } from "./chat";
 import {
   caseHref,
@@ -52,6 +53,10 @@ const targetPages: Record<NotificationTargetType, Place | null> = {
   loan_reviews: {
     href: (id) => `${loanHref(id)}#anmeldelser`,
     anchor: (id) => `anmeldelser-${id}`,
+  },
+  moderation_measure: {
+    href: measureNoticeHref,
+    anchor: (id) => `tiltak-${id}`,
   },
 };
 

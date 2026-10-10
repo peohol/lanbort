@@ -1,0 +1,91 @@
+import type { MeasureNotice, ModerationMeasureKind } from "@lanbort/contracts";
+import { dimensionLabel } from "./reviews";
+
+/**
+ * What the owner or author a measure hits is told (PS-TRUST-018): what was
+ * done, where it applies and what it means for them. Never that there was
+ * a report, who sent it or who decided.
+ */
+
+/** The notification's sentence, before anything is opened. */
+export const measureNoticeTitles: Record<ModerationMeasureKind, string> = {
+  publication_rejected: "Publiseringen av tingen din er avvist i et miljø",
+  publication_blocked: "Tingen din er sperret for publisering i et miljø",
+  object_blocked: "Tingen din er sperret for nye lån",
+  object_unblocked: "Sperren av tingen din er opphevet",
+  review_removed: "Anmeldelsen din er fjernet",
+  review_text_removed: "Teksten i anmeldelsen din er fjernet",
+  review_score_removed: "En vurdering i anmeldelsen din er fjernet",
+  review_response_removed: "Tilsvaret ditt er fjernet",
+};
+
+/** Where the measure applies, in a sentence: the environment or Lånbort. */
+const placeOf = (notice: MeasureNotice, environment: string | null) =>
+  notice.scope === "platform" ? "Lånbort" : (environment ?? "miljøet");
+
+/** The short state above the heading («Sperret i Borettslaget Lia»). */
+export function measureNoticeLabel(
+  notice: MeasureNotice,
+  environment: string | null,
+): string {
+  const place = placeOf(notice, environment);
+  const labels: Record<ModerationMeasureKind, string> = {
+    publication_rejected: `Avvist i ${place}`,
+    publication_blocked: `Sperret i ${place}`,
+    object_blocked: "Sperret for nye lån",
+    object_unblocked: "Sperren er opphevet",
+    review_removed: "Fjernet",
+    review_text_removed: "Tekst fjernet",
+    review_score_removed: "Vurdering fjernet",
+    review_response_removed: "Tilsvar fjernet",
+  };
+
+  return labels[notice.kind];
+}
+
+/** What was done, said where it applies. */
+export function measureNoticeHeading(
+  notice: MeasureNotice,
+  environment: string | null,
+): string {
+  const place = placeOf(notice, environment);
+  const headings: Record<ModerationMeasureKind, string> = {
+    publication_rejected: `Publiseringen er avvist i ${place}`,
+    publication_blocked: `Publiseringen er sperret i ${place}`,
+    object_blocked: "Tingen er sperret for nye lån",
+    object_unblocked: "Sperren av tingen er opphevet",
+    review_removed: "Anmeldelsen er fjernet",
+    review_text_removed: "Teksten i anmeldelsen er fjernet",
+    review_score_removed: notice.dimension
+      ? `Vurderingen «${dimensionLabel(notice.dimension)}» er fjernet`
+      : "En vurdering i anmeldelsen er fjernet",
+    review_response_removed: "Tilsvaret er fjernet",
+  };
+
+  return headings[notice.kind];
+}
+
+/** What it means for them, and what it leaves as it was. */
+export function measureNoticeEffect(
+  notice: MeasureNotice,
+  environment: string | null,
+): string {
+  const place = placeOf(notice, environment);
+  const elsewhere =
+    "Andre steder gjelder det ikke, og lån som allerede er godkjent, går som før.";
+  const effects: Record<ModerationMeasureKind, string> = {
+    publication_rejected: `Tingen vises ikke i ${place}. Du kan publisere den der på nytt. ${elsewhere}`,
+    publication_blocked: `Tingen kan ikke publiseres i ${place} igjen før en administrator opphever sperren. ${elsewhere}`,
+    object_blocked:
+      "Tingen kan ikke lånes ut på nye lån før Lånbort opphever sperren.",
+    object_unblocked: "Tingen kan lånes ut igjen.",
+    review_removed: "Anmeldelsen vises ikke lenger noe sted.",
+    review_text_removed:
+      "Teksten vises ikke lenger. Vurderingene i anmeldelsen står.",
+    review_score_removed:
+      "Den ene vurderingen vises ikke lenger. Resten av anmeldelsen står.",
+    review_response_removed: "Teksten i tilsvaret vises ikke lenger.",
+  };
+
+  return effects[notice.kind];
+}

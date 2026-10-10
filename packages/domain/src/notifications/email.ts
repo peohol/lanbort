@@ -66,6 +66,10 @@ export const notificationEmailSubjects = {
   "case.entry_added": "Det er skrevet noe nytt i en sak",
   "case.statements_shared": "Innleggene i en sak er delt",
   "case.closed": "En sak du er med i er lukket",
+  "case.contact_ended": "En henvendelse er avsluttet av den som tok kontakt",
+  "case.report_withdrawn": "En rapport er trukket av den som sendte den",
+  "moderation.measure_taken":
+    "Det er gjort et tiltak mot noe du har publisert eller skrevet",
   "object.question_asked": "Det er stilt et spørsmål om et objekt du eier",
   "object.question_replied": "Det er kommet et nytt innlegg i en spørsmålstråd",
   "object.available": "Et objekt du abonnerer på er tilgjengelig igjen",

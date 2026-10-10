@@ -11,9 +11,16 @@ import { describedBy, Field } from "@/components/field";
 import { MoreActions } from "@/components/more-actions";
 import { environmentCasesHref } from "@/navigation/cases";
 import { casesHref } from "@/navigation/routes";
-import { describeAction, measureLabels, personIn } from "@/presentation/cases";
+import {
+  describeAction,
+  handlerFunction,
+  handlersInSentence,
+  measureLabels,
+  personIn,
+} from "@/presentation/cases";
 import { formatShortTime } from "@/presentation/dates";
 import styles from "../cases.module.css";
+import { CloseWithMessage } from "./close-case";
 import { MeasureForm } from "./measure-form";
 
 const casePath = (c: Case, action: string) => `/api/cases/${c.id}/${action}`;
@@ -72,22 +79,33 @@ export function CloseCase({
   primary?: boolean;
 }) {
   const parties = partiesOf(c);
+  const consequences = {
+    gone: [`${parties} kan ikke skrive mer i saken.`],
+    stays: [
+      "Alt som er skrevet, blir stående.",
+      c.kind === "loan_mediation"
+        ? "Lukkingen avgjør ingenting om lånet eller kontoene. Lånet går videre etter det partene selv registrerer."
+        : "Lukkingen avgjør ingenting om kontoene.",
+    ],
+    affects: [`${parties} får beskjed om at saken er lukket.`],
+  };
+
+  if (caseKinds[c.kind].closingMessage) {
+    return (
+      <CloseWithMessage
+        caseId={c.id}
+        consequences={consequences}
+        primary={primary}
+      />
+    );
+  }
 
   return (
     <ConfirmAction
       primary={primary}
       label="Lukk saken"
       title="Lukke saken?"
-      consequences={{
-        gone: [`${parties} kan ikke skrive mer i saken.`],
-        stays: [
-          "Alt som er skrevet, blir stående.",
-          c.kind === "loan_mediation"
-            ? "Lukkingen avgjør ingenting om lånet eller kontoene. Lånet går videre etter det partene selv registrerer."
-            : "Lukkingen avgjør ingenting om kontoene.",
-        ],
-        affects: [`${parties} får beskjed om at saken er lukket.`],
-      }}
+      consequences={consequences}
       confirmLabel="Lukk saken"
       path={casePath(c, "close")}
       body={{}}
@@ -231,6 +249,68 @@ export function HandlerMoreActions({ c, userId }: { c: Case; userId: string }) {
   );
 }
 
+/**
+ * What the one who opened the case may do to end it (PS-COM-021), under
+ * «Flere valg» as for a handler: close a contact, with nothing to confirm
+ * since nothing disappears, or withdraw a report, which the sheet says
+ * removes nothing and stops no assessment. In a mediation the row says why
+ * neither party closes it.
+ */
+export function ParticipantMoreActions({
+  c,
+  environment,
+}: {
+  c: Case;
+  environment: string | null;
+}) {
+  const ends = caseKinds[c.kind].openerEnds;
+  const handlers = handlerFunction(c.kind, environment);
+
+  if (ends === "withdraw" && c.withdrawnAt !== null) return null;
+
+  return (
+    <MoreActions>
+      {ends === "close" && (
+        <>
+          <ActionButton
+            label="Avslutt henvendelsen"
+            path={casePath(c, "end")}
+            body={{}}
+          />
+          <p className="quiet">
+            Saken lukkes, og alt som er skrevet, blir stående.
+          </p>
+        </>
+      )}
+      {ends === "withdraw" && (
+        <ConfirmAction
+          label="Trekk rapporten"
+          title="Trekke rapporten?"
+          consequences={{
+            stays: [
+              "Det du har skrevet, blir stående i saken og slettes ikke.",
+              `${handlers} kan likevel fullføre vurderingen og gjøre tiltak hvis det trengs.`,
+            ],
+            affects: [
+              `${handlers} får beskjed om at du har trukket rapporten.`,
+            ],
+          }}
+          confirmLabel="Trekk rapporten"
+          path={casePath(c, "withdraw")}
+          body={{}}
+        />
+      )}
+      {ends === null && (
+        <p className={styles.unavailable}>
+          <strong>Lukke saken</strong>
+          Bare {handlersInSentence(c.kind, environment)} kan lukke en mekling,
+          fordi dere begge er parter.
+        </p>
+      )}
+    </MoreActions>
+  );
+}
+
 /** What was done in the case, for its handlers (UX-IA-008). */
 export function History({
   c,
@@ -247,7 +327,7 @@ export function History({
       <ol className={styles.entries} aria-label="Behandlingen, eldste først">
         {c.history.map((action, index) => (
           <li key={index} className={styles.entry}>
-            <span>{describeAction(action, c.people)}</span>
+            <span>{describeAction(action, c)}</span>
             <time className="quiet" dateTime={action.at}>
               {formatShortTime(action.at)}
             </time>

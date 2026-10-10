@@ -54,8 +54,8 @@ interface EntryFormProps {
  * what happens («Lagre notatet»). A correction is a new entry that names the
  * writer's own earlier one, which stays as it was, and reaches the same
  * people. With `correctOnly` it is the one thing to write: a handler
- * correcting their own entry once the case is closed. Each entry sent is
- * its own command: the form starts afresh, with a new idempotency key.
+ * correcting their own entry once the case is closed. Once an entry is
+ * sent, the form starts afresh for the next.
  */
 export function EntryForm(props: EntryFormProps) {
   const [round, setRound] = useState(0);

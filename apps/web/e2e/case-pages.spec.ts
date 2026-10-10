@@ -1,10 +1,13 @@
+import { randomUUID } from "node:crypto";
 import { type Browser, expect, type Page, test } from "@playwright/test";
+import sharp from "sharp";
 import {
   accountId,
   collectBrowserProblems,
   postCommand,
   registerThroughApi,
   uniqueWord,
+  untilOutboxSettles,
 } from "./helpers";
 
 /**
@@ -151,8 +154,176 @@ test("a report reaches the administrators, and never the person it is about", as
   await expect(eva.getByText("Send videre til Lånbort")).toBeVisible();
   await expect(eva.getByRole("button", { name: /Lånbort/ })).toHaveCount(0);
 
+  // The reporter withdraws it: nothing is removed, and the administrators
+  // may still finish the assessment (PS-COM-021).
+  await ola.getByText("Flere valg").click();
+  await ola.getByRole("button", { name: "Trekk rapporten" }).click();
+  await ola
+    .getByRole("dialog")
+    .getByRole("button", { name: "Trekk rapporten" })
+    .click();
+  await expect(ola.getByText(/^Du trakk rapporten/)).toBeVisible();
+  await expect(entry(ola, "Truende meldinger i lobbyen.")).toBeVisible();
+  await expect(
+    ola.getByRole("button", { name: "Trekk rapporten" }),
+  ).toHaveCount(0);
+  await eva.reload();
+  await expect(
+    eva.getByText(/^Ola Medlem trakk rapporten .+dere kan likevel/),
+  ).toBeVisible();
+
+  // A report is closed with a closing message to the reporter (PS-COM-020).
+  await eva.getByRole("button", { name: "Ta saken" }).click();
+  await expect(statusCard(eva)).toContainText("Du har saken");
+  await eva.getByRole("button", { name: "Lukk saken" }).click();
+  const sheet = eva.getByRole("dialog");
+  await sheet
+    .getByLabel("Avslutningsmelding til partene")
+    .fill("Takk for rapporten. Saken er vurdert og avsluttet.");
+  await sheet.getByRole("button", { name: "Lukk saken" }).click();
+  await expect(statusCard(eva)).toContainText("Saken er lukket");
+  await ola.goto(caseUrl);
+  await expect(
+    entry(ola, "Takk for rapporten. Saken er vurdert og avsluttet."),
+  ).toContainText("Avslutningsmelding");
+
   expect((await kim.goto(caseUrl))?.status()).toBe(404);
   await kim.goto("/saker");
   await expect(kim.getByText(/Du har ingen saker\./)).toBeVisible();
   await Promise.all([eva, ola, kim].map((page) => page.context().close()));
+});
+
+test("a member ends their own contact, and the administrators see who did", async ({
+  browser,
+  baseURL,
+}) => {
+  const eva = await signedIn(browser, baseURL!, "Eva Eier");
+  const ola = await signedIn(browser, baseURL!, "Ola Medlem");
+  const name = `Lia ${uniqueWord()}`;
+  const { environmentId } = await (
+    await postCommand(eva.request, "/api/environments", { name, type: "open" })
+  ).json();
+  await postCommand(ola.request, "/api/environments/membership/join", {
+    environmentId,
+    answers: [],
+  });
+
+  await ola.goto(`/saker/ny?kontakt=${environmentId}`);
+  await ola.getByLabel("Melding").fill("Kan vi få en felles stige?");
+  await ola.getByRole("button", { name: "Send til administratorene" }).click();
+  await expect(ola).toHaveURL(/\/saker\/[0-9a-f-]{36}$/);
+  const caseUrl = ola.url();
+
+  // Nothing disappears, so nothing asks to confirm (PS-COM-021).
+  await ola.getByText("Flere valg").click();
+  await ola.getByRole("button", { name: "Avslutt henvendelsen" }).click();
+  await expect(statusCard(ola)).toContainText("Saken er lukket");
+  await expect(ola.getByRole("textbox")).toHaveCount(0);
+
+  await eva.goto(caseUrl);
+  await expect(statusCard(eva)).toContainText("Saken er lukket");
+  await eva.getByText("Historikk", { exact: true }).click();
+  await expect(
+    eva.getByText("Ola Medlem avsluttet henvendelsen"),
+  ).toBeVisible();
+  await Promise.all([eva, ola].map((page) => page.context().close()));
+});
+
+test("the owner of a blocked thing is told what, where and why, never of the report, and its picture follows its name", async ({
+  browser,
+  baseURL,
+}) => {
+  const eva = await signedIn(browser, baseURL!, "Eva Eier");
+  const jonas = await signedIn(browser, baseURL!, "Jonas Vik");
+  const kari = await signedIn(browser, baseURL!, "Kari Nordmann");
+  const name = `Lia ${uniqueWord()}`;
+  const { environmentId } = await (
+    await postCommand(eva.request, "/api/environments", { name, type: "open" })
+  ).json();
+  for (const member of [jonas, kari]) {
+    await postCommand(member.request, "/api/environments/membership/join", {
+      environmentId,
+      answers: [],
+    });
+  }
+  const { objectId } = await (
+    await postCommand(jonas.request, "/api/objects", {
+      title: "Gassflaske 11 kg",
+      categoryId: "annet",
+      description: "Full.",
+      availability: [{ start: "2030-07-01", end: null }],
+    })
+  ).json();
+  await postCommand(jonas.request, `/api/objects/${objectId}/publications`, {
+    environmentId,
+  });
+  const { caseId } = await (
+    await postCommand(kari.request, "/api/environments/reports", {
+      environmentId,
+      target: { kind: "object", objectId },
+      body: "Flasken er fylt med propan.",
+    })
+  ).json();
+  const upload = await jonas.request.post(`/api/objects/${objectId}/images`, {
+    data: await sharp({
+      create: { width: 40, height: 30, channels: 3, background: "#4a7" },
+    })
+      .jpeg()
+      .toBuffer(),
+    headers: { "content-type": "image/jpeg", "Idempotency-Key": randomUUID() },
+  });
+  expect(upload.ok(), await upload.text()).toBe(true);
+  const { imageId } = await upload.json();
+
+  // Whoever reads the case sees the thing's picture by its name
+  // (PS-OBJ-021); its owner, whom the report is about, never gets it.
+  const src = `/api/cases/${caseId}/images/${imageId}`;
+  await eva.goto(`/saker/${caseId}`);
+  const picture = eva.locator(".page-picture img");
+  await expect(picture).toHaveAttribute("src", src);
+  await expect
+    .poll(() => picture.evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBeGreaterThan(0);
+  expect((await jonas.request.get(src)).status()).toBe(404);
+
+  await postCommand(eva.request, `/api/cases/${caseId}/claim`, {});
+  await postCommand(eva.request, `/api/cases/${caseId}/measures`, {
+    measure: "publication_blocked",
+    reason: "Fylt gassflaske står på listen over det som ikke kan lånes ut.",
+  });
+
+  // A required notice to the owner (PS-TRUST-018).
+  await untilOutboxSettles(jonas.request, async () =>
+    (
+      await (await jonas.request.get("/api/notifications")).json()
+    ).notifications.some(
+      (notification: { kind: string }) =>
+        notification.kind === "moderation.measure_taken",
+    ),
+  );
+  await jonas.goto("/varsler");
+  await jonas
+    .getByRole("link", {
+      name: /Tingen din er sperret for publisering i et miljø/,
+    })
+    .click();
+  await expect(jonas).toHaveURL(/\/saker\/tiltak\/[0-9a-f-]{36}$/);
+  await expect(jonas.getByRole("heading", { level: 1 })).toHaveText(
+    "Gassflaske 11 kg",
+  );
+  await expect(statusCard(jonas)).toContainText(
+    `Publiseringen er sperret i ${name}`,
+  );
+  await expect(statusCard(jonas)).toContainText(
+    "Begrunnelse: Fylt gassflaske står på listen over det som ikke kan lånes ut.",
+  );
+  await expect(
+    jonas.getByRole("link", { name: "Be om ny vurdering" }),
+  ).toHaveAttribute("href", `/saker/ny?kontakt=${environmentId}`);
+  // Nothing says there was a report, or who sent it.
+  await expect(jonas.getByText(/rapport|Kari/i)).toHaveCount(0);
+
+  // Nobody else learns that the measure exists.
+  expect((await kari.goto(jonas.url()))?.status()).toBe(404);
+  await Promise.all([eva, jonas, kari].map((page) => page.context().close()));
 });

@@ -18,7 +18,7 @@ import styles from "../cases.module.css";
 export function MeasureForm(props: MeasureFormProps) {
   const [round, setRound] = useState(0);
 
-  // Each measure is its own command, with its own idempotency key.
+  // Once a measure is taken, the form starts afresh for the next.
   return (
     <MeasureFormRound
       key={round}

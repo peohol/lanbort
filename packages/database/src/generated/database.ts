@@ -117,6 +117,10 @@ export interface AppCaseEntries {
   body: string;
   capacity: string;
   case_id: string;
+  /**
+   * The closing message to the parties of a report or mediation (PS-COM-020); one per case, written as it is closed.
+   */
+  closing: Generated<boolean>;
   corrects_entry_id: string | null;
   created_at: Timestamp;
   id: Generated<string>;

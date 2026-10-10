@@ -8,6 +8,7 @@ import {
   type PartyStatement,
   privateMessagesPerCaseLimit,
   caseReferenceSchema,
+  closeCaseSchema,
   openCaseRoundSchema,
   openEnvironmentContactSchema,
   openLoanMediationSchema,
@@ -37,10 +38,12 @@ import { loadPair, lockPair } from "../social/pair";
 import {
   caseAssigned,
   caseClosed,
+  caseContactEnded,
   caseEntryAdded,
   caseOpened,
   caseRecused,
   caseReleased,
+  caseReportWithdrawn,
   caseRoundOpened,
   caseStatementsShared,
 } from "./events";
@@ -54,6 +57,7 @@ import {
   type CaseResource,
   claimCasePolicy,
   closeCasePolicy,
+  endContactPolicy,
   openCaseRoundPolicy,
   openEnvironmentContactPolicy,
   recuseFromCasePolicy,
@@ -61,6 +65,7 @@ import {
   reportUnavailabilityPolicy,
   shareCaseStatementsPolicy,
   transferCasePolicy,
+  withdrawReportPolicy,
   writeCaseEntryPolicy,
 } from "./policies";
 import {
@@ -72,6 +77,7 @@ import {
   insertEntry,
   insertPrivateMessages,
   isCaseHandler,
+  loadActions,
   loadHandlerStanding,
   loadParticipants,
   type OpenCaseKey,
@@ -709,8 +715,9 @@ export interface HandlerAction<I> {
 }
 
 /**
- * A handler's action on an open case. The case is locked, and returned to
- * the queue first if its handler can no longer handle it.
+ * An action on an open case, a handler's or (as its policy says) a
+ * participant's. The case is locked, and returned to the queue first if its
+ * handler can no longer handle it.
  */
 export function handlerCommand<
   I extends { readonly caseId: string },
@@ -941,14 +948,41 @@ export const shareCaseStatements = handlerCommand(
 /**
  * The handler closes the case. It decides nothing about the loan or the
  * account it concerns: a mediator is not a judge (vision 06), and a report
- * changes nothing by itself (PS-COM-015).
+ * changes nothing by itself (PS-COM-015). A report or a mediation is closed
+ * with a short closing message to its parties, its last entry
+ * (PS-COM-020); the parties learn of it from the notice that the case is
+ * closed, not from one of their own.
  */
 export const closeCase = handlerCommand(
   "case.close",
-  caseReferenceSchema,
+  closeCaseSchema,
   closeCasePolicy,
-  async ({ tx, c, userId, events, now }) => {
+  async ({ tx, c, userId, input, events, now }) => {
     requireActing(c, userId);
+
+    if (caseKinds[c.kind].closingMessage !== (input.body !== undefined)) {
+      invalid(
+        "body",
+        caseKinds[c.kind].closingMessage
+          ? "A report or mediation is closed with a closing message"
+          : "Only a report or mediation has a closing message",
+      );
+    }
+
+    if (input.body !== undefined) {
+      await insertEntry(tx, {
+        caseId: c.id,
+        authorUserId: userId,
+        capacity: "handler",
+        audience: "parties",
+        audienceUserId: null,
+        body: input.body,
+        correctsEntryId: null,
+        closing: true,
+        now,
+      });
+    }
+
     await recordAction(tx, {
       caseId: c.id,
       kind: "closed",
@@ -956,5 +990,79 @@ export const closeCase = handlerCommand(
       now,
     });
     events.record(caseClosed, { resourceId: c.id, payload: eventBase(c) });
+  },
+);
+
+/**
+ * What a participant's own step returns: never who handles the case, which
+ * a participant is not shown.
+ */
+const participantResult = (c: CaseRecord, status: CaseRecord["status"]) => ({
+  caseId: c.id,
+  status,
+  assigneeUserId: null,
+});
+
+/**
+ * PS-COM-021: the member who contacted the administrators closes the
+ * contact while it is open. Everything written stays, and whoever has it
+ * is told.
+ */
+export const endContact = handlerCommand(
+  "case.end_contact",
+  caseReferenceSchema,
+  endContactPolicy,
+  async ({ tx, c, userId, events, now }) => {
+    if (caseKinds[c.kind].openerEnds !== "close") {
+      conflict("Only a contact is closed by the member who opened it");
+    }
+
+    await recordAction(tx, {
+      caseId: c.id,
+      kind: "closed",
+      actorUserId: userId,
+      now,
+    });
+    events.record(caseContactEnded, {
+      resourceId: c.id,
+      payload: eventBase(c),
+    });
+
+    return participantResult(c, "closed");
+  },
+);
+
+/**
+ * PS-COM-021: a reporter withdraws their report. It is recorded and the
+ * handlers are told, but nothing sent in is removed, and the report stays
+ * open: a handler may still finish the assessment and any measure.
+ */
+export const withdrawReport = handlerCommand(
+  "case.withdraw_report",
+  caseReferenceSchema,
+  withdrawReportPolicy,
+  async ({ tx, c, userId, events, now }) => {
+    if (caseKinds[c.kind].openerEnds !== "withdraw") {
+      conflict("Only a report is withdrawn");
+    }
+
+    if (
+      (await loadActions(tx, c.id)).some(({ kind }) => kind === "withdrawn")
+    ) {
+      conflict("The report is already withdrawn");
+    }
+
+    await recordAction(tx, {
+      caseId: c.id,
+      kind: "withdrawn",
+      actorUserId: userId,
+      now,
+    });
+    events.record(caseReportWithdrawn, {
+      resourceId: c.id,
+      payload: eventBase(c),
+    });
+
+    return participantResult(c, "open");
   },
 );

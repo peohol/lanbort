@@ -1,8 +1,6 @@
 import type { Case } from "@lanbort/contracts";
 import {
   caseKinds,
-  getEnvironment,
-  isDomainError,
   listCaseMeasures,
   measuresFor,
   readCase,
@@ -13,10 +11,12 @@ import { Fragment, type ReactNode } from "react";
 import { PageHeader } from "@/components/page-header";
 import { StatusCard } from "@/components/status-card";
 import { ContextTag } from "@/components/tag";
+import { ThingThumbnail } from "@/components/thing-thumbnail";
 import { caseEvidenceHref, environmentCasesHref } from "@/navigation/cases";
 import { casesHref, loanHref } from "@/navigation/routes";
 import {
   aboutCase,
+  caseImageHref,
   caseKindTitle,
   caseTitle,
   describeHandling,
@@ -26,9 +26,11 @@ import {
   participantTurn,
   personIn,
   reportTargetLabels,
+  withdrawalText,
 } from "@/presentation/cases";
 import { formatShortTime } from "@/presentation/dates";
 import { loanStatusLabels } from "@/presentation/loans";
+import { firstImageHref } from "@/presentation/object-images";
 import { chatEnabled } from "@/server/env";
 import {
   pageQuery,
@@ -36,6 +38,7 @@ import {
   requirePageAccount,
 } from "@/server/session";
 import styles from "../cases.module.css";
+import { environmentName } from "../environment-name";
 import { HandlerRole } from "../handler-role";
 import { Entries } from "./entries";
 import { type AudienceChoice, EntryForm } from "./entry-form";
@@ -44,24 +47,13 @@ import {
   HandlerMoreActions,
   Handling,
   History,
+  ParticipantMoreActions,
   ShareStatements,
   TakeCase,
   TakenMeasures,
 } from "./handling";
 
 export const metadata: Metadata = { title: "Saken – Lånbort" };
-
-/** The environment's name, if the viewer may still see it (PS-ENV-009). */
-async function environmentName(environmentId: string | null) {
-  if (environmentId === null) return null;
-
-  try {
-    return (await pageQuery(getEnvironment, { environmentId }))?.name ?? null;
-  } catch (error) {
-    if (isDomainError(error)) return null;
-    throw error;
-  }
-}
 
 /** Who a handler may write to, and what each choice means. */
 function audiencesFor(c: Case, handlers: string): AudienceChoice[] {
@@ -261,6 +253,7 @@ export default async function CasePage({
   // A handler writes and acts once they have taken the case (UX-INT-001).
   const holding = asHandler && open && c.assigneeUserId === account.userId;
   const writes = asHandler ? holding : c.mayWrite;
+  const withdrawal = withdrawalText(c, { asHandler, environment });
   const step =
     asHandler && open
       ? handlerStep(c, account.userId, measures.length > 0)
@@ -320,6 +313,18 @@ export default async function CasePage({
           opener: openerOf(c),
         })}
         kind={caseKindTitle[c.kind]}
+        // The thing it names, with its picture (PS-OBJ-021).
+        picture={
+          (c.loanTitle ?? c.objectTitle) !== null && (
+            <ThingThumbnail
+              src={firstImageHref(c.images, (imageId) =>
+                caseImageHref(c.id, imageId),
+              )}
+              size="title"
+              placeholder
+            />
+          )
+        }
         back={back}
         context={
           environment && (
@@ -339,6 +344,7 @@ export default async function CasePage({
       >
         {step?.body ?? handling.detail}
       </StatusCard>
+      {withdrawal && <p className="quiet">{withdrawal}</p>}
       {asHandler && <Facts c={c} />}
       {asHandler && (
         <TakenMeasures
@@ -393,6 +399,9 @@ export default async function CasePage({
       )}
       {asHandler && open && (
         <HandlerMoreActions c={c} userId={account.userId} />
+      )}
+      {!asHandler && open && (
+        <ParticipantMoreActions c={c} environment={environment} />
       )}
     </main>
   );

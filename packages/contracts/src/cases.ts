@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { loanIdSchema, loanStatusSchema } from "./loans";
-import { multilineText } from "./objects";
+import {
+  multilineText,
+  objectImageIdSchema,
+  objectImageSchema,
+} from "./objects";
 
 /**
  * Administrative cases (WP-45, PS-COM-010–015). A case is a governed process
@@ -77,6 +81,7 @@ export const caseActionKindSchema = z.enum([
   "statements_shared",
   "recused",
   "closed",
+  "withdrawn",
 ]);
 
 /**
@@ -188,6 +193,21 @@ export const caseEntryResultSchema = z.strictObject({
 
 export const caseReferenceSchema = z.strictObject({ caseId: caseIdSchema });
 
+/** One picture of the thing a case names (PS-OBJ-021). */
+export const caseImageQuerySchema = z.strictObject({
+  caseId: caseIdSchema,
+  imageId: objectImageIdSchema,
+});
+
+/**
+ * Closing a case; a report or a mediation is closed with a short closing
+ * message to its parties, which becomes its last entry (PS-COM-020).
+ */
+export const closeCaseSchema = z.strictObject({
+  caseId: caseIdSchema,
+  body: caseEntryBodySchema.optional(),
+});
+
 /** The responsible handler hands the case to another handler. */
 export const transferCaseSchema = z.strictObject({
   caseId: caseIdSchema,
@@ -221,6 +241,8 @@ export const caseEntrySchema = z.strictObject({
   /** Private messages the participant who wrote it submitted, by time sent. */
   privateMessages: z.array(privateMessageCopySchema),
   correctsEntryId: caseEntryIdSchema.nullable(),
+  /** The closing message the case was closed with (PS-COM-020). */
+  closing: z.boolean(),
   createdAt: z.iso.datetime(),
 });
 
@@ -282,6 +304,8 @@ export const caseSchema = z.strictObject({
   escalatedFromCaseId: caseIdSchema.nullable(),
   openedAt: z.iso.datetime(),
   closedAt: z.iso.datetime().nullable(),
+  /** When its reporter withdrew a report (PS-COM-021); it may still be open. */
+  withdrawnAt: z.iso.datetime().nullable(),
   handling: caseHandlingSchema,
   /** The responsible handler; handlers only. */
   assigneeUserId: z.uuid().nullable(),
@@ -294,6 +318,11 @@ export const caseSchema = z.strictObject({
   loanTitle: z.string().nullable(),
   /** The reported object's title, while the object exists. */
   objectTitle: z.string().nullable(),
+  /**
+   * The pictures of the thing the case names, a mediated loan's or a
+   * reported object's: whoever reads its name sees them (PS-OBJ-021).
+   */
+  images: z.array(objectImageSchema),
   /** The mediated loan, for a mediation while the loan exists. */
   loan: caseLoanSchema.nullable(),
   /**
@@ -372,6 +401,7 @@ export type PartyStatement = {
   readonly privateMessages?: readonly PrivateMessageCopy[] | undefined;
 };
 export type WriteCaseEntry = z.infer<typeof writeCaseEntrySchema>;
+export type CloseCase = z.infer<typeof closeCaseSchema>;
 export type CaseOpenedResult = z.infer<typeof caseOpenedResultSchema>;
 export type CaseEntryResult = z.infer<typeof caseEntryResultSchema>;
 export type CaseActionResult = z.infer<typeof caseActionResultSchema>;

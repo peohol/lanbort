@@ -92,6 +92,7 @@ const resourceKeys = new Set([
   "imageId",
   "caseId",
   "correctsEntryId",
+  "measureId",
   "questionId",
   "notificationId",
   "notificationIds",
@@ -268,6 +269,9 @@ async function hiddenWorld() {
       imageId,
       pictureId: pictureId!,
       caseId,
+      // No measure is taken in this world; the notice's own test shows
+      // that nobody but whoever a real one hits learns it exists.
+      measureId: randomUUID(),
       questionId,
       conversationId,
       linkRequestId,
@@ -670,6 +674,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
 
   // Cases and moderation
   "case.read": (ids) => ({ caseId: ids.caseId }),
+  "case.read_image": (ids) => ({ caseId: ids.caseId, imageId: ids.imageId }),
   "case.write": (ids) => ({ caseId: ids.caseId, body: text }),
   "case.claim": (ids) => ({ caseId: ids.caseId }),
   "case.release": (ids) => ({ caseId: ids.caseId }),
@@ -678,6 +683,8 @@ const probes: Record<string, (ids: WorldIds) => object> = {
   "case.share_statements": (ids) => ({ caseId: ids.caseId }),
   "case.recuse": (ids) => ({ caseId: ids.caseId }),
   "case.close": (ids) => ({ caseId: ids.caseId }),
+  "case.end_contact": (ids) => ({ caseId: ids.caseId }),
+  "case.withdraw_report": (ids) => ({ caseId: ids.caseId }),
   "case.escalate": (ids) => ({ caseId: ids.caseId, body: text }),
   "case.open_environment_contact": (ids) => ({
     environmentId: ids.environmentId,
@@ -701,6 +708,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     reason: text,
   }),
   "moderation.list_measures": (ids) => ({ caseId: ids.caseId }),
+  "moderation.read_notice": (ids) => ({ measureId: ids.measureId }),
 
   // Chat (ADR-0010)
   "chat.start_conversation": (ids) => ({
@@ -1139,6 +1147,7 @@ describe("co-owner boundaries", () => {
 const caseOperations = probed.filter((operation) =>
   operation.inputKeys.has("caseId"),
 );
+const openerOperations = ["case.end_contact", "case.withdraw_report"];
 
 describe("conflict of interest (PS-USR-009)", () => {
   /**
@@ -1198,13 +1207,18 @@ describe("conflict of interest (PS-USR-009)", () => {
 
   const everyCaseOperation = (answer: string) =>
     Object.fromEntries(caseOperations.map(({ name }) => [name, answer]));
+  /** What only the one who opened a case does to end it (PS-COM-021). */
+  const openerSteps = (answer: string) =>
+    Object.fromEntries(openerOperations.map((name) => [name, answer]));
 
   it("refuses an administrator who co-owns the object every case operation", async () => {
     const world = await mediation();
 
-    expect(await outcomes(world, world.actors.coOwner)).toEqual(
-      everyCaseOperation("conflict_of_interest"),
-    );
+    expect(await outcomes(world, world.actors.coOwner)).toEqual({
+      ...everyCaseOperation("conflict_of_interest"),
+      // Not a participant either.
+      ...openerSteps("forbidden"),
+    });
   });
 
   it("lets an administrator who is a party take part only as a party", async () => {
@@ -1213,7 +1227,10 @@ describe("conflict of interest (PS-USR-009)", () => {
     expect(await outcomes(world, world.actors.lender)).toEqual({
       ...everyCaseOperation("conflict_of_interest"),
       "case.read": "ok",
+      "case.read_image": "ok",
       "case.write": "ok",
+      // A party never ends a mediation.
+      ...openerSteps("conflict"),
     });
   });
 
@@ -1355,7 +1372,13 @@ describe("privileged platform access stays closed (OD-0010)", () => {
           probes[operation.name]!({ ...world.ids, caseId }),
         ),
         operation.name,
-      ).toEqual({ refused: "stronger_authentication_required", fields: [] });
+      ).toEqual({
+        // What only the reporter does is refused before any steward access.
+        refused: openerOperations.includes(operation.name)
+          ? "forbidden"
+          : "stronger_authentication_required",
+        fields: [],
+      });
     }
 
     await expect(

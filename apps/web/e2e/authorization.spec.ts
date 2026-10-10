@@ -68,6 +68,7 @@ const fixedSegments: Record<string, string> = { part: "0" };
 /** The query each read route that names a resource gets, from the ids. */
 const probes: Record<string, (ids: Ids) => Record<string, string>> = {
   "cases/[caseId]": () => ({}),
+  "cases/[caseId]/images/[imageId]": () => ({}),
   "cases/[caseId]/measures": () => ({}),
   "cases/queue/environment": (ids) => ({ environmentId: ids.environmentId }),
   "chat/conversations/[conversationId]": () => ({}),
