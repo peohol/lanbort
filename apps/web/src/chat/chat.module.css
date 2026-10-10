@@ -235,7 +235,15 @@
   text-decoration: none;
 }
 
-.loanLink > span {
+/* In the place of a thing's picture when it has none (PS-OBJ-021). */
+.loanPicture {
+  flex: none;
+  width: 2.375rem;
+  height: 2.375rem;
+  border-radius: var(--radius-s);
+}
+
+.loanLink > span:not(.loanPicture) {
   display: grid;
   flex: 1;
   min-width: 0;

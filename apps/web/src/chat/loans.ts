@@ -1,3 +1,5 @@
+import type { ThingPicture } from "@lanbort/contracts";
+
 /**
  * A loan or an open request between the reader and someone they chat
  * with (PS-COM-017): the conversation links to it, and every agreement is
@@ -11,6 +13,8 @@ export interface ChatLoan {
   title: string;
   /** Its state in a few words, such as «Utlånt». */
   status: string;
+  /** The thing's first picture, read as a party (PS-OBJ-021). */
+  picture: ThingPicture | null;
 }
 
 /** The pending loans and requests per person, by their user id. */
