@@ -5,6 +5,7 @@ import { personLinkShape } from "./social";
 import {
   availabilityIntervalSchema,
   calendarDateSchema,
+  coOwnerInvitationIdSchema,
   multilineText,
   objectCategoryIdSchema,
   objectIdSchema,
@@ -413,10 +414,11 @@ export const loanImageQuerySchema = z.strictObject({
 export const loanReferenceSchema = loanReadQuerySchema;
 
 /**
- * PS-OBJ-021: the first picture of a loan's or request's thing where a list
- * names the thing, and the read it goes through: as a party of the loan
- * (`loan.read_image`) or the request (`loan_request.read_image`), or as one
- * of the thing's owners (`object.read_image`).
+ * PS-OBJ-021: the first picture of a thing where a list names it, and the
+ * read it goes through: as a party of the loan (`loan.read_image`) or the
+ * request (`loan_request.read_image`), as one of the thing's owners
+ * (`object.read_image`), or as invited to co-own it while the invitation is
+ * open (`object_invitation.read_image`).
  */
 export const thingPictureSchema = z.discriminatedUnion("through", [
   z.strictObject({
@@ -432,6 +434,11 @@ export const thingPictureSchema = z.discriminatedUnion("through", [
   z.strictObject({
     through: z.literal("owner"),
     objectId: objectIdSchema,
+    imageId: objectImageIdSchema,
+  }),
+  z.strictObject({
+    through: z.literal("object_invitation"),
+    invitationId: coOwnerInvitationIdSchema,
     imageId: objectImageIdSchema,
   }),
 ]);
