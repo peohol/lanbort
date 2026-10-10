@@ -59,6 +59,7 @@ import {
 } from "../objects/events";
 import {
   platformRoleGranted,
+  platformSubjectLookedUp,
   stewardEnrollmentCodeIssued,
   stewardPasskeyAdded,
   stewardPasskeyConfirmed,
@@ -117,6 +118,8 @@ export const restoreLosses: readonly EventDefinition<unknown>[] = [
   stewardPasskeyAdded,
   stewardPasskeyConfirmed,
   stewardEnrollmentCodeIssued,
+  // A steward's lookup changes nothing; only its audit record is lost.
+  platformSubjectLookedUp,
   accountReactivated,
   accountRetiredAsDuplicate,
   accountsLinkedAsSamePerson,

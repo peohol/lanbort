@@ -723,6 +723,10 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     basis: text,
   }),
   "case.read_interventions": (ids) => ({ caseId: ids.caseId }),
+  "platform.look_up_subject": (ids) => ({
+    by: "object",
+    objectId: ids.objectId,
+  }),
   "account.suspend": (ids) => ({
     caseId: ids.caseId,
     userId: ids.userId,

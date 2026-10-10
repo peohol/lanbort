@@ -333,7 +333,7 @@ const P = {
 const ic = (k, st = '') => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"${st ? ` style="${st}"` : ''}><path d="${P[k]}"></path>${k === 'target' ? '<circle cx="12" cy="12" r="3" fill="currentColor"></circle>' : ''}</svg>`;
 const tag = (cls, t) => `<span class="${cls}">${t}</span>`;
 /* OD-0023 og OD-0026 er avgjort og bygget på serveren, ikke i appen. OD-0021 og OD-0008 er åpne. */
-const DECIDED = ['0023', '0026'];
+const DECIDED = ['0023', '0026', '0055'];
 const OD = n => tag('od', DECIDED.includes(n) ? `VEDTATT, IKKE BYGGET · OD-${n}` : `VENTER PÅ OD-${n}`);
 const UK = t => tag('uk', `UAVKLART · ${t}`);
 const RED = '#C4122F', BLUE = '#2B4A8A', GREY = '#4F5967', GREEN = '#1F5E3A';
@@ -342,6 +342,7 @@ const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '
 const DECISIONS = [
   ['0023', 'Passkeys for plattformforvaltere', 'Minst to aktive passkeys, høyst ti. Den første med en engangs registreringskode som driftsansvarlig gir ansikt til ansikt eller på telefon, aldri på e-post. Flere bare fra en økt bekreftet med passkey de siste 10 minuttene. Den siste kan ikke fjernes. Mister forvalteren alle, tilbakestiller driftsansvarlig. Bygget på serveren og slått av i produksjon til det er verifisert der.'],
   ['0026', 'Plattforminngrep starter fra en sak', 'Inngrep mot kontoer og miljøroller gjøres fra en sak i plattformkøen som forvalteren har og ikke er involvert i, med begrunnelse, og føres i saken. Uten rapport åpner forvalteren eget saksgrunnlag først. Ingen inngrepsknapper på vanlige person- og miljøsider. Bygget på serveren.'],
+  ['0055', 'Finne kontoen eller tingen', 'Med hele e-postadressen eller lenken til personens eller tingens side, aldri med navnesøk. Oppslaget er tilgangsstyrt, og hvert oppslag loggføres, også når det ikke finner noe.'],
   ['0021', 'Utnevning og tilbakestilling i appen', 'Ikke avgjort. Til da utnevnes forvaltere, og tapte passkeys tilbakestilles, bare med driftskommandoen. Prototypen viser det som ikke tilgjengelig.'],
   ['0008', 'Uavhengig behandling når ingen forvalter er habil', 'Ikke avgjort (før bred lansering). Til da sier saken ærlig at ingen kan behandle den, uten en knapp videre.']
 ];
@@ -363,7 +364,7 @@ const THINGS = {
   kajakk:{ name:'Kajakk', owner:'per' }, henger:{ name:'Tilhenger', owner:'nora' }
 };
 const STATUS = { active:'aktiv', suspended:'suspendert', closing:'under kontrollert avslutning', deleted:'slettet' };
-/* Kontoene en forvalter kan velge som den andre kontoen (hvordan de finnes, er ikke bestemt). */
+/* Kontoene en forvalter kan velge som den andre kontoen, når oppslaget finner dem (OD-0055). */
 const CAND = { mdahl:'Aktiv konto · opprettet 6. okt.', siri:'Aktiv konto · opprettet i februar' };
 const ACC0 = () => ({
   mats:{ status:'active', since:'mars', ctx:`Medlem i ${ENV}`, roles:[], cands:['mdahl'], dupOf:null,
@@ -416,10 +417,13 @@ const PK_NOTE = {
 const PK_DETAIL = 'Var det ikke deg eller avtalt med deg, si fra til de andre plattformforvalterne med en gang.';
 
 /* ---------- Tilstand ---------- */
+const LOOK0 = () => ({ q:'', note:'' });
+/** The typed address that finds `ref`, as a preset shows it after «Finn». */
+const addressOf = ref => Object.keys(LOOK.acc).find(k => LOOK.acc[k] === ref && k.includes('@')) || '';
 const LIVE0 = () => ({
   stack:[], cur:{ v:'hjem' }, clock:9 * 60 + 5, confirmedAt:9 * 60 + 2, prod:false, anders:true,
   pks:PK0(), nextPk:3, acc:ACC0(), cases:CASES0(), blocked:{}, filter:'all', tab:'open', nInq:0,
-  flow:null, inq:null, setup:{ code:'', name:'', done:false }, addName:'', rep:{ env:true, to:'adm' },
+  flow:null, inq:null, look:{ q:'', note:'' }, setup:{ code:'', name:'', done:false }, addName:'', rep:{ env:true, to:'adm' },
   sheet:null, sys:null, pending:null, sysMsg:'', draft:{ entry:'', aud:'party', closing:'' },
   flash:'', flashMark:'', err:'', focus:null,
   log:{ nora:[{ t:'En sak venter på behandling', s:'Handlingsvarsel til forvalterne som kan ta den.', at:'07.50' }], oth:[] }
@@ -750,7 +754,7 @@ const targetCard = c => `<div class="cd" style="padding:12px 14px">${c.acc
   ? `<div class="row">${av(c.acc, 'xs')}<span class="f1"><span class="t2" style="display:block">${PEOPLE[c.acc].name}</span><span class="s2">Konto ${STATUS[S.acc[c.acc].status]} · fra «${c.title}»</span></span></div>`
   : thingRow(THINGS[c.thing].name, `Eies av ${PEOPLE[THINGS[c.thing].owner].name} · fra «${c.title}»`)}</div>`;
 function picker(F, x) {
-  if (F.need === 'cand') return `<span class="lbl">${F.needLabel}</span>${radios(F.needLabel, x.acc.cands.map(k => option(x.sel === k, PEOPLE[k].name, CAND[k], A('sel', k))))}<span class="hint">${F.candHint}</span>${UK('OD-0055 · hvordan forvalteren finner den andre kontoen')}`;
+  if (F.need === 'cand') return `<span class="hq">${F.needLabel}</span>${lookField('acc', 'cfind')}${x.sel ? radios(F.needLabel, [option(true, PEOPLE[x.sel].name, CAND[x.sel] || 'Aktiv konto')]) : ''}<span class="hint">${F.candHint}</span>`;
   if (F.need === 'env') return `<span class="lbl">${F.needLabel}</span>${radios(F.needLabel, x.acc.roles.map(r => option(x.sel === r.env, r.env, `${x.first} er ${r.role}`, A('sel', r.env))))}`;
   if (F.need === 'thing') return `<span class="lbl">${F.needLabel}</span>${radios(F.needLabel, x.acc.things.filter(t => !t.moved).map(t => option(x.sel === t.id, t.name, t.alone ? `${x.who} eier den alene` : `Eies også av ${t.with}. Andre medeiere bestemmer selv, så den kan ikke flyttes herfra.`, t.alone ? A('sel', t.id) : '', !t.alone)))}`;
   return '';
@@ -792,6 +796,27 @@ function doRun() {
 }
 
 /* ---------- Eget saksgrunnlag (PS-ADM-015) ---------- */
+/* OD-0055: what the steward already has, the full address or the link to the page. Never names. */
+const LOOK = {
+  acc:{ 'siri.h@eksempel.no':'sirih', 'xn--lnbort-iua.no/personer/siri-h':'sirih', 'lånbort.no/personer/siri-h':'sirih', 'siri.holm@eksempel.no':'siri', 'lånbort.no/personer/siri-holm':'siri',
+    'mats.dahl@eksempel.no':'mats', 'm.dahl@eksempel.no':'mdahl', 'lånbort.no/personer/m-dahl':'mdahl', 'nora.lunde@lanbort.no':'nora', 'lånbort.no/personer/nora-lunde':'nora' },
+  thing:{ 'lånbort.no/ting/kajakk':'kajakk', 'lånbort.no/ting/tilhenger':'henger' }
+};
+const LOOK_TEXT = {
+  acc:{ field:'Lenke eller e-postadresse', help:'Lim inn lenken til personens side, eller skriv hele e-postadressen. Det finnes ikke søk på navn, og hvert oppslag loggføres.',
+    unreadable:'Skriv hele e-postadressen, eller lim inn lenken til personens side.', none:'Fant ingen konto med den adressen eller lenken.' },
+  thing:{ field:'Lenke til tingen', help:'Lim inn lenken til tingens side. Det finnes ikke søk, og hvert oppslag loggføres.',
+    unreadable:'Lim inn lenken til tingens side.', none:'Fant ingen ting med den lenken.' }
+};
+/** The account or thing a typed address or link names, or why not. */
+function lookUp(type, typed) {
+  const q = typed.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '');
+  const readable = type === 'acc' ? (/^[^\s@/]+@[^\s@/]+\.[^\s@/]+$/.test(q) || q.includes('/personer/')) : q.includes('/ting/');
+  if (!readable) return { note:LOOK_TEXT[type].unreadable };
+  const ref = LOOK[type][q];
+  return ref ? { ref } : { note:LOOK_TEXT[type].none };
+}
+const lookField = (type, act) => `${inputF(LOOK_TEXT[type].field, S.look.q, ' data-draft="look" autocomplete="off" spellcheck="false" maxlength="2000"', LOOK_TEXT[type].help)}${b('bn', 'Finn', act, '', 'finn')}${S.look.note ? `<span class="hint" role="status">${S.look.note}</span>` : ''}`;
 const INQ_CANDS = {
   acc:[['sirih', 'Siri H.', 'Aktiv konto · opprettet 12. sep.'], ['mats', 'Mats Dahl', 'Aktiv konto · har allerede en åpen rapport'], ['nora', 'Nora Lunde (deg)', 'Du kan ikke åpne saksgrunnlag om din egen konto.', true]],
   thing:[['kajakk', 'Kajakk', 'Eies av Per Lien'], ['henger', 'Tilhenger (din)', 'Du kan ikke åpne saksgrunnlag om din egen ting.', true]]
@@ -804,7 +829,7 @@ function vInq() {
   let body;
   if (q.step === 1) {
     body = `<span class="hq now">Hva gjelder saksgrunnlaget?</span>${radios('Gjelder', [option(q.type === 'acc', 'En konto', 'For eksempel en mulig duplikatkonto eller falsk identitet.', A('itype', 'acc')), option(q.type === 'thing', 'En ting', 'For eksempel en ting som kan være farlig.', A('itype', 'thing'))])}
-${sec(q.type === 'acc' ? 'Hvilken konto' : 'Hvilken ting')}${UK('OD-0055 · hvordan forvalteren finner kontoen eller tingen')}${radios(q.type === 'acc' ? 'Hvilken konto' : 'Hvilken ting', INQ_CANDS[q.type].map(([k, t, s, dis]) => option(q.ref === k, t, s, dis ? '' : A('iref', k), !!dis)))}
+${sec(q.type === 'acc' ? 'Hvilken konto' : 'Hvilken ting')}${lookField(q.type, 'ifind')}${q.ref ? radios(q.type === 'acc' ? 'Funnet konto' : 'Funnet ting', INQ_CANDS[q.type].filter(([k]) => k === q.ref).map(([k, t, s, dis]) => option(!dis, t, s, '', !!dis))) : ''}
 ${err(S.err)}${b('btn', 'Neste: grunnlag', 'inext')}`;
   } else if (q.step === 2) {
     body = `<span class="hq now">Grunnlag</span>${field('Hvorfor åpner du saken?', esc(q.basis), 'Det du har sett eller fått vite, og hvor.', ' data-draft="ibasis" maxlength="2000"')}<span class="hint">Blir sakens første innlegg. Bare forvalterne som behandler, ser det.</span>${err(S.err)}${b('btn', 'Neste: se over', 'inext')}${b('bn', 'Tilbake', 'iprev')}`;
@@ -998,8 +1023,13 @@ const ACT = {
     c.closed = true; S.sheet = null; S.flash = 'Saken er lukket.';
   },
   pick:id => { S.flow = { id, step:1, fam:null, sel:null, basis:'', pk:false }; push('flow'); },
-  fam:k => { const F = FAM[k]; S.flow.fam = k; S.flow.step = 2; const x = ctx(); S.flow.sel = F.need === 'cand' && x.acc.cands.length === 1 ? x.acc.cands[0] : F.need === 'env' && x.acc.roles.length === 1 ? x.acc.roles[0].env : null; S.focus = 'top'; },
+  fam:k => { const F = FAM[k]; S.flow.fam = k; S.flow.step = 2; const x = ctx(); S.look = LOOK0(); S.flow.sel = F.need === 'env' && x.acc.roles.length === 1 ? x.acc.roles[0].env : null; S.focus = 'top'; },
   sel:v => { S.flow.sel = v; },
+  cfind:() => { const x = ctx(), r = lookUp('acc', S.look.q); S.flow.sel = null; S.look.note = r.note || '';
+    if (r.ref === 'nora') S.look.note = 'Du kan ikke velge din egen konto.';
+    else if (r.ref === x.key) S.look.note = 'Det er kontoen saken gjelder. Finn den andre kontoen.';
+    else if (r.ref && !x.acc.cands.includes(r.ref)) S.look.note = 'Den kontoen er ikke aktiv eller kan ikke brukes her.';
+    else if (r.ref) S.flow.sel = r.ref; },
   next:() => {
     const f = S.flow;
     if (f.step === 2 && FAM[f.fam].need && !f.sel) { S.err = 'Velg før du går videre.'; return; }
@@ -1031,13 +1061,13 @@ const ACT = {
   sysfail:() => { const m = S.sys.mode; S.sys = null; if (m === 'get') { S.sysMsg = 'Passkeyen ble ikke godtatt. Ingenting er endret. Prøv igjen, eller bruk en annen passkey.'; S.focus = 'dialog'; }
     else S.err = S.cur.v === 'setup' ? 'Passkeyen ble ikke laget. Ingenting er endret, og koden kan brukes igjen mens den gjelder.' : 'Passkeyen ble ikke laget. Ingenting er endret.'; },
   cancel:() => { S.sheet = null; S.pending = null; S.sysMsg = ''; S.focus = 'top'; },
-  inq:() => { S.inq = { step:1, type:'acc', ref:null, basis:'' }; push('inq'); },
-  itype:t => { S.inq.type = t; S.inq.ref = null; },
-  iref:r => { S.inq.ref = r; },
+  inq:() => { S.inq = { step:1, type:'acc', ref:null, basis:'' }; S.look = LOOK0(); push('inq'); },
+  itype:t => { S.inq.type = t; S.inq.ref = null; S.look = LOOK0(); },
+  ifind:() => { const r = lookUp(S.inq.type, S.look.q); S.inq.ref = r.ref || null; S.look.note = r.note || ''; },
   repto:k => { S.rep.to = k; },
   esc:() => { S.sheet = { k:'admmore' }; },
   escsheet:() => { if (!S.prod) S.sheet = { k:'esc' }; },
-  inext:() => { const q = S.inq; if (q.step === 1 && !q.ref) { S.err = 'Velg hva saken gjelder.'; return; } if (q.step === 2 && !q.basis.trim()) { S.err = 'Skriv grunnlaget for saken.'; return; } q.step += 1; S.focus = 'top'; },
+  inext:() => { const q = S.inq; if (q.step === 1 && (!q.ref || INQ_CANDS[q.type].some(([k, , , dis]) => k === q.ref && dis))) { S.err = 'Finn kontoen eller tingen saken gjelder.'; return; } if (q.step === 2 && !q.basis.trim()) { S.err = 'Skriv grunnlaget for saken.'; return; } q.step += 1; S.focus = 'top'; },
   iprev:() => { S.inq.step = Math.max(1, S.inq.step - 1); S.focus = 'top'; },
   iopen:() => { const q = S.inq; withPasskey(() => openInquiry(q.type, q.ref, q.basis.trim())); },
   mkfirst:() => {
@@ -1065,6 +1095,7 @@ function act(a, arg) {
   renderLive();
 }
 const DRAFTS = {
+  look:v => { S.look.q = v; },
   basis:v => { S.flow.basis = v; }, ibasis:v => { S.inq.basis = v; }, entry:v => { S.draft.entry = v; }, closing:v => { S.draft.closing = v; },
   code:v => { S.setup.code = v; }, name:v => { S.setup.name = v; }, addName:v => { S.addName = v; }
 };
@@ -1097,7 +1128,7 @@ const route = (...vs) => { S.stack = vs.slice(0, -1).map(([v, id]) => ({ v, id }
 const H = ['hjem'], HUB = ['hub'], Q = ['queue'];
 const stale = () => { S.clock = S.confirmedAt + 14; };
 const hold = id => { S.cases[id].assignee = 'nora'; };
-const flowAt = (id, fam, step, o = {}) => { hold(id); S.flow = { id, step, fam, sel:'sel' in o ? o.sel : null, basis:o.basis || '', pk:false }; route(H, HUB, Q, ['case', id], ['flow']); };
+const flowAt = (id, fam, step, o = {}) => { hold(id); S.flow = { id, step, fam, sel:'sel' in o ? o.sel : null, basis:o.basis || '', pk:false }; if (fam && FAM[fam].need === 'cand' && o.sel) S.look = { q:addressOf(o.sel), note:'' }; route(H, HUB, Q, ['case', id], ['flow']); };
 const take = (id, fam, o) => { hold(id); S.flow = { id, step:4, fam, sel:'sel' in o ? o.sel : null, basis:o.basis, pk:false }; doRun(); };
 const siriCase = () => { const id = openInquiry('acc', 'sirih', B.siriBasis); S.log.oth = []; return id; };
 const noPks = () => { S.pks = []; S.confirmedAt = null; S.log.nora.unshift({ t:PK_NOTE.enrollment_code, s:PK_DETAIL, at:'08.40', mail:true }); };
@@ -1110,7 +1141,7 @@ const GROUPS = [
   { h:'3 · En plattformsak som forvalter', s:'Samme sakside som i kjerneflyt 8: kortet sier hvem som har saken og hva som er neste steg. Nytt er «Inngrep»: inngrepene tatt fra saken, med hva, hvem det gjelder, begrunnelse, hvem som besluttet og når. Bare behandlerne ser listen. Bare den som har saken, gjør inngrep.' },
   { h:'4 · Inngrep: velg, konsekvenser, begrunnelse, bekreft', s:'Alle inngrep går gjennom de samme stegene, fra saken. Konsekvensene står i vanlige ord før begrunnelsen. Er bekreftelsen eldre enn 10 minutter når du trykker, kommer passkeyen inn som eget steg, og begrunnelsen er tatt vare på.' },
   { h:'5 · De andre inngrepene', s:'Én flyt per familie, med de samme stegene. Her vises steget med konsekvensene, og det som ikke kan gjøres nå, med grunnen.' },
-  { h:'6 · Åpne saksgrunnlag', s:'Når et inngrep ikke starter fra en rapport, åpner forvalteren først en sak om en konto eller en ting. Grunnlaget blir sakens første innlegg, bare for behandlerne. Forvalteren har saken med en gang, og den det gjelder, ser den aldri.' },
+  { h:'6 · Åpne saksgrunnlag', s:'Når et inngrep ikke starter fra en rapport, åpner forvalteren først en sak om en konto eller en ting. Den finnes på hele e-postadressen eller lenken til siden, aldri på navn, og hvert oppslag loggføres (OD-0055). Grunnlaget blir sakens første innlegg, bare for behandlerne. Forvalteren har saken med en gang, og den det gjelder, ser den aldri.' },
   { h:'7 · Inhabil og ingen habil forvalter', s:'Den som er involvert, ser saken bare som part, aldri i køen. Erklærer en forvalter seg inhabil, går saken tilbake til de andre. Finnes ingen habil forvalter, sier saken det rett ut, uten en knapp videre.' },
   { h:'8 · Passkeys', s:'Forvalterrollen virker med minst to passkeys, høyst ti. Den første legges til med registreringskoden fra driftsansvarlig, den neste fra en økt som nettopp er bekreftet med passkey. Navnet gis når passkeyen lages. Listen har ingen omdøping, og den siste kan ikke fjernes.' },
   { h:'9 · Produksjon før verifisering', s:'Til passkeys er prøvd og verifisert på det faste domenet, er forvaltningen slått av i produksjon. Forvalteren ser appen som alle andre: Hjem viser ikke «For Lånbort», og Forvaltning, plattformkøen og passkeys finnes ikke. Rapport til Lånbort og «Send videre til Lånbort» står som «Ikke tilgjengelig ennå», som i kjerneflyt 8.' },
@@ -1140,13 +1171,15 @@ const PRESETS = [
   { g:4, k:'f-closure', l:'Starte kontrollert avslutning', set:() => flowAt('mats', 'closure', 2), cap:'Ny aktivitet stanser, og det som pågår, fullføres før avslutningen kan fullføres.' },
   { g:4, k:'f-complete-blocked', l:'Fullføre, men noe binder ennå', set:() => { take('mats', 'closure', { basis:B.closure }); flowAt('mats', null, 1); }, cap:'«Fullfør avslutningen» finnes, men er stengt så lenge noe binder kontoen, og raden sier hva.' },
   { g:4, k:'f-complete', l:'Fullføre avslutningen', set:() => { const id = siriCase(); take(id, 'dup', { sel:'siri', basis:B.siri }); take(id, 'move', { sel:'drill', basis:B.move }); flowAt(id, 'complete', 2); }, cap:'Ingenting binder Siri H. lenger. Det som slettes og det som består, står før knappen.' },
-  { g:4, k:'f-dup', l:'Avvikle som duplikat', set:() => { const id = siriCase(); flowAt(id, 'dup', 2, { sel:'siri' }); }, cap:'To kontoer slås aldri sammen (PS-ADM-009). Den andre kontoen må være aktiv. Hvordan forvalteren finner den, er ikke bestemt.' },
+  { g:4, k:'f-dup', l:'Avvikle som duplikat', set:() => { const id = siriCase(); flowAt(id, 'dup', 2, { sel:'siri' }); }, cap:'To kontoer slås aldri sammen (PS-ADM-009). Den andre kontoen må være aktiv, og forvalteren finner den på hele e-postadressen eller lenken til siden (OD-0055).' },
   { g:4, k:'f-move', l:'Flytte en ting fra duplikatet', set:() => { const id = siriCase(); take(id, 'dup', { sel:'siri', basis:B.siri }); flowAt(id, 'move', 2, { sel:'drill' }); }, cap:'Bare ting duplikatet eier alene. Teltet eies også av Per Lien, så det kan ikke flyttes herfra.' },
   { g:4, k:'f-link', l:'Koble som samme person', set:() => flowAt('mats', 'link', 2, { sel:'mdahl' }), cap:'Bare en sikkerhetsoppføring. Ingen av kontoene endres, og ingen ser koblingen.' },
   { g:4, k:'f-false', l:'Registrere falsk identitet', set:() => flowAt('mats', 'falseid', 2), cap:'Et internt signal som ikke endrer noe av seg selv (PS-ADM-010).' },
   { g:4, k:'f-roles', l:'Avslutte roller i et miljø', set:() => flowAt('ola', 'roles', 2, { sel:ENV2 }), cap:'Eierplassen går videre etter PS-ENV-013. Ingen får den fra forvalteren, og medlemmene ser bare resultatet.' },
   { g:4, k:'f-block', l:'Sperre en ting overalt', set:() => { hold('gass'); flowAt('gass', 'block', 2); }, cap:'Modereringstiltaket som allerede finnes. Her får eieren begrunnelsen (PS-TRUST-018), og det står på begrunnelsessteget.' },
-  { g:5, k:'inq-1', l:'Hva gjelder saken', set:() => { route(H, HUB, ['inq']); S.inq = { step:1, type:'acc', ref:'sirih', basis:'' }; }, cap:'Konto eller ting. Egen konto og egne ting kan ikke velges. Hvordan forvalteren finner dem, er ikke bestemt.' },
+  { g:5, k:'inq-1', l:'Hva gjelder saken', set:() => { route(H, HUB, ['inq']); S.inq = { step:1, type:'acc', ref:'sirih', basis:'' }; S.look = { q:'siri.h@eksempel.no', note:'' }; }, cap:'Konto eller ting, funnet på hele e-postadressen eller lenken til siden, aldri på navn (OD-0055). Hvert oppslag loggføres, også når det ikke finner noe.' },
+  { g:5, k:'inq-1-none', l:'Bare navn finner ingenting', set:() => { route(H, HUB, ['inq']); S.inq = { step:1, type:'acc', ref:null, basis:'' }; S.look = { q:'Siri Holm', note:LOOK_TEXT.acc.unreadable }; }, cap:'Det finnes ikke søk. Et navn, en del av en adresse eller en ukjent adresse finner ingenting.' },
+  { g:5, k:'inq-1-own', l:'Egen konto', set:() => { route(H, HUB, ['inq']); S.inq = { step:1, type:'acc', ref:'nora', basis:'' }; S.look = { q:'nora.lunde@lanbort.no', note:'' }; }, cap:'Den finnes, men kan ikke velges. Det samme gjelder egne ting.' },
   { g:5, k:'inq-2', l:'Grunnlag', set:() => { route(H, HUB, ['inq']); S.inq = { step:2, type:'acc', ref:'sirih', basis:B.siriBasis }; }, cap:'Grunnlaget blir første innlegg, bare for behandlerne.' },
   { g:5, k:'inq-3', l:'Bekreft', set:() => { route(H, HUB, ['inq']); S.inq = { step:3, type:'acc', ref:'sirih', basis:B.siriBasis }; }, cap:'Konsekvensene før knappen. Etterpå åpnes saken, og forvalteren har den.' },
   { g:6, k:'own', l:'Egen rapport: inhabil', set:() => route(H, ['own']), cap:'Nora rapporterte stigen som vanlig bruker. Ingen rollestripe og ingen behandlingshandlinger. Saken står ikke i køen hennes.' },

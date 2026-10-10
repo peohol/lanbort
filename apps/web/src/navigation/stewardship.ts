@@ -1,7 +1,11 @@
-import type { CaseKind } from "@lanbort/contracts";
+import {
+  type CaseKind,
+  type PlatformLookup,
+  platformLookupSchema,
+} from "@lanbort/contracts";
 import type { InterventionFlowKey } from "@/presentation/interventions";
 import type { SearchParams } from "./list-pages";
-import { caseHref } from "./routes";
+import { caseHref, objectHref, personHref } from "./routes";
 
 /**
  * The platform stewards' pages (PS-ADM-015, ADR-0011, «Plattformforvaltning
@@ -13,6 +17,9 @@ export const stewardshipHref = "/forvaltning";
 export const passkeysHref = `${stewardshipHref}/passkeys`;
 
 export const newPasskeyHref = `${passkeysHref}/ny`;
+
+/** A steward's own inquiry, where no report came in (PS-ADM-015). */
+export const inquiryHref = `${stewardshipHref}/saksgrunnlag`;
 
 /** The platform queue's own address, without its filters. */
 export const platformQueuePath = `${stewardshipHref}/ko`;
@@ -90,3 +97,43 @@ export const interventionBySlug = (slug: string) =>
   (Object.entries(interventionSlugs) as [InterventionFlowKey, string][]).find(
     ([, each]) => each === slug,
   )?.[0] ?? null;
+
+/** The id in a link to a page `href` makes, or null. */
+function idInLink(link: string, href: (id: string) => string): string | null {
+  const marker = "~";
+  const prefix = href(marker).split(marker)[0]!;
+  let path: string;
+
+  try {
+    path = new URL(link, "http://localhost").pathname;
+  } catch {
+    return null;
+  }
+
+  return path.startsWith(prefix)
+    ? (path.slice(prefix.length).split("/")[0] ?? null)
+    : null;
+}
+
+/**
+ * What a steward typed to find an account or a thing (OD-0055), as its
+ * lookup: the full e-mail address, or the link to the person's or the
+ * thing's page, read from its address. Null for anything else, since there
+ * is no search.
+ */
+export function lookupOf(
+  kind: "user" | "object",
+  text: string,
+): PlatformLookup | null {
+  const value = text.trim();
+  const id = idInLink(value, kind === "user" ? personHref : objectHref);
+  const lookup =
+    kind === "object"
+      ? { by: "object", objectId: id }
+      : value.includes("@") && !value.includes("/")
+        ? { by: "email", email: value }
+        : { by: "person", userId: id };
+  const parsed = platformLookupSchema.safeParse(lookup);
+
+  return parsed.success ? parsed.data : null;
+}

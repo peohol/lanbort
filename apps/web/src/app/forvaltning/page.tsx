@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { MenuList, MenuRow } from "@/components/menu-list";
 import { PageHeader } from "@/components/page-header";
 import { Tag } from "@/components/tag";
-import { passkeysHref, platformQueueHref } from "@/navigation/stewardship";
+import {
+  inquiryHref,
+  passkeysHref,
+  platformQueueHref,
+} from "@/navigation/stewardship";
 import {
   passkeyCountText,
   queueCounts,
@@ -61,6 +65,16 @@ export default async function StewardshipPage() {
       <section aria-labelledby="forvaltning">
         <h2 id="forvaltning">Forvaltning</h2>
         <MenuList label="forvaltning">
+          <MenuRow
+            href={counts ? inquiryHref : undefined}
+            icon="edit"
+            label="Åpne saksgrunnlag"
+            detail={
+              counts
+                ? "Når et inngrep ikke starter fra en rapport"
+                : queueLockedText[standing as keyof typeof queueLockedText]
+            }
+          />
           <MenuRow
             href={passkeysHref}
             icon="lock"

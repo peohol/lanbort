@@ -1,4 +1,4 @@
-import { platformRoleSchema } from "@lanbort/contracts";
+import { platformLookupBySchema, platformRoleSchema } from "@lanbort/contracts";
 import { z } from "zod";
 import { defineEvent } from "../events/catalog";
 
@@ -66,5 +66,21 @@ export const stewardEnrollmentCodeIssued = defineEvent({
   payload: z.strictObject({
     codeId: z.uuid(),
     removedPasskeys: z.number().int().min(0),
+  }),
+});
+
+/**
+ * A steward looked up an account or a thing (OD-0055), found or not: how,
+ * and whether it was found. The resource is what was found, or `none`;
+ * never the address or anything typed.
+ */
+export const platformSubjectLookedUp = defineEvent({
+  type: "platform.subject_looked_up",
+  version: 1,
+  kind: "audit",
+  resourceType: "platform_lookup",
+  payload: z.strictObject({
+    by: platformLookupBySchema,
+    found: z.boolean(),
   }),
 });

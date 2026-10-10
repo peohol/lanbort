@@ -11,6 +11,7 @@ import {
   finishPasskeyRegistrationPolicy,
   issueEnrollmentCodePolicy,
   listOwnPasskeysPolicy,
+  lookUpPlatformSubjectPolicy,
   removePasskeyPolicy,
   resetStewardPasskeysPolicy,
   type StewardTarget,
@@ -439,6 +440,35 @@ function interventionMatrices() {
       ...notSteward.map((row) => ({
         ...row,
         resource: user("active"),
+        context: undefined,
+      })),
+    ]),
+    policyMatrix(lookUpPlatformSubjectPolicy, [
+      {
+        name: "a confirmed steward looks up an account",
+        actor: steward,
+        resource: {
+          found: {
+            kind: "user",
+            userId: someone,
+            name: null,
+            status: "active",
+            involved: false,
+          },
+        },
+        context: undefined,
+        expected: "allow",
+      },
+      {
+        name: "and is told when nothing was found",
+        actor: steward,
+        resource: { found: null },
+        context: undefined,
+        expected: "allow",
+      },
+      ...notSteward.map((row) => ({
+        ...row,
+        resource: { found: null },
         context: undefined,
       })),
     ]),
