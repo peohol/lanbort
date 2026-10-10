@@ -22,6 +22,7 @@ import { inviteCoOwner } from "../objects/co-owners";
 import { publishObject, setObjectApproval } from "../publications/commands";
 import { submitLoanReview } from "../reviews/commands";
 import { sendFriendRequest } from "../social/commands";
+import { acquaint } from "../testing/acquaintance";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
 import { listEnvironmentAdministrationTasks, readHome } from "./queries";
@@ -286,6 +287,7 @@ describe("environments on Home", () => {
     const admin = await user();
     const environmentId = await environment(admin, { type: "hidden" });
     const invitee = await user();
+    await acquaint(db, admin, invitee);
     await run(inviteMember, admin, {
       environmentId,
       userId: invitee.userId,

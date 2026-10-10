@@ -11,6 +11,7 @@ import {
 import sharp from "sharp";
 import {
   accountId,
+  befriend,
   chatAccount,
   postCommand,
   registerThroughApi,
@@ -77,6 +78,7 @@ const probes: Record<string, (ids: Ids) => Record<string, string>> = {
   "chat/archives/[archiveId]/parts/[part]": () => ({}),
   "environments/details": (ids) => ({ environmentId: ids.environmentId }),
   "environments/memberships": (ids) => ({ environmentId: ids.environmentId }),
+  "environments/memberships/invitable": (ids) => ({ userId: ids.userId }),
   "environments/members": (ids) => ({ environmentId: ids.environmentId }),
   "environments/roles": (ids) => ({ environmentId: ids.environmentId }),
   "environments/publications": (ids) => ({ environmentId: ids.environmentId }),
@@ -225,6 +227,7 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
     await person(),
   ];
   for (const { context, userId } of [lender, borrower, member]) {
+    await befriend(request, context);
     await postCommand(request, "/api/environments/memberships/invite", {
       environmentId,
       userId,

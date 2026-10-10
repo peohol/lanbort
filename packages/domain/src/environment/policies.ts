@@ -10,6 +10,8 @@ import {
   requireRecentAuthentication,
   requireSystemProcess,
 } from "../authorization/rules";
+import { personVisibleToActor } from "../people/policies";
+import type { PersonRelation } from "../people/store";
 import type { RoleInvitationRecord } from "./continuity-store";
 import type {
   EnvironmentAccess,
@@ -158,6 +160,20 @@ export const inviteMemberPolicy = definePolicy<EnvironmentAccess, void>({
   action: "environment_membership.invite",
   actor: [requireActiveAccount],
   resource: [...administration],
+});
+
+/**
+ * PS-ENV-018: where the caller may invite a person, asked only about
+ * someone they may see in Lånbort; to anyone else the person does not
+ * exist. Each environment is then the invitation's own policy.
+ */
+export const listInvitableEnvironmentsPolicy = definePolicy<
+  PersonRelation,
+  void
+>({
+  action: "environment_membership.list_invitable",
+  actor: [requireActiveAccount],
+  resource: [personVisibleToActor],
 });
 
 export const liftRestrictionPolicy = definePolicy<EnvironmentAccess, void>({
@@ -418,6 +434,7 @@ export const environmentPolicies = [
   listMembershipsPolicy,
   listMembersPolicy,
   inviteMemberPolicy,
+  listInvitableEnvironmentsPolicy,
   liftRestrictionPolicy,
   liftConcealedRestrictionsPolicy,
   approveMembershipPolicy,

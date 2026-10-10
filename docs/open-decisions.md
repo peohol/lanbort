@@ -184,7 +184,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0051 — Hvem administratorene kan invitere
 - **Lag:** Produktspesifikasjon
 - **Status:** Avklart (produkteier, 10. oktober 2026)
-- **Beslutning:** Se [PS-ENV-018](product-spec/02-miljoer.md). Venner og andre eksisterende brukere administratoren lovlig kan se, også fra personens side; ingen oppslag på e-post eller navn som røper konto eller skjulte miljøer. Ikke bygget; til da inviteres bare venner.
+- **Beslutning:** Se [PS-ENV-018](product-spec/02-miljoer.md). Venner og andre eksisterende brukere administratoren lovlig kan se, også fra personens side; ingen oppslag på e-post eller navn som røper konto eller skjulte miljøer. Bygget: «Inviter til …» på personens side.
 
 ### OD-0052 — Hva søkeren får når administratorene ber om mer informasjon
 - **Lag:** Produktspesifikasjon

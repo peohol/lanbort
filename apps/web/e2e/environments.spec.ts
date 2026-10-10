@@ -5,7 +5,7 @@ import {
   type PlaywrightWorkerArgs,
   test,
 } from "@playwright/test";
-import { registerThroughApi } from "./helpers";
+import { befriend, registerThroughApi } from "./helpers";
 
 /** WP-21 over HTTP: environments, membership flows and hidden environments. */
 
@@ -120,6 +120,8 @@ test("a hidden environment does not exist for anyone it has not invited", async 
   ).toEqual([]);
 
   // After an account-bound invitation the invited user sees and accepts it.
+  // An administrator invites only someone they may see (PS-ENV-018).
+  await befriend(request, outsider.context);
   await post(request, "/memberships/invite", {
     environmentId,
     userId: outsider.userId,

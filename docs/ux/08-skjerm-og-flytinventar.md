@@ -211,8 +211,8 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 
 - **Oppgave:** forstå hvem en person er i en konkret situasjon, og styre relasjonen.
 - **Tilstander:** venn; ikke venn; ikke venn, og forespørsel kan ikke sendes nå (etter avslag, vist nøytralt); venneforespørsel sendt eller mottatt; blokkert av deg; tillitsprofil per rolle med datagrunnlag og usikkerhet; få anmeldelser; tingene personen har gjort synlige for venner; ingen side for slettede eller blokkerende brukere.
-- **Ser / handler:** den som har legitim tilgang (venner, felles miljø, part i lån). Handlinger etter relasjon: send, trekk, godta eller avslå forespørsel, fjern venn, blokker og opphev blokkering.
-- **Regler:** UX-IA-010, UX-IA-019, UX-P15, UX-PRIV-007, UX-PRIV-010, UX-PRIV-012, PS-USR-002–007, PS-USR-011, PS-USR-012, PS-TRUST-006, PS-TRUST-007, PS-TRUST-010, PS-TRUST-011, PS-TRUST-017.
+- **Ser / handler:** den som har legitim tilgang (venner, felles miljø, part i lån). Handlinger etter relasjon: send, trekk, godta eller avslå forespørsel, fjern venn, blokker og opphev blokkering. En administrator kan invitere personen til lukkede og skjulte miljøer vedkommende administrerer og som kan ta imot personen nå (PS-ENV-018).
+- **Regler:** UX-IA-010, UX-IA-019, UX-P15, UX-PRIV-007, UX-PRIV-010, UX-PRIV-012, PS-USR-002–007, PS-USR-011, PS-USR-012, PS-TRUST-006, PS-TRUST-007, PS-TRUST-010, PS-TRUST-011, PS-TRUST-017, PS-ENV-018.
 - **Forløp:** normal.
 - **UI-pakke:** WP-86; venners ting i WP-27.
 
@@ -634,5 +634,4 @@ Til disse er bygget, gjør appen det som står i siste kolonne. Prototypen for f
 
 | Regel      | Flater                                                    | Til den er bygget                                                  |
 | ---------- | --------------------------------------------------------- | ------------------------------------------------------------------ |
-| PS-ENV-018 | Innmeldinger og invitasjoner, personens side              | Administratorene inviterer bare egne venner                        |
 | PS-ADM-015 | Inngrep på kontoer, inngrep i et miljø                    | Ingen flate (også stengt til OD-0023)                              |

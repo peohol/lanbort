@@ -9,6 +9,7 @@ import {
 } from "../commands/command";
 import { executeQuery } from "../commands/query";
 import { ConsumerRegistry } from "../outbox/consumer";
+import { acquaint } from "../testing/acquaintance";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
 import { acceptFriendRequest, sendFriendRequest } from "../social/commands";
@@ -140,6 +141,7 @@ async function member(environmentId: string, owner: UserActor) {
   if (type === "open") {
     await output(joinEnvironment, actor, { environmentId, answers: [] });
   } else {
+    await acquaint(db, owner, actor);
     await output(inviteMember, owner, { environmentId, userId: actor.userId });
     await output(acceptInvitation, actor, { environmentId, answers: [] });
   }
@@ -249,6 +251,7 @@ describe("stricter types (PS-ENV-007)", () => {
     const applicant = await user();
     await output(joinEnvironment, applicant, { environmentId, answers: [] });
     const invited = await user();
+    await acquaint(db, owner, invited);
     await output(inviteMember, owner, {
       environmentId,
       userId: invited.userId,
@@ -276,6 +279,7 @@ describe("stricter types (PS-ENV-007)", () => {
     expect(await history(environmentId)).toEqual(["open", "closed", "hidden"]);
 
     // The former applicant can only come in through a new invitation.
+    await acquaint(db, owner, applicant);
     await output(inviteMember, owner, {
       environmentId,
       userId: applicant.userId,
@@ -630,11 +634,13 @@ describe("hidden invitations (PS-ENV-010)", () => {
     ).rejects.toMatchObject({ code: "not_found" });
 
     for (const invitee of [kept, withdrawn]) {
+      await acquaint(db, sender, invitee);
       await output(inviteMember, sender, {
         environmentId,
         userId: invitee.userId,
       });
     }
+    await acquaint(db, departing, afterDeparture);
     await output(inviteMember, departing, {
       environmentId,
       userId: afterDeparture.userId,
@@ -851,6 +857,7 @@ describe("historical privacy (PS-ENV-009)", () => {
       }),
     ).rejects.toMatchObject({ code: "forbidden" });
     // Those who were there are told to lift it before inviting.
+    await acquaint(db, barred.owner, barred.applicant);
     await expect(
       run(inviteMember, barred.owner, {
         environmentId: barred.environmentId,

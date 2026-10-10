@@ -105,7 +105,7 @@ Den som har søkt om å bli medlem, eller om å bli aktiv igjen som passivt medl
 ### PS-ENV-018 — Administratorene inviterer bare dem de allerede kan se
 **Forankring:** VP-08; [Invitasjoner og tips](../vision/03-miljoer.md); PS-ENV-010, PS-NFR-002
 
-En administrator kan invitere sine venner og andre eksisterende brukere som administratoren lovlig kan se i Lånbort, fra vennelisten og fra personens side. Det finnes ikke noe oppslag på e-postadresse eller navn, og ingenting i invitasjonen kan røpe om en adresse eller et navn har en konto, eller at et skjult miljø finnes. Ikke bygget ennå: til det er bygget, kan bare administratorens venner inviteres. (Produkteier, 10. oktober 2026, OD-0051.)
+En administrator kan invitere sine venner og andre eksisterende brukere som administratoren lovlig kan se i Lånbort, fra vennelisten og fra personens side. Det finnes ikke noe oppslag på e-postadresse eller navn, og ingenting i invitasjonen kan røpe om en adresse eller et navn har en konto, eller at et skjult miljø finnes. (Produkteier, 10. oktober 2026, OD-0051.)
 
 ### PS-ENV-019 — Ett valgfritt spørsmål når administratorene ber om mer informasjon
 **Forankring:** [Krav ved innmelding](../vision/03-miljoer.md); PS-ENV-004, UX-PRIV-009

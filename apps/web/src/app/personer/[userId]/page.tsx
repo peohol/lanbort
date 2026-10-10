@@ -2,6 +2,7 @@ import {
   calendarDate,
   collectPages,
   listFriendObjects,
+  listInvitableEnvironments,
   listLoans,
   readPerson,
   readTrustProfile,
@@ -26,6 +27,7 @@ import {
   requirePageAccount,
 } from "@/server/session";
 import { Between, FriendThings } from "./between";
+import { InviteTo } from "./invite";
 import styles from "./person.module.css";
 import { PersonMoreActions, RelationCard } from "./relation";
 import { roleIn } from "./role";
@@ -91,8 +93,9 @@ function header(person: Person) {
 /**
  * A person (WP-86, kjerneflyt 6): who they are, why the reader sees them,
  * where the reader stands with them and the next step, what is between
- * them now, what others said about them in each role (PS-TRUST-006–007)
- * and, for a friend, the things they show friends. Someone the reader may
+ * them now, where the reader may invite them (PS-ENV-018), what others
+ * said about them in each role (PS-TRUST-006–007) and, for a friend, the
+ * things they show friends. Someone the reader may
  * not see shows the same «not found» as someone who does not exist
  * (PS-USR-006, UX-PRIV-007). There are no activity figures (PS-TRUST-017).
  */
@@ -106,13 +109,16 @@ export default async function PersonPage({
   await requirePageAccount();
   const [{ userId }, query] = await Promise.all([params, searchParams]);
   const person = await pageQueryOrNotFound(readPerson, { userId });
-  const [loans, trust, things, contact] = await Promise.all([
+  const [loans, trust, things, contact, invitable] = await Promise.all([
     person.relation
       ? pageQuery(listLoans, { state: "current", counterpartId: userId })
       : null,
     person.trustProfile ? pageQuery(readTrustProfile, { userId }) : null,
     friendThingsOf(person, query),
     chatContactLink(userId),
+    person.relation && !person.relation.blockedByMe
+      ? pageQuery(listInvitableEnvironments, { userId })
+      : null,
   ]);
   const why = whyVisible(person);
   const { picture, context } = header(person);
@@ -134,6 +140,13 @@ export default async function PersonPage({
       )}
       <RelationCard person={person} writeHref={contact?.href ?? null} />
       {loans && <Between loans={loans} />}
+      {invitable && (
+        <InviteTo
+          userId={userId}
+          name={person.realName}
+          environments={invitable.environments}
+        />
+      )}
       <div className={styles.aside}>
         {trust ? (
           <TrustSummary userId={userId} profile={trust} role={roleIn(query)} />

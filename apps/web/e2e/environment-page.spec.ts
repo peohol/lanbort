@@ -1,6 +1,7 @@
 import { type Browser, expect, type Page, test } from "@playwright/test";
 import {
   accountId,
+  befriend,
   axeViolations,
   collectBrowserProblems,
   postCommand,
@@ -350,6 +351,7 @@ test("an invitation to a hidden environment is accepted on its page, and members
   const unknown = await outsider.page.goto(`/miljoer/${environmentId}`);
   expect(unknown?.status()).toBe(404);
 
+  await befriend(page.request, bo.context.request);
   await postCommand(page.request, "/api/environments/memberships/invite", {
     environmentId,
     userId: bo.id,

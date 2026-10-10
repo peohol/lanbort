@@ -30,6 +30,7 @@ import { ConsumerRegistry } from "../outbox/consumer";
 import { processOutboxBatch } from "../outbox/worker";
 import { publishObject, withdrawPublication } from "../publications/commands";
 import { blockUser } from "../social/commands";
+import { acquaint } from "../testing/acquaintance";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
 import { reconcileSearchIndex, searchIndexer } from "./indexer";
@@ -102,6 +103,7 @@ async function join(environmentId: string, admin: UserActor, actor: UserActor) {
   if (type === "open") {
     await run(joinEnvironment, actor, { environmentId, answers: [] });
   } else {
+    await acquaint(db, admin, actor);
     await run(inviteMember, admin, { environmentId, userId: actor.userId });
     await run(acceptInvitation, actor, { environmentId, answers: [] });
   }
@@ -223,6 +225,7 @@ describe("Finn: objects (WP-61, ADR-0005)", () => {
     expect(await found(outsider, { q: name })).toEqual([]);
 
     const applicant = await user();
+    await acquaint(db, admin, applicant);
     await run(inviteMember, admin, {
       environmentId,
       userId: applicant.userId,

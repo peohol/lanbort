@@ -53,6 +53,7 @@ import {
 } from "../objects/restrictions";
 import { ConsumerRegistry } from "../outbox/consumer";
 import { blockUser, liftUserBlock } from "../social/commands";
+import { acquaint } from "../testing/acquaintance";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
 import {
@@ -175,6 +176,7 @@ async function join(environmentId: string, admin: UserActor, actor: UserActor) {
   if (type === "open") {
     await run(joinEnvironment, actor, { environmentId, answers: [] });
   } else {
+    await acquaint(db, admin, actor);
     await run(inviteMember, admin, { environmentId, userId: actor.userId });
     await run(acceptInvitation, actor, { environmentId, answers: [] });
   }

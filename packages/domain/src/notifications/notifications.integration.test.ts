@@ -34,6 +34,7 @@ import { inviteCoOwner, withdrawCoOwnerInvitation } from "../objects/co-owners";
 import { updateObject } from "../objects/commands";
 import { ConsumerRegistry, type StoredEvent } from "../outbox/consumer";
 import { acceptFriendRequest, sendFriendRequest } from "../social/commands";
+import { acquaint } from "../testing/acquaintance";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
 import { deliverAll } from "../testing/outbox";
@@ -738,6 +739,7 @@ describe("environments and co-ownership", () => {
     const invited = await user();
     const stranger = await user();
 
+    await acquaint(db, admin, invited);
     await run(inviteMember, admin, {
       environmentId: hidden,
       userId: invited.userId,
@@ -870,6 +872,7 @@ describe("environments and co-ownership", () => {
     const admin = await user();
     const hidden = await environment(admin, { type: "hidden" });
     const invited = await user();
+    await acquaint(db, admin, invited);
     const { membershipId } = await run(inviteMember, admin, {
       environmentId: hidden,
       userId: invited.userId,
