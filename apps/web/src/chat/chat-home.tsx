@@ -281,10 +281,27 @@ function ConversationList({
     ? friends.filter((f) => !talkingTo.has(f.userId))
     : [];
 
+  // Opened to write to someone they already talk with: their conversation.
+  const router = useRouter();
+  const existing = invitation
+    ? conversations?.find(
+        (c) =>
+          c.kind === "private" &&
+          c.others.some((o) => o.userId === invitation.userId),
+      )?.conversationId
+    : undefined;
+  useEffect(() => {
+    if (existing) router.replace(chatConversationHref(existing));
+  }, [existing, router]);
+  const invited = invitation && {
+    ...invitation,
+    ...friends.find((f) => f.userId === invitation.userId),
+  };
+
   return (
     <>
       <StartNote />
-      {invitation && conversations && !talkingTo.has(invitation.userId) && (
+      {invited && conversations && !talkingTo.has(invited.userId) && (
         <section
           aria-labelledby="ny-samtale"
           className={`card ${styles.stack}`}
@@ -292,13 +309,13 @@ function ConversationList({
           <h2 id="ny-samtale">Ny samtale</h2>
           <p>
             Vil du starte en privat samtale med{" "}
-            {invitation.realName ?? "den som kontaktet deg"}? Å åpne samtalen
-            svarer ikke på henvendelsen.
+            {invited.realName ?? "den som kontaktet deg"}?
+            {invited.context && " Å åpne samtalen svarer ikke på henvendelsen."}
           </p>
           <StartButton
             engine={engine}
-            person={invitation}
-            context={invitation.context}
+            person={invited}
+            context={invited.context}
             label="Start samtalen"
           />
         </section>

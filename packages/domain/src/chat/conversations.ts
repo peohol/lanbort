@@ -3,6 +3,7 @@ import {
   type ChatContext,
   chatAcknowledgedSchema,
   chatClaimedKeyPackagesSchema,
+  chatContactSchema,
   chatCommitAcceptedSchema,
   chatConversationListSchema,
   chatConversationStartedSchema,
@@ -46,6 +47,7 @@ import {
   hideChatConversationPolicy,
   listChatConversationsPolicy,
   muteChatConversationPolicy,
+  readChatContactPolicy,
   readChatConversationPolicy,
   readChatDirectoryPolicy,
   readChatInboxPolicy,
@@ -93,7 +95,7 @@ const orderedPair = (a: string, b: string): [string, string] =>
  *   there, and the other asked it.
  */
 async function invitedByContext(
-  tx: Tx,
+  tx: Db,
   callerId: string,
   otherId: string,
   context: ChatContext | undefined,
@@ -153,6 +155,50 @@ async function existingConversation(
 }
 
 /**
+ * How the caller relates to someone they want to write to: whether they
+ * are reachable, may write by friendship or an existing conversation, or
+ * received the structured contact `context` names; and the conversation
+ * they already have. Null for the caller themselves or no one.
+ */
+async function contactWith(
+  db: Db,
+  callerId: string,
+  input: z.infer<typeof startChatConversationSchema>,
+  now: Date,
+) {
+  if (input.userId === callerId) {
+    return null;
+  }
+
+  const pair = await loadPair(db, callerId, input.userId);
+
+  if (!pair) {
+    return null;
+  }
+
+  const status = (await accountStatuses(db, [input.userId])).get(input.userId);
+  const reachable =
+    pair.otherActive &&
+    status !== undefined &&
+    takesNewActivity(status) &&
+    !pair.blockedByActor &&
+    !pair.blockedByOther;
+  const existing = await existingConversation(db, callerId, input.userId);
+  const friends = pair.openFriendship?.status === "active";
+
+  return {
+    reachable,
+    friends: friends || existing !== null,
+    invitedByContext:
+      reachable &&
+      !friends &&
+      (await invitedByContext(db, callerId, input.userId, input.context, now)),
+    existing,
+    openedVia: friends ? ("friendship" as const) : input.context?.kind,
+  };
+}
+
+/**
  * Starts a private conversation with a friend, or with someone whose
  * structured contact the caller received (PS-COM-006). There is one per
  * pair: asking again returns it, and shows it again in the caller's list.
@@ -169,48 +215,12 @@ export const startChatConversation = defineCommand({
   load: async ({ tx, actor, input, now }) => {
     const callerId = actingUserId(actor);
 
-    if (input.userId === callerId) {
-      return null;
+    if (input.userId !== callerId) {
+      await lockPair(tx, callerId, input.userId);
     }
 
-    await lockPair(tx, callerId, input.userId);
-    const pair = await loadPair(tx, callerId, input.userId);
-
-    if (!pair) {
-      return null;
-    }
-
-    const status = (await accountStatuses(tx, [input.userId])).get(
-      input.userId,
-    );
-    const reachable =
-      pair.otherActive &&
-      status !== undefined &&
-      takesNewActivity(status) &&
-      !pair.blockedByActor &&
-      !pair.blockedByOther;
-    const existing = await existingConversation(tx, callerId, input.userId);
-    const friends = pair.openFriendship?.status === "active";
-
-    return {
-      resource: {
-        reachable,
-        friends: friends || existing !== null,
-        invitedByContext:
-          reachable &&
-          !friends &&
-          (await invitedByContext(
-            tx,
-            callerId,
-            input.userId,
-            input.context,
-            now,
-          )),
-        existing,
-        openedVia: friends ? ("friendship" as const) : input.context?.kind,
-      },
-      context: undefined,
-    };
+    const resource = await contactWith(tx, callerId, input, now);
+    return resource && { resource, context: undefined };
   },
   execute: async ({ tx, actor, input, resource, events, now }) => {
     const callerId = actingUserId(actor);
@@ -253,6 +263,33 @@ export const startChatConversation = defineCommand({
 
     return { conversationId: id };
   },
+});
+
+/**
+ * Where a page about someone lets the caller write to them (PS-COM-017):
+ * the conversation they have, or the offer to start one by the same rules
+ * as starting it (PS-COM-006). It tells nothing about anyone the caller
+ * could not start a conversation with.
+ */
+export const readChatContact = defineQuery({
+  name: "chat.read_contact",
+  input: startChatConversationSchema,
+  policy: readChatContactPolicy,
+  load: async ({ db, actor, input, now }) => ({
+    resource: await contactWith(db, actingUserId(actor), input, now),
+    context: undefined,
+  }),
+  present: ({ resource }) =>
+    chatContactSchema.parse(
+      resource?.reachable
+        ? {
+            conversationId: resource.existing,
+            canStart:
+              resource.existing === null &&
+              (resource.friends || resource.invitedByContext),
+          }
+        : { conversationId: null, canStart: false },
+    ),
 });
 
 /**

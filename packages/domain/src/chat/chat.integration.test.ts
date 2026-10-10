@@ -30,6 +30,7 @@ import {
   hideChatConversation,
   listChatConversations,
   muteChatConversation,
+  readChatContact,
   readChatConversation,
   readChatDirectory,
   readChatInbox,
@@ -142,6 +143,16 @@ const read = (actor: UserActor, conversationId: string) =>
   executeQuery(tick(), readChatConversation, {
     actor,
     input: { conversationId },
+  });
+
+const contact = (
+  actor: UserActor,
+  other: UserActor,
+  context?: Record<string, string>,
+) =>
+  executeQuery(tick(), readChatContact, {
+    actor,
+    input: { userId: other.userId, ...(context && { context }) },
   });
 
 const list = async (actor: UserActor) =>
@@ -495,6 +506,45 @@ describe("first contact (PS-COM-006, PS-USR-005–006)", () => {
     await expect(start(owner, borrower, context)).resolves.toMatchObject({
       conversationId: expect.any(String),
     });
+  });
+
+  it("tells a page where the caller can write, by the same rules", async () => {
+    const none = { conversationId: null, canStart: false };
+    const alice = await user();
+    const bob = await user();
+
+    expect(await contact(alice, bob)).toEqual(none);
+    expect(await contact(alice, alice)).toEqual(none);
+    await friends(alice, bob);
+    expect(await contact(alice, bob)).toEqual({
+      conversationId: null,
+      canStart: true,
+    });
+    const { conversationId } = await start(alice, bob);
+    expect(await contact(bob, alice)).toEqual({
+      conversationId,
+      canStart: false,
+    });
+
+    // A received request lets the lender start it, never the borrower.
+    const { owner, borrower, objectId, environmentId } = await kit.published();
+    const { requestId } = await kit.ask(
+      borrower,
+      objectId,
+      kit.environmentOrigin(environmentId),
+    );
+    const context = { kind: "loan_request", requestId };
+    expect(await contact(borrower, owner, context)).toEqual(none);
+    expect(await contact(owner, borrower)).toEqual(none);
+    expect(await contact(owner, borrower, context)).toEqual({
+      conversationId: null,
+      canStart: true,
+    });
+
+    // A block either way hides even the conversation they had.
+    await run(blockUser, bob, { userId: alice.userId });
+    expect(await contact(alice, bob)).toEqual(none);
+    expect(await contact(bob, alice)).toEqual(none);
   });
 
   it("treats a blocked person as no one, and closes the conversation", async () => {

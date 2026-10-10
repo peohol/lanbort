@@ -695,6 +695,10 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     userId: bystander.userId,
     context: { kind: "loan_request", requestId: ids.requestId },
   }),
+  "chat.read_contact": (ids) => ({
+    userId: bystander.userId,
+    context: { kind: "loan_request", requestId: ids.requestId },
+  }),
   "chat.read_conversation": (ids) => ({ conversationId: ids.conversationId }),
   "chat.read_directory": (ids) => ({ conversationId: ids.conversationId }),
   "chat.hide_conversation": (ids) => ({ conversationId: ids.conversationId }),
