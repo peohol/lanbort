@@ -251,6 +251,11 @@ export const environmentSchema = z.strictObject({
   /** PS-ENV-011: objects need an administrator's approval to be visible. */
   requiresObjectApproval: z.boolean(),
   requirements: z.array(requirementSchema),
+  /**
+   * PS-ENV-016: about how many active members, rounded on the server. Null
+   * for a hidden environment, which nobody finds from outside.
+   */
+  members: approximateMembersSchema.nullable(),
   /** The caller's own relation to the environment. */
   membership: ownMembershipSchema.nullable(),
   roles: z.array(environmentRoleSchema),

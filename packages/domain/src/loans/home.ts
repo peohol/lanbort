@@ -9,6 +9,11 @@ import {
 import { collectPages } from "../commands/pages";
 import { addDays } from "../objects/availability";
 import { type HomeSource, homeItem } from "../home/source";
+import {
+  coOwnerLoanPicture,
+  loanPicture,
+  loanRequestPicture,
+} from "./pictures";
 import { listLoanRequests, listLoans } from "./queries";
 import { listCoOwnerLoans } from "./responsibility";
 
@@ -58,6 +63,7 @@ function loanTask(loan: Loan): HomeItem | null {
     role: own,
     person: loan.parties[own === "borrower" ? "lender" : "borrower"].realName,
     via: via(loan.origin),
+    picture: loanPicture(loan),
     period: loan.period,
   };
   const transfer = loan.responsibilityTransfer;
@@ -137,6 +143,7 @@ export function loanRequestHomeItem(request: LoanRequest): HomeItem | null {
     role: request.role,
     person: request.role === "lender" ? request.borrower.realName : null,
     via: via(request.origin),
+    picture: loanRequestPicture(request),
     period: requestedPeriod(request),
   };
 
@@ -167,7 +174,11 @@ export function loanRequestHomeItem(request: LoanRequest): HomeItem | null {
  */
 export function coOwnerLoanHomeItem(loan: CoOwnerLoan): HomeItem | null {
   const target = { type: "loan", id: loan.loanId } as const;
-  const details = { title: loan.title, role: "lender" as const };
+  const details = {
+    title: loan.title,
+    role: "lender" as const,
+    picture: coOwnerLoanPicture(loan),
+  };
 
   if (loan.transfer?.kind === "voluntary" && !loan.transfer.recipientAccepted) {
     return homeItem("loan.answer_responsibility", target, details);

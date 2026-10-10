@@ -203,10 +203,20 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 
 ## Avklart
 
+### OD-0054 — Eiernavn når en ting er delt direkte med venner
+- **Lag:** Produktspesifikasjon
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Beslutning:** Se [PS-OBJ-022](product-spec/03-utlansobjekter.md). Navnet vises bare for eiere betrakteren selv er venn med, også ved medeierskap, og håndheves på serveren.
+
 ### OD-0048 — Omtrentlig medlemstall før medlemskap
 - **Lag:** Produktspesifikasjon
 - **Status:** Avklart (produkteier, 10. oktober 2026)
 - **Beslutning:** Se [PS-ENV-016](product-spec/02-miljoer.md). Rundet tall: «under 10 medlemmer» for små miljøer, ellers nærmeste ti.
+
+### OD-0049 — Tingens bilder på lånets side
+- **Lag:** Produktspesifikasjon
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Beslutning:** Se [PS-OBJ-021](product-spec/03-utlansobjekter.md#ps-obj-021--den-som-ser-tingens-navn-ser-også-bildene).
 
 ### OD-0038 — Hva den som rapporterte, får vite når saken lukkes
 - **Lag:** Produktspesifikasjon / UX

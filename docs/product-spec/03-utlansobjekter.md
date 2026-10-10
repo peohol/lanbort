@@ -45,6 +45,11 @@ Et objekt kan eksplisitt publiseres til venner som et eget publiseringsvalg ved 
 
 Som en miljøpublisering endrer valget ikke objektet selv. Det følger de samme grensene som andre måter å finne objektet på: den som ser må være venn med en nåværende eier, og verken blokkering mot en eier, frysing eller sperre for nye lån gjør objektet synlig. Slås valget av eller forsvinner vennskapet, avsluttes ikke-godkjente direkte forespørsler nøytralt (PS-LOAN-002). Godkjente lån fortsetter.
 
+### PS-OBJ-021 — Den som ser tingens navn, ser også bildene
+**Forankring:** PS-OBJ-001; avklarer OD-0049 (produkteier, 10. oktober 2026)
+
+Alle som får se navnet på en ting, skal også kunne se bildene av den, slik de er nå. Det gjelder også gjennom et lån eller en låneforespørsel: partene ser tingens bilder så lenge de ser lånet eller forespørselen, også etter at det er avsluttet, og selv om de ikke lenger finner tingen der forespørselen kom fra. Bildene er ikke en del av avtalen (PS-OBJ-012); en slettet ting har ingen bilder.
+
 ### PS-OBJ-007 — Medeierskap krever aksept
 **Forankring:** [Medeierskap](../vision/04-utlansobjekter.md)
 
@@ -139,6 +144,11 @@ Piloten skal ikke dekke alt Lånbort en dag kan støtte. Den har ingen særvilk�
 Grensen vises for eieren der hen forvalter og registrerer ting. Et objekt som bryter den, kan rapporteres. Miljøets administratorer kan avvise eller sperre publiseringen i sitt miljø (PS-OBJ-017), og plattformforvaltere kan sperre objektet for nye lån overalt (PS-TRUST-013).
 
 Grensen er ikke endelig policy for bred lansering. «Venter til senere» kan åpnes, eventuelt med særvilkår, først når OD-0001 er vurdert juridisk og sikkerhetsmessig.
+
+### PS-OBJ-022 — Venner ser navnet på eiere de er venn med
+**Forankring:** PS-OBJ-020, PS-ENV-015; avklarer OD-0054 (produkteier, 10. oktober 2026)
+
+Når en ting finnes gjennom venner (PS-OBJ-020), vises navnet til eierne betrakteren selv er venn med nå. Ved medeierskap vises bare de medeierne betrakteren er venn med; en medeier betrakteren ikke er venn med, vises ikke. Regelen håndheves på serveren hver gang tingen vises, så et avsluttet vennskap eller en blokkering skjuler navnet med en gang. Den gjelder på tingens side, i oversikter der tingen er funnet gjennom venner, og i låneforespørsler som startes derfra. Gjennom et miljø gjelder PS-ENV-015.
 
 ## Publiseringsstatus per miljø
 

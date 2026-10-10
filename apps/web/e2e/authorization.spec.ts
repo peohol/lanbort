@@ -80,6 +80,7 @@ const probes: Record<string, (ids: Ids) => Record<string, string>> = {
     imageId: ids.imageId,
   }),
   "loan-requests/[requestId]": () => ({}),
+  "loan-requests/[requestId]/images/[imageId]": () => ({}),
   "loan-requests/preview": (ids) => ({
     objectId: ids.objectId,
     environmentId: ids.environmentId,
@@ -88,6 +89,7 @@ const probes: Record<string, (ids: Ids) => Record<string, string>> = {
   "loans/[loanId]/co-owner-view": () => ({}),
   "loans/[loanId]/condition": () => ({}),
   "loans/[loanId]/history": () => ({}),
+  "loans/[loanId]/images/[imageId]": () => ({}),
   "loans/[loanId]/logistics": () => ({}),
   "loans/[loanId]/reviews": () => ({}),
   "object-questions": (ids) => ({

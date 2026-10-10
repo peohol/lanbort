@@ -8,6 +8,7 @@ import {
   multilineText,
   objectCategoryIdSchema,
   objectIdSchema,
+  objectImageIdSchema,
   objectImageSchema,
 } from "./objects";
 
@@ -165,6 +166,12 @@ export const loanRequestListQuerySchema = z.strictObject({
 
 export const loanRequestReadQuerySchema = loanRequestReferenceSchema;
 
+/** One picture of the request's thing (PS-OBJ-021). */
+export const loanRequestImageQuerySchema = z.strictObject({
+  requestId: loanRequestIdSchema,
+  imageId: objectImageIdSchema,
+});
+
 /**
  * What the caller would request through an origin: the object's content and
  * the version of the terms to confirm. Without `environmentId` the origin is
@@ -199,7 +206,8 @@ export const loanRequestPreviewSchema = z.strictObject({
   following: z.boolean(),
   /**
    * Through an environment, the owners who are active members of it
-   * (PS-ENV-015); empty for a direct request.
+   * (PS-ENV-015); for a direct request, the owners the caller is a friend
+   * of (PS-OBJ-022).
    */
   owners: z.array(shownOwnerSchema),
 });
@@ -269,6 +277,12 @@ export const loanRequestSchema = z.strictObject({
       categoryId: objectCategoryIdSchema,
     })
     .nullable(),
+  /**
+   * The thing's pictures as they are now, not as agreed: whoever sees the
+   * thing's name sees its pictures (PS-OBJ-021). Read through
+   * `loan_request.read_image`; empty once the object is deleted.
+   */
+  images: z.array(objectImageSchema),
   confirmedTerms: termsSchema.nullable(),
   /** The current terms while the borrower has to confirm them. */
   pendingTerms: termsSchema.nullable(),
@@ -390,7 +404,37 @@ export const loanEndReasonSchema = z.enum([
 
 export const loanReadQuerySchema = z.strictObject({ loanId: loanIdSchema });
 
+/** One picture of the loan's thing (PS-OBJ-021). */
+export const loanImageQuerySchema = z.strictObject({
+  loanId: loanIdSchema,
+  imageId: objectImageIdSchema,
+});
+
 export const loanReferenceSchema = loanReadQuerySchema;
+
+/**
+ * PS-OBJ-021: the first picture of a loan's or request's thing where a list
+ * names the thing, and the read it goes through: as a party of the loan
+ * (`loan.read_image`) or the request (`loan_request.read_image`), or as one
+ * of the thing's owners (`object.read_image`).
+ */
+export const thingPictureSchema = z.discriminatedUnion("through", [
+  z.strictObject({
+    through: z.literal("loan"),
+    loanId: loanIdSchema,
+    imageId: objectImageIdSchema,
+  }),
+  z.strictObject({
+    through: z.literal("loan_request"),
+    requestId: loanRequestIdSchema,
+    imageId: objectImageIdSchema,
+  }),
+  z.strictObject({
+    through: z.literal("owner"),
+    objectId: objectIdSchema,
+    imageId: objectImageIdSchema,
+  }),
+]);
 
 /**
  * PS-LOAN-011: either party ends a reserved loan before the handover, on
@@ -711,6 +755,12 @@ export const loanSchema = z.strictObject({
   origin: loanOriginSchema,
   /** Null once an ended loan's object is deleted. */
   objectId: objectIdSchema.nullable(),
+  /**
+   * The thing's pictures as they are now, not as agreed: whoever sees the
+   * thing's name sees its pictures (PS-OBJ-021). Read through
+   * `loan.read_image`; empty once the object is deleted.
+   */
+  images: z.array(objectImageSchema),
   role: loanRequestRoleSchema,
   borrowerUserId: z.uuid(),
   responsibleLenderId: z.uuid(),
@@ -1031,6 +1081,11 @@ export const coOwnerLoanSchema = z.strictObject({
   status: loanStatusSchema,
   agreementVersion: z.int(),
   title: z.string(),
+  /**
+   * The thing's pictures as they are now, read as one of its owners
+   * (`object.read_image`, PS-OBJ-021).
+   */
+  images: z.array(objectImageSchema),
   period: loanPeriodSchema,
   /** The open transfer to the caller, if any. */
   transfer: responsibilityTransferSchema.nullable(),
@@ -1075,6 +1130,11 @@ export const coOwnerLoanViewSchema = z.strictObject({
   title: z.string(),
   categoryId: objectCategoryIdSchema,
   loanTerms: z.string().nullable(),
+  /**
+   * The thing's pictures as they are now, read as one of its owners
+   * (`object.read_image`, PS-OBJ-021).
+   */
+  images: z.array(objectImageSchema),
   /** The borrower and the responsible lender, by name (UX-INT-004). */
   parties: z.strictObject({
     borrower: loanPersonSchema,
@@ -1105,6 +1165,7 @@ export type LoanRequestResult = z.infer<typeof loanRequestResultSchema>;
 export type LoanRequestPreview = z.infer<typeof loanRequestPreviewSchema>;
 export type LoanOrigin = z.infer<typeof loanOriginSchema>;
 export type LoanRequest = z.infer<typeof loanRequestSchema>;
+export type ThingPicture = z.infer<typeof thingPictureSchema>;
 export type LoanRequestDetail = z.infer<typeof loanRequestDetailSchema>;
 export type LoanRequestList = z.infer<typeof loanRequestListSchema>;
 export type LoanPeriod = z.infer<typeof loanPeriodSchema>;

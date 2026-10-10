@@ -28,6 +28,7 @@ import { findEnvironmentsHref } from "@/presentation/search";
 import { EmptyState } from "./empty-state";
 import { Icon, type IconName } from "./icon";
 import { ContextTag, Tag } from "./tag";
+import { ThingThumbnail } from "./thing-thumbnail";
 import styles from "./home-view.module.css";
 
 const hrefOf = (item: HomeItem) =>
@@ -76,9 +77,12 @@ function TaskCard({ item, today }: { item: HomeItem; today: string }) {
           {card.tag.text}
         </Tag>
       </p>
-      <h3 id={id} className={styles.cardTitle}>
-        {card.title}
-      </h3>
+      <div className={styles.cardHead}>
+        <ThingThumbnail picture={item.picture} />
+        <h3 id={id} className={styles.cardTitle}>
+          {card.title}
+        </h3>
+      </div>
       {card.hint && <p className={styles.hint}>{card.hint}</p>}
       <div className={styles.cardFoot}>
         <Via item={item} />
@@ -96,16 +100,23 @@ function Row({
   icon,
   action,
   about,
+  picture = null,
 }: {
   icon: IconName;
   action: string;
   about: string;
+  picture?: HomeItem["picture"];
 }) {
   return (
     <>
-      <span className={styles.rowIcon}>
-        <Icon name={icon} />
-      </span>
+      <ThingThumbnail
+        picture={picture}
+        fallback={
+          <span className={styles.rowIcon}>
+            <Icon name={icon} />
+          </span>
+        }
+      />
       <span className={styles.rowText}>
         <strong>{action}</strong>
         {about && <span>{about}</span>}
@@ -117,7 +128,7 @@ function Row({
 function TaskRow({ item }: { item: HomeItem }) {
   return (
     <Entry href={hrefOf(item)} className={styles.row}>
-      <Row {...homeRow(item)} />
+      <Row {...homeRow(item)} picture={item.picture} />
     </Entry>
   );
 }
@@ -194,6 +205,7 @@ function Upcoming({ items, today }: { items: HomeItem[]; today: string }) {
                   <span className="visually-hidden">{leaf.label}: </span>
                 </span>
               )}
+              <ThingThumbnail picture={item.picture} />
               <span className={styles.rowText}>
                 <strong>{upcomingText(item)}</strong>
                 {context && <span>{context}</span>}
@@ -215,6 +227,7 @@ function Unresolved({ items }: { items: HomeItem[] }) {
         return (
           <li key={keyOf(item)}>
             <Entry href={hrefOf(item)} className={styles.unresolved}>
+              <ThingThumbnail picture={item.picture} />
               <span className={styles.rowText}>
                 <span>
                   <Tag tone={tag.tone} icon={tag.icon}>

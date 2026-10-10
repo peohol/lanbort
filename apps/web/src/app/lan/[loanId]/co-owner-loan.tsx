@@ -10,9 +10,11 @@ import {
   describeCoOwnerLoan,
 } from "@/presentation/loan-co-owner";
 import { personName } from "@/presentation/loan-status";
+import { ownImageHref } from "@/presentation/object-images";
 import styles from "../_parts/loan.module.css";
 import { Progress } from "../_parts/progress";
 import { Steps } from "../_parts/steps";
+import { ThingPicture } from "../_parts/thing-picture";
 
 /**
  * A loan for a co-owner who is not its party (UX-PRIV-013, KF7 screen 13):
@@ -28,6 +30,12 @@ export function CoOwnerLoan({ view }: { view: CoOwnerLoanView }) {
     <main>
       <PageHeader
         kind="Lån · Du er medeier"
+        picture={
+          <ThingPicture
+            images={view.images}
+            href={(imageId) => ownImageHref(view.objectId, imageId)}
+          />
+        }
         title={coOwnerLoanTitle(view)}
         back={{ href: loansHref, label: "Lån" }}
       />

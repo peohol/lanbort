@@ -19,6 +19,7 @@ const request = (changes: Partial<LoanRequest> = {}): LoanRequest => ({
   status: "requested",
   endReason: null,
   object: { title: "Stige", categoryId: "annet" },
+  images: [],
   confirmedTerms: { version: 1, loanTerms: null },
   pendingTerms: null,
   responsibility: null,
