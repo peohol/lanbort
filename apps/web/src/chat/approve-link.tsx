@@ -36,6 +36,23 @@ const header = (title: string, task = true) => (
   />
 );
 
+/**
+ * «Tidligere meldinger» (12): history moves only when the user chooses it
+ * (ADR-0010 §5), so «Bare nye meldinger» is chosen at first.
+ */
+const historyChoices = [
+  {
+    move: false,
+    label: "Bare nye meldinger",
+    help: "Enheten ser meldinger fra nå av. Tidligere meldinger blir på enhetene som har dem.",
+  },
+  {
+    move: true,
+    label: "Overfør meldingene herfra",
+    help: "Krypteres til den nye enheten. Bare det som ligger på denne enheten, følger med.",
+  },
+] as const;
+
 /** Gi denne enheten tilgang (12): what approving means, then the choice. */
 function Confirm({
   request,
@@ -44,8 +61,9 @@ function Confirm({
 }: {
   request: ChatLinkRequest;
   busy: boolean;
-  approve: () => void;
+  approve: (moveHistory: boolean) => void;
 }) {
+  const [move, setMove] = useState(false);
   return (
     <>
       {header("Gi denne enheten tilgang til privat chat?")}
@@ -63,7 +81,7 @@ function Confirm({
           points={[
             {
               icon: "conversations",
-              text: "Den kan lese og sende meldinger fra nå av, men ikke det som er sendt før.",
+              text: "Den kan lese og sende meldinger fra nå av.",
             },
             {
               icon: "shield",
@@ -71,11 +89,35 @@ function Confirm({
             },
           ]}
         />
+        <fieldset>
+          <legend>Tidligere meldinger</legend>
+          {historyChoices.map((choice) => {
+            const id = `historikk-${choice.move ? "overfor" : "nye"}`;
+            return (
+              <div key={id}>
+                <div className="checkbox">
+                  <input
+                    id={id}
+                    type="radio"
+                    name="historikk"
+                    checked={move === choice.move}
+                    aria-describedby={`${id}-hjelp`}
+                    onChange={() => setMove(choice.move)}
+                  />
+                  <label htmlFor={id}>{choice.label}</label>
+                </div>
+                <p id={`${id}-hjelp`} className="help">
+                  {choice.help}
+                </p>
+              </div>
+            );
+          })}
+        </fieldset>
         <BusyButton
           type="button"
           className="button-primary"
           busy={busy}
-          onClick={approve}
+          onClick={() => approve(move)}
         >
           Godkjenn enheten
         </BusyButton>
@@ -99,7 +141,7 @@ function Approve({ engine }: { engine: ChatEngine }) {
   const [found, setFound] = useState<ChatLinkRequest>();
   const [missing, setMissing] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState<{ moved: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = () =>
@@ -126,13 +168,13 @@ function Approve({ engine }: { engine: ChatEngine }) {
     else setMissing(true);
   }
 
-  async function approve() {
+  async function approve(moveHistory: boolean) {
     if (!found) return;
     setBusy(true);
     setError(null);
     try {
-      await engine.approveLink(found);
-      setDone(true);
+      await engine.approveLink(found, moveHistory);
+      setDone({ moved: moveHistory });
       announce("Enheten er godkjent.");
     } catch (problem) {
       setError(chatErrorMessage(problem));
@@ -147,7 +189,9 @@ function Approve({ engine }: { engine: ChatEngine }) {
         {header("Ny enhet godkjent", false)}
         <Notice tag="Godkjent" tone="positive" role="status">
           <p>
-            Enheten er godkjent. Den kan lese meldinger som sendes fra nå av.
+            {done.moved
+              ? "Enheten er godkjent. Meldingene herfra er sendt kryptert til den."
+              : "Enheten er godkjent. Den kan lese meldinger som sendes fra nå av."}
           </p>
           <Link href={chatDevicesHref} className="button button-secondary">
             Til Mine enheter
@@ -160,7 +204,11 @@ function Approve({ engine }: { engine: ChatEngine }) {
   if (found) {
     return (
       <>
-        <Confirm request={found} busy={busy} approve={() => void approve()} />
+        <Confirm
+          request={found}
+          busy={busy}
+          approve={(moveHistory) => void approve(moveHistory)}
+        />
         <ErrorText>{error}</ErrorText>
       </>
     );

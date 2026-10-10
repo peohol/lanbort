@@ -107,7 +107,16 @@ export const chatLimits = {
    * in one such block (ADR-0010, WP-44).
    */
   paddedMessageBytes: 1024,
+  /**
+   * A history archive (ADR-0010 §5, §8): plaintext per part, and at most
+   * this many parts. Each part's ciphertext is longer by its 16-byte tag.
+   */
+  archivePartBytes: 512 * 1024,
+  archiveParts: 16,
 } as const;
+
+/** AES-GCM's tag on each archive part. */
+const archiveTagBytes = 16;
 
 /** A position in a device's inbox: the server's message order. */
 export const chatPositionSchema = z.string().regex(/^[1-9]\d{0,18}$/);
@@ -170,6 +179,52 @@ export const chatLinkStatusSchema = z.strictObject({
   /** The sealed package once an existing device has approved. */
   package: base64Bytes(chatLimits.linkPackageBytes).nullable(),
 });
+
+// History archives
+
+/**
+ * A device starts an archive of its history for a device being linked
+ * (ADR-0010 §5). Its key goes in the link package, never to the server.
+ */
+export const createChatArchiveSchema = z.strictObject({
+  partCount: z.number().int().min(1).max(chatLimits.archiveParts),
+});
+
+export const chatArchiveSchema = z.strictObject({
+  archiveId: z.uuid(),
+  expiresAt: z.iso.datetime(),
+});
+
+export const chatArchiveTargetSchema = z.strictObject({
+  archiveId: z.uuid(),
+});
+
+export const chatArchivePartTargetSchema = z.strictObject({
+  archiveId: z.uuid(),
+  // A path segment in the API, so it arrives as text.
+  part: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(chatLimits.archiveParts - 1),
+});
+
+const archivePart = base64Bytes(
+  chatLimits.archivePartBytes + archiveTagBytes,
+  archiveTagBytes,
+);
+
+export const putChatArchivePartSchema = z.strictObject({
+  ...chatArchivePartTargetSchema.shape,
+  data: archivePart,
+});
+
+/** Whether every part is stored, so the archive can be read. */
+export const chatArchiveProgressSchema = z.strictObject({
+  complete: z.boolean(),
+});
+
+export const chatArchivePartSchema = z.strictObject({ data: archivePart });
 
 export const revokeChatDeviceSchema = z.strictObject({
   revocation: deviceRevocationSchema,
@@ -389,6 +444,7 @@ export type ChatDevice = z.infer<typeof chatDeviceSchema>;
 export type OwnChatDevices = z.infer<typeof ownChatDevicesSchema>;
 export type ChatLinkRequest = z.infer<typeof chatLinkRequestSchema>;
 export type ChatLinkStatus = z.infer<typeof chatLinkStatusSchema>;
+export type ChatArchive = z.infer<typeof chatArchiveSchema>;
 export type ChatConversation = z.infer<typeof chatConversationSchema>;
 export type ChatConversationList = z.infer<typeof chatConversationListSchema>;
 export type ChatDirectory = z.infer<typeof chatDirectorySchema>;

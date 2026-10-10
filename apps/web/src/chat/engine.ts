@@ -14,6 +14,7 @@ import {
   type DeviceCertificate,
   type DeviceRevocation,
   type KeyPackageBundle,
+  type LinkedArchive,
   type MemoryTrustStore,
   type PendingCommit,
   type PendingLink,
@@ -48,6 +49,14 @@ import {
 } from "@lanbort/e2ee";
 import { ChatApiError, chatApi } from "./api";
 import { fromBase64, fromUtf8, toBase64, utf8 } from "./bytes";
+import {
+  type ConversationHistory,
+  mergeHistory,
+  packHistory,
+  receiveHistory,
+  sendHistory,
+  unpackHistory,
+} from "./history-transfer";
 import { type ChatStore, deleteChatStore, openChatStore } from "./store";
 
 /** How the device keeps its chat going, set once here (ADR-0010 §6). */
@@ -90,6 +99,9 @@ export interface HistoryEntry {
   /** An own message that has not reached the server yet. */
   unsent?: boolean;
 }
+
+/** Where moving the other device's history here stands (KF5 screen 13). */
+export type HistoryTransfer = "running" | "done" | "failed";
 
 /** Why a conversation does not work on this device. */
 export type ConversationProblem = "no_key_package" | "out_of_sync";
@@ -256,15 +268,21 @@ export async function requestDeviceLink(): Promise<{
   return { link, status };
 }
 
-/** On the new device, once an existing device has approved. */
+/**
+ * On the new device, once an existing device has approved. History the
+ * other device moved here is fetched after, while chat already works.
+ */
 export async function completeDeviceLink(
   userId: string,
   link: PendingLink,
   status: ChatLinkStatus & { package: string },
 ): Promise<ChatEngine> {
-  const { account, device } = await link.open(fromBase64(status.package));
+  const { account, device, archive } = await link.open(
+    fromBase64(status.package),
+  );
   const engine = await ChatEngine.begin(userId, account, device);
   await chatApi.finishLink(status.linkRequestId);
+  if (archive) void engine.receiveHistory(archive);
   return engine;
 }
 
@@ -289,6 +307,7 @@ export class ChatEngine {
   >();
   readonly #listeners = new Set<() => void>();
   #queue: Promise<unknown> = Promise.resolve();
+  #historyTransfer: HistoryTransfer | null = null;
 
   constructor(
     readonly userId: string,
@@ -409,13 +428,27 @@ export class ChatEngine {
     return (await matchLinkRequest(keyed, shown))?.request;
   }
 
-  /** Certifies the new device and seals the account key to it. */
-  async approveLink(request: ChatLinkRequest): Promise<void> {
-    const { certificate, sealed } = await approveLink(this.account, {
-      deviceId: request.deviceId,
-      deviceKey: fromBase64(request.deviceKey),
-      linkKey: fromBase64(request.linkKey),
-    });
+  /**
+   * Certifies the new device and seals the account key to it, and with
+   * `moveHistory` the key of this device's history, stored encrypted.
+   */
+  async approveLink(
+    request: ChatLinkRequest,
+    moveHistory = false,
+  ): Promise<void> {
+    const archive = moveHistory
+      ? await sendHistory(packHistory(await this.#ownHistory()))
+      : undefined;
+    const { certificate, sealed } = await approveLink(
+      this.account,
+      {
+        deviceId: request.deviceId,
+        deviceKey: fromBase64(request.deviceKey),
+        linkKey: fromBase64(request.linkKey),
+      },
+      archive,
+    );
+    if (archive) wipe(archive.key.reveal());
     await chatApi.approveLink(request.linkRequestId, {
       certificate: certificateWire(certificate),
       package: toBase64(sealed),
@@ -576,6 +609,48 @@ export class ChatEngine {
         !group.members().some((m) => m.accountId !== this.userId),
       problem: record.problem,
     };
+  }
+
+  /** Moving the other device's history here, if it is or was under way. */
+  get historyTransfer(): HistoryTransfer | null {
+    return this.#historyTransfer;
+  }
+
+  /** Fetches the history the approving device moved here, and adds it. */
+  async receiveHistory(archive: LinkedArchive): Promise<void> {
+    this.#historyTransfer = "running";
+    this.#changed();
+    try {
+      const moved = unpackHistory(await receiveHistory(archive));
+      await this.#exclusive(async () => {
+        for (const { id, history, seen } of moved) {
+          await this.#updateHistory(id, (own) => mergeHistory(own, history));
+          if (seen !== null && (await this.seen(id)) === null) {
+            await this.store.putJson(records.seen(id), seen);
+          }
+        }
+      });
+      this.#historyTransfer = "done";
+    } catch {
+      this.#historyTransfer = "failed";
+    } finally {
+      wipe(archive.key.reveal());
+      this.#changed();
+    }
+  }
+
+  async #ownHistory(): Promise<ConversationHistory[]> {
+    const prefix = records.history("");
+    return Promise.all(
+      (await this.store.names(prefix)).map(async (name) => {
+        const id = name.slice(prefix.length);
+        return {
+          id,
+          history: await this.history(id),
+          seen: await this.seen(id),
+        };
+      }),
+    );
   }
 
   async history(id: string): Promise<HistoryEntry[]> {

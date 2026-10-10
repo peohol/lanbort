@@ -1,6 +1,7 @@
 export * from "./events";
 export * from "./policies";
 export * from "./devices";
+export * from "./archives";
 export * from "./conversations";
 export * from "./loan-logistics";
 export {

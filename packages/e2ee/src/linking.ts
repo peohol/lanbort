@@ -35,7 +35,24 @@ export interface PendingLink {
   /** The QR code's content. */
   qr: string;
   /** Opens the package the existing device sealed, once it is there. */
-  open(sealed: Uint8Array): Promise<{ account: AccountKey; device: Device }>;
+  open(sealed: Uint8Array): Promise<OpenedLink>;
+}
+
+/**
+ * The history archive the existing device moved to the new one, if the
+ * user chose to (ADR-0010 §5, §8): where the server keeps it, and its key.
+ */
+export interface LinkedArchive {
+  archiveId: string;
+  /** How many parts it has; opening checks it. */
+  parts: number;
+  key: Secret<Uint8Array>;
+}
+
+export interface OpenedLink {
+  account: AccountKey;
+  device: Device;
+  archive?: LinkedArchive;
 }
 
 const crockford = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
@@ -148,9 +165,10 @@ export async function startLink(
         utf8(deviceId),
       );
       try {
-        const account = importAccountKey(plain);
+        const { account, archive } = readPackage(plain);
         return {
           account,
+          ...(archive && { archive }),
           // Ed25519 signatures are deterministic: this is the very
           // certificate the approving device signed.
           device: {
@@ -173,12 +191,66 @@ const bytes = z.string().transform((value) => fromBase64(value));
 const sealedSchema = z.strictObject({ enc: bytes, ct: bytes });
 
 /**
+ * What the package holds: the account key, and the archive's key when
+ * history is moved. A package from before archives is the account key
+ * alone, as `exportAccountKey` writes it.
+ */
+const packageSchema = z.strictObject({
+  v: z.literal(2),
+  account: z.string(),
+  archive: z
+    .strictObject({
+      archiveId: z.string(),
+      parts: z.number().int().positive(),
+      key: z.string(),
+    })
+    .optional(),
+});
+
+function readPackage(plain: Uint8Array): {
+  account: AccountKey;
+  archive?: LinkedArchive;
+} {
+  const parsed = packageSchema.safeParse(
+    (() => {
+      try {
+        return JSON.parse(new TextDecoder().decode(plain));
+      } catch {
+        return undefined;
+      }
+    })(),
+  );
+
+  if (!parsed.success) {
+    return { account: importAccountKey(plain) };
+  }
+
+  const account = fromBase64(parsed.data.account);
+  try {
+    return {
+      account: importAccountKey(account),
+      ...(parsed.data.archive && {
+        archive: {
+          archiveId: parsed.data.archive.archiveId,
+          parts: parsed.data.archive.parts,
+          key: new Secret(fromBase64(parsed.data.archive.key)),
+        },
+      }),
+    };
+  } finally {
+    wipe(account);
+  }
+}
+
+/**
  * Run on an existing device once the user has compared the code: certifies
- * the new device and seals the account key to it.
+ * the new device and seals the account key to it, with the key of the
+ * history archive when the user chose to move the history.
  */
 export async function approveLink(
   account: AccountKey,
   request: LinkRequestKeys,
+  archive?: LinkedArchive,
 ): Promise<{ certificate: DeviceCertificate; sealed: Uint8Array }> {
   const { hpke } = await loadSuite();
   const certificate = await certifyDevice(
@@ -186,7 +258,21 @@ export async function approveLink(
     request.deviceId,
     request.deviceKey,
   );
-  const plain = exportAccountKey(account).reveal();
+  const accountBytes = exportAccountKey(account).reveal();
+  const plain = utf8(
+    JSON.stringify({
+      v: 2,
+      account: toBase64(accountBytes),
+      ...(archive && {
+        archive: {
+          archiveId: archive.archiveId,
+          parts: archive.parts,
+          key: toBase64(archive.key.reveal()),
+        },
+      }),
+    }),
+  );
+  wipe(accountBytes);
   try {
     const { enc, ct } = await hpke.seal(
       await hpke.importPublicKey(request.linkKey),

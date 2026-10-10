@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+  ChatArchive,
   ChatClaimedKeyPackages,
   ChatConversation,
   ChatConversationList,
@@ -56,6 +57,7 @@ async function post<T>(
 }
 
 const conversation = (id: string) => `/api/chat/conversations/${id}`;
+const archive = (id: string) => `/api/chat/archives/${id}`;
 
 /** The chat API (`app/api/chat`): public keys and ciphertext only. */
 export const chatApi = {
@@ -88,6 +90,15 @@ export const chatApi = {
     id: string,
     body: { certificate: DeviceCertificateWire; package: string },
   ) => post(`/api/chat/links/${id}/approve`, body),
+
+  /** History archives moved to a device being linked (ADR-0010 §5). */
+  createArchive: (partCount: number) =>
+    post<ChatArchive>("/api/chat/archives", { partCount }),
+  putArchivePart: (id: string, part: number, data: string) =>
+    post<{ complete: boolean }>(`${archive(id)}/parts/${part}`, { data }),
+  archivePart: (id: string, part: number) =>
+    get<{ data: string }>(`${archive(id)}/parts/${part}`),
+  deleteArchive: (id: string) => post(`${archive(id)}/delete`, {}),
 
   conversations: () => get<ChatConversationList>("/api/chat/conversations"),
   start: (body: {

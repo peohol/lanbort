@@ -40,6 +40,12 @@ import {
   submitChatCommit,
 } from "./conversations";
 import {
+  createChatArchive,
+  deleteChatArchive,
+  putChatArchivePart,
+  readChatArchivePart,
+} from "./archives";
+import {
   approveChatLink,
   finishChatLink,
   listChatLinkRequests,
@@ -419,6 +425,146 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
         linkKey,
       }),
     ).rejects.toMatchObject(conflict);
+  });
+
+  it("moves the history to a new device through an archive only it can fetch", async () => {
+    const alice = await chatUser();
+    const laptop = newSession(alice.actor);
+    const deviceId = randomUUID();
+    const deviceKey = testChatDevice(alice.account).deviceKey;
+    const part = (byte: number) => Buffer.alloc(32, byte).toString("base64");
+    const readPart = (actor: UserActor, archiveId: string, index: number) =>
+      executeQuery(tick(), readChatArchivePart, {
+        actor,
+        input: { archiveId, part: index },
+      });
+
+    // An archive is only for a device that waits to be linked.
+    await expect(
+      run(createChatArchive, alice.actor, { partCount: 2 }),
+    ).rejects.toMatchObject(conflict);
+    const { linkRequestId } = await run(requestChatLink, laptop, {
+      deviceId,
+      deviceKey,
+      linkKey: deviceKey,
+    });
+    await expect(
+      run(createChatArchive, laptop, { partCount: 2 }),
+    ).rejects.toMatchObject(forbidden);
+    const { archiveId: replaced } = await run(createChatArchive, alice.actor, {
+      partCount: 1,
+    });
+    const { archiveId } = await run(createChatArchive, alice.actor, {
+      partCount: 2,
+    });
+    await expect(
+      run(putChatArchivePart, alice.actor, {
+        archiveId: replaced,
+        part: 0,
+        data: part(1),
+      }),
+    ).rejects.toMatchObject(notFound);
+
+    // Someone else neither writes, reads nor removes it.
+    const bob = await chatUser();
+    await expect(
+      run(putChatArchivePart, bob.actor, { archiveId, part: 0, data: part(9) }),
+    ).rejects.toMatchObject(notFound);
+    await expect(
+      run(deleteChatArchive, bob.actor, { archiveId }),
+    ).rejects.toMatchObject(notFound);
+
+    await expect(
+      run(putChatArchivePart, alice.actor, {
+        archiveId,
+        part: 0,
+        data: part(1),
+      }),
+    ).resolves.toEqual({ complete: false });
+    await expect(
+      run(putChatArchivePart, alice.actor, {
+        archiveId,
+        part: 0,
+        data: part(2),
+      }),
+    ).rejects.toMatchObject(conflict);
+    await expect(
+      run(putChatArchivePart, alice.actor, {
+        archiveId,
+        part: 2,
+        data: part(2),
+      }),
+    ).rejects.toMatchObject(notFound);
+    // Nothing can be read before every part is in.
+    await expect(readPart(alice.actor, archiveId, 0)).rejects.toMatchObject(
+      notFound,
+    );
+    await expect(
+      run(putChatArchivePart, alice.actor, {
+        archiveId,
+        part: 1,
+        data: part(2),
+      }),
+    ).resolves.toEqual({ complete: true });
+    await expect(
+      run(putChatArchivePart, alice.actor, {
+        archiveId,
+        part: 1,
+        data: part(3),
+      }),
+    ).rejects.toMatchObject(notFound);
+
+    await run(approveChatLink, alice.actor, {
+      linkRequestId,
+      certificate: alice.account.certify(deviceId, deviceKey),
+      package: "c2VhbGVk",
+    });
+    await expect(readPart(bob.actor, archiveId, 0)).rejects.toMatchObject(
+      notFound,
+    );
+    await expect(readPart(laptop, archiveId, 0)).resolves.toEqual({
+      data: part(1),
+    });
+    await expect(readPart(laptop, archiveId, 1)).resolves.toEqual({
+      data: part(2),
+    });
+    await run(deleteChatArchive, laptop, { archiveId });
+    await expect(readPart(laptop, archiveId, 0)).rejects.toMatchObject(
+      notFound,
+    );
+  });
+
+  it("lets a history archive expire with the retention job", async () => {
+    const alice = await chatUser();
+    const laptop = newSession(alice.actor);
+    const deviceKey = testChatDevice(alice.account).deviceKey;
+    await run(requestChatLink, laptop, {
+      deviceId: randomUUID(),
+      deviceKey,
+      linkKey: deviceKey,
+    });
+    const { archiveId } = await run(createChatArchive, alice.actor, {
+      partCount: 1,
+    });
+
+    kit.advanceDays(1);
+    await expect(
+      run(putChatArchivePart, alice.actor, {
+        archiveId,
+        part: 0,
+        data: Buffer.alloc(16).toString("base64"),
+      }),
+    ).rejects.toMatchObject(notFound);
+    await executeCommand(tick(), purgeExpiredChat, {
+      actor: systemActor(chatRetentionProcess),
+      input: {},
+    });
+    const left = await db
+      .selectFrom("app.chat_archives")
+      .select("id")
+      .where("id", "=", archiveId)
+      .execute();
+    expect(left).toEqual([]);
   });
 
   it("keeps only key packages the device made for itself", async () => {

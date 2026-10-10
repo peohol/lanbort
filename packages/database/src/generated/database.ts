@@ -166,6 +166,22 @@ export interface AppChatAccountKeys {
   user_id: string;
 }
 
+export interface AppChatArchiveParts {
+  archive_id: string;
+  data: Buffer;
+  part: number;
+}
+
+export interface AppChatArchives {
+  completed_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  id: Generated<string>;
+  part_count: number;
+  purpose: string;
+  user_id: string;
+}
+
 export interface AppChatConversations {
   created_at: Generated<Timestamp>;
   created_by_user_id: string;
@@ -984,6 +1000,8 @@ export interface DB {
   "app.case_participants": AppCaseParticipants;
   "app.cases": AppCases;
   "app.chat_account_keys": AppChatAccountKeys;
+  "app.chat_archive_parts": AppChatArchiveParts;
+  "app.chat_archives": AppChatArchives;
   "app.chat_conversations": AppChatConversations;
   "app.chat_deliveries": AppChatDeliveries;
   "app.chat_devices": AppChatDevices;

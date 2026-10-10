@@ -34,8 +34,11 @@ export {
   verifyDeviceCertificate,
   verifyDeviceRevocation,
 } from "./identity";
+export { openArchive, sealArchive } from "./archive";
 export {
+  type LinkedArchive,
   type LinkRequestKeys,
+  type OpenedLink,
   type PendingLink,
   approveLink,
   linkCode,

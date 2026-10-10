@@ -21,8 +21,8 @@ async function deleted(query: {
 
 /**
  * Deletes what the delivery service may no longer keep (ADR-0010 §8):
- * ciphertext no device fetched in time, expired key packages and link
- * requests. Run by the scheduled job `/api/internal/chat-retention`.
+ * ciphertext no device fetched in time, expired key packages, link
+ * requests and history archives. Run by the scheduled job `/api/internal/chat-retention`.
  */
 export const purgeExpiredChat = defineCommand({
   name: "chat.purge_expired",
@@ -31,6 +31,7 @@ export const purgeExpiredChat = defineCommand({
     messages: countSchema,
     keyPackages: countSchema,
     linkRequests: countSchema,
+    archives: countSchema,
   }),
   policy: purgeChatDeliveryPolicy,
   idempotency: "none",
@@ -51,15 +52,18 @@ export const purgeExpiredChat = defineCommand({
     linkRequests: await deleted(
       tx.deleteFrom("app.chat_link_requests").where("expires_at", "<=", now),
     ),
+    archives: await deleted(
+      tx.deleteFrom("app.chat_archives").where("expires_at", "<=", now),
+    ),
   }),
 });
 
 /**
  * After a restore the server's epochs may lag the devices' (ADR-0010 §9).
  * Every conversation gets a new group generation, and the one-time key
- * packages, link requests and waiting ciphertext from before are dropped;
- * devices publish new packages and start the groups anew. History on the
- * devices stays. `pnpm ops:restore finish` runs it. It acts on what existed
+ * packages, link requests, history archives and waiting ciphertext from
+ * before are dropped; devices publish new packages and start the groups
+ * anew. History on the devices stays. `pnpm ops:restore finish` runs it. It acts on what existed
  * when it runs, which after a restore is everything.
  */
 export const restartChatGroups = defineCommand({
@@ -84,6 +88,10 @@ export const restartChatGroups = defineCommand({
       .execute();
     await tx
       .deleteFrom("app.chat_link_requests")
+      .where("created_at", "<=", now)
+      .execute();
+    await tx
+      .deleteFrom("app.chat_archives")
       .where("created_at", "<=", now)
       .execute();
     const restarted = await tx
@@ -116,6 +124,10 @@ export const chatAccountDeletionStep: AccountDeletionStep = {
       .execute();
     await db
       .deleteFrom("app.chat_link_requests")
+      .where("user_id", "=", userId)
+      .execute();
+    await db
+      .deleteFrom("app.chat_archives")
       .where("user_id", "=", userId)
       .execute();
     await db

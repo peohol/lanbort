@@ -141,6 +141,35 @@ export const approveChatLinkPolicy = definePolicy<OwnChatResource, void>({
 });
 
 /**
+ * History archives (ADR-0010 §5): the approving device stores its history
+ * for the new one; only the account's own devices see an archive.
+ */
+export const createChatArchivePolicy = definePolicy<ChatSessionResource, void>({
+  action: "chat.create_archive",
+  actor: [requireActiveAccount],
+  resource: [sessionDevice],
+});
+
+const archivePolicy = (action: string) =>
+  definePolicy<OwnChatResource, void>({
+    action,
+    actor: [requireActiveAccount],
+    resource: [sessionDevice, ownResource],
+  });
+
+export const putChatArchivePartPolicy = archivePolicy("chat.put_archive_part");
+export const readChatArchivePartPolicy = archivePolicy(
+  "chat.read_archive_part",
+);
+
+/** Giving up an archive is kept for an account no longer active. */
+export const deleteChatArchivePolicy = definePolicy<OwnChatResource, void>({
+  action: "chat.delete_archive",
+  actor: [requireMinimumAccess],
+  resource: [sessionDevice, ownResource],
+});
+
+/**
  * Revoking one of the account's devices, also this one at sign-out. Kept
  * for an account that is no longer active, so a lost device can always be
  * shut out (PS-ADM-002).
@@ -283,6 +312,10 @@ export const chatPolicies = [
   finishChatLinkPolicy,
   listChatLinkRequestsPolicy,
   approveChatLinkPolicy,
+  createChatArchivePolicy,
+  putChatArchivePartPolicy,
+  readChatArchivePartPolicy,
+  deleteChatArchivePolicy,
   revokeChatDevicePolicy,
   readOwnChatDevicesPolicy,
   publishChatKeyPackagesPolicy,

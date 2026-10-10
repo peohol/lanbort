@@ -191,6 +191,10 @@ async function registerAccount(
     .deleteFrom("app.chat_link_requests")
     .where("user_id", "=", userId)
     .execute();
+  await tx
+    .deleteFrom("app.chat_archives")
+    .where("user_id", "=", userId)
+    .execute();
 
   const { id: accountKeyId } = await tx
     .insertInto("app.chat_account_keys")

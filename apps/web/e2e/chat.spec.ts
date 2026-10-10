@@ -63,7 +63,7 @@ async function expectMessage(page: Page, text: string) {
 test("two friends chat end to end, and a new device is linked with its code", async ({
   browser,
 }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(240_000);
   const anna = await person(browser, "Anna Berg");
   const bo = await person(browser, "Bo Dahl");
   await postCommand(anna.context.request, "/api/social/friend-requests", {
@@ -238,7 +238,33 @@ test("two friends chat end to end, and a new device is linked with its code", as
     anna.page.getByRole("button", { name: "Fjern", exact: true }),
   ).toHaveCount(0);
 
-  for (const someone of [anna, bo, laptop]) {
+  // A tablet gets the history from Anna's phone, when she chooses it (12).
+  const tablet = await device(browser);
+  await signInThroughApi(tablet.context.request, anna.email);
+  await tablet.page.goto("/samtaler/koble");
+  const tabletCode = (await tablet.page.locator("p.link-code").textContent())!;
+  await anna.page.goto("/samtaler/enheter/koble?kode");
+  await anna.page.getByLabel("Kode fra den nye enheten").fill(tabletCode);
+  await anna.page.getByRole("button", { name: "Fortsett" }).click();
+  await expect(anna.page.getByLabel("Bare nye meldinger")).toBeChecked();
+  await anna.page.getByLabel("Overfør meldingene herfra").check();
+  expect(await axeViolations(anna.page)).toEqual([]);
+  await anna.page.getByRole("button", { name: "Godkjenn enheten" }).click();
+  await expect(
+    anna.page.getByText("Meldingene herfra er sendt kryptert til den."),
+  ).toBeVisible();
+  await expect(
+    tablet.page.getByText("Meldingene fra den andre enheten er hentet hit."),
+  ).toBeVisible({ timeout: 20_000 });
+  await tablet.page.goto(conversation);
+  await expect(
+    messages(tablet.page).getByText("Hei Bo, kan jeg låne stigen?"),
+  ).toBeVisible();
+  await expect(
+    messages(tablet.page).getByText("Hent den når du vil."),
+  ).toBeVisible();
+
+  for (const someone of [anna, bo, laptop, tablet]) {
     // A message encrypted before a device joined is refused and sent again
     // under the group's new keys; the browser logs the refusal.
     expect(

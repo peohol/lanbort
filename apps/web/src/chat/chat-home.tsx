@@ -3,7 +3,7 @@
 import type { ChatContext, ChatConversation } from "@lanbort/contracts";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { BusyButton } from "@/components/busy-button";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorText } from "@/components/error-text";
@@ -16,7 +16,7 @@ import styles from "./chat.module.css";
 import { ChatIcon } from "./chat-icon";
 import { type ChatStart, useChat } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";
-import type { ChatEngine } from "./engine";
+import type { ChatEngine, HistoryTransfer } from "./engine";
 import { type ChatLoans, loansLine } from "./loans";
 import { chatErrorMessage } from "./messages";
 import { Notice } from "./notice";
@@ -240,18 +240,42 @@ const startNotes: Record<ChatStart, { tag: string; text: string }> = {
   },
 };
 
+/** A linked device that got the other device's history (13, ADR-0010 §5). */
+const historyNotes: Record<HistoryTransfer, string> = {
+  running: "Henter tidligere meldinger …",
+  done: "Du kan lese og skrive her. Meldingene fra den andre enheten er hentet hit.",
+  failed:
+    "Du kan lese og skrive her. Tidligere meldinger kunne ikke hentes hit, men de ligger fortsatt på den andre enheten.",
+};
+
 /** Says once how the device just got chat (07, 13, 18). */
-function StartNote() {
+function StartNote({ engine }: { engine: ChatEngine }) {
   const { state, settle } = useChat();
   const [since] = useState(state.status === "ready" ? state.since : undefined);
+  const transfer = useSyncExternalStore(
+    (listener) => engine.subscribe(listener),
+    () => engine.historyTransfer,
+    () => null,
+  );
   useEffect(() => {
     if (since) settle();
   }, [since, settle]);
 
+  if (transfer === "running") {
+    return <p role="status">{historyNotes.running}</p>;
+  }
   if (!since) return null;
-  const { tag, text } = startNotes[since];
+  const { tag } = startNotes[since];
+  const text =
+    since === "linked" && transfer
+      ? historyNotes[transfer]
+      : startNotes[since].text;
   return (
-    <Notice tag={tag} tone="positive" role="status">
+    <Notice
+      tag={tag}
+      tone={transfer === "failed" ? "warning" : "positive"}
+      role="status"
+    >
       <p>{text}</p>
     </Notice>
   );
@@ -300,7 +324,7 @@ function ConversationList({
 
   return (
     <>
-      <StartNote />
+      <StartNote engine={engine} />
       {invited && conversations && !talkingTo.has(invited.userId) && (
         <section
           aria-labelledby="ny-samtale"
