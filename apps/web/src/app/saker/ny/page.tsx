@@ -3,13 +3,16 @@ import {
   getEnvironment,
   isDomainError,
   previewLoanRequest,
+  readPerson,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CommandForm } from "@/components/command-form";
 import { describedBy, Field } from "@/components/field";
+import { MenuList, MenuRow } from "@/components/menu-list";
 import { PageHeader } from "@/components/page-header";
+import { StatusCard } from "@/components/status-card";
 import { ContextTag } from "@/components/tag";
 import {
   type CaseStart,
@@ -25,6 +28,7 @@ import {
   pageQueryOrNotFound,
   requirePageAccount,
 } from "@/server/session";
+import styles from "../cases.module.css";
 
 export const metadata: Metadata = { title: "Ny sak – Lånbort" };
 
@@ -36,36 +40,139 @@ const targetOf = ({ kind, id }: ReportSubject) =>
       ? { kind, objectId: id }
       : { kind, reviewId: id };
 
-/** The thing's title, if the viewer can see it where they report it. */
-async function objectTitle(objectId: string, environmentId: string | null) {
+/** What a query answers, or null where the reader may not see it. */
+async function seen<T>(read: () => Promise<T>): Promise<T | null> {
   try {
-    return (
-      (
-        await pageQuery(previewLoanRequest, {
-          objectId,
-          ...(environmentId ? { environmentId } : {}),
-        })
-      )?.title ?? null
-    );
+    return await read();
   } catch (error) {
     if (isDomainError(error)) return null;
     throw error;
   }
 }
 
-function titleOf(start: CaseStart, thing: string | null) {
-  if (start.kind === "contact") return "Kontakt administratorene";
-  if (thing) return `Rapporter «${thing}»`;
+/** What is reported, by name where the reader sees it. */
+async function subjectOf(start: CaseStart) {
+  if (start.kind !== "report") return null;
 
-  return `Rapporter ${reportTargetLabels[start.subject.kind]}`;
+  const { subject, environmentId } = start;
+
+  if (subject.kind === "object") {
+    const preview = await seen(() =>
+      pageQuery(previewLoanRequest, {
+        objectId: subject.id,
+        ...(environmentId ? { environmentId } : {}),
+      }),
+    );
+
+    return { name: preview?.title ? `«${preview.title}»` : null, places: [] };
+  }
+
+  if (subject.kind === "user") {
+    const person = await seen(() =>
+      pageQuery(readPerson, { userId: subject.id }),
+    );
+
+    return {
+      name: person?.realName ?? null,
+      places: person?.sharedEnvironments ?? [],
+    };
+  }
+
+  return { name: null, places: [] };
+}
+
+/**
+ * Who assesses the report (UX-INT-003): the environment's administrators,
+ * the one choice there is now. Lånbort stands beside it as not available
+ * yet, since nobody can handle a report there until the platform stewards'
+ * stronger sign-in is built (UX-EXC-011, OD-0023).
+ */
+function Receiver({ environment }: { environment: string }) {
+  // The choice is shown, not sent: the page decides where the report goes.
+  return (
+    <fieldset className={styles.options}>
+      <legend>Hvem skal vurdere det?</legend>
+      <label className={styles.option}>
+        <input type="radio" defaultChecked />
+        <span>
+          <strong>Administratorene i {environment}</strong>
+          <small>
+            For det som gjelder oppførsel og ting i miljøet. Én av dem tar
+            saken.
+          </small>
+        </span>
+      </label>
+      <label className={styles.option}>
+        <input type="radio" disabled />
+        <span>
+          <strong>Lånbort</strong>
+          <small>
+            Ikke tilgjengelig ennå. Lånbort kan ikke ta imot rapporter i appen
+            ennå.
+          </small>
+        </span>
+      </label>
+    </fieldset>
+  );
+}
+
+/**
+ * UX-EXC-011: a report only Lånbort could assess (a review, or what has no
+ * environment in common) is not offered until the platform stewards can
+ * handle it. The page says so plainly, promises nothing and names no
+ * address that does not exist, and offers the environments where the
+ * administrators have the mandate instead.
+ */
+function NotAvailable({
+  start,
+  places,
+}: {
+  start: Extract<CaseStart, { kind: "report" }>;
+  places: readonly { id: string; name: string }[];
+}) {
+  const review =
+    start.subject.kind === "review" || start.subject.kind === "review_response";
+
+  return (
+    <>
+      <StatusCard
+        label="Ikke tilgjengelig ennå"
+        tone="neutral"
+        status={
+          review
+            ? "Du kan ikke rapportere anmeldelser ennå"
+            : "Du kan ikke rapportere til Lånbort ennå"
+        }
+      >
+        {review
+          ? "Anmeldelser vurderes av Lånbort, og Lånbort kan ikke ta imot rapporter i appen ennå. Er du uenig i en anmeldelse av deg, kan du svare med et tilsvar."
+          : "Lånbort kan ikke ta imot rapporter i appen ennå. Der dere er i samme miljø, kan administratorene der vurdere det."}
+      </StatusCard>
+      {places.length > 0 && (
+        <section aria-labelledby="miljoer">
+          <h2 id="miljoer">Rapporter i et miljø</h2>
+          <MenuList label="miljoer">
+            {places.map((place) => (
+              <MenuRow
+                key={place.id}
+                href={newCaseHref({ ...start, environmentId: place.id })}
+                icon="environment"
+                label={`Administratorene i ${place.name}`}
+              />
+            ))}
+          </MenuList>
+        </section>
+      )}
+    </>
+  );
 }
 
 /**
  * A new case where it starts (UX-IA-007): a member writes to an
- * environment's administrators (PS-COM-010), or a user reports a person or
- * a thing to an environment's administrators, or something to Lånbort
- * (PS-TRUST-013). The page leads to the case once it is sent. Writing
- * again in an open case of the same kind continues it.
+ * environment's administrators (PS-COM-010), or reports a person or a
+ * thing to them (PS-TRUST-013). Reporting to Lånbort is not offered yet
+ * (UX-EXC-011). The page leads to the case once it is sent; writing again
+ * in an open case of the same kind continues it.
  */
 export default async function NewCasePage({
   searchParams,
@@ -77,63 +184,76 @@ export default async function NewCasePage({
 
   if (!start) notFound();
 
-  const environment = start.environmentId
-    ? await pageQueryOrNotFound(getEnvironment, {
-        environmentId: start.environmentId,
-      })
-    : null;
-  const thing =
-    start.kind === "report" && start.subject.kind === "object"
-      ? await objectTitle(start.subject.id, start.environmentId)
-      : null;
-  const next = caseHref("{caseId}");
-  const form =
-    start.kind === "contact"
-      ? {
-          path: "/api/environments/contact",
-          fixed: { environmentId: start.environmentId },
-          submitLabel: "Send til administratorene",
-        }
-      : start.environmentId
-        ? {
-            path: "/api/environments/reports",
-            fixed: {
-              environmentId: start.environmentId,
-              target: targetOf(start.subject),
-            },
-            submitLabel: "Send rapporten til administratorene",
-          }
-        : {
-            path: "/api/cases/platform-reports",
-            fixed: { target: targetOf(start.subject) },
-            submitLabel: "Send rapporten til Lånbort",
-          };
+  const [environment, subject] = await Promise.all([
+    start.environmentId
+      ? pageQueryOrNotFound(getEnvironment, {
+          environmentId: start.environmentId,
+        })
+      : null,
+    subjectOf(start),
+  ]);
+  const contact = start.kind === "contact";
+  const title = contact
+    ? "Kontakt administratorene"
+    : subject?.name
+      ? `Rapporter ${subject.name}`
+      : `Rapporter ${reportTargetLabels[start.subject.kind]}`;
+  const context = environment && (
+    <ContextTag label="Miljø" icon="environment">
+      {environment.name}
+    </ContextTag>
+  );
+
+  if (start.kind === "report" && !environment) {
+    return (
+      <main>
+        <PageHeader
+          title={title}
+          kind="Rapport"
+          back={{ href: casesHref, label: "Saker" }}
+          task
+        />
+        <NotAvailable start={start} places={subject?.places ?? []} />
+      </main>
+    );
+  }
 
   return (
     <main>
       <PageHeader
-        title={titleOf(start, thing)}
+        title={title}
+        kind={contact ? "Henvendelse" : "Rapport"}
         back={{ href: casesHref, label: "Saker" }}
         task
-        context={
-          <ContextTag label="Til">
-            {environment ? `Administratorene i ${environment.name}` : "Lånbort"}
-          </ContextTag>
-        }
+        context={context}
       >
-        {start.kind === "contact"
-          ? "Du skriver til administratorene som gruppe. Én av dem tar saken, og svaret kommer i saken."
-          : "En rapport ber om en vurdering. Den sier ikke at noen har gjort noe galt, og den rapporten gjelder, får ikke vite om den gjennom saken."}
+        {contact
+          ? "Du skriver til administratorene som gruppe. Én av dem tar saken, og svaret kommer der. Saken er ikke en privat samtale."
+          : "En rapport ber om en vurdering. Den sier ikke at noen har gjort noe galt. Den du rapporterer, får ikke vite om rapporten gjennom saken."}
       </PageHeader>
       <CommandForm
-        path={form.path}
-        fixed={form.fixed}
-        next={next}
-        submitLabel={form.submitLabel}
+        path={
+          contact ? "/api/environments/contact" : "/api/environments/reports"
+        }
+        fixed={
+          start.kind === "contact"
+            ? { environmentId: start.environmentId }
+            : {
+                environmentId: start.environmentId,
+                target: targetOf(start.subject),
+              }
+        }
+        next={caseHref("{caseId}")}
+        submitLabel={
+          contact
+            ? "Send til administratorene"
+            : "Send rapporten til administratorene"
+        }
       >
+        {!contact && environment && <Receiver environment={environment.name} />}
         <Field
           id="tekst"
-          label={start.kind === "contact" ? "Melding" : "Hva har skjedd"}
+          label={contact ? "Melding" : "Hva har skjedd"}
           help="Skriv bare det som trengs for saken. Private samtaler blir ikke en del av saken, men du kan sende inn meldinger fra dem senere."
         >
           <textarea
@@ -146,12 +266,10 @@ export default async function NewCasePage({
           />
         </Field>
       </CommandForm>
-      {start.kind === "report" && start.environmentId && (
-        <p className="link-row">
-          <Link href={newCaseHref({ ...start, environmentId: null })}>
-            Gjelder det et alvorlig brudd eller noe ulovlig? Rapporter til
-            Lånbort i stedet
-          </Link>
+      {!contact && (
+        <p className={styles.footnote}>
+          Gjelder det et lån som ikke er levert tilbake? Det avklares på{" "}
+          <Link href="/lan">lånet</Link>, ikke med en rapport.
         </p>
       )}
     </main>

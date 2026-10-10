@@ -9,95 +9,180 @@ import { CommandForm } from "@/components/command-form";
 import { ConfirmAction } from "@/components/confirm-action";
 import { describedBy, Field } from "@/components/field";
 import { MoreActions } from "@/components/more-actions";
-import { caseHref } from "@/navigation/routes";
+import { environmentCasesHref } from "@/navigation/cases";
+import { casesHref } from "@/navigation/routes";
 import { describeAction, measureLabels, personIn } from "@/presentation/cases";
-import { formatTime } from "@/presentation/dates";
+import { formatShortTime } from "@/presentation/dates";
+import styles from "../cases.module.css";
+import { MeasureForm } from "./measure-form";
 
-/** The handler's first step: take the case, or give it back (PS-COM-011). */
-export function Assignment({ c, userId }: { c: Case; userId: string }) {
-  const path = (action: string) => `/api/cases/${c.id}/${action}`;
+const casePath = (c: Case, action: string) => `/api/cases/${c.id}/${action}`;
 
-  if (c.assigneeUserId === null) {
-    return (
-      <ActionButton primary label="Ta saken" path={path("claim")} body={{}} />
-    );
-  }
+/** The parties by name, as a closing sheet says who it affects. */
+const partiesOf = (c: Case) => {
+  const names = c.participants.map((participant) =>
+    personIn(c.people, participant.userId),
+  );
 
-  return c.assigneeUserId === userId ? (
+  return names.length > 0 ? names.join(" og ") : "Partene";
+};
+
+/** The handler takes the case while nobody has it (PS-COM-011). */
+export function TakeCase({ c }: { c: Case }) {
+  return (
     <ActionButton
-      label="Legg saken tilbake i køen"
-      path={path("release")}
+      primary
+      label="Ta saken"
+      path={casePath(c, "claim")}
       body={{}}
     />
-  ) : null;
+  );
+}
+
+/** PS-COM-012: the parties of a mediation see each other's statements. */
+export function ShareStatements({ c }: { c: Case }) {
+  return (
+    <ConfirmAction
+      primary
+      label="Del forklaringene med partene"
+      title="Dele forklaringene?"
+      consequences={{
+        affects: [
+          `${partiesOf(c)} ser hverandres innlegg skrevet så langt.`,
+          "Innlegg som kommer senere, venter til du deler igjen.",
+        ],
+        stays: ["Interne notater og innlegg til én part deles ikke."],
+      }}
+      confirmLabel="Del forklaringene"
+      path={casePath(c, "share-statements")}
+      body={{}}
+    />
+  );
 }
 
 /**
- * The rest of the handling of an open case (PS-COM-011, UX-JRN-012), for
- * the handler who has it, or anyone who may handle it while nobody does;
- * another handler may only step aside. The server decides each step again.
+ * Closing decides nothing about the loan or the accounts (vision 06): the
+ * sheet says so, and that everything written stays.
+ */
+export function CloseCase({
+  c,
+  primary = false,
+}: {
+  c: Case;
+  primary?: boolean;
+}) {
+  const parties = partiesOf(c);
+
+  return (
+    <ConfirmAction
+      primary={primary}
+      label="Lukk saken"
+      title="Lukke saken?"
+      consequences={{
+        gone: [`${parties} kan ikke skrive mer i saken.`],
+        stays: [
+          "Alt som er skrevet, blir stående.",
+          c.kind === "loan_mediation"
+            ? "Lukkingen avgjør ingenting om lånet eller kontoene. Lånet går videre etter det partene selv registrerer."
+            : "Lukkingen avgjør ingenting om kontoene.",
+        ],
+        affects: [`${parties} får beskjed om at saken er lukket.`],
+      }}
+      confirmLabel="Lukk saken"
+      path={casePath(c, "close")}
+      body={{}}
+    />
+  );
+}
+
+/**
+ * The handling of an open case the reader acts on (PS-COM-011,
+ * UX-JRN-012): asking for new entries, a measure on what a report is
+ * about, and closing. The server decides each step again.
  */
 export function Handling({
   c,
-  userId,
   measures,
+  environment,
+  closeOffered,
 }: {
   c: Case;
-  userId: string;
   measures: readonly ModerationMeasureKind[];
+  environment: string | null;
+  /** Whether «Lukk saken» belongs here, not in the status card. */
+  closeOffered: boolean;
 }) {
-  const mine = c.assigneeUserId === userId;
-  const acting = mine || c.assigneeUserId === null;
-  const path = (action: string) => `/api/cases/${c.id}/${action}`;
+  const { turns } = caseKinds[c.kind];
   const name = (id: string) => personIn(c.people, id);
-  const { turns, separateStatements } = caseKinds[c.kind];
 
   return (
-    <section aria-labelledby="behandling">
-      <h2 id="behandling">Saksbehandling</h2>
-      {acting && turns && c.participants.length > 0 && (
-        <CommandForm
-          path={path("rounds")}
-          submitLabel="Be om nytt innlegg"
-          secondary
-        >
-          <Field
-            id="runde"
-            label="Hvem skal kunne skrive igjen"
-            help="Partene skriver ett innlegg om gangen."
-          >
-            <select id="runde" name="userId" {...describedBy("runde", true)}>
-              <option value="">Alle parter</option>
-              {c.participants.map((participant) => (
-                <option key={participant.userId} value={participant.userId}>
-                  {name(participant.userId)}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </CommandForm>
+    <>
+      {measures.length > 0 && (
+        <MeasureForm
+          caseId={c.id}
+          measures={measures}
+          environment={environment}
+        />
       )}
-      {acting && separateStatements && (
-        <div className="actions">
-          <ConfirmAction
-            label="Del forklaringene med partene"
-            title="Del forklaringene?"
-            consequences={{
-              affects: [
-                "Partene ser hverandres innlegg skrevet så langt.",
-                "Innlegg som kommer senere, venter til du deler igjen.",
-              ],
-              stays: ["Interne notater og innlegg til én part deles ikke."],
-            }}
-            confirmLabel="Del forklaringene"
-            path={path("share-statements")}
-            body={{}}
-          />
-        </div>
+      <section className={styles.section} aria-labelledby="behandling">
+        <h2 id="behandling">Behandling</h2>
+        {turns && c.participants.length > 0 && (
+          <CommandForm
+            path={casePath(c, "rounds")}
+            submitLabel="Be om nytt innlegg"
+            secondary
+          >
+            <Field
+              id="runde"
+              label="Hvem skal kunne skrive igjen"
+              help="Partene skriver ett innlegg om gangen. De får beskjed om at det er deres tur."
+            >
+              <select id="runde" name="userId" {...describedBy("runde", true)}>
+                {c.participants.length > 1 && (
+                  <option value="">Begge parter</option>
+                )}
+                {c.participants.map((participant) => (
+                  <option key={participant.userId} value={participant.userId}>
+                    {name(participant.userId)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </CommandForm>
+        )}
+        {closeOffered && (
+          <div className="actions">
+            <CloseCase c={c} />
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+
+/**
+ * The rarer steps for a handler (UX-INT-009): giving the case back or on,
+ * and stepping aside as not impartial (PS-USR-009). Taking a report on to
+ * Lånbort is not offered until the platform stewards can handle it
+ * (UX-EXC-011); the row says so where it would have been.
+ */
+export function HandlerMoreActions({ c, userId }: { c: Case; userId: string }) {
+  const mine = c.assigneeUserId === userId;
+  const acting = mine || c.assigneeUserId === null;
+  const name = (id: string) => personIn(c.people, id);
+
+  return (
+    <MoreActions>
+      {mine && (
+        <ActionButton
+          label="Legg saken tilbake i køen"
+          path={casePath(c, "release")}
+          body={{}}
+        />
       )}
       {mine && c.handlers.length > 0 && (
         <CommandForm
-          path={path("transfer")}
+          path={casePath(c, "transfer")}
           submitLabel="Gi saken videre"
           secondary
         >
@@ -112,120 +197,37 @@ export function Handling({
           </Field>
         </CommandForm>
       )}
-      {acting && measures.length > 0 && <Measures c={c} measures={measures} />}
-      {acting && (
-        <div className="actions">
-          <ConfirmAction
-            label="Lukk saken"
-            title="Lukk saken?"
-            consequences={{
-              gone: ["Partene kan ikke skrive mer i saken."],
-              stays: [
-                "Alt som er skrevet, blir stående.",
-                "Lukkingen avgjør ingenting om lånet eller kontoene.",
-              ],
-              affects: ["Partene får beskjed om at saken er lukket."],
-            }}
-            confirmLabel="Lukk saken"
-            path={path("close")}
-            body={{}}
-          />
-        </div>
+      {acting && c.kind === "environment_report" && (
+        <p className={styles.unavailable}>
+          <strong>Send videre til Lånbort</strong>
+          Ikke tilgjengelig ennå. Lånbort kan ikke ta imot rapporter i appen
+          ennå.
+        </p>
       )}
-      <MoreActions>
-        {acting && c.kind === "environment_report" && (
-          <CommandForm
-            path={path("escalate")}
-            next={caseHref("{caseId}")}
-            submitLabel="Send rapporten videre til Lånbort"
-            done="Rapporten er sendt til Lånbort"
-            secondary
-          >
-            <Field
-              id="eskaler"
-              label="Hva Lånbort bør vite"
-              help="For alvorlige brudd og det som gjelder hele Lånbort. Rapporten her fortsetter som før, og du blir den som melder den nye."
-            >
-              <textarea
-                id="eskaler"
-                name="body"
-                rows={3}
-                required
-                {...describedBy("eskaler", true)}
-              />
-            </Field>
-          </CommandForm>
-        )}
-        <ConfirmAction
-          label="Erklær deg inhabil"
-          title="Erklær deg inhabil?"
-          consequences={{
-            gone: ["Du kan ikke behandle denne saken igjen."],
-            stays: ["Det du har skrevet i saken, blir stående."],
-            affects: mine
-              ? ["Saken går tilbake i køen til de andre saksbehandlerne."]
-              : [],
-          }}
-          confirmLabel="Erklær meg inhabil"
-          path={path("recuse")}
-          body={{}}
-          danger
-        />
-      </MoreActions>
-    </section>
-  );
-}
-
-/** PS-TRUST-013–016: a measure on what the report concerns, with a reason. */
-function Measures({
-  c,
-  measures,
-}: {
-  c: Case;
-  measures: readonly ModerationMeasureKind[];
-}) {
-  return (
-    <CommandForm
-      path={`/api/cases/${c.id}/measures`}
-      submitLabel="Gjennomfør tiltaket"
-      secondary
-    >
-      <Field id="tiltak" label="Tiltak">
-        <select id="tiltak" name="measure" required>
-          {measures.map((measure) => (
-            <option key={measure} value={measure}>
-              {measureLabels[measure]}
-            </option>
-          ))}
-        </select>
-      </Field>
-      {measures.includes("review_score_removed") && (
-        <Field
-          id="dimensjon"
-          label="Vurderingen som skal fjernes"
-          help="Bare når tiltaket er å fjerne én vurdering."
-        >
-          <input
-            id="dimensjon"
-            name="dimension"
-            {...describedBy("dimensjon", true)}
-          />
-        </Field>
-      )}
-      <Field
-        id="begrunnelse"
-        label="Begrunnelse"
-        help="Lagres med tiltaket og vises bare for saksbehandlerne."
-      >
-        <textarea
-          id="begrunnelse"
-          name="reason"
-          rows={3}
-          required
-          {...describedBy("begrunnelse", true)}
-        />
-      </Field>
-    </CommandForm>
+      <ConfirmAction
+        label="Erklær deg inhabil"
+        title="Erklære deg inhabil?"
+        consequences={{
+          gone: [
+            "Du kan ikke behandle denne saken igjen, og du ser den ikke lenger.",
+          ],
+          stays: ["Det du har skrevet i saken, blir stående."],
+          affects: mine
+            ? [
+                "Saken går tilbake i køen, og de andre administratorene får beskjed.",
+              ]
+            : [],
+        }}
+        confirmLabel="Erklær meg inhabil"
+        path={casePath(c, "recuse")}
+        body={{}}
+        next={
+          c.environmentId ? environmentCasesHref(c.environmentId) : casesHref
+        }
+        icon="block"
+        danger
+      />
+    </MoreActions>
   );
 }
 
@@ -233,54 +235,72 @@ function Measures({
 export function History({
   c,
   taken,
-  measuresOffered,
 }: {
   c: Case;
   taken: readonly ModerationMeasure[];
-  measuresOffered: boolean;
 }) {
-  if (c.history.length === 0 && taken.length === 0) return null;
+  if (c.history.length === 0) return null;
 
   return (
-    <details id="historikk">
+    <details id="historikk" className={styles.section}>
       <summary>Historikk</summary>
-      {c.history.length > 0 && (
-        <ol className="entries" aria-label="Behandlingen, eldste først">
-          {c.history.map((action, index) => (
-            <li key={index} className="entry">
-              <span>{describeAction(action, c.people)}</span>
-              <time className="entry-detail" dateTime={action.at}>
-                {formatTime(action.at)}
-              </time>
-            </li>
-          ))}
-        </ol>
-      )}
-      {(measuresOffered || taken.length > 0) && (
-        <>
-          <h3>Tiltak</h3>
-          {taken.length === 0 ? (
-            <p className="quiet">Ingen tiltak er gjennomført.</p>
-          ) : (
-            <ol className="entries" aria-label="Tiltak, eldste først">
-              {taken.map((measure) => (
-                <li key={measure.id} className="entry">
-                  <span>{measureLabels[measure.kind]}</span>
-                  <span className="entry-detail">
-                    {personIn(
-                      c.people,
-                      measure.decidedByUserId,
-                      "En saksbehandler",
-                    )}{" "}
-                    · {formatTime(measure.decidedAt)}
-                  </span>
-                  <span className="message-text">{measure.reason}</span>
-                </li>
-              ))}
-            </ol>
-          )}
-        </>
-      )}
+      <ol className={styles.entries} aria-label="Behandlingen, eldste først">
+        {c.history.map((action, index) => (
+          <li key={index} className={styles.entry}>
+            <span>{describeAction(action, c.people)}</span>
+            <time className="quiet" dateTime={action.at}>
+              {formatShortTime(action.at)}
+            </time>
+          </li>
+        ))}
+        {taken.map((measure) => (
+          <li key={measure.id} className={styles.entry}>
+            <span>
+              {personIn(c.people, measure.decidedByUserId, "En saksbehandler")}{" "}
+              gjennomførte tiltaket «{measureLabels[measure.kind]}»
+            </span>
+            <time className="quiet" dateTime={measure.decidedAt}>
+              {formatShortTime(measure.decidedAt)}
+            </time>
+          </li>
+        ))}
+      </ol>
     </details>
+  );
+}
+
+/** The measures taken on the report (PS-TRUST-016): what, who, when, why. */
+export function TakenMeasures({
+  c,
+  taken,
+  environment,
+}: {
+  c: Case;
+  taken: readonly ModerationMeasure[];
+  environment: string | null;
+}) {
+  if (taken.length === 0) return null;
+
+  return (
+    <section className={styles.section} aria-labelledby="tiltak">
+      <h2 id="tiltak">Tiltak</h2>
+      <ol className={styles.entries}>
+        {taken.map((measure) => (
+          <li key={measure.id} className={styles.entry}>
+            <strong>
+              {measureLabels[measure.kind]}
+              {measure.scope === "environment" && environment
+                ? ` i ${environment}`
+                : ""}
+            </strong>
+            <span className="quiet">
+              {personIn(c.people, measure.decidedByUserId, "En saksbehandler")}{" "}
+              · {formatShortTime(measure.decidedAt)}
+            </span>
+            <p className={styles.body}>{measure.reason}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }

@@ -4,8 +4,8 @@ import {
   listOwnEnvironments,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
+import { MenuList, MenuRow } from "@/components/menu-list";
 import { PageHeader } from "@/components/page-header";
 import { environmentCasesHref } from "@/navigation/cases";
 import {
@@ -23,10 +23,13 @@ export const metadata: Metadata = { title: "Saker – Lånbort" };
 const listKey = "saker";
 
 /**
- * Own cases (UX-IA-007): the cases the user takes part in, newest first,
- * and, for each environment they administer, the way to its queue. The
- * platform stewards' queue is not shown until their stronger sign-in is
- * built (OD-0023), since every action in it is refused until then.
+ * Own cases (UX-IA-007, PS-COM-001): the cases the user takes part in, the
+ * open ones first, with «Din tur» where they are to write; and, for each
+ * environment they administer, the way to its queue. It is a way into the
+ * same pages, not an inbox of its own. A report about the user is never
+ * here. The platform stewards' queue is not shown until their stronger
+ * sign-in is built (OD-0023), since every action in it is refused until
+ * then.
  */
 export default async function CasesPage({
   searchParams,
@@ -52,6 +55,19 @@ export default async function CasesPage({
   const administered = (environments ?? []).filter((environment) =>
     environment.roles.includes("administrator"),
   );
+  const groups = [
+    {
+      key: "apne",
+      heading: "Åpne",
+      cases: own.items.filter((c) => c.status === "open"),
+    },
+    {
+      key: "lukkede",
+      heading: "Lukkede",
+      cases: own.items.filter((c) => c.status === "closed"),
+    },
+  ].filter((group) => group.cases.length > 0);
+  const viewer = { userId: account.userId, asHandler: false };
 
   return (
     <main>
@@ -59,42 +75,53 @@ export default async function CasesPage({
         Kontakt med administratorer, meklinger og rapporter du er part i.
         Private samtaler er aldri en del av en sak.
       </PageHeader>
+      {own.items.length === 0 && (
+        <EmptyState>
+          Du har ingen saker. En sak starter fra miljøet, lånet eller det den
+          gjelder.
+        </EmptyState>
+      )}
+      <div id={listKey}>
+        {groups.map((group) => (
+          <section key={group.key} aria-labelledby={group.key}>
+            <h2 id={group.key}>
+              {group.heading}
+              {group.key === "apne" && (
+                <span className="count"> · {group.cases.length}</span>
+              )}
+            </h2>
+            <CaseList
+              label={group.key}
+              cases={group.cases}
+              viewer={viewer}
+              environmentName={(id) => names.get(id) ?? null}
+            />
+          </section>
+        ))}
+      </div>
+      {own.nextCursor !== null && (
+        <p className="link-row">
+          <a href={morePagesHref(casesHref, query, listKey, listKey)}>
+            Vis eldre saker
+          </a>
+        </p>
+      )}
       {administered.length > 0 && (
         <section aria-labelledby="ko">
           <h2 id="ko">Saker du kan behandle</h2>
-          <ul className="entries">
+          <MenuList label="ko">
             {administered.map((environment) => (
-              <li key={environment.id} className="entry">
-                <Link href={environmentCasesHref(environment.id)}>
-                  Saker i {environment.name}
-                </Link>
-              </li>
+              <MenuRow
+                key={environment.id}
+                href={environmentCasesHref(environment.id)}
+                icon="shield"
+                label={`Saker i ${environment.name}`}
+                detail="Som administrator"
+              />
             ))}
-          </ul>
+          </MenuList>
         </section>
       )}
-      <section aria-labelledby={listKey}>
-        <h2 id={listKey}>Dine saker</h2>
-        {own.items.length === 0 ? (
-          <EmptyState>
-            Du er ikke part i noen saker. En sak starter fra miljøet, lånet
-            eller det den gjelder.
-          </EmptyState>
-        ) : (
-          <CaseList
-            label="Dine saker, nyeste først"
-            cases={own.items}
-            viewer={{ userId: account.userId, asHandler: false }}
-            environmentName={(id) => names.get(id) ?? null}
-            nameOf={() => ""}
-            more={
-              own.nextCursor === null
-                ? null
-                : morePagesHref(casesHref, query, listKey, listKey)
-            }
-          />
-        )}
-      </section>
     </main>
   );
 }

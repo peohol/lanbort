@@ -5,7 +5,7 @@ import {
 } from "@lanbort/contracts";
 import { z } from "zod";
 import { defineQuery } from "../commands/query";
-import { caseQueueHomeSource, environmentCaseQueueItem } from "../cases/home";
+import { caseQueueHomeSource, environmentCaseQueueItems } from "../cases/home";
 import { AuthorizationError } from "../errors";
 import {
   environmentAdministrationItems,
@@ -101,7 +101,7 @@ export const listEnvironmentAdministrationTasks = defineQuery({
     const items: HomeItem[] = [];
 
     if (environment?.roles.includes("administrator")) {
-      const cases = await environmentCaseQueueItem(reader, environment);
+      const cases = await environmentCaseQueueItems(reader, environment);
 
       items.push(
         ...environmentHomeItems(environment),
@@ -110,7 +110,7 @@ export const listEnvironmentAdministrationTasks = defineQuery({
           environment,
           ownObjectIdsOnce(reader),
         )),
-        ...(cases ? [cases] : []),
+        ...cases,
       );
     }
 

@@ -84,15 +84,26 @@ const texts: Record<HomeItemKind, (item: HomeItem) => string> = {
   "environment.claim_ownership": (item) =>
     `${item.title} mangler eier. Du kan melde at du vil overta`,
   "environment.handle_cases": (item) =>
-    `${item.count} ${plural(item.count, "sak venter", "saker venter")} på behandling i ${item.title}`,
+    `${item.count} ${plural(item.count, "henvendelse venter", "henvendelser venter")} på svar i ${item.title}`,
+  "environment.mediate_loans": (item) =>
+    `${item.count} ${plural(item.count, "lån venter", "lån venter")} på mekling i ${item.title}`,
+  "environment.review_reports": (item) =>
+    `${item.count} ${plural(item.count, "rapport venter", "rapporter venter")} på vurdering i ${item.title}`,
 };
+
+/** The tasks that lead to an environment's case queue (UX-IA-007). */
+const caseTasks: readonly HomeItemKind[] = [
+  "environment.handle_cases",
+  "environment.mediate_loans",
+  "environment.review_reports",
+];
 
 /**
  * Where an item leads: its target's page, or for an environment's waiting
  * cases, the environment's queue (UX-IA-007).
  */
 export const homeItemHref = (item: HomeItem): string | null =>
-  item.kind === "environment.handle_cases"
+  caseTasks.includes(item.kind)
     ? environmentCasesHref(item.target.id)
     : hrefFor(item.target);
 
