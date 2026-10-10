@@ -21,28 +21,18 @@ export interface AudienceChoice {
   readonly help: string;
 }
 
-/** An earlier entry of the writer's own that a new one may correct. */
+/**
+ * An earlier entry of the writer's own that a new one may correct. A
+ * handler's correction goes to the same audience as the entry it corrects.
+ */
 export interface CorrectableEntry {
   readonly id: string;
   readonly label: string;
+  readonly audience?: AudienceChoice["audience"];
+  readonly toUserId?: string | null;
 }
 
-/**
- * Writes in a case (PS-COM-013–014): a participant writes to the case; a
- * handler first says who sees it, in a row of pills, and the button says
- * what happens («Lagre notatet»). A correction is a new entry that names the
- * writer's own earlier one, which stays as it was.
- */
-export function EntryForm({
-  caseId,
-  heading,
-  label,
-  submitLabel,
-  audiences,
-  correctable,
-  help,
-  evidenceHref,
-}: {
+interface EntryFormProps {
   caseId: string;
   heading: string;
   /** The text field's label. */
@@ -55,14 +45,55 @@ export function EntryForm({
   help?: string;
   /** Where a participant chooses private messages to submit (WP-46). */
   evidenceHref?: string | null;
-}) {
+  correctOnly?: boolean;
+}
+
+/**
+ * Writes in a case (PS-COM-013–014): a participant writes to the case; a
+ * handler first says who sees it, in a row of pills, and the button says
+ * what happens («Lagre notatet»). A correction is a new entry that names the
+ * writer's own earlier one, which stays as it was, and reaches the same
+ * people. With `correctOnly` it is the one thing to write: a handler
+ * correcting their own entry once the case is closed. Each entry sent is
+ * its own command: the form starts afresh, with a new idempotency key.
+ */
+export function EntryForm(props: EntryFormProps) {
+  const [round, setRound] = useState(0);
+
+  return (
+    <EntryFormRound
+      key={round}
+      {...props}
+      onSent={() => setRound((count) => count + 1)}
+    />
+  );
+}
+
+function EntryFormRound({
+  caseId,
+  heading,
+  label,
+  submitLabel,
+  audiences,
+  correctable,
+  help,
+  evidenceHref,
+  correctOnly = false,
+  onSent,
+}: EntryFormProps & { onSent: () => void }) {
   const id = useId();
   const errorId = `${id}-feil`;
   const [body, setBody] = useState("");
   const [audience, setAudience] = useState(audiences[0]?.value ?? "");
-  const [corrects, setCorrects] = useState("");
+  const [corrects, setCorrects] = useState(
+    correctOnly ? (correctable[0]?.id ?? "") : "",
+  );
+  const corrected = correctable.find((entry) => entry.id === corrects);
   const chosen = audiences.find((choice) => choice.value === audience);
-  const note = chosen?.audience === "handlers";
+  const to = corrected?.audience
+    ? { audience: corrected.audience, toUserId: corrected.toUserId ?? null }
+    : chosen && { audience: chosen.audience, toUserId: chosen.toUserId };
+  const note = to?.audience === "handlers";
   const command = useCommand({
     path: `/api/cases/${caseId}/entries`,
     done: note ? "Notatet er lagret" : "Innlegget er sendt",
@@ -72,26 +103,23 @@ export function EntryForm({
     event.preventDefault();
     const sent = await command.run({
       body,
-      ...(chosen
+      ...(to
         ? {
-            audience: chosen.audience,
-            ...(chosen.toUserId ? { toUserId: chosen.toUserId } : {}),
+            audience: to.audience,
+            ...(to.toUserId ? { toUserId: to.toUserId } : {}),
           }
         : {}),
       ...(corrects ? { correctsEntryId: corrects } : {}),
     });
 
-    if (sent) {
-      setBody("");
-      setCorrects("");
-    }
+    if (sent) onSent();
   }
 
   return (
     <section className={styles.section} aria-labelledby={`${id}-skriv`}>
       <h2 id={`${id}-skriv`}>{heading}</h2>
       <form onSubmit={(event) => void submit(event)}>
-        {audiences.length > 0 && (
+        {audiences.length > 0 && !corrected && (
           <fieldset className={styles.audiences}>
             <legend className="visually-hidden">Hvem skal se innlegget</legend>
             {audiences.map((choice) => (
@@ -112,7 +140,11 @@ export function EntryForm({
         <Field
           id={`${id}-tekst`}
           label={note ? "Internt notat" : label}
-          help={chosen?.help ?? help}
+          help={
+            corrected
+              ? "Rettelsen går til de samme som så innlegget du retter."
+              : (chosen?.help ?? help)
+          }
         >
           <textarea
             id={`${id}-tekst`}
@@ -128,16 +160,25 @@ export function EntryForm({
         {correctable.length > 0 && (
           <Field
             id={`${id}-retter`}
-            label="Retter et tidligere innlegg"
-            help="Velg bare hvis dette retter noe du skrev før. Det du skrev før, blir stående."
+            label={
+              correctOnly
+                ? "Innlegget du retter"
+                : "Retter et tidligere innlegg"
+            }
+            help={
+              correctOnly
+                ? "Saken er lukket, men du kan rette en faktisk feil i det du skrev. Det du skrev før, blir stående."
+                : "Velg bare hvis dette retter noe du skrev før. Det du skrev før, blir stående."
+            }
           >
             <select
               id={`${id}-retter`}
               value={corrects}
+              required={correctOnly}
               onChange={(event) => setCorrects(event.target.value)}
               {...describedBy(`${id}-retter`, true)}
             >
-              <option value="">Nei, et nytt innlegg</option>
+              {!correctOnly && <option value="">Nei, et nytt innlegg</option>}
               {correctable.map((entry) => (
                 <option key={entry.id} value={entry.id}>
                   {entry.label}
@@ -159,7 +200,11 @@ export function EntryForm({
             className="button-primary"
             busy={command.pending}
           >
-            {note ? "Lagre notatet" : submitLabel}
+            {corrected
+              ? "Send rettelsen"
+              : note
+                ? "Lagre notatet"
+                : submitLabel}
           </BusyButton>
         </div>
         <ErrorText id={errorId}>{command.error}</ErrorText>

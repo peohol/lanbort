@@ -269,6 +269,15 @@ export default async function CasePage({
     (entry) =>
       entry.authorUserId === account.userId && entry.capacity === c.viewer,
   );
+  const correctable = own.map((entry) => ({
+    id: entry.id,
+    label: `Innlegget ditt ${formatShortTime(entry.createdAt)}`,
+    ...(asHandler
+      ? { audience: entry.audience, toUserId: entry.toUserId }
+      : {}),
+  }));
+  // PS-COM-014: a handler still corrects their own entry once it is closed.
+  const correcting = asHandler && !open && correctable.length > 0;
   const firstStatement =
     !asHandler &&
     caseKinds[c.kind].separateStatements &&
@@ -344,15 +353,20 @@ export default async function CasePage({
           Du kan skrive igjen når administratorene ber om mer.
         </p>
       )}
-      {writes && (
+      {(writes || correcting) && (
         <EntryForm
+          key={correcting ? "rett" : "skriv"}
           caseId={c.id}
-          {...writer}
+          {...(correcting
+            ? {
+                heading: "Rett et innlegg",
+                label: "Rettelse",
+                submitLabel: "Send rettelsen",
+                correctOnly: true,
+              }
+            : writer)}
           audiences={asHandler ? audiencesFor(c, handlers) : []}
-          correctable={own.map((entry) => ({
-            id: entry.id,
-            label: `Innlegget ditt ${formatShortTime(entry.createdAt)}`,
-          }))}
+          correctable={correctable}
           help={
             caseKinds[c.kind].separateStatements
               ? "Skriv hva som skjedde, så konkret du kan. Den andre parten ser det ikke før administratoren deler forklaringene."

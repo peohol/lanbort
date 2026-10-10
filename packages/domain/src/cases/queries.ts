@@ -20,7 +20,6 @@ import {
   type CaseRecord,
   type EntryRecord,
   handlingOf,
-  loanClarified,
   type ParticipantRecord,
   platformCaseKinds,
   sharedUpTo,
@@ -42,6 +41,7 @@ import {
   loadCaseTitles,
   loadEntries,
   loadHandlingState,
+  loadClarified,
   loadLoanStatuses,
   loadParticipants,
   loadParticipantsOf,
@@ -56,6 +56,7 @@ const nothingRead = {
   actions: [] as ActionRecord[],
   titles: { loanTitle: null, objectTitle: null },
   loanStatus: null,
+  loanClarified: false,
   handlers: [] as string[],
   names: new Map<string, string>(),
 };
@@ -144,6 +145,7 @@ export const readCase = defineQuery({
               ? ((await loadLoanStatuses(tx, [c.loanId], now)).get(c.loanId) ??
                 null)
               : null,
+          loanClarified: await loadClarified(tx, c.id, now),
           handlers,
           names: await realNames(
             tx,
@@ -228,7 +230,7 @@ export const readCase = defineQuery({
           ? null
           : {
               status: resource.loanStatus,
-              clarified: loanClarified(resource.loanStatus),
+              clarified: resource.loanClarified,
             },
       handlers: asParty
         ? []
@@ -283,15 +285,6 @@ async function toList(
 ): Promise<CaseList> {
   const ids = page.items.map(({ record }) => record.id);
   const participants = await loadParticipantsOf(db, ids);
-  const loans = await loadLoanStatuses(
-    db,
-    page.items.flatMap(({ record }) =>
-      record.kind === "loan_mediation" && record.loanId !== null
-        ? [record.loanId]
-        : [],
-    ),
-    now,
-  );
   const named = (item: ListedCase) => [
     ...(item.record.subjectUserId === null ? [] : [item.record.subjectUserId]),
     ...(viewer.asHandler
@@ -311,8 +304,6 @@ async function toList(
       const own = participants
         .get(record.id)
         ?.find(({ userId }) => userId === viewer.userId);
-      const loanStatus =
-        record.loanId === null ? undefined : loans.get(record.loanId);
 
       return {
         id: record.id,
@@ -336,7 +327,7 @@ async function toList(
           caseKinds[record.kind].turns &&
           (own?.mayWrite ?? false),
         loanClarified:
-          loanStatus === undefined ? null : loanClarified(loanStatus),
+          record.kind === "loan_mediation" ? item.loanClarified : null,
         people: [...new Set(named(item))].map((userId) => ({
           userId,
           realName: names.get(userId) ?? null,
@@ -409,7 +400,12 @@ export const listEnvironmentCaseQueue = defineQuery({
                   .where("c.environment_id", "=", input.environmentId)
                   .where("c.status", "=", input.status)
                   .where(handledBy(actor.userId, now)),
-              { cursor: input.cursor, pageSize: casePageSize, now },
+              {
+                cursor: input.cursor,
+                pageSize: casePageSize,
+                now,
+                clarifiedLast: true,
+              },
             )
           : { items: [], nextCursor: null };
 

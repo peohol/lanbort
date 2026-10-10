@@ -79,12 +79,21 @@ test("a member's contact is taken from Home, answered and closed in the case", a
   await expect(statusCard(eva)).toContainText("Saken er lukket");
   await eva.getByText("Historikk", { exact: true }).click();
   await expect(eva.getByText("Eva Eier lukket saken")).toBeVisible();
+  // A handler still corrects a factual error once it is closed (PS-COM-014).
+  await eva
+    .getByRole("textbox", { name: "Rettelse" })
+    .fill("Nøkkelen henger i kjelleren.");
+  await eva.getByRole("button", { name: "Send rettelsen" }).click();
+  await expect(entry(eva, "Nøkkelen henger i kjelleren.")).toContainText(
+    "Retter innlegget fra",
+  );
 
   // The member sees the answer as the administrators', not as Eva's.
   await ola.goto(caseUrl);
   await expect(entry(ola, "Nøkkelen henger i gangen.")).toContainText(
     `Administratorene i ${name}`,
   );
+  await expect(entry(ola, "Nøkkelen henger i kjelleren.")).toBeVisible();
   await expect(ola.getByText("Eva Eier")).toHaveCount(0);
   await expect(ola.getByRole("button", { name: "Ta saken" })).toHaveCount(0);
   await expect(ola.getByRole("textbox")).toHaveCount(0);

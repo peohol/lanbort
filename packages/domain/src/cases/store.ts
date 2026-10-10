@@ -598,18 +598,95 @@ export async function recordAction(
   }
 }
 
-/** The page of cases after `cursor`, newest first. */
+/**
+ * PS-COM-022: the parties have themselves clarified the loan an open
+ * mediation of `c` is about. Only what their own statements settled
+ * counts: the handover they agree on while the loan runs and its return
+ * day is not over, its return the lender confirmed, or both saying it was
+ * never handed over. A loan that is late, disputed, awaiting either step,
+ * ended administratively as unresolved, stopped, or not completed only
+ * because a deadline passed, is not.
+ */
+export const clarifiedByParties = (now: Date) => {
+  const today = calendarDate(now);
+
+  return sql<boolean>`(c.kind = 'loan_mediation' and c.status = 'open' and exists (
+    select 1 from app.loans as loan
+    where loan.id = c.loan_id
+      and case loan.status
+        when 'active' then ${today}::date < (
+          select upper(agreement.period) from app.loan_agreements as agreement
+          where agreement.loan_id = loan.id
+          order by agreement.version desc limit 1
+        )
+        when 'ended' then loan.end_reason = 'returned'
+          or (loan.end_reason = 'not_completed' and (
+            select count(*) from app.loan_handover_reports as report
+            where report.loan_id = loan.id
+              and report.agreement_version = (
+                select max(version) from app.loan_agreements
+                where loan_id = loan.id
+              )
+              and report.outcome = 'not_handed_over'
+              and not exists (
+                select 1 from app.loan_handover_reports as later
+                where later.loan_id = report.loan_id
+                  and later.agreement_version = report.agreement_version
+                  and later.reporter_role = report.reporter_role
+                  and later.position > report.position
+              )
+          ) = 2)
+        else false
+      end
+  ))`;
+};
+
+/** Whether the parties have clarified the loan of each open mediation. */
+export async function loadClarified(
+  db: Db,
+  caseId: string,
+  now: Date,
+): Promise<boolean> {
+  const { clarified } = await db
+    .selectFrom("app.cases as c")
+    .select(clarifiedByParties(now).as("clarified"))
+    .where("c.id", "=", caseId)
+    .executeTakeFirstOrThrow();
+
+  return clarified;
+}
+
+/**
+ * The page of cases after `cursor`, newest first; with `clarifiedLast` a
+ * mediation whose loan the parties have clarified comes after every other
+ * case, across all pages (PS-COM-022).
+ */
 export async function listCases(
   db: Db,
   filter: (query: ReturnType<typeof listQuery>) => ReturnType<typeof listQuery>,
-  options: { cursor: string | undefined; pageSize: number; now: Date },
+  options: {
+    cursor: string | undefined;
+    pageSize: number;
+    now: Date;
+    clarifiedLast?: boolean;
+  },
 ) {
-  const rows = await filter(listQuery(db, options.now))
+  const rank = options.clarifiedLast
+    ? sql<number>`(${clarifiedByParties(options.now)})::int`
+    : sql<number>`0`;
+  const query = filter(listQuery(db, options.now));
+  const rows = await (options.clarifiedLast ? query.orderBy(rank) : query)
     .where(
       options.cursor === undefined
         ? sql<boolean>`true`
-        : sql<boolean>`(c.opened_at, c.id) < (
-            select opened_at, id from app.cases where id = ${options.cursor}
+        : sql<boolean>`(
+            select ${rank} > cursor.rank
+              or (${rank} = cursor.rank
+                and (c.opened_at, c.id) < (cursor.opened_at, cursor.id))
+            from (
+              select ${rank} as rank, c.opened_at, c.id
+              from app.cases as c where c.id = ${options.cursor}
+            ) as cursor
           )`,
     )
     .orderBy("c.opened_at", "desc")
@@ -621,6 +698,7 @@ export async function listCases(
     assigneeUserId: row.current_assignee,
     handlerAvailable: row.handler_available,
     title: row.title,
+    loanClarified: row.loan_clarified,
   }));
 
   return {
@@ -634,6 +712,7 @@ function listQuery(db: Db, now: Date) {
   return caseQuery(db).select([
     currentAssignee(now).as("current_assignee"),
     hasHandler(now).as("handler_available"),
+    clarifiedByParties(now).as("loan_clarified"),
     sql<string | null>`coalesce(
       (select agreement.title from app.loan_agreements as agreement
         where agreement.loan_id = c.loan_id

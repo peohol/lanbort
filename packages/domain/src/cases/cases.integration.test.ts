@@ -13,6 +13,7 @@ import {
 import { approveLoanRequest } from "../loans/approval";
 import { acceptResponsibility } from "../loans/commands";
 import { reportHandover } from "../loans/handover";
+import { reportReturn } from "../loans/return";
 import { readLoan } from "../loans/queries";
 import { grantPlatformRole, revokePlatformRole } from "../platform/commands";
 import { platformRoleOpsProcess } from "../platform/policies";
@@ -39,6 +40,7 @@ import {
   listPlatformCaseQueue,
   readCase,
 } from "./queries";
+import { listCases } from "./store";
 
 /**
  * WP-45: administrative cases and their queue (PS-COM-010–015). A case
@@ -656,6 +658,108 @@ describe("mediation of a loan through an environment (PS-COM-012, vision 05)", (
       clarified: true,
     });
     expect((await read(owner, caseId)).status).toBe("open");
+  });
+
+  it("counts as clarified only what the parties themselves settled (PS-COM-022)", async () => {
+    const clarified = async (caseId: string, admin: UserActor) =>
+      (await read(admin, caseId)).loan?.clarified;
+
+    // Both saying it was never handed over settles it.
+    const both = await disputedLoan();
+    const settled = await run(requestLoanMediation, both.borrower, {
+      loanId: both.loanId,
+      body: "Jeg fikk den aldri.",
+    });
+    expect(await clarified(settled.caseId, both.admin)).toBe(false);
+    await run(reportHandover, both.owner, {
+      loanId: both.loanId,
+      agreementVersion: 1,
+      outcome: "not_handed_over",
+    });
+    expect((await read(both.admin, settled.caseId)).loan).toEqual({
+      status: "ended",
+      clarified: true,
+    });
+
+    // A handover agreed on is clarified until the return day is over; a
+    // late return is not, and the lender's confirmation of it is.
+    const loan = await disputedLoan();
+    const { caseId } = await run(requestLoanMediation, loan.borrower, {
+      loanId: loan.loanId,
+      body: "Uenige om overleveringen.",
+    });
+    await run(reportHandover, loan.borrower, {
+      loanId: loan.loanId,
+      agreementVersion: 1,
+      outcome: "handed_over",
+    });
+    expect(await clarified(caseId, loan.admin)).toBe(true);
+    kit.advance(2 * oneDay);
+    expect((await read(loan.admin, caseId)).loan).toEqual({
+      status: "awaiting_return",
+      clarified: false,
+    });
+    const back = (
+      actor: UserActor,
+      outcome: "still_has" | "returned" | "received",
+    ) =>
+      run(reportReturn, actor, {
+        loanId: loan.loanId,
+        agreementVersion: 1,
+        outcome,
+        immediately: true,
+      });
+    await back(loan.borrower, "still_has");
+    expect((await read(loan.admin, caseId)).loan).toEqual({
+      status: "late",
+      clarified: false,
+    });
+    await back(loan.borrower, "returned");
+    await back(loan.owner, "received");
+    expect((await read(loan.admin, caseId)).loan).toEqual({
+      status: "ended",
+      clarified: true,
+    });
+  });
+
+  it("puts a clarified mediation after every other case in the queue, across pages (PS-COM-022)", async () => {
+    const older = await disputedLoan();
+    const first = await run(requestLoanMediation, older.borrower, {
+      loanId: older.loanId,
+      body: "Uenige.",
+    });
+    kit.advance(1000);
+    const newer = await disputedLoan();
+    const second = await run(requestLoanMediation, newer.borrower, {
+      loanId: newer.loanId,
+      body: "Uenige.",
+    });
+    await run(reportHandover, newer.borrower, {
+      loanId: newer.loanId,
+      agreementVersion: 1,
+      outcome: "handed_over",
+    });
+
+    const ids = [first.caseId, second.caseId];
+    const page = (cursor?: string) =>
+      listCases(db, (query) => query.where("c.id", "in", ids), {
+        cursor,
+        pageSize: 1,
+        now: kit.now(),
+        clarifiedLast: true,
+      });
+    const one = await page();
+    const two = await page(one.nextCursor!);
+    expect(
+      [...one.items, ...two.items].map((item) => [
+        item.record.id,
+        item.loanClarified,
+      ]),
+    ).toEqual([
+      [first.caseId, false],
+      [second.caseId, true],
+    ]);
+    expect(two.nextCursor).toBeNull();
   });
 
   it("is never handled by an administrator with a stake in the loan", async () => {

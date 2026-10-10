@@ -15,15 +15,31 @@ import styles from "../cases.module.css";
  * are offered, and the button names the measure and where it applies
  * (UX-INT-003).
  */
-export function MeasureForm({
-  caseId,
-  measures,
-  environment,
-}: {
+export function MeasureForm(props: MeasureFormProps) {
+  const [round, setRound] = useState(0);
+
+  // Each measure is its own command, with its own idempotency key.
+  return (
+    <MeasureFormRound
+      key={round}
+      {...props}
+      onDone={() => setRound((count) => count + 1)}
+    />
+  );
+}
+
+interface MeasureFormProps {
   caseId: string;
   measures: readonly ModerationMeasureKind[];
   environment: string | null;
-}) {
+}
+
+function MeasureFormRound({
+  caseId,
+  measures,
+  environment,
+  onDone,
+}: MeasureFormProps & { onDone: () => void }) {
   const id = useId();
   const errorId = `${id}-feil`;
   const [measure, setMeasure] = useState<ModerationMeasureKind | null>(null);
@@ -45,10 +61,7 @@ export function MeasureForm({
       ...(measure === "review_score_removed" ? { dimension } : {}),
     });
 
-    if (done) {
-      setMeasure(null);
-      setReason("");
-    }
+    if (done) onDone();
   }
 
   return (
