@@ -848,11 +848,14 @@ export const submitChatCommit = defineCommand({
       invalid("welcome");
     }
 
-    // A device the server already shut out (revoked, reset or deleted) is
-    // still removed from the MLS group by the commit, so it may be named.
+    // Only a device the server already shut out (revoked, reset or deleted)
+    // is removed: the commit still takes it out of the MLS group. A live
+    // device stays, so no participant can cut another's device off.
     if (
       new Set(removed).size !== removed.length ||
-      removed.some((id) => id === device.id || added.includes(id))
+      removed.some(
+        (id) => id === device.id || added.includes(id) || live.has(id),
+      )
     ) {
       invalid("removedDeviceIds");
     }

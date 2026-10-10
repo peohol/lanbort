@@ -2,6 +2,7 @@ import {
   approveChatLinkSchema,
   chatDeviceRegisteredSchema,
   chatDoneSchema,
+  chatLimits,
   chatKeyPackageStockSchema,
   chatLinkRequestListSchema,
   chatLinkRequestTargetSchema,
@@ -15,7 +16,7 @@ import {
   revokeChatDeviceSchema,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import type { Transaction } from "kysely";
+import { type Kysely, sql, type Transaction } from "kysely";
 import { z } from "zod";
 import { rateLimits } from "../abuse/rate-limits";
 import type { Actor, UserActor } from "../actor";
@@ -505,6 +506,15 @@ export const approveChatLink = defineCommand({
       conflict("The device id is taken");
     }
 
+    // A restore revokes every other device in one request (ADR-0010 §8).
+    const live = (await devicesOf(tx, [approver.userId])).filter(
+      (device) => device.revokedAt === null,
+    );
+
+    if (live.length >= chatLimits.devicesPerAccount) {
+      conflict("The account has as many devices as it can have");
+    }
+
     await insertDevice(
       tx,
       input.certificate,
@@ -754,3 +764,39 @@ export const publishChatKeyPackages = defineCommand({
     };
   },
 });
+
+/**
+ * A re-authentication gives the browser a new sign-in session (WP-12). The
+ * old session's chat device and pending link request go with it, and the
+ * old session ends. Otherwise the device would stay in every group, bound
+ * to a session nothing uses any more, while the browser lost its chat
+ * (ADR-0010 §5, §7). Call it only once the new session is known to be the
+ * same user's.
+ */
+export async function renewChatSession(
+  db: Kysely<Database>,
+  userId: string,
+  from: string,
+  to: string,
+): Promise<void> {
+  if (from === to) {
+    return;
+  }
+
+  await db.transaction().execute(async (tx) => {
+    await tx
+      .updateTable("app.chat_devices")
+      .set({ session_id: to })
+      .where("user_id", "=", userId)
+      .where("session_id", "=", from)
+      .where("revoked_at", "is", null)
+      .execute();
+    await tx
+      .updateTable("app.chat_link_requests")
+      .set({ session_id: to })
+      .where("user_id", "=", userId)
+      .where("session_id", "=", from)
+      .execute();
+    await sql`select app.end_auth_sessions(${[from]}::text[])`.execute(tx);
+  });
+}
