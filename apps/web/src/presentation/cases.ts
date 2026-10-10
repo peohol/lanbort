@@ -367,8 +367,9 @@ export const loanClarifiedText = "Lånet er avklart av partene";
 /**
  * A queue in the order work is done (Tomat kjerneflyt 8): what nobody has
  * taken, then the reader's own, then others'. Mediations whose loan the
- * parties have clarified come last in each group, so tidying up never goes
- * before what is urgent (PS-COM-022).
+ * parties have clarified are tidying up and come after all of these, so
+ * they never go before what is urgent, whoever has them (PS-COM-022); each
+ * row still says who has it.
  */
 export function queueGroups(
   cases: readonly CaseSummary[],
@@ -392,16 +393,20 @@ export function queueGroups(
         c.assigneeUserId !== null && c.assigneeUserId !== userId,
     },
   ];
+  const ranked = (list: readonly CaseSummary[]) =>
+    groups.flatMap(({ has }) => list.filter(has));
+  const urgent = cases.filter((c) => !c.loanClarified);
 
-  return groups
-    .map(({ key, heading, has }) => ({
+  return [
+    ...groups.map(({ key, heading, has }) => ({
       key,
       heading,
-      cases: cases
-        .filter(has)
-        .sort(
-          (a, b) => Number(a.loanClarified ?? 0) - Number(b.loanClarified ?? 0),
-        ),
-    }))
-    .filter((group) => group.cases.length > 0);
+      cases: urgent.filter(has),
+    })),
+    {
+      key: "avklart",
+      heading: "Avklart av partene",
+      cases: ranked(cases.filter((c) => c.loanClarified)),
+    },
+  ].filter((group) => group.cases.length > 0);
 }

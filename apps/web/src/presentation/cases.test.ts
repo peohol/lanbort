@@ -68,21 +68,32 @@ describe("cases", () => {
     expect(handlerFunction("platform_report", null)).toBe("Lånbort");
   });
 
-  it("groups the queue by who has the case, a clarified loan last", () => {
+  it("groups the queue by who has the case, a clarified loan after every group", () => {
     const clarified = summary({ id: "c1", loanClarified: true });
     const disputed = summary({ id: "c2", loanClarified: false });
     const mine = summary({ id: "c3", assigneeUserId: me });
     const theirs = summary({ id: "c4", assigneeUserId: other });
+    const clarifiedMine = summary({
+      id: "c5",
+      assigneeUserId: me,
+      loanClarified: true,
+    });
+    const clarifiedTheirs = summary({
+      id: "c6",
+      assigneeUserId: other,
+      loanClarified: true,
+    });
 
     expect(
-      queueGroups([clarified, mine, disputed, theirs], me).map((group) => [
-        group.heading,
-        group.cases.map((c) => c.id),
-      ]),
+      queueGroups(
+        [clarifiedTheirs, clarified, mine, clarifiedMine, disputed, theirs],
+        me,
+      ).map((group) => [group.heading, group.cases.map((c) => c.id)]),
     ).toEqual([
-      ["Ingen har tatt", ["c2", "c1"]],
+      ["Ingen har tatt", ["c2"]],
       ["Du har", ["c3"]],
       ["Andre har", ["c4"]],
+      ["Avklart av partene", ["c1", "c5", "c6"]],
     ]);
   });
 
