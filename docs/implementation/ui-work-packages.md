@@ -50,6 +50,7 @@ Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) er la
 - **Konto og Varsler som lag (UX-IA-002, UX-IA-020):** åpnet fra appen legger de seg over skjermen (fullskjerm på mobil, panel på større skjerm), og «Lukk», Escape og klikk ved siden av går tilbake til nøyaktig samme skjerm. Nås de utenfra, er laget selve siden. Lagene er `components/layer.tsx` og `app/@layer`. Laget viser de vanlige sidene under `app/konto` og `app/varsler`, så innhold bygges der og ikke i laget. Konto har en egen stabel. Lenker til personer og egne saker åpnes inni Konto (`accountLayerHref`).
 - **Lenkerader med chevron:** `MenuList` og `MenuRow` (`components/menu-list.tsx`) er en liste i ett kort med skillelinjer. Hver rad har ikon (`icon`) eller bilde eller myk firkant (`lead`), tittel, en kort linje under (`detail`, også med merker), eventuelt et merke til slutt (`end`) og chevron. Hele raden er klikkbar. Bruk dem i stedet for lokale varianter.
 - **Bilde ved tittelen og bred side:** `PageHeader` med `picture` viser bildet til venstre for typeetikett og tittel. `<main className="main-wide">` gir en side med spalter på stor skjerm opptil 72rem (vanlig bredde er 48rem).
+- **Søkefelt:** `SearchField` (`components/search-field.tsx`) er det store søkefeltet med knapp, som på Finn. Det har `id`, `label` (lest opp og vist som plassholder), `name` (standard `q`) og `defaultValue`, og står i et vanlig GET-skjema med `role="search"`.
 
 ## WP-80 — Felles UI-grunnlag
 

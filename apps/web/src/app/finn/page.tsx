@@ -15,8 +15,8 @@ import { errorMessage } from "@/components/error-messages";
 import { EntryDetail } from "@/components/entry-detail";
 import { ErrorText } from "@/components/error-text";
 import { NearMeButton } from "@/components/near-me-button";
-import { Icon } from "@/components/icon";
 import { ownersDetail } from "@/components/owner-names";
+import { SearchField } from "@/components/search-field";
 import { ContextTag, Tag } from "@/components/tag";
 import { ThingCard, ThingCards } from "@/components/thing-card";
 import {
@@ -177,7 +177,11 @@ async function ObjectSearch({
   return (
     <>
       <form role="search" action="/finn" method="get" className={styles.form}>
-        <SearchField label="Hva leter du etter?" form={form} />
+        <SearchField
+          id="finn-q"
+          label="Hva leter du etter?"
+          defaultValue={form.q}
+        />
         <MoreFilters
           chosen={Boolean(
             form.category || form.from || form.to || placeChosen(form),
@@ -281,8 +285,9 @@ async function EnvironmentSearch({
       <form role="search" action="/finn" method="get" className={styles.form}>
         <input type="hidden" name="vis" value="miljoer" />
         <SearchField
+          id="finn-q"
           label="Navn, sted eller hva miljøet handler om"
-          form={form}
+          defaultValue={form.q}
         />
         <MoreFilters chosen={Boolean(form.type) || placeChosen(form)}>
           <label htmlFor="finn-type">Type</label>
@@ -367,33 +372,6 @@ async function EnvironmentSearch({
         <Link href={newEnvironmentHref}>Opprett et miljø</Link>
       </p>
     </>
-  );
-}
-
-/**
- * The words to search for, in one large field (UX-P20), with its name for
- * assistive technology; the button searches without a script too.
- */
-function SearchField({ label, form }: { label: string; form: FinnForm }) {
-  return (
-    <div className={styles.search}>
-      <label htmlFor="finn-q" className="visually-hidden">
-        {label}
-      </label>
-      <Icon name="find" />
-      <input
-        id="finn-q"
-        name="q"
-        type="search"
-        defaultValue={form.q}
-        maxLength={100}
-        autoComplete="off"
-        placeholder={label}
-      />
-      <button type="submit" className="button-primary">
-        Søk
-      </button>
-    </div>
   );
 }
 
