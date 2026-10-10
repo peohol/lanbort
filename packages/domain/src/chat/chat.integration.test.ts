@@ -494,6 +494,7 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
         deviceId,
         deviceKey,
         linkKey: deviceKey,
+        commitment: linkCommitment,
       });
     const status = (linkRequestId: string) =>
       executeQuery(tick(), readChatLinkStatus, {
