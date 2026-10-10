@@ -2,6 +2,7 @@ import type { Environment, Requirement } from "@lanbort/contracts";
 import { Fragment } from "react";
 import { AreaMap } from "@/components/area-map";
 import {
+  describeMembers,
   environmentTypeExplanations,
   requirementKindNames,
 } from "@/presentation/environments";
@@ -9,11 +10,12 @@ import styles from "./environment.module.css";
 
 /**
  * What the environment is, as far as the caller may see it (PS-ENV-001):
- * the type in plain words, who and what it is for, and where it is,
- * approximately (WP-62).
+ * the type in plain words, who and what it is for, about how many members
+ * it has (PS-ENV-016) and where it is, approximately (WP-62).
  */
 export function About({ environment }: { environment: Environment }) {
-  const { description, audience, objectFocus, location, area } = environment;
+  const { description, audience, objectFocus, members, location, area } =
+    environment;
 
   return (
     <section aria-labelledby="om-miljoet" className={styles.card}>
@@ -37,6 +39,12 @@ export function About({ environment }: { environment: Environment }) {
           <>
             <dt>Hva slags ting</dt>
             <dd className="message-text">{objectFocus}</dd>
+          </>
+        )}
+        {members && (
+          <>
+            <dt>Medlemmer</dt>
+            <dd>{describeMembers(members)}</dd>
           </>
         )}
         {location && (
