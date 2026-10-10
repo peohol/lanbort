@@ -4,6 +4,7 @@ import {
   authorizeActor,
   type DomainContext,
   reauthenticatePolicy,
+  renewChatSession,
   resolveUserActor,
   type UserActor,
 } from "@lanbort/domain";
@@ -44,7 +45,8 @@ export async function requestReauthentication(
 
 /**
  * The new code renews the session. It must still belong to the same user;
- * anything else ends the session.
+ * anything else ends the session. The old session ends, and its chat
+ * device carries on in the new one.
  */
 export async function confirmReauthentication(
   context: ReauthenticationContext,
@@ -61,4 +63,12 @@ export async function confirmReauthentication(
     await context.auth.signOut();
     throw new AuthorizationError("account.session", "unauthenticated");
   }
+
+  // The browser now has a new session; its chat device moves to it.
+  await renewChatSession(
+    context.domain.db,
+    actor.userId,
+    context.actor.authentication.sessionId,
+    actor.authentication.sessionId,
+  );
 }

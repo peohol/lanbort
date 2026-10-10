@@ -1,4 +1,5 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
+import { chatLimits } from "@lanbort/contracts";
 import { sql } from "kysely";
 import { afterAll, describe, expect, it } from "vitest";
 import { deleteOwnAccount } from "../account/deletion";
@@ -52,6 +53,7 @@ import {
   publishChatKeyPackages,
   readChatLinkStatus,
   readOwnChatDevices,
+  renewChatSession,
   registerChatAccount,
   requestChatLink,
   resetChatAccount,
@@ -312,6 +314,39 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
     ).rejects.toMatchObject(invalid);
   });
 
+  it("keeps the device when a re-authentication renews the session, and ends the old one", async () => {
+    const old = await providerSession(await user());
+    const alice = await chatUser(old);
+    const renewed = newSession(alice.actor);
+    const current = (actor: UserActor) =>
+      executeQuery(tick(), readOwnChatDevices, { actor, input: {} }).then(
+        ({ currentDeviceId }) => currentDeviceId,
+      );
+    const deviceId = await current(old);
+    expect(deviceId).not.toBeNull();
+
+    await renewChatSession(
+      db,
+      alice.actor.userId,
+      old.authentication.sessionId,
+      renewed.authentication.sessionId,
+    );
+
+    expect(await current(renewed)).toBe(deviceId);
+    expect(await current(old)).toBeNull();
+    expect(await sessionLives(old)).toBe(false);
+
+    // Another account's device in a session of the same id stays put.
+    const bob = await chatUser();
+    await renewChatSession(
+      db,
+      alice.actor.userId,
+      bob.actor.authentication.sessionId,
+      randomUUID(),
+    );
+    expect(await current(bob.actor)).not.toBeNull();
+  });
+
   it("links a new session's device through an existing one", async () => {
     const alice = await chatUser();
     const laptop = newSession(alice.actor);
@@ -437,6 +472,45 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
         deviceKey,
         linkKey,
         commitment: linkCommitment,
+      }),
+    ).rejects.toMatchObject(conflict);
+  });
+
+  it("links no more devices than a restore can revoke at once", async () => {
+    const alice = await chatUser();
+    const { account_key_id } = await db
+      .selectFrom("app.chat_devices")
+      .select("account_key_id")
+      .where("id", "=", alice.device.deviceId)
+      .executeTakeFirstOrThrow();
+    await db
+      .insertInto("app.chat_devices")
+      .values(
+        Array.from({ length: chatLimits.devicesPerAccount - 1 }, () => ({
+          id: randomUUID(),
+          user_id: alice.actor.userId,
+          account_key_id,
+          session_id: randomUUID(),
+          device_key: randomBytes(32),
+          certificate_signature: randomBytes(64),
+        })),
+      )
+      .execute();
+
+    const laptop = newSession(alice.actor);
+    const deviceId = randomUUID();
+    const deviceKey = testChatDevice(alice.account).deviceKey;
+    const { linkRequestId } = await run(requestChatLink, laptop, {
+      deviceId,
+      deviceKey,
+      linkKey: deviceKey,
+      commitment: linkCommitment,
+    });
+    await expect(
+      run(approveChatLink, alice.actor, {
+        linkRequestId,
+        certificate: alice.account.certify(deviceId, deviceKey),
+        package: "c2VhbGVk",
       }),
     ).rejects.toMatchObject(conflict);
   });
@@ -869,6 +943,12 @@ describe("the group's order and delivery (ADR-0010 §9)", () => {
   it("accepts exactly one commit per epoch", async () => {
     const { alice, bob, conversationId } = await pairInConversation();
 
+    // A live device is never removed, the other's or one's own.
+    for (const live of [alice.device.deviceId, bob.device.deviceId]) {
+      await expect(
+        commit(bob, conversationId, { epoch: 1, remove: [live] }),
+      ).rejects.toMatchObject(invalid);
+    }
     await commit(bob, conversationId, { epoch: 1 });
     await expect(
       commit(alice, conversationId, { epoch: 1 }),

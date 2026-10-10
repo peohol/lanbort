@@ -283,6 +283,25 @@ async function spendRateLimit<I, R, C, O>(
   return parsed;
 }
 
+/** The request is a retry of one this actor already completed. */
+async function completedBefore<I, R, C, O>(
+  domain: DomainContext,
+  command: CommandDefinition<I, R, C, O>,
+  request: CommandRequest,
+): Promise<boolean> {
+  try {
+    const claim = idempotencyClaim(
+      command as CommandDefinition<unknown, unknown, unknown, unknown>,
+      request,
+      parseInput(command.input, request.input),
+    );
+
+    return claim !== undefined && (await isCompleted(domain.db, claim));
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Runs a command as one transaction, after its rate limit:
  * actor rules → lock and re-read the actor's account → idempotency lookup →
@@ -298,10 +317,20 @@ export async function executeCommand<I, R, C, O>(
 ): Promise<CommandResult<O>> {
   const now = domain.clock?.() ?? new Date();
 
-  authorizeActor(command.policy as Policy<never, never>, {
-    actor: request.actor,
-    now,
-  });
+  try {
+    authorizeActor(command.policy as Policy<never, never>, {
+      actor: request.actor,
+      now,
+    });
+  } catch (error) {
+    // A retry of the caller's own completed request still gets its stored
+    // result, though the request itself may have changed what the caller
+    // may do (a lost response to «Deaktiver kontoen»).
+    if (!(await completedBefore(domain, command, request))) {
+      throw error;
+    }
+  }
+
   const { input, claim } = await spendRateLimit(domain, command, request);
 
   return runTransaction(domain.db, async (tx) => {
