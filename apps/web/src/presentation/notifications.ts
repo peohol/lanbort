@@ -38,6 +38,10 @@ export function notificationHref(notification: Notification): string | null {
     : hrefFor(target);
 }
 
+/** What a measure did, or that a block was lifted (PS-TRUST-018). */
+const measureTitle = (_about: About, detail: string | null) =>
+  measureNoticeTitles[detail as ModerationMeasureKind] ?? null;
+
 /**
  * The sentence that names what happened, where the reader may see what it
  * is about (`about`). Without a name it needs, it gives way to the general
@@ -53,8 +57,8 @@ const named: Partial<
   "loan_request.received": ({ thing, person }) =>
     thing && `${person ?? "Noen"} vil låne ${thing}`,
   // What was done, never that there was a report (PS-TRUST-018).
-  "moderation.measure_taken": (_about, detail) =>
-    measureNoticeTitles[detail as ModerationMeasureKind] ?? null,
+  "moderation.measure_taken": measureTitle,
+  "moderation.block_lifted": measureTitle,
   // The name and how many, never what was written (PS-COM-018).
   "chat.new_messages": ({ person }, detail) =>
     person && `${newMessages(detail)} fra ${person}`,

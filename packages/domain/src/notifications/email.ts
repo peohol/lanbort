@@ -70,6 +70,7 @@ export const notificationEmailSubjects = {
   "case.report_withdrawn": "En rapport er trukket av den som sendte den",
   "moderation.measure_taken":
     "Det er gjort et tiltak mot noe du har publisert eller skrevet",
+  "moderation.block_lifted": "Sperren av en ting du eier er opphevet",
   "object.question_asked": "Det er stilt et spørsmål om et objekt du eier",
   "object.question_replied": "Det er kommet et nytt innlegg i en spørsmålstråd",
   "object.available": "Et objekt du abonnerer på er tilgjengelig igjen",

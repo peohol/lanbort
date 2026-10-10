@@ -10,9 +10,10 @@ import { findReportedReview } from "./store";
 type Db = Kysely<Database>;
 
 /**
- * Whom a measure hits (PS-TRUST-018): the owners of the thing whose
- * publication or loans it stops, or the author of the review or response it
- * takes out. Lifting a block hits nobody.
+ * Whom a measure's notice goes to (PS-TRUST-018): the owners of the thing
+ * whose publication or loans it stops, or the author of the review or
+ * response it takes out. Lifting a block goes to the owners it held back
+ * (product owner, 10 October 2026).
  */
 const hits: Record<
   ModerationMeasureKind,
@@ -21,7 +22,7 @@ const hits: Record<
   publication_rejected: "owners",
   publication_blocked: "owners",
   object_blocked: "owners",
-  object_unblocked: null,
+  object_unblocked: "owners",
   review_removed: "review_author",
   review_text_removed: "review_author",
   review_score_removed: "review_author",
