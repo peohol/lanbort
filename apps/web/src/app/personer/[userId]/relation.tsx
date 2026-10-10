@@ -22,9 +22,17 @@ const afterEnding = (person: Person) =>
 /**
  * The card «Dere to» (UX-INT-001): where the reader stands with the person
  * and only the next step: send, accept or decline, withdraw, or lift the
- * block (PS-USR-003–006). Friends have no next step here.
+ * block (PS-USR-003–006). Friends can write to each other (PS-COM-017),
+ * where private chat is on.
  */
-export function RelationCard({ person }: { person: Person }) {
+export function RelationCard({
+  person,
+  writeHref,
+}: {
+  person: Person;
+  /** Where «Skriv til» leads; none while private chat is off. */
+  writeHref: string | null;
+}) {
   const { relation, realName: name } = person;
   const text = describeRelation(person);
   const body = { userId: person.userId };
@@ -83,7 +91,11 @@ export function RelationCard({ person }: { person: Person }) {
             {...afterEnding(person)}
           />
         ),
-        friends: null,
+        friends: writeHref && (
+          <Link className="button button-secondary" href={writeHref}>
+            Skriv til {name}
+          </Link>
+        ),
       }[relation.friendship]
     ));
 

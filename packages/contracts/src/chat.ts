@@ -221,6 +221,17 @@ export const startChatConversationSchema = z.strictObject({
   context: chatContextSchema.optional(),
 });
 
+/**
+ * Whether the caller can write to someone, asked with the context a page
+ * shows them in (PS-COM-006, PS-COM-017): the conversation they have, or
+ * whether they may start one. Someone blocked either way, gone or missing
+ * has neither.
+ */
+export const chatContactSchema = z.strictObject({
+  conversationId: chatConversationIdSchema.nullable(),
+  canStart: z.boolean(),
+});
+
 export const chatConversationTargetSchema = z.strictObject({
   conversationId: chatConversationIdSchema,
 });
@@ -373,6 +384,7 @@ export type DeviceCertificateWire = z.infer<typeof deviceCertificateSchema>;
 export type DeviceRevocationWire = z.infer<typeof deviceRevocationSchema>;
 export type ChatConversationKind = z.infer<typeof chatConversationKindSchema>;
 export type ChatContext = z.infer<typeof chatContextSchema>;
+export type ChatContact = z.infer<typeof chatContactSchema>;
 export type ChatDevice = z.infer<typeof chatDeviceSchema>;
 export type OwnChatDevices = z.infer<typeof ownChatDevicesSchema>;
 export type ChatLinkRequest = z.infer<typeof chatLinkRequestSchema>;

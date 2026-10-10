@@ -97,6 +97,31 @@ Aktive medlemmer ser miljøets medlemsliste og eierne av tingene som er publiser
 
 Den som finner et åpent eller lukket miljø, ser et omtrentlig antall aktive medlemmer, aldri det nøyaktige. Under 10 vises som «under 10 medlemmer»; ellers rundes tallet til nærmeste ti («ca. 140 medlemmer»), så én person inn eller ut sjelden endrer det som vises. Avrundingen skjer på serveren, og det nøyaktige tallet sendes ikke til klienten. (Produkteier, 10. oktober 2026, OD-0048.)
 
+### PS-ENV-017 — Søkeren får vite at søknaden er avgjort
+**Forankring:** [Lukket miljø og passivt medlem](../vision/03-miljoer.md)
+
+Den som har søkt om å bli medlem, eller om å bli aktiv igjen som passivt medlem, får et varsel i appen både når søknaden godkjennes og når den avslås. Varselet om godkjenning leder til miljøet med velkomsten ved første besøk derfra. Avslaget sier nøytralt at søknaden ikke ble godkjent, uten begrunnelse og uten hvem som avgjorde den, og sier heller ikke om søkeren er utestengt fra nytt forsøk (PS-ENV-004). (Produkteier, 10. oktober 2026, OD-0050.)
+
+### PS-ENV-018 — Administratorene inviterer bare dem de allerede kan se
+**Forankring:** VP-08; [Invitasjoner og tips](../vision/03-miljoer.md); PS-ENV-010, PS-NFR-002
+
+En administrator kan invitere sine venner og andre eksisterende brukere som administratoren lovlig kan se i Lånbort, fra vennelisten og fra personens side. Det finnes ikke noe oppslag på e-postadresse eller navn, og ingenting i invitasjonen kan røpe om en adresse eller et navn har en konto, eller at et skjult miljø finnes. Ikke bygget ennå: til det er bygget, kan bare administratorens venner inviteres. (Produkteier, 10. oktober 2026, OD-0051.)
+
+### PS-ENV-019 — Ett valgfritt spørsmål når administratorene ber om mer informasjon
+**Forankring:** [Krav ved innmelding](../vision/03-miljoer.md); PS-ENV-004, UX-PRIV-009
+
+Når administratorene ber søkeren om mer informasjon, kan de skrive ett kort, valgfritt og konkret spørsmål knyttet til søknaden. Søkeren ser spørsmålet ordrett på søknaden, avsendt som «Administratorene i [miljøet]», og får ett handlingsvarsel i appen. Uten spørsmål får søkeren bare standardoppfordringen om å se over svarene og sende dem på nytt. Spørsmålet er ingen privat samtale, kopieres ikke til profilen og følger søknadens tilgang og sletting. Ikke bygget ennå. (Produkteier, 10. oktober 2026, OD-0052.)
+
+### PS-ENV-020 — Den som er stengt ute, ser at de ikke kan søke nå
+**Forankring:** [Krav ved innmelding](../vision/03-miljoer.md); PS-ENV-004, PS-ENV-017, PS-NFR-002
+
+Den som avslås og samtidig stenges ute fra nye forsøk, får det samme nøytrale avslaget som andre (PS-ENV-017), uten begrunnelse og uten hvem som avgjorde. Etterpå sier miljøets side «Du kan ikke søke om å bli med nå», uten aktiv søknadsknapp. Dette vises bare i et miljø personen fortsatt kan se, og røper aldri at et skjult miljø finnes. Ikke bygget ennå. (Produkteier, 10. oktober 2026, OD-0053.)
+
+### PS-ENV-021 — Administratorene kan avslutte et aktivt medlemskap
+**Forankring:** [Kontinuitet ved avvikling, utestengelse og manglende administrasjon](../vision/03-miljoer.md); PS-ENV-004, PS-TRUST-013, PS-TRUST-016, PS-TRUST-018
+
+En habil administrator kan avslutte et aktivt medlemskap som et lokalt modereringstiltak, med en saklig begrunnelse som lagres sporbart (PS-TRUST-016). Om personen også stenges ute fra nye forsøk, velges separat. Godkjente lån og det innsynet partene trenger i dem, består. Den det gjelder, får nøytral beskjed om tiltaket og konsekvensene, med en vei til ny vurdering hos administratorene (PS-TRUST-018), uten å få vite hvem som eventuelt rapporterte. Ikke bygget ennå: til det er bygget, har administratorene ingen slik handling, og den vises ikke. (Produkteier, 10. oktober 2026, OD-0025.)
+
 ## Miljøtilstand
 
 Normal livssyklus:

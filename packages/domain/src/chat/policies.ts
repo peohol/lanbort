@@ -222,6 +222,12 @@ export const readChatMessageNotificationsPolicy = conversationReadPolicy(
   "chat.read_message_notifications",
 );
 
+/** Whether the caller can write to someone: about their own conversations. */
+export const readChatContactPolicy = definePolicy<unknown, void>({
+  action: "chat.read_contact",
+  actor: [requireMinimumAccess],
+});
+
 /** The caller's own list; each entry is theirs by construction. */
 export const listChatConversationsPolicy = definePolicy<unknown, void>({
   action: "chat.list_conversations",
@@ -281,6 +287,7 @@ export const chatPolicies = [
   readOwnChatDevicesPolicy,
   publishChatKeyPackagesPolicy,
   startChatConversationPolicy,
+  readChatContactPolicy,
   startLoanLogisticsChatPolicy,
   readChatConversationPolicy,
   readChatDirectoryPolicy,

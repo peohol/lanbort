@@ -197,8 +197,11 @@ button:disabled{cursor:default}
 <style>
 /* ny: fase 7 – administrator- og forvalterflater. Bygger på klassene fra kjerneflyt 1–8; bare det som mangler, er lagt til. */
 /* Merke for det som venter på en beslutning (ikke vedtatt, vises ikke i appen før det er avgjort) */
-.L .od{font:700 11px ui-monospace,Menlo,monospace;color:#fff;background:#8A3E26;border-radius:4px;padding:2px 6px;white-space:nowrap;align-self:flex-start;flex:none;letter-spacing:0}
-.L.nomark .od,.L.nomark .odx{display:none}
+.L .bt{font:700 11px ui-monospace,Menlo,monospace;color:#fff;background:#1F5E3A;border-radius:4px;padding:2px 6px;white-space:nowrap;align-self:flex-start;flex:none;letter-spacing:0}
+.od{font:700 11px ui-monospace,Menlo,monospace;color:#fff;background:#8A3E26;border-radius:4px;padding:2px 6px;white-space:nowrap;align-self:flex-start;flex:none;letter-spacing:0}
+.L.nomark .od,.L.nomark .odx{display:none!important}
+/* Det appen gjør i dag, der det vedtatte ennå ikke er bygget: vises bare når merkene er slått av */
+.L:not(.nomark) .nowx{display:none!important}
 .L .uq .od{display:inline-block}
 /* Antall som venter, ved enden av en rad */
 .L .cnt{min-width:28px;height:28px;border-radius:14px;background:#FBE8DF;color:#8A3E26;font-weight:700;font-size:14px;display:inline-grid;place-items:center;padding:0 8px;flex:none}
@@ -234,7 +237,7 @@ button:disabled{cursor:default}
 <div class="doc">
 <div class="row" style="gap:12px;align-items:baseline;flex-wrap:wrap"><span style="font:600 11px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1E2733;color:#fff;border-radius:4px;white-space:nowrap;flex:none">Fase 7 · administrator og forvalter · v1</span><span class="hq" style="font-size:28px">Administrere et miljø</span></div>
 <p class="s" style="margin:0;max-width:1100px;color:#1E2733">Hvordan administratorene i et miljø gjør jobben sin: innmeldinger, ting som venter på godkjenning, medlemmer og utestengelse, roller og eierskap, innstillinger og krav, miljøtype og avvikling. Til slutt hvordan plattformforvalterne skal arbeide når sterkere innlogging finnes. Personene er de samme som i kjerneflyt 1–8: Tone Vik eier Borettslaget Lia og er administrator sammen med Ingrid Berg. Jonas Vik og Mats Dahl har søkt om å bli med, og Kari Nordmann vil låne ut sykkelhengeren sin der. Produktatferden følger PS-ENV-001–015, PS-USR-008–009, PS-ADM-003, -013–014, PS-TRUST-016, UX-JRN-012, UX-PRIV-005–006, -009, UX-EXC-007, -009, -011, UX-INT-001–008, visjon 03 og inventaret «Miljøadministrator» og «Plattformforvalter». Saksbehandlingen i miljøet er tegnet i kjerneflyt 8 og gjentas ikke her. Datoene ligger rundt lørdag 10. oktober. Navn og tekster er eksempler.</p>
-<p class="s" style="margin:0;max-width:1100px">Alt administratorene kan gjøre her, finnes allerede i appen i dag, men på én lang side. Prototypen deler det i oppgaver. Det som venter på en produktbeslutning, er merket <span class="od">VENTER PÅ OD-…</span> og vises ikke i appen før beslutningen er tatt. Øverst kan du prøve en innmelding med administratoren og søkeren samtidig.</p>
+<p class="s" style="margin:0;max-width:1100px">Alt administratorene kan gjøre i dag, finnes allerede i appen, men på én lang side. Prototypen deler det i oppgaver. Produktvalgene som var åpne, ble avgjort 10. oktober. Varselet til søkeren er bygget og merket <span class="bt">BYGGET · OD-0050</span>. Det som er vedtatt, men ikke bygget, er merket <span class="od">VEDTATT, IKKE BYGGET · OD-…</span>. Plattformforvalternes flater venter fortsatt på OD-0023. Slår du av bryteren under, viser prototypen bare det appen gjør i dag. Øverst kan du prøve en innmelding med administratoren og søkeren samtidig.</p>
 <div class="rules">
 <div class="rule"><span class="ty">1 · OPPGAVER FØR INNSTILLINGER</span><span class="s" style="font-size:14.5px;color:#1E2733">«Administrer miljøet» begynner med det som venter: innmeldinger, ting og saker, med antall. Hver oppgave har sin egen side i stabelen. Innstillingene ligger under, og det sjeldne ligger under «Flere valg».</span></div>
 <div class="rule"><span class="ty">2 · SAMME PERSON, TYDELIG ROLLE</span><span class="s" style="font-size:14.5px;color:#1E2733">Ingen egen administratorprofil og ikke noe kontrollpanel. Rollestripen sier hvilken rolle du handler i. Det bare eieren kan, vises bare for eieren, og det du selv er part i, avgjør en annen.</span></div>
@@ -242,15 +245,15 @@ button:disabled{cursor:default}
 <div class="rule"><span class="ty">4 · INGEN MAKT UTEN GRUNNLAG</span><span class="s" style="font-size:14.5px;color:#1E2733">Står ingen administrator til rådighet, venter det som venter, uten knapp til plattformen. Plattformforvalterne får ingen handlinger før sikkerhetsnøklene deres er på plass (OD-0023).</span></div>
 </div>
 <div style="max-width:1500px;display:flex;flex-direction:column">
-<div class="row" style="gap:10px;padding-bottom:4px;flex-wrap:wrap"><span class="t" style="font-size:16px">Venter på beslutning</span><span class="s" style="font-size:14px">Reelt uavklarte produktvalg, med anbefaling. Prototypen viser hvordan anbefalingen ville sett ut, men appen viser ingenting av det før produkteier har avgjort.</span></div>
+<div class="row" style="gap:10px;padding-bottom:4px;flex-wrap:wrap"><span class="t" style="font-size:16px">Avgjort 10. oktober</span><span class="s" style="font-size:14px">Produkteiers beslutninger, slik de står i beslutningsregisteret og spesifikasjonen. Prototypen viser dem, merket med om de er bygget.</span></div>
 <div class="uqs" id="uqs"></div>
 </div>
 <p class="s2" style="margin:0;max-width:1100px"><b style="color:#1E2733">Ikke med her:</b> saksbehandling i miljøet (kjerneflyt 8), miljøets side og «Som administrator» der (kjerneflyt 3), opprettelse av miljø (kjerneflyt 3), melding om mulig dødsfall (OD-0003), utnevnelse av plattformforvaltere, som skjer med en driftskommando (OD-0021), og administrativ avslutning av et lån som uavklart (OD-0017).</p>
-<div class="ctrl"><label class="tg"><input type="checkbox" id="opt-mark" checked><span class="sw" aria-hidden="true"></span>Vis merkene og forslagene</label></div>
+<div class="ctrl"><label class="tg"><input type="checkbox" id="opt-mark" checked><span class="sw" aria-hidden="true"></span>Vis det som er vedtatt, men ikke bygget</label></div>
 </div>
 
 <section style="display:flex;flex-direction:column;gap:16px" aria-labelledby="h-live">
-<div class="gh"><span class="hq" style="font-size:24px" id="h-live">Prøv innmeldingen: Tone og Jonas samtidig</span><span class="s">Jonas Vik har søkt om å bli med i Borettslaget Lia. Tone ser søknaden under Innmeldinger. Trykk i telefonene: godkjenn, be om mer informasjon eller avslå. Jonas sin telefon oppdateres med en gang, og kolonnen til høyre viser hva hver av dem faktisk får beskjed om i dag.</span></div>
+<div class="gh"><span class="hq" style="font-size:24px" id="h-live">Prøv innmeldingen: Tone og Jonas samtidig</span><span class="s">Jonas Vik har søkt om å bli med i Borettslaget Lia. Tone ser søknaden under Innmeldinger. Trykk i telefonene: godkjenn, be om mer informasjon eller avslå. Jonas sin telefon oppdateres med en gang, og kolonnen til høyre viser hva hver av dem får beskjed om. Med bryteren øverst slått av viser telefonene og kolonnen det appen gjør i dag.</span></div>
 <div class="ctrl"><label class="tg"><input type="checkbox" id="opt-off"><span class="sw" aria-hidden="true"></span>Uten nett</label><label class="tg" style="font-weight:400">Når nettet er tilbake <select id="opt-outcome" class="bn sm" style="min-height:40px"><option value="done">gikk det gjennom</option><option value="failed">gikk det ikke gjennom</option></select></label><button class="bn sm" id="ingrid-first" type="button">Ingrid Berg avgjør først</button><button class="bn sm" id="reset" type="button">Start på nytt</button></div>
 <div class="live" id="live"></div>
 </section>
@@ -286,16 +289,21 @@ const P = {
 const ic = (k, st = '') => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"${st ? ` style="${st}"` : ''}><path d="${P[k]}"></path>${k === 'target' ? '<circle cx="12" cy="12" r="3" fill="currentColor"></circle>' : ''}</svg>`;
 const tag = (cls, t) => `<span class="${cls}">${t}</span>`;
 const NB = t => tag('nb', t || 'IKKE BYGGET');
-const OD = n => tag('od', `VENTER PÅ OD-${n}`);
+/* Avgjort av produkteier 10. oktober 2026. OD-0050 er bygget, de andre ikke. OD-0023 er fortsatt åpen. */
+const BUILT = ['0050'];
+const DECIDED = ['0025', '0026', '0051', '0052', '0053'];
+const OD = n => BUILT.includes(n) ? tag('bt', `BYGGET · OD-${n}`)
+  : tag('od', DECIDED.includes(n) ? `VEDTATT, IKKE BYGGET · OD-${n}` : `VENTER PÅ OD-${n}`);
 const RED = '#C4122F', BLUE = '#2B4A8A', GREY = '#4F5967', GREEN = '#1F5E3A';
 
-/* ---------- Produktvalg som venter (samme innhold som docs/open-decisions.md) ---------- */
-const OPEN = [
-  ['0025', 'Kan administratorene fjerne et aktivt medlem?', 'I dag kan noen bare stenges ute når en søknad avslås. Anbefaling: en habil administrator kan avslutte et aktivt medlemskap med en begrunnelse, eventuelt også stenge for nye forsøk, som et sporbart tiltak med samme virkning på pågående lån som utmelding.'],
-  ['0026', 'Hvor gjør plattformforvalterne inngrep på kontoer og miljøer?', 'Anbefaling: alle inngrep startes fra en sak i plattformkøen, så begrunnelse, habilitet og historikk følger saken. Ingen forvalterknapper på vanlige person- og miljøsider.'],
-  ['0051', 'Hvem kan administratorene invitere?', 'I dag bare egne venner. Et skjult miljø kan bare få nye medlemmer ved invitasjon til en eksisterende konto. Anbefaling: også personer administratoren allerede kan se i Lånbort, fra personens side, men ikke søk på e-post eller navn, som ville røpe hvem som har konto.'],
-  ['0052', 'Hva søkeren får når administratorene ber om mer informasjon', 'I dag får søkeren ingen beskjed og ingen forklaring, bare «se over svarene dine» når miljøsiden åpnes. Anbefaling: administratoren kan skrive et kort spørsmål som står på søknaden, og søkeren får et handlingsvarsel.'],
-  ['0053', 'Hva den som er stengt ute fra nye forsøk, får vite', 'Spesifikasjonen sier ikke hva søkeren ser. I dag ser det ut som et vanlig avslag, og søknadsknappen står der fortsatt. Anbefaling: samme nøytrale avslag, uten «du kan søke på nytt», og miljøsiden sier rolig at man ikke kan søke nå, uten grunn.']
+/* ---------- Produktvalg avgjort 10. oktober (samme innhold som docs/open-decisions.md) ---------- */
+const DECISIONS = [
+  ['0050', 'Søkeren får varsel når søknaden er avgjort', 'Bygget. Varsel i appen både ved godkjenning og avslag. Godkjenningen leder til miljøet med «Velkommen» første gang. Avslaget er nøytralt, uten begrunnelse og uten hvem som avgjorde.'],
+  ['0051', 'Administratorene kan invitere den de allerede kan se', 'Også fra personens side for andre brukere administratoren lovlig kan se, ikke bare venner. Ingen søk på e-post eller navn, så ingen kan finne ut hvem som har konto eller hvilke skjulte miljøer som finnes. Til det er bygget, inviteres bare venner.'],
+  ['0052', 'Ett kort, valgfritt spørsmål til søkeren', 'Står på søknaden, avsendt som «Administratorene i [miljøet]», og søkeren får ett handlingsvarsel. Uten tekst står «Se over svarene dine og send dem på nytt». Ingen privat chat, ingen kopi til profilen, og spørsmålet slettes sammen med søknaden.'],
+  ['0053', 'Den som er stengt ute, ser at de ikke kan søke nå', 'Samme nøytrale avslag som ellers. Etterpå sier miljøsiden «Du kan ikke søke om å bli med nå», uten søknadsknapp, uten grunn og uten løfte om nytt forsøk.'],
+  ['0025', 'Administratorene kan avslutte et aktivt medlemskap', 'En habil administrator avslutter medlemskapet med en saklig begrunnelse som lagres, og velger for seg om personen også stenges ute. Godkjente lån og nødvendig innsyn består. Den det gjelder, får nøytral beskjed om tiltaket og konsekvensene, og en vei til ny vurdering, uten å få vite hvem som rapporterte.'],
+  ['0026', 'Plattforminngrep starter fra en sak', 'Inngrep mot kontoer og miljøer gjøres fra en sak i plattformkøen, med habilitet, begrunnelse og sporbarhet. Kommer initiativet ikke fra en rapport, opprettes en sak først. Ingen inngrepsknapper på vanlige person- og miljøsider, og alt er stengt til sikkerhetsnøklene er på plass (OD-0023).']
 ];
 
 /* ---------- Personer (eksempler) ---------- */
@@ -329,9 +337,11 @@ const pill = (cls, i, t) => `<span class="pill ${cls}">${ic(i)}${t}</span>`;
 const flash = t => t ? `<span class="flash" role="status">${ic('check')}${t}</span>` : '';
 
 let PN = 0;
-function phone({ num = String(++PN).padStart(2, '0'), label, time, body, height, cap = '', aria }) {
-  return `<div><div class="who"><span class="num">${num}</span>${label}</div>
-<div class="ph" role="group" aria-label="${aria || label}"${height ? ` style="min-height:${height}px"` : ''}>${sb(time)}${body}</div>
+/* `odx`: hele skjermen finnes ikke i appen ennå, og skjules med bryteren. */
+/* `clip`: et ark over en lang side vises i en skjerm av fast høyde. */
+function phone({ num = String(++PN).padStart(2, '0'), label, time, body, height, clip, cap = '', aria, odx = false }) {
+  return `<div${odx ? ' class="odx"' : ''}><div class="who"><span class="num">${num}</span>${label}</div>
+<div class="ph" role="group" aria-label="${aria || label}"${clip ? ` style="height:${clip}px;overflow:hidden"` : height ? ` style="min-height:${height}px"` : ''}>${sb(time)}${body}</div>
 ${cap ? `<p class="cap">${cap}</p>` : ''}</div>`;
 }
 const note = (title, inner) => `<div class="acd"><div class="who">${title}</div><div class="cd" style="gap:8px">${inner}</div></div>`;
@@ -370,11 +380,14 @@ const RULES = 'Jeg har lest husordenen for utlån i borettslaget';
 const NOTE = {
   review:['inbox', 'Noen har søkt om å bli med', 'Handlingsvarsel til administratorene som kan avgjøre nå. Telles under «Som administrator» på Hjem.'],
   resent:['inbox', 'En søker har sendt svarene på nytt', 'Samme handlingsvarsel som en ny søknad, til de samme administratorene.'],
-  none_info:['pen', 'Ingen varsel i dag', 'Jonas ser at administratorene ber om mer, først når han åpner miljøet.', '0052'],
-  none_done:['check', 'Ingen varsel i dag', 'Jonas ser utfallet først når han åpner miljøet. Anbefalingen er varsel ved både godkjenning og avslag.', '0050']
+  /* Vedtatt 10. oktober (OD-0052), ikke bygget. I dag får Jonas ingen varsel. */
+  info:['pen', `Administratorene i ${ENV} ber om mer informasjon`, 'Handlingsvarsel. Åpner søknaden hans, med spørsmålet hvis de skrev et.', '0052', 'Jonas ser at administratorene ber om mer, først når han åpner miljøet.'],
+  /* OD-0050, bygget (PS-ENV-017). */
+  approved:['check', `Søknaden din til ${ENV} er godkjent`, 'Åpner miljøet med «Velkommen» første gang.'],
+  rejected:['x', `Søknaden din til ${ENV} ble ikke godkjent`, 'Nøytralt: ingen begrunnelse og ikke hvem som avgjorde. Åpner miljøets side.']
 };
 const LIVE0 = () => ({
-  app:'submitted', restricted:false, by:null, stale:false, view:'list', sheet:null, restrictChk:false,
+  app:'submitted', restricted:false, question:'', asked:'', by:null, stale:false, view:'list', sheet:null, restrictChk:false,
   answer:'C 201', busy:null, focus:null, clock:9 * 60 + 30, flash:{ tone:'', jonas:'' },
   log:{ tone:[{ k:'review', at:'09.12' }], jonas:[] }
 });
@@ -387,9 +400,9 @@ const seen = () => S.stale ? { app:'submitted', by:null } : S;
 const ACTIONS = {
   open() { S.view = 'detail'; return ''; },
   list() { S.view = 'list'; return ''; },
-  approve() { S.app = 'approved'; S.by = 'tone'; tell('jonas', 'none_done'); return 'Jonas er godkjent og er nå medlem.'; },
-  doinfo() { S.app = 'info'; tell('jonas', 'none_info'); return 'Jonas kan nå se over svarene og sende dem på nytt.'; },
-  doreject() { S.app = 'rejected'; S.by = 'tone'; S.restricted = S.restrictChk; tell('jonas', 'none_done'); return S.restricted ? 'Søknaden er avslått, og Jonas er stengt ute fra nye forsøk.' : 'Søknaden er avslått.'; },
+  approve() { S.app = 'approved'; S.by = 'tone'; tell('jonas', 'approved'); return 'Jonas er godkjent og er nå medlem.'; },
+  doinfo() { S.app = 'info'; S.asked = S.question.trim(); S.question = ''; tell('jonas', 'info'); return 'Jonas kan nå se over svarene og sende dem på nytt.'; },
+  doreject() { S.app = 'rejected'; S.by = 'tone'; S.restricted = S.restrictChk; tell('jonas', 'rejected'); return S.restricted ? 'Søknaden er avslått, og Jonas er stengt ute fra nye forsøk.' : 'Søknaden er avslått.'; },
   resend() { S.app = 'submitted'; tell('tone', 'resent'); return 'Svarene er sendt. Administratorene ser på søknaden igjen.'; },
   lift() { S.restricted = false; return 'Utestengelsen er opphevet. Jonas kan søke igjen.'; }
 };
@@ -441,34 +454,46 @@ const LIVE_SHEETS = {
   info:() => sheet({ over:'Jonas Vik', title:'Be Jonas om mer informasjon?', rows:[
     ['pen', BLUE, 'Jonas kan se over svarene sine og sende dem på nytt.'],
     ['inbox', GREY, 'Søknaden flyttes til «Venter på søkeren» til han har gjort det.']],
-    body:`<div class="odx" style="display:flex;flex-direction:column;gap:6px">${OD('0052')}${field('Spørsmål til Jonas (valgfritt)', '', 'For eksempel: Står du på kontrakten for C 201?')}<span class="hint">Står på søknaden hans, ikke i privat chat. Jonas får et handlingsvarsel.</span></div>`,
+    body:`<div class="odx" style="display:flex;flex-direction:column;gap:6px">${OD('0052')}${field('Spørsmål til Jonas (valgfritt)', esc(S.question), 'For eksempel: Står du på kontrakten for C 201?', ' data-draft="question" maxlength="300"')}<span class="hint">Ett kort spørsmål. Står på søknaden hans, avsendt som «Administratorene i ${ENV}», ikke i privat chat. Uten spørsmål ber vi ham se over svarene.</span></div>`,
     actions:'<button class="btn" type="button" data-act="doinfo" data-who="tone">Be om mer informasjon</button><button class="bn" type="button" data-act="cancel" data-who="tone">Avbryt</button>' })
 };
 
+/* Det søkeren skrev eller administratoren spurte, vist som tekst. */
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c]);
+
 function jonasScreen() {
   const b = (cls, t, act) => `<button class="${cls}" type="button" data-act="${act}" data-who="jonas">${t}</button>`;
-  let card, extra = '';
-  if (S.app === 'submitted') card = statusCard({ p:pill('p-wt', 'clock', 'Venter på administratorene'), h:'Søknaden din venter på svar fra administratorene.', actions:`${flash(S.flash.jonas)}<span class="q">Trekk søknaden</span>` });
+  /* Vedtatt, ikke bygget (odx), og det appen gjør i dag (nowx), side om side. */
+  const both = (decided, today) => `<div class="odx" style="display:flex;flex-direction:column;gap:10px">${decided}</div><div class="nowx" style="display:flex;flex-direction:column;gap:10px">${today}</div>`;
+  const notMember = statusCard({ p:pill('p-wt', 'lock', 'Lukket miljø'), h:'Du er ikke medlem. En administrator ser på søknaden din før du blir med.', actions:'<span class="btn">Søk om å bli med</span>' });
+  let body = '';
+  if (S.app === 'submitted') body = statusCard({ p:pill('p-wt', 'clock', 'Venter på administratorene'), h:'Søknaden din venter på svar fra administratorene. Du får varsel når de har svart.', actions:`${flash(S.flash.jonas)}<span class="q">Trekk søknaden</span>` });
   else if (S.app === 'info') {
-    card = statusCard({ p:pill('p-me', 'target', 'Venter på deg'), h:'Administratorene ber om mer informasjon før de svarer.', s:'Se over svarene dine og send dem på nytt.',
-      actions:`<div class="odx msg" style="display:flex;flex-direction:column;gap:6px">${OD('0052')}<span class="ea">${ic('shield')}Administratorene i ${ENV}</span>«Står du på kontrakten for C 201, eller bor du hos noen som gjør det?»</div>` });
-    extra = `${sec('Svarene dine')}<div class="cd">${field(REQ, S.answer, '', ' data-draft="answer"')}<span class="hint">Svaret går bare til miljøets innmelding, ikke til profilen din.</span>${b('btn', 'Send svarene på nytt', 'resend')}</div>`;
-  } else if (S.app === 'approved') card = statusCard({ p:pill('p-on', 'check', 'Medlem'), h:'Du er medlem.', s:'Tingene og medlemmene i Borettslaget Lia vises nå.' });
-  else {
-    card = statusCard({ p:pill('p-wt', 'lock', 'Lukket miljø'), h:'Du er ikke medlem. En administrator ser på søknaden din før du blir med.', actions:`<span class="btn">Søk om å bli med</span>` });
-    extra = `<div class="odx cd ol">${OD(S.restricted ? '0053' : '0050')}<span class="s" style="color:#1E2733">${S.restricted
-      ? 'Forslag: «Søknaden ble ikke godkjent.» Ingen søknadsknapp, men «Du kan ikke søke om å bli med i dette miljøet nå.» Ingen grunn.'
-      : 'Forslag: «Søknaden ble ikke godkjent. Du kan søke på nytt senere.» I dag ser Jonas bare at han ikke er medlem.'}</span></div>`;
-  }
+    const resend = `${sec('Svarene dine')}<div class="cd">${field(REQ, esc(S.answer), '', ' data-draft="answer"')}<span class="hint">Svaret går bare til miljøets innmelding, ikke til profilen din.</span>${b('btn', 'Send svarene på nytt', 'resend')}</div>`;
+    body = both(
+      `${statusCard({ p:pill('p-me', 'target', 'Venter på deg'), h:'Administratorene ber om mer informasjon før de svarer.', s:S.asked ? '' : 'Se over svarene dine og send dem på nytt.',
+        actions:S.asked ? `<div class="msg" style="display:flex;flex-direction:column;gap:6px"><span class="ea">${ic('shield')}Administratorene i ${ENV}</span>«${esc(S.asked)}»</div>` : '' })}${OD('0052')}`,
+      statusCard({ p:pill('p-me', 'target', 'Venter på deg'), h:'Administratorene ber om mer informasjon før de svarer.', s:'Se over svarene dine og send dem på nytt.' })
+    ) + resend;
+  } else if (S.app === 'approved') body = statusCard({ p:pill('p-on', 'check', 'Medlem'), h:`Velkommen til ${ENV}`, s:'Søknaden din er godkjent. Tingene og medlemmene vises nå.' });
+  else body = both(
+    S.restricted
+      ? `${statusCard({ p:pill('p-wt', 'lock', 'Lukket miljø'), h:'Søknaden din ble ikke godkjent.', s:'Du kan ikke søke om å bli med nå.' })}${OD('0053')}`
+      : `${statusCard({ p:pill('p-wt', 'lock', 'Lukket miljø'), h:'Søknaden din ble ikke godkjent.', s:'Du kan søke på nytt senere.', actions:'<span class="btn">Søk om å bli med</span>' })}${tag('od', 'GODKJENT DESIGN, IKKE BYGGET · KJERNEFLYT 3')}`,
+    notMember);
   return `${backbar('Finn', { n:0 })}<div class="scr" style="gap:10px">
-${pageHead(ENV, { kicker:'Miljø', ctx:`${ic('lock')}Lukket miljø` })}${card}${extra}
+${pageHead(ENV, { kicker:'Miljø', ctx:`${ic('lock')}Lukket miljø` })}${body}
 </div>${nav('finn')}`;
 }
 
 function logCol(v, who) {
   const items = S.log[v];
   return `<div class="log"><div class="who" style="padding-bottom:0">Det ${who} får beskjed om</div>${items.length
-    ? items.map(x => { const [i, t, s, od] = NOTE[x.k]; return `<div class="lg${od ? ' none' : ''}"><span class="tic" style="width:32px;height:32px">${ic(i)}</span><span class="f1"><span class="vm">INNMELDING · ${x.at}</span><b>${t}</b><br><span class="s2">${s}</span>${od ? `<br>${OD(od)}` : ''}</span></div>`; }).join('')
+    ? items.map(x => {
+      const [i, t, s, od, today] = NOTE[x.k];
+      const row = (cls, icon, title, text, mark) => `<div class="lg${cls}"><span class="tic" style="width:32px;height:32px">${ic(icon)}</span><span class="f1"><span class="vm">INNMELDING · ${x.at}</span><b>${title}</b><br><span class="s2">${text}</span>${mark}</span></div>`;
+      return od ? row(' odx', i, t, s, `<br>${OD(od)}`) + row(' none nowx', i, 'Ingen varsel i dag', today, '') : row('', i, t, s, '');
+    }).join('')
     : '<div class="lg none"><span>Ingenting ennå.</span></div>'}</div>`;
 }
 
@@ -525,7 +550,7 @@ document.getElementById('opt-off').addEventListener('change', e => {
   renderLive();
 });
 document.getElementById('ingrid-first').addEventListener('click', () => {
-  S.app = 'approved'; S.by = 'ingrid'; S.stale = true; S.clock += 1; tell('jonas', 'none_done'); renderLive();
+  S.app = 'approved'; S.by = 'ingrid'; S.stale = true; S.clock += 1; tell('jonas', 'approved'); renderLive();
 });
 document.getElementById('reset').addEventListener('click', () => { S = LIVE0(); document.getElementById('opt-off').checked = false; document.getElementById('opt-outcome').value = 'done'; renderLive(); });
 document.getElementById('opt-mark').addEventListener('change', e => document.getElementById('L').classList.toggle('nomark', !e.target.checked));
@@ -652,7 +677,7 @@ const S_SECTIONS = [
       phone({ label:'Innmeldinger', time:'09:25', body:snap({ view:'list' }, toneList), cap:'Hver rad åpner søknaden. «Venter på søkeren» er de dere har bedt om mer fra. En invitasjon kan trekkes av alle administratorene, for den tilhører miljøet (PS-ENV-010).' }),
       phone({ label:'Søknaden', time:'09:26', body:snap({ view:'detail' }, toneDetail), cap:'Én primærknapp. «Be om mer informasjon» og «Avslå» er likeverdige og nøytrale. Mangler et svar på et krav som gjelder nå, står det i stedet for «Godkjenn».' }),
       phone({ label:'Avslå og steng ute', time:'09:27', body:snap({ view:'detail', sheet:'reject', restrictChk:true }, toneDetail), cap:'I dag ligger «Avvis og steng ute» som en egen handling under «Flere valg». Her er det ett ark med en avkrysning. Knappen blir signalrød og bytter navn når den stenger ute.' }),
-      phone({ label:'Be om mer · med forslaget', time:'09:28', body:snap({ view:'detail', sheet:'info' }, toneDetail), cap:'Det appen gjør i dag: søkeren kan se over svarene og sende dem på nytt, men får ingen beskjed og ingen forklaring. Spørsmålsfeltet og varselet er forslaget i OD-0052.' }),
+      phone({ label:'Be om mer informasjon', time:'09:28', body:snap({ view:'detail', sheet:'info' }, toneDetail), cap:'Vedtatt i OD-0052, ikke bygget: ett kort, valgfritt spørsmål som søkeren ser ordrett, sendt som «Administratorene i miljøet», og ett varsel i appen. Uten tekst ser søkeren bare standardoppfordringen om å se over svarene. I appen i dag kan søkeren se over svarene og sende dem på nytt, men får ingen beskjed.' }),
       phone({ label:'Vil bli aktiv igjen', time:'09:30', body:`${backbar('Innmeldinger')}<div class="scr" style="gap:10px">${pageHead('Erik Sund', { kicker:'Passivt medlem', ctx:`${ic('house')}${ENV}` })}${roleStrip()}
 ${statusCard({ p:pill('p-wt', 'clock', 'Venter på dere'), h:'Erik vil bli aktiv igjen', s:'Han ble passiv 3. okt. fordi han ikke svarte på et nytt krav innen fristen. Nå har han svart.', actions:`${bt('btn', 'Godkjenn Erik', 'check')}${row2(bt('bn', 'Avslå'))}` })}
 ${answers([[REQ, 'A 405'], [RULES, 'Godtatt']])}<span class="hint">Avslår du, forblir Erik passivt medlem. Han beholder historikken sin i miljøet.</span></div>${nav('hjem')}`,
@@ -662,27 +687,27 @@ ${answers([[REQ, 'A 405'], [RULES, 'Godtatt']])}<span class="hint">Avslår du, f
 ${flash('Invitasjonen er sendt til Lise Moe.')}
 ${menu([mr({ lead:av('siri', 'xs'), t:'Siri Holm', s:'Venn', end:bt('sg', 'Inviter') }), mr({ lead:av('mats', 'xs'), t:'Mats Dahl', s:'Venn · har søkt selv', end:'' }), mr({ lead:av('lise', 'xs'), t:'Lise Moe', s:'Invitert nå', end:'<span class="s2">Trekk</span>' })])}
 <span class="hint">Venner som er stengt ute, står ikke her. Andre kan søke fra miljøets side.</span>
-<div class="odx cd ol">${OD('0051')}<span class="s" style="color:#1E2733">Forslag: «Inviter til ${ENV}» også på personens side for dem du allerede kan se i Lånbort, for eksempel fra et annet miljø. Ikke søk på e-post eller navn.</span></div></div>${nav('hjem')}`,
-        cap:'I dag kan administratorene bare invitere sine egne venner. I et skjult miljø er det den eneste veien inn, så hvem man kan invitere, er et reelt produktvalg (OD-0051).' }),
+<div class="odx cd ol">${OD('0051')}<span class="s" style="color:#1E2733">Vedtatt: «Inviter til ${ENV}» også på personens side for andre du allerede kan se i Lånbort, for eksempel fra et annet miljø. Ingen søk på e-post eller navn. Til det er bygget, inviteres bare venner.</span></div></div>${nav('hjem')}`,
+        cap:'I dag kan administratorene bare invitere sine egne venner. I et skjult miljø er det den eneste veien inn. OD-0051 åpner også for personer administratoren allerede kan se, fra personens side, uten å røpe hvem som har konto.' }),
       `<div class="stack">
 ${note('Ingen innmeldinger', '<span class="s" style="color:#1E2733">«Ingen innmeldinger venter.» Raden i «Venter på dere» forsvinner. Invitasjonene og «Inviter en venn» nås da fra Medlemmer.</span>')}
 ${note('Ingen administrator er aktiv', '<span class="s" style="color:#1E2733">Søkerne ser at ingen kan behandle søknaden nå, og at den ligger trygt til noen kan (kjerneflyt 3, UX-EXC-009). Ingen knapp til Lånbort.</span>')}
 </div>`
     ] },
 
-  { h:'Medlemmer og utestengelse', s:'Hvem som er med, hvem som må svare på et nytt krav, hvem som er passive, og hvem som er stengt ute fra nye forsøk. Utestengelse er noe annet enn passivt medlemskap (PS-ENV-004). Å fjerne et aktivt medlem er ikke mulig før OD-0025 er avgjort.',
+  { h:'Medlemmer og utestengelse', s:'Hvem som er med, hvem som må svare på et nytt krav, hvem som er passive, og hvem som er stengt ute fra nye forsøk. Utestengelse er noe annet enn passivt medlemskap (PS-ENV-004). Å fjerne et aktivt medlem er vedtatt (OD-0025), men ikke bygget.',
     items:[
       phone({ label:'Medlemmer', time:'10:02', body:membersScreen(), cap:'Tallene øverst svarer på det vanligste spørsmålet. «Må svare på nytt krav» viser fristen (PS-ENV-006). Den som er stengt ute, kan slippes inn igjen herfra, også etter at søknaden er avsluttet.' }),
-      phone({ label:'Et medlem', time:'10:03', body:membersScreen(sheet({ over:'Medlemmer', title:'Kari Nordmann', body:`${menu([mr({ lead:ic('eye'), t:'Se Karis side', end:'' }), mr({ lead:ic('crown'), t:'Inviter som administrator', end:'' })])}<div class="odx" style="display:flex;flex-direction:column;gap:6px">${OD('0025')}<span class="lk">${ic('lock')}Fjern fra miljøet</span></div>`, actions:'<span class="bn">Lukk</span>' })),
-        cap:'Det en administrator kan gjøre med et medlem i dag. Med merkene av ser du arket slik appen viser det nå, uten «Fjern».' }),
-      phone({ label:'Fjerne et medlem · forslag', time:'10:05', body:membersScreen(sheet({ over:'Per Lien', title:'Fjerne Per fra miljøet?', rows:[
-        ['lan', BLUE, 'Lån som er avtalt, fortsetter, som når noen melder seg ut.'],
-        ['ting', GREY, 'Tingene hans forsvinner fra miljøet. Forespørsler herfra som ikke er godkjent, avsluttes.'],
-        ['bell', GREY, 'Per får beskjed om at han ikke lenger er medlem, med begrunnelsen.']],
-        body:`${OD('0025')}${field('Begrunnelse', '', 'Kort og saklig. Lagres med tiltaket.')}${check(true, 'Steng Per ute fra nye forsøk', 'Han kan verken søke eller inviteres før en administrator opphever det.')}`,
+      phone({ label:'Et medlem', time:'10:03', body:membersScreen(sheet({ over:'Medlemmer', title:'Kari Nordmann', body:`${menu([mr({ lead:ic('eye'), t:'Se Karis side', end:'' }), mr({ lead:ic('crown'), t:'Inviter som administrator', end:'' })])}<div class="odx" style="display:flex;flex-direction:column;gap:6px">${OD('0025')}${menu([mr({ lead:ic('pmin'), t:'Fjern fra miljøet', s:'Med begrunnelse. Du velger for seg om Kari også stenges ute.', end:'', danger:true })])}</div>`, actions:'<span class="bn">Lukk</span>' })),
+        cap:'Det en administrator kan gjøre med et medlem. Med bryteren av ser du arket slik appen viser det i dag, uten «Fjern fra miljøet». En administrator som er part i saken, får ikke valget (PS-USR-009).' }),
+      phone({ label:'Fjerne et medlem', time:'10:05', odx:true, body:membersScreen(sheet({ over:'Per Lien', title:'Fjerne Per fra miljøet?', rows:[
+        ['lan', BLUE, 'Lån som er godkjent, fortsetter, og Per beholder innsynet han trenger i dem.'],
+        ['ting', GREY, 'Tingene hans forsvinner fra miljøet. Forespørsler herfra som ikke er godkjent, avsluttes, som når noen melder seg ut.'],
+        ['bell', GREY, 'Per får nøytral beskjed om tiltaket, hva det betyr, og hvordan han ber om en ny vurdering. Han får ikke vite hvem som rapporterte.']],
+        body:`${OD('0025')}${field('Begrunnelse', '', 'Kort og saklig. Lagres med tiltaket.')}${check(false, 'Steng Per også ute fra nye forsøk', 'Et eget valg. Da kan han verken søke eller inviteres før en administrator opphever det.')}`,
         actions:`<span class="bdf">${ic('pmin')}Fjern Per fra miljøet</span><span class="bn">Avbryt</span>` })),
-        cap:'Slik anbefalingen i OD-0025 kunne sett ut: et begrunnet, sporbart tiltak (PS-TRUST-016), samme virkning på lån som utmelding, og utestengelse som et valg. Vises ikke i appen før det er avgjort.' }),
-      phone({ label:'Tidligere utestengelser', time:'10:08', body:membersScreen(sheet({ over:'Medlemmer', title:'Oppheve utestengelser fra før du ble med?', rows:[
+        cap:'Vedtatt i OD-0025, ikke bygget: et begrunnet, sporbart tiltak (PS-TRUST-016) med samme virkning på lån som utmelding. Å stenge ute er et eget valg, av som standard. Skjules med bryteren.' }),
+      phone({ label:'Tidligere utestengelser', time:'10:08', clip:844, body:membersScreen(sheet({ over:'Medlemmer', title:'Oppheve utestengelser fra før du ble med?', rows:[
         ['undo', BLUE, 'Utestengelser fra da miljøet var mer privat enn du har kjent det, oppheves.'],
         ['eyeoff', GREY, 'De det gjelder, kan søke eller inviteres igjen. Hvem de er, og om det finnes noen, vises bare for dem som var med da.']],
         actions:'<span class="btn">Opphev utestengelsene</span><span class="bn">Avbryt</span>' })),
@@ -761,26 +786,26 @@ ${statusCard({ p:pill('p-wt', 'info', 'Kan ikke administrere nå'), h:'Du kan ik
         cap:'Statuskortet tar plassen øverst så lenge avviklingen pågår. Bare eieren ser «Fortsett miljøet». Miljøtypen kan bare gjøres strengere i denne perioden.' })
     ] },
 
-  { h:'Plattformforvaltere: når sterkere innlogging finnes', s:'Plattformforvalterne behandler rapporter til Lånbort, rapporter sendt videre fra miljøer og meldinger om mulig dødsfall. Handlingene krever WebAuthn (ADR-0011), som ikke bygges før OD-0023 er avgjort. Til da viser appen ingenting av dette. Skjermene under viser retningen, med samme kø og saksside som administratorene i kjerneflyt 8.',
+  { h:'Plattformforvaltere: når sterkere innlogging finnes', s:'Plattformforvalterne behandler rapporter til Lånbort, rapporter sendt videre fra miljøer og meldinger om mulig dødsfall. Handlingene krever WebAuthn (ADR-0011), som ikke bygges før OD-0023 er avgjort. Til da viser appen ingenting av dette. Skjermene under viser retningen, med samme kø og saksside som administratorene i kjerneflyt 8, og skjules med bryteren.',
     items:[
       `<div class="stack">
 ${note('I dag', `<span class="s" style="color:#1E2733">En plattformforvalter ser appen som alle andre. Rollen gis med en driftskommando (OD-0021). Ingen kø, ingen tiltak og ingen rapportering til Lånbort (UX-EXC-011).</span>${OD('0023')}`)}
-${note('Hvorfor ingen knapper på personsider', `<span class="s" style="color:#1E2733">Anbefalingen i OD-0026 er at inngrep på kontoer og miljøer alltid startes fra en sak, så begrunnelse, habilitet og historikk følger med. Da blir det ingen forvalterknapper på vanlige sider.</span>${OD('0026')}`)}
+<div class="odx">${note('Hvorfor ingen knapper på personsider', `<span class="s" style="color:#1E2733">Vedtatt i OD-0026: inngrep på kontoer og miljøer startes alltid fra en sak i plattformkøen, så habilitet, begrunnelse og historikk følger med. Kommer initiativet ikke fra en rapport, opprettes en sak først. Derfor ingen forvalterknapper på vanlige sider.</span>${OD('0026')}`)}</div>
 </div>`,
-      phone({ label:'Plattformkøen', time:'08:10', aria:'Plattformkøen, slik den er tenkt', body:platQueue, cap:'Inngangen er en egen seksjon på Hjem, «For Lånbort», som for administratorene. Rollestripen er grå, ikke blå, så det er tydelig at dette ikke er et miljø.' }),
-      phone({ label:'Tiltak krever sikkerhetsnøkkel', time:'08:14', body:platCase(sheet({ over:'Rapport om «Gassflaske 11 kg»', title:'Bekreft at det er deg', rows:[
+      phone({ label:'Plattformkøen', time:'08:10', odx:true, aria:'Plattformkøen, slik den er tenkt', body:platQueue, cap:'Inngangen er en egen seksjon på Hjem, «For Lånbort», som for administratorene. Rollestripen er grå, ikke blå, så det er tydelig at dette ikke er et miljø.' }),
+      phone({ label:'Tiltak krever sikkerhetsnøkkel', time:'08:14', odx:true, body:platCase(sheet({ over:'Rapport om «Gassflaske 11 kg»', title:'Bekreft at det er deg', rows:[
         ['key', BLUE, 'Bruk sikkerhetsnøkkelen eller passkey-en du har registrert som forvalter.'],
         ['clock', GREY, 'Bekreftelsen gjelder en kort stund, så du kan gjøre flere tiltak i samme sak.']],
         body:OD('0023'), actions:`<span class="btn">${ic('key')}Bruk sikkerhetsnøkkel</span><span class="bn">Avbryt</span>` })),
         cap:'Tiltakene har lås til forvalteren har bekreftet med WebAuthn. Hvordan nøklene registreres, og hvor mange som trengs, er OD-0023.' }),
-      phone({ label:'Inngrep på en konto · forslag', time:'08:20', body:platCase(sheet({ over:'Rapport om Mats Dahl', title:'Suspendere kontoen til Mats Dahl?', rows:[
+      phone({ label:'Inngrep på en konto', time:'08:20', odx:true, body:platCase(sheet({ over:'Rapport om Mats Dahl', title:'Suspendere kontoen til Mats Dahl?', rows:[
         ['x', RED, 'Forespørsler som ikke er godkjent, avsluttes nøytralt.'],
         ['lan', RED, 'Reserverte lån før overlevering stanses. Motparten får vite at lånet ikke kan gjennomføres, ikke hvorfor.'],
         ['ting', BLUE, 'Ting som er overlevert, følges til trygg retur.'],
         ['doc', GREY, 'Begrunnelsen og hvem som besluttet, lagres med tiltaket.']],
         body:`${OD('0026')}${field('Begrunnelse', '', 'Kort og saklig')}`,
         actions:`<span class="bdf">${ic('block')}Suspender kontoen</span><span class="bn">Avbryt</span>` })),
-        cap:'Slik anbefalingen i OD-0026 kunne sett ut: inngrepet startes fra saken, med konsekvensene i PS-ADM-003 og UX-EXC-007 og begrunnelse etter PS-ADM-014.' })
+        cap:'Vedtatt i OD-0026: inngrepet startes fra saken, med konsekvensene i PS-ADM-003 og UX-EXC-007 og begrunnelse etter PS-ADM-014. Stengt til OD-0023 er på plass.' })
     ] }
 ];
 
@@ -811,7 +836,7 @@ ${sec('Invitert · 1')}${menu([mr({ lead:av('lise', 'xs'), t:'Lise Moe', s:'Invi
 }
 
 function renderSections() {
-  document.getElementById('uqs').innerHTML = OPEN.map(([n, q, t]) => `<div class="uq">${OD(n)}<span><b>${q}</b> ${t}</span></div>`).join('');
+  document.getElementById('uqs').innerHTML = DECISIONS.map(([n, q, t]) => `<div class="uq">${OD(n)}<span><b>${q}.</b> ${t}</span></div>`).join('');
   document.getElementById('sections').innerHTML = S_SECTIONS.map(x => `<section style="display:flex;flex-direction:column;gap:16px"><div class="gh"><span class="hq" style="font-size:24px">${x.h}</span><span class="s">${x.s}</span></div><div class="lane">${x.items.join('')}</div></section>`).join('')
     + `<section style="display:flex;flex-direction:column;gap:16px"><div class="gh"><span class="hq" style="font-size:24px">Større skjerm</span><span class="s">Samme innhold og regler. «Administrer miljøet» blir en fast kolonne til venstre, og oppgaven åpnes ved siden av, så administratoren kan gå gjennom innmeldingene uten å miste oversikten. Hver søknad viser svarene direkte.</span></div><div class="dkw">${desktop()}</div></section>`;
 }

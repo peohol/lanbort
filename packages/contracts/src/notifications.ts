@@ -63,6 +63,8 @@ export const notificationKinds = {
   "social.friend_request_accepted": "information",
   "environment.membership_invited": "action",
   "environment.membership_review_requested": "action",
+  "environment.membership_approved": "action",
+  "environment.membership_rejected": "action",
   "environment.role_invited": "action",
   "environment.type_change_proposed": "action",
   "environment.requirements_changed": "action",

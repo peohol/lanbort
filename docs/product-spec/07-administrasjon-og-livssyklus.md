@@ -90,6 +90,11 @@ En plattformforvalter kan ikke behandle sak der vedkommende selv er part eller g
 
 Kontrollert kontoavslutning, eierskapsoverføring, suspensjon og andre særinngrep skal registreres med grunnlag og aktør.
 
+### PS-ADM-015 — Plattforminngrep starter fra en sak
+**Forankring:** VP-15, VP-16; PS-ADM-014, PS-TRUST-016, UX-IA-007
+
+Plattformforvalterens inngrep mot kontoer og miljøer, også mot misbruk av en administrator- eller eierrolle, gjøres fra en sak i plattformkøen, med habilitet, begrunnelse og sporbarhet. Kommer initiativet ikke fra en rapport, opprettes et autorisert saksgrunnlag først. Vanlige person- og miljøsider har ingen inngrepsknapper. Ikke bygget ennå, og stengt til WebAuthn for plattformforvaltere er på plass (ADR-0011, OD-0023). (Produkteier, 10. oktober 2026, OD-0026.)
+
 ## Pilotregel for inaktivitet
 
 Automatisk permanent kontosletting aktiveres **ikke** i pilotfasen. Inaktive kontoer kan skjules/deaktiveres etter varsling, men permanent sletting skjer selvbetjent eller gjennom kontrollert særprosess. Dette gjør det mulig å fastsette langtidsfrister etter reell bruk og juridisk vurdering.
