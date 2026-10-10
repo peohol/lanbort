@@ -419,7 +419,7 @@ const PK_DETAIL = 'Var det ikke deg eller avtalt med deg, si fra til de andre pl
 const LIVE0 = () => ({
   stack:[], cur:{ v:'hjem' }, clock:9 * 60 + 5, confirmedAt:9 * 60 + 2, prod:false, anders:true,
   pks:PK0(), nextPk:3, acc:ACC0(), cases:CASES0(), blocked:{}, filter:'all', tab:'open', nInq:0,
-  flow:null, inq:null, setup:{ code:'', name:'', done:false }, addName:'',
+  flow:null, inq:null, setup:{ code:'', name:'', done:false }, addName:'', rep:{ env:true, to:'adm' },
   sheet:null, sys:null, pending:null, sysMsg:'', draft:{ entry:'', aud:'party', closing:'' },
   flash:'', flashMark:'', err:'', focus:null,
   log:{ nora:[{ t:'En sak venter på behandling', s:'Handlingsvarsel til forvalterne som kan ta den.', at:'07.50' }], oth:[] }
@@ -486,7 +486,7 @@ ${cap ? `<p class="cap">${cap}</p>` : ''}</div>`;
 }
 
 /* ---------- Forvalterens byggeklosser ---------- */
-const TITLE = { hjem:'Hjem', hub:'Forvaltning', queue:'Plattformkøen', case:'Saken', flow:'Inngrep', inq:'Saksgrunnlag', pks:'Passkeys', setup:'Sett opp passkeys', add:'Legg til passkey', own:'Saken' };
+const TITLE = { hjem:'Hjem', hub:'Forvaltning', queue:'Plattformkøen', case:'Saken', flow:'Inngrep', inq:'Saksgrunnlag', pks:'Passkeys', setup:'Sett opp passkeys', add:'Legg til passkey', own:'Saken', rep:'Rapport', admcase:'Saken' };
 const backbar = () => { const p = S.stack[S.stack.length - 1]; return `<div class="bk">${p ? `<button class="bkb" type="button"${A('back')}>${ic('back')}${TITLE[p.v]}</button>` : ''}<span style="margin-left:auto"></span>${bell(S.log.nora.length)}</div>`; };
 const page = inner => `${backbar()}<div class="scr" style="gap:10px">${inner}</div>${nav('hjem')}`;
 const pageHead = (title, { kicker = 'Lånbort', ctx = '' } = {}) =>
@@ -882,6 +882,12 @@ ${err(S.err)}${b('btn', fresh() ? 'Lag passkey' : 'Bekreft og lag passkey', 'mkp
 const curTitle = () => S.cur.v === 'case' ? S.cases[S.cur.id].title : S.cur.v === 'flow' ? S.cases[S.flow.id].title : TITLE[S.cur.v];
 const cancelBtn = b('bn', 'Avbryt', 'cancel');
 const SHEETS = {
+  admmore:() => sheet({ over:S.cases.gass.title, title:'Flere valg', body:`<div class="cd ol" style="padding:2px 4px;gap:0">${mr({ lead:ic('out'), t:'Legg saken tilbake i køen', end:'' })}${mr({ lead:ic('shield'), t:'Send videre til Lånbort', s:'Lånbort får en egen rapport om det samme. Saken her fortsetter som før.', end:'', act:A('escsheet') })}${mr({ lead:ic('block'), t:'Erklær deg inhabil', end:'', danger:true })}</div>`, actions:b('bn', 'Lukk', 'cancel') }),
+  esc:() => sheet({ over:S.cases.gass.title, title:'Sende rapporten videre til Lånbort?', rows:[
+    ['flag', BLUE, 'Lånbort får en egen rapport om det samme, med det du skriver her. En forvalter tar den.'],
+    ['doc', BLUE, `Saken i ${ENV} fortsetter som før, og tiltakene dere har gjort, står.`],
+    ['shield', GREY, 'Du er den som rapporterte til Lånbort, så du behandler aldri den saken som forvalter.']],
+    body:field('Hva Lånbort bør vurdere', ''), actions:`${b('btn', 'Send videre til Lånbort', 'cancel')}${cancelBtn}` }),
   pk:() => sheet({ over:curTitle(), title:'Bekreft at det er deg', rows:[
     ['key', BLUE, 'Bruk en av passkeyene dine for forvaltningen, på denne enheten eller en annen.'],
     ['clock', GREY, 'Bekreftelsen gjelder i 10 minutter i denne økten. Så bekrefter du på nytt.']],
@@ -915,7 +921,29 @@ function sysDialog() {
 }
 
 /* ---------- Handlinger ---------- */
-const VIEWS = { hjem:vHjem, hub:vHub, queue:vQueue, case:vCase, flow:vFlow, inq:vInq, pks:vPks, setup:vSetup, add:vAdd, own:vOwn };
+/* ---------- Rapportere til Lånbort (kjerneflyt 8, nå aktivt) ---------- */
+/* Hvem som behandler hva, er PS-TRUST-013: miljøets regler lokalt, alvorlig misbruk og plattformens regler hos Lånbort. */
+const LB_HELP = 'For alvorlig misbruk, brudd på Lånborts regler og det som gjelder sikkerhet eller lovlighet. En forvalter hos Lånbort tar saken.';
+function vReport() {
+  const r = S.rep, toLb = r.to === 'lb', who = PEOPLE.mats.name;
+  const choice = r.env
+    ? `${sec('Hvem skal vurdere det?')}${radios('Hvem skal vurdere det?', [
+        option(!toLb, `Administratorene i ${ENV}`, 'For det som gjelder miljøets regler og tingene her. Én av dem tar saken.', A('repto', 'adm')),
+        option(toLb, 'Lånbort', LB_HELP, A('repto', 'lb'))])}`
+    : `${sec('Til Lånbort')}<div class="cd ol"><span class="s" style="color:#1E2733">Dere er ikke i et miljø sammen, så rapporten går til Lånbort. ${LB_HELP}</span></div>`;
+  return page(`${pageHead(`Rapporter ${who}`, { kicker:'Rapport' })}
+<span class="s" style="padding:0 4px">En rapport ber om en vurdering. Den sier ikke at noen har gjort noe galt. Den du rapporterer, får ikke vite om rapporten gjennom saken.</span>
+${choice}${field('Hva har skjedd', '')}<span class="hint">Skriv bare det som trengs for saken. Private samtaler blir ikke en del av saken, men du kan sende inn meldinger fra dem senere.</span>
+<button class="btn" type="button">${toLb ? 'Send rapporten til Lånbort' : 'Send rapporten til administratorene'}</button>`);
+}
+function vAdmCase() {
+  const c = S.cases.gass;
+  return page(`${pageHead(c.title, { kicker:`Rapport · ${ENV}` })}<div class="role">${ic('shield')}<span class="f1">Du behandler som administrator i ${ENV}</span></div>
+${statusCard({ p:pill('p-on', 'check', 'Du har saken'), h:'Vurder om publiseringen skal avvises eller sperres i miljøet', s:'Saken kan også lukkes uten tiltak.' })}
+<button class="q" type="button"${A('esc')}>Flere valg</button>`);
+}
+
+const VIEWS = { hjem:vHjem, hub:vHub, queue:vQueue, case:vCase, flow:vFlow, inq:vInq, pks:vPks, setup:vSetup, add:vAdd, own:vOwn, rep:vReport, admcase:vAdmCase };
 const push = (v, id) => { S.stack.push(S.cur); S.cur = { v, id }; S.focus = 'top'; };
 /* Krever fersk passkey-bekreftelse; uten den åpnes arket, og handlingen venter til bekreftelsen er gjort. */
 function withPasskey(fn) {
@@ -1000,6 +1028,9 @@ const ACT = {
   inq:() => { S.inq = { step:1, type:'acc', ref:null, basis:'' }; push('inq'); },
   itype:t => { S.inq.type = t; S.inq.ref = null; },
   iref:r => { S.inq.ref = r; },
+  repto:k => { S.rep.to = k; },
+  esc:() => { S.sheet = { k:'admmore' }; },
+  escsheet:() => { S.sheet = { k:'esc' }; },
   inext:() => { const q = S.inq; if (q.step === 1 && !q.ref) { S.err = 'Velg hva saken gjelder.'; return; } if (q.step === 2 && !q.basis.trim()) { S.err = 'Skriv grunnlaget for saken.'; return; } q.step += 1; S.focus = 'top'; },
   iprev:() => { S.inq.step = Math.max(1, S.inq.step - 1); S.focus = 'top'; },
   iopen:() => { const q = S.inq; withPasskey(() => openInquiry(q.type, q.ref, q.basis.trim())); },
@@ -1076,7 +1107,8 @@ const GROUPS = [
   { h:'6 · Åpne saksgrunnlag', s:'Når et inngrep ikke starter fra en rapport, åpner forvalteren først en sak om en konto eller en ting. Grunnlaget blir sakens første innlegg, bare for behandlerne. Forvalteren har saken med en gang, og den det gjelder, ser den aldri.' },
   { h:'7 · Inhabil og ingen habil forvalter', s:'Den som er involvert, ser saken bare som part, aldri i køen. Erklærer en forvalter seg inhabil, går saken tilbake til de andre. Finnes ingen habil forvalter, sier saken det rett ut, uten en knapp videre.' },
   { h:'8 · Passkeys', s:'Forvalterrollen virker med minst to passkeys, høyst ti. Den første legges til med registreringskoden fra driftsansvarlig, den neste fra en økt som nettopp er bekreftet med passkey. Navnet gis når passkeyen lages. Listen har ingen omdøping, og den siste kan ikke fjernes.' },
-  { h:'9 · Produksjon før verifisering', s:'Til passkeys er prøvd og verifisert på det faste domenet, er forvaltningen slått av i produksjon. En liten stripe sier det der rollen ellers ville virket.' }
+  { h:'9 · Produksjon før verifisering', s:'Til passkeys er prøvd og verifisert på det faste domenet, er forvaltningen slått av i produksjon. En liten stripe sier det der rollen ellers ville virket.' },
+  { h:'10 · Rapportere til Lånbort', s:'Når forvalterne kan behandle saker, blir det som står som «Ikke tilgjengelig ennå» i kjerneflyt 8 aktivt (UX-EXC-011): Lånbort som valg i rapporten, rapporten når dere ikke har et miljø felles, og «Send videre til Lånbort» for administratorene. Hvem som vurderer hva, er PS-TRUST-013. Det følger samme bryter som forvaltningen, så det er av i produksjon til den er verifisert.' }
 ];
 const PRESETS = [
   { g:0, k:'hjem', l:'Hjem med «For Lånbort»', set:() => route(H), cap:'Forvalteren er også vanlig bruker. Rollen har sin egen seksjon på Hjem. Raden leder rett til køen, og «Forvaltning» samler resten. Egne saker ligger under «Uavklart» som for alle andre.' },
@@ -1125,7 +1157,10 @@ const PRESETS = [
   { g:7, k:'pk-last', l:'Den siste kan ikke fjernes', set:() => { firstPk(); stale(); route(H, HUB, ['pks']); }, cap:'Med én passkey er «Fjern» borte og erstattet av grunnen. Statuskortet sier at handlingene er stengt.' },
   { g:7, k:'pk-confirm', l:'Bekreft med passkey', clip:844, set:() => { stale(); route(H, HUB); S.sheet = { k:'pk' }; }, cap:'Samme ark fra alle steder bekreftelsen trengs: køen, saken, inngrep, saksgrunnlag og passkeys.' },
   { g:8, k:'prod-hjem', l:'Hjem i produksjon', set:() => { S.prod = true; route(H); }, cap:'Stripen sier at forvaltningen er av. Ingen kø og ingen passkeys.' },
-  { g:8, k:'prod-hub', l:'Forvaltning i produksjon', set:() => { S.prod = true; route(H, HUB); }, cap:'Radene finnes, men er stengt, så forvalteren ser hva som kommer, uten å kunne bruke det.' }
+  { g:8, k:'prod-hub', l:'Forvaltning i produksjon', set:() => { S.prod = true; route(H, HUB); }, cap:'Radene finnes, men er stengt, så forvalteren ser hva som kommer, uten å kunne bruke det.' },
+  { g:9, k:'rep-env', l:'Rapport med valget Lånbort', set:() => { route(H, ['rep']); S.rep = { env:true, to:'lb' }; }, cap:'Valget fra kjerneflyt 8, nå aktivt. Teksten under Lånbort er fra PS-TRUST-013. Knappen sier hvem rapporten går til.' },
+  { g:9, k:'rep-none', l:'Rapport uten felles miljø', set:() => { route(H, ['rep']); S.rep = { env:false, to:'lb' }; }, cap:'Uten et miljø dere har felles, kan bare Lånbort vurdere det. Før var dette «Du kan ikke rapportere til Lånbort ennå».' },
+  { g:9, k:'rep-adm', l:'Administratoren sender videre', clip:844, set:() => { route(H, ['admcase']); S.sheet = { k:'esc' }; }, cap:'Det en administrator i miljøet gjør i «Flere valg». Rapporten i miljøet består (PS-TRUST-016), og Lånbort får sin egen.' }
 ];
 PRESETS.forEach((p, i) => { p.num = String(i + 1).padStart(2, '0'); });
 const presetByKey = k => PRESETS.find(p => p.k === k);
