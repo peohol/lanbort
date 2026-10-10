@@ -1,6 +1,6 @@
 "use client";
 
-import { chatApi } from "./api";
+import { ChatApiError, chatApi } from "./api";
 import { ConfirmSheet } from "./sheet";
 
 /**
@@ -45,7 +45,21 @@ export function DeclineLink({
       ]}
       confirmLabel={confirmLabel}
       confirm={async () => {
-        await Promise.all(linkRequestIds.map((id) => chatApi.declineLink(id)));
+        // A request that expired or was answered meanwhile waits no more,
+        // and one declined already is declined again: trying once more
+        // after a failure ends where every request is answered.
+        await Promise.all(
+          linkRequestIds.map((id) =>
+            chatApi.declineLink(id).catch((problem: unknown) => {
+              if (
+                !(problem instanceof ChatApiError) ||
+                problem.code !== "not_found"
+              ) {
+                throw problem;
+              }
+            }),
+          ),
+        );
         onDeclined();
       }}
     />
