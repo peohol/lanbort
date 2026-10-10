@@ -43,3 +43,12 @@ export const isChatPage = (pathname: string) =>
 /** Only the page that scans a link code may use the camera. */
 export const usesCamera = (pathname: string) =>
   pathname === chatApproveLinkHref;
+
+/**
+ * In the browser: the path the page's document was loaded with, not
+ * navigated to since. Its security headers are that path's.
+ */
+export function loadedPath(): string {
+  const entry = performance.getEntriesByType("navigation")[0];
+  return entry ? new URL(entry.name).pathname : location.pathname;
+}

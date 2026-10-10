@@ -9,22 +9,20 @@ const hasSessionCookie = (request: NextRequest) =>
   request.cookies.getAll().some(({ name }) => name.startsWith("sb-"));
 
 /**
- * A chat page's security headers, with a fresh nonce for its scripts
- * (ADR-0010 §13). Next.js reads the nonce from the request's policy and
- * puts it on the scripts it renders.
+ * A page's security headers, with a fresh nonce for its scripts (ADR-0010
+ * §13). Next.js reads the nonce from the request's policy and puts it on
+ * the scripts it renders. Chat pages get the stricter variant.
  */
-function chatHeaders(request: NextRequest) {
-  if (!isChatPage(request.nextUrl.pathname)) {
-    return undefined;
-  }
-
+function pageHeaders(request: NextRequest) {
+  const { pathname } = request.nextUrl;
   const nonce = btoa(
     String.fromCharCode(...crypto.getRandomValues(new Uint8Array(18))),
   );
 
   return getSecurityHeaders({
     development: process.env.NODE_ENV === "development",
-    chat: { nonce, camera: usesCamera(request.nextUrl.pathname) },
+    nonce,
+    ...(isChatPage(pathname) && { chat: { camera: usesCamera(pathname) } }),
   });
 }
 
@@ -32,12 +30,12 @@ function chatHeaders(request: NextRequest) {
  * Keeps sessions fresh: an expired access token is refreshed here, where the
  * new cookies can still be written to both the request and the response.
  * This is not an authorization layer; Route Handlers and domain policies
- * decide access. It also gives chat pages their own security headers, and
- * pages the address they were asked for.
+ * decide access. It also gives every page its security headers, and the
+ * address it was asked for.
  */
 export async function proxy(request: NextRequest) {
-  const security = chatHeaders(request);
-  const policy = security?.find(
+  const security = pageHeaders(request);
+  const policy = security.find(
     ({ key }) => key === "Content-Security-Policy",
   )?.value;
   const forward = () => {
@@ -54,7 +52,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next({ request: { headers } });
   };
   const respond = (response: NextResponse) => {
-    for (const { key, value } of security ?? []) {
+    for (const { key, value } of security) {
       response.headers.set(key, value);
     }
 

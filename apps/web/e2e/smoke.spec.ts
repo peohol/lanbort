@@ -35,8 +35,17 @@ test("responses carry the security header baseline", async ({ request }) => {
     expect(headers["x-content-type-options"]).toBe("nosniff");
     expect(headers["x-frame-options"]).toBe("DENY");
     expect(headers["referrer-policy"]).toBe("no-referrer");
+    expect(headers["cross-origin-opener-policy"]).toBe("same-origin");
     expect(headers).not.toHaveProperty("x-powered-by");
+    // No inline script runs without the page's own nonce (ADR-0010 §13).
+    const scripts = headers["content-security-policy"]!.split(";").find(
+      (part) => part.trim().startsWith("script-src"),
+    )!;
+    expect(scripts).not.toContain("unsafe-inline");
   }
+
+  const page = (await request.get("/")).headers()["content-security-policy"]!;
+  expect(page).toMatch(/script-src 'self' 'nonce-[^']+' 'strict-dynamic'/);
 });
 
 test("health endpoint returns the non-sensitive contract", async ({
