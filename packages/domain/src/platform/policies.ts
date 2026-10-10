@@ -1,4 +1,8 @@
-import type { CaseKind, StewardPasskeys } from "@lanbort/contracts";
+import type {
+  CaseKind,
+  PlatformLookupResult,
+  StewardPasskeys,
+} from "@lanbort/contracts";
 import type { AccountStatus, UserActor } from "../actor";
 import {
   allow,
@@ -297,6 +301,20 @@ export const openPlatformInquiryPolicy = definePolicy<InquiryTarget, void>({
   ],
 });
 
+/** What a steward's lookup found, or null (OD-0055). */
+export type LookupFinding = PlatformLookupResult;
+
+/**
+ * OD-0055: only a steward, confirmed with a passkey, looks up an account or
+ * a thing, and only by its full e-mail address or the link to its page.
+ * Finding one's own is allowed, so the steward sees why they cannot act on
+ * it; acting stays with each operation's own policy.
+ */
+export const lookUpPlatformSubjectPolicy = definePolicy<LookupFinding, void>({
+  action: "platform.look_up_subject",
+  actor: [...platformStewardAccess],
+});
+
 /** The roles someone holds in one environment, as the command locked them. */
 export interface EnvironmentRolesTarget {
   readonly environmentId: string;
@@ -332,4 +350,5 @@ export const platformPolicies = [
   resetStewardPasskeysPolicy,
   openPlatformInquiryPolicy,
   endEnvironmentRolesPolicy,
+  lookUpPlatformSubjectPolicy,
 ];

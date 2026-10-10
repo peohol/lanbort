@@ -39,6 +39,7 @@ import { searchEnvironments, searchObjects } from "../search/queries";
 import { sendFriendRequest } from "../social/commands";
 import { getSocialRelation } from "../social/queries";
 import { readTrustProfile } from "../trust/queries";
+import { lookUpPlatformSubject } from "../platform/lookup";
 import { removeStewardPasskey } from "../platform/passkey-commands";
 import { testPasskeyCommands } from "../testing/stewards";
 import { rateLimits } from "./rate-limits";
@@ -73,6 +74,7 @@ const limited = {
     readTrustProfile,
     getSocialRelation,
     previewLoanRequest,
+    lookUpPlatformSubject,
   ],
   chatMessages: [sendChatMessage, submitChatCommit],
   chatKeys: [

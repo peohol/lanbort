@@ -5,3 +5,4 @@ export * from "./passkeys";
 export * from "./passkey-commands";
 export * from "./interventions";
 export * from "./intervention-commands";
+export * from "./lookup";

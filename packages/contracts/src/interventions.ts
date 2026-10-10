@@ -4,6 +4,7 @@ import {
   accountStatusSchema,
   basisSchema,
 } from "./account";
+import { emailAddressSchema } from "./auth";
 import { caseEntryIdSchema, caseIdSchema, casePersonSchema } from "./cases";
 import { objectIdSchema } from "./objects";
 
@@ -29,6 +30,45 @@ export const openPlatformInquirySchema = z.strictObject({
 export const platformInquiryOpenedSchema = z.strictObject({
   caseId: caseIdSchema,
   entryId: caseEntryIdSchema,
+});
+
+/**
+ * OD-0055: a steward finds the account or thing an inquiry or a duplicate
+ * is about only from what they already have: the full e-mail address, or
+ * the link to the person's or the thing's page (which the app reads into
+ * its id). Never a name search. Every lookup is recorded, found or not.
+ */
+export const platformLookupBySchema = z.enum(["email", "person", "object"]);
+
+export const platformLookupSchema = z.discriminatedUnion("by", [
+  z.strictObject({ by: z.literal("email"), email: emailAddressSchema }),
+  z.strictObject({ by: z.literal("person"), userId: z.uuid() }),
+  z.strictObject({ by: z.literal("object"), objectId: objectIdSchema }),
+]);
+
+/**
+ * What a lookup found, or null. `involved` when it is the steward's own
+ * account or a thing they own, which they can never act on (PS-USR-009).
+ */
+export const platformLookupResultSchema = z.strictObject({
+  found: z
+    .discriminatedUnion("kind", [
+      z.strictObject({
+        kind: z.literal("user"),
+        userId: z.uuid(),
+        name: z.string().nullable(),
+        status: accountStatusSchema,
+        involved: z.boolean(),
+      }),
+      z.strictObject({
+        kind: z.literal("object"),
+        objectId: objectIdSchema,
+        title: z.string(),
+        ownerNames: z.array(z.string()),
+        involved: z.boolean(),
+      }),
+    ])
+    .nullable(),
 });
 
 /**
@@ -115,6 +155,8 @@ export const caseInterventionsSchema = z.strictObject({
 });
 
 export type OpenPlatformInquiry = z.infer<typeof openPlatformInquirySchema>;
+export type PlatformLookup = z.infer<typeof platformLookupSchema>;
+export type PlatformLookupResult = z.infer<typeof platformLookupResultSchema>;
 export type EndEnvironmentRoles = z.infer<typeof endEnvironmentRolesSchema>;
 export type PlatformInterventionKind = z.infer<
   typeof platformInterventionKindSchema
