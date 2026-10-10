@@ -84,6 +84,7 @@ export const chatApi = {
     deviceId: string;
     deviceKey: string;
     linkKey: string;
+    commitment: string;
   }) => post<ChatLinkStatus>("/api/chat/links", body),
   linkStatus: (id: string) => get<ChatLinkStatus>(`/api/chat/links/${id}`),
   finishLink: (id: string) => post(`/api/chat/links/${id}/finish`, {}),

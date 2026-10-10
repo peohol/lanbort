@@ -95,10 +95,10 @@ Dette sjekkes av hver klient for hvert medlem som legges til, hver nøkkeloppdat
 ## 5. Ny enhet (kobling)
 
 1. Den nye enheten logger inn som vanlig. Det gir ingen chattilgang.
-2. Den lager sin enhetsnøkkel og et engangs HPKE-nøkkelpar (RFC 9180, samme algoritmer som ciphersuiten) og viser en QR-kode med den offentlige HPKE-nøkkelen og et sjekksum av enhetsnøkkelen. Uten kamera vises i stedet en kode på 26 tegn (128-bit sjekksum av de samme nøklene) som tastes inn.
-3. En eksisterende enhet skanner koden eller får koden tastet inn, viser hvilken enhet som ber om tilgang, og brukeren godkjenner.
-4. Den eksisterende enheten signerer enhetssertifikatet og krypterer en pakke til den nye enhetens HPKE-nøkkel med kontonøkkelen og, hvis brukeren velger det, nøkkelen til et historikkarkiv (punkt 8). Pakken går via serveren, som bare ser ciphertext. Fordi den offentlige nøkkelen kom direkte fra skjermen, kan serveren ikke bytte den ut.
-5. Den nye enheten legges til i kontoens samtaler (punkt 4) og ser meldinger fra nå av. Gammel historikk får den bare hvis brukeren valgte å overføre den i steg 4.
+2. Den lager sin enhetsnøkkel, et engangs HPKE-nøkkelpar (RFC 9180, samme algoritmer som ciphersuiten) og en tilfeldig hemmelighet på 128 bit. Hemmeligheten vises bare på skjermen, som QR-kode eller som en kode på 26 tegn som kan tastes inn. Serveren får de offentlige nøklene og en forpliktelse til dem (HMAC-SHA256 med en nøkkel utledet fra hemmeligheten), aldri selve hemmeligheten.
+3. En eksisterende enhet skanner koden eller får den tastet inn. Den finner forespørselen hvis forpliktelse koden åpner, viser hvilken enhet som ber om tilgang, og brukeren godkjenner. Har serveren byttet en nøkkel, åpner koden ingen forespørsel.
+4. Den eksisterende enheten signerer enhetssertifikatet og lager en pakke med kontonøkkelen, kontaktenes kontonøkler som kontoen allerede stoler på, og, hvis brukeren velger det, nøkkelen til et historikkarkiv (punkt 8). Pakken krypteres først med AES-GCM under en nøkkel utledet fra hemmeligheten og deretter med HPKE til den nye enhetens engangsnøkkel. Begge lagene er bundet til forespørselens nøkler. Serveren ser bare ciphertext. Siden den ikke kjenner hemmeligheten, kan den verken bytte nøklene eller lage en egen pakke med en kontonøkkel den selv kontrollerer.
+5. Den nye enheten starter med de samme festede kontonøklene for kontaktene som enheten som godkjente den. En nøkkel serveren senere viser og som avviker, gir derfor varsel om endret sikkerhetskode også på den nye enheten. Den nye enheten legges til i kontoens samtaler (punkt 4) og ser meldinger fra nå av. Gammel historikk får den bare hvis brukeren valgte å overføre den i steg 4.
 
 Koblingsforespørselen utløper etter kort tid og kan brukes én gang. En fullført godkjenning utløser dessuten sikkerhetsvarsel til kontoeieren både i app og på verifisert e-post, uavhengig av hvem som godkjente koblingen (PS-COM-016). Varselet leder til «Mine enheter», der ukjente enheter kan tilbakekalles; det inneholder ikke chatinnhold eller nøkkelmateriale.
 
@@ -137,7 +137,7 @@ Serveren kan holde en tilbakekalling tilbake fra en kontakt. Det gir ikke den ta
 **Gjenopprettingsnøkkel (valgfri, tilbys brukeren):**
 
 - 256 tilfeldige bit laget på enheten, vist én gang som 52 tegn i grupper. Brukeren skriver den ned eller lagrer den i en passordbehandler. Når og hvor den tilbys, står i PS-COM-019.
-- Fra den utledes (HKDF-SHA256) en nøkkel som krypterer en sikkerhetskopi av kontonøkkelen og historikkarkivets nøkkel. Sikkerhetskopien og arkivet lagres hos serveren som ciphertext.
+- Fra den utledes (HKDF-SHA256) en nøkkel som krypterer en sikkerhetskopi av kontonøkkelen, historikkarkivets nøkkel og kontaktenes festede kontonøkler. Sikkerhetskopien og arkivet lagres hos serveren som ciphertext.
 - **Passord eller PIN brukes aldri** som grunnlag. En laventropi-hemmelighet kan knekkes av den som har ciphertexten, og uten maskinvarebasert forsøksbegrensning (HSM) har vi ingen måte å hindre det på.
 
 **Recovery-tilfellene:**

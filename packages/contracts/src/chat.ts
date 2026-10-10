@@ -99,7 +99,12 @@ export const chatLimits = {
   handshakeBytes: 256 * 1024,
   addedPerCommit: 50,
   removalsPerCommit: 50,
-  linkPackageBytes: 16 * 1024,
+  /**
+   * The link package and the recovery backup carry the account's pinned
+   * contact keys (at most 1000 of them, ADR-0010 §5, §8), so both have
+   * room for that.
+   */
+  linkPackageBytes: 160 * 1024,
   inboxPageSize: 100,
   /**
    * Shorter messages are padded to this length before encryption, so their
@@ -113,7 +118,7 @@ export const chatLimits = {
    */
   archivePartBytes: 512 * 1024,
   archiveParts: 16,
-  recoveryBackupBytes: 4096,
+  recoveryBackupBytes: 128 * 1024,
   /** More than anyone links; a restore revokes them in one request. */
   devicesPerAccount: 100,
 } as const;
@@ -140,12 +145,19 @@ export const chatDeviceRegisteredSchema = z.strictObject({
   deviceId: chatDeviceIdSchema,
 });
 
-/** A new device asks to be linked (ADR-0010 §5); keys only, public halves. */
+/** A commitment to a link request's keys, under the secret on the screen. */
+const linkCommitment = base64Bytes(32, 32);
+
+/**
+ * A new device asks to be linked (ADR-0010 §5): public halves, and a
+ * commitment to them under the secret only its screen shows.
+ */
 export const requestChatLinkSchema = z.strictObject({
   deviceId: chatDeviceIdSchema,
   deviceKey: publicKey,
   /** The one-time HPKE key the package is sealed to. */
   linkKey: publicKey,
+  commitment: linkCommitment,
 });
 
 export const chatLinkRequestSchema = z.strictObject({
@@ -153,6 +165,7 @@ export const chatLinkRequestSchema = z.strictObject({
   deviceId: chatDeviceIdSchema,
   deviceKey: publicKey,
   linkKey: publicKey,
+  commitment: linkCommitment,
   createdAt: z.iso.datetime(),
   expiresAt: z.iso.datetime(),
 });

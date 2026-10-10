@@ -8,8 +8,11 @@ import { fromBase64, fromUtf8, toBase64, utf8 } from "./suite";
 /**
  * What one of the account's devices hands another, sealed in the link
  * package (ADR-0010 §5) or in the recovery key's backup (§8): the account
- * key, a history archive's key if the history goes along, and the recovery
- * key's backup key so the device can keep the backup up to date.
+ * key, a history archive's key if the history goes along, the recovery
+ * key's backup key so the device can keep the backup up to date, and the
+ * contacts' account keys the device has pinned. With those, a new device
+ * trusts the keys its account already trusted, instead of trusting
+ * whatever the server shows it first (§3).
  */
 
 /** A history archive: where the server keeps it, and its key. */
@@ -24,7 +27,12 @@ export interface AccountPackage {
   account: AccountKey;
   archive?: LinkedArchive | undefined;
   recovery?: RecoveryKey | undefined;
+  /** Pinned account keys by account id, base64, as a trust snapshot holds them. */
+  pinned?: Record<string, string> | undefined;
 }
+
+/** The most pinned account keys a package carries. */
+export const MAX_PINNED_ACCOUNTS = 1000;
 
 const archiveSchema = z.strictObject({
   archiveId: z.string(),
@@ -55,8 +63,16 @@ export const exportLinkedArchive = (
 export const importLinkedArchive = (encoded: Uint8Array): LinkedArchive =>
   archiveOf(archiveSchema.parse(JSON.parse(fromUtf8(encoded))));
 
+const pinnedSchema = z
+  .record(z.string().min(1).max(128), z.string().regex(/^[A-Za-z0-9+/]{43}=$/))
+  .refine(
+    (pinned) => Object.keys(pinned).length <= MAX_PINNED_ACCOUNTS,
+    "too many pinned accounts",
+  );
+
 const packageSchema = z.strictObject({
-  v: z.literal(2),
+  v: z.union([z.literal(2), z.literal(3)]),
+  pinned: pinnedSchema.optional(),
   account: z.string(),
   archive: archiveSchema.optional(),
   recovery: z
@@ -68,13 +84,18 @@ export function writeAccountPackage({
   account,
   archive,
   recovery,
+  pinned,
 }: AccountPackage): Uint8Array<ArrayBuffer> {
+  if (pinned && pinnedSchema.safeParse(pinned).success === false) {
+    throw new Error("Invalid pinned account keys");
+  }
   const accountBytes = exportAccountKey(account).reveal();
   try {
     return utf8(
       JSON.stringify({
-        v: 2,
+        v: 3,
         account: toBase64(accountBytes),
+        ...(pinned && { pinned }),
         ...(archive && { archive: archiveWire(archive) }),
         ...(recovery && {
           recovery: {
@@ -108,7 +129,7 @@ export function readAccountPackage(plain: Uint8Array): AccountPackage {
     return { account: importAccountKey(plain) };
   }
 
-  const { archive, recovery } = parsed.data;
+  const { archive, recovery, pinned } = parsed.data;
   const account = fromBase64(parsed.data.account);
   try {
     return {
@@ -120,6 +141,7 @@ export function readAccountPackage(plain: Uint8Array): AccountPackage {
           backupKey: new Secret(fromBase64(recovery.backupKey)),
         },
       }),
+      ...(pinned && { pinned }),
     };
   } finally {
     wipe(account);

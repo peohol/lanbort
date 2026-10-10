@@ -22,6 +22,7 @@ import {
   type TrustSnapshot,
   Conversation,
   KEY_PACKAGE_LIFETIME_SECONDS,
+  MAX_PINNED_ACCOUNTS,
   acceptChangedAccountKey,
   applyRevocation,
   approveLink,
@@ -129,7 +130,7 @@ export interface HistoryTransfer {
   from: "device" | "backup";
 }
 
-/** When the history last changed, and when the backup last caught up. */
+/** When the history or the pinned keys last changed, and when the backup last caught up. */
 interface BackupState {
   changedAt: number;
   backedUpAt: number;
@@ -176,6 +177,16 @@ const certificateOf = (wire: DeviceCertificateWire) =>
   decodeCertificate(utf8(JSON.stringify(wire)));
 const revocationOf = (wire: DeviceRevocationWire) =>
   decodeRevocation(utf8(JSON.stringify(wire)));
+
+/** A pending link request, with the code the user showed this device. */
+export type MatchedLinkRequest = ChatLinkRequest & { code: string };
+
+const linkKeysOf = (request: ChatLinkRequest) => ({
+  deviceId: request.deviceId,
+  deviceKey: fromBase64(request.deviceKey),
+  linkKey: fromBase64(request.linkKey),
+  commitment: fromBase64(request.commitment),
+});
 
 const isConflict = (error: unknown) =>
   error instanceof ChatApiError && error.code === "conflict";
@@ -324,6 +335,7 @@ export async function requestDeviceLink(): Promise<{
     deviceId: link.keys.deviceId,
     deviceKey: toBase64(link.keys.deviceKey),
     linkKey: toBase64(link.keys.linkKey),
+    commitment: toBase64(link.keys.commitment),
   });
   return { link, status };
 }
@@ -338,12 +350,13 @@ export async function completeDeviceLink(
   link: PendingLink,
   status: ChatLinkStatus & { package: string },
 ): Promise<ChatEngine> {
-  const { account, device, archive, recovery } = await link.open(
+  const { account, device, archive, recovery, pinned } = await link.open(
     fromBase64(status.package),
   );
   const engine = await ChatEngine.begin(userId, account, device, {
     recovery,
     linked: true,
+    pinned,
   });
   if (archive) await engine.holdHistory(archive, "device");
   await chatApi.finishLink(status.linkRequestId);
@@ -376,7 +389,7 @@ export async function restoreChat(
   } catch {
     return "wrong_key";
   }
-  const { account, archive } = opened;
+  const { account, archive, pinned } = opened;
   // The server refuses a backup of an older key; this says so sooner.
   if (devices.accountKey !== toBase64(account.publicKey)) {
     throw new ChatApiError("conflict");
@@ -395,6 +408,7 @@ export async function restoreChat(
   await deleteChatStore(userId);
   const engine = await ChatEngine.begin(userId, account, device, {
     recovery: key,
+    pinned,
   });
 
   // Only the archive the server still keeps for the backup.
@@ -436,6 +450,8 @@ export class ChatEngine {
   #linkedAt: Promise<string | null> | null = null;
   #backup: BackupState | undefined;
   #backingUp: Promise<void> | null = null;
+  /** The pinned account keys as last saved: the backup carries them. */
+  #pinned: string;
 
   constructor(
     readonly userId: string,
@@ -459,6 +475,7 @@ export class ChatEngine {
     this.#recovery = recovery;
     this.#linked = linked;
     if (linked && addedAt) this.#linkedAt = Promise.resolve(addedAt);
+    this.#pinned = JSON.stringify(trust.snapshot().accountKeys);
   }
 
   /**
@@ -472,10 +489,16 @@ export class ChatEngine {
     {
       recovery,
       linked = false,
-    }: { recovery?: RecoveryKey | undefined; linked?: boolean } = {},
+      pinned = {},
+    }: {
+      recovery?: RecoveryKey | undefined;
+      linked?: boolean;
+      /** The contacts' keys the account's other device had pinned (§5, §8). */
+      pinned?: Record<string, string> | undefined;
+    } = {},
   ): Promise<ChatEngine> {
     const store = await openChatStore(userId);
-    const trust = createMemoryTrustStore();
+    const trust = createMemoryTrustStore({ accountKeys: pinned, revoked: [] });
     trust.setAccountKey(userId, account.publicKey);
     await putSecret(store, records.account, exportAccountKey(account));
     await putSecret(store, records.device, exportDevice(device));
@@ -589,18 +612,31 @@ export class ChatEngine {
     );
   }
 
-  /** The account's pending link requests the user's code points to. */
+  /**
+   * The contacts' account keys this device has pinned, for a new or
+   * restored device of the account to start from (ADR-0010 §5, §8). None
+   * if there are more than a package holds: that device then pins them as
+   * it meets them.
+   */
+  #pinnedForPackage(): Record<string, string> | undefined {
+    const pinned = { ...this.trust.snapshot().accountKeys };
+    delete pinned[this.userId];
+    return Object.keys(pinned).length <= MAX_PINNED_ACCOUNTS
+      ? pinned
+      : undefined;
+  }
+
+  /** The account's pending link request the user's code points to. */
   async findLinkRequest(
     requests: readonly ChatLinkRequest[],
-    shown: { code: string; linkKey?: Uint8Array },
-  ): Promise<ChatLinkRequest | undefined> {
+    shown: { code: string },
+  ): Promise<MatchedLinkRequest | undefined> {
     const keyed = requests.map((request) => ({
       request,
-      deviceId: request.deviceId,
-      deviceKey: fromBase64(request.deviceKey),
-      linkKey: fromBase64(request.linkKey),
+      ...linkKeysOf(request),
     }));
-    return (await matchLinkRequest(keyed, shown))?.request;
+    const found = (await matchLinkRequest(keyed, shown))?.request;
+    return found && { ...found, code: shown.code };
   }
 
   /**
@@ -609,7 +645,7 @@ export class ChatEngine {
    * `moveHistory` the key of this device's history, stored encrypted.
    */
   async approveLink(
-    request: ChatLinkRequest,
+    request: MatchedLinkRequest,
     moveHistory = false,
   ): Promise<void> {
     const archive = moveHistory
@@ -619,15 +655,13 @@ export class ChatEngine {
         )
       : undefined;
     const { certificate, sealed } = await approveLink(
-      {
-        deviceId: request.deviceId,
-        deviceKey: fromBase64(request.deviceKey),
-        linkKey: fromBase64(request.linkKey),
-      },
+      linkKeysOf(request),
+      request.code,
       {
         account: this.account,
         archive,
         recovery: this.#recovery ?? undefined,
+        pinned: this.#pinnedForPackage(),
       },
     );
     if (archive) wipe(archive.key.reveal());
@@ -671,7 +705,10 @@ export class ChatEngine {
     await chatApi.createRecoveryKey({
       keyId: toBase64(key.id),
       backup: toBase64(
-        await sealRecoveryBackup(key, { account: this.account }),
+        await sealRecoveryBackup(key, {
+          account: this.account,
+          pinned: this.#pinnedForPackage(),
+        }),
       ),
     });
     await putSecret(this.store, records.recovery, exportRecoveryKey(key));
@@ -709,6 +746,7 @@ export class ChatEngine {
           await sealRecoveryBackup(recovery, {
             account: this.account,
             archive,
+            pinned: this.#pinnedForPackage(),
           }),
         ),
         archiveId: archive.archiveId,
@@ -740,6 +778,14 @@ export class ChatEngine {
     }
   }
 
+  /** What the backup holds has changed: the next due backup takes it. */
+  async #backupDue() {
+    if (!this.#recovery) return;
+    const state = await this.#backupState();
+    state.changedAt = Date.now();
+    await this.store.putJson(records.backup, state);
+  }
+
   async #backupState(): Promise<BackupState> {
     this.#backup ??= (await this.store.getJson<BackupState>(
       records.backup,
@@ -763,7 +809,13 @@ export class ChatEngine {
   // Trust
 
   async #saveTrust() {
-    await this.store.putJson(records.trust, this.trust.snapshot());
+    const snapshot = this.trust.snapshot();
+    await this.store.putJson(records.trust, snapshot);
+    const pinned = JSON.stringify(snapshot.accountKeys);
+    if (pinned !== this.#pinned) {
+      this.#pinned = pinned;
+      await this.#backupDue();
+    }
   }
 
   /**
@@ -1060,11 +1112,7 @@ export class ChatEngine {
       records.history(id),
       change(await this.history(id)),
     );
-    if (this.#recovery) {
-      const state = await this.#backupState();
-      state.changedAt = Date.now();
-      await this.store.putJson(records.backup, state);
-    }
+    await this.#backupDue();
   }
 
   /** Adds a received message, never in place of one (`withReceived`). */
