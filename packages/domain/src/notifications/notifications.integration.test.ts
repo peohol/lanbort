@@ -9,6 +9,7 @@ import {
   inviteMember,
   joinEnvironment,
   rejectMembership,
+  requestInformation,
   withdrawInvitation,
 } from "../environment/membership-commands";
 import { inviteAdministrator } from "../environment/role-commands";
@@ -780,6 +781,32 @@ describe("environments and co-ownership", () => {
     expect(await told(rejected.applicant)).toEqual([
       outcome("environment.membership_rejected"),
     ]);
+  });
+
+  it("tell an applicant that the administrators ask for more, never what they asked (PS-ENV-019)", async () => {
+    const admin = await user();
+    const closed = await environment(admin, { type: "closed" });
+    const applicant = await user();
+    const { membershipId } = await run(joinEnvironment, applicant, {
+      environmentId: closed,
+      answers: [],
+    });
+
+    await run(requestInformation, admin, {
+      environmentId: closed,
+      membershipId,
+      question: "Hvilken oppgang bor du i?",
+    });
+    const notifications = await told(applicant);
+    expect(notifications).toEqual([
+      {
+        kind: "environment.membership_information_requested",
+        level: "action",
+        detail: null,
+        target: { type: "environment", id: closed },
+      },
+    ]);
+    expect(JSON.stringify(notifications)).not.toContain("oppgang");
   });
 
   it("tell a member invited to a role, and a user invited to co-own an object", async () => {

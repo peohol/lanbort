@@ -438,6 +438,73 @@ describe("closed environments", () => {
     );
   });
 
+  it("can ask one short question, which the applicant reads verbatim until the application moves on (PS-ENV-019)", async () => {
+    const { owner, applicant, environmentId, membershipId } =
+      await closedWithApplicant();
+    const question = "Står du på kontrakten for C 201?";
+
+    await expect(
+      run(requestInformation, owner, {
+        environmentId,
+        membershipId,
+        question: "x".repeat(301),
+      }),
+    ).rejects.toMatchObject({ code: "invalid_input" });
+    await output(requestInformation, owner, {
+      environmentId,
+      membershipId,
+      question: `  ${question}\n`,
+    });
+    expect((await read(applicant, environmentId)).membership).toMatchObject({
+      reviewStage: "information_requested",
+      informationQuestion: question,
+    });
+    expect(
+      (await memberships(owner, environmentId)).memberships.find(
+        (m) => m.id === membershipId,
+      )?.informationQuestion,
+    ).toBe(question);
+
+    // Once the answers are sent again, the question is gone with that step.
+    await output(submitAnswers, applicant, {
+      environmentId,
+      answers: await answersFor(applicant, environmentId),
+    });
+    expect((await read(applicant, environmentId)).membership).toMatchObject({
+      reviewStage: "submitted",
+      informationQuestion: null,
+    });
+
+    // Without text, only the standard prompt: no question is stored.
+    await output(requestInformation, owner, {
+      environmentId,
+      membershipId,
+      question: "   ",
+    });
+    expect(
+      (await read(applicant, environmentId)).membership?.informationQuestion,
+    ).toBeNull();
+  });
+
+  it("drops the question with the application when it is withdrawn", async () => {
+    const { owner, applicant, environmentId, membershipId } =
+      await closedWithApplicant();
+
+    await output(requestInformation, owner, {
+      environmentId,
+      membershipId,
+      question: "Hvilken oppgang bor du i?",
+    });
+    await output(leaveEnvironment, applicant, { environmentId });
+
+    const row = await db
+      .selectFrom("app.environment_memberships")
+      .select("information_question")
+      .where("id", "=", membershipId)
+      .executeTakeFirstOrThrow();
+    expect(row.information_question).toBeNull();
+  });
+
   it("can reject, optionally barring new attempts until lifted", async () => {
     const { owner, applicant, environmentId, membershipId } =
       await closedWithApplicant();

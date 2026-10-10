@@ -22,6 +22,7 @@ function membership(changes: Partial<Membership> = {}): Membership {
     transitionDeadline: null,
     unmetRequirementIds: [],
     answers: [],
+    informationQuestion: null,
     ...changes,
   };
 }

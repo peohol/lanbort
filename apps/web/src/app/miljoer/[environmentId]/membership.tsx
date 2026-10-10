@@ -24,6 +24,7 @@ import {
   typeChangeAnswer,
 } from "@/presentation/environments";
 import { findEnvironmentsHref } from "@/presentation/search";
+import { InformationQuestion } from "./information-question";
 
 const leavePath = "/api/environments/membership/leave";
 
@@ -90,6 +91,9 @@ export function Membership({
             Nå kan du låne av de andre medlemmene og legge ut dine egne ting
             her. Du finner miljøet under «Dine miljøer» i Hjem.
           </p>
+        )}
+        {step.kind === "information_requested" && (
+          <AskedQuestion environment={environment} />
         )}
         {given.length > 0 && (
           <section aria-labelledby="soknaden-din">
@@ -359,4 +363,19 @@ export function YourMembership({ environment }: { environment: Environment }) {
       )}
     </section>
   );
+}
+
+/**
+ * PS-ENV-019: what the administrators asked, verbatim and from them as a
+ * group, while the application waits on the applicant.
+ */
+export function AskedQuestion({ environment }: { environment: Environment }) {
+  const question = environment.membership?.informationQuestion;
+
+  return question ? (
+    <InformationQuestion
+      from={`Administratorene i ${environment.name}`}
+      question={question}
+    />
+  ) : null;
 }

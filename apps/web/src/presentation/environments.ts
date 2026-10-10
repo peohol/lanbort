@@ -150,7 +150,10 @@ export function describeMembership(
         ? "Du har bedt om å bli aktiv igjen. Venter på svar fra administratorene. Du får varsel når de har svart."
         : "Søknaden din venter på svar fra administratorene. Du får varsel når de har svart.";
     case "information_requested":
-      return "Administratorene ber om mer informasjon før de svarer. Se over svarene dine og send dem på nytt.";
+      // PS-ENV-019: their question, when they wrote one, is shown with it.
+      return environment.membership?.informationQuestion
+        ? "Administratorene ber om mer informasjon før de svarer."
+        : "Administratorene ber om mer informasjon før de svarer. Se over svarene dine og send dem på nytt.";
     case "confirm":
       return "Miljøet er blitt åpent. Bekreft at du fortsatt vil bli med.";
     case "passive":

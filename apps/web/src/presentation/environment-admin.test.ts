@@ -32,6 +32,7 @@ const membership = (
   transitionDeadline: null,
   unmetRequirementIds: [],
   answers: [],
+  informationQuestion: null,
   ...details,
 });
 

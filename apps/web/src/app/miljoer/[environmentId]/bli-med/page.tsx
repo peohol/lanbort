@@ -7,6 +7,7 @@ import { environmentHref, environmentWelcomeHref } from "@/navigation/routes";
 import { answerCommand, membershipStep } from "@/presentation/environments";
 import { pageQueryOrNotFound, requirePageAccount } from "@/server/session";
 import { environmentHome } from "../back";
+import { AskedQuestion } from "../membership";
 
 export const metadata: Metadata = { title: "Bli med – Lånbort" };
 
@@ -43,6 +44,7 @@ export default async function JoinEnvironmentPage({
         home={environmentHome(environment)}
         task
       />
+      <AskedQuestion environment={environment} />
       <RequirementAnswers
         environmentId={environmentId}
         requirements={environment.requirements}

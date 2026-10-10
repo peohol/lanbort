@@ -1,15 +1,16 @@
-import type {
-  AdministeredMembership,
-  Environment,
-  EnvironmentMemberships,
-  SocialContact,
+import {
+  type AdministeredMembership,
+  type Environment,
+  type EnvironmentMemberships,
+  maxInformationQuestionLength,
+  type SocialContact,
 } from "@lanbort/contracts";
 import { Fragment, type ReactNode } from "react";
 import { ActionButton } from "@/components/action-button";
 import { CommandForm } from "@/components/command-form";
 import { ConfirmAction } from "@/components/confirm-action";
 import { EmptyState } from "@/components/empty-state";
-import { Field } from "@/components/field";
+import { describedBy, Field } from "@/components/field";
 import { MoreActions } from "@/components/more-actions";
 import { Tag } from "@/components/tag";
 import {
@@ -17,6 +18,7 @@ import {
   membershipStatus,
   membershipTask,
 } from "@/presentation/environment-admin";
+import { InformationQuestion } from "../information-question";
 
 /** A member's name as administrators see it. */
 export const memberName = (membership: { realName: string | null }) =>
@@ -132,6 +134,12 @@ function MembershipList({
                 <Tag tone={status.tone}>{status.text}</Tag>
               </span>
               <Answers environment={environment} membership={membership} />
+              {membership.informationQuestion && (
+                <InformationQuestion
+                  from="Spørsmålet dere sendte"
+                  question={membership.informationQuestion}
+                />
+              )}
               {actions && (
                 <div className="actions" role="group" aria-labelledby={nameId}>
                   {actions(membership)}
@@ -216,10 +224,10 @@ function Decision({
         />
       )}
       {awaitsDecision(membership) && (
-        <ActionButton
-          label="Be om mer informasjon"
-          path="/api/environments/memberships/request-information"
-          body={body}
+        <RequestInformation
+          environment={environment}
+          membership={membership}
+          name={name}
         />
       )}
       <ConfirmAction
@@ -250,6 +258,54 @@ function Decision({
         />
       </MoreActions>
     </>
+  );
+}
+
+/**
+ * PS-ENV-019: asking for more, with one short question the applicant reads
+ * verbatim on the application, from the administrators as a group. Without
+ * one, the applicant is asked to look over the answers.
+ */
+function RequestInformation({
+  environment,
+  membership,
+  name,
+}: {
+  environment: Environment;
+  membership: AdministeredMembership;
+  name: string;
+}) {
+  const fieldId = `sporsmal-${membership.id}`;
+  const help = `Ett kort spørsmål. ${name} ser det på søknaden, fra «Administratorene i ${environment.name}», ikke i privat chat. Uten spørsmål blir ${name} bedt om å se over svarene.`;
+
+  return (
+    <ConfirmAction
+      label="Be om mer informasjon"
+      title={`Be ${name} om mer informasjon?`}
+      consequences={{
+        affects: [
+          `${name} får et varsel og kan se over svarene og sende dem på nytt.`,
+        ],
+        stays: [`Søknaden venter på ${name} til svarene er sendt på nytt.`],
+      }}
+      confirmLabel="Be om mer informasjon"
+      path="/api/environments/memberships/request-information"
+      body={{ environmentId: environment.id, membershipId: membership.id }}
+    >
+      <Field
+        id={fieldId}
+        label={`Spørsmål til ${name} (valgfritt)`}
+        help={help}
+      >
+        <textarea
+          id={fieldId}
+          name="question"
+          rows={3}
+          maxLength={maxInformationQuestionLength}
+          {...describedBy(fieldId, help)}
+        />
+      </Field>
+    </ConfirmAction>
   );
 }
 

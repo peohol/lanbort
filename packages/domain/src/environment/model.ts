@@ -75,6 +75,8 @@ export interface MembershipRecord {
   readonly passiveReason: MembershipPassiveReason | null;
   /** Where the current passive period began (PS-ENV-009). */
   readonly passivePosition: HistoryPosition | null;
+  /** PS-ENV-019: the administrators' question while it waits on the applicant. */
+  readonly informationQuestion: string | null;
 }
 
 export interface GivenAnswer {

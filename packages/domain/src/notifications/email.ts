@@ -47,6 +47,8 @@ export const notificationEmailSubjects = {
   "environment.membership_invited": "Du er invitert til et miljø",
   "environment.membership_review_requested":
     "En søknad om medlemskap venter på behandling",
+  "environment.membership_information_requested":
+    "Administratorene i et miljø ber om mer informasjon",
   "environment.membership_approved": "Søknaden din om medlemskap er godkjent",
   "environment.membership_rejected":
     "Søknaden din om medlemskap ble ikke godkjent",

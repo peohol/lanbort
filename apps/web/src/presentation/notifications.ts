@@ -108,6 +108,9 @@ const named: Partial<
   "environment.role_invited": ({ place }, detail) =>
     place &&
     `Du er spurt om å bli ${detail === "owner" ? "eier" : "administrator"} i ${place}`,
+  // PS-ENV-019: who asks, never the question; it is on the application.
+  "environment.membership_information_requested": ({ place }) =>
+    place && `Administratorene i ${place} ber om mer informasjon`,
   // PS-ENV-017: neutral, never why or who decided.
   "environment.membership_approved": ({ place }, detail) =>
     place &&
@@ -220,6 +223,11 @@ const answers: Partial<
     lapsed: requestAnswers.lapsed,
   },
   "environment.membership_invited": invitationAnswers,
+  "environment.membership_information_requested": {
+    accepted: "Du har sendt svarene på nytt.",
+    declined: "Søknaden venter ikke lenger på deg.",
+    lapsed: "Søknaden venter ikke lenger på deg.",
+  },
   "environment.role_invited": invitationAnswers,
   "object.co_owner_invited": invitationAnswers,
 };

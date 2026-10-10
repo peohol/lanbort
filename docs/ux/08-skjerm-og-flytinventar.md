@@ -636,7 +636,6 @@ Til disse er bygget, gjør appen det som står i siste kolonne. Prototypen for f
 | Regel      | Flater                                                    | Til den er bygget                                                  |
 | ---------- | --------------------------------------------------------- | ------------------------------------------------------------------ |
 | PS-ENV-018 | Innmeldinger og invitasjoner, personens side              | Administratorene inviterer bare egne venner                        |
-| PS-ENV-019 | Innmeldinger og invitasjoner, innmelding og invitasjon    | «Be om mer informasjon» uten tekst og uten varsel til søkeren      |
 | PS-ENV-020 | Innmeldinger og invitasjoner, miljøets side               | Den som er stengt ute, ser et vanlig avslag                        |
 | PS-ENV-021 | Medlemmer og utestengelse                                 | Ingen handling for å fjerne et aktivt medlem                       |
 | PS-ADM-015 | Inngrep på kontoer, inngrep i et miljø                    | Ingen flate (også stengt til OD-0023)                              |

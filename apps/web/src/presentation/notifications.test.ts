@@ -149,6 +149,32 @@ describe("what it is about, and what became of it", () => {
   });
 });
 
+describe("a request for more information (PS-ENV-019)", () => {
+  it("names who asks, never the question, and follows the applicant's answer", () => {
+    const kind = "environment.membership_information_requested";
+    const about = { thing: null, picture: null, person: null, place: "Gården" };
+
+    expect(notificationWords({ kind, detail: null, about }).title).toBe(
+      "Administratorene i Gården ber om mer informasjon",
+    );
+    expect(
+      notificationWords({
+        kind,
+        detail: null,
+        about: { ...about, place: null },
+      }).title,
+    ).toBe("Administratorene i et miljø ber om mer informasjon");
+    expect(
+      notificationWords({ kind, detail: null, about, standing: "accepted" })
+        .detail,
+    ).toBe("Du har sendt svarene på nytt.");
+    expect(
+      notificationWords({ kind, detail: null, about, standing: "lapsed" })
+        .detail,
+    ).toBe("Søknaden venter ikke lenger på deg.");
+  });
+});
+
 describe("an application's outcome (PS-ENV-017)", () => {
   const about: {
     thing: null;

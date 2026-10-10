@@ -98,6 +98,7 @@ const membershipColumns = [
   "transition_deadline",
   "passive_reason",
   "passive_position",
+  "information_question",
 ] as const;
 
 function toMembership(row: {
@@ -112,6 +113,7 @@ function toMembership(row: {
   transition_deadline: Date | null;
   passive_reason: string | null;
   passive_position: string | null;
+  information_question: string | null;
 }): MembershipRecord {
   return {
     id: row.id,
@@ -125,6 +127,7 @@ function toMembership(row: {
     transitionDeadline: row.transition_deadline,
     passiveReason: row.passive_reason as MembershipPassiveReason | null,
     passivePosition: toOptionalPosition(row.passive_position),
+    informationQuestion: row.information_question,
   };
 }
 
