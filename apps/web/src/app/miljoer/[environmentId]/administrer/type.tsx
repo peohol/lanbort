@@ -1,7 +1,6 @@
 import type { Environment } from "@lanbort/contracts";
 import { ActionButton } from "@/components/action-button";
 import { ConfirmAction } from "@/components/confirm-action";
-import { ReauthenticatedAction } from "@/components/reauthenticated-action";
 import { StatusCard } from "@/components/status-card";
 import { formatTime } from "@/presentation/dates";
 import {
@@ -12,7 +11,6 @@ import {
   environmentTypeAdjectives,
   proposalWaitsFor,
   typeChoices,
-  windDownConsequences,
 } from "@/presentation/environment-admin";
 
 /**
@@ -21,7 +19,11 @@ import {
  * A stricter type applies at once; a weaker one is proposed to the members.
  * Only a stricter type is possible while the environment winds down.
  */
-export function TypeSection({ environment }: { environment: Environment }) {
+export function EnvironmentTypeChoices({
+  environment,
+}: {
+  environment: Environment;
+}) {
   const environmentId = environment.id;
   const proposal = environment.typeChange;
   const choices = typeChoices(environment.type).filter(
@@ -29,8 +31,7 @@ export function TypeSection({ environment }: { environment: Environment }) {
   );
 
   return (
-    <section aria-labelledby="miljotype">
-      <h2 id="miljotype">Miljøtype</h2>
+    <>
       <p>
         <strong>{environmentTypeNames[environment.type]}.</strong>{" "}
         {environmentTypeExplanations[environment.type]}
@@ -95,72 +96,49 @@ export function TypeSection({ environment }: { environment: Environment }) {
         </StatusCard>
       )}
       {!proposal && choices.length > 0 && (
-        <div className="actions">
-          {choices.map((choice) => {
-            const label = environmentTypeAdjectives[choice.type];
-            const proposed = choice.kind !== "stricter";
+        <section aria-labelledby="endre-miljotype">
+          <h2 id="endre-miljotype">Endre miljøtype</h2>
+          <div className="actions">
+            {choices.map((choice) => {
+              const label = environmentTypeAdjectives[choice.type];
+              const proposed = choice.kind !== "stricter";
 
-            return (
-              <ConfirmAction
-                key={choice.type}
-                label={
-                  proposed ? `Foreslå ${label} miljø` : `Gjør miljøet ${label}`
-                }
-                title={
-                  proposed
-                    ? `Foreslå at miljøet blir ${label}`
-                    : `Gjør miljøet ${label}`
-                }
-                consequences={choice.consequences}
-                confirmLabel={
-                  proposed
-                    ? `Send forslaget til medlemmene`
-                    : `Gjør miljøet ${label} nå`
-                }
-                path="/api/environments/type"
-                body={{
-                  environmentId,
-                  expectedType: environment.type,
-                  type: choice.type,
-                }}
-              />
-            );
-          })}
-        </div>
+              return (
+                <ConfirmAction
+                  key={choice.type}
+                  label={
+                    proposed
+                      ? `Foreslå ${label} miljø`
+                      : `Gjør miljøet ${label}`
+                  }
+                  title={
+                    proposed
+                      ? `Foreslå at miljøet blir ${label}`
+                      : `Gjør miljøet ${label}`
+                  }
+                  consequences={choice.consequences}
+                  confirmLabel={
+                    proposed
+                      ? `Send forslaget til medlemmene`
+                      : `Gjør miljøet ${label} nå`
+                  }
+                  path="/api/environments/type"
+                  body={{
+                    environmentId,
+                    expectedType: environment.type,
+                    type: choice.type,
+                  }}
+                />
+              );
+            })}
+          </div>
+          {environment.type === "hidden" && (
+            <p className="help">
+              Et skjult miljø blir åpent i to steg: først lukket, så åpent.
+            </p>
+          )}
+        </section>
       )}
-      {environment.type === "hidden" && !proposal && (
-        <p className="help">
-          Et skjult miljø blir åpent i to steg: først lukket, så åpent.
-        </p>
-      )}
-    </section>
-  );
-}
-
-/**
- * PS-ENV-012: only the owner winds the environment down, with a fresh
- * proof of identity, and may cancel within the cancellation period (shown
- * at the top of the page while it runs).
- */
-export function WindDownSection({ environment }: { environment: Environment }) {
-  if (environment.state !== "active") return null;
-
-  return (
-    <section aria-labelledby="avvikling">
-      <h2 id="avvikling">Avvikle miljøet</h2>
-      <p>
-        Avvikling stanser alt nytt i miljøet. Lån som allerede er avtalt,
-        fortsetter.
-      </p>
-      <ReauthenticatedAction
-        label="Avvikle miljøet"
-        title={`Avvikle ${environment.name}`}
-        consequences={windDownConsequences}
-        confirmLabel={`Avvikle ${environment.name}`}
-        path="/api/environments/wind-down"
-        body={{ environmentId: environment.id }}
-        danger
-      />
-    </section>
+    </>
   );
 }

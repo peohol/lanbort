@@ -440,7 +440,7 @@ Miljøadministrator omfatter miljøets eier, som også er administrator, og admi
 - **Ser / handler:** administratorer. En habil administrator kan avslutte et aktivt medlemskap med begrunnelse og velge separat om personen også stenges ute (PS-ENV-021, ikke bygget).
 - **Regler:** PS-ENV-004, PS-ENV-009, PS-ENV-021, PS-TRUST-016, PS-TRUST-018, UX-PRIV-009.
 - **Forløp:** avvik.
-- **UI-pakke:** ingen.
+- **UI-pakke:** WP-85 (aktive og passive medlemmer, utestengelser).
 
 #### Publiseringer og forhåndsgodkjenning
 
@@ -609,7 +609,7 @@ Scenariene i [UX-scenariovalideringen](07-scenariovalidering.md) ligger alle på
 Disse flatene følger av spesifikasjonen og UX-modellen, men ingen pakke i UI-planen bygger dem ennå:
 
 - **Melding om mulig dødsfall** fra personens side eller et felles lån (PS-COM-015, UX-EXC-008).
-- **Medlemmer og utestengelse** for administratorer, inkludert å oppheve at noen er stengt ute (PS-ENV-004). Å avslutte et aktivt medlemskap er vedtatt (PS-ENV-021), men ikke bygget.
+- **Å avslutte et aktivt medlemskap** fra Medlemmer og utestengelse (PS-ENV-021). Vedtatt, men ikke bygget; resten av flaten er bygget i WP-85.
 - **Plattformforvalterens inngrep** på kontoer og miljøer, fra en sak i plattformkøen (PS-ADM-015). Venter på OD-0023.
 - **Varsel før utlogging på en enhet med privat chat** (ADR-0010 punkt 7). Konto-sidens «Logg ut» har ikke dette varselet ennå; «Fjern denne enheten» i Mine enheter sier hva enheten mister.
 - **Gjenopprettingsnøkkel og overføring av gammel historikk** for privat chat (ADR-0010 punkt 5 og 8, PS-COM-019). Begge er vedtatt som valgfrie for brukeren, men ikke bygget; til da er kobling fra en annen enhet eller tilbakestilling de eneste veiene.

@@ -12,7 +12,6 @@ import { EmptyState } from "@/components/empty-state";
 import { Field } from "@/components/field";
 import { MoreActions } from "@/components/more-actions";
 import { Tag } from "@/components/tag";
-import { formatTime } from "@/presentation/dates";
 import {
   awaitsDecision,
   membershipStatus,
@@ -29,7 +28,7 @@ export const memberName = (membership: { realName: string | null }) =>
  * someone else. Answers are shown as information given to the
  * environment's membership process, not as profile data (UX-PRIV-009).
  */
-export function MembershipsSection({
+export function Memberships({
   environment,
   memberships: { memberships, restrictions },
   friends,
@@ -50,18 +49,13 @@ export function MembershipsSection({
   );
   const confirming = byTask("confirmation");
   const invited = byTask("invitation");
-  const nothing =
-    deciding.length +
-      confirming.length +
-      invited.length +
-      restrictions.length ===
-    0;
+  const nothing = deciding.length + confirming.length + invited.length === 0;
 
   return (
-    <section aria-labelledby="innmeldinger">
-      <h2 id="innmeldinger">Innmeldinger</h2>
+    <>
       {nothing && <EmptyState>Ingen innmeldinger venter.</EmptyState>}
       <MembershipList
+        id="venter-avgjorelse"
         heading="Venter på avgjørelse"
         memberships={deciding}
         environment={environment}
@@ -70,11 +64,13 @@ export function MembershipsSection({
         )}
       />
       <MembershipList
+        id="venter-soker"
         heading="Venter på svar fra søkeren"
         memberships={confirming}
         environment={environment}
       />
       <MembershipList
+        id="invitert"
         heading="Invitert"
         memberships={invited}
         environment={environment}
@@ -89,10 +85,6 @@ export function MembershipsSection({
           />
         )}
       />
-      <Restrictions
-        environmentId={environment.id}
-        restrictions={restrictions}
-      />
       <Invite
         environment={environment}
         candidates={friends.filter(
@@ -104,17 +96,19 @@ export function MembershipsSection({
             ),
         )}
       />
-    </section>
+    </>
   );
 }
 
 function MembershipList({
+  id,
   heading,
   memberships,
   environment,
   actions,
 }: {
-  heading?: string;
+  id: string;
+  heading: string;
   memberships: readonly AdministeredMembership[];
   environment: Environment;
   actions?: (membership: AdministeredMembership) => ReactNode;
@@ -122,8 +116,10 @@ function MembershipList({
   if (memberships.length === 0) return null;
 
   return (
-    <>
-      {heading && <h3>{heading}</h3>}
+    <section aria-labelledby={id}>
+      <h2 id={id}>
+        {heading} <span className="count">({memberships.length})</span>
+      </h2>
       <ul className="entries">
         {memberships.map((membership) => {
           const nameId = `medlemskap-${membership.id}`;
@@ -145,7 +141,7 @@ function MembershipList({
           );
         })}
       </ul>
-    </>
+    </section>
   );
 }
 
@@ -258,74 +254,6 @@ function Decision({
 }
 
 /**
- * Those barred from new attempts (PS-ENV-004), also once the application
- * that was rejected has ended, so an administrator can let them try again.
- * Until then they can neither apply nor be invited. Bars from a stricter
- * type than the administrator was active in are not listed (PS-ENV-009);
- * the step to lift them is always offered, so it never tells whether there
- * are any.
- */
-function Restrictions({
-  environmentId,
-  restrictions,
-}: {
-  environmentId: string;
-  restrictions: EnvironmentMemberships["restrictions"];
-}) {
-  return (
-    <>
-      {restrictions.length > 0 && (
-        <>
-          <h3>Stengt ute fra nye forsøk</h3>
-          <ul className="entries">
-            {restrictions.map((restriction) => {
-              const nameId = `utestengt-${restriction.id}`;
-
-              return (
-                <li key={restriction.id} className="entry">
-                  <strong id={nameId}>{memberName(restriction)}</strong>
-                  <span className="entry-detail">
-                    {`Stengt ute ${formatTime(restriction.imposedAt)}. Kan ikke søke eller inviteres.`}
-                  </span>
-                  <div
-                    className="actions"
-                    role="group"
-                    aria-labelledby={nameId}
-                  >
-                    <ActionButton
-                      label="Opphev utestengelsen"
-                      path="/api/environments/restrictions/lift"
-                      body={{ environmentId, restrictionId: restriction.id }}
-                    />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </>
-      )}
-      <MoreActions label="Tidligere utestengelser">
-        <ConfirmAction
-          label="Opphev utestengelser fra før du ble med"
-          title="Opphev utestengelser fra før du ble med"
-          consequences={{
-            gone: [
-              "Utestengelser fra da miljøet var mer privat enn du har kjent det, oppheves.",
-            ],
-            affects: [
-              "De det gjelder, kan søke eller inviteres igjen. Hvem de er, og om det finnes noen, vises bare for dem som var med da.",
-            ],
-          }}
-          confirmLabel="Opphev utestengelsene"
-          path="/api/environments/restrictions/lift-concealed"
-          body={{ environmentId }}
-        />
-      </MoreActions>
-    </>
-  );
-}
-
-/**
  * PS-ENV-010: administrators invite existing accounts, here the friends
  * who are neither members nor barred. An open environment needs no
  * invitation.
@@ -346,8 +274,8 @@ function Invite({
   }
 
   return (
-    <>
-      <h3>Inviter</h3>
+    <section aria-labelledby="inviter">
+      <h2 id="inviter">Inviter</h2>
       <p className="help">
         {environment.type === "hidden"
           ? "Bare de dere inviterer, kan bli med i et skjult miljø. Du kan invitere vennene dine."
@@ -373,6 +301,6 @@ function Invite({
           </Field>
         </CommandForm>
       )}
-    </>
+    </section>
   );
 }

@@ -1,17 +1,23 @@
-import type { Environment } from "@lanbort/contracts";
+import type {
+  Environment,
+  EnvironmentMemberships,
+  EnvironmentRoles,
+  HomeItem,
+  HomeItemKind,
+} from "@lanbort/contracts";
 import {
-  getEnvironment,
-  getSocialOverview,
+  listEnvironmentAdministrationTasks,
   listEnvironmentPublications,
   listMemberships,
-  listObjectCategories,
   listRoles,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
 import { ActionButton } from "@/components/action-button";
+import type { IconName } from "@/components/icon";
+import { MenuList, MenuRow } from "@/components/menu-list";
+import { MoreActions } from "@/components/more-actions";
 import { PageHeader } from "@/components/page-header";
+import { ReauthenticatedAction } from "@/components/reauthenticated-action";
 import { StatusCard } from "@/components/status-card";
 import { ContextTag, Tag } from "@/components/tag";
 import { environmentCasesHref } from "@/navigation/cases";
@@ -19,139 +25,217 @@ import { environmentHref } from "@/navigation/routes";
 import { formatTime } from "@/presentation/dates";
 import { environmentTypeNames } from "@/presentation/environments";
 import {
+  type AdministrationPage,
+  administrationPageHref,
+  administrationPages,
   awaitsDecision,
-  describeRoles,
+  counted,
+  waitingNames,
+  waitingTasks,
+  windDownConsequences,
 } from "@/presentation/environment-admin";
+import { pageQuery, pageQueryOrNotFound } from "@/server/session";
+import { environmentHome } from "../back";
 import {
-  pageQuery,
-  pageQueryOrNotFound,
-  requirePageAccount,
-} from "@/server/session";
-import { MembershipsSection } from "./memberships-section";
-import {
-  olderParam,
-  PublicationsSection,
-  reviewedStatuses,
-} from "./publications-section";
-import { RolesSection } from "./roles-section";
-import { SettingsSection } from "./settings-section";
-import { TypeSection, WindDownSection } from "./type-section";
+  type AdministrationParams,
+  loadAdministration,
+  RoleTag,
+} from "./administration";
+import { memberName } from "./memberships";
 
 export const metadata: Metadata = { title: "Administrer miljøet – Lånbort" };
 
-type SearchParams = Record<string, string | string[] | undefined>;
-
-const single = (value: string | string[] | undefined) =>
-  typeof value === "string" ? value : undefined;
-
 /**
- * An environment's administration (WP-85, UX-JRN-012, UX-PRIV-006): the
- * administrators' tasks on the environment itself, decisions first, then
- * the rarer settings. Only the environment's roles reach it; to anyone
- * else it does not exist, like any page they may not see (PS-NFR-002).
- * Every action is authorized again by the API.
+ * «Administrer miljøet» (WP-85, UX-JRN-012, UX-PRIV-006): what waits on
+ * the administrators first, each task leading to its own page, then the
+ * environment's pages, and the rare steps under «Flere valg». The counts
+ * are Home's (UX-IA-005), read the same way.
  */
 export default async function EnvironmentAdministrationPage({
   params,
-  searchParams,
 }: {
-  params: Promise<{ environmentId: string }>;
-  searchParams: Promise<SearchParams>;
+  params: AdministrationParams;
 }) {
-  const account = await requirePageAccount();
-  const [{ environmentId }, query] = await Promise.all([params, searchParams]);
-  const environment = await pageQueryOrNotFound(getEnvironment, {
-    environmentId,
-  });
-
-  if (environment.roles.length === 0) {
-    notFound();
-  }
+  const { account, environment } = await loadAdministration(params);
 
   if (environment.membership?.state !== "active") {
     return <PassiveAdministrator environment={environment} />;
   }
 
-  const [memberships, roles, social, categories, ...publications] =
-    await Promise.all([
-      pageQueryOrNotFound(listMemberships, { environmentId }),
-      pageQueryOrNotFound(listRoles, { environmentId }),
-      environment.type === "open" ? null : pageQuery(getSocialOverview, {}),
-      pageQuery(listObjectCategories, {}),
-      ...reviewedStatuses.map((status) =>
-        pageQueryOrNotFound(listEnvironmentPublications, {
-          environmentId,
-          status,
-          cursor: single(query[olderParam(status)]),
-        }),
-      ),
-    ]);
-  const isOwner = environment.roles.includes("owner");
-  const pending = publications[reviewedStatuses.indexOf("pending")];
+  const environmentId = environment.id;
+  const [tasks, memberships, roles, pending] = await Promise.all([
+    pageQuery(listEnvironmentAdministrationTasks, { environmentId }),
+    pageQueryOrNotFound(listMemberships, { environmentId }),
+    pageQueryOrNotFound(listRoles, { environmentId }),
+    pageQueryOrNotFound(listEnvironmentPublications, {
+      environmentId,
+      status: "pending",
+    }),
+  ]);
+  const count = (kind: HomeItem["kind"]) =>
+    tasks?.find((task) => task.kind === kind)?.count ?? 0;
   const decisions =
-    memberships.memberships.filter(awaitsDecision).length +
-    (pending?.publications.filter((p) => !p.ownedByYou).length ?? 0);
+    count("environment.review_memberships") +
+    count("environment.review_publications");
+  const waiting = waitingTasks(tasks ?? []);
+  const casesWait = waiting.some(
+    (task) => task.href === environmentCasesHref(environmentId),
+  );
+  // Who or what waits, where the page already has it.
+  const details: Partial<Record<HomeItemKind, string | null>> = {
+    "environment.review_memberships": waitingNames(
+      memberships.memberships
+        .filter((m) => awaitsDecision(m) && m.userId !== account.userId)
+        .map(memberName),
+    ),
+    "environment.review_publications": waitingNames(
+      pending.publications
+        .filter((publication) => !publication.ownedByYou)
+        .map((publication) => publication.object.title),
+      count("environment.review_publications"),
+    ),
+  };
 
   return (
     <main>
       <PageHeader
-        title={environment.name}
-        back={{ href: environmentHref(environment.id), label: "Til miljøet" }}
+        title="Administrer miljøet"
+        back={{ href: environmentHref(environmentId), label: environment.name }}
+        home={environmentHome(environment)}
         context={
           <>
             <ContextTag label="Miljøtype">
               {environmentTypeNames[environment.type]}
             </ContextTag>
-            <Tag>Du er {describeRoles(environment.roles)}</Tag>
+            <RoleTag environment={environment} />
           </>
         }
-      >
-        Oppgaver og innstillinger for miljøet.
-      </PageHeader>
-      <Overview
-        environment={environment}
-        isOwner={isOwner}
-        decisions={decisions}
       />
-      <nav aria-label="På denne siden" className="link-row">
-        <a href="#innmeldinger">Innmeldinger</a> <a href="#ting">Ting</a>{" "}
-        <a href="#roller">Roller</a> <a href="#innstillinger">Innstillinger</a>{" "}
-        <a href="#miljotype">Miljøtype</a> <a href="#saker">Saker</a>
-      </nav>
-      <MembershipsSection
-        environment={environment}
-        memberships={memberships}
-        friends={social?.friends ?? []}
-        ownUserId={account.userId}
-      />
-      <PublicationsSection
-        environment={environment}
-        pages={publications}
-        members={memberships.memberships}
-        categories={categories?.categories ?? []}
-        query={query}
-      />
-      <RolesSection
-        environment={environment}
-        roles={roles}
-        members={memberships.memberships}
-        ownUserId={account.userId}
-      />
-      <SettingsSection environment={environment} />
-      <TypeSection environment={environment} />
-      {isOwner && <WindDownSection environment={environment} />}
-      <section aria-labelledby="saker">
-        <h2 id="saker">Saker</h2>
-        <p>
-          Meldinger og meklinger som miljøet har ansvar for, ligger i{" "}
-          <Link href={environmentCasesHref(environment.id)}>
-            miljøets saker
-          </Link>
-          .
-        </p>
+      <Overview environment={environment} decisions={decisions} />
+      {waiting.length > 0 && (
+        <section aria-labelledby="venter">
+          <h2 id="venter">Venter på dere</h2>
+          <MenuList label="venter">
+            {waiting.map((task) => (
+              <MenuRow
+                key={task.kind}
+                href={task.href}
+                icon={waitingIcons[task.kind] ?? "flag"}
+                label={task.label}
+                detail={details[task.kind]}
+                end={<Tag tone="attention">{task.count} venter</Tag>}
+              />
+            ))}
+          </MenuList>
+        </section>
+      )}
+      <section aria-labelledby="miljoet">
+        <h2 id="miljoet">Miljøet</h2>
+        <MenuList label="miljoet">
+          {environmentRows(environment, memberships, roles)
+            // Waiting memberships are reached from «Venter på dere».
+            .filter(
+              (row) =>
+                row.page !== "memberships" ||
+                count("environment.review_memberships") === 0,
+            )
+            .map((row) => (
+              <MenuRow
+                key={row.page}
+                href={administrationPageHref(environmentId, row.page)}
+                icon={row.icon}
+                label={administrationPages[row.page].title}
+                detail={row.detail}
+              />
+            ))}
+          {!casesWait && (
+            <MenuRow
+              href={environmentCasesHref(environmentId)}
+              icon="flag"
+              label="Saker"
+              detail="Ingen saker venter på dere"
+            />
+          )}
+        </MenuList>
       </section>
+      {environment.roles.includes("owner") &&
+        environment.state === "active" && (
+          <MoreActions>
+            <ReauthenticatedAction
+              label="Avvikle miljøet"
+              title={`Avvikle ${environment.name}`}
+              consequences={windDownConsequences}
+              confirmLabel={`Avvikle ${environment.name}`}
+              path="/api/environments/wind-down"
+              body={{ environmentId }}
+              danger
+            />
+          </MoreActions>
+        )}
     </main>
   );
+}
+
+const waitingIcons: Partial<Record<HomeItemKind, IconName>> = {
+  "environment.review_memberships": "person",
+  "environment.review_publications": "things",
+};
+
+/** The environment's own pages, each with a line on how it stands now. */
+function environmentRows(
+  environment: Environment,
+  { memberships, restrictions }: EnvironmentMemberships,
+  { holders }: EnvironmentRoles,
+): { page: AdministrationPage; icon: IconName; detail?: string }[] {
+  const active = memberships.filter((m) => m.state === "active").length;
+  const passive = memberships.filter((m) => m.state === "passive").length;
+  const owner = holders.find((holder) => holder.roles.includes("owner"));
+  const proposal = environment.typeChange;
+
+  return [
+    {
+      page: "members",
+      icon: "people",
+      detail: [
+        counted(active, "aktivt", "aktive"),
+        passive > 0 && counted(passive, "passivt", "passive"),
+        restrictions.length > 0 && `${restrictions.length} stengt ute`,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    },
+    { page: "memberships", icon: "person" },
+    {
+      page: "things",
+      icon: "things",
+      detail: environment.requiresObjectApproval
+        ? "Nye ting må godkjennes"
+        : "Nye ting vises med en gang",
+    },
+    {
+      page: "roles",
+      icon: "shield",
+      detail: [
+        owner ? `${memberName(owner)} er eier` : "Miljøet mangler eier",
+        counted(holders.length, "administrator", "administratorer"),
+      ].join(" · "),
+    },
+    {
+      page: "settings",
+      icon: "edit",
+      detail:
+        environment.requirements.length === 0
+          ? "Navn, beskrivelse og område. Ingen krav for å bli med"
+          : `Navn, beskrivelse, område og ${counted(environment.requirements.length, "krav", "krav")}`,
+    },
+    {
+      page: "type",
+      icon: "lock",
+      detail: proposal
+        ? `Forslag om ${environmentTypeNames[proposal.toType].toLocaleLowerCase("nb")} venter på medlemmene`
+        : environmentTypeNames[environment.type],
+    },
+  ];
 }
 
 /**
@@ -161,15 +245,14 @@ export default async function EnvironmentAdministrationPage({
  */
 function Overview({
   environment,
-  isOwner,
   decisions,
 }: {
   environment: Environment;
-  isOwner: boolean;
   decisions: number;
 }) {
   const continuity = environment.continuity;
   const body = { environmentId: environment.id };
+  const isOwner = environment.roles.includes("owner");
 
   if (continuity?.windDown) {
     const { windDown } = continuity;
@@ -247,6 +330,11 @@ function Overview({
           : `${decisions} ${decisions === 1 ? "avgjørelse venter" : "avgjørelser venter"} på administratorene`
       }
       tone={decisions === 0 ? "positive" : "waiting"}
+      who={
+        decisions === 0
+          ? undefined
+          : "Alle administratorene ser de samme oppgavene. Den som avgjør først, avgjør for miljøet."
+      }
     />
   );
 }
@@ -264,8 +352,12 @@ function PassiveAdministrator({ environment }: { environment: Environment }) {
   return (
     <main>
       <PageHeader
-        title={environment.name}
-        back={{ href: environmentHref(environment.id), label: "Til miljøet" }}
+        title="Administrer miljøet"
+        back={{
+          href: environmentHref(environment.id),
+          label: environment.name,
+        }}
+        home={environmentHome(environment)}
       />
       <StatusCard
         status="Du kan ikke administrere miljøet nå"

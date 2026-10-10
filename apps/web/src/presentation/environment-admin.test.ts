@@ -1,9 +1,11 @@
-import type {
-  AdministeredMembership,
-  EnvironmentRoles,
-  HomeItemKind,
+import {
+  type AdministeredMembership,
+  type EnvironmentRoles,
+  type HomeItemKind,
+  homeItemKinds,
 } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
+import { environmentCasesHref } from "@/navigation/cases";
 import {
   administrationHref,
   awaitsDecision,
@@ -12,7 +14,10 @@ import {
   ownershipRecipients,
   proposalWaitsFor,
   typeChoices,
+  waitingNames,
+  waitingTasks,
 } from "./environment-admin";
+import { administrationText } from "./home-tasks";
 
 const membership = (
   details: Partial<AdministeredMembership>,
@@ -149,12 +154,68 @@ describe("Home's administration tasks", () => {
     count: 1,
   });
 
-  it("leads to the environment's administration", () => {
+  it("leads to where each task is done in the administration", () => {
+    const admin = "/miljoer/00000000-0000-4000-8000-000000000003/administrer";
+
     expect(administrationHref(item("environment.review_memberships"))).toBe(
-      "/miljoer/00000000-0000-4000-8000-000000000003/administrer",
+      `${admin}/innmeldinger`,
     );
+    expect(administrationHref(item("environment.review_publications"))).toBe(
+      `${admin}/ting`,
+    );
+    // A missing owner is answered on «Administrer miljøet» itself.
+    expect(administrationHref(item("environment.claim_ownership"))).toBe(admin);
     expect(
       administrationHref(item("environment.answer_invitation")),
     ).toBeNull();
+  });
+
+  const administration = (Object.keys(homeItemKinds) as HomeItemKind[]).filter(
+    (kind) => homeItemKinds[kind] === "administration",
+  );
+  const ownPages: readonly HomeItemKind[] = [
+    "environment.review_memberships",
+    "environment.review_publications",
+    "environment.claim_ownership",
+  ];
+
+  it("leaves no kind of task out of «Venter på dere», each counted", () => {
+    const rows = waitingTasks(
+      administration.map((kind) => ({ ...item(kind), count: 2 })),
+    );
+
+    // A missing owner is the status card at the top, not a row.
+    expect(rows.map(({ kind }) => kind)).toEqual(
+      administration.filter((kind) => kind !== "environment.claim_ownership"),
+    );
+    expect(rows.every(({ count }) => count === 2)).toBe(true);
+  });
+
+  it("leads each kind of case to the queue, with what to do", () => {
+    const cases = administration.filter((kind) => !ownPages.includes(kind));
+    const rows = waitingTasks(cases.map(item));
+
+    expect(cases.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.href).toBe(environmentCasesHref(item(row.kind).target.id));
+      expect(row.label).toBe(administrationText(item(row.kind)));
+    }
+  });
+});
+
+describe("who or what waits, in a short line", () => {
+  it("names one or two, and counts the rest", () => {
+    expect(waitingNames([])).toBeNull();
+    expect(waitingNames(["Jonas Vik"])).toBe("Jonas Vik");
+    expect(waitingNames(["Jonas Vik", "Erik Sund"])).toBe(
+      "Jonas Vik og Erik Sund",
+    );
+    expect(waitingNames(["Jonas Vik", "Erik Sund", "Mats Dahl"])).toBe(
+      "Jonas Vik, Erik Sund og 1 til",
+    );
+  });
+
+  it("counts also those the page did not list", () => {
+    expect(waitingNames(["Sykkelhenger"], 4)).toBe("Sykkelhenger og 3 til");
   });
 });

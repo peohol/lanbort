@@ -91,6 +91,20 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
     name: "Administrer miljø",
     path: ({ environmentId }) => `/miljoer/${environmentId}/administrer`,
   },
+  ...(
+    [
+      ["Innmeldinger og invitasjoner", "innmeldinger"],
+      ["Medlemmer i miljøet", "medlemmer"],
+      ["Ting i miljøet", "ting"],
+      ["Roller og eierskap", "roller"],
+      ["Innstillinger og krav", "innstillinger"],
+      ["Miljøtype", "miljotype"],
+    ] as const
+  ).map(([name, segment]) => ({
+    name,
+    path: ({ environmentId }: { environmentId: string }) =>
+      `/miljoer/${environmentId}/administrer/${segment}`,
+  })),
   { name: "Samtaler", path: () => "/samtaler" },
   { name: "Varsler", path: () => "/varsler" },
   { name: "Konto", path: () => "/konto" },
