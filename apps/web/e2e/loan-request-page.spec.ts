@@ -90,6 +90,11 @@ test("a member asks to borrow a thing in the environment, and the owner approves
   await expect(bo).toHaveURL(/\/lan\/foresporsel\//);
   await expect(bo.getByText("Venter på svar fra eieren")).toBeVisible();
   const requestUrl = bo.url();
+  // The sent form is done with: back from the request leads to the thing.
+  await bo.goBack();
+  await expect(bo).toHaveURL(
+    new RegExp(`/ting/${objectId}\\?miljo=${environmentId}$`),
+  );
   await members.close();
 
   // The owner finds it in Lån, and sees who asks and what approving means.
@@ -108,6 +113,12 @@ test("a member asks to borrow a thing in the environment, and the owner approves
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     `Stige ${word} til Bo Dahl`,
   );
+  // The approved request is done with: back from the loan leads to Lån.
+  await expect(
+    page.locator(`a[href="${new URL(requestUrl).pathname}"]`),
+  ).toHaveCount(0);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/lan$/);
   expect(problems).toEqual([]);
   expect(boProblems).toEqual([]);
 });

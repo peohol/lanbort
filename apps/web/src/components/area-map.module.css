@@ -10,11 +10,53 @@
 }
 
 /*
- * The attribution toggle is a summary, so it gets the shared 44 px target
- * (UX-A11Y-003). MapLibre places it from the top of its compact box, so the
- * box must be as tall as the toggle; otherwise the toggle reaches below the
- * map, where the caption covers it, and more so with larger text.
+ * MapLibre draws its own controls, so the app's button and «show more»
+ * styles are taken off them here. They keep the shared 44 px target
+ * (UX-A11Y-003), with their icon drawn once in the middle.
+ */
+.map :global(.maplibregl-ctrl-group button),
+.map :global(summary.maplibregl-ctrl-attrib-button) {
+  width: var(--target);
+  height: var(--target);
+  min-height: 0;
+  padding: 0;
+  box-shadow: none;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.map :global(.maplibregl-ctrl-group button) {
+  border-radius: 0;
+}
+
+/* MapLibre's own focus mark is a shadow; the app's ring replaces it. */
+.map :global(.maplibregl-ctrl-group button):focus-visible,
+.map :global(summary.maplibregl-ctrl-attrib-button):focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: -3px;
+}
+
+.map :global(summary.maplibregl-ctrl-attrib-button) {
+  border-radius: 50%;
+}
+
+.map :global(summary.maplibregl-ctrl-attrib-button)::after {
+  content: none;
+}
+
+/*
+ * MapLibre places the attribution toggle from the top of its compact box,
+ * so the box must be as tall as the toggle; otherwise the toggle reaches
+ * below the map, where the caption covers it, and more so with larger
+ * text. The words, when shown, stay clear of the toggle.
  */
 .map :global(.maplibregl-ctrl-attrib.maplibregl-compact) {
-  min-height: 2.75rem;
+  min-height: var(--target);
+  padding-right: var(--target);
+  border-radius: calc(var(--target) / 2);
+}
+
+.map :global(.maplibregl-ctrl-attrib.maplibregl-compact-show) {
+  padding: var(--space-2) calc(var(--target) + var(--space-1)) var(--space-2)
+    var(--space-3);
 }

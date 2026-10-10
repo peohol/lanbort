@@ -121,6 +121,37 @@ describe("the navigation stack (UX-IA-009–011)", () => {
     expect(returnToArea(back, "find", "push")).toEqual(areaStack("find"));
   });
 
+  it("lets a page that is done with give its place to the next", () => {
+    const request: Place = {
+      href: "/lan/foresporsel/5",
+      label: "Forespørsel om Stige",
+      home: "loans",
+    };
+    const asked = arrive(
+      arrive(areaStack("find"), thing, "push"),
+      request,
+      "push",
+    );
+    const approved = arrive(asked, loan, "replace");
+
+    // Back from the loan leads where the request was opened from.
+    expect(approved.area).toBe("find");
+    expect(approved.entries.map(({ href }) => href)).toEqual([
+      thing.href,
+      loan.href,
+    ]);
+    expect(backOf(approved)).toEqual({ href: thing.href, label: "Stige" });
+
+    // Something already in the stack is gone back to, as when pushed.
+    expect(arrive(approved, thing, "replace").entries).toEqual([
+      { href: thing.href, label: "Stige" },
+    ]);
+
+    // A direct entry's replacement is a direct entry too.
+    const opened = arrive(asked, request, "direct", "varsel");
+    expect(arrive(opened, loan, "replace")).toEqual(ruleStack(loan, "varsel"));
+  });
+
   it("knows whether a stack belongs to the page", () => {
     const stack = arrive(areaStack("loans"), loan, "push");
 
