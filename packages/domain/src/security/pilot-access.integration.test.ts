@@ -26,6 +26,7 @@ import {
   registerChatAccount,
   reportUnavailability,
   requestChatLink,
+  createChatArchive,
   requestLoanMediation,
   resolveUserActor,
   setObjectRestriction,
@@ -97,6 +98,7 @@ const resourceKeys = new Set([
   "through",
   "conversationId",
   "linkRequestId",
+  "archiveId",
   "channelId",
   "pictureId",
 ]);
@@ -231,6 +233,11 @@ async function hiddenWorld() {
       linkKey: linking.deviceKey,
     },
   );
+  const { archiveId } = await run(createChatArchive, lender, {
+    purpose: "link",
+    linkRequestId,
+    partCount: 1,
+  });
 
   await run(blockUser, borrower, { userId: lender.userId });
   const { channels } = await executeQuery(kit.tick(), readLoanLogistics, {
@@ -264,6 +271,7 @@ async function hiddenWorld() {
       questionId,
       conversationId,
       linkRequestId,
+      archiveId,
       channelId,
       notificationId: randomUUID(),
       userId: other.userId,
@@ -736,6 +744,23 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     linkRequestId: ids.linkRequestId,
     certificate: bystanderDevice.certificate,
     package: "AAECAw==",
+  }),
+  "chat.create_archive": (ids) => ({
+    purpose: "link",
+    linkRequestId: ids.linkRequestId,
+    partCount: 1,
+  }),
+  "chat.put_archive_part": (ids) => ({
+    archiveId: ids.archiveId,
+    part: 0,
+    data: "AAAAAAAAAAAAAAAAAAAAAA==",
+  }),
+  "chat.read_archive_part": (ids) => ({ archiveId: ids.archiveId, part: 0 }),
+  "chat.delete_archive": (ids) => ({ archiveId: ids.archiveId }),
+  "chat.back_up_history": (ids) => ({
+    archiveId: ids.archiveId,
+    keyId: "AAAAAAAAAAAAAAAAAAAAAA==",
+    backup: Buffer.alloc(32).toString("base64"),
   }),
 
   // Notifications

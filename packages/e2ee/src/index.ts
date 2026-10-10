@@ -34,8 +34,16 @@ export {
   verifyDeviceCertificate,
   verifyDeviceRevocation,
 } from "./identity";
+export { openArchive, sealArchive } from "./archive";
+export {
+  type AccountPackage,
+  exportLinkedArchive,
+  importLinkedArchive,
+  type LinkedArchive,
+} from "./account-package";
 export {
   type LinkRequestKeys,
+  type OpenedLink,
   type PendingLink,
   approveLink,
   linkCode,
@@ -52,6 +60,17 @@ export {
   importDevice,
   importKeyPackage,
 } from "./persist";
+export {
+  type RecoveryKey,
+  RECOVERY_KEY_LENGTH,
+  createRecoveryKey,
+  exportRecoveryKey,
+  groupRecoveryKey,
+  importRecoveryKey,
+  openRecoveryBackup,
+  readRecoveryKey,
+  sealRecoveryBackup,
+} from "./recovery";
 export { type AccountIdentity, securityCode } from "./safety";
 export { Secret, wipe } from "./secret";
 export { CIPHERSUITE } from "./suite";

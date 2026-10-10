@@ -1,5 +1,35 @@
-import { chatAccountKeyReset, chatDeviceLinked } from "../../chat/events";
+import {
+  chatAccountKeyReset,
+  chatAccountRestored,
+  chatDeviceLinked,
+} from "../../chat/events";
+import type { EventDefinition } from "../../events/catalog";
 import { notifyOn, tell } from "../rule";
+
+/**
+ * Tells the account a device was added: linked, or restored with the
+ * recovery key (PS-COM-016). The event names that device, so only its own
+ * account hears of it.
+ */
+const deviceAdded = <P>(event: EventDefinition<P>) =>
+  notifyOn(
+    event,
+    async ({ db, event: happened }) => {
+      const device = await db
+        .selectFrom("app.chat_devices")
+        .select("user_id")
+        .where("id", "=", happened.resourceId)
+        .executeTakeFirst();
+
+      return device
+        ? tell([device.user_id], "chat.device_linked", {
+            type: "chat_device",
+            id: happened.resourceId,
+          })
+        : [];
+    },
+    { tellsActor: true },
+  );
 
 /**
  * Security notices about the account's own private chat. A reset is told to
@@ -8,27 +38,9 @@ import { notifyOn, tell } from "../rule";
  * that every device was shut out.
  */
 export const chatRules = [
-  // The account owner is informed when another chat device is approved,
-  // including when they personally approved it (PS-COM-016). The event
-  // refers to that device, so only its actual account is notified.
-  notifyOn(
-    chatDeviceLinked,
-    async ({ db, event }) => {
-      const device = await db
-        .selectFrom("app.chat_devices")
-        .select("user_id")
-        .where("id", "=", event.resourceId)
-        .executeTakeFirst();
-
-      return device
-        ? tell([device.user_id], "chat.device_linked", {
-            type: "chat_device",
-            id: event.resourceId,
-          })
-        : [];
-    },
-    { tellsActor: true },
-  ),
+  // Also when the owner approved or restored it themselves.
+  deviceAdded(chatDeviceLinked),
+  deviceAdded(chatAccountRestored),
   notifyOn(
     chatAccountKeyReset,
     async ({ db, event }) => {

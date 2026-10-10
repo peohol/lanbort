@@ -12,6 +12,7 @@ import {
   chatApproveByCodeHref,
   chatApproveLinkHref,
   chatHref,
+  chatRecoveryKeyHref,
   chatResetHref,
 } from "@/navigation/chat";
 import { chatApi } from "./api";
@@ -23,6 +24,7 @@ import { addedAt, deviceName } from "./device-names";
 import type { ChatEngine } from "./engine";
 import { chatErrorMessage } from "./messages";
 import { Notice } from "./notice";
+import { RecoveryKeyRow } from "./recovery-key";
 import { hasScanner } from "./scanner";
 import { ConfirmSheet } from "./sheet";
 
@@ -173,6 +175,8 @@ function Devices({ engine }: { engine: ChatEngine }) {
           Koble til ny enhet
         </a>
 
+        {devices && <RecoveryKeyRow recovery={devices.recovery} />}
+
         <div className={styles.hint}>
           <strong>Mistet en enhet, eller kjenner du ikke igjen en?</strong>
           <p>Fjern den her. Den stenges ute med en gang.</p>
@@ -193,11 +197,28 @@ function Devices({ engine }: { engine: ChatEngine }) {
                     icon: "device",
                     text: `${names.format(others.map(deviceName))} beholder sine samtaler.`,
                   }
-                : {
-                    icon: "info",
-                    text: "Dette er den eneste enheten din med privat chat. Meldingene her kan ikke hentes tilbake.",
-                  },
+                : devices.recovery
+                  ? {
+                      icon: "key",
+                      text: "Meldinger som er sikkerhetskopiert, kan hentes tilbake med gjenopprettingsnøkkelen. Meldinger som ikke er sikkerhetskopiert ennå, er tapt.",
+                    }
+                  : {
+                      icon: "info",
+                      text: "Dette er den eneste enheten din med privat chat. Meldingene her kan ikke hentes tilbake.",
+                    },
             ]}
+            first={
+              // The history can be secured before what cannot be undone.
+              others.length === 0 &&
+              !devices.recovery && (
+                <Link
+                  className="button button-secondary"
+                  href={chatRecoveryKeyHref}
+                >
+                  Lag gjenopprettingsnøkkel først
+                </Link>
+              )
+            }
             confirmLabel="Fjern og logg ut"
             confirm={removeCurrent}
           />

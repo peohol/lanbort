@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { type ApiFailureCode, postJson } from "@/components/api-client";
@@ -7,7 +8,12 @@ import { BusyButton } from "@/components/busy-button";
 import { ErrorText, fieldErrorProps } from "@/components/error-text";
 import { Icon } from "@/components/icon";
 import { PageHeader } from "@/components/page-header";
-import { chatDevicesHref, chatHref, chatLinkHref } from "@/navigation/chat";
+import {
+  chatDevicesHref,
+  chatHref,
+  chatLinkHref,
+  chatRestoreHref,
+} from "@/navigation/chat";
 import { ChatApiError } from "./api";
 import styles from "./chat.module.css";
 import { useChat } from "./chat-provider";
@@ -152,7 +158,8 @@ export function ChatReset() {
       {header("Tilbakestill privat chat")}
       <div className={styles.stack}>
         <p className="quiet">
-          Gjør dette bare hvis du ikke har noen enhet med privat chat igjen.
+          Gjør dette bare hvis du ikke har noen enhet med privat chat igjen og
+          ikke har gjenopprettingsnøkkelen.
         </p>
         <section className="card" aria-label="Hva som skjer">
           <Points
@@ -187,6 +194,11 @@ export function ChatReset() {
           Tilbakestill privat chat
         </BusyButton>
         <ErrorText>{error && chatErrorMessage(error)}</ErrorText>
+        {state.status === "link" && state.recovery && (
+          <Link href={chatRestoreHref} className={styles.centered}>
+            Jeg har gjenopprettingsnøkkelen
+          </Link>
+        )}
         {state.status === "link" && (
           // A full page load: the link page has its own security headers.
           <a href={chatLinkHref} className={styles.centered}>

@@ -17,6 +17,8 @@ export const chatRetention = {
   keyPackageMs: 27 * days,
   /** A link request is used once, soon after it is shown. */
   linkRequestMs: 10 * minutes,
+  /** A history archive waits for the new device to fetch it. */
+  archiveMs: 60 * minutes,
 } as const;
 
 /** At most this many unused key packages are kept per device. */

@@ -48,6 +48,7 @@ import { Notice } from "./notice";
 import { dayHeading, messageTime, sameDay } from "./time";
 import { firstUnseen } from "./unread";
 import { useConversations } from "./use-conversations";
+import { useOwnDevices } from "./use-own-devices";
 
 const problems: Record<ConversationProblem, string> = {
   no_key_package:
@@ -616,6 +617,7 @@ function SideList({
   loans: ChatLoans;
 }) {
   const { conversations, summaries } = useConversations(engine);
+  const { devices } = useOwnDevices();
   return (
     <nav className={styles.splitList} aria-label="Alle samtaler">
       {conversations && conversations.length > 0 && (
@@ -626,7 +628,7 @@ function SideList({
           current={id}
         />
       )}
-      <DevicesLink />
+      <DevicesLink devices={devices} />
     </nav>
   );
 }
