@@ -13,10 +13,7 @@ import {
   type LoanLogisticsChannelRecord,
   presentChannel,
 } from "./logistics-store";
-import {
-  type LoanResource,
-  readLoanLogisticsPolicy,
-} from "./policies";
+import { type LoanResource, readLoanLogisticsPolicy } from "./policies";
 import { findLoan } from "./reservations";
 
 /**

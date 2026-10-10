@@ -299,4 +299,3 @@ export const loanConditionAnswered = conditionEvent("condition_answered", {
   role: loanRequestRoleSchema,
   kind: loanConditionAnswerKindSchema,
 });
-
