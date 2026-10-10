@@ -97,6 +97,11 @@ Aktive medlemmer ser miljøets medlemsliste og eierne av tingene som er publiser
 
 Den som finner et åpent eller lukket miljø, ser et omtrentlig antall aktive medlemmer, aldri det nøyaktige. Under 10 vises som «under 10 medlemmer»; ellers rundes tallet til nærmeste ti («ca. 140 medlemmer»), så én person inn eller ut sjelden endrer det som vises. Avrundingen skjer på serveren, og det nøyaktige tallet sendes ikke til klienten. (Produkteier, 10. oktober 2026, OD-0048.)
 
+### PS-ENV-017 — Søkeren får vite at søknaden er avgjort
+**Forankring:** [Lukket miljø og passivt medlem](../vision/03-miljoer.md)
+
+Den som har søkt om å bli medlem, eller om å bli aktiv igjen som passivt medlem, får et varsel i appen både når søknaden godkjennes og når den avslås. Varselet om godkjenning leder til miljøet med velkomsten ved første besøk derfra. Avslaget sier nøytralt at søknaden ikke ble godkjent, uten begrunnelse og uten hvem som avgjorde den, og sier heller ikke om søkeren er utestengt fra nytt forsøk (PS-ENV-004). (Produkteier, 10. oktober 2026, OD-0050.)
+
 ## Miljøtilstand
 
 Normal livssyklus:

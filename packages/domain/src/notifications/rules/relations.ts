@@ -1,7 +1,9 @@
 import {
   environmentRoleInvited,
   environmentTypeChangeProposed,
+  membershipActivated,
   membershipInvited,
+  membershipRejected,
   membershipReviewRequested,
   membershipTransitionStarted,
 } from "../../environment/events";
@@ -110,6 +112,31 @@ export const relationRules = [
           payload.reactivation ? "reactivation" : null,
         );
       },
+    ),
+  ),
+  // PS-ENV-017: the applicant hears the outcome of their own application,
+  // or of their request to be active again, never why or who decided. A
+  // member who reactivates themselves is the actor, and is not told.
+  notifyOn(membershipActivated, ({ db, event, payload }) =>
+    payload.via === "approval" || payload.via === "reactivation"
+      ? whileStill(
+          membership(db, event.resourceId).where("state", "=", "active"),
+          () =>
+            tell(
+              [payload.userId],
+              "environment.membership_approved",
+              environment(payload.environmentId),
+              payload.via === "reactivation" ? "reactivation" : null,
+            ),
+        )
+      : [],
+  ),
+  notifyOn(membershipRejected, ({ payload }) =>
+    tell(
+      [payload.userId],
+      "environment.membership_rejected",
+      environment(payload.environmentId),
+      payload.reactivation ? "reactivation" : null,
     ),
   ),
   notifyOn(environmentRoleInvited, ({ db, event, payload }) =>

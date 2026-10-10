@@ -5,8 +5,10 @@ import { systemActor, type UserActor } from "../actor";
 import { executeQuery } from "../commands/query";
 import { updateRequirements } from "../environment/environment-commands";
 import {
+  approveMembership,
   inviteMember,
   joinEnvironment,
+  rejectMembership,
   withdrawInvitation,
 } from "../environment/membership-commands";
 import { inviteAdministrator } from "../environment/role-commands";
@@ -734,6 +736,46 @@ describe("environments and co-ownership", () => {
       },
     ]);
     expect(await told(applicant)).toEqual([]);
+  });
+
+  it("tell an applicant that the application was approved or not, never why or by whom (PS-ENV-017)", async () => {
+    const admin = await user();
+    const closed = await environment(admin, { type: "closed" });
+    const outcome = (kind: string) => ({
+      kind,
+      level: "action",
+      detail: null,
+      target: { type: "environment", id: closed },
+    });
+    const apply = async () => {
+      const applicant = await user();
+      const { membershipId } = await run(joinEnvironment, applicant, {
+        environmentId: closed,
+        answers: [],
+      });
+
+      return { applicant, membershipId };
+    };
+
+    const approved = await apply();
+    await run(approveMembership, admin, {
+      environmentId: closed,
+      membershipId: approved.membershipId,
+    });
+    expect(await told(approved.applicant)).toEqual([
+      outcome("environment.membership_approved"),
+    ]);
+
+    const rejected = await apply();
+    await run(rejectMembership, admin, {
+      environmentId: closed,
+      membershipId: rejected.membershipId,
+      restrict: true,
+    });
+    // The same words whether or not the applicant may try again.
+    expect(await told(rejected.applicant)).toEqual([
+      outcome("environment.membership_rejected"),
+    ]);
   });
 
   it("tell a member invited to a role, and a user invited to co-own an object", async () => {
