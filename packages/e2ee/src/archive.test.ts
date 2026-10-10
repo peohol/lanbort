@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   approveLink,
   createAccountKey,
+  exportLinkedArchive,
+  importLinkedArchive,
   openArchive,
   sealArchive,
   Secret,
@@ -30,6 +32,23 @@ describe("history archive", () => {
     await expect(
       sealArchive(new Uint8Array(chatLimits.archiveParts + 1), 1),
     ).rejects.toThrow();
+  });
+
+  it("is kept on the device until its history is there", async () => {
+    const { key, parts } = await sealArchive(history);
+    const kept = importLinkedArchive(
+      exportLinkedArchive({
+        archiveId: "a1",
+        parts: parts.length,
+        key,
+      }).reveal(),
+    );
+
+    expect(kept).toMatchObject({ archiveId: "a1", parts: parts.length });
+    expect(fromUtf8(await openArchive(kept.key.reveal(), parts))).toBe(
+      fromUtf8(history),
+    );
+    expect(() => importLinkedArchive(utf8('{"archiveId":"a1"}'))).toThrow();
   });
 
   it("is one part when empty", async () => {

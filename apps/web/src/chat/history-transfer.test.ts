@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { utf8 } from "./bytes";
 import type { HistoryEntry } from "./engine";
-import { mergeHistory, packHistory, unpackHistory } from "./history-transfer";
+import {
+  historyLost,
+  mergeHistory,
+  packHistory,
+  unpackHistory,
+} from "./history-transfer";
+import { ChatApiError } from "./api";
+import { firstUnseen } from "./unread";
 
 const entry = (
   id: string,
@@ -61,6 +68,45 @@ describe("moving history to a linked device", () => {
     expect(ids[0]).toBe(`m${50 - ids.length}`);
   });
 
+  it("keeps how far it was read on a message that moves", () => {
+    const [behind, trimmed] = unpackHistory(
+      packHistory(
+        [
+          {
+            id: "c1",
+            history: [
+              entry("a", 59),
+              entry("b", 59, { own: true, sentAt: null, unsent: true }),
+            ],
+            seen: "b",
+          },
+          {
+            id: "c2",
+            history: Array.from({ length: 50 }, (_, i) => entry(`m${i}`, i)),
+            seen: "m0",
+          },
+        ],
+        packHistory([
+          {
+            id: "c2",
+            history: Array.from({ length: 50 }, (_, i) => entry(`m${i}`, i)),
+            seen: null,
+          },
+        ]).length / 2,
+      ),
+    );
+
+    // Read up to an unsent message: everything before it stays read.
+    expect(behind!.seen).toBe("a");
+    expect(firstUnseen(behind!.history, behind!.seen)).toBeNull();
+    // Read up to a message left out: everything kept is newer, so new.
+    expect(trimmed!.history[0]!.id).not.toBe("m0");
+    expect(trimmed!.seen).toBeNull();
+    expect(firstUnseen(trimmed!.history, trimmed!.seen)).toBe(
+      trimmed!.history[0],
+    );
+  });
+
   it("refuses an archive that is not history", () => {
     expect(() => unpackHistory(utf8('{"v":2}'))).toThrow();
     expect(() =>
@@ -84,5 +130,12 @@ describe("moving history to a linked device", () => {
       entry("c", 5),
       entry("d", 6),
     ]);
+  });
+
+  it("tries again after a lost connection, not when the archive is gone", () => {
+    expect(historyLost(new ChatApiError("network"))).toBe(false);
+    expect(historyLost(new ChatApiError("internal_error"))).toBe(false);
+    expect(historyLost(new ChatApiError("not_found"))).toBe(true);
+    expect(historyLost(new Error("does not open"))).toBe(true);
   });
 });

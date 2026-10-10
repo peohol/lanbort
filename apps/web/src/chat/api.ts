@@ -2,7 +2,6 @@
 
 import type {
   ChatArchive,
-  ChatArchivePurpose,
   ChatClaimedKeyPackages,
   ChatConversation,
   ChatConversationList,
@@ -11,6 +10,7 @@ import type {
   ChatLinkRequest,
   ChatLinkStatus,
   ChatRecoveryBackup,
+  CreateChatArchive,
   DeviceCertificateWire,
   DeviceRevocationWire,
   OwnChatDevices,
@@ -94,8 +94,8 @@ export const chatApi = {
   ) => post(`/api/chat/links/${id}/approve`, body),
 
   /** History archives, for a device being linked or the backup (ADR-0010 §5, §8). */
-  createArchive: (partCount: number, purpose: ChatArchivePurpose) =>
-    post<ChatArchive>("/api/chat/archives", { partCount, purpose }),
+  createArchive: (body: CreateChatArchive) =>
+    post<ChatArchive>("/api/chat/archives", body),
   putArchivePart: (id: string, part: number, data: string) =>
     post<{ complete: boolean }>(`${archive(id)}/parts/${part}`, { data }),
   archivePart: (id: string, part: number) =>

@@ -1,7 +1,4 @@
-import {
-  createChatRecoveryKey,
-  readChatRecoveryBackup,
-} from "@lanbort/domain";
+import { createChatRecoveryKey, readChatRecoveryBackup } from "@lanbort/domain";
 import { userCommandRoute, userQueryRoute } from "@/server/http/command-route";
 import { chatOnly } from "@/server/http/chat-gate";
 

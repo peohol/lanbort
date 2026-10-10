@@ -58,7 +58,10 @@ function Offer({
 
   return (
     <>
-      <Intro icon={<ChatIcon name="key" />} title="Lag en gjenopprettingsnøkkel">
+      <Intro
+        icon={<ChatIcon name="key" />}
+        title="Lag en gjenopprettingsnøkkel"
+      >
         <p className="quiet">
           Mister du alle enhetene dine, kan du hente tilbake privat chat og
           meldingene som er sikkerhetskopiert, med nøkkelen. Bare du har den.

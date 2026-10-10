@@ -8,12 +8,17 @@ create table app.chat_archives (
   user_id uuid not null references app.users (id),
   -- Moving history to a device being linked. Short-lived.
   purpose text not null check (purpose in ('link')),
+  -- The link request it was made for. Not a reference: the device being
+  -- linked fetches it after its request is gone. Each waiting device has
+  -- its own, so linking two at once keeps both.
+  link_request_id uuid,
   -- chatLimits.archiveParts.
   part_count integer not null check (part_count between 1 and 16),
   created_at timestamptz not null default clock_timestamp(),
   -- Set once every part is stored; only then can it be read.
   completed_at timestamptz,
-  expires_at timestamptz not null check (expires_at > created_at)
+  expires_at timestamptz not null check (expires_at > created_at),
+  check ((purpose = 'link') = (link_request_id is not null))
 );
 
 comment on table app.chat_archives is
@@ -21,6 +26,8 @@ comment on table app.chat_archives is
 
 create index chat_archives_user_idx on app.chat_archives (user_id, created_at);
 create index chat_archives_expires_idx on app.chat_archives (expires_at);
+create unique index chat_archives_link_request_idx
+  on app.chat_archives (link_request_id) where link_request_id is not null;
 
 create table app.chat_archive_parts (
   archive_id uuid not null references app.chat_archives (id) on delete cascade,

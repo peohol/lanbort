@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChatArchivePurpose, chatLimits } from "@lanbort/contracts";
+import { type CreateChatArchive, chatLimits } from "@lanbort/contracts";
 import {
   type LinkedArchive,
   openArchive,
@@ -8,7 +8,7 @@ import {
   wipe,
 } from "@lanbort/e2ee";
 import { z } from "zod";
-import { chatApi } from "./api";
+import { ChatApiError, chatApi } from "./api";
 import { fromBase64, fromUtf8, toBase64, utf8 } from "./bytes";
 import type { HistoryEntry } from "./engine";
 
@@ -54,6 +54,26 @@ const encode = (conversations: readonly ConversationHistory[]) =>
   utf8(JSON.stringify({ v: 1, conversations }));
 
 /**
+ * How far a conversation was read, on a message the archive keeps: the
+ * last kept one at or before the marker, so what was read stays read and
+ * what came after stays new. None when every message up to it is left out.
+ */
+export function keptSeen(
+  history: readonly HistoryEntry[],
+  kept: readonly HistoryEntry[],
+  seen: string | null,
+): string | null {
+  const at = history.findIndex((entry) => entry.id === seen);
+  // No marker, or one already gone: the same on the new device.
+  if (at === -1) return seen;
+  const keptIds = new Set(kept.map((entry) => entry.id));
+  return (
+    history.slice(0, at + 1).findLast((entry) => keptIds.has(entry.id))?.id ??
+    null
+  );
+}
+
+/**
  * The history as an archive's plaintext. A message still waiting to be sent
  * stays behind: the new device would send it again. If it is all too much,
  * the oldest messages are left out.
@@ -62,35 +82,39 @@ export function packHistory(
   conversations: readonly ConversationHistory[],
   maxBytes = archiveBytes,
 ): Uint8Array {
-  let kept = conversations.map((conversation) => ({
-    ...conversation,
-    history: conversation.history
-      .filter((entry) => !entry.unsent)
-      .map(({ id, senderUserId, own, text, sentAt }) => ({
+  const encodeKept = (kept: readonly HistoryEntry[][]) =>
+    encode(
+      conversations.map(({ id, history, seen }, index) => ({
         id,
-        senderUserId,
-        own,
-        text,
-        sentAt,
+        history: kept[index]!.map(
+          ({ id, senderUserId, own, text, sentAt }) => ({
+            id,
+            senderUserId,
+            own,
+            text,
+            sentAt,
+          }),
+        ),
+        seen: keptSeen(history, kept[index]!, seen),
       })),
-  }));
-  let packed = encode(kept);
+    );
+  let kept = conversations.map(({ history }) =>
+    history.filter((entry) => !entry.unsent),
+  );
+  let packed = encodeKept(kept);
 
   while (packed.length > maxBytes) {
     const times = kept
-      .flatMap((conversation) => conversation.history)
+      .flat()
       .map((entry) => entry.sentAt ?? "")
       .sort();
     // A tenth of the oldest at a time, so it ends after a few rounds.
     const cutoff = times[Math.ceil(times.length / 10) - 1] ?? "";
-    kept = kept.map((conversation) => ({
-      ...conversation,
-      history: conversation.history.filter(
-        (entry) => (entry.sentAt ?? "") > cutoff,
-      ),
-    }));
+    kept = kept.map((history) =>
+      history.filter((entry) => (entry.sentAt ?? "") > cutoff),
+    );
     wipe(packed);
-    packed = encode(kept);
+    packed = encodeKept(kept);
   }
 
   return packed;
@@ -116,14 +140,22 @@ export function mergeHistory(
   );
 }
 
+type WithoutParts<T> = T extends unknown ? Omit<T, "partCount"> : never;
+
+/** What an archive is for: a device's link request, or the backup. */
+export type ArchiveTarget = WithoutParts<CreateChatArchive>;
+
 /** Encrypts the history and stores it, for a package to point to. */
 export async function sendHistory(
   plaintext: Uint8Array,
-  purpose: ChatArchivePurpose,
+  target: ArchiveTarget,
 ): Promise<LinkedArchive> {
   const { key, parts } = await sealArchive(plaintext);
   wipe(plaintext);
-  const { archiveId } = await chatApi.createArchive(parts.length, purpose);
+  const { archiveId } = await chatApi.createArchive({
+    ...target,
+    partCount: parts.length,
+  });
 
   for (const [index, part] of parts.entries()) {
     await chatApi.putArchivePart(archiveId, index, toBase64(part));
@@ -133,23 +165,25 @@ export async function sendHistory(
 }
 
 /**
- * Fetches and opens the moved history, then removes it from the server;
- * a backup's stays, for the backup still points to it.
+ * Fetches and opens the moved history. It stays on the server until the
+ * caller has stored it, so a lost connection can be tried again.
  */
 export async function receiveHistory(
   archive: LinkedArchive,
-  { keep = false }: { keep?: boolean } = {},
 ): Promise<Uint8Array> {
-  try {
-    const parts: Uint8Array[] = [];
-    for (let index = 0; index < archive.parts; index++) {
-      const { data } = await chatApi.archivePart(archive.archiveId, index);
-      parts.push(fromBase64(data));
-    }
-    return await openArchive(archive.key.reveal(), parts);
-  } finally {
-    if (!keep) {
-      await chatApi.deleteArchive(archive.archiveId).catch(() => undefined);
-    }
+  const parts: Uint8Array[] = [];
+  for (let index = 0; index < archive.parts; index++) {
+    const { data } = await chatApi.archivePart(archive.archiveId, index);
+    parts.push(fromBase64(data));
   }
+  return openArchive(archive.key.reveal(), parts);
 }
+
+/**
+ * Whether trying again cannot help: the archive is gone or expired, or it
+ * does not open. A lost connection or a busy server can.
+ */
+export const historyLost = (error: unknown) =>
+  !(error instanceof ChatApiError) ||
+  error.code === "not_found" ||
+  error.code === "forbidden";

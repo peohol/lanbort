@@ -448,9 +448,15 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
         input: { archiveId, part: index },
       });
 
+    const forLink = (linkRequestId: string, partCount: number) => ({
+      purpose: "link" as const,
+      linkRequestId,
+      partCount,
+    });
+
     // An archive is only for a device that waits to be linked.
     await expect(
-      run(createChatArchive, alice.actor, { partCount: 2 }),
+      run(createChatArchive, alice.actor, forLink(randomUUID(), 2)),
     ).rejects.toMatchObject(conflict);
     const { linkRequestId } = await run(requestChatLink, laptop, {
       deviceId,
@@ -458,14 +464,18 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
       linkKey: deviceKey,
     });
     await expect(
-      run(createChatArchive, laptop, { partCount: 2 }),
+      run(createChatArchive, laptop, forLink(linkRequestId, 2)),
     ).rejects.toMatchObject(forbidden);
-    const { archiveId: replaced } = await run(createChatArchive, alice.actor, {
-      partCount: 1,
-    });
-    const { archiveId } = await run(createChatArchive, alice.actor, {
-      partCount: 2,
-    });
+    const { archiveId: replaced } = await run(
+      createChatArchive,
+      alice.actor,
+      forLink(linkRequestId, 1),
+    );
+    const { archiveId } = await run(
+      createChatArchive,
+      alice.actor,
+      forLink(linkRequestId, 2),
+    );
     await expect(
       run(putChatArchivePart, alice.actor, {
         archiveId: replaced,
@@ -474,8 +484,12 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
       }),
     ).rejects.toMatchObject(notFound);
 
-    // Someone else neither writes, reads nor removes it.
+    // Someone else neither writes, reads nor removes it, nor makes one
+    // for this account's link request.
     const bob = await chatUser();
+    await expect(
+      run(createChatArchive, bob.actor, forLink(linkRequestId, 1)),
+    ).rejects.toMatchObject(conflict);
     await expect(
       run(putChatArchivePart, bob.actor, { archiveId, part: 0, data: part(9) }),
     ).rejects.toMatchObject(notFound);
@@ -543,16 +557,64 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
     );
   });
 
+  it("keeps each device's archive when two are linked at the same time", async () => {
+    const alice = await chatUser();
+    const linking = await Promise.all(
+      [newSession(alice.actor), newSession(alice.actor)].map(async (actor) => {
+        const deviceId = randomUUID();
+        const deviceKey = testChatDevice(alice.account).deviceKey;
+        const { linkRequestId } = await run(requestChatLink, actor, {
+          deviceId,
+          deviceKey,
+          linkKey: deviceKey,
+        });
+        return { actor, deviceId, deviceKey, linkRequestId };
+      }),
+    );
+
+    // The first is approved with its archive before the second gets one.
+    const archives: string[] = [];
+    for (const [index, link] of linking.entries()) {
+      const { archiveId } = await run(createChatArchive, alice.actor, {
+        purpose: "link",
+        linkRequestId: link.linkRequestId,
+        partCount: 1,
+      });
+      await run(putChatArchivePart, alice.actor, {
+        archiveId,
+        part: 0,
+        data: Buffer.alloc(16, index).toString("base64"),
+      });
+      await run(approveChatLink, alice.actor, {
+        linkRequestId: link.linkRequestId,
+        certificate: alice.account.certify(link.deviceId, link.deviceKey),
+        package: "c2VhbGVk",
+      });
+      archives.push(archiveId);
+    }
+
+    for (const [index, link] of linking.entries()) {
+      await expect(
+        executeQuery(tick(), readChatArchivePart, {
+          actor: link.actor,
+          input: { archiveId: archives[index]!, part: 0 },
+        }),
+      ).resolves.toEqual({ data: Buffer.alloc(16, index).toString("base64") });
+    }
+  });
+
   it("lets a history archive expire with the retention job", async () => {
     const alice = await chatUser();
     const laptop = newSession(alice.actor);
     const deviceKey = testChatDevice(alice.account).deviceKey;
-    await run(requestChatLink, laptop, {
+    const { linkRequestId } = await run(requestChatLink, laptop, {
       deviceId: randomUUID(),
       deviceKey,
       linkKey: deviceKey,
     });
     const { archiveId } = await run(createChatArchive, alice.actor, {
+      purpose: "link",
+      linkRequestId,
       partCount: 1,
     });
 
@@ -1088,10 +1150,14 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
     });
 
     // Only a complete backup archive of the account's own, under the key.
-    const { archiveId: unfinished } = await run(createChatArchive, alice.actor, {
-      partCount: 2,
-      purpose: "backup",
-    });
+    const { archiveId: unfinished } = await run(
+      createChatArchive,
+      alice.actor,
+      {
+        partCount: 2,
+        purpose: "backup",
+      },
+    );
     await expect(
       run(backUpChatHistory, alice.actor, {
         keyId: keyA,

@@ -100,7 +100,10 @@ export function checkCertificate(
   }
 }
 
-export async function deviceIdTaken(tx: Tx, deviceId: string): Promise<boolean> {
+export async function deviceIdTaken(
+  tx: Tx,
+  deviceId: string,
+): Promise<boolean> {
   const [device, request] = await Promise.all([
     tx
       .selectFrom("app.chat_devices")
@@ -618,9 +621,7 @@ export const readOwnChatDevices = defineQuery({
         : null,
       // PS-COM-019: one reminder, only for someone who said «Ikke nå».
       recoveryReminder:
-        !recovery &&
-        prompt?.declined_at != null &&
-        prompt.reminded_at === null,
+        !recovery && prompt?.declined_at != null && prompt.reminded_at === null,
     }),
 });
 

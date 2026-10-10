@@ -35,7 +35,12 @@ export {
   verifyDeviceRevocation,
 } from "./identity";
 export { openArchive, sealArchive } from "./archive";
-export { type AccountPackage, type LinkedArchive } from "./account-package";
+export {
+  type AccountPackage,
+  exportLinkedArchive,
+  importLinkedArchive,
+  type LinkedArchive,
+} from "./account-package";
 export {
   type LinkRequestKeys,
   type OpenedLink,

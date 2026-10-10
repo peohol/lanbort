@@ -208,13 +208,14 @@ export const readChatRecoveryBackupPolicy = definePolicy<
   resource: [recoveryKeyExists],
 });
 
-export const restoreChatAccountPolicy = definePolicy<ChatRecoveryResource, void>(
-  {
-    action: "chat.restore_account",
-    actor: [requireActiveAccount],
-    resource: [recoveryKeyExists],
-  },
-);
+export const restoreChatAccountPolicy = definePolicy<
+  ChatRecoveryResource,
+  void
+>({
+  action: "chat.restore_account",
+  actor: [requireActiveAccount],
+  resource: [recoveryKeyExists],
+});
 
 /** «Ikke nå» and the one reminder: about the caller's own account. */
 export const answerChatRecoveryPromptPolicy = definePolicy<void, void>({

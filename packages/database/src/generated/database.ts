@@ -177,6 +177,7 @@ export interface AppChatArchives {
   created_at: Generated<Timestamp>;
   expires_at: Timestamp;
   id: Generated<string>;
+  link_request_id: string | null;
   part_count: number;
   purpose: string;
   user_id: string;

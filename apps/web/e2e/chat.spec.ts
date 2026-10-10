@@ -254,10 +254,21 @@ test("two friends chat end to end, and a new device is linked with its code", as
   await expect(anna.page.getByLabel("Bare nye meldinger")).toBeChecked();
   await anna.page.getByLabel("Overfør meldingene herfra").check();
   expect(await axeViolations(anna.page)).toEqual([]);
+  // The tablet's connection fails while it fetches them, and the page is
+  // reloaded: the history is kept and fetched once it can be.
+  const parts = "**/api/chat/archives/*/parts/*";
+  await tablet.page.route(parts, (route) =>
+    route.fulfill({ status: 503, body: "" }),
+  );
   await anna.page.getByRole("button", { name: "Godkjenn enheten" }).click();
   await expect(
     anna.page.getByText("Meldingene herfra er sendt kryptert til den."),
   ).toBeVisible();
+  await expect(tablet.page.getByText("Henter tidligere meldinger")).toBeVisible(
+    { timeout: 20_000 },
+  );
+  await tablet.page.unroute(parts);
+  await tablet.page.reload();
   await expect(
     tablet.page.getByText("Meldingene fra den andre enheten er hentet hit."),
   ).toBeVisible({ timeout: 20_000 });
@@ -272,8 +283,12 @@ test("two friends chat end to end, and a new device is linked with its code", as
   for (const someone of [anna, bo, laptop, tablet]) {
     // A message encrypted before a device joined is refused and sent again
     // under the group's new keys; the browser logs the refusal.
+    // The tablet's failed fetches are logged too.
     expect(
-      someone.problems.filter((problem) => !problem.includes("409 (Conflict)")),
+      someone.problems.filter(
+        (problem) =>
+          !/(409 \(Conflict\)|503 \(Service Unavailable\))/.test(problem),
+      ),
     ).toEqual([]);
     await someone.context.close();
   }
@@ -338,12 +353,16 @@ test("the recovery key brings chat and its backed-up messages back when every de
   expect(await axeViolations(anna.page)).toEqual([]);
   const done = anna.page.getByRole("button", { name: "Ferdig" });
   await expect(done).toBeDisabled();
-  await anna.page.getByLabel("Jeg har skrevet ned eller lagret nøkkelen").check();
+  await anna.page
+    .getByLabel("Jeg har skrevet ned eller lagret nøkkelen")
+    .check();
   await done.click();
   await expect(
     anna.page.getByText("Gjenopprettingsnøkkelen er laget."),
   ).toBeVisible();
-  await anna.page.getByRole("link", { name: "Tilbake til Mine enheter" }).click();
+  await anna.page
+    .getByRole("link", { name: "Tilbake til Mine enheter" })
+    .click();
   await expect(anna.page.getByText("Lag en ny nøkkel")).toBeVisible();
   await anna.page.goto("/samtaler");
   await expect(reminder).toHaveCount(0);
@@ -403,7 +422,9 @@ test("the recovery key brings chat and its backed-up messages back when every de
   await bo.page.getByLabel("Ny melding").fill("Hent den i morgen.");
   await bo.page.getByRole("button", { name: "Send" }).click();
   await expectMessage(phone.page, "Hent den i morgen.");
-  const own = await (await phone.context.request.get("/api/chat/devices")).json();
+  const own = await (
+    await phone.context.request.get("/api/chat/devices")
+  ).json();
   expect(
     own.devices.filter((d: { revokedAt: string | null }) => !d.revokedAt),
   ).toHaveLength(1);

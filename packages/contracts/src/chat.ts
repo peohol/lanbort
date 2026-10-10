@@ -186,16 +186,28 @@ export const chatLinkStatusSchema = z.strictObject({
 // History archives
 
 /**
- * A device starts an archive of its history for a device being linked
- * (ADR-0010 §5). Its key goes in the link package, never to the server.
+ * An archive of a device's history: for a device being linked (ADR-0010
+ * §5), or for the recovery key's backup (§8). Its key never goes to the
+ * server.
  */
 export const chatArchivePurposeSchema = z.enum(["link", "backup"]);
 
-export const createChatArchiveSchema = z.strictObject({
-  partCount: z.number().int().min(1).max(chatLimits.archiveParts),
-  /** For a device being linked, or the recovery key's backup. */
-  purpose: chatArchivePurposeSchema.default("link"),
-});
+const archivePartCount = z.number().int().min(1).max(chatLimits.archiveParts);
+
+/**
+ * For the device whose link request is being approved, or for the recovery
+ * key's backup.
+ */
+export const createChatArchiveSchema = z.discriminatedUnion("purpose", [
+  z.strictObject({
+    purpose: z.literal("link"),
+    linkRequestId: z.uuid(),
+    partCount: archivePartCount,
+  }),
+  z.strictObject({ purpose: z.literal("backup"), partCount: archivePartCount }),
+]);
+
+export type CreateChatArchive = z.infer<typeof createChatArchiveSchema>;
 
 export const chatArchiveSchema = z.strictObject({
   archiveId: z.uuid(),
@@ -285,7 +297,9 @@ export const chatRecoveryBackupSchema = z.strictObject({
  */
 export const restoreChatAccountSchema = z.strictObject({
   certificate: deviceCertificateSchema,
-  revocations: z.array(deviceRevocationSchema).max(chatLimits.devicesPerAccount),
+  revocations: z
+    .array(deviceRevocationSchema)
+    .max(chatLimits.devicesPerAccount),
 });
 
 /** «Ikke nå» to the offer, or an answer to the one reminder. */

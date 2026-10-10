@@ -1,5 +1,5 @@
 import {
-  type ChatArchivePurpose,
+  type CreateChatArchive,
   chatArchivePartSchema,
   chatArchivePartTargetSchema,
   chatArchiveProgressSchema,
@@ -113,9 +113,9 @@ export async function archiveResource(
 
 /**
  * A device starts an archive: for a device waiting to be linked, or for the
- * recovery key's backup. Each replaces the account's earlier one of its
- * kind, except the archive the backup points to, so there is at most one
- * of each being made.
+ * recovery key's backup. It replaces the earlier one for the same link
+ * request, or the earlier backup the backup does not point to, so another
+ * device being linked at the same time keeps its own.
  */
 export const createChatArchive = defineCommand({
   name: "chat.create_archive",
@@ -133,23 +133,29 @@ export const createChatArchive = defineCommand({
   execute: async ({ tx, actor, input, now }) => {
     const userId = actingUserId(actor);
 
-    if (!(await archiveWanted[input.purpose](tx, userId, now))) {
+    const linkRequestId = input.purpose === "link" ? input.linkRequestId : null;
+
+    if (!(await archiveWanted(tx, userId, input, now))) {
       throw new DomainError(
         "conflict",
         input.purpose === "link"
-          ? "No device is waiting to be linked"
+          ? "That device is not waiting to be linked"
           : "The account has no recovery key",
       );
     }
 
     await unattachedArchives(tx, userId)
       .where("purpose", "=", input.purpose)
+      .$if(linkRequestId !== null, (query) =>
+        query.where("link_request_id", "=", linkRequestId),
+      )
       .execute();
     const archive = await tx
       .insertInto("app.chat_archives")
       .values({
         user_id: userId,
         purpose: input.purpose,
+        link_request_id: linkRequestId,
         part_count: input.partCount,
         created_at: now,
         expires_at: new Date(now.getTime() + chatRetention.archiveMs),
@@ -164,26 +170,30 @@ export const createChatArchive = defineCommand({
   },
 });
 
-/** Whether the account has a use for a new archive of the kind. */
-const archiveWanted: Record<
-  ChatArchivePurpose,
-  (tx: Db, userId: string, now: Date) => Promise<boolean>
-> = {
-  link: async (tx, userId, now) =>
-    (await tx
-      .selectFrom("app.chat_link_requests")
-      .select("id")
-      .where("user_id", "=", userId)
-      .where("approved_at", "is", null)
-      .where("expires_at", ">", now)
-      .executeTakeFirst()) !== undefined,
-  backup: async (tx, userId) =>
-    (await tx
-      .selectFrom("app.chat_recovery_keys")
-      .select("user_id")
-      .where("user_id", "=", userId)
-      .executeTakeFirst()) !== undefined,
-};
+/**
+ * Whether the account has a use for the archive: the link request is its
+ * own and still waits, or it has a recovery key.
+ */
+const archiveWanted = async (
+  tx: Db,
+  userId: string,
+  input: CreateChatArchive,
+  now: Date,
+) =>
+  (input.purpose === "link"
+    ? await tx
+        .selectFrom("app.chat_link_requests")
+        .select("id")
+        .where("id", "=", input.linkRequestId)
+        .where("user_id", "=", userId)
+        .where("approved_at", "is", null)
+        .where("expires_at", ">", now)
+        .executeTakeFirst()
+    : await tx
+        .selectFrom("app.chat_recovery_keys")
+        .select("user_id")
+        .where("user_id", "=", userId)
+        .executeTakeFirst()) !== undefined;
 
 /** The archive the recovery key's backup points to; kept while it does. */
 const attachedArchives = (db: Db) =>

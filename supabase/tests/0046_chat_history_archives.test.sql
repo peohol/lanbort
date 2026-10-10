@@ -1,25 +1,35 @@
 begin;
 
-select plan(9);
+select plan(10);
 
 insert into app.users (id, status, adult_confirmed_at) values
   ('00000000-0000-4000-8000-0000000000a1', 'active', now());
 
-insert into app.chat_archives (id, user_id, purpose, part_count, expires_at)
+insert into app.chat_archives (id, user_id, purpose, link_request_id, part_count, expires_at)
 values (
   '00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-0000000000a1',
-  'link', 2, now() + interval '1 hour'
+  'link', '00000000-0000-4000-8000-0000000000c1', 2, now() + interval '1 hour'
 );
 
 -- ADR-0010 §5: a history archive is ciphertext in at most 16 parts.
 select throws_ok(
   $$
-    insert into app.chat_archives (user_id, purpose, part_count, expires_at)
-    values ('00000000-0000-4000-8000-0000000000a1', 'link', 17, now() + interval '1 hour')
+    insert into app.chat_archives (user_id, purpose, link_request_id, part_count, expires_at)
+    values ('00000000-0000-4000-8000-0000000000a1', 'link', gen_random_uuid(), 17, now() + interval '1 hour')
   $$,
   '23514',
   null,
   'an archive has at most 16 parts'
+);
+
+select throws_ok(
+  $$
+    insert into app.chat_archives (user_id, purpose, part_count, expires_at)
+    values ('00000000-0000-4000-8000-0000000000a1', 'link', 1, now() + interval '1 hour')
+  $$,
+  '23514',
+  null,
+  'a link''s archive names the link request it is for'
 );
 
 select throws_ok(

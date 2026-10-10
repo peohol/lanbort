@@ -26,16 +26,39 @@ export interface AccountPackage {
   recovery?: RecoveryKey | undefined;
 }
 
+const archiveSchema = z.strictObject({
+  archiveId: z.string(),
+  parts: z.number().int().positive(),
+  key: z.string(),
+});
+
+const archiveWire = (archive: LinkedArchive) => ({
+  archiveId: archive.archiveId,
+  parts: archive.parts,
+  key: toBase64(archive.key.reveal()),
+});
+
+const archiveOf = (wire: z.infer<typeof archiveSchema>): LinkedArchive => ({
+  archiveId: wire.archiveId,
+  parts: wire.parts,
+  key: new Secret(fromBase64(wire.key)),
+});
+
+/**
+ * An archive to fetch, for the device to keep in its own encrypted store
+ * until the history is there, so a reload does not lose its key.
+ */
+export const exportLinkedArchive = (
+  archive: LinkedArchive,
+): Secret<Uint8Array> => new Secret(utf8(JSON.stringify(archiveWire(archive))));
+
+export const importLinkedArchive = (encoded: Uint8Array): LinkedArchive =>
+  archiveOf(archiveSchema.parse(JSON.parse(fromUtf8(encoded))));
+
 const packageSchema = z.strictObject({
   v: z.literal(2),
   account: z.string(),
-  archive: z
-    .strictObject({
-      archiveId: z.string(),
-      parts: z.number().int().positive(),
-      key: z.string(),
-    })
-    .optional(),
+  archive: archiveSchema.optional(),
   recovery: z
     .strictObject({ id: z.string(), backupKey: z.string() })
     .optional(),
@@ -52,13 +75,7 @@ export function writeAccountPackage({
       JSON.stringify({
         v: 2,
         account: toBase64(accountBytes),
-        ...(archive && {
-          archive: {
-            archiveId: archive.archiveId,
-            parts: archive.parts,
-            key: toBase64(archive.key.reveal()),
-          },
-        }),
+        ...(archive && { archive: archiveWire(archive) }),
         ...(recovery && {
           recovery: {
             id: toBase64(recovery.id),
@@ -96,13 +113,7 @@ export function readAccountPackage(plain: Uint8Array): AccountPackage {
   try {
     return {
       account: importAccountKey(account),
-      ...(archive && {
-        archive: {
-          archiveId: archive.archiveId,
-          parts: archive.parts,
-          key: new Secret(fromBase64(archive.key)),
-        },
-      }),
+      ...(archive && { archive: archiveOf(archive) }),
       ...(recovery && {
         recovery: {
           id: fromBase64(recovery.id),

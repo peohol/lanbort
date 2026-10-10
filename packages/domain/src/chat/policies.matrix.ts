@@ -160,7 +160,12 @@ const recoveryAction = (policy: Policy<ChatRecoveryResource, void>) =>
   cases(policy, [
     ["an account with a recovery key", user, { exists: true }, "allow"],
     ["an account without one", user, { exists: false }, "not_found"],
-    ["a deactivated account", deactivated, { exists: true }, "account_inactive"],
+    [
+      "a deactivated account",
+      deactivated,
+      { exists: true },
+      "account_inactive",
+    ],
     ["anonymous caller", anonymousActor, { exists: true }, "unauthenticated"],
   ]);
 

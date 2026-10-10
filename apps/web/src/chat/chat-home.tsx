@@ -267,7 +267,16 @@ const historyNotes: Record<
   },
 };
 
-/** Says once how the device just got chat (07, 13, 18, R3). */
+/** How the device got history that was still on its way after a reload. */
+const startOfHistory: Record<HistoryTransfer["from"], ChatStart> = {
+  device: "linked",
+  backup: "restored",
+};
+
+/**
+ * Says once how the device just got chat (07, 13, 18, R3), and how
+ * fetching history ended, also when a reload interrupted it.
+ */
 function StartNote({ engine }: { engine: ChatEngine }) {
   const { state, settle } = useChat();
   const [since] = useState(state.status === "ready" ? state.since : undefined);
@@ -283,13 +292,14 @@ function StartNote({ engine }: { engine: ChatEngine }) {
   if (transfer?.state === "running") {
     return <p role="status">{historyNotes[transfer.from].running}</p>;
   }
-  if (!since) return null;
-  const { tag } = startNotes[since];
+  const start = since ?? (transfer && startOfHistory[transfer.from]);
+  if (!start) return null;
+  const { tag } = startNotes[start];
   const text = transfer
     ? historyNotes[transfer.from][transfer.state]
-    : since === "started" && engine.hasRecoveryKey
+    : start === "started" && engine.hasRecoveryKey
       ? `${startNotes.started.text} Gjenopprettingsnøkkelen er laget.`
-      : startNotes[since].text;
+      : startNotes[start].text;
   return (
     <Notice
       tag={tag}
