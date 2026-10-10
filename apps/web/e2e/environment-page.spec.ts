@@ -7,6 +7,7 @@ import {
   registerThroughApi,
   today,
   uniqueWord,
+  untilOutboxSettles,
 } from "./helpers";
 
 /**
@@ -149,6 +150,30 @@ test("an environment is created, applied to, used and left in the browser", asyn
   await expect(
     bo.page.getByRole("region", { name: "Som administrator" }),
   ).toHaveCount(0);
+
+  // Searching among the things here finds them as in Finn.
+  await untilOutboxSettles(bo.context.request, async () => {
+    const { objects } = await (
+      await bo.context.request.get(
+        `/api/search/objects?q=Stige&environmentId=${environmentId}`,
+      )
+    ).json();
+    return objects.length > 0;
+  });
+  await bo.page.getByLabel(`Søk i ${name}`).fill("Stige");
+  await bo.page
+    .getByRole("search")
+    .getByRole("button", { name: "Søk" })
+    .click();
+  const found = bo.page.getByRole("region", { name: "1 ting for «Stige»" });
+  await expect(found.getByRole("link", { name: "Stige" })).toHaveAttribute(
+    "href",
+    `/ting/${objectId}?miljo=${environmentId}`,
+  );
+  await found.getByRole("link", { name: "Vis alle ting" }).click();
+  await expect(
+    bo.page.getByRole("region", { name: "Ting i miljøet" }),
+  ).toBeVisible();
 
   // About the environment and its members, a page away.
   await bo.page.getByRole("link", { name: "Om miljøet og medlemmer" }).click();
