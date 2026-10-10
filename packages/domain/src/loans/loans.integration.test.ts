@@ -27,7 +27,7 @@ import { blockUser, removeFriend, sendFriendRequest } from "../social/commands";
 import { subscribeToObject } from "../subscriptions/commands";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
-import { startTestVote } from "../testing/type-changes";
+import { serializeTypeChanges, startTestVote } from "../testing/type-changes";
 import { approveLoanRequest } from "./approval";
 import {
   acceptResponsibility,
@@ -807,6 +807,8 @@ describe("losing access before approval (PS-LOAN-002)", () => {
 });
 
 describe("historical privacy (PS-ENV-009)", () => {
+  serializeTypeChanges(db);
+
   it("keeps a request made while closed from an owner who joined after it opened", async () => {
     const admin = await user();
     const environmentId = await environment(admin, { type: "closed" });

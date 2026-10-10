@@ -35,6 +35,7 @@ import { acceptFriendRequest, sendFriendRequest } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
 import { deliverAll } from "../testing/outbox";
+import { serializeTypeChanges } from "../testing/type-changes";
 import {
   markAllNotificationsRead,
   markNotificationsRead,
@@ -701,6 +702,9 @@ describe("loan deadlines", () => {
 });
 
 describe("environments and co-ownership", () => {
+  // Two tests leave a proposal open that another file's job could decide.
+  serializeTypeChanges(db);
+
   it("tell the invited, and the administrators who review an application, without revealing a hidden environment to anyone else", async () => {
     const admin = await user();
     const hidden = await environment(admin, { type: "hidden" });

@@ -1,5 +1,6 @@
 import type { Database } from "@lanbort/database";
-import type { Kysely } from "kysely";
+import { type Kysely, sql } from "kysely";
+import { afterEach, beforeEach } from "vitest";
 import { daysAfter } from "../environment/model";
 import { typeChangeDays } from "../environment/privacy";
 
@@ -37,4 +38,49 @@ export async function startTestVote(
     .executeTakeFirstOrThrow();
 
   return id;
+}
+
+/** Generous: a waiting test sits behind at most a few other files' tests. */
+const typeChangeLockTimeout = 120_000;
+const typeChangeLock = sql`hashtextextended('test:type_changes', 0)`;
+
+/**
+ * Runs each test in the current scope alone among the tests that use it.
+ * Concluding is one job for every environment, so a test file that moves its
+ * own clock days ahead and runs it decides other files' open proposals
+ * mid-vote. Every test that leaves a proposal open or runs the job holds
+ * this lock, a session lock on a connection of its own, from start to end.
+ */
+export function serializeTypeChanges(db: Kysely<Database>) {
+  let release: (() => void) | undefined;
+  let held: Promise<void> | undefined;
+
+  beforeEach(async () => {
+    let acquired!: () => void;
+    const locked = new Promise<void>((resolve) => {
+      acquired = resolve;
+    });
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    held = db.connection().execute(async (connection) => {
+      await sql`select pg_advisory_lock(${typeChangeLock})`.execute(connection);
+      acquired();
+      try {
+        await released;
+      } finally {
+        await sql`select pg_advisory_unlock(${typeChangeLock})`.execute(
+          connection,
+        );
+      }
+    });
+    await Promise.race([locked, held]);
+  }, typeChangeLockTimeout);
+
+  afterEach(async () => {
+    release?.();
+    await held;
+    release = undefined;
+    held = undefined;
+  });
 }
