@@ -63,6 +63,8 @@ export interface EntryRecord {
   /** By time sent; only a participant's entry has any. */
   readonly privateMessages: readonly PrivateMessageCopyRecord[];
   readonly correctsEntryId: string | null;
+  /** The closing message (PS-COM-020). */
+  readonly closing: boolean;
   readonly createdAt: Date;
   readonly position: bigint;
 }
@@ -91,25 +93,43 @@ export const caseKinds: Record<
     readonly separateStatements: boolean;
     /** Handled by the platform stewards, not an environment's administrators. */
     readonly platform: boolean;
+    /**
+     * Closed with a closing message to the parties (PS-COM-020,
+     * `app.case_closes_with_message`).
+     */
+    readonly closingMessage: boolean;
   }
 > = {
   environment_contact: {
     turns: false,
     separateStatements: false,
     platform: false,
+    closingMessage: false,
   },
-  loan_mediation: { turns: true, separateStatements: true, platform: false },
+  loan_mediation: {
+    turns: true,
+    separateStatements: true,
+    platform: false,
+    closingMessage: true,
+  },
   unavailability_report: {
     turns: true,
     separateStatements: false,
     platform: true,
+    closingMessage: false,
   },
   environment_report: {
     turns: true,
     separateStatements: false,
     platform: false,
+    closingMessage: true,
   },
-  platform_report: { turns: true, separateStatements: false, platform: true },
+  platform_report: {
+    turns: true,
+    separateStatements: false,
+    platform: true,
+    closingMessage: true,
+  },
 };
 
 /** The kinds the platform stewards handle (`app.case_platform_kind`). */

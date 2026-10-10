@@ -1,5 +1,8 @@
 import { closeCase } from "@lanbort/domain";
-import { userPathCommandRoute } from "@/server/http/command-route";
+import { userCommandRoute } from "@/server/http/command-route";
 
-/** A handler closes the case; it decides nothing about the loan or account. */
-export const POST = userPathCommandRoute(closeCase);
+/**
+ * `{ body? }`: a handler closes the case, a report or mediation with its
+ * closing message (PS-COM-020); it decides nothing about the loan or account.
+ */
+export const POST = userCommandRoute(closeCase);

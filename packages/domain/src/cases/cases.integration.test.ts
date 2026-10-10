@@ -488,6 +488,9 @@ describe("what is written in a case (PS-COM-013–014)", () => {
       write(requester, caseId, "Hei", { audience: "handlers" }),
     ).rejects.toMatchObject({ code: "invalid_input" });
 
+    await expect(
+      run(closeCase, admin, { caseId, body: "Ferdig" }),
+    ).rejects.toMatchObject({ code: "invalid_input", fields: ["body"] });
     await run(closeCase, admin, { caseId });
     await expect(write(requester, caseId, "Hallo?")).rejects.toMatchObject(
       conflict,
@@ -595,8 +598,25 @@ describe("mediation of a loan through an environment (PS-COM-012, vision 05)", (
     });
     expect((await read(admin, caseId)).loanTitle).toBe(loan.agreement.title);
 
+    // A mediation is closed with a closing message to both parties, its
+    // last entry (PS-COM-020); a contact has none.
+    await expect(run(closeCase, admin, { caseId })).rejects.toMatchObject({
+      code: "invalid_input",
+      fields: ["body"],
+    });
+    await run(closeCase, admin, {
+      caseId,
+      body: "Saken er avsluttet. Partene ble ikke enige.",
+    });
+    for (const party of [owner, borrower]) {
+      expect((await read(party, caseId)).entries.at(-1)).toMatchObject({
+        body: "Saken er avsluttet. Partene ble ikke enige.",
+        closing: true,
+        authorUserId: null,
+      });
+    }
+
     // Closing the mediation decides nothing about the loan.
-    await run(closeCase, admin, { caseId });
     expect(
       (
         await executeQuery(tick(), readLoan, {

@@ -81,6 +81,12 @@ function Entry({
           {formatShortTime(entry.createdAt)}
         </time>
       </div>
+      {entry.closing && (
+        <p className={styles.aside}>
+          <Icon name="check" />
+          Avslutningsmelding
+        </p>
+      )}
       {entry.correctsEntryId && (
         <p className={styles.aside}>
           <Icon name="edit" />

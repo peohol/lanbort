@@ -151,6 +151,21 @@ test("a report reaches the administrators, and never the person it is about", as
   await expect(eva.getByText("Send videre til Lånbort")).toBeVisible();
   await expect(eva.getByRole("button", { name: /Lånbort/ })).toHaveCount(0);
 
+  // A report is closed with a closing message to the reporter (PS-COM-020).
+  await eva.getByRole("button", { name: "Ta saken" }).click();
+  await expect(statusCard(eva)).toContainText("Du har saken");
+  await eva.getByRole("button", { name: "Lukk saken" }).click();
+  const sheet = eva.getByRole("dialog");
+  await sheet
+    .getByLabel("Avslutningsmelding til partene")
+    .fill("Takk for rapporten. Saken er vurdert og avsluttet.");
+  await sheet.getByRole("button", { name: "Lukk saken" }).click();
+  await expect(statusCard(eva)).toContainText("Saken er lukket");
+  await ola.goto(caseUrl);
+  await expect(
+    entry(ola, "Takk for rapporten. Saken er vurdert og avsluttet."),
+  ).toContainText("Avslutningsmelding");
+
   expect((await kim.goto(caseUrl))?.status()).toBe(404);
   await kim.goto("/saker");
   await expect(kim.getByText(/Du har ingen saker\./)).toBeVisible();

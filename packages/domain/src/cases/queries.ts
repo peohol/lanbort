@@ -212,6 +212,7 @@ export const readCase = defineQuery({
             sentAt: copy.sentAt.toISOString(),
           })),
           correctsEntryId: entry.correctsEntryId,
+          closing: entry.closing,
           createdAt: entry.createdAt.toISOString(),
         })),
       history: asParty

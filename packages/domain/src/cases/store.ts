@@ -186,6 +186,7 @@ export async function loadEntries(
       "audience_user_id",
       "body",
       "corrects_entry_id",
+      "closing",
       "created_at",
       "position",
     ])
@@ -207,6 +208,7 @@ export async function loadEntries(
     body: row.body,
     privateMessages: copies.get(row.id) ?? [],
     correctsEntryId: row.corrects_entry_id,
+    closing: row.closing,
     createdAt: row.created_at,
     position: BigInt(row.position),
   }));
@@ -396,6 +398,8 @@ export async function insertEntry(
     readonly audienceUserId: string | null;
     readonly body: string;
     readonly correctsEntryId: string | null;
+    /** The closing message (PS-COM-020). */
+    readonly closing?: boolean;
     readonly now: Date;
   },
 ): Promise<string> {
@@ -409,6 +413,7 @@ export async function insertEntry(
       audience_user_id: values.audienceUserId,
       body: values.body,
       corrects_entry_id: values.correctsEntryId,
+      closing: values.closing ?? false,
       created_at: values.now,
     })
     .returning("id")

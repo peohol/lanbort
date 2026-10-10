@@ -8,6 +8,7 @@ import {
   type PartyStatement,
   privateMessagesPerCaseLimit,
   caseReferenceSchema,
+  closeCaseSchema,
   openCaseRoundSchema,
   openEnvironmentContactSchema,
   openLoanMediationSchema,
@@ -941,14 +942,41 @@ export const shareCaseStatements = handlerCommand(
 /**
  * The handler closes the case. It decides nothing about the loan or the
  * account it concerns: a mediator is not a judge (vision 06), and a report
- * changes nothing by itself (PS-COM-015).
+ * changes nothing by itself (PS-COM-015). A report or a mediation is closed
+ * with a short closing message to its parties, its last entry
+ * (PS-COM-020); the parties learn of it from the notice that the case is
+ * closed, not from one of their own.
  */
 export const closeCase = handlerCommand(
   "case.close",
-  caseReferenceSchema,
+  closeCaseSchema,
   closeCasePolicy,
-  async ({ tx, c, userId, events, now }) => {
+  async ({ tx, c, userId, input, events, now }) => {
     requireActing(c, userId);
+
+    if (caseKinds[c.kind].closingMessage !== (input.body !== undefined)) {
+      invalid(
+        "body",
+        caseKinds[c.kind].closingMessage
+          ? "A report or mediation is closed with a closing message"
+          : "Only a report or mediation has a closing message",
+      );
+    }
+
+    if (input.body !== undefined) {
+      await insertEntry(tx, {
+        caseId: c.id,
+        authorUserId: userId,
+        capacity: "handler",
+        audience: "parties",
+        audienceUserId: null,
+        body: input.body,
+        correctsEntryId: null,
+        closing: true,
+        now,
+      });
+    }
+
     await recordAction(tx, {
       caseId: c.id,
       kind: "closed",

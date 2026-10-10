@@ -14,6 +14,7 @@ import { casesHref } from "@/navigation/routes";
 import { describeAction, measureLabels, personIn } from "@/presentation/cases";
 import { formatShortTime } from "@/presentation/dates";
 import styles from "../cases.module.css";
+import { CloseWithMessage } from "./close-case";
 import { MeasureForm } from "./measure-form";
 
 const casePath = (c: Case, action: string) => `/api/cases/${c.id}/${action}`;
@@ -72,22 +73,33 @@ export function CloseCase({
   primary?: boolean;
 }) {
   const parties = partiesOf(c);
+  const consequences = {
+    gone: [`${parties} kan ikke skrive mer i saken.`],
+    stays: [
+      "Alt som er skrevet, blir stående.",
+      c.kind === "loan_mediation"
+        ? "Lukkingen avgjør ingenting om lånet eller kontoene. Lånet går videre etter det partene selv registrerer."
+        : "Lukkingen avgjør ingenting om kontoene.",
+    ],
+    affects: [`${parties} får beskjed om at saken er lukket.`],
+  };
+
+  if (caseKinds[c.kind].closingMessage) {
+    return (
+      <CloseWithMessage
+        caseId={c.id}
+        consequences={consequences}
+        primary={primary}
+      />
+    );
+  }
 
   return (
     <ConfirmAction
       primary={primary}
       label="Lukk saken"
       title="Lukke saken?"
-      consequences={{
-        gone: [`${parties} kan ikke skrive mer i saken.`],
-        stays: [
-          "Alt som er skrevet, blir stående.",
-          c.kind === "loan_mediation"
-            ? "Lukkingen avgjør ingenting om lånet eller kontoene. Lånet går videre etter det partene selv registrerer."
-            : "Lukkingen avgjør ingenting om kontoene.",
-        ],
-        affects: [`${parties} får beskjed om at saken er lukket.`],
-      }}
+      consequences={consequences}
       confirmLabel="Lukk saken"
       path={casePath(c, "close")}
       body={{}}

@@ -227,7 +227,10 @@ describe("reports in an environment (PS-TRUST-013, PS-OBJ-017)", () => {
     ]);
 
     // A closed report takes no more measures.
-    await run(closeCase, admin, { caseId: opened.caseId });
+    await run(closeCase, admin, {
+      caseId: opened.caseId,
+      body: "Saken er avsluttet.",
+    });
     await expect(
       measure(admin, opened.caseId, "publication_rejected"),
     ).rejects.toMatchObject(conflict);

@@ -188,6 +188,15 @@ export const caseEntryResultSchema = z.strictObject({
 
 export const caseReferenceSchema = z.strictObject({ caseId: caseIdSchema });
 
+/**
+ * Closing a case; a report or a mediation is closed with a short closing
+ * message to its parties, which becomes its last entry (PS-COM-020).
+ */
+export const closeCaseSchema = z.strictObject({
+  caseId: caseIdSchema,
+  body: caseEntryBodySchema.optional(),
+});
+
 /** The responsible handler hands the case to another handler. */
 export const transferCaseSchema = z.strictObject({
   caseId: caseIdSchema,
@@ -221,6 +230,8 @@ export const caseEntrySchema = z.strictObject({
   /** Private messages the participant who wrote it submitted, by time sent. */
   privateMessages: z.array(privateMessageCopySchema),
   correctsEntryId: caseEntryIdSchema.nullable(),
+  /** The closing message the case was closed with (PS-COM-020). */
+  closing: z.boolean(),
   createdAt: z.iso.datetime(),
 });
 
@@ -372,6 +383,7 @@ export type PartyStatement = {
   readonly privateMessages?: readonly PrivateMessageCopy[] | undefined;
 };
 export type WriteCaseEntry = z.infer<typeof writeCaseEntrySchema>;
+export type CloseCase = z.infer<typeof closeCaseSchema>;
 export type CaseOpenedResult = z.infer<typeof caseOpenedResultSchema>;
 export type CaseEntryResult = z.infer<typeof caseEntryResultSchema>;
 export type CaseActionResult = z.infer<typeof caseActionResultSchema>;

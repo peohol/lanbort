@@ -24,6 +24,7 @@ const entry = (
   body: "Forklaring",
   privateMessages: [],
   correctsEntryId: null,
+  closing: false,
   createdAt: new Date("2026-10-20T12:00:00Z"),
   position: BigInt(position),
   ...overrides,
