@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { accountStateHref } from "@/navigation/routes";
+import { emailAddressForms } from "@/presentation/email-address";
 import { serverEnv } from "@/server/env";
 import { requirePageAccount } from "@/server/session";
 
@@ -20,9 +21,10 @@ const days = (ms: number) => Math.round(ms / (24 * 60 * 60 * 1000));
 export default async function PrivacyPage() {
   await requirePageAccount();
   const { OPERATOR_NAME: operator, CONTACT_EMAIL: contact } = serverEnv();
-  const write = contact ? (
+  const email = contact && emailAddressForms(contact);
+  const write = email ? (
     <>
-      skriv til <a href={`mailto:${contact}`}>{contact}</a>
+      skriv til <a href={email.href}>{email.shown}</a>
     </>
   ) : (
     "si fra til den som inviterte deg til piloten"
