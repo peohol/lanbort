@@ -3,11 +3,12 @@ import Link from "next/link";
 import { CommandForm } from "@/components/command-form";
 import { EmptyState } from "@/components/empty-state";
 import { describedBy, Field } from "@/components/field";
+import { questionsAnchor } from "@/navigation/routes";
 import { formatTime } from "@/presentation/dates";
 import type { ChatContactLink } from "@/server/chat-contact";
 
 /** The element id of the questions, for links back to them. */
-export const questionsId = "sporsmal";
+export const questionsId = questionsAnchor;
 
 /** Who wrote a post, as members of the environment see it (PS-OBJ-015). */
 function author(post: ObjectQuestion["posts"][number], userId: string): string {

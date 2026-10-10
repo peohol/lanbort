@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  objectQuestionsHref,
   notificationLinkHref,
   personHref,
   personRoleHref,
@@ -53,5 +54,11 @@ describe("person addresses", () => {
     expect(personRoleHref("abc", "borrower")).toBe(
       "/personer/abc/som-laantaker",
     );
+  });
+});
+
+describe("question addresses", () => {
+  it("lead to the thing in the environment it was asked in, at its questions", () => {
+    expect(objectQuestionsHref("o1", "e1")).toBe("/ting/o1?miljo=e1#sporsmal");
   });
 });

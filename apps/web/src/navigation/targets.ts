@@ -8,6 +8,7 @@ import {
   environmentHref,
   loanHref,
   loanRequestHref,
+  objectQuestionHref,
   personHref,
 } from "./routes";
 
@@ -37,7 +38,10 @@ const targetPages: Record<NotificationTargetType, Place | null> = {
   user: { href: personHref, anchor: (id) => `person-${id}` },
   environment: { href: environmentHref, anchor: (id) => `miljo-${id}` },
   case: { href: caseHref, anchor: (id) => `sak-${id}` },
-  object_question: null,
+  object_question: {
+    href: objectQuestionHref,
+    anchor: (id) => `sporsmal-${id}`,
+  },
   object_subscription: null,
   chat_device: entryOn(chatDevicesHref, (id) => `enhet-${id}`),
   chat_conversation: {

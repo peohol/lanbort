@@ -42,6 +42,21 @@ export const newObjectHref = (environmentId?: string) =>
 
 export const editObjectHref = (id: string) => `/ting/${id}/rediger`;
 
+/** The element id of a thing's questions and answers on its page. */
+export const questionsAnchor = "sporsmal";
+
+/**
+ * Where a question about a thing is read and answered (PS-OBJ-015): the
+ * thing in the environment it was asked in, at its questions. An owner
+ * sees their own view there, with the questions from every environment.
+ */
+export const objectQuestionsHref = (objectId: string, environmentId: string) =>
+  `${objectHref(objectId, { kind: "environment", environmentId })}#${questionsAnchor}`;
+
+/** One question, for a notification that names only the question. */
+export const objectQuestionHref = (questionId: string) =>
+  `/ting/sporsmal/${questionId}`;
+
 /** Ask to borrow a thing through `origin` (UX-JRN-004). */
 export const requestObjectHref = (id: string, origin: ObjectOrigin) =>
   `/ting/${id}/lan${originQuery(origin)}`;
