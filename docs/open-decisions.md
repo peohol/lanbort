@@ -354,4 +354,4 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0020 — Hvem kan stenge lånelogistikk-kanalen tidlig
 - **Lag:** Produktspesifikasjon
 - **Status:** Avklart (produkteier, 6. oktober 2026)
-- **Beslutning:** Se [PS-COM-007](product-spec/05-kommunikasjon-varsler-og-saker.md). Ingen part kan stenge samtalen mens lånet pågår; partene kan dempe eller arkivere den. Demping og arkivering er ikke bygget ennå (WP-44).
+- **Beslutning:** Se [PS-COM-007](product-spec/05-kommunikasjon-varsler-og-saker.md). Ingen part kan stenge samtalen mens lånet pågår; partene kan dempe eller arkivere den. Bygget: demping og arkivering virker for lånelogistikk som for andre samtaler, og databasen tillater ingen tidlig stenging (WP-44).
