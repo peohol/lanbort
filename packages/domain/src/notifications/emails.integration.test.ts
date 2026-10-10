@@ -9,13 +9,13 @@ import { leaveEnvironment } from "../environment/membership-commands";
 import { cancelLoan } from "../loans/cancellation";
 import { ConsumerRegistry, defineConsumer } from "../outbox/consumer";
 import { askObjectQuestion } from "../questions/commands";
-import { processOutboxBatch } from "../outbox/worker";
 import { sendFriendRequest } from "../social/commands";
 import {
   subscribeToObject,
   unsubscribeFromObject,
 } from "../subscriptions/commands";
 import { connectTestDatabase } from "../testing/database";
+import { deliverAll } from "../testing/outbox";
 import { loanTestKit } from "../testing/loans";
 import { commitWhileRacing, endMembership } from "../testing/races";
 import { markNotificationsRead, setNotificationPreference } from "./commands";
@@ -49,7 +49,7 @@ const { run, user, reservedLoan } = kit;
 const appUrl = "https://lanbort.example";
 
 async function deliverEvents() {
-  while ((await processOutboxBatch(db, consumers, { batchSize: 100 })).claimed);
+  await deliverAll(db, consumers);
 }
 
 /** Runs the e-mail job until nothing is due. */
