@@ -170,14 +170,13 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Anbefaling:** Supabases daglige backup, pluss en egen daglig backup av databasen og alle filene i et privat GitHub-repo med 7 dagers historikk, og en månedlig gjenopprettingsøvelse til et isolert miljø. RPO ≤ 24 timer, RTO ≤ 8 timer. Point-in-Time Recovery og gjenoppretting til et nytt Supabase-prosjekt koster ekstra og velges bort. Se [backup og gjenoppretting](implementation/backup-restore.md#strategi-for-piloten).
 - **Avklares før:** appen åpnes for et eksternt testpanel (Port D).
 
+## Avklart
+
 ### OD-0023 — Registrering og recovery for plattformforvalteres WebAuthn
 - **Lag:** Tverrgående
-- **Status:** Åpen
+- **Status:** Avklart (10. oktober 2026, etter produkteierens oppdrag om å avklare den etter utredningen)
 - **Berører:** PS-USR-008, [ADR-0011](architecture/decisions/ADR-0011-webauthn-for-plattformforvaltere.md), WP-12
-- **Spørsmål:** Hvordan registrerer en plattformforvalter passkeys eller sikkerhetsnøkler, hvor mange må være registrert før rollen virker, og hvordan gjenopprettes tilgang når én eller alle går tapt? [Utredningen](architecture/utredninger/OD-0010-privilegert-autentisering.md#anbefalt-modell-i-detalj) anbefaler minst to autentikatorer, en engangs registreringskode som overleveres utenom e-post, og en revisjonslogget driftsvei ved tap av alle.
-- **Avklares før:** WebAuthn-mekanismen bygges (WP-12), og dermed før privilegerte plattformforvalterhandlinger tas i bruk (Port D). Til da er de avvist.
-
-## Avklart
+- **Beslutning:** Se [ADR-0011, «Registrering og recovery»](architecture/decisions/ADR-0011-webauthn-for-plattformforvaltere.md#registrering-og-recovery-od-0023). Utredningens modell, uten vesentlige endringer: minst to passkeys før rollen virker; den første med en engangs registreringskode fra driftskommandoen, overlevert utenom e-post; flere bare fra en sesjon som nettopp er bekreftet med en passkey; den siste kan ikke fjernes; tap av alle løses med en revisjonslogget tilbakestilling i driftskommandoen og en ny kode. Ingen gjenopprettingskoder og ingen e-postvei. Bygget, men slått av i produksjon (`PLATFORM_STEWARDS_ENABLED`).
 
 ### OD-0050 — Varsel til søkeren når en søknad er avgjort
 - **Lag:** Produktspesifikasjon
@@ -332,7 +331,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0010 — Mekanisme for privilegert autentisering
 - **Lag:** Tverrgående
 - **Status:** Avklart (produkteier, 6. oktober 2026)
-- **Beslutning:** Se [ADR-0011](architecture/decisions/ADR-0011-webauthn-for-plattformforvaltere.md). Passkey/WebAuthn som ekstra sterk bekreftelse, bare for plattformforvaltere; fysisk sikkerhetsnøkkel støttes, men kreves ikke. Registrering og recovery er åpne i OD-0023. Ikke bygget ennå (WP-12).
+- **Beslutning:** Se [ADR-0011](architecture/decisions/ADR-0011-webauthn-for-plattformforvaltere.md). Passkey/WebAuthn som ekstra sterk bekreftelse, bare for plattformforvaltere; fysisk sikkerhetsnøkkel støttes, men kreves ikke. Registrering og recovery er avklart i OD-0023. Bygget, men slått av i produksjon til den er verifisert der (WP-12).
 
 ### OD-0012 — Avstemningsfrist ved skjult → lukket
 - **Lag:** Produktspesifikasjon

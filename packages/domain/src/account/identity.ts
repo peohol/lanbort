@@ -9,6 +9,7 @@ import {
 import type { DomainContext } from "../commands/command";
 import { EventRecorder, writeEvents } from "../events/recorder";
 import { sql } from "kysely";
+import { stewardAuthentication } from "../platform/passkeys";
 import { accountCreated } from "./events";
 
 /**
@@ -34,34 +35,15 @@ function isPlatformRole(role: string): role is PlatformRole {
   return (platformRoles as readonly string[]).includes(role);
 }
 
-/**
- * Sign-in methods Lånbort accepts as the stronger authentication that
- * privileged roles require (`aal2`). The mechanism is not decided (OD-0010),
- * so none is accepted yet: privileged access stays closed whatever the auth
- * provider reports, until a decided mechanism is added here together with an
- * audited way to set it up.
- */
-const strongAuthenticationMethods: readonly string[] = [];
-
-/** The provider's assurance, counted only with an accepted stronger method. */
-function trustedAuthentication(
+function toActor(
+  row: UserRow,
   authentication: AuthenticationContext,
-): AuthenticationContext {
-  const strong = authentication.methods.some(({ method }) =>
-    strongAuthenticationMethods.includes(method),
-  );
-
-  return authentication.assurance === "aal2" && !strong
-    ? { ...authentication, assurance: "aal1" }
-    : authentication;
-}
-
-function toActor(row: UserRow, identity: AuthenticatedIdentity): UserActor {
+): UserActor {
   return {
     kind: "user",
     userId: row.id,
     accountStatus: row.status as AccountStatus,
-    authentication: trustedAuthentication(identity.authentication),
+    authentication,
     platformRoles: row.platform_roles.filter(isPlatformRole),
   };
 }
@@ -116,7 +98,21 @@ export async function resolveUserActor(
       correlationId,
     ));
 
-  return row.status === "deleted" ? null : toActor(row, identity);
+  if (row.status === "deleted") {
+    return null;
+  }
+
+  // ADR-0011: only a fresh passkey confirmation in this session makes it
+  // stronger, never what the provider reports.
+  const authentication = await stewardAuthentication(domain.db, {
+    userId: row.id,
+    authentication: identity.authentication,
+    holdsPlatformRole: row.platform_roles.length > 0,
+    enabled: domain.platformStewards === true,
+    now: domain.clock?.() ?? new Date(),
+  });
+
+  return toActor(row, authentication);
 }
 
 /** First sight of a verified identity: a new internal account. */
@@ -183,7 +179,10 @@ async function createLinkedUser(
       .execute();
 
     const created = { ...user, platform_roles: [] };
-    const actor = toActor(created, identity);
+    const actor = toActor(created, {
+      ...identity.authentication,
+      assurance: "aal1",
+    });
     const events = new EventRecorder();
     events.record(accountCreated, { resourceId: user.id, payload: {} });
     await writeEvents(tx, events, {

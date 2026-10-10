@@ -8,6 +8,7 @@ import { AuthProviderError } from "./errors";
 import { toIdentity, type VerifiedIdentity } from "./identity";
 
 export * from "./errors";
+export * from "./passkeys";
 export type { AuthenticationMethod, VerifiedIdentity } from "./identity";
 
 /**

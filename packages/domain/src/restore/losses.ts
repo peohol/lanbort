@@ -57,7 +57,12 @@ import {
   objectReverted,
   objectUpdated,
 } from "../objects/events";
-import { platformRoleGranted } from "../platform/events";
+import {
+  platformRoleGranted,
+  stewardEnrollmentCodeIssued,
+  stewardPasskeyAdded,
+  stewardPasskeyConfirmed,
+} from "../platform/events";
 import {
   environmentObjectApprovalChanged,
   friendPublicationCreated,
@@ -107,6 +112,11 @@ export const restoreLosses: readonly EventDefinition<unknown>[] = [
   // is an internal record; stopping the account is its own lifecycle event.
   accountCreated,
   registrationCompleted,
+  // A steward's passkeys and codes: a lost one is added or issued again;
+  // removals are replayed, so a lost passkey never counts again.
+  stewardPasskeyAdded,
+  stewardPasskeyConfirmed,
+  stewardEnrollmentCodeIssued,
   accountReactivated,
   accountRetiredAsDuplicate,
   accountsLinkedAsSamePerson,

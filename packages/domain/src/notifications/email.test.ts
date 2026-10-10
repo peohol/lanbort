@@ -47,6 +47,7 @@ describe("notification e-mails (WP-41)", () => {
     for (const kind of [
       "chat.account_key_reset",
       "chat.device_linked",
+      "steward.passkeys_changed",
     ] as const) {
       const email = composeNotificationEmail({
         kind,

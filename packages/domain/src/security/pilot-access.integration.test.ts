@@ -1287,11 +1287,12 @@ describe("representatives while OD-0003 is open (PS-ADM-007–008)", () => {
   });
 });
 
-describe("privileged platform access stays closed (OD-0010)", () => {
+describe("privileged platform access stays closed without the steward's passkeys (ADR-0011)", () => {
   /**
-   * Whatever stronger sign-in the identity provider reports, none is a
-   * decided mechanism yet, so the session never counts as stronger
-   * authentication (docs/architecture/04, «Sesjonssikkerhet»).
+   * Whatever stronger sign-in the identity provider reports, only a fresh
+   * confirmation with the steward's own passkeys counts as stronger
+   * authentication (docs/architecture/04, «Sesjonssikkerhet»), so these
+   * sessions never do.
    */
   const reportedMethods = [
     ["totp"],
@@ -1332,6 +1333,12 @@ describe("privileged platform access stays closed (OD-0010)", () => {
     }))!;
   }
 
+  /**
+   * What a steward reaches before confirming: the way to stronger access
+   * itself, which shows only the steward's own passkeys (OD-0023).
+   */
+  const towardsStrongerAccess = ["steward_passkey.list_own"];
+
   /** Operations whose actor rules let `actor` through only for their roles. */
   function openedByRole(actor: UserActor) {
     const passes = (who: UserActor, { definition }: Operation) =>
@@ -1343,7 +1350,10 @@ describe("privileged platform access stays closed (OD-0010)", () => {
 
     return allOperations
       .filter(
-        (operation) => passes(actor, operation) && !passes(ordinary, operation),
+        (operation) =>
+          passes(actor, operation) &&
+          !passes(ordinary, operation) &&
+          !towardsStrongerAccess.includes(operation.name),
       )
       .map(({ name }) => name);
   }

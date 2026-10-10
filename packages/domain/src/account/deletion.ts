@@ -33,7 +33,7 @@ import { deleteObject } from "../objects/deletion";
 import { loadObjectState } from "../objects/state";
 import { defineConsumer, OutboxDeliveryError } from "../outbox/consumer";
 import { profilePictureDeletionStep } from "../people/pictures";
-import { platformRoleRevoked } from "../platform/events";
+import { platformRoleRevoked, stewardPasskeyRemoved } from "../platform/events";
 import { chatAccountDeletionStep } from "../chat/maintenance";
 import { reviewRightsStep } from "../reviews/account-deletion";
 import { friendshipEndedByAccountDeletion } from "../social/events";
@@ -213,7 +213,7 @@ const coOwnerInvitationsStep: AccountDeletionStep = {
   },
 };
 
-/** Global roles end with the account (PS-USR-008). */
+/** Global roles, and a steward's passkeys, end with the account (PS-USR-008). */
 const platformRolesStep: AccountDeletionStep = {
   name: "platform_roles",
   run: async (db, userId, now, events) => {
@@ -235,6 +235,30 @@ const platformRolesStep: AccountDeletionStep = {
         payload: { role: role as PlatformRole },
       });
     }
+
+    // A steward's passkeys and any open code end with the role (OD-0023).
+    const removed = await db
+      .updateTable("app.steward_passkeys")
+      .set({ removed_at: now, removed_by_process: accountLifecycleProcess })
+      .where("user_id", "=", userId)
+      .where("removed_at", "is", null)
+      .returning("id")
+      .execute();
+
+    for (const { id } of removed) {
+      events.record(stewardPasskeyRemoved, {
+        resourceId: userId,
+        payload: { passkeyId: id },
+      });
+    }
+
+    await db
+      .updateTable("app.steward_enrollment_codes")
+      .set({ voided_at: now })
+      .where("user_id", "=", userId)
+      .where("used_at", "is", null)
+      .where("voided_at", "is", null)
+      .execute();
   },
 };
 

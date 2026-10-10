@@ -164,6 +164,13 @@ const refinements: Partial<
     detail:
       "Enheten kan motta nye meldinger fra nå av. Den får ikke tidligere meldinger automatisk. Var det ikke deg, fjern den i Mine enheter.",
   }),
+  "steward.passkeys_changed": (detail) => ({
+    title:
+      stewardPasskeyChanges[detail ?? ""] ??
+      notificationEmailSubjects["steward.passkeys_changed"],
+    detail:
+      "Var det ikke deg eller avtalt med deg, si fra til de andre plattformforvalterne med en gang.",
+  }),
   "loan.handover_reported": (detail) =>
     detail === "not_handed_over"
       ? "Den andre parten sier at overleveringen ikke skjedde"
@@ -188,6 +195,14 @@ function newMessages(detail: string | null): string {
 
   return count === 1 ? "Ny melding" : `${count} nye meldinger`;
 }
+
+const stewardPasskeyChanges: Record<string, string> = {
+  added: "En ny passkey er lagt til plattformforvaltningen din",
+  removed: "En passkey er fjernet fra plattformforvaltningen din",
+  enrollment_code:
+    "Det er laget en registreringskode for plattformforvaltningen din",
+  reset: "Passkeyene for plattformforvaltningen din er tilbakestilt",
+};
 
 const returnTexts: Record<string, string> = {
   returned: "Låntakeren sier at objektet er levert tilbake",
@@ -285,6 +300,7 @@ const contexts: Record<
   chat_device: { label: "Konto", icon: "lock" },
   chat_conversation: { label: "Samtaler", icon: "conversations" },
   moderation_measure: { label: "Tiltak", icon: "block" },
+  steward_access: { label: "Forvaltning", icon: "lock" },
 };
 
 /** The context a notification belongs to: an environment by its name. */

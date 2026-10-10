@@ -26,7 +26,8 @@
     "env:local": "scripts/dev/write-local-env.sh",
     "ops:platform-role": "pnpm --filter @lanbort/ops --silent platform-role",
     "ops:restore": "pnpm --filter @lanbort/ops --silent restore",
-    "ops:storage": "pnpm --filter @lanbort/ops --silent storage"
+    "ops:storage": "pnpm --filter @lanbort/ops --silent storage",
+    "ops:steward-passkeys": "pnpm --filter @lanbort/ops --silent steward-passkeys"
   },
   "devDependencies": {
     "@types/node": "24.19.0",

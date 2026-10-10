@@ -15,13 +15,24 @@ Plattformforvaltere bekrefter privilegerte handlinger med **passkey/WebAuthn** s
 
 En e-postinnlogget sesjon alene skal aldri kunne registrere en ny autentikator, og det finnes ingen vei der en e-postkode, en supporthenvendelse eller en kode på papir alene gir forvaltertilgang.
 
-## Hva som ikke er besluttet her
+## Registrering og recovery (OD-0023)
 
-Hvordan forvaltere registrerer autentikatorer, hvor mange de må ha før rollen virker, og hvordan tilgang gjenopprettes når de går tapt, er ikke besluttet. Det er åpent som [OD-0023](../../open-decisions.md#od-0023--registrering-og-recovery-for-plattformforvalteres-webauthn). Utredningens modell (minst to autentikatorer, engangs registreringskode og en revisjonslogget driftsvei ved tap av alle) er teknisk anbefaling og utgangspunkt, ikke bindende krav.
+Avklart 10. oktober 2026 etter [utredningens modell](../utredninger/OD-0010-privilegert-autentisering.md#anbefalt-modell-i-detalj), uten vesentlige endringer.
 
-## Hva som ikke endres før mekanismen er bygget
+- **Antall.** Forvalterrollen gir sterkere tilgang først når forvalteren har minst **to** aktive passkeys (høyst ti). Faller de under to, er privilegerte handlinger stengt til en ny er lagt til.
+- **Første passkey** legges til med en **engangs registreringskode** fra driftskommandoen `pnpm ops:steward-passkeys enroll`. Koden gjelder én passkey, for én konto, i 60 minutter, og bare hashen lagres. Den overleveres utenom e-post (ansikt til ansikt eller i en telefonsamtale der operatøren kjenner forvalteren). En ny kode ugyldiggjør en tidligere. Har forvalteren allerede en passkey, nektes koden; da brukes `reset`, så tapte passkeys aldri teller igjen.
+- **Flere passkeys** legges bare til fra en sesjon som er bekreftet med en av forvalterens passkeys de siste 10 minuttene. En e-postinnlogget sesjon alene kan aldri legge til en passkey.
+- **Bruk.** En bekreftelse er bundet til innloggingssesjonen og er fersk i 10 minutter. Privilegerte handlinger og lesing som forvalter krever en fersk bekreftelse. En gammel eller manglende bekreftelse gir `stronger_authentication_required`, ikke `reauthentication_required`, fordi det er passkeyen og ikke e-postkoden som må bekreftes på nytt.
+- **Tap av én.** Forvalteren bekrefter med en annen passkey, fjerner den tapte og legger til en ny. Den siste kan ikke fjernes.
+- **Tap av alle.** `pnpm ops:steward-passkeys reset` fjerner alle forvalterens passkeys på én gang, så åpne sesjoner mister sterkere tilgang straks, og lager en ny registreringskode. Rollen består, men virker ikke før to nye passkeys er lagt til. Utredningen åpnet også for at en annen forvalter gjør dette i appen; det venter, som utnevning i appen, på [OD-0021](../../open-decisions.md#od-0021--hvem-kan-utnevne-plattformforvaltere-i-appen).
+- **Revisjon og varsel.** Hver ny passkey, fjerning, bekreftelse og utstedt kode blir en revisjonshendelse i samme transaksjon som endringen, uten nøkkelmateriale, kode eller begrunnelse. Forvalteren får et påkrevd varsel, også på e-post, når en passkey legges til eller fjernes, og når en kode utstedes eller passkeys tilbakestilles. Varselet gir ingen tilgang.
+- **Ingen bakdører.** Ingen gjenopprettingskoder, ingen e-postvei og ingen supporthenvendelse gir forvaltertilgang. Den som kjører driftskommandoen, har allerede databasetilgang og står over forvaltermodellen; det er den ærlige tillitsgrensen, og den er ikke ny.
 
-Beslutningen er tatt, men mekanismen er ikke implementert. Til den er bygget og testet, gjelder dagens fail-closed-modell uendret: ingen sesjon godtas som sterkere, og privilegerte plattformforvalterhandlinger avvises. Implementeringen hører til WP-12 og må være ferdig før slike handlinger tas i reell bruk (Port D).
+**Mekanisme.** Supabase Auths WebAuthn-faktor er fortsatt ikke dokumentert for hostede prosjekter (MFA-veiledningen beskriver bare TOTP og telefon, 10. oktober 2026). Derfor brukes utredningens reserveløsning: serveren verifiserer WebAuthn selv med `@simplewebauthn/server` bak adapteren i `packages/auth`, lagrer bare offentlige nøkler i appens egne tabeller, og binder bekreftelsen til Supabase-sesjonens `session_id`. Relying party og tillatte origins kommer fra serverens konfigurasjon (`APP_URL`, eventuelt `WEBAUTHN_RP_ID`), aldri fra forespørselen. Brukerverifisering kreves, attestasjon ikke. `aal2` og metoder fra auth-leverandøren godtas aldri.
+
+## Aktivering i produksjon
+
+Mekanismen er bygget og testet automatisk, men står av i produksjon til den er verifisert der: uten `PLATFORM_STEWARDS_ENABLED=true` finnes passkey-rutene ikke, og ingen sesjon regnes som sterkere. Til da gjelder fail-closed-modellen uendret. Den må være verifisert før privilegerte handlinger tas i reell bruk (Port D).
 
 Produksjonsdomenet må være fast før forvaltere registrerer nøkler, fordi nøklene er bundet til domenet.
 
@@ -31,6 +42,6 @@ WebAuthn er det eneste av de vurderte alternativene som tåler phishing også n�
 
 ## Konsekvenser
 
-- WebAuthn holdes bak adapteren i `packages/auth`. Første valg er Supabase Auths egen WebAuthn-faktor; reserveløsningen er standard WebAuthn-verifisering på serveren, bundet til Supabase-sesjonen (se utredningen).
-- Domenet og policyene endres ikke: `platformStewardAccess` krever fortsatt `aal2`, og bare den valgte mekanismen legges til som sterkere metode.
+- WebAuthn holdes bak adapteren i `packages/auth`. Første valg var Supabase Auths egen WebAuthn-faktor; siden den ikke er dokumentert for hostede prosjekter, brukes reserveløsningen: standard WebAuthn-verifisering på serveren, bundet til Supabase-sesjonen (se over og utredningen).
+- Policyene endres ikke: `platformStewardAccess` krever fortsatt `aal2`, og bare en fersk passkey-bekreftelse gir det.
 - Hver registrering og fjerning av en autentikator revisjonslogges før en sterkere sesjon godtas, uten nøkkelmateriale.

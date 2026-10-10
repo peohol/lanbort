@@ -75,7 +75,7 @@ import {
   profilePictureVisibilityChanged,
 } from "../people/events";
 import { changeVisibility, removePicture } from "../people/pictures";
-import { platformRoleRevoked } from "../platform/events";
+import { platformRoleRevoked, stewardPasskeyRemoved } from "../platform/events";
 import {
   friendPublicationCreated,
   friendPublicationWithdrawn,
@@ -419,6 +419,31 @@ const platformRoleReplay: RestoreReplay = {
     }
 
     recordAgain(platformRoleRevoked, args);
+
+    return "applied";
+  },
+};
+
+/** OD-0023: a removed passkey stays removed, however it was lost. */
+const stewardPasskeyRemovalReplay: RestoreReplay = {
+  name: "steward_passkey_removal",
+  events: [stewardPasskeyRemoved],
+  replay: async (args) => {
+    const { tx, entry, now } = args;
+    const { passkeyId } = payloadOf(stewardPasskeyRemoved, entry);
+    const removed = await tx
+      .updateTable("app.steward_passkeys")
+      .set({ removed_at: now, removed_by_process: restoreProcess })
+      .where("id", "=", passkeyId)
+      .where("user_id", "=", entry.resourceId)
+      .where("removed_at", "is", null)
+      .executeTakeFirst();
+
+    if (removed.numUpdatedRows === 0n) {
+      return "unchanged";
+    }
+
+    recordAgain(stewardPasskeyRemoved, args);
 
     return "applied";
   },
@@ -1139,6 +1164,7 @@ export const restoreReplays: readonly RestoreReplay[] = [
   blockReplay,
   friendshipReplay,
   platformRoleReplay,
+  stewardPasskeyRemovalReplay,
   objectDeletionReplay,
   imageRemovalReplay,
   imageUploadReplay,

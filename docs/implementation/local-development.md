@@ -27,7 +27,7 @@ Innlogging bruker engangskode på e-post. Lokalt havner e-postene i Mailpit på 
 | Mappe | Ansvar |
 | --- | --- |
 | `apps/web` | Next.js-app med UI og Route Handlers som HTTP/API-grense |
-| `apps/ops` | Revisjonsloggede driftskommandoer: `pnpm ops:platform-role` og `pnpm ops:restore` |
+| `apps/ops` | Revisjonsloggede driftskommandoer: `pnpm ops:platform-role`, `pnpm ops:steward-passkeys` og `pnpm ops:restore` |
 | `packages/contracts` | Delte API-kontrakter (Zod). Inneholder aldri serverens autorisasjonslogikk |
 | `packages/database` | Kysely/Postgres-adapter og genererte databasetyper. Kun for serverkode |
 | `packages/domain` | Serverens domenekjerne: aktørmodell, policy-/autorisasjons-API, hendelser, transactional outbox, idempotente kommandoer, konto og plattformroller. Kun for serverkode |

@@ -34,7 +34,7 @@ Etabler én konsistent policyvei for ressurs-/kontekstbasert tilgang og en testm
 **Krav:** PS-USR-008, PS-USR-009  
 Plattformforvalterrolle, habilitetsgrunnlag og et mekanismenøytralt grunnlag for re-autentisering og sterkere privilegert autentisering. Mekanismen er besluttet i [ADR-0011](../architecture/decisions/ADR-0011-webauthn-for-plattformforvaltere.md): passkey/WebAuthn som andre faktor, bare for plattformforvaltere, der fysisk sikkerhetsnøkkel støttes, men ikke kreves. Til den er bygget, skal plattformforvaltertilgang avvises.
 
-**Status:** Grunnlaget er ferdig. Gjenstår: WebAuthn-mekanismen etter ADR-0011. Registrering, antall autentikatorer og recovery avgjøres i OD-0023 før den bygges; utredningens modell er anbefalt utgangspunkt. Den må være bygget før privilegerte plattformforvalterhandlinger tas i reell bruk (Port D).
+**Status:** Ferdig bygget, med WebAuthn etter ADR-0011 og OD-0023 (passkeys, registreringskode og tilbakestilling i `pnpm ops:steward-passkeys`). Står av i produksjon (`PLATFORM_STEWARDS_ENABLED`) til den er verifisert der, før privilegerte plattformforvalterhandlinger tas i reell bruk (Port D).
 
 ### WP-13 — Audit events og transactional outbox
 **Krav:** PS-DOM-006, PS-NFR-009; ADR-0004  

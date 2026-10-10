@@ -57,7 +57,7 @@ Leveranser:
 | --- | --- | --- |
 | WP-10 | Supabase Auth bak serveradapter, innlogging/registrering med engangskode på e-post, HttpOnly-sesjon, intern bruker/profil atskilt fra leverandøridentiteten, registrering med ekte navn og 18+ | Ferdig |
 | WP-11 | Policy-API (aktør + handling + ressurs + kontekst + tilstand), standardiserte avslag, felles Route Handler-grense med meta-test og lint, testmatrise med tillatte og avviste tilfeller for hver policy | Ferdig |
-| WP-12 | Plattformforvalterrolle fra egne tildelinger, revisjonslogget og idempotent driftskommando, mekanismenøytrale regler for sterkere autentisering (`aal2`), nylig innlogging og habilitet, og ny innlogging med e-postkode | Ferdig; WebAuthn for plattformforvaltere (ADR-0011) er besluttet, men ikke bygget |
+| WP-12 | Plattformforvalterrolle fra egne tildelinger, revisjonslogget og idempotent driftskommando, mekanismenøytrale regler for sterkere autentisering (`aal2`), nylig innlogging og habilitet, og ny innlogging med e-postkode | Ferdig; WebAuthn for plattformforvaltere (ADR-0011, OD-0023) er bygget, men står av i produksjon til den er verifisert der |
 | WP-13 | Append-only audit-hendelser, transactional outbox i samme transaksjon, idempotent worker med lease, retry og dead-letter | Ferdig |
 | WP-14 | Idempotente kommandoer: ingen dobbel utførelse, konsistent replay, trygt ved samtidige kall og ingen lekkasje mellom aktører | Ferdig |
 

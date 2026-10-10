@@ -989,6 +989,47 @@ export interface AppSearchObjectSources {
   object_id: string | null;
 }
 
+export interface AppStewardEnrollmentCodes {
+  code_hash: Buffer;
+  expires_at: Timestamp;
+  id: Generated<string>;
+  issued_at: Generated<Timestamp>;
+  issued_by_process: string;
+  reason: string;
+  used_at: Timestamp | null;
+  user_id: string;
+  voided_at: Timestamp | null;
+}
+
+export interface AppStewardPasskeyChallenges {
+  challenge: Buffer;
+  completed_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  enrollment_code_id: string | null;
+  expires_at: Timestamp;
+  id: Generated<string>;
+  passkey_id: string | null;
+  purpose: string;
+  session_id: string;
+  user_id: string;
+}
+
+export interface AppStewardPasskeys {
+  created_at: Generated<Timestamp>;
+  credential_id: Buffer;
+  enrolled_with: string;
+  id: Generated<string>;
+  last_used_at: Timestamp | null;
+  name: string;
+  public_key: Buffer;
+  removed_at: Timestamp | null;
+  removed_by_process: string | null;
+  removed_by_user_id: string | null;
+  sign_count: Generated<Int8>;
+  transports: Generated<string[]>;
+  user_id: string;
+}
+
 export interface AppUserBlocks {
   blocked_id: string;
   blocker_id: string;
@@ -1102,6 +1143,9 @@ export interface DB {
   "app.search_environments": AppSearchEnvironments;
   "app.search_object_sources": AppSearchObjectSources;
   "app.search_objects": AppSearchObjects;
+  "app.steward_enrollment_codes": AppStewardEnrollmentCodes;
+  "app.steward_passkey_challenges": AppStewardPasskeyChallenges;
+  "app.steward_passkeys": AppStewardPasskeys;
   "app.user_blocks": AppUserBlocks;
   "app.users": AppUsers;
   "app.verified_contacts": AppVerifiedContacts;

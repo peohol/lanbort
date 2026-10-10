@@ -228,13 +228,13 @@ describe("platform steward role (WP-12)", () => {
   });
 });
 
-describe("stronger authentication (WP-12, OD-0010)", () => {
+describe("stronger authentication (WP-12, ADR-0011)", () => {
   const handleCase = definePolicy({
     action: "test.platform_case.handle",
     actor: [...platformStewardAccess],
   });
 
-  it("is not accepted from the provider until a mechanism is decided", async () => {
+  it("is never taken from the provider, only from the steward's own passkeys", async () => {
     const { identity } = await registerTestUser(domain);
     await executeCommand(domain, grantPlatformRole, {
       actor: ops,
@@ -242,9 +242,10 @@ describe("stronger authentication (WP-12, OD-0010)", () => {
       idempotencyKey: randomUUID(),
     });
 
-    // Whatever the provider reports, e.g. an authenticator app, no session
-    // counts as stronger yet, so privileged access stays closed.
-    for (const method of ["totp", "webauthn", "phone"]) {
+    // Whatever the provider reports, e.g. an authenticator app or a method
+    // named like Lånbort's own, no session counts as stronger
+    // (passkeys.integration.test.ts covers the passkeys themselves).
+    for (const method of ["totp", "webauthn", "phone", "steward_passkey"]) {
       const steward = await resolveUserActor(domain, {
         ...identity,
         authentication: {
