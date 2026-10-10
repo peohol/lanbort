@@ -9,6 +9,7 @@ import {
   postCommand,
   registerThroughApi,
   signInThroughApi,
+  wayBack,
 } from "./helpers";
 
 /**
@@ -545,11 +546,10 @@ test("a loan's page leads to the parties' conversation, or offers to start it (K
         .getByRole("link")
         .first(),
     ).toContainText(title);
-    await expect(
-      bo.page
-        .getByRole("navigation", { name: "Du er her" })
-        .getByRole("link", { name: title }),
-    ).toHaveAttribute("href", `/lan/${id}`);
+    await expect(wayBack(bo.page).filter({ hasText: title })).toHaveAttribute(
+      "href",
+      `/lan/${id}`,
+    );
   }
   await anna.page.goto(`/lan/${loanId}`);
   await expect(

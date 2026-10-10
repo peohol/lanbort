@@ -128,17 +128,18 @@ export const today = () =>
     day: "2-digit",
   }).format(new Date());
 
+const json = async (response: Promise<APIResponse>) => (await response).json();
+
 /**
- * A loan agreed between two signed-in accounts, starting today: the lender
- * registers the object, the borrower asks, and the lender approves.
+ * A loan request between two signed-in accounts, starting today and ready
+ * to approve: the lender registers the object, the borrower asks, and the
+ * lender accepts the declaration.
  */
-export async function agreeLoan(
+export async function requestLoan(
   lender: APIRequestContext,
   borrower: APIRequestContext,
   title: string,
 ): Promise<string> {
-  const json = async (response: Promise<APIResponse>) =>
-    (await response).json();
   const { objectId } = await json(
     postCommand(lender, "/api/objects", {
       title,
@@ -166,11 +167,28 @@ export async function agreeLoan(
   await postCommand(lender, `/api/loan-requests/${requestId}/responsibility`, {
     declarationVersion: preview.responsibilityDeclarationVersion,
   });
+  return requestId;
+}
+
+/** A loan agreed between two signed-in accounts, starting today. */
+export async function agreeLoan(
+  lender: APIRequestContext,
+  borrower: APIRequestContext,
+  title: string,
+): Promise<string> {
+  const requestId = await requestLoan(lender, borrower, title);
   const { loanId } = await json(
     postCommand(lender, `/api/loan-requests/${requestId}/approve`),
   );
   return loanId;
 }
+
+/**
+ * The way back as the screen shows it (UX-IA-014): one link back on a
+ * phone, the breadcrumbs on a larger screen.
+ */
+export const wayBack = (page: Page) =>
+  page.locator(".place-bar").getByRole("link").filter({ visible: true });
 
 /** A word no other test uses, so the shared database cannot interfere. */
 export const uniqueWord = () =>

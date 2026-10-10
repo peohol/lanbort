@@ -2,17 +2,21 @@ import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "@playwright/test";
 import {
   axeViolations,
+  befriend,
   collectBrowserProblems,
   enterEmailCode,
   newEmail,
   postCommand,
   registerThroughApi,
+  requestLoan,
   uniqueWord,
 } from "./helpers";
 
 /**
  * Hard states in the browser: pages that are not there, a session that has
- * run out, and a command whose answer was lost after the server did it.
+ * run out, a command whose answer was lost after the server did it, a
+ * press made with no connection, and a page the other party changed while
+ * it was open.
  */
 
 /**
@@ -141,11 +145,9 @@ test("a thing whose registration answer was lost is registered once", async ({
   await page.getByRole("button", { name: "Lagre uten å publisere" }).click();
   await expect(alertOn(page)).toHaveText(lostAnswer);
 
-  // Back to the first step, a new name, and saved again.
-  await page
-    .getByRole("navigation", { name: "Steg" })
-    .getByRole("button", { name: "Om tingen" })
-    .click();
+  // Back to the first step from the review, which every screen size has,
+  // a new name, and saved again.
+  await page.getByRole("button", { name: "Endre om tingen" }).click();
   await page.getByLabel("Navn").fill(`Baufil ${word}`);
   for (let step = 0; step < 3; step += 1) {
     await page.getByRole("button", { name: "Videre" }).click();
@@ -158,4 +160,68 @@ test("a thing whose registration answer was lost is registered once", async ({
   await expect(page).toHaveURL("/mine-ting");
   await expect(page.getByText(`Sag ${word}`)).toBeVisible();
   await expect(page.getByText(`Baufil ${word}`)).toHaveCount(0);
+});
+
+test("a press made with no connection says so, keeps what was filled in, and is done once afterwards", async ({
+  page,
+  context,
+}) => {
+  await registerThroughApi(page.request);
+  const name = `Laget ${uniqueWord()}`;
+
+  await page.goto("/miljoer/ny");
+  await page.getByLabel("Navn").fill(name);
+  await page.getByLabel("Åpent miljø").check();
+  await context.setOffline(true);
+  await page.getByRole("button", { name: "Opprett miljøet" }).click();
+  await expect(alertOn(page)).toHaveText(lostAnswer);
+  await expect(page.getByLabel("Navn")).toHaveValue(name);
+
+  await context.setOffline(false);
+  await page.getByRole("button", { name: "Opprett miljøet" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
+  const environments = await (
+    await page.request.get("/api/environments")
+  ).json();
+  expect(environments).toMatchObject([{ name }]);
+});
+
+test("an approval of a request the borrower withdrew meanwhile says what changed, and shows what holds", async ({
+  page,
+  playwright,
+  baseURL,
+}) => {
+  const problems = collectBrowserProblems(page);
+  const anna = page.request;
+  await registerThroughApi(anna, undefined, "Anna Berg");
+  const bo = await playwright.request.newContext({
+    baseURL: baseURL!,
+    extraHTTPHeaders: { origin: baseURL! },
+  });
+  await registerThroughApi(bo, undefined, "Bo Dahl");
+  await befriend(anna, bo);
+  const title = `Stige ${uniqueWord()}`;
+  const requestId = await requestLoan(anna, bo, title);
+
+  await page.goto(`/lan/foresporsel/${requestId}`);
+  const approve = page.getByRole("button", { name: /^Godkjenn lån / });
+  const label = await approve.textContent();
+  await approve.click();
+  // Bo takes it back while Anna reads what approving means.
+  await postCommand(bo, `/api/loan-requests/${requestId}/withdraw`);
+  await page.getByRole("dialog").getByRole("button", { name: label! }).click();
+
+  await expect(alertOn(page)).toHaveText(/^Noe endret seg mens du så på siden/);
+  await expect(page.getByText("Låntakeren trakk forespørselen")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /^Godkjenn lån / }),
+  ).toHaveCount(0);
+  expect(
+    await (await anna.get(`/api/loan-requests/${requestId}`)).json(),
+  ).toMatchObject({ status: "ended", endReason: "withdrawn" });
+  expect(
+    problems.filter(
+      (problem) => !problem.startsWith("Failed to load resource"),
+    ),
+  ).toEqual([]);
 });
