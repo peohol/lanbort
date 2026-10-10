@@ -35,3 +35,4 @@ export * from "./search";
 export * from "./outbox/policy";
 export * from "./policies";
 export * from "./restore";
+export * from "./retention";

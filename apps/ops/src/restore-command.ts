@@ -4,6 +4,7 @@ import type { Database } from "@lanbort/database";
 import {
   type DomainContext,
   executeCommand,
+  purgeExpiredData,
   exportRestoreJournal,
   reconcileSearchIndex,
   type ReplayResult,
@@ -13,6 +14,7 @@ import {
   restartChatGroups,
   restoreActor,
   restoreJournalEntrySchema,
+  retentionProcess,
   runRestoreChecks,
   searchIndexProcess,
   systemActor,
@@ -27,7 +29,8 @@ export const usage = `Finishes a database restore before the service opens again
       restricted since <time> (the backup's time, minus a margin).
   pnpm ops:restore finish --journal <file>
       Against the restored database: checks its migrations, re-applies the
-      journal, rebuilds the search index and runs the checks. Repeatable.
+      journal, rebuilds the search index, deletes what has passed its
+      retention time and runs the checks. Repeatable.
   pnpm ops:restore verify
       Checks migrations and runs the checks only.
 
@@ -222,6 +225,14 @@ export async function runRestoreCommand(
     lines.push(
       `Chat: ${chat.output.conversations} conversations start new groups.`,
     );
+
+    // A backup holds what has since passed its retention time (OD-0002).
+    const purged = await executeCommand(domain, purgeExpiredData, {
+      actor: systemActor(retentionProcess),
+      input: {},
+    });
+    const expired = Object.values(purged.output).reduce((a, b) => a + b, 0);
+    lines.push(`Retention: ${expired} expired rows deleted.`);
   }
 
   const checks = await runRestoreChecks(domain.db);

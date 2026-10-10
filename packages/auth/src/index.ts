@@ -83,8 +83,8 @@ function isClientError(error: unknown) {
 export interface AuthGateway {
   /**
    * Sends a one-time code. Unknown addresses get an account created on
-   * verification, so the response never reveals whether an address is
-   * registered.
+   * verification, or, while new accounts are closed, no code; either way
+   * the response never reveals whether an address is registered.
    */
   requestEmailCode(email: string): Promise<void>;
   /** Verifies the code and starts a session (cookies are set). */
@@ -129,6 +129,15 @@ export function createAuthGateway(
         email,
         options: { shouldCreateUser: true },
       });
+
+      // New accounts are closed (a closed pilot) and the address has none:
+      // no code is sent, and the answer is the same as when one is.
+      if (
+        isAuthApiError(error) &&
+        newAccountsClosedCodes.has(error.code ?? "")
+      ) {
+        return;
+      }
 
       if (error) {
         throw providerError(error);
@@ -184,6 +193,29 @@ export function createAuthGateway(
       }
     },
   };
+}
+
+/** What the provider answers when it creates no new accounts. */
+const newAccountsClosedCodes = new Set(["signup_disabled", "otp_disabled"]);
+
+/**
+ * Whether the provider creates accounts for new addresses, or only lets in
+ * those that already have one (a closed pilot, PS-NFR-015). The provider's
+ * own setting is the only source; it is also what enforces it.
+ */
+export async function newAccountsOpen(
+  config: Pick<AuthConfig, "url" | "publishableKey">,
+): Promise<boolean> {
+  const response = await fetch(`${config.url}/auth/v1/settings`, {
+    headers: { apikey: config.publishableKey },
+  });
+
+  if (!response.ok) {
+    throw new AuthProviderError("unavailable");
+  }
+
+  return !((await response.json()) as { disable_signup?: boolean })
+    .disable_signup;
 }
 
 export interface AuthAdminConfig {

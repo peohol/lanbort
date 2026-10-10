@@ -22,6 +22,7 @@ import { allPolicies } from "./policies";
 import { publicationMatrices } from "./publications/policies.matrix";
 import { questionMatrices } from "./questions/policies.matrix";
 import { restoreMatrices } from "./restore/policies.matrix";
+import { retentionMatrices } from "./retention/policies.matrix";
 import { reviewMatrices } from "./reviews/policies.matrix";
 import { searchMatrices } from "./search/policies.matrix";
 import { socialMatrices } from "./social/policies.matrix";
@@ -52,6 +53,7 @@ const matrices: readonly PolicyMatrix<never, never>[] = [
   ...moderationMatrices,
   ...searchMatrices,
   ...restoreMatrices,
+  ...retentionMatrices,
   ...chatMatrices,
 ] as never;
 

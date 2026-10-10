@@ -78,6 +78,7 @@ Fremgangsmåten er den samme om backupen er den egne eller Supabases. Bare steg 
    - gjør slettinger og begrensninger fra journalen på nytt med domenets egne kommandoer, som systemprosessen `ops.restore`,
    - bygger søkeindeksen på nytt fra domenetabellene,
    - gir hver chatsamtale en ny gruppegenerasjon og sletter ventende chiffertekst og engangsnøkler fra før, siden enhetene kan være lenger fremme enn den gjenopprettede serveren (ADR-0010 §9); historikken på enhetene består,
+   - sletter det som har passert oppbevaringstiden siden backupen ([oppbevaring](retention.md)),
    - sjekker at slettede kontoer ikke har data igjen og at søkeindeksen stemmer.
 
    Kommandoen kan kjøres flere ganger; det som er gjort, gjøres ikke igjen. Svarer den `Ready to open`, er databasen klar.
