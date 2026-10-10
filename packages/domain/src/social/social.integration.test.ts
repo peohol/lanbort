@@ -757,10 +757,17 @@ describe("an account that is not active (PS-ADM-002)", () => {
       code: "not_found",
     });
 
-    // Ending works without the other's answer.
-    await run(declineFriendRequest, a, b.actor);
-    await run(withdrawFriendRequest, a, c.actor);
-    await run(removeFriend, a, friend.actor);
+    // Ending works without the other's answer, and offers no new request.
+    for (const [command, other] of [
+      [declineFriendRequest, b],
+      [withdrawFriendRequest, c],
+      [removeFriend, friend],
+    ] as const) {
+      expect((await run(command, a, other.actor)).output).toMatchObject({
+        friendship: "none",
+        canRequest: false,
+      });
+    }
     for (const other of [b, c, friend]) {
       expect(
         (await relationsBetween(a, other.actor)).map((row) => row.status),

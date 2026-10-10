@@ -43,6 +43,18 @@ describe("describeLoanRequest", () => {
         "2026-10-13",
       ).label,
     ).toBe("Tiden har passert");
+    // Also while it waits for new terms or is on hold, and never once it ended.
+    for (const status of ["awaiting_terms_confirmation", "on_hold"] as const) {
+      expect(
+        describeLoanRequest({ ...passed, status }, "2026-10-13").label,
+      ).toBe("Tiden har passert");
+    }
+    expect(
+      describeLoanRequest(
+        { ...passed, status: "ended", endReason: "withdrawn" },
+        "2026-10-13",
+      ).label,
+    ).toBe("Avsluttet");
   });
 
   it("tells the borrower nothing is agreed before an answer", () => {

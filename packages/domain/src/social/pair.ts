@@ -166,11 +166,17 @@ export function friendshipStateOf(pair: SocialPair): FriendshipState {
 }
 
 /**
- * The actor may send the other a friend request now: no open relation, no
- * block of their own, and no declined request to wait out (PS-USR-012).
+ * The actor may send the other a friend request now: an active account, no
+ * open relation, no block of their own, and no declined request to wait out
+ * (PS-USR-012).
  */
 export function mayRequestFriendship(pair: SocialPair): boolean {
-  return !pair.openFriendship && !pair.blockedByActor && !pair.requestHeldBack;
+  return (
+    pair.otherActive &&
+    !pair.openFriendship &&
+    !pair.blockedByActor &&
+    !pair.requestHeldBack
+  );
 }
 
 /**

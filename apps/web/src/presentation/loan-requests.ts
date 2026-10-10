@@ -75,6 +75,15 @@ export interface LoanRequestStatusText {
   readonly body?: string;
 }
 
+/** The request still waits for an answer or for the borrower. */
+export function requestIsOpen(request: Pick<LoanRequest, "status">): boolean {
+  return (
+    request.status === "requested" ||
+    request.status === "awaiting_terms_confirmation" ||
+    request.status === "on_hold"
+  );
+}
+
 /**
  * Whether the time asked for has begun or is over, so no approval can give
  * it whole: approval reserves only from today (PS-LOAN-006).
@@ -103,21 +112,23 @@ export function describeLoanRequest(
   const borrower = request.role === "borrower";
   const name = personName(request.borrower);
 
+  if (requestIsOpen(request) && requestedTimeHasPassed(request, today)) {
+    return borrower
+      ? {
+          label: "Tiden har passert",
+          text: "Tiden du ba om har begynt, så eieren kan ikke godkjenne den",
+          tone: "warning",
+          body: "Trekk forespørselen og be om en ny tid hvis du fortsatt vil låne.",
+        }
+      : {
+          label: "Venter på deg",
+          text: `Tiden ${name} ba om har begynt, så den kan ikke godkjennes. Avslå forespørselen`,
+          tone: "warning",
+        };
+  }
+
   switch (request.status) {
     case "requested":
-      if (requestedTimeHasPassed(request, today))
-        return borrower
-          ? {
-              label: "Tiden har passert",
-              text: "Tiden du ba om har begynt, så eieren kan ikke godkjenne den",
-              tone: "warning",
-              body: "Trekk forespørselen og be om en ny tid hvis du fortsatt vil låne.",
-            }
-          : {
-              label: "Venter på deg",
-              text: `Tiden ${name} ba om har begynt, så den kan ikke godkjennes. Avslå forespørselen`,
-              tone: "warning",
-            };
       if (borrower)
         return {
           label: "Venter på eieren",
