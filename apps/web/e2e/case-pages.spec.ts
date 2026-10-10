@@ -3,6 +3,8 @@ import { type Browser, expect, type Page, test } from "@playwright/test";
 import sharp from "sharp";
 import {
   accountId,
+  agreeLoan,
+  axeViolations,
   befriend,
   collectBrowserProblems,
   postCommand,
@@ -250,6 +252,63 @@ test("a report goes to Lånbort when chosen, or when there is no environment in 
   );
 
   await Promise.all([eva, ola, pia].map((page) => page.context().close()));
+});
+
+test("a friend tells Lånbort that someone may have died, without access to them (PS-COM-015)", async ({
+  browser,
+  baseURL,
+}) => {
+  const kari = await signedIn(browser, baseURL!, "Kari Nord");
+  const ola = await signedIn(browser, baseURL!, "Ola Sør");
+  const problems = [kari, ola].map(collectBrowserProblems);
+  await befriend(kari.request, ola.request);
+  const olaId = await accountId(ola.request);
+
+  // The last of the rarer steps on the person's page.
+  await kari.goto(`/personer/${olaId}`);
+  await kari.getByText("Flere valg").click();
+  await kari.getByRole("link", { name: "Si fra om mulig dødsfall" }).click();
+  await expect(
+    kari.getByRole("heading", { level: 1, name: "Si fra om Ola Sør" }),
+  ).toBeVisible();
+  await expect(
+    kari.getByText("Meldingen endrer ingenting av seg selv."),
+  ).toBeVisible();
+  expect(await axeViolations(kari)).toEqual([]);
+
+  const told = "Søsteren hans fortalte meg at han døde forrige uke.";
+  await kari.getByLabel("Hva vet du?").fill(told);
+  await kari.getByRole("button", { name: "Send meldingen" }).click();
+  await expect(kari).toHaveURL(/\/saker\/[0-9a-f-]{36}$/);
+  await expect(entry(kari, told)).toBeVisible();
+
+  // Not about oneself.
+  const kariId = await accountId(kari.request);
+  const own = await kari.request.get(`/saker/mulig-dodsfall/${kariId}`);
+  expect(own.status()).toBe(404);
+
+  // The person it is about sees nothing of it.
+  await ola.goto("/saker");
+  await expect(ola.getByText("Kari Nord")).toHaveCount(0);
+
+  // A loan's page offers it about the other party, but a loan outlasts a
+  // block, and the report is never taken across one: then neither party
+  // is offered it.
+  const loanId = await agreeLoan(kari.request, ola.request, uniqueWord());
+  const offered = async (page: Page) => {
+    await page.goto(`/lan/${loanId}`);
+    await page.getByText("Flere valg").click();
+    return page.getByRole("link", { name: "Si fra om mulig dødsfall" });
+  };
+  await expect(await offered(kari)).toBeVisible();
+  await postCommand(ola.request, "/api/social/blocks", { userId: kariId });
+  for (const page of [kari, ola]) {
+    await expect(await offered(page)).toHaveCount(0);
+  }
+  expect(
+    (await ola.request.get(`/saker/mulig-dodsfall/${kariId}`)).status(),
+  ).toBe(404);
+  expect(problems.flat()).toEqual([]);
 });
 
 test("a member ends their own contact, and the administrators see who did", async ({

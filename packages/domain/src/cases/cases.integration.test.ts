@@ -40,6 +40,7 @@ import {
   listOwnCases,
   listPlatformCaseQueue,
   readCase,
+  readUnavailabilityTarget,
 } from "./queries";
 import { listCases } from "./store";
 
@@ -975,5 +976,27 @@ describe("a report that a user may have died or be permanently unavailable (PS-C
         body: "Hei",
       }),
     ).rejects.toMatchObject(notFound);
+
+    // A page asks the same rule before it offers the report.
+    const target = (actor: UserActor, userId: string) =>
+      executeQuery(tick(), readUnavailabilityTarget, {
+        actor,
+        input: { userId },
+      });
+    await expect(target(admin, other.userId)).resolves.toEqual({
+      userId: other.userId,
+    });
+    await expect(target(other, borrower.userId)).rejects.toMatchObject(
+      forbidden,
+    );
+    await expect(target(borrower, other.userId)).rejects.toMatchObject(
+      notFound,
+    );
+    await expect(target(reporter, stranger.userId)).rejects.toMatchObject(
+      notFound,
+    );
+    await expect(target(reporter, reporter.userId)).rejects.toMatchObject(
+      notFound,
+    );
   });
 });

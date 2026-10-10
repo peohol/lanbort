@@ -373,7 +373,7 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 - **Ser / handler:** den som har et konkret felles forhold til personen.
 - **Regler:** UX-EXC-008, PS-COM-015, PS-ADM-007, [visjon 06](../vision/06-kommunikasjon-varsler-og-saker.md).
 - **Forløp:** avvik.
-- **UI-pakke:** ingen.
+- **UI-pakke:** bygget 10. oktober 2026 etter designet «Mulig dødsfall og ventende enheter»: valget sist under «Flere valg» på personens side og lånets side, og skjemaet som egen oppgave. Vises ikke før plattformforvalterne kan behandle saker (OD-0023).
 
 #### Egen konto deaktivert, suspendert eller under avslutning
 
@@ -608,7 +608,6 @@ Scenariene i [UX-scenariovalideringen](07-scenariovalidering.md) ligger alle på
 
 Disse flatene følger av spesifikasjonen og UX-modellen, men ingen pakke i UI-planen bygger dem ennå:
 
-- **Melding om mulig dødsfall** fra personens side eller et felles lån (PS-COM-015, UX-EXC-008).
 - **Plattformforvalterens inngrep** på kontoer og miljøer, fra en sak i plattformkøen (PS-ADM-015). Venter på OD-0023.
 - Presentasjon og synlighet for andre profilfelt står allerede under «Senere» i UI-planen.
 

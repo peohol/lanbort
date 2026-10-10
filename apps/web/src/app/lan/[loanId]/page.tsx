@@ -49,6 +49,7 @@ import { firstImageHref, loanImageHref } from "@/presentation/object-images";
 import { ThingThumbnail } from "@/components/thing-thumbnail";
 import { hiddenUntil } from "@/presentation/reviews";
 import { chatContactLink } from "@/server/chat-contact";
+import { unavailabilityReportLink } from "@/server/unavailability-report";
 import { chatEnabled } from "@/server/env";
 import {
   pageQuery,
@@ -342,10 +343,13 @@ function LoanStatus({
 function LoanMoreActions({
   loan,
   condition,
+  unavailabilityReport,
 }: {
   loan: Loan;
   /** What was registered as damage, deficiency or loss (PS-LOAN-023). */
   condition: LoanConditionReports | null;
+  /** Where to tell Lånbort the other party may have died (PS-COM-015). */
+  unavailabilityReport: string | null;
 }) {
   const { secondary } = loanSteps(loan);
   const mayReport = condition?.mayReport ?? false;
@@ -358,7 +362,8 @@ function LoanMoreActions({
     secondary.length === 0 &&
     !proposes &&
     !actions.cancel &&
-    actions.offerResponsibility.length === 0
+    actions.offerResponsibility.length === 0 &&
+    !unavailabilityReport
   ) {
     return null;
   }
@@ -379,6 +384,11 @@ function LoanMoreActions({
         />
       )}
       <Cancel loan={loan} />
+      {unavailabilityReport && (
+        <Link className="button" href={unavailabilityReport}>
+          Si fra om mulig dødsfall
+        </Link>
+      )}
     </MoreActions>
   );
 }
@@ -476,7 +486,16 @@ export default async function LoanPage({
     if (reviews) return <ReviewsOnly reviews={reviews}>{shown}</ReviewsOnly>;
     notFound();
   }
-  const [history, logistics, reviews, condition, contact] = await Promise.all([
+  const counterpartId =
+    loan.role === "lender" ? loan.borrowerUserId : loan.responsibleLenderId;
+  const [
+    history,
+    logistics,
+    reviews,
+    condition,
+    contact,
+    unavailabilityReport,
+  ] = await Promise.all([
     collectPages(
       (cursor) => pageQuery(readLoanHistory, { loanId, cursor }),
       ({ entries }) => entries,
@@ -493,10 +512,12 @@ export default async function LoanPage({
     pageQueryIfAllowed(readLoanConditionReports, { loanId }),
     // The server decides: a block closes it, and the logistics channel
     // (WP-44) is the way left then.
-    chatContactLink(
-      loan.role === "lender" ? loan.borrowerUserId : loan.responsibleLenderId,
-      { kind: "loan_request", requestId: loan.requestId },
-    ),
+    chatContactLink(counterpartId, {
+      kind: "loan_request",
+      requestId: loan.requestId,
+    }),
+    // Not across a block, which a loan outlasts (PS-COM-015).
+    unavailabilityReportLink(counterpartId),
   ]);
   const other = loan.role === "lender" ? "borrower" : "lender";
 
@@ -531,7 +552,11 @@ export default async function LoanPage({
           {logistics && <Logistics channel={logistics} />}
           <Agreement loan={loan} />
           <Party person={loan.parties[other]} role={other} contact={contact} />
-          <LoanMoreActions loan={loan} condition={condition} />
+          <LoanMoreActions
+            loan={loan}
+            condition={condition}
+            unavailabilityReport={unavailabilityReport}
+          />
           {reviews && <Reviews reviews={reviews} />}
         </div>
         <div className={styles.column}>
