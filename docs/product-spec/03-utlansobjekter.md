@@ -140,6 +140,11 @@ Grensen vises for eieren der hen forvalter og registrerer ting. Et objekt som br
 
 Grensen er ikke endelig policy for bred lansering. «Venter til senere» kan åpnes, eventuelt med særvilkår, først når OD-0001 er vurdert juridisk og sikkerhetsmessig.
 
+### PS-OBJ-022 — Venner ser navnet på eiere de er venn med
+**Forankring:** PS-OBJ-020, PS-ENV-015; avklarer OD-0054 (produkteier, 10. oktober 2026)
+
+Når en ting finnes gjennom venner (PS-OBJ-020), vises navnet til eierne betrakteren selv er venn med nå. Ved medeierskap vises bare de medeierne betrakteren er venn med; en medeier betrakteren ikke er venn med, vises ikke. Regelen håndheves på serveren hver gang tingen vises, så et avsluttet vennskap eller en blokkering skjuler navnet med en gang. Den gjelder på tingens side, i oversikter der tingen er funnet gjennom venner, og i låneforespørsler som startes derfra. Gjennom et miljø gjelder PS-ENV-015.
+
 ## Publiseringsstatus per miljø
 
 Minst:

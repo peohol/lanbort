@@ -64,7 +64,10 @@ export function RequestForm({
   origin: LoanRequestOrigin;
   /** Where the request is made, as the reader sees it. */
   shownOrigin: LoanOrigin;
-  /** Through an environment, the owners asked; empty between friends. */
+  /**
+   * The owners asked: through an environment those who are members there,
+   * between friends those the caller is a friend of (PS-OBJ-022).
+   */
   owners: readonly ShownOwner[];
   termsVersion: number;
   loanTerms: string | null;

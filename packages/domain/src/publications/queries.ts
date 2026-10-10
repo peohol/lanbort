@@ -59,7 +59,7 @@ import {
   readPublishedImagePolicy,
 } from "./policies";
 import { findFriendPublication, ownerHasAccess } from "./store";
-import { environmentOwners } from "./owners";
+import { shownOwners } from "./owners";
 import { rateLimits } from "../abuse/rate-limits";
 
 type Db = Kysely<Database>;
@@ -479,7 +479,7 @@ export function foundAvailability(
 /**
  * A found object as the viewer sees it, with actual availability shown
  * without saying what blocks it (UX-05). Who owns it is the caller's to add
- * (`environmentOwners`), since that depends on where it is found.
+ * (`shownOwners`), since that depends on where it is found.
  */
 export function presentFound(row: FoundRow, details: FoundDetails, now: Date) {
   const derived = foundAvailability(row.object_id, details, now);
@@ -534,13 +534,15 @@ export const listEnvironmentObjects = defineQuery({
         items.map((row) => row.object_id),
       );
       const owners = viewerId
-        ? await environmentOwners(
+        ? await shownOwners(
             tx,
             viewerId,
-            items.map((row) => ({
-              objectId: row.object_id,
-              environmentId: access.environment.id,
-            })),
+            {
+              environments: items.map((row) => ({
+                objectId: row.object_id,
+                environmentId: access.environment.id,
+              })),
+            },
             now,
           )
         : new Map();
