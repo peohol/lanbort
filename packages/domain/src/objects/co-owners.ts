@@ -1,5 +1,6 @@
 import {
   coOwnerInvitationIdSchema,
+  coOwnerInvitationImageQuerySchema,
   coOwnerInvitationInputSchema,
   coOwnerInvitationResultSchema,
   type CoOwnerInvitationStatus,
@@ -35,8 +36,10 @@ import {
   inviteCoOwnerPolicy,
   leaveObjectPolicy,
   listCoOwnerInvitationsPolicy,
+  readCoOwnerInvitationImagePolicy,
   withdrawCoOwnerInvitationPolicy,
 } from "./policies";
+import { findImageFile } from "./images";
 import {
   actingUserId,
   loadLockedObject,
@@ -349,6 +352,45 @@ export const listCoOwnerInvitations = defineQuery({
         description: row.description,
       },
     })),
+  }),
+});
+
+/**
+ * PS-OBJ-021: whoever sees the thing's name sees its pictures. The invited
+ * user sees the thing's name while asked, so its pictures too, and only
+ * then: once the invitation is answered, withdrawn or closed, an accepted
+ * co-owner reads them as an owner (`object.read_image`) and anyone else not
+ * at all.
+ */
+export const coOwnerInvitationImageFile = defineQuery({
+  name: "object_invitation.read_image",
+  input: coOwnerInvitationImageQuerySchema,
+  policy: readCoOwnerInvitationImagePolicy,
+  load: async ({ db, input }) => {
+    const invitation = await db
+      .selectFrom("app.object_co_owner_invitations")
+      .select(["object_id", "invited_user_id"])
+      .where("id", "=", input.invitationId)
+      .where("status", "=", "pending")
+      .executeTakeFirst();
+    const file =
+      invitation &&
+      (await findImageFile(db, invitation.object_id, input.imageId));
+
+    return invitation && file
+      ? {
+          resource: {
+            invitationId: input.invitationId,
+            invitedUserId: invitation.invited_user_id,
+            ...file,
+          },
+          context: undefined,
+        }
+      : null;
+  },
+  present: ({ resource }) => ({
+    key: resource.key,
+    contentType: resource.contentType,
   }),
 });
 

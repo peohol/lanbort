@@ -259,6 +259,12 @@ export const receivedCoOwnerInvitationSchema = z.strictObject({
   }),
 });
 
+/** One picture of the thing an open invitation asks to co-own. */
+export const coOwnerInvitationImageQuerySchema = z.strictObject({
+  invitationId: coOwnerInvitationIdSchema,
+  imageId: objectImageIdSchema,
+});
+
 export const receivedCoOwnerInvitationListSchema = z.strictObject({
   invitations: z.array(receivedCoOwnerInvitationSchema),
 });

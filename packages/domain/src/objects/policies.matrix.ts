@@ -37,6 +37,7 @@ const minimumAccess = new Set([
   "object.withdraw_co_owner_invitation",
   "object_invitation.decline",
   "object_invitation.list",
+  "object_invitation.read_image",
 ]);
 
 const deactivatedCase = <R>(

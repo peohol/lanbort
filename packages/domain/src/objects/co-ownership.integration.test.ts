@@ -14,6 +14,7 @@ import { connectTestDatabase } from "../testing/database";
 import { addDays, calendarDate } from "./availability";
 import {
   acceptCoOwnerInvitation,
+  coOwnerInvitationImageFile,
   declineCoOwnerInvitation,
   defineLeaveObject,
   inviteCoOwner,
@@ -32,6 +33,7 @@ import { getObjectHistory, revertObject } from "./history";
 import {
   objectImageFileCleanup,
   type ImageStore,
+  readImageFile,
   uploadObjectImage,
 } from "./images";
 import { getObject, listOwnObjects } from "./queries";
@@ -253,6 +255,72 @@ describe("becoming a co-owner (PS-OBJ-007)", () => {
     expect(
       (await read(cia, objectId)).owners.map((owner) => owner.userId),
     ).toEqual([bo.userId, cia.userId]);
+  });
+});
+
+describe("the thing's pictures for the invited user (PS-OBJ-021)", () => {
+  async function invitedWithPicture() {
+    const anna = await user();
+    const bo = await user();
+    const { objectId } = await create(anna);
+    const bytes = new TextEncoder().encode(`img-${randomUUID()}`);
+    const {
+      output: { imageId },
+    } = await uploadObjectImage(domain, images, {
+      actor: anna,
+      objectId,
+      bytes,
+      idempotencyKey: randomUUID(),
+    });
+    const { invitationId } = await invite(anna, objectId, bo);
+
+    return { anna, bo, objectId, imageId, invitationId, bytes };
+  }
+
+  const picture = (actor: UserActor, invitationId: string, imageId: string) =>
+    readImageFile(domain, store, coOwnerInvitationImageFile, {
+      actor,
+      input: { invitationId, imageId },
+    });
+
+  it("shows them only to the invited user, and only while asked", async () => {
+    const { anna, bo, imageId, invitationId, bytes } =
+      await invitedWithPicture();
+
+    expect((await picture(bo, invitationId, imageId)).bytes).toEqual(bytes);
+    for (const other of [anna, await user()]) {
+      await expect(picture(other, invitationId, imageId)).rejects.toMatchObject(
+        notFound,
+      );
+    }
+    await expect(picture(bo, invitationId, randomUUID())).rejects.toMatchObject(
+      notFound,
+    );
+
+    // Once co-owner, the picture is read as an owner; the invitation is spent.
+    await run(acceptCoOwnerInvitation, bo, { invitationId });
+    await expect(picture(bo, invitationId, imageId)).rejects.toMatchObject(
+      notFound,
+    );
+  });
+
+  it("ends with a declined or withdrawn invitation", async () => {
+    const declined = await invitedWithPicture();
+    await run(declineCoOwnerInvitation, declined.bo, {
+      invitationId: declined.invitationId,
+    });
+    await expect(
+      picture(declined.bo, declined.invitationId, declined.imageId),
+    ).rejects.toMatchObject(notFound);
+
+    const withdrawn = await invitedWithPicture();
+    await run(withdrawCoOwnerInvitation, withdrawn.anna, {
+      objectId: withdrawn.objectId,
+      invitationId: withdrawn.invitationId,
+    });
+    await expect(
+      picture(withdrawn.bo, withdrawn.invitationId, withdrawn.imageId),
+    ).rejects.toMatchObject(notFound);
   });
 });
 
