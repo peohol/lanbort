@@ -4,6 +4,7 @@ import { ActionButton } from "@/components/action-button";
 import { ConfirmAction } from "@/components/confirm-action";
 import { MoreActions } from "@/components/more-actions";
 import { StatusCard } from "@/components/status-card";
+import { UnblockAction } from "@/components/unblock-action";
 import { newCaseHref } from "@/navigation/cases";
 import { friendsHref } from "@/navigation/routes";
 import { describeRelation, sharedNames } from "@/presentation/people";
@@ -40,22 +41,7 @@ export function RelationCard({
   const steps =
     relation &&
     (relation.blockedByMe ? (
-      <ConfirmAction
-        label="Opphev blokkeringen"
-        title={`Oppheve blokkeringen av ${name}?`}
-        consequences={{
-          gone: [
-            "Blokkeringen. Dere kan få kontakt igjen og se hverandre der dere begge er med.",
-          ],
-          stays: [
-            "Vennskap og forespørsler som blokkeringen avsluttet, kommer ikke tilbake.",
-          ],
-          affects: [`${name} får ikke beskjed.`],
-        }}
-        confirmLabel="Opphev blokkeringen"
-        path={social("blocks/lift")}
-        body={body}
-      />
+      <UnblockAction userId={person.userId} name={name} />
     ) : (
       {
         none: relation.canRequest && (

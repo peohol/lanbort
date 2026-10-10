@@ -1,3 +1,4 @@
+import type { OwnProfilePicture } from "@lanbort/contracts";
 import { getSocialOverview, takesNewActivity } from "@lanbort/domain";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -13,6 +14,7 @@ import {
   casesHref,
   friendsHref,
   notificationChoicesHref,
+  personHref,
   profilePictureHref,
 } from "@/navigation/routes";
 import { accountStatusLabel } from "@/presentation/account";
@@ -23,11 +25,22 @@ export const metadata: Metadata = { title: "Konto – Lånbort" };
 const count = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
 
+/** Who sees the user's picture (PS-USR-002), or that there is none. */
+const pictureReach = ({ pictureId, visibility }: OwnProfilePicture) =>
+  pictureId
+    ? {
+        general: "Profilbildet ser alle som kan se deg",
+        friends: "Profilbildet ser bare vennene dine",
+        only_me: "Profilbildet ser bare du",
+      }[visibility]
+    : "Legg til et profilbilde";
+
 /**
  * The account (UX-IA-003, UX-IA-020): opened from the user's picture as a
  * layer of its own, with the profile, the people the user has relations
  * with, and the rest of the account's own pages. An account that is not
- * active has no new relations (PS-ADM-002).
+ * active has no new relations, and no page of its own for others to see
+ * (PS-ADM-002).
  */
 export default async function AccountPage() {
   const account = await requirePageAccount();
@@ -39,18 +52,27 @@ export default async function AccountPage() {
     <main>
       <PageHeader title="Konto" />
       <section className="card profile-card" aria-label="Profil">
-        <ProfilePicture
-          pictureId={account.picture.pictureId}
-          name={account.realName}
-          size="large"
-          initials
-        />
-        <div>
-          <p className="profile-name">{account.realName}</p>
-          <p className="link-row">
-            <Link href={profilePictureHref}>Profilbilde</Link>
-          </p>
-        </div>
+        <Link href={profilePictureHref} className="profile-card-row">
+          <ProfilePicture
+            pictureId={account.picture.pictureId}
+            name={account.realName}
+            size="medium"
+            initials
+          />
+          <span className="menu-text">
+            <span className="profile-name">{account.realName}</span>
+            <span className="menu-detail">{pictureReach(account.picture)}</span>
+          </span>
+          <Icon name="chevron" className="icon menu-chevron" />
+        </Link>
+        {active && (
+          <Link
+            href={personHref(account.userId)}
+            className="button button-quiet"
+          >
+            Se din egen side
+          </Link>
+        )}
       </section>
 
       {social && (

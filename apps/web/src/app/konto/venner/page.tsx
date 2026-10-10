@@ -4,6 +4,7 @@ import { ActionButton } from "@/components/action-button";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { minimumAccessText, restingNotice } from "@/presentation/account";
+import { formatShortDate } from "@/presentation/dates";
 import { pageQuery, requirePageAccount } from "@/server/session";
 import { People, target } from "../people";
 
@@ -11,9 +12,13 @@ export const metadata: Metadata = { title: "Venner – Lånbort" };
 
 const social = (path: string) => `/api/social/${path}`;
 
+const sent = ({ since }: { since: string }) =>
+  `Sendt ${formatShortDate(since)}`;
+
 /**
- * Friends and friend requests both ways (PS-USR-003–005), answered right in
- * the list. An account that is not active has no new relations (PS-ADM-002).
+ * Friends and friend requests both ways (PS-USR-003–005, KF6 screen 19),
+ * answered right in the list. An account that is not active has no new
+ * relations (PS-ADM-002).
  */
 export default async function FriendsPage() {
   const account = await requirePageAccount();
@@ -38,6 +43,8 @@ export default async function FriendsPage() {
           <People
             heading="Vil bli venn med deg"
             people={overview.incomingRequests}
+            detail={sent}
+            actionsBelow
             actions={(person) => (
               <>
                 <ActionButton
@@ -57,9 +64,10 @@ export default async function FriendsPage() {
           <People
             heading="Du har spurt"
             people={overview.outgoingRequests}
+            detail={sent}
             actions={(person) => (
               <ActionButton
-                label="Trekk tilbake"
+                label="Trekk"
                 path={social("friend-requests/withdraw")}
                 body={target(person)}
               />
