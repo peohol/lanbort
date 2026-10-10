@@ -10,7 +10,12 @@ const localHosts = new Set(["", "localhost", "127.0.0.1", "[::1]"]);
  * Supabase's own CA as well as the public ones. An `sslmode` in the
  * connection string still takes precedence.
  */
-export function connectionTls(connectionString: string): ConnectionOptions | undefined {
+export function connectionTls(
+  connectionString: string,
+): ConnectionOptions | undefined {
   if (localHosts.has(new URL(connectionString).hostname)) return undefined;
-  return { ca: [...rootCertificates, SUPABASE_ROOT_CA], rejectUnauthorized: true };
+  return {
+    ca: [...rootCertificates, SUPABASE_ROOT_CA],
+    rejectUnauthorized: true,
+  };
 }

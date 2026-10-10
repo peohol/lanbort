@@ -22,6 +22,9 @@ describe("connectionTls", () => {
   });
 
   it("requires verified TLS for any other host as well", () => {
-    expect(connectionTls("postgresql://u:p@db.example.org/postgres")?.rejectUnauthorized).toBe(true);
+    expect(
+      connectionTls("postgresql://u:p@db.example.org/postgres")
+        ?.rejectUnauthorized,
+    ).toBe(true);
   });
 });
