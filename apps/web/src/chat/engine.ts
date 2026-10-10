@@ -154,6 +154,8 @@ const records = {
   device: "device",
   recovery: "recovery",
   backup: "backup",
+  /** When this device was linked (13); none on a first or restored one. */
+  linked: "linked",
   /** An archive's key, kept until its history is here. */
   transfer: (from: HistoryTransfer["from"] | "") => `transfer:${from}`,
   trust: "trust",
@@ -239,10 +241,11 @@ export async function loadChat(userId: string): Promise<
 > {
   const devices = await chatApi.devices();
   const store = await openChatStore(userId);
-  const [account, device, recovery] = await Promise.all([
+  const [account, device, recovery, linkedAt] = await Promise.all([
     store.get(records.account),
     store.get(records.device),
     store.get(records.recovery),
+    store.getJson<string>(records.linked),
   ]);
 
   if (account && device) {
@@ -264,7 +267,7 @@ export async function loadChat(userId: string): Promise<
         accountKey,
         ownDevice,
         trust,
-        recoveryKey,
+        { recovery: recoveryKey, linkedAt: linkedAt ?? null },
       );
       // History a reload or a lost connection interrupted.
       void engine.resumeHistory();
@@ -330,7 +333,10 @@ export async function completeDeviceLink(
   const { account, device, archive, recovery } = await link.open(
     fromBase64(status.package),
   );
-  const engine = await ChatEngine.begin(userId, account, device, recovery);
+  const engine = await ChatEngine.begin(userId, account, device, {
+    recovery,
+    linkedAt: new Date().toISOString(),
+  });
   if (archive) await engine.holdHistory(archive, "device");
   await chatApi.finishLink(status.linkRequestId);
   void engine.resumeHistory();
@@ -379,7 +385,9 @@ export async function restoreChat(
     revocations: revocations.map(revocationWire),
   });
   await deleteChatStore(userId);
-  const engine = await ChatEngine.begin(userId, account, device, key);
+  const engine = await ChatEngine.begin(userId, account, device, {
+    recovery: key,
+  });
 
   // Only the archive the server still keeps for the backup.
   if (archive && archive.archiveId === backup.archive?.archiveId) {
@@ -416,6 +424,7 @@ export class ChatEngine {
   #receivingHistory: Promise<void> | null = null;
   #historyRetryAt = 0;
   #recovery: RecoveryKey | null;
+  readonly #linkedAt: string | null;
   #backup: BackupState | undefined;
   #backingUp: Promise<void> | null = null;
 
@@ -425,21 +434,32 @@ export class ChatEngine {
     private readonly account: AccountKey,
     private readonly device: Device,
     private readonly trust: MemoryTrustStore,
-    /** The recovery key's backup key, if this device has it (ADR-0010 §8). */
-    recovery: RecoveryKey | null = null,
+    {
+      recovery = null,
+      linkedAt = null,
+    }: {
+      /** The recovery key's backup key, if this device has it (ADR-0010 §8). */
+      recovery?: RecoveryKey | null;
+      /** When this device was linked to the others (ADR-0010 §5). */
+      linkedAt?: string | null;
+    } = {},
   ) {
     this.#recovery = recovery;
+    this.#linkedAt = linkedAt;
   }
 
   /**
    * A device with fresh keys: stores them, with the recovery key's backup
-   * key if it got one, and publishes key packages.
+   * key if it got one and when it was linked, and publishes key packages.
    */
   static async begin(
     userId: string,
     account: AccountKey,
     device: Device,
-    recovery?: RecoveryKey,
+    {
+      recovery,
+      linkedAt,
+    }: { recovery?: RecoveryKey | undefined; linkedAt?: string } = {},
   ): Promise<ChatEngine> {
     const store = await openChatStore(userId);
     const trust = createMemoryTrustStore();
@@ -449,21 +469,23 @@ export class ChatEngine {
     if (recovery) {
       await putSecret(store, records.recovery, exportRecoveryKey(recovery));
     }
+    if (linkedAt) await store.putJson(records.linked, linkedAt);
     await store.putJson(records.trust, trust.snapshot());
-    const engine = new ChatEngine(
-      userId,
-      store,
-      account,
-      device,
-      trust,
-      recovery ?? null,
-    );
+    const engine = new ChatEngine(userId, store, account, device, trust, {
+      recovery: recovery ?? null,
+      linkedAt: linkedAt ?? null,
+    });
     await engine.replenishKeyPackages();
     return engine;
   }
 
   get deviceId(): string {
     return this.device.certificate.deviceId;
+  }
+
+  /** When this device was linked; null on a first or restored device. */
+  get linkedAt(): string | null {
+    return this.#linkedAt;
   }
 
   /** Something the pages show has changed. */

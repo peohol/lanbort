@@ -1,4 +1,5 @@
 import type { ThingPicture } from "@lanbort/contracts";
+import { samePlace } from "@/navigation/stack";
 
 /**
  * A loan or an open request between the reader and someone they chat
@@ -27,4 +28,22 @@ export function loansLine(loans: readonly ChatLoan[] | undefined) {
   return loans.length === 1
     ? `Lån: ${titles[0]}`
     : `${loans.length} lån: ${titles.join(", ")}`;
+}
+
+/**
+ * The loans with the one the user came from first (UX-IA-014): a
+ * conversation opened from a loan shows that loan before the others. It is
+ * the latest of them in the way back (`trail`), so it stays first in
+ * «Om samtalen» too.
+ */
+export function cameFromFirst(
+  loans: readonly ChatLoan[],
+  trail: readonly { href: string }[],
+): readonly ChatLoan[] {
+  const from = trail.findLast(({ href }) =>
+    loans.some((loan) => samePlace(loan.href, href)),
+  );
+  if (!from) return loans;
+  const first = (loan: ChatLoan) => samePlace(loan.href, from.href);
+  return [...loans.filter(first), ...loans.filter((loan) => !first(loan))];
 }

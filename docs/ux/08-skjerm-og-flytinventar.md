@@ -241,7 +241,7 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 ##### Koble til en ny enhet
 
 - **Oppgave:** få privat chat på en enhet til når kontoen allerede har chat på en annen.
-- **Tilstander:** enheten er ikke koblet, med forklaring om at den må godkjennes fra en annen enhet og bare ser nye meldinger; QR-kode og en kode på 26 tegn for den som ikke kan skanne; venter på godkjenning; koblet, videre til samtalene; koblingen ble ikke fullført eller koden har utløpt, med ny kode; allerede koblet; enheten har mistet nøklene (for eksempel fordi nettleserdataene er slettet) og må logge inn igjen og kobles på nytt.
+- **Tilstander:** enheten er ikke koblet, med forklaring om at den må godkjennes fra en annen enhet og bare ser nye meldinger; QR-kode og en kode på 26 tegn for den som ikke kan skanne; venter på godkjenning; koblet, videre til samtalene, der en samtale som startet før koblingen sier når enheten ble koblet til og at meldinger fra før finnes på enhetene som mottok dem (med mindre de ble overført); koblingen ble ikke fullført eller koden har utløpt, med ny kode; allerede koblet; enheten har mistet nøklene (for eksempel fordi nettleserdataene er slettet) og må logge inn igjen og kobles på nytt.
 - **Ser / handler:** brukeren selv, på den nye enheten. Har brukeren ingen annen enhet med chat, vises veien til [tilbakestilling](#tilbakestill-privat-chat).
 - **Regler:** PS-COM-005, PS-NFR-007, ADR-0010 punkt 5 og 8.
 - **Forløp:** normal.

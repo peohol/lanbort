@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { announce } from "@/components/announcer";
 import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
+import { useStack } from "@/components/navigation-stack";
 import { PageHeader } from "@/components/page-header";
 import { chatConversationHref, chatHref } from "@/navigation/chat";
 import { personHref } from "@/navigation/routes";
@@ -20,7 +21,7 @@ import { useEngineVersion } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";
 import type { ChatEngine } from "./engine";
 import { LinkRow } from "./link-row";
-import type { ChatLoan, ChatLoans } from "./loans";
+import { type ChatLoan, type ChatLoans, cameFromFirst } from "./loans";
 import { chatErrorMessage } from "./messages";
 
 type Person = ChatConversation["others"][number];
@@ -162,11 +163,15 @@ function About({
   const name = nameOf(others) || "den du skriver med";
   const logistics = info?.kind === "loan_logistics";
   const loan = logistics ? loanOf(loans, info.loanId) : undefined;
+  const stack = useStack();
   const linked: readonly ChatLoan[] = logistics
     ? loan
       ? [loan]
       : []
-    : others.flatMap((person) => loans[person.userId] ?? []);
+    : cameFromFirst(
+        others.flatMap((person) => loans[person.userId] ?? []),
+        stack?.entries ?? [],
+      );
 
   return (
     <>

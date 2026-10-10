@@ -257,14 +257,16 @@
 }
 
 /* One line on who can read the messages, with the way to more. */
-.secure {
+.secure,
+.since {
   margin: 0 0 var(--space-3);
   font-size: var(--text-s);
   color: var(--color-muted);
   text-align: center;
 }
 
-.secure > span > :global(.icon) {
+.secure > span > :global(.icon),
+.since > :global(.icon) {
   width: 1rem;
   height: 1rem;
   margin-right: var(--space-1);

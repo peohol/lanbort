@@ -190,6 +190,7 @@ export interface ConversationRecord {
   readonly generation: number;
   readonly epoch: bigint;
   readonly participantIds: readonly string[];
+  readonly createdAt: Date;
   readonly lastActivityAt: Date;
   /** A `loan_logistics` conversation's channel and loan (WP-44). */
   readonly loanLogistics: {
@@ -215,6 +216,7 @@ export async function loadConversation(
       "conversation.kind",
       "conversation.generation",
       "conversation.epoch",
+      "conversation.created_at",
       "conversation.last_activity_at",
       "conversation.loan_logistics_channel_id",
       eb
@@ -248,6 +250,7 @@ export async function loadConversation(
     generation: row.generation,
     epoch: BigInt(row.epoch),
     participantIds: participants.map((p) => p.user_id),
+    createdAt: row.created_at,
     lastActivityAt: row.last_activity_at,
     loanLogistics:
       row.loan_logistics_channel_id && row.loan_id
