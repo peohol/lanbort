@@ -17,7 +17,7 @@ import { defineQuery } from "../commands/query";
 import { DomainError } from "../errors";
 import type { EventRecorder } from "../events/recorder";
 import { calendarDate } from "../objects/availability";
-import { actingUserId, inSnapshot } from "../objects/state";
+import { actingUserId, currentImages, inSnapshot } from "../objects/state";
 import { blockedWithAny, lockPair } from "../social/pair";
 import {
   loanResponsibilityAnswered,
@@ -656,6 +656,7 @@ export function presentTransfer(
 interface CoOwnerLoanRecord {
   readonly loan: LoanRecord;
   readonly objectId: string;
+  readonly images: Awaited<ReturnType<typeof currentImages>>;
   readonly transfer: TransferRecord | null;
   readonly reach: CoOwnerReach;
   readonly openTransfer: boolean;
@@ -698,6 +699,7 @@ export const listCoOwnerLoans = defineQuery({
         items.push({
           loan,
           objectId: loan.objectId,
+          images: await currentImages(tx, loan.objectId),
           transfer: transfer?.possible ? transfer : null,
           reach: await loadCoOwnerReach(tx, loanId, userId),
           openTransfer: (await findTransfer(tx, loanId))?.possible ?? false,
@@ -735,6 +737,7 @@ export const listCoOwnerLoans = defineQuery({
         {
           loanId: loan.id,
           objectId: item.objectId,
+          images: item.images,
           status: presentedLoanStatus(
             loan.status,
             loan.agreement.period,

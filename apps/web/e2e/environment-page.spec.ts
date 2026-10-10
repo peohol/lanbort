@@ -80,6 +80,8 @@ test("an environment is created, applied to, used and left in the browser", asyn
       "Alle kan finne miljøet, men en administrator godkjenner nye medlemmer.",
     ),
   ).toBeVisible();
+  // About how many, never the exact number (PS-ENV-016).
+  await expect(bo.page.getByText("under 10 medlemmer")).toBeVisible();
   await expect(bo.page.getByRole("heading", { name: /Medlemmer/ })).toHaveCount(
     0,
   );

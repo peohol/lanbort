@@ -25,9 +25,14 @@ import { defineQuery } from "../commands/query";
 import { canSeeEnvironment } from "../environment/policies";
 import { findEnvironment, loadEnvironmentAccess } from "../environment/store";
 import { calendarDate, toApiInterval } from "../objects/availability";
-import { inSnapshot, loadImages, loadObjectState } from "../objects/state";
+import {
+  currentImages,
+  inSnapshot,
+  loadImages,
+  loadObjectState,
+} from "../objects/state";
 import { linkIn, noPersonLinks, personLinks } from "../people/queries";
-import { environmentOwners } from "../publications/owners";
+import { shownOwners } from "../publications/owners";
 import { assessOrigin } from "./access";
 import { findOpenAmendment, type LoanAmendmentRecord } from "./amendment-store";
 import { loanActions } from "./next-steps";
@@ -144,21 +149,24 @@ export const previewLoanRequest = defineQuery({
       const seen = target.reachable
         ? await loadSeen(tx, actor, target.object.objectId, now)
         : null;
+      // Named as where it is found: members there, or friends (PS-OBJ-022).
+      const { objectId } = target.object;
       const owners =
-        seen && actor.kind === "user" && input.environmentId !== undefined
+        seen && actor.kind === "user"
           ? (
-              await environmentOwners(
+              await shownOwners(
                 tx,
                 actor.userId,
-                [
-                  {
-                    objectId: target.object.objectId,
-                    environmentId: input.environmentId,
-                  },
-                ],
+                input.environmentId === undefined
+                  ? { friends: [objectId] }
+                  : {
+                      environments: [
+                        { objectId, environmentId: input.environmentId },
+                      ],
+                    },
                 now,
               )
-            ).get(target.object.objectId)
+            ).get(objectId)
           : undefined;
 
       return {
@@ -258,6 +266,7 @@ async function describeObject(db: Db, request: LoanRequestRecord, now: Date) {
     return {
       ...presentedStatus(request, openStanding),
       object: null,
+      images: [],
       confirmedTerms: null,
       pendingTerms: null,
       ownerIds: request.formerOwnerIds ?? [],
@@ -292,6 +301,7 @@ async function describeObject(db: Db, request: LoanRequestRecord, now: Date) {
   return {
     ...presented,
     object: { title: confirmed.title, categoryId: confirmed.categoryId },
+    images: await currentImages(db, object.objectId),
     confirmedTerms: {
       version: request.termsVersion,
       loanTerms: confirmed.loanTerms,
@@ -613,6 +623,7 @@ async function loadLoanDetail(
         );
   const coOwnerNames = await realNames(db, coOwnerIds);
   const mediations = await loadMediations(db, loan.id);
+  const images = await currentImages(db, loan.objectId);
   const request = await findLoanRequest(db, loan.requestId);
   const origin: LoanOrigin = request
     ? await describeOrigin(db, viewer, request, "other", now)
@@ -630,6 +641,7 @@ async function loadLoanDetail(
     names,
     links,
     origin,
+    images,
     awaitingControl,
     lenderOwns: awaitingControl && ownerIds.includes(loan.responsibleLenderId),
     coOwners: coOwnerIds.flatMap((userId) => {
@@ -803,6 +815,7 @@ function presentLoan(actor: Actor, resource: LoanDetail, now: Date): Loan {
     requestId: resource.requestId,
     origin: resource.origin,
     objectId: resource.objectId,
+    images: resource.images,
     role: role ?? "lender",
     borrowerUserId: resource.borrowerUserId,
     responsibleLenderId: resource.responsibleLenderId,

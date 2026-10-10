@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { thingPictureSchema } from "./loans";
 
 /**
  * Notifications (PS-COM-001–003). A notification only draws attention to
@@ -187,6 +188,8 @@ export const notificationStandingSchema = z.enum(notificationStandings);
 export const describedNotificationSchema = notificationSchema.extend({
   about: z.strictObject({
     thing: z.string().nullable(),
+    /** The thing's first picture, while the reader sees it (PS-OBJ-021). */
+    picture: thingPictureSchema.nullable(),
     person: z.string().nullable(),
     place: z.string().nullable(),
   }),

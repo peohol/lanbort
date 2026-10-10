@@ -30,7 +30,10 @@ import {
   requestObjectHref,
 } from "@/navigation/routes";
 import { loanRequestStatusLabels } from "@/presentation/loans";
-import { environmentImageHref } from "@/presentation/object-images";
+import {
+  environmentImageHref,
+  friendImageHref,
+} from "@/presentation/object-images";
 import { formatDay } from "@/presentation/dates";
 import {
   availabilityLine,
@@ -59,8 +62,10 @@ async function openRequestFor(objectId: string) {
 /**
  * A thing as someone who may borrow it sees it (UX-JRN-004, UX-JRN-013):
  * through one environment, or directly between friends, said as its
- * context (UX-PRIV-003). Through an environment its owners who are members
- * there are named (PS-ENV-015); what blocks it is not said (UX-PRIV-004). The next step is to ask to borrow it; in an
+ * context (UX-PRIV-003). Its pictures are read the same way. Through an
+ * environment its owners who are members there are named (PS-ENV-015),
+ * directly the owners the caller is a friend of (PS-OBJ-022); what blocks
+ * it is not said (UX-PRIV-004). The next step is to ask to borrow it; in an
  * environment the thing can also be followed and asked about there
  * (PS-OBJ-014–015).
  */
@@ -122,15 +127,15 @@ export async function ViewerView({
           </>
         }
       />
-      {environment && (
-        <ObjectGallery
-          title={object.title}
-          images={object.images}
-          src={(imageId) =>
-            environmentImageHref(environment.id, object.objectId, imageId)
-          }
-        />
-      )}
+      <ObjectGallery
+        title={object.title}
+        images={object.images}
+        src={(imageId) =>
+          environment
+            ? environmentImageHref(environment.id, object.objectId, imageId)
+            : friendImageHref(object.objectId, imageId)
+        }
+      />
       <StatusCard
         status={status.label}
         tone={status.tone}

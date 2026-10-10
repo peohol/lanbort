@@ -1,12 +1,9 @@
 /* The loan's pages (KF1 v2, KF7): what is particular to a loan, on top of
    the shared Tomat foundation in globals.css. */
 
-/* A wider screen gives the timeline its own column (KF7, «Større skjerm»). */
+/* A wider screen gives the timeline its own column (KF7, «Større skjerm»),
+   in the shared wide page (`main-wide`). */
 @media (min-width: 64rem) {
-  :global(.app-content) main.page {
-    width: min(64rem, 100%);
-  }
-
   .layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -23,6 +20,19 @@
 
 .column > :global(.status-card) {
   margin: 0;
+}
+
+/* The thing's picture beside the title (KF7). */
+.thing {
+  display: block;
+  width: 3rem;
+  height: 3rem;
+  object-fit: cover;
+  border-radius: var(--radius-field);
+}
+
+img.thing {
+  background: var(--color-sunken);
 }
 
 /* The way from request to done: done steps as filled dots, the step the

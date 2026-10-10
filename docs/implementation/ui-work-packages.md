@@ -1,6 +1,6 @@
 # Brukerflaten: UI-arbeidspakker
 
-> **Status:** Plan for Fase 8, 6. oktober 2026. Serverens domene og API er bygget for nesten hele produktmodellen; brukerflaten dekker foreløpig bare Hjem, Finn, Lån, lånets side, Mine ting (liste), Samtaler, Varsler og Konto. Denne planen bygger resten som én helhetlig, mobil-først app etter [UX-modellen](../ux/README.md).
+> **Status 10. oktober 2026:** Pakkene WP-80–WP-89 og WP-27 under er bygget (6.–7. oktober 2026). Siden 9. oktober tas sidene over til det godkjente Tomat-designet, flyt for flyt. [Designreferansene](../../design/README.md#aktive-filer) viser hvilke flyter som er godkjent og hvor langt hver er bygget. Det som gjenstår, står under hver pakke og under «Senere». En flyt er ikke bygget før den står som bygget her. Planen var å bygge brukerflaten som én helhetlig, mobil-først app etter [UX-modellen](../ux/README.md).
 
 ## Prinsipper for alle pakkene
 
@@ -39,7 +39,7 @@ Et naturlig første uttak for et testpanel er WP-81, WP-83, WP-84 og WP-87: å r
 
 ## Tomat i appen — felles designgrunnlag
 
-Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) er lagt inn i appens felles grunnlag. Sporene som tar over sider til Tomat, bruker dette og lager ikke egne varianter. Mangler en byggestein, legges den til her først.
+Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) og navigasjonsmodellen fra UI-designets fase 2 (UX-IA-009–015, UX-IA-020) er lagt inn i appens felles grunnlag (#85, #88, #96, #108 og #114). Sporene som tar over sider til Tomat, bruker dette og lager ikke egne varianter. Mangler en byggestein, legges den til her først.
 
 - **Stil og tokens:** `apps/web/src/app/globals.css`. Farger (`--color-*`, lys og mørk modus med AA-kontrast), avstander (`--space-*`), radier (`--radius-*`), tekststørrelser (`--text-*`) og skriftene Atkinson Hyperlegible Next og Quicksand (selvhostet i `public/fonts/`). Kort er `.card`, rader er `.entries`/`.entry`, filtre er `.filters`.
 - **Knapper:** vanlig knapp er nøytral; `.button-primary` er neste steg (UX-INT-001), `.button-secondary` er et mildere steg ved siden av, `.button-danger` er destruktiv i omriss og fylles bare i bekreftelsen (`ConfirmAction`), og `.button-quiet` er en stille lenke som «Flere valg».
@@ -165,12 +165,12 @@ Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) er la
 **Gjenstår etter beslutningene 9. oktober 2026** (designreferanse: [Personer, venner og tillit v1](../../design/L%C3%A5nbort%20-%20Personer%2C%20venner%20og%20tillit%20v1.html)). Bygges i det vertikale sporet, ikke i designarbeidet:
 
 - **Sperre etter avslag (PS-USR-012).** Bygget 9. oktober 2026. Serveren avviser `friendship.request` med det samme nøytrale svaret som ved egen blokkering når parets siste vennskapsrad er avslått og ble sendt av den som prøver; databasen holder samme regel. Relasjonen har feltet `canRequest`, som bare sier om en forespørsel kan sendes nå, og personens side sier da «Du kan ikke sende … en venneforespørsel nå».
-- **Varsler (PS-USR-011).** Appen varsler allerede bare ny og godtatt forespørsel, og varselet åpner personens side med gjeldende relasjon. Når varslingssenteret får designet, må et varsel om en trukket forespørsel si at den ikke lenger gjelder (UX-IA-019).
-- **Konto som lag (UX-IA-020).** I dag er Konto en vanlig side (`/konto`). Den blir et fullskjerms lag med egen stabel og «Lukk» som returnerer til forrige skjerm med tilstanden. Bygges sammen med stabelen fra UI-designets fase 2 (se «Senere»).
+- **Varsler (PS-USR-011).** Appen varsler bare ny og godtatt forespørsel, og varselet åpner personens side med gjeldende relasjon. Varslingssenteret i Tomat (#99) sier om en forespørsel er godtatt, eller at den ikke lenger gjelder (UX-IA-019).
+- **Konto som lag (UX-IA-020).** Bygget 9. oktober 2026 (#96): Konto er et fullskjerms lag med egen stabel, og «Lukk» returnerer til forrige skjerm med tilstanden.
 - **Rollen fra inngangen først (UX-PRIV-012).** Bygget 9. oktober 2026. Lenker fra et lån, en forespørsel, en ting og en anmeldelse gir rollen i adressen (`?rolle=laantaker|utlaaner`), og tillitsprofilen viser den rollen først. Andre innganger gir standardrekkefølgen. Nye innganger med en rolle gir den til `PersonName`.
 - **Ingen aktivitetstall (PS-TRUST-017).** Appen viser ingen i dag; ingenting skal bygges.
 - **Personens side i Tomat.** Bygget 9. oktober 2026 etter designreferansen: hvorfor du ser personen (felles miljøer og vennskap), kortet «Dere to» med bare neste steg, «Mellom dere nå» (lånene dere har sammen som ikke er avsluttet), erfaringene per rolle med egen side per rolle (`/personer/[id]/som-laantaker|som-utlaaner`) med fordelingsstriper og anmeldelser, tingene en venn har gjort synlige for venner (UI-delen av WP-27 for profilen), og fjern, blokker og rapporter under «Flere valg». Avslag, tilbaketrekking og fjerning blir på siden når et felles miljø fortsatt gir tilgang. På stor skjerm står erfaringene i en egen spalte til høyre (skjerm 09).
-- **Venner og Blokkerte i Konto.** Gjenstår: egne sider i Konto-laget (designreferansen skjerm 18–20), bygges når Konto er et lag (UX-IA-020).
+- **Venner og Blokkerte i Konto.** Bygget 9. oktober 2026 (#96) som egne sider i Konto-laget (designreferansen skjerm 18–20).
 
 ## WP-87 — Lånets side og anmeldelser
 
@@ -194,7 +194,7 @@ Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) er la
 - **Medeierens avgrensede innsyn (UX-PRIV-013).** Serverdelen er bygget 9. oktober 2026: `loan.read_as_co_owner` (`GET /api/loans/[loanId]/co-owner-view`) gir medeiere i eierkretsen ved godkjenning og den som er spurt om ansvaret bare feltene regelen nevner og egne steg. Andre medeiere og tidligere medeiere får «finnes ikke», og partenes visning er uendret. Lånets side viser denne visningen når `loan.read` svarer «finnes ikke» (bygget samme dag): «Lån · Du er medeier», statuskortet med medeierens eget svar, og periode, vilkår, låntaker og ansvarlig utlåner. Ved uenighet og uavklart avslutning vises ingen steglinje, fordi den ville røpet hva partene har sagt.
 - **Varsel når anmeldelser blir synlige (PS-TRUST-003).** Bygget 9. oktober 2026 på serveren: ett informasjonsvarsel per part og publisering, bare i appen som standard, som leder til `/lan/<id>#anmeldelser`. Anmeldelsesdelen på lånets side har `id="anmeldelser"`.
 - **Tilsvar uten fritekst (PS-TRUST-005).** Appen tillater allerede dette; ingenting skal bygges.
-- **Øvrige avvik i designreferansen:** «Kanseller» erstatter «Avlys» i appens tekster (bygget 9. oktober 2026, sammen med lånets side i Tomat, #91); «Avslutt lånet nå» under angrefristen (domenet støtter det); ny overleveringsdag under overleveringsavklaringen (UX-INT-001, domenet avviser i dag); en ventende ansvarsoverføring vises bare til utlåneren og medeieren (bygget i #91; låntakeren ser den bare når hen selv må godta).
+- **Øvrige avvik i designreferansen:** «Kanseller» erstatter «Avlys» i appens tekster (bygget 9. oktober 2026, sammen med lånets side i Tomat, #91); «Avslutt lånet nå» under angrefristen for utlånerens mottaksbekreftelse (bygget 9. oktober 2026); ny overleveringsdag under overleveringsavklaringen (UX-INT-001; domenet tillot det allerede, PS-LOAN-012, og statuskortet tilbyr det fra 9. oktober 2026); en ventende ansvarsoverføring vises bare til utlåneren og medeieren (bygget i #91; låntakeren ser den bare når hen selv må godta).
 
 ## WP-88 — Saker og arbeidskø
 
@@ -211,7 +211,7 @@ Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) er la
 
 **Avhenger av:** WP-80.
 
-**Gjenstår etter beslutningene 9. oktober 2026** (designreferanse: [Rapportering, saker og konfliktløsning v1](../../design/L%C3%A5nbort%20-%20Rapportering%2C%20saker%20og%20konfliktl%C3%B8sning%20v1.html)). Bygges i det vertikale sporet, ikke i designarbeidet:
+**Gjenstår etter beslutningene 9. oktober 2026** (designet ble godkjent 10. oktober 2026, #84; designreferanse: [Rapportering, saker og konfliktløsning v1](../../design/L%C3%A5nbort%20-%20Rapportering%2C%20saker%20og%20konfliktl%C3%B8sning%20v1.html)). Bygges i det vertikale sporet, ikke i designarbeidet:
 
 - **Avslutningsmelding (PS-COM-020).** «Lukk saken» i rapporter og meklinger krever en kort melding til partene, som blir sakens siste innlegg. Den skal ikke røpe vurderinger, tiltak mot andre, andres beskyttede opplysninger eller hvem som rapporterte. Lukking tar i dag ingen melding.
 - **Varsel til den et tiltak rammer (PS-TRUST-018).** Et påkrevd varsel til eieren eller forfatteren med tiltaket, hvor det virker, en kort begrunnelse og en vei til ny vurdering: «Kontakt administratorene» for et lokalt tiltak, Lånbort for et plattformtiltak. Det skal ikke røpe rapporten, melderen eller saksinnhold. Tiltak gir i dag ingen varsel. Tester: varselet går ut for hvert tiltak, og verken varselet eller lesemodellen røper rapporten eller melderen.
@@ -232,7 +232,6 @@ Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) er la
 
 ## Senere
 
-- Skjermstrukturen og navigasjonen som ble låst i UI-designets fase 2 (UX-IA-009–015) er ikke bygget ennå. I appen i dag går tilbakelenken til sidens faste område, ikke langs en stabel; varsler og e-postlenker åpner målet uten bygget stabel og merke; forespørselen og lånet er to sider; og skjemaet for låneforespørselen viser områdene. Dette bygges i det vertikale implementeringssporet fra designfase 4 ([UI-designplanen](../planning/ui-design-plan.md)).
 - **Samtaler i Tomat (kjerneflyt 5).** Bygget 9. oktober 2026: samtalelisten med én rad per person, pågående lån og mottatte forespørsler under navnet, siste melding og «Ny melding» markert bare på enheten; samtalen med «Lån mellom dere», dager, ventende meldinger og plass igjen i lånelogistikk; «Om samtalen» med lån, profil, sikkerhetskode, kontaktens enheter (ADR-0010 punkt 4) og «Fjern fra mine samtaler»; liste og samtale side om side på store skjermer. Enhetsflytene i Tomat: «Slå på privat chat», kobling av ny enhet som en avgrenset oppgave med kode som lages med en gang, utløpt og mislykket kobling, «Mine enheter» med ventende enhet øverst og fjerning gjennom bekreftelsesark, godkjenning med skanning eller kode og «Ikke godkjenn», og tilbakestilling som egen side (`/samtaler/tilbakestill`) med kode fra e-post. Varsler om nye meldinger (PS-COM-018): ett varsel per samtale som teller nye meldinger og flyttes øverst til samtalen er åpnet, «Demp samtalen» i «Om samtalen», og «Privat chat» i Varslingsvalg med egne valg for appen (på) og e-post (av, sendt etter ti minutter hvis varselet fortsatt er ulest). Gjenstår: åpning av fri samtale fra en mottatt forespørsel eller et spørsmål om en ting (serveren og `/samtaler?med=` finnes, men ingen side lenker dit), lenken fra lånet til den private samtalen (UX-IA-014), start av samtale fra personens side, gjenopprettingsnøkkelen (PS-COM-019), overføring av tidligere meldinger ved kobling (ADR-0010 punkt 5) og en egen avvisning av en ventende enhet (i dag utløper den av seg selv). Privat chat er av for ekte brukere til Port C.
 - Kort presentasjon og synlighetsvalg for andre profilfelt (PS-USR-002), når profilfeltene er fastsatt. Profilbildet er bygget, med eget synlighetsvalg, og vises som sirkel (PS-USR-002).
 - Flatene [skjerm- og flytinventaret](../ux/08-skjerm-og-flytinventar.md#hull-flater-uten-ui-pakke) viser at ingen pakke bygger ennå: melding om mulig dødsfall, administratorenes oversikt over medlemmer og utestengte, og for privat chat varsel før utlogging, gjenopprettingsnøkkel og overføring av gammel historikk (ADR-0010).

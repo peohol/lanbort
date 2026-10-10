@@ -584,6 +584,11 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     declarationVersion: 1,
   }),
   "loan.read": (ids) => ({ loanId: ids.loanId }),
+  "loan.read_image": (ids) => ({ loanId: ids.loanId, imageId: ids.imageId }),
+  "loan_request.read_image": (ids) => ({
+    requestId: ids.requestId,
+    imageId: ids.imageId,
+  }),
   "loan.read_as_co_owner": (ids) => ({ loanId: ids.loanId }),
   "loan.list": (ids) => ({ state: "current", objectId: ids.objectId }),
   "loan.read_history": (ids) => ({ loanId: ids.loanId }),
@@ -987,12 +992,14 @@ const chatReads = ["chat.read_conversation", "chat.read_directory"];
 // A party learns that the co-owner's view is not theirs (`forbidden`).
 const loanReads = [
   "loan_request.read",
+  "loan_request.read_image",
   "loan_review.read",
   "loan.list",
   "loan.read",
   "loan.read_as_co_owner",
   "loan.read_condition_reports",
   "loan.read_history",
+  "loan.read_image",
   "loan.read_logistics",
 ];
 
@@ -1081,6 +1088,7 @@ describe("co-owner boundaries", () => {
     const reached = await reachable(world, world.actors.coOwner, reads);
     expect(reached.filter((name) => loanReads.includes(name))).toEqual([
       "loan_request.read",
+      "loan_request.read_image",
       "loan.read_as_co_owner",
     ]);
   });

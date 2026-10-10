@@ -374,6 +374,8 @@ describe("closed environments", () => {
       name: "Borettslaget",
       membership: null,
       roles: [],
+      // PS-ENV-016: the owner is the only member, so «under 10».
+      members: { kind: "fewer_than", count: 10 },
     });
     expect(view.requirements).toHaveLength(1);
     expect(JSON.stringify(view)).not.toContain(owner.userId);
@@ -831,7 +833,10 @@ describe("hidden environments (PS-NFR-002)", () => {
       answers: await answersFor(member, environmentId),
     });
 
-    expect((await read(member, environmentId)).roles).toEqual([]);
+    const view = await read(member, environmentId);
+    expect(view.roles).toEqual([]);
+    // Nobody finds a hidden environment, so no count either (PS-ENV-016).
+    expect(view.members).toBeNull();
     await expect(memberships(member, environmentId)).rejects.toMatchObject({
       code: "forbidden",
     });

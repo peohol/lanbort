@@ -45,6 +45,13 @@
   margin: 0;
 }
 
+/* The title beside the thing's picture, when it has one. */
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 .cardTitle {
   margin: 0;
   font-family: var(--font-heading);

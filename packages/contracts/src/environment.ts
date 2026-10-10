@@ -19,6 +19,17 @@ export const membershipStateSchema = z.enum([
   "ended",
 ]);
 
+/**
+ * PS-ENV-016: about how many active members an environment has, as someone
+ * outside it may see it. Rounded on the server; the exact number is never
+ * sent. `fewer_than` says the count is below `count`, `about` that it is
+ * `count` rounded to the nearest ten.
+ */
+export const approximateMembersSchema = z.strictObject({
+  kind: z.enum(["fewer_than", "about"]),
+  count: z.number().int().nonnegative(),
+});
+
 export const membershipOriginSchema = z.enum([
   "founder",
   "self_service",
@@ -240,6 +251,11 @@ export const environmentSchema = z.strictObject({
   /** PS-ENV-011: objects need an administrator's approval to be visible. */
   requiresObjectApproval: z.boolean(),
   requirements: z.array(requirementSchema),
+  /**
+   * PS-ENV-016: about how many active members, rounded on the server. Null
+   * for a hidden environment, which nobody finds from outside.
+   */
+  members: approximateMembersSchema.nullable(),
   /** The caller's own relation to the environment. */
   membership: ownMembershipSchema.nullable(),
   roles: z.array(environmentRoleSchema),
@@ -328,6 +344,7 @@ export const environmentRolesSchema = z.strictObject({
 
 export type EnvironmentType = z.infer<typeof environmentTypeSchema>;
 export type MembershipState = z.infer<typeof membershipStateSchema>;
+export type ApproximateMembers = z.infer<typeof approximateMembersSchema>;
 export type MembershipOrigin = z.infer<typeof membershipOriginSchema>;
 export type MembershipReviewStage = z.infer<typeof membershipReviewStageSchema>;
 export type MembershipPassiveReason = z.infer<

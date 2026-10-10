@@ -940,7 +940,12 @@ describe("notifications of new messages (PS-COM-018)", () => {
       expect.objectContaining({
         detail: "messages_2",
         target: { type: "chat_conversation", id: conversationId },
-        about: { thing: null, person: expect.any(String), place: null },
+        about: {
+          thing: null,
+          picture: null,
+          person: expect.any(String),
+          place: null,
+        },
       }),
     ]);
   });

@@ -6,6 +6,7 @@ import {
   loanSteps,
   loanTitle,
   personName,
+  proposalDefaults,
 } from "./loan-status";
 
 const id = "00000000-0000-4000-8000-000000000001";
@@ -32,6 +33,7 @@ function loan(changes: Partial<Loan> = {}): Loan {
     requestId: id,
     origin: { kind: "direct" },
     objectId: id,
+    images: [],
     role: "borrower",
     borrowerUserId: id,
     responsibleLenderId: id,
@@ -413,6 +415,32 @@ describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
     ]);
   });
 
+  it("lets the lender end the loan at once while the receipt waits", () => {
+    const waiting = (outcome: "returned" | "received") =>
+      loanSteps(
+        loan({
+          status: "awaiting_return",
+          role: outcome === "received" ? "lender" : "borrower",
+          return: {
+            borrower: null,
+            lender: null,
+            pending: { outcome, effectiveAt: at },
+          },
+          actions: { ...noActions, undoReturn: true },
+        }),
+      ).primary;
+
+    expect(waiting("received")).toEqual([
+      { label: "Angre", path: `/api/loans/${id}/return/undo`, body: {} },
+      {
+        label: "Avslutt lånet nå",
+        path: `/api/loans/${id}/return`,
+        body: { agreementVersion: 2, outcome: "received", immediately: true },
+      },
+    ]);
+    expect(waiting("returned").map(({ label }) => label)).toEqual(["Angre"]);
+  });
+
   it("answers the open proposal and transfer by their own ids", () => {
     const transferId = "00000000-0000-4000-8000-000000000002";
     const steps = loanSteps(
@@ -536,5 +564,30 @@ describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
       primary: [],
       secondary: [],
     });
+  });
+});
+
+describe("where a proposal starts from (PS-LOAN-010)", () => {
+  const period = { start: "2026-10-05", end: "2026-10-07" };
+
+  it("keeps the agreed period while its handover is ahead", () => {
+    expect(proposalDefaults(period, "period", "2026-10-04")).toEqual(period);
+  });
+
+  it("moves a passed handover day to today, keeping the length", () => {
+    expect(proposalDefaults(period, "period", "2026-10-09")).toEqual({
+      start: "2026-10-09",
+      end: "2026-10-11",
+    });
+  });
+
+  it("moves only the return day after the handover, to tomorrow at the earliest", () => {
+    expect(proposalDefaults(period, "return_day", "2026-10-08")).toEqual({
+      start: "2026-10-05",
+      end: "2026-10-09",
+    });
+    expect(proposalDefaults(period, "return_day", "2026-10-06")).toEqual(
+      period,
+    );
   });
 });

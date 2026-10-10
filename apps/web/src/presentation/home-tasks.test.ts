@@ -33,6 +33,7 @@ function item(kind: HomeItemKind, details: Partial<HomeItem> = {}): HomeItem {
     role: "lender",
     person: "Ola",
     via: "Borettslaget Lia",
+    picture: null,
     period: null,
     day: null,
     dueAt: null,

@@ -30,6 +30,7 @@ import {
   newEnvironmentHref,
   objectHref,
 } from "@/navigation/routes";
+import { describeMembers } from "@/presentation/environments";
 import { availabilityStatus } from "@/presentation/objects";
 import {
   describeFoundIn,
@@ -328,11 +329,11 @@ async function EnvironmentSearch({
               >
                 {environment.name}
               </Link>
-              {environment.location && (
-                <ContextTag label="Sted" icon="environment">
-                  {environment.location}
-                </ContextTag>
-              )}
+              <ContextTag label="Sted og størrelse" icon="environment">
+                {[environment.location, describeMembers(environment.members)]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </ContextTag>
               {environment.description && (
                 <span className={styles.description}>
                   {environment.description}

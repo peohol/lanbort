@@ -14,6 +14,7 @@ import type {
 import { sql } from "kysely";
 import { z } from "zod";
 import { defineQuery } from "../commands/query";
+import { loadApproximateMembers } from "./member-count";
 import {
   type AdministratorRecord,
   administrators,
@@ -168,6 +169,12 @@ export const getEnvironment = defineQuery({
       resource: {
         ...access,
         requirements: await currentRequirements(db, input.environmentId),
+        members:
+          access.environment.type === "hidden"
+            ? null
+            : ((
+                await loadApproximateMembers(db, [input.environmentId], now)
+              ).get(input.environmentId) ?? null),
         answers: own ? ((await answersOf(db, [own.id])).get(own.id) ?? []) : [],
         continuity,
         typeChange:
@@ -200,6 +207,7 @@ export const getEnvironment = defineQuery({
         kind,
         text,
       })),
+      members: resource.members,
       membership: ownMembership
         ? presentMembership(
             ownMembership,

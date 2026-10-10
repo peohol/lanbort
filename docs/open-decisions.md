@@ -192,15 +192,6 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Avklares før:** plattformforvalterens flater designes og vises (etter OD-0023). Til da finnes ingen slik flate i appen.
 - **Anbefaling:** Start alle inngrep fra en sak i plattformkøen, slik at begrunnelse, habilitet og historikk følger saken (PS-TRUST-016, PS-ADM-014), og vis ingen forvalterhandlinger på ordinære person- og miljøsider.
 
-### OD-0048 — Omtrentlig medlemstall før medlemskap
-- **Lag:** Produktspesifikasjon
-- **Status:** Åpen
-- **Berører:** PS-ENV-001, [visjon 03](vision/03-miljoer.md) («omtrentlig medlemstall»), Finn miljøer i Tomat-designet
-- **Spørsmål:** Visjonen sier at den som ikke er medlem kan se et omtrentlig medlemstall for åpne og lukkede miljøer, og designet for Finn viser for eksempel «ca. 140 medlemmer», men spesifikasjonen sier ikke hvor grovt tallet skal være. Et nøyaktig tall i små miljøer kan avsløre når én bestemt person blir med eller går ut. Hvordan skal tallet rundes, og skal små miljøer vises uten tall? Inntil dette er besluttet, viser Finn ikke medlemstall.
-- **Avhenger av:** Produktvurdering av personvern i små miljøer.
-- **Avklares før:** medlemstallet skal vises i Finn eller på miljøets side for ikke-medlemmer.
-- **Anbefaling:** Vis «under 10 medlemmer» for de minste miljøene, og ellers tallet rundet til nærmeste ti («ca. 140 medlemmer»), slik at én person inn eller ut sjelden endrer det som vises.
-
 ### OD-0050 — Varsel til søkeren når en søknad er avgjort
 - **Lag:** Produktspesifikasjon
 - **Status:** Åpen
@@ -238,6 +229,21 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Anbefaling:** Samme nøytrale avslag som ellers, men uten «du kan søke på nytt». Miljøets side sier rolig at man ikke kan søke om å bli med nå, uten grunn og uten å si hvem som avgjorde det.
 
 ## Avklart
+
+### OD-0054 — Eiernavn når en ting er delt direkte med venner
+- **Lag:** Produktspesifikasjon
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Beslutning:** Se [PS-OBJ-022](product-spec/03-utlansobjekter.md). Navnet vises bare for eiere betrakteren selv er venn med, også ved medeierskap, og håndheves på serveren.
+
+### OD-0048 — Omtrentlig medlemstall før medlemskap
+- **Lag:** Produktspesifikasjon
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Beslutning:** Se [PS-ENV-016](product-spec/02-miljoer.md). Rundet tall: «under 10 medlemmer» for små miljøer, ellers nærmeste ti.
+
+### OD-0049 — Tingens bilder på lånets side
+- **Lag:** Produktspesifikasjon
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Beslutning:** Se [PS-OBJ-021](product-spec/03-utlansobjekter.md#ps-obj-021--den-som-ser-tingens-navn-ser-også-bildene).
 
 ### OD-0038 — Hva den som rapporterte, får vite når saken lukkes
 - **Lag:** Produktspesifikasjon / UX

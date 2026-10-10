@@ -275,6 +275,23 @@ export async function loadImages(
 }
 
 /**
+ * One object's pictures in their order, as the API gives them; none once
+ * the object is deleted (`objectId` null).
+ */
+export async function currentImages(
+  db: Kysely<Database>,
+  objectId: string | null,
+): Promise<{ id: string; width: number; height: number }[]> {
+  if (objectId === null) {
+    return [];
+  }
+
+  return ((await loadImages(db, [objectId])).get(objectId) ?? []).map(
+    ({ id, width, height }) => ({ id, width, height }),
+  );
+}
+
+/**
  * The objects that are out of their owners' hands: handed over in a loan
  * that has not ended (PS-LOAN-014–017).
  */
