@@ -53,6 +53,10 @@
     {
       "path": "/api/internal/chat-retention",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/internal/retention",
+      "schedule": "23 3 * * *"
     }
   ]
 }

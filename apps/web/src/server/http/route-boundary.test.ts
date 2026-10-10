@@ -59,6 +59,11 @@ const nonUserRoutes: Record<
     reason:
       "deletes chat ciphertext and keys past their retention, authenticated with the cron secret",
   },
+  "GET /api/internal/retention": {
+    access: "scheduler",
+    reason:
+      "deletes data past the pilot's retention periods (OD-0002), authenticated with the cron secret",
+  },
   "GET /api/internal/case-queue-returns": {
     access: "scheduler",
     reason:

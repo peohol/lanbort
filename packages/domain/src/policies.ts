@@ -14,6 +14,7 @@ import { platformPolicies } from "./platform/policies";
 import { publicationPolicies } from "./publications/policies";
 import { questionPolicies } from "./questions/policies";
 import { restorePolicies } from "./restore/policies";
+import { retentionPolicies } from "./retention/policies";
 import { reviewPolicies } from "./reviews/policies";
 import { searchPolicies } from "./search/policies";
 import { socialPolicies } from "./social/policies";
@@ -43,6 +44,7 @@ export const allPolicies: readonly Policy<never, never>[] = [
   ...moderationPolicies,
   ...searchPolicies,
   ...restorePolicies,
+  ...retentionPolicies,
   ...chatPolicies,
   processOutboxPolicy,
 ];
