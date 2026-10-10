@@ -30,6 +30,12 @@ export interface DomainContext {
   readonly db: Kysely<Database>;
   readonly consumers: ConsumerRegistry;
   readonly clock?: () => Date;
+  /**
+   * Whether platform stewards may confirm privileged access with passkeys
+   * in this deployment (PLATFORM_STEWARDS_ENABLED, ADR-0011). Off unless
+   * set, so privileged access stays closed by default.
+   */
+  readonly platformStewards?: boolean;
 }
 
 export interface Loaded<R, C> {

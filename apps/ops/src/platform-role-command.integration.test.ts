@@ -1,13 +1,8 @@
-import { randomUUID } from "node:crypto";
 import { createDatabase } from "@lanbort/database";
-import {
-  completeRegistration,
-  ConsumerRegistry,
-  executeCommand,
-  resolveUserActor,
-} from "@lanbort/domain";
+import { ConsumerRegistry } from "@lanbort/domain";
 import { afterAll, describe, expect, it } from "vitest";
 import { runPlatformRoleCommand } from "./platform-role-command";
+import { registeredAccount } from "./testing";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -19,26 +14,9 @@ const db = createDatabase({ connectionString, maxConnections: 2 });
 afterAll(() => db.destroy());
 const domain = { db, consumers: new ConsumerRegistry() };
 
-async function registeredAccount() {
-  const email = `ops-${randomUUID()}@example.test`;
-  const actor = await resolveUserActor(domain, {
-    provider: "supabase",
-    subject: randomUUID(),
-    email,
-    emailVerified: true,
-    authentication: { sessionId: randomUUID(), assurance: "aal1", methods: [] },
-  });
-  await executeCommand(domain, completeRegistration, {
-    actor: actor!,
-    input: { realName: "Drift Testesen", adultConfirmed: true },
-    idempotencyKey: randomUUID(),
-  });
-  return { email, userId: actor!.userId };
-}
-
 describe("ops:platform-role", () => {
   it("grants and revokes through the audited command", async () => {
-    const { email } = await registeredAccount();
+    const { email } = await registeredAccount(domain);
 
     const granted = await runPlatformRoleCommand(domain, [
       "grant",
@@ -78,7 +56,7 @@ describe("ops:platform-role", () => {
   });
 
   it("retries a change safely with the announced key", async () => {
-    const { email, userId } = await registeredAccount();
+    const { email, userId } = await registeredAccount(domain);
     const keys: string[] = [];
     const grant = (...extra: string[]) =>
       runPlatformRoleCommand(

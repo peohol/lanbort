@@ -49,6 +49,11 @@ export const rateLimits = {
   chatResets: rule("chat_resets", 3, 24 * hours),
   /** History archives moved to a new device, part by part (ADR-0010 §5). */
   chatArchives: rule("chat_archives", 200, hours),
+  /**
+   * Platform stewards' passkey ceremonies: adding, confirming and removing
+   * (ADR-0011). A confirmation is two calls, every 10 minutes at most.
+   */
+  passkeys: rule("passkeys", 40, hours),
   /** Place names from the external place search. */
   placeSearch: rule("place_search", 30, 5 * minutes),
   /** E-mail codes sent to one address, for sign-in and re-authentication. */

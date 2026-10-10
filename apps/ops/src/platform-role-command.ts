@@ -4,11 +4,11 @@ import {
   type DomainContext,
   executeCommand,
   grantPlatformRole,
-  isDomainError,
   platformRoleOpsProcess,
   revokePlatformRole,
   systemActor,
 } from "@lanbort/domain";
+import { type CommandOutcome, refusal } from "./outcome";
 
 export const usage = `Grants or revokes a global product role (PS-USR-008).
 
@@ -24,11 +24,6 @@ Options:
 `;
 
 const commands = { grant: grantPlatformRole, revoke: revokePlatformRole };
-
-export interface CommandOutcome {
-  readonly exitCode: 0 | 1 | 2;
-  readonly message: string;
-}
 
 export interface CommandOptions {
   /** Told the key before the change runs, so an interrupted run can be retried. */
@@ -87,11 +82,6 @@ export async function runPlatformRoleCommand(
       message: `${action === "grant" ? "Granted" : "Revoked"} ${input.role} (grant ${output.grantId})${replayed ? ", already applied with this key" : ""}.`,
     };
   } catch (error) {
-    if (isDomainError(error)) {
-      const fields = error.fields.length ? ` (${error.fields.join(", ")})` : "";
-      return { exitCode: 1, message: `Refused: ${error.code}${fields}.` };
-    }
-
-    throw error;
+    return refusal(error);
   }
 }

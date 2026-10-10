@@ -8,6 +8,7 @@ import { loanRules } from "./rules/loans";
 import { moderationRules } from "./rules/moderation";
 import { objectRules } from "./rules/objects";
 import { relationRules } from "./rules/relations";
+import { stewardRules } from "./rules/stewards";
 import { recordNotifications } from "./store";
 
 /** Every event that makes notifications, and who it tells. */
@@ -18,6 +19,7 @@ export const notificationRules: readonly NotificationRule[] = [
   ...moderationRules,
   ...objectRules,
   ...chatRules,
+  ...stewardRules,
 ];
 
 export function rulesByEventType(rules: readonly NotificationRule[]) {

@@ -18,3 +18,53 @@ export const platformRoleRevoked = defineEvent({
   resourceType: "user",
   payload: z.strictObject({ role: platformRoleSchema }),
 });
+
+/**
+ * A steward's passkey was added (ADR-0011, OD-0023): with an enrollment code
+ * from the operational command, or from a session already confirmed with
+ * another passkey. Recorded before the passkey counts; never key material.
+ */
+export const stewardPasskeyAdded = defineEvent({
+  type: "steward_passkey.added",
+  version: 1,
+  kind: "audit",
+  resourceType: "user",
+  payload: z.strictObject({
+    passkeyId: z.uuid(),
+    enrolledWith: z.enum(["enrollment_code", "passkey"]),
+  }),
+});
+
+/** The steward confirmed a session with a passkey. */
+export const stewardPasskeyConfirmed = defineEvent({
+  type: "steward_passkey.confirmed",
+  version: 1,
+  kind: "audit",
+  resourceType: "user",
+  payload: z.strictObject({ passkeyId: z.uuid() }),
+});
+
+/** A passkey stopped counting: removed by the steward, or by a reset. */
+export const stewardPasskeyRemoved = defineEvent({
+  type: "steward_passkey.removed",
+  version: 1,
+  kind: "audit",
+  resourceType: "user",
+  payload: z.strictObject({ passkeyId: z.uuid() }),
+});
+
+/**
+ * The operational command issued a one-time enrollment code, voiding any
+ * earlier one; the code itself is never recorded. A reset removed the
+ * steward's passkeys first, each with its own removal.
+ */
+export const stewardEnrollmentCodeIssued = defineEvent({
+  type: "steward_passkey.enrollment_code_issued",
+  version: 1,
+  kind: "audit",
+  resourceType: "user",
+  payload: z.strictObject({
+    codeId: z.uuid(),
+    removedPasskeys: z.number().int().min(0),
+  }),
+});

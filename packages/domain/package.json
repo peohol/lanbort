@@ -20,5 +20,8 @@
     "@lanbort/observability": "workspace:*",
     "kysely": "0.29.6",
     "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@lanbort/auth": "workspace:*"
   }
 }

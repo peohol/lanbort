@@ -25,6 +25,19 @@ const serverEnvSchema = z.object({
    * exact value `true` turns it on, for local development and CI.
    */
   CHAT_ENABLED: z.string().optional(),
+  /**
+   * Platform stewards' privileged access and the cases only they handle
+   * (ADR-0011, OD-0023): off until WebAuthn and the security controls are
+   * verified in this deployment; only the exact value `true` turns it on.
+   */
+  PLATFORM_STEWARDS_ENABLED: z.string().optional(),
+  /**
+   * The domain stewards' passkeys are bound to, when it is wider than
+   * APP_URL's host (e.g. `xn--lnbort-iua.no` for `www.xn--lnbort-iua.no`).
+   * Passkeys only work with APP_URL set; both come from configuration,
+   * never from the request.
+   */
+  WEBAUTHN_RP_ID: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -36,6 +49,14 @@ let cached: ServerEnv | undefined;
  * its own, so a chat route or page that is off needs no other configuration.
  */
 export const chatEnabled = () => process.env.CHAT_ENABLED === "true";
+
+/**
+ * Whether platform stewards can confirm privileged access with passkeys, and
+ * so whether the platform's cases can be received and handled at all, in
+ * this environment; off unless set (ADR-0011, OD-0023).
+ */
+export const platformStewardsEnabled = () =>
+  process.env.PLATFORM_STEWARDS_ENABLED === "true";
 
 /**
  * Server configuration, validated on first use rather than at import time so

@@ -21,6 +21,7 @@
     "@lanbort/observability": "workspace:*",
     "@lanbort/places": "workspace:*",
     "@lanbort/storage": "workspace:*",
+    "@simplewebauthn/browser": "14.0.0",
     "maplibre-gl": "6.11.2",
     "next": "16.3.8",
     "react": "19.3.0",

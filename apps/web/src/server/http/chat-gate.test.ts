@@ -7,7 +7,7 @@ vi.mock("next/headers", () => ({
 }));
 
 const { createRouteFactory, boundaryOf } = await import("./route");
-const { chatOnly } = await import("./chat-gate");
+const { chatOnly, stewardsOnly } = await import("./chat-gate");
 
 const route = createRouteFactory({
   domain: () => ({ db: {} as never, consumers: new ConsumerRegistry() }),
@@ -17,30 +17,37 @@ const route = createRouteFactory({
   cronSecret: () => undefined,
 });
 
-const handler = chatOnly(
-  route.public(async () => Response.json({ reached: true })),
-);
-const call = () =>
-  handler(new NextRequest("http://localhost/api/chat/inbox"), {
-    params: Promise.resolve({}),
-  });
+describe.each([
+  { gate: chatOnly, flag: "CHAT_ENABLED", what: "private chat (Port C)" },
+  {
+    gate: stewardsOnly,
+    flag: "PLATFORM_STEWARDS_ENABLED",
+    what: "platform stewards (ADR-0011)",
+  },
+])("$what gate", ({ gate, flag }) => {
+  const handler = gate(
+    route.public(async () => Response.json({ reached: true })),
+  );
+  const call = () =>
+    handler(new NextRequest("http://localhost/api/gated"), {
+      params: Promise.resolve({}),
+    });
 
-describe("private chat gate (Port C)", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
-  it("answers as if the route did not exist unless chat is turned on", async () => {
+  it("answers as if the route did not exist unless turned on", async () => {
     for (const value of [undefined, "", "1", "TRUE", "false"]) {
-      vi.stubEnv("CHAT_ENABLED", value);
+      vi.stubEnv(flag, value);
       const response = await call();
       expect(response.status).toBe(404);
       expect(await response.json()).toEqual({ error: { code: "not_found" } });
     }
   });
 
-  it("passes through when chat is on, keeping the route's boundary", async () => {
-    vi.stubEnv("CHAT_ENABLED", "true");
+  it("passes through when turned on, keeping the route's boundary", async () => {
+    vi.stubEnv(flag, "true");
     expect(await (await call()).json()).toEqual({ reached: true });
     expect(boundaryOf(handler)).toEqual({ access: "public" });
   });

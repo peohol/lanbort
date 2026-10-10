@@ -1,17 +1,22 @@
 import {
   type AuthAdmin,
   type AuthGateway,
+  AuthProviderError,
   type CookieStore,
   createAuthAdmin,
   createAuthGateway,
+  createPasskeyCeremonies,
+  passkeyConfigFor,
 } from "@lanbort/auth";
 import { createDatabase } from "@lanbort/database";
 import {
   type DomainContext,
   type IdentityProviderAdmin,
   outboxConsumers,
+  type StewardPasskeyCommands,
+  stewardPasskeyCommands,
 } from "@lanbort/domain";
-import { serverEnv } from "./env";
+import { platformStewardsEnabled, serverEnv } from "./env";
 import { objectImageServices, profilePictureServices } from "./images";
 
 /**
@@ -56,6 +61,7 @@ const consumers = outboxConsumers({
 });
 
 let domain: DomainContext | undefined;
+let passkeys: StewardPasskeyCommands | undefined;
 
 export const runtime: Runtime = {
   domain() {
@@ -66,6 +72,7 @@ export const runtime: Runtime = {
         maxConnections: 5,
       }),
       consumers,
+      platformStewards: platformStewardsEnabled(),
     };
 
     return domain;
@@ -86,3 +93,25 @@ export const runtime: Runtime = {
     return serverEnv().CRON_SECRET;
   },
 };
+
+/**
+ * Stewards' passkey ceremonies for this deployment's relying party
+ * (APP_URL, WEBAUTHN_RP_ID); `unavailable` without APP_URL.
+ */
+export function passkeyCommands(): StewardPasskeyCommands {
+  if (!passkeys) {
+    const env = serverEnv();
+
+    if (!env.APP_URL) {
+      throw new AuthProviderError("unavailable");
+    }
+
+    passkeys = stewardPasskeyCommands(
+      createPasskeyCeremonies(
+        passkeyConfigFor(env.APP_URL, env.WEBAUTHN_RP_ID),
+      ),
+    );
+  }
+
+  return passkeys;
+}

@@ -79,6 +79,8 @@ export const notificationEmailSubjects = {
     "Privat chat på kontoen din er tilbakestilt, og tidligere enheter er stengt ute",
   "chat.device_linked": "En ny enhet er koblet til privat chat",
   "chat.new_messages": "Du har en ny melding i Lånbort",
+  "steward.passkeys_changed":
+    "Passkeys for plattformforvaltningen din er endret",
 } as const satisfies Record<NotificationKind, string>;
 
 /** Why the recipient gets the e-mail at all (PS-COM-003). */
@@ -96,6 +98,8 @@ const kindReasons: Partial<Record<NotificationKind, string>> = {
   "chat.account_key_reset":
     "Du får denne e-posten fordi sikkerhetsvarsler om kontoen din alltid sendes på e-post.",
   "chat.device_linked":
+    "Du får denne e-posten fordi sikkerhetsvarsler om kontoen din alltid sendes på e-post.",
+  "steward.passkeys_changed":
     "Du får denne e-posten fordi sikkerhetsvarsler om kontoen din alltid sendes på e-post.",
   "chat.new_messages":
     "Du får denne e-posten fordi du har valgt e-post om nye meldinger i privat chat. Du kan slå det av i varslingsvalgene i Lånbort.",

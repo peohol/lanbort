@@ -11,7 +11,8 @@
     "test:integration": "vitest run .integration.test.ts",
     "platform-role": "tsx src/platform-role.ts",
     "restore": "tsx src/restore.ts",
-    "storage": "tsx src/storage-snapshot.ts"
+    "storage": "tsx src/storage-snapshot.ts",
+    "steward-passkeys": "tsx src/steward-passkeys.ts"
   },
   "dependencies": {
     "@lanbort/database": "workspace:*",

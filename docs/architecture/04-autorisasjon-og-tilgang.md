@@ -51,7 +51,7 @@ Inntil OD-0003 er avgjort finnes ingen representative grant, og ingen kodevei gi
 - re-autentisering for kontosletting, eierskapsoverføring og andre sensitive handlinger
 - vanlige brukere skal ikke ha et generelt krav om MFA i pilotmodellen; verifisert e-post er den etablerte basisen for konto og innlogging
 - handlinger som plattformforvalter skal kreve et sterkere autentiseringsnivå enn vanlig innlogging; mekanismen er passkey/WebAuthn som andre faktor ([ADR-0011](decisions/ADR-0011-webauthn-for-plattformforvaltere.md)), der fysisk sikkerhetsnøkkel støttes, men ikke kreves
-- tilgangsgrensen er fail closed: så lenge WebAuthn-mekanismen ikke er implementert, avvises privilegerte plattformforvalterhandlinger uansett hva identitetsleverandøren rapporterer, og den må være bygget før slike handlinger tas i reell bruk (produksjon eller pilot med reelle brukere)
+- tilgangsgrensen er fail closed: privilegerte plattformforvalterhandlinger avvises uansett hva identitetsleverandøren rapporterer, med mindre forvalteren nettopp har bekreftet sesjonen med en av sine egne passkeys og har minst to (OD-0023); i et miljø der forvaltere ikke er slått på (`PLATFORM_STEWARDS_ENABLED`), avvises de alltid. Mekanismen må være verifisert der før slike handlinger tas i reell bruk (produksjon eller pilot med reelle brukere)
 - bare WebAuthn godtas som sterkere: TOTP/autentiseringsapp, SMS/telefon, gjenopprettingskoder, ny e-postkode og Vipps gir ikke sterkere autentisering og skal ikke innføres som standard eller krav uten en ny eksplisitt beslutning
 - støtte for sterkere autentisering hos miljøadministratorer kan vurderes senere, men skal ikke gjøres obligatorisk uten en egen beslutning
 

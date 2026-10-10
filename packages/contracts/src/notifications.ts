@@ -88,6 +88,7 @@ export const notificationKinds = {
   "chat.account_key_reset": "required",
   "chat.device_linked": "required",
   "chat.new_messages": "information",
+  "steward.passkeys_changed": "required",
 } as const satisfies Record<string, NotificationLevel>;
 
 export type NotificationKind = keyof typeof notificationKinds;
@@ -101,7 +102,8 @@ export type NotificationKind = keyof typeof notificationKinds;
  * deadline); konflikthendelser og vesentlige avvik. This is a rule per kind,
  * not a channel choice. Security events for
  * the account's private chat (a key reset or a newly linked device) go out
- * the same way, under PS-COM-016 and ADR-0010 §§5, 8. Other required kinds stay in the app
+ * the same way, under PS-COM-016 and ADR-0010 §§5, 8, and so do changes to a
+ * platform steward's passkeys (OD-0023). Other required kinds stay in the app
  * only, until OD-0004 settles the channels per kind and level.
  */
 export const emailReserveKinds = [
@@ -115,6 +117,7 @@ export const emailReserveKinds = [
   "loan.possession_uncertain",
   "chat.account_key_reset",
   "chat.device_linked",
+  "steward.passkeys_changed",
 ] as const satisfies readonly NotificationKind[];
 
 export const notificationKindSchema = z.enum(
@@ -129,7 +132,8 @@ export const notificationKindSchema = z.enum(
  * A `chat_device` is one of the recipient's own chat devices, and a
  * `chat_conversation` one of their private conversations. A `loan_reviews`
  * target is the reviews on the loan with that id, which only its parties can
- * open (PS-TRUST-003).
+ * open (PS-TRUST-003). A `steward_access` target is the recipient's own
+ * privileged access as a platform steward (OD-0023), by their user id.
  */
 export const notificationTargetTypes = [
   "loan",
@@ -144,6 +148,7 @@ export const notificationTargetTypes = [
   "chat_conversation",
   "loan_reviews",
   "moderation_measure",
+  "steward_access",
 ] as const;
 export const notificationTargetTypeSchema = z.enum(notificationTargetTypes);
 

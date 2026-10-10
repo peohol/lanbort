@@ -58,6 +58,8 @@ const targetPages: Record<NotificationTargetType, Place | null> = {
     href: measureNoticeHref,
     anchor: (id) => `tiltak-${id}`,
   },
+  // The stewards' own pages come with their design (PS-ADM-015).
+  steward_access: null,
 };
 
 export function hrefFor(target: NotificationTarget): string | null {
