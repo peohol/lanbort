@@ -92,6 +92,8 @@ export function RequestForm({
     path: "/api/loan-requests",
     done: "Forespørselen er sendt",
     after: ({ requestId }) => loanRequestHref(requestId),
+    // Once sent, the form is done with: back from the request skips it.
+    replace: true,
     messages: {
       conflict:
         "Tingen er ikke ledig i hele tiden du ba om, eller vilkårene er endret. Siden viser nå det som gjelder. Se over og send igjen om det fortsatt passer.",

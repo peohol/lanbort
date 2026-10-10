@@ -68,6 +68,7 @@ export function ConfirmAction({
   idempotent = true,
   messages,
   next,
+  replace = false,
 }: {
   /** The button that opens the dialog. */
   label: string;
@@ -88,6 +89,8 @@ export function ConfirmAction({
   messages?: ErrorMessages;
   /** The page to go to once done, filled from the answer (`CommandForm`). */
   next?: string | undefined;
+  /** The page is done with once confirmed: `next` takes its place. */
+  replace?: boolean | undefined;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -97,6 +100,7 @@ export function ConfirmAction({
     idempotent,
     messages: messages ?? {},
     after: next ? (data) => fillHref(next, data) : "refresh",
+    replace,
   });
 
   async function confirm() {

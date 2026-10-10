@@ -14,6 +14,8 @@ import {
   arrive,
   arriveInLayer,
   type DirectEntry,
+  isLayerStackOf,
+  isStackOf,
   type LayerStack,
   type Place,
   returnToArea,
@@ -34,8 +36,9 @@ import {
  * - the browser's back and forward move within the stack;
  * - everything else in the app adds to the stack, except where a direct
  *   entry is announced first (`expectDirectEntry`), as from a notification,
- *   and where a page is opened from inside a layer, which starts from the
- *   page's rule.
+ *   where a page is announced to take the current one's place
+ *   (`expectReplacement`), and where a page is opened from inside a layer,
+ *   which starts from the page's rule.
  */
 
 interface State {
@@ -138,11 +141,26 @@ export function expectDirectEntry(via: DirectEntry) {
   next = { how: "direct", via, seen: false };
 }
 
+/**
+ * The next page takes the current one's place, in the browser's history
+ * (`router.replace`) and in the stack, as after a step that is done with
+ * the page it was taken on. A form is not in the stack (`enterTask`), so
+ * the page after it is added as usual.
+ */
+export function expectReplacement() {
+  const inStack =
+    isStackOf(state.stack, here()) || isLayerStackOf(state.layer, here());
+  next = { how: inStack ? "replace" : "push", via: null, seen: false };
+}
+
+/** Whether the user followed something in the app to the page. */
+const followed = (how: Arrival) => how === "push" || how === "replace";
+
 /** The user has arrived at a detail page. */
 export function enterPlace(place: Place) {
   const { how, via } = take();
   // A page followed from inside a layer is not part of the stack under it.
-  const fromLayer = state.layer !== null && how === "push";
+  const fromLayer = state.layer !== null && followed(how);
 
   set({
     stack: arrive(state.stack, place, fromLayer ? "direct" : how, via),
@@ -161,7 +179,7 @@ export function enterTask(from: Place) {
   const fromLayer = state.layer !== null;
   const change = { layer: null, outside: outsideNow() };
 
-  if (how === "push" && state.stack !== null && !fromLayer) {
+  if (followed(how) && state.stack !== null && !fromLayer) {
     set(change);
     return;
   }

@@ -32,18 +32,6 @@
   outline: 3px solid var(--color-focus);
 }
 
-.image {
-  flex: none;
-  width: 4rem;
-  height: 4rem;
-  object-fit: cover;
-  border-radius: var(--radius-s);
-}
-
-img.image {
-  background: var(--color-sunken);
-}
-
 .body {
   display: grid;
   justify-items: start;

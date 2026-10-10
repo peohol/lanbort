@@ -23,6 +23,7 @@ export function CommandForm({
   submitLabel,
   done = submitLabel,
   next,
+  replace = false,
   idempotent = true,
   errorId,
   secondary = false,
@@ -35,6 +36,8 @@ export function CommandForm({
   /** What is announced when it is done; the submit label by default. */
   done?: string;
   next?: string;
+  /** The form is done with once sent: `next` takes its place (`useCommand`). */
+  replace?: boolean;
   idempotent?: boolean;
   errorId?: string;
   /** For a form that is not the page's main step. */
@@ -49,6 +52,7 @@ export function CommandForm({
     idempotent,
     ...(messages ? { messages } : {}),
     after: next ? (data) => fillHref(next, data) : "refresh",
+    replace,
   });
 
   function submit(event: FormEvent<HTMLFormElement>) {
