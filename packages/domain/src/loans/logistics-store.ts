@@ -9,8 +9,7 @@ import type { Kysely } from "kysely";
  * Database access for loan logistics channels (WP-44, PS-COM-007). The
  * database opens a channel when a block comes between the parties of a loan
  * in progress, and closes it when the loan ends or its parties change
- * (migration `…_phase4_loan_logistics`); the domain only reads them and
- * closes one early as a safety measure.
+ * (migration `…_phase4_loan_logistics`); the domain only reads them.
  */
 type Db = Kysely<Database>;
 
@@ -111,22 +110,6 @@ export async function findChannel(
   return row ? toChannel(row) : null;
 }
 
-/** The loan's open channel, locked for closing, or null. */
-export async function findOpenChannel(
-  db: Db,
-  loanId: string,
-): Promise<LoanLogisticsChannelRecord | null> {
-  const open = await db
-    .selectFrom("app.loan_logistics_channels")
-    .select("id")
-    .where("loan_id", "=", loanId)
-    .where("closed_at", "is", null)
-    .forUpdate()
-    .executeTakeFirst();
-
-  return open ? findChannel(db, open.id) : null;
-}
-
 /**
  * The loan's channels that joined `userId`, newest first. A party never sees
  * a channel between the other party and someone else (an earlier lender):
@@ -150,68 +133,4 @@ export async function findChannelsOf(
     .execute();
 
   return rows.map(toChannel);
-}
-
-/** Closes the open channel for `reason`; the database checks the reason. */
-export async function closeChannel(
-  db: Db,
-  channelId: string,
-  reason: LoanLogisticsCloseReason,
-  at: Date,
-): Promise<void> {
-  await db
-    .updateTable("app.loan_logistics_channels")
-    .set({ closed_at: at, close_reason: reason })
-    .where("id", "=", channelId)
-    .where("closed_at", "is", null)
-    .execute();
-}
-
-/**
- * Whether a channel on the loan between these two people was closed as a
- * safety measure, which keeps them from getting another.
- */
-export async function hasSafetyClosure(
-  db: Db,
-  loanId: string,
-  parties: { readonly borrowerUserId: string; readonly lenderUserId: string },
-): Promise<boolean> {
-  const row = await db
-    .selectFrom("app.loan_logistics_channels")
-    .select("id")
-    .where("loan_id", "=", loanId)
-    .where("borrower_user_id", "=", parties.borrowerUserId)
-    .where("lender_user_id", "=", parties.lenderUserId)
-    .where("close_reason", "=", "safety")
-    .executeTakeFirst();
-
-  return row !== undefined;
-}
-
-/**
- * Records a safety closure between people who were the loan's parties when
- * there is no channel to close: a restore re-applies the measure this way
- * (WP-72), so a later block cannot open another. The database allows no
- * other closed channel to be added.
- */
-export async function insertSafetyClosure(
-  db: Db,
-  loanId: string,
-  parties: { readonly borrowerUserId: string; readonly lenderUserId: string },
-  at: Date,
-): Promise<string> {
-  const { id } = await db
-    .insertInto("app.loan_logistics_channels")
-    .values({
-      loan_id: loanId,
-      borrower_user_id: parties.borrowerUserId,
-      lender_user_id: parties.lenderUserId,
-      opened_at: at,
-      closed_at: at,
-      close_reason: "safety",
-    })
-    .returning("id")
-    .executeTakeFirstOrThrow();
-
-  return id;
 }

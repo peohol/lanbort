@@ -38,6 +38,7 @@ export {
 export { openArchive, sealArchive } from "./archive";
 export {
   type AccountPackage,
+  MAX_PINNED_ACCOUNTS,
   exportLinkedArchive,
   importLinkedArchive,
   type LinkedArchive,
@@ -47,7 +48,6 @@ export {
   type OpenedLink,
   type PendingLink,
   approveLink,
-  linkCode,
   matchLinkRequest,
   normalizeLinkCode,
   readLinkQr,

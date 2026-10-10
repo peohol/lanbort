@@ -66,11 +66,12 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 
 ### OD-0002 — Oppbevaringstider per datatype
 - **Lag:** Tverrgående
-- **Status:** Åpen
+- **Status:** Pilotpolicy vedtatt (10. oktober 2026, på produkteiers oppdrag om en konservativ pilotpolicy); endelige regler åpne
 - **Berører:** PS-ADM-011, PS-NFR-009, PS-NFR-013
 - **Spørsmål:** Hvor lenge skal låne-, saks-, modererings-, sikkerhets- og øvrige historikkdata bevares?
-- **Avhenger av:** Produktbehov, personvern og juridisk vurdering.
-- **Avklares før:** pilot med reelle brukere (Port D) som en eksplisitt pilotpolicy; endelige regler før bred lansering (Port E).
+- **Pilot:** [Oppbevaring i piloten](implementation/retention.md): egne opplysninger går med kontoen; felles historikk, saker og hendelsesloggen står gjennom piloten med bare intern ID for slettede kontoer; varsler 180 dager; e-postleveranser, outbox og lagrede kommandosvar 30 dager; svar på miljøkrav 90 dager etter avsluttet medlemskap; backuper 7 dager. En planlagt jobb sletter det som er utløpt.
+- **Avhenger av:** Produktbehov, personvern og juridisk vurdering (OD-0007).
+- **Avklares før:** bred lansering (Port E): endelige frister, også for fritekst i felles historikk og saker.
 
 ### OD-0003 — Dokumentasjonskrav ved dødsfall eller varig utilgjengelighet
 - **Lag:** Produktspesifikasjon
@@ -355,4 +356,4 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0020 — Hvem kan stenge lånelogistikk-kanalen tidlig
 - **Lag:** Produktspesifikasjon
 - **Status:** Avklart (produkteier, 6. oktober 2026)
-- **Beslutning:** Se [PS-COM-007](product-spec/05-kommunikasjon-varsler-og-saker.md). Ingen part kan stenge samtalen mens lånet pågår; partene kan dempe eller arkivere den. Demping og arkivering er ikke bygget ennå (WP-44).
+- **Beslutning:** Se [PS-COM-007](product-spec/05-kommunikasjon-varsler-og-saker.md). Ingen part kan stenge samtalen mens lånet pågår; partene kan dempe eller arkivere den. Bygget: demping og arkivering virker for lånelogistikk som for andre samtaler, og databasen tillater ingen tidlig stenging (WP-44).

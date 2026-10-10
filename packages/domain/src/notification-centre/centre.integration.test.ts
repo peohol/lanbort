@@ -21,7 +21,12 @@ import {
 } from "../environment/role-commands";
 import { approveLoanRequest } from "../loans/approval";
 import { declineLoanRequest, withdrawLoanRequest } from "../loans/commands";
-import { inviteCoOwner, withdrawCoOwnerInvitation } from "../objects/co-owners";
+import {
+  acceptCoOwnerInvitation,
+  inviteCoOwner,
+  leaveObject,
+  withdrawCoOwnerInvitation,
+} from "../objects/co-owners";
 import { attachObjectImage } from "../objects/images";
 import { notificationGenerator } from "../notifications/generator";
 import { ConsumerRegistry } from "../outbox/consumer";
@@ -233,8 +238,16 @@ describe("a request for more information (PS-ENV-019)", () => {
       (
         await every(applicant, "environment.membership_information_requested")
       ).map(({ standing }) => standing);
-    const requestMore = () =>
-      run(requestInformation, admin, { environmentId: closed, membershipId });
+    // Delivered one at a time: the centre lists notifications in the order
+    // they were written, and another file's worker may otherwise write the
+    // second before the first.
+    const requestMore = async () => {
+      await run(requestInformation, admin, {
+        environmentId: closed,
+        membershipId,
+      });
+      await deliverAll(db, consumers);
+    };
 
     await requestMore();
     await run(submitAnswers, applicant, { environmentId: closed, answers: [] });
@@ -338,6 +351,29 @@ describe("invitations", () => {
     expect(await latest(invited, "object.co_owner_invited")).toMatchObject({
       about: { thing: null, picture: null },
       standing: "lapsed",
+    });
+  });
+
+  it("to co-own an object name it while co-owned, and not after leaving it", async () => {
+    const admin = await user();
+    const invited = await user();
+    const objectId = await create(admin);
+    const { invitationId } = await run(inviteCoOwner, admin, {
+      objectId,
+      userId: invited.userId,
+    });
+    const offered = await latest(invited, "object.co_owner_invited");
+    expect(offered.about.thing).toEqual(expect.any(String));
+    await run(acceptCoOwnerInvitation, invited, { invitationId });
+    expect(await latest(invited, "object.co_owner_invited")).toMatchObject({
+      about: { thing: offered.about.thing },
+      standing: "accepted",
+    });
+
+    await run(leaveObject, invited, { objectId });
+    expect(await latest(invited, "object.co_owner_invited")).toMatchObject({
+      about: { thing: null },
+      standing: "accepted",
     });
   });
 });

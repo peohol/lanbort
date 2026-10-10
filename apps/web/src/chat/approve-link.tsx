@@ -19,7 +19,7 @@ import { ChatIcon } from "./chat-icon";
 import { loadedPath } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";
 import { deviceName } from "./device-names";
-import type { ChatEngine } from "./engine";
+import type { ChatEngine, MatchedLinkRequest } from "./engine";
 import { chatErrorMessage } from "./messages";
 import { Notice } from "./notice";
 import { Points } from "./points";
@@ -138,7 +138,7 @@ function Approve({ engine }: { engine: ChatEngine }) {
   );
   const [requests, setRequests] = useState<ChatLinkRequest[]>();
   const [code, setCode] = useState("");
-  const [found, setFound] = useState<ChatLinkRequest>();
+  const [found, setFound] = useState<MatchedLinkRequest>();
   const [missing, setMissing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<{ moved: boolean } | null>(null);

@@ -72,6 +72,9 @@ import {
 import { groupIdOf } from "./model";
 import { chatRetentionProcess } from "./policies";
 
+/** A link request's commitment; the server stores it as it is (ADR-0010 §5). */
+const linkCommitment = Buffer.alloc(32, 7).toString("base64");
+
 /**
  * WP-43: the server side of private chat (ADR-0010). The server sees only
  * ciphertext; these tests check what it decides: who may act through which
@@ -323,6 +326,7 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
         deviceId,
         deviceKey,
         linkKey,
+        commitment: linkCommitment,
       },
     );
     expect(none).toBeNull();
@@ -432,6 +436,7 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
         deviceId: randomUUID(),
         deviceKey,
         linkKey,
+        commitment: linkCommitment,
       }),
     ).rejects.toMatchObject(conflict);
   });
@@ -462,6 +467,7 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
       deviceId,
       deviceKey,
       linkKey: deviceKey,
+      commitment: linkCommitment,
     });
     await expect(
       run(createChatArchive, laptop, forLink(linkRequestId, 2)),
@@ -567,6 +573,7 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
           deviceId,
           deviceKey,
           linkKey: deviceKey,
+          commitment: linkCommitment,
         });
         return { actor, deviceId, deviceKey, linkRequestId };
       }),
@@ -611,6 +618,7 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
       deviceId: randomUUID(),
       deviceKey,
       linkKey: deviceKey,
+      commitment: linkCommitment,
     });
     const { archiveId } = await run(createChatArchive, alice.actor, {
       purpose: "link",
@@ -976,6 +984,7 @@ describe("revoking and resetting (ADR-0010 §7–8)", () => {
       deviceId: laptopDevice.deviceId,
       deviceKey: laptopDevice.deviceKey,
       linkKey: laptopDevice.deviceKey,
+      commitment: linkCommitment,
     });
     await run(approveChatLink, phone, {
       linkRequestId,
@@ -1021,6 +1030,7 @@ describe("revoking and resetting (ADR-0010 §7–8)", () => {
       deviceId: stolenDevice.deviceId,
       deviceKey: stolenDevice.deviceKey,
       linkKey: stolenDevice.deviceKey,
+      commitment: linkCommitment,
     });
     await run(approveChatLink, phone, {
       linkRequestId,
@@ -1243,6 +1253,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
       deviceId: laptopDevice.deviceId,
       deviceKey: laptopDevice.deviceKey,
       linkKey: laptopDevice.deviceKey,
+      commitment: linkCommitment,
     });
     await run(approveChatLink, phone, {
       linkRequestId,

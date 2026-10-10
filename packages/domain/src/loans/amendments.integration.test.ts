@@ -172,6 +172,7 @@ describe("proposing a change (PS-LOAN-010)", () => {
           id: proposed.amendmentId,
           period: { start: day(2), end: day(6) },
           proposedBy: "borrower",
+          proposedByYou: party === borrower,
         },
       });
     }

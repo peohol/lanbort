@@ -807,6 +807,11 @@ export const loanSchema = z.strictObject({
       id: loanAmendmentIdSchema,
       period: loanPeriodSchema,
       proposedBy: loanRequestRoleSchema,
+      /**
+       * The caller made it. Not always so when `proposedBy` is the
+       * caller's side: a new lender takes over the side's open proposal.
+       */
+      proposedByYou: z.boolean(),
       proposedAt: z.iso.datetime(),
     })
     .nullable(),

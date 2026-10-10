@@ -320,6 +320,7 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
       deviceId: linking.deviceId,
       deviceKey: linking.deviceKey,
       linkKey: linking.deviceKey,
+      commitment: linking.deviceKey,
     })
   ).json();
   // The history the lender's phone moves to that device.

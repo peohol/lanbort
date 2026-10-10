@@ -31,6 +31,17 @@ const otherIsVisible: PairRule = ({ resource }) =>
     ? allow
     : deny("not_found");
 
+/**
+ * Saying no, taking a request back and ending a friendship need no answer
+ * from the other: they work also while the other's account is not active
+ * (PS-ADM-002), so nothing is left that the actor cannot end. Still not
+ * against one who blocks the actor, who does not exist to them.
+ */
+const otherIsNotHiding: PairRule = ({ resource }) =>
+  resource.blockedByActor || !resource.blockedByOther
+    ? allow
+    : deny("not_found");
+
 /** The actor has to lift their own block before contacting the other. */
 const notBlockedByActor: PairRule = ({ resource }) =>
   resource.blockedByActor ? deny("forbidden") : allow;
@@ -53,20 +64,33 @@ export const sendFriendRequestPolicy = definePolicy<SocialPair, void>({
 });
 
 /** Answering, withdrawing and ending act on the pair's open relation. */
-function relationPolicy(action: string) {
+function relationPolicy(
+  action: string,
+  resource: readonly PairRule[] = visiblePair,
+) {
   return definePolicy<SocialPair, void>({
     action,
     actor: [requireActiveAccount],
-    resource: visiblePair,
+    resource,
   });
 }
 
+/** What only ends a relation reaches an account that is not active too. */
+const endingPair = [actorIsParty, otherIsNotHiding] as const;
+
 export const acceptFriendRequestPolicy = relationPolicy("friendship.accept");
-export const declineFriendRequestPolicy = relationPolicy("friendship.decline");
+export const declineFriendRequestPolicy = relationPolicy(
+  "friendship.decline",
+  endingPair,
+);
 export const withdrawFriendRequestPolicy = relationPolicy(
   "friendship.withdraw",
+  endingPair,
 );
-export const removeFriendPolicy = relationPolicy("friendship.remove");
+export const removeFriendPolicy = relationPolicy(
+  "friendship.remove",
+  endingPair,
+);
 export const readSocialRelationPolicy = relationPolicy("social.relation.read");
 
 /**

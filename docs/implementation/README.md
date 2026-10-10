@@ -75,7 +75,6 @@ Bevisst utsatt:
 - WebAuthn som sterkere autentisering for plattformforvaltere (ADR-0011) er besluttet, men må bygges før slike handlinger tas i reell bruk (Port D); til da avvises de
 - endring av e-postadresse og synlighet per profilfelt (Fase 2)
 - egen databaserolle med minste privilegium for appen, og innstilling av hostet Supabase Auths egne grenser per IP når innlogging går via serveren (appens egne grenser per klient kom i WP-73), før pilot (Port D)
-- oppbevaringstid for audit-hendelser venter på OD-0002
 
 ### Fase 2 — Sosial modell, miljøer og objekter
 Mål: brukere kan etablere de kontekstene og objektene som senere lån bygger på.

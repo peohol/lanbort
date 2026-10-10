@@ -48,13 +48,6 @@ import { applyType } from "../environment/type-change-store";
 import { DomainError } from "../errors";
 import type { EventDefinition } from "../events/catalog";
 import type { EventRecorder } from "../events/recorder";
-import { loanLogisticsClosedForSafety } from "../loans/events";
-import {
-  closeChannel,
-  findOpenChannel,
-  hasSafetyClosure,
-  insertSafetyClosure,
-} from "../loans/logistics-store";
 import { moderationMeasureTaken } from "../moderation/events";
 import { archiveLockedObject } from "../objects/commands";
 import { removeOwner } from "../objects/co-owners";
@@ -1161,76 +1154,6 @@ const moderationReplay: RestoreReplay = {
 };
 
 /**
- * PS-COM-007: a logistics channel closed for safety stays closed, and its
- * parties get no new one. The block replay opens a new channel where the
- * restored copy had none, so the loan's open channel between the same
- * people is the one to close; with none to close (the block was lifted
- * again, or the loan has moved on), the closure is recorded on its own.
- */
-const logisticsSafetyReplay: RestoreReplay = {
-  name: "loan_logistics_safety_closure",
-  events: [loanLogisticsClosedForSafety],
-  capture: async (db, entry) => {
-    const channel = await db
-      .selectFrom("app.loan_logistics_channels")
-      .select(["borrower_user_id", "lender_user_id"])
-      .where("id", "=", entry.resourceId)
-      .executeTakeFirst();
-
-    return channel
-      ? {
-          borrowerUserId: channel.borrower_user_id,
-          lenderUserId: channel.lender_user_id,
-        }
-      : null;
-  },
-  replay: async ({ tx, entry, events, now }) => {
-    const { loanId } = payloadOf(loanLogisticsClosedForSafety, entry);
-    const borrowerUserId = entry.captured?.borrowerUserId;
-    const lenderUserId = entry.captured?.lenderUserId;
-
-    if (!borrowerUserId || !lenderUserId) {
-      needsHandling("The journal does not say whom the channel joined");
-    }
-
-    // A loan made after the backup is lost with the window, and its
-    // channel with it.
-    const loan = await tx
-      .selectFrom("app.loans")
-      .select("id")
-      .where("id", "=", loanId)
-      .executeTakeFirst();
-
-    if (!loan) {
-      return "unchanged";
-    }
-
-    const parties = { borrowerUserId, lenderUserId };
-    const open = await findOpenChannel(tx, loanId);
-    let channelId: string;
-
-    if (
-      open?.borrowerUserId === borrowerUserId &&
-      open.lenderUserId === lenderUserId
-    ) {
-      await closeChannel(tx, open.id, "safety", now);
-      channelId = open.id;
-    } else if (await hasSafetyClosure(tx, loanId, parties)) {
-      return "unchanged";
-    } else {
-      channelId = await insertSafetyClosure(tx, loanId, parties, now);
-    }
-
-    events.record(loanLogisticsClosedForSafety, {
-      resourceId: channelId,
-      payload: { loanId },
-    });
-
-    return "applied";
-  },
-};
-
-/**
  * Everything a restore re-applies, in no particular order: the journal's
  * own order decides. Every event type is either here or in
  * `restoreClassification`'s list of what a restore may lose.
@@ -1272,7 +1195,6 @@ export const restoreReplays: readonly RestoreReplay[] = [
   typeChangeReplay,
   windDownReplay,
   moderationReplay,
-  logisticsSafetyReplay,
   chatDeviceRevocationReplay,
   chatAccountKeyResetReplay,
 ];

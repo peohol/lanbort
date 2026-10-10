@@ -41,8 +41,10 @@ export function friendRequestStanding(
 
   if (friendship?.status === "active") return "accepted";
 
+  // A request from an account that is not active cannot be accepted now.
   return friendship?.status === "pending" &&
-    friendship.requesterId === pair?.otherUserId
+    friendship.requesterId === pair?.otherUserId &&
+    pair.otherActive
     ? "open"
     : "lapsed";
 }

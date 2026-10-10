@@ -1,6 +1,6 @@
 # Datalivssyklus, backup og gjenoppretting
 
-> **Status:** Systemarkitektur v0.1. Eksakte retention-tider er OD-0002.
+> **Status:** Systemarkitektur v0.1. Tidene for piloten står i [oppbevaring i piloten](../implementation/retention.md) (OD-0002); endelige tider før bred lansering.
 
 ## Klassifisering
 
@@ -59,4 +59,4 @@ Søkeindeks, cache, thumbnails og leverandørkopier må ha mekanisme for oppdate
 
 ## Retention
 
-Konkrete tider fastsettes i OD-0002 før bred lansering. Sikkerhetslogger bør ha klart kortere standardlevetid enn avtale-/saksdata med legitimt historisk behov.
+Pilotens tider står i [oppbevaring i piloten](../implementation/retention.md). Endelige tider fastsettes i OD-0002 før bred lansering. Sikkerhetslogger bør ha klart kortere standardlevetid enn avtale-/saksdata med legitimt historisk behov.

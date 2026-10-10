@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { isChatPage, usesCamera } from "@/navigation/chat";
 import { getSecurityHeaders } from "@/security-headers";
+import { pagePathHeader } from "@/server/page-path";
 import { runtime } from "@/server/runtime";
 
 /** Supabase session cookies are named `sb-<project>-auth-token[.n]`. */
@@ -31,7 +32,8 @@ function chatHeaders(request: NextRequest) {
  * Keeps sessions fresh: an expired access token is refreshed here, where the
  * new cookies can still be written to both the request and the response.
  * This is not an authorization layer; Route Handlers and domain policies
- * decide access. It also gives chat pages their own security headers.
+ * decide access. It also gives chat pages their own security headers, and
+ * pages the address they were asked for.
  */
 export async function proxy(request: NextRequest) {
   const security = chatHeaders(request);
@@ -40,6 +42,10 @@ export async function proxy(request: NextRequest) {
   )?.value;
   const forward = () => {
     const headers = new Headers(request.headers);
+    headers.set(
+      pagePathHeader,
+      request.nextUrl.pathname + request.nextUrl.search,
+    );
 
     if (policy) {
       headers.set("content-security-policy", policy);

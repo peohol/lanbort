@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import type { UserActor } from "../actor";
 import { resolveUserActor } from "../account/identity";
+import { deactivateAccount, reactivateAccount } from "../account/lifecycle";
 import { type DomainContext, executeCommand } from "../commands/command";
 import { executeQuery } from "../commands/query";
 import { ConsumerRegistry } from "../outbox/consumer";
@@ -720,5 +721,93 @@ describe("manipulated calls", () => {
       canRequest: false,
     });
     expect(await relationsBetween(anna, bo)).toHaveLength(1);
+  });
+});
+
+describe("an account that is not active (PS-ADM-002)", () => {
+  const account = () => registerTestUser(domain);
+  type Account = Awaited<ReturnType<typeof account>>;
+  const change = async (
+    { identity }: Account,
+    command: typeof deactivateAccount,
+  ) =>
+    executeCommand(domain, command, {
+      actor: (await resolveUserActor(domain, identity))!,
+      input: {},
+      idempotencyKey: randomUUID(),
+    });
+
+  it("can still be said no to, asked no longer, and unfriended", async () => {
+    const [{ actor: a }, b, c, friend] = (await Promise.all(
+      [1, 2, 3, 4].map(account),
+    )) as [Account, Account, Account, Account];
+    await run(sendFriendRequest, b.actor, a);
+    await run(sendFriendRequest, a, c.actor);
+    await friends(a, friend.actor);
+    for (const other of [b, c, friend]) {
+      await change(other, deactivateAccount);
+    }
+
+    // Nothing waits that cannot be answered.
+    const waiting = await overview(a);
+    expect(ids(waiting.incomingRequests)).toEqual([]);
+    expect(ids(waiting.outgoingRequests)).toEqual([]);
+    expect(ids(waiting.friends)).toEqual([friend.actor.userId]);
+    await expect(run(acceptFriendRequest, a, b.actor)).rejects.toMatchObject({
+      code: "not_found",
+    });
+
+    // Ending works without the other's answer, and offers no new request.
+    for (const [command, other] of [
+      [declineFriendRequest, b],
+      [withdrawFriendRequest, c],
+      [removeFriend, friend],
+    ] as const) {
+      expect((await run(command, a, other.actor)).output).toMatchObject({
+        friendship: "none",
+        canRequest: false,
+      });
+    }
+    for (const other of [b, c, friend]) {
+      expect(
+        (await relationsBetween(a, other.actor)).map((row) => row.status),
+      ).toEqual(["ended"]);
+    }
+  });
+
+  it("still looks missing when it blocks the caller", async () => {
+    const [{ actor: a }, b] = (await Promise.all([1, 2].map(account))) as [
+      Account,
+      Account,
+    ];
+    await friends(a, b.actor);
+    await run(blockUser, b.actor, a);
+    await change(b, deactivateAccount);
+    const nobody = randomUUID();
+
+    for (const command of [
+      declineFriendRequest,
+      withdrawFriendRequest,
+      removeFriend,
+    ]) {
+      const toBlocker = await run(command, a, b.actor).catch((error) => error);
+      const toNobody = await run(command, a, nobody).catch((error) => error);
+
+      expect(toBlocker).toMatchObject({ code: "not_found" });
+      expect(toBlocker.fields).toEqual(toNobody.fields);
+    }
+  });
+
+  it("brings a request back when the account is active again", async () => {
+    const [{ actor: a }, b] = (await Promise.all([1, 2].map(account))) as [
+      Account,
+      Account,
+    ];
+    await run(sendFriendRequest, b.actor, a);
+    await change(b, deactivateAccount);
+    expect(ids((await overview(a)).incomingRequests)).toEqual([]);
+
+    await change(b, reactivateAccount);
+    expect(ids((await overview(a)).incomingRequests)).toEqual([b.actor.userId]);
   });
 });

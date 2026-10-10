@@ -221,14 +221,19 @@ function amendmentSituation(loan: Loan): LoanSituation | null {
     ? `ny returdag: ${formatDay(amendment.period.end)}`
     : `ny periode: ${formatPeriod(amendment.period)}`;
   const agreed = formatPeriod(loan.period);
+  const deadline = handoverDeadline(loan);
+  const also = deadline ? [deadline] : [];
 
   if (amendment.proposedBy === loan.role) {
     return {
       label: `Venter på ${other}`,
       tone: "waiting",
-      headline: `Du har foreslått ${what}`,
+      headline: amendment.proposedByYou
+        ? `Du har foreslått ${what}`
+        : `Det er foreslått ${what}`,
       body: [
         `Ingenting endres før ${other} godtar. Til da gjelder avtalen som før: ${agreed}.`,
+        ...also,
       ],
     };
   }
@@ -237,13 +242,12 @@ function amendmentSituation(loan: Loan): LoanSituation | null {
     label: "Venter på deg",
     tone: "attention",
     headline: `${other} foreslår ${what}`,
-    body: loan.actions.amendment.includes("accept")
-      ? [
-          `Avtalt nå: ${agreed}. Godtar du, gjelder den nye avtalen for dere begge.`,
-        ]
-      : [
-          `Forslaget kan ikke godtas nå. Sier du nei, gjelder avtalen som før: ${agreed}.`,
-        ],
+    body: [
+      loan.actions.amendment.includes("accept")
+        ? `Avtalt nå: ${agreed}. Godtar du, gjelder den nye avtalen for dere begge.`
+        : `Forslaget kan ikke godtas nå. Sier du nei, gjelder avtalen som før: ${agreed}.`,
+      ...also,
+    ],
   };
 }
 
@@ -360,7 +364,6 @@ function handoverSituation(loan: Loan, today: string): LoanSituation {
 
   const mine = loan.handover[own];
   const theirs = loan.handover[otherSide(own)];
-  const due = loan.handover.answerDueAt;
 
   if (mine === null && theirs === null) {
     return {
@@ -373,16 +376,14 @@ function handoverSituation(loan: Loan, today: string): LoanSituation {
     };
   }
 
+  const deadline = handoverDeadline(loan);
+
   if (mine === null) {
     return {
       label: "Venter på deg",
       tone: "attention",
       headline: `${other} sier at overleveringen ikke skjedde`,
-      body: due
-        ? [
-            `Svar innen ${formatTime(due)}. Uten svar avsluttes lånet som ikke gjennomført.`,
-          ]
-        : [],
+      body: deadline ? [deadline] : [],
     };
   }
 
@@ -390,12 +391,25 @@ function handoverSituation(loan: Loan, today: string): LoanSituation {
     label: `Venter på ${other}`,
     tone: "waiting",
     headline: `Venter på at ${other} forteller om overleveringen`,
-    body: due
-      ? [
-          `Du sa at overleveringen ikke skjedde. Svarer ikke ${other} innen ${formatTime(due)}, avsluttes lånet som ikke gjennomført.`,
-        ]
-      : [],
+    body: deadline ? [deadline] : [],
   };
+}
+
+/**
+ * The running deadline to answer that the handover did not happen, for
+ * either side: it runs whatever else waits, such as a proposed new period,
+ * and when it is out the loan ends as not completed.
+ */
+function handoverDeadline(loan: Loan): string | null {
+  const due = loan.handover.answerDueAt;
+
+  if (!due) return null;
+
+  if (loan.handover[loan.role] === null) {
+    return `Svar innen ${formatTime(due)} på at overleveringen ikke skjedde. Uten svar avsluttes lånet som ikke gjennomført.`;
+  }
+
+  return `Du sa at overleveringen ikke skjedde. Svarer ikke ${otherParty(loan)} innen ${formatTime(due)}, avsluttes lånet som ikke gjennomført.`;
 }
 
 function returnSituation(loan: Loan): LoanSituation {

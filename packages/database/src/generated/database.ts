@@ -236,6 +236,10 @@ export interface AppChatKeyPackages {
 
 export interface AppChatLinkRequests {
   approved_at: Timestamp | null;
+  /**
+   * HMAC of the request's keys under a key from the secret on the new device's screen (ADR-0010 §5).
+   */
+  commitment: Buffer | null;
   created_at: Generated<Timestamp>;
   device_id: string;
   device_key: Buffer;

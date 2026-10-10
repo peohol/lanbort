@@ -49,12 +49,12 @@ select throws_ok(
     insert into app.chat_recovery_keys (user_id, account_key_id, key_id, backup)
     values (
       '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000c1',
-      decode(repeat('00', 16), 'hex'), decode(repeat('00', 4097), 'hex')
+      decode(repeat('00', 16), 'hex'), decode(repeat('00', 131073), 'hex')
     )
   $$,
   '23514',
   null,
-  'a backup holds two keys, not a history'
+  'a backup holds keys and pinned contact keys, not a history'
 );
 
 select lives_ok(

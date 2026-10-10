@@ -13,9 +13,17 @@ type Step = "email" | "code";
 
 /**
  * UX-JRN-001 steps 1–2: e-mail address, then the one-time code. `next` is
- * where the user was going, such as a notification's e-mail link.
+ * where the user was going, such as a notification's e-mail link. While new
+ * accounts are closed (a closed pilot), only invited addresses get a code,
+ * and the words never tell whether an address is invited.
  */
-export function SignInForm({ next }: { next?: string }) {
+export function SignInForm({
+  next,
+  newAccounts = true,
+}: {
+  next?: string;
+  newAccounts?: boolean;
+}) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
@@ -40,7 +48,11 @@ export function SignInForm({ next }: { next?: string }) {
       return;
     }
 
-    setStatus(`Vi har sendt en kode til ${email}.`);
+    setStatus(
+      newAccounts
+        ? `Vi har sendt en kode til ${email}.`
+        : `Er ${email} invitert, har vi sendt en kode dit.`,
+    );
     setStep("code");
   }
 
@@ -76,8 +88,9 @@ export function SignInForm({ next }: { next?: string }) {
       {step === "email" ? (
         <>
           <p>
-            Vi sender deg en engangskode på e-post. Har du ikke konto, lager vi
-            en når du har bekreftet adressen.
+            {newAccounts
+              ? "Vi sender deg en engangskode på e-post. Har du ikke konto, lager vi en når du har bekreftet adressen."
+              : "Lånbort er foreløpig bare åpent for dem som er invitert. Vi sender deg en engangskode på e-post."}
           </p>
           <label htmlFor="email">E-postadresse</label>
           <input
