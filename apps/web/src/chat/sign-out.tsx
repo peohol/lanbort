@@ -13,6 +13,7 @@ import { accountHref } from "@/navigation/areas";
 import { chatRecoveryKeyHref } from "@/navigation/chat";
 import styles from "./chat.module.css";
 import { useChat } from "./chat-provider";
+import { Setup } from "./chat-setup";
 import { deviceName } from "./device-names";
 import type { ChatEngine } from "./engine";
 import { chatErrorMessage } from "./messages";
@@ -89,7 +90,7 @@ function WithChat({ engine }: { engine: ChatEngine }) {
       setError(chatErrorMessage(problem));
       return;
     }
-    const result = await signOut();
+    const result = await signOut(engine.userId);
     if (!result.ok) {
       setBusy(false);
       setError(errorMessage(result.code));
@@ -128,21 +129,27 @@ function WithChat({ engine }: { engine: ChatEngine }) {
         >
           Logg ut
         </BusyButton>
-        <Link className="button" href={accountHref}>
-          Avbryt
-        </Link>
+        {cancel}
       </div>
     </>
   );
 }
 
+const cancel = (
+  <Link className="button" href={accountHref}>
+    Avbryt
+  </Link>
+);
+
 /**
  * «Logg ut» on a device with private chat (ADR-0010 §7): it says first what
- * the device loses. Where the chat cannot run here (open in another tab,
- * or gone already), signing out still deletes what the browser holds.
+ * the device loses. While the chat runs in another tab, this device cannot
+ * revoke itself here, so it does not sign out past it. Where the chat cannot
+ * run at all (its keys gone, or it fails to open), signing out still deletes
+ * what the browser holds.
  */
 export function ChatSignOut() {
-  const { state } = useChat();
+  const { state, userId } = useChat();
 
   if (state.status === "ready") return <WithChat engine={state.engine} />;
 
@@ -151,8 +158,14 @@ export function ChatSignOut() {
       {header}
       {state.status === "loading" ? (
         <p role="status">Henter privat chat …</p>
+      ) : state.status === "elsewhere" ? (
+        <div className={styles.stack}>
+          <Setup />
+          {cancel}
+        </div>
       ) : (
         <div className={styles.stack}>
+          {state.status === "failed" && <Setup />}
           <Points
             points={[
               {
@@ -162,10 +175,8 @@ export function ChatSignOut() {
               { icon: "signOut", text: "Du logges ut på denne enheten." },
             ]}
           />
-          <SignOutButton className="button-danger" />
-          <Link className="button" href={accountHref}>
-            Avbryt
-          </Link>
+          <SignOutButton userId={userId} className="button-danger" />
+          {cancel}
         </div>
       )}
     </>

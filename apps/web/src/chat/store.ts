@@ -115,19 +115,23 @@ export async function deleteChatStore(userId: string): Promise<void> {
 }
 
 /**
- * Deletes the chat of every account this browser holds, at sign-out
- * (ADR-0010 §7): no account is signed in afterwards, and a device's chat
- * only ever works in the sign-in it was made in. Where the browser cannot
- * list its databases, there is nothing to find them by.
+ * Deletes the chat this browser holds at sign-out (ADR-0010 §7): the
+ * account's own, and any other account's it can list. No account is signed
+ * in afterwards, and a device's chat only works in the sign-in it was made
+ * in. Where the browser cannot list its databases, the account's own is
+ * still found by its name.
  */
-export async function deleteAllChatStores(): Promise<void> {
+export async function deleteChatStoresAtSignOut(userId: string): Promise<void> {
   if (typeof indexedDB === "undefined") return;
-  if (typeof indexedDB.databases !== "function") return;
-  const names = (await indexedDB.databases()).flatMap(({ name }) =>
-    name?.startsWith(databasePrefix) ? [name] : [],
-  );
+  const listed =
+    typeof indexedDB.databases === "function"
+      ? (await indexedDB.databases()).flatMap(({ name }) =>
+          name?.startsWith(databasePrefix) ? [name] : [],
+        )
+      : [];
+  const names = new Set([databaseName(userId), ...listed]);
   await Promise.all(
-    names.map((name) => request(indexedDB.deleteDatabase(name))),
+    [...names].map((name) => request(indexedDB.deleteDatabase(name))),
   );
 }
 

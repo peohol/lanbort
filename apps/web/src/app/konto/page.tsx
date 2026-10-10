@@ -57,7 +57,7 @@ const hasChatDevice = async () =>
     null) !== null;
 
 /** «Logg ut», in Konto's menu. */
-function SignOutRow({ chat }: { chat: boolean }) {
+function SignOutRow({ chat, userId }: { chat: boolean; userId: string }) {
   const content = (
     <>
       <Icon name="signOut" />
@@ -75,7 +75,9 @@ function SignOutRow({ chat }: { chat: boolean }) {
           {content}
         </a>
       ) : (
-        <SignOutButton className="menu-row">{content}</SignOutButton>
+        <SignOutButton userId={userId} className="menu-row">
+          {content}
+        </SignOutButton>
       )}
     </li>
   );
@@ -165,7 +167,7 @@ export default async function AccountPage() {
             icon="lock"
             label="Personvern og sikkerhet"
           />
-          <SignOutRow chat={chat} />
+          <SignOutRow chat={chat} userId={account.userId} />
         </MenuList>
       </section>
     </main>

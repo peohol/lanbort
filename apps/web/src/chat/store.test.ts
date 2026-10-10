@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { deleteAllChatStores } from "./store";
+import { deleteChatStoresAtSignOut } from "./store";
 
-/** An IndexedDB that lists `names` and records what is deleted. */
-function fakeIndexedDb(names: (string | undefined)[]) {
+/**
+ * An IndexedDB that lists `names`, or cannot list any (null), and records
+ * what is deleted.
+ */
+function fakeIndexedDb(names: (string | undefined)[] | null) {
   const deleted: string[] = [];
   vi.stubGlobal("indexedDB", {
-    databases: async () => names.map((name) => ({ name, version: 1 })),
+    ...(names && {
+      databases: async () => names.map((name) => ({ name, version: 1 })),
+    }),
     deleteDatabase: (name: string) => {
       deleted.push(name);
       const req = { result: undefined } as {
@@ -23,23 +28,25 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("deleteAllChatStores (ADR-0010 §7)", () => {
-  it("deletes every account's chat in the browser, and nothing else", async () => {
+describe("deleteChatStoresAtSignOut (ADR-0010 §7)", () => {
+  it("deletes the account's chat and every other one in the browser, and nothing else", async () => {
     const deleted = fakeIndexedDb([
-      "lanbort-chat-a",
+      "lanbort-chat-b",
       "something-else",
       undefined,
-      "lanbort-chat-b",
+      "lanbort-chat-a",
     ]);
 
-    await deleteAllChatStores();
+    await deleteChatStoresAtSignOut("a");
 
-    expect(deleted).toEqual(["lanbort-chat-a", "lanbort-chat-b"]);
+    expect(deleted.sort()).toEqual(["lanbort-chat-a", "lanbort-chat-b"]);
   });
 
-  it("does nothing where the browser cannot list its databases", async () => {
-    vi.stubGlobal("indexedDB", { deleteDatabase: vi.fn() });
+  it("still deletes the account's own where the browser cannot list its databases", async () => {
+    const deleted = fakeIndexedDb(null);
 
-    await expect(deleteAllChatStores()).resolves.toBeUndefined();
+    await deleteChatStoresAtSignOut("a");
+
+    expect(deleted).toEqual(["lanbort-chat-a"]);
   });
 });

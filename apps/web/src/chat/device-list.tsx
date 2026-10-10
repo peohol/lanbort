@@ -100,7 +100,7 @@ function Devices({ engine }: { engine: ChatEngine }) {
     await engine.revokeDevice(devices!.currentDeviceId!);
     // The server ends the device's sign-in with it (ADR-0010 §7); ending it
     // here as well leaves nothing behind until it has.
-    await signOut();
+    await signOut(engine.userId);
     router.replace("/");
     router.refresh();
   }

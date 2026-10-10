@@ -154,7 +154,7 @@ export function ReadyChat({
 
 /** What the device needs before it can chat, or why it cannot yet. */
 export function Setup() {
-  const { state, reload } = useChat();
+  const { state, reload, userId } = useChat();
 
   switch (state.status) {
     case "loading":
@@ -223,7 +223,7 @@ export function Setup() {
               annen enhet du har privat chat på. Meldinger som lå her, kan ikke
               hentes tilbake hit.
             </p>
-            <SignOutButton />
+            <SignOutButton userId={userId} />
           </Notice>
           <OtherDevicesGone />
         </>

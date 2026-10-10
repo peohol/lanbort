@@ -462,6 +462,16 @@ test("signing out on a device with chat says what it loses, then revokes it and 
     );
   expect(await chatStores()).not.toEqual([]);
 
+  // While the chat runs in another tab, this one cannot revoke the device,
+  // so it does not sign out past it.
+  const other = await anna.context.newPage();
+  await other.goto("/samtaler/logg-ut");
+  await expect(
+    other.getByText("Åpen i en annen fane", { exact: true }),
+  ).toBeVisible();
+  await expect(other.getByRole("button", { name: "Logg ut" })).toHaveCount(0);
+  await other.close();
+
   await anna.page.goto("/konto");
   await anna.page.getByRole("link", { name: "Logg ut" }).click();
   await expect(anna.page).toHaveURL(/\/samtaler\/logg-ut$/);

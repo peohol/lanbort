@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
-import { deleteAllChatStores } from "@/chat/store";
+import { deleteChatStoresAtSignOut } from "@/chat/store";
 import { type ApiResult, postJson } from "./api-client";
 import { BusyButton } from "./busy-button";
 import { errorMessage } from "./error-messages";
@@ -14,20 +14,23 @@ import { ErrorText } from "./error-text";
  * is left behind. A device whose chat is running revokes itself first
  * (`/samtaler/logg-ut`).
  */
-export async function signOut(): Promise<ApiResult<unknown>> {
+export async function signOut(userId: string): Promise<ApiResult<unknown>> {
   const result = await postJson("/api/auth/sign-out", {});
 
   if (result.ok) {
-    await deleteAllChatStores();
+    await deleteChatStoresAtSignOut(userId);
   }
 
   return result;
 }
 
 export function SignOutButton({
+  userId,
   className,
   children = "Logg ut",
 }: {
+  /** The signed-in account, whose chat this browser deletes. */
+  userId: string;
   className?: string;
   children?: ReactNode;
 }) {
@@ -37,7 +40,7 @@ export function SignOutButton({
 
   async function run() {
     setPending(true);
-    const result = await signOut();
+    const result = await signOut(userId);
 
     if (!result.ok) {
       setPending(false);
