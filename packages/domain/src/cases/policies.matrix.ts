@@ -19,6 +19,7 @@ import {
   readCasePolicy,
   recuseFromCasePolicy,
   releaseCasePolicy,
+  type EnvironmentContactAccess,
   type ReportTarget,
   reportUnavailabilityPolicy,
   shareCaseStatementsPolicy,
@@ -284,6 +285,11 @@ export const passiveMember = environment({
 export const outsider = (type: EnvironmentAccess["environment"]["type"]) =>
   environment({ membership: null, roles: [], restricted: false }, type);
 
+const contact = (
+  access: EnvironmentAccess,
+  removed = false,
+): EnvironmentContactAccess => ({ ...access, removed });
+
 const reportTarget = (overrides: Partial<ReportTarget> = {}): ReportTarget => ({
   actorId: reporter.userId,
   otherUserId: subject.userId,
@@ -310,38 +316,50 @@ export const caseMatrices = [
   caseMatrix(endContactPolicy, "participant"),
   caseMatrix(withdrawReportPolicy, "participant"),
   policyMatrix(openEnvironmentContactPolicy, [
-    expectCase("an active member", member, activeMember(), "allow"),
+    expectCase("an active member", member, contact(activeMember()), "allow"),
     expectCase(
       "an administrator, as a member",
       administrator,
-      activeMember(["administrator"]),
+      contact(activeMember(["administrator"])),
       "allow",
     ),
     expectCase(
       "a passive member takes part in nothing new",
       member,
-      passiveMember,
+      contact(passiveMember),
       "forbidden",
     ),
     expectCase(
       "a non-member of an open environment",
       stranger,
-      outsider("open"),
+      contact(outsider("open")),
       "forbidden",
     ),
     expectCase(
       "a non-member of a hidden environment does not see it",
       stranger,
-      outsider("hidden"),
+      contact(outsider("hidden")),
       "not_found",
     ),
     expectCase(
       "a deactivated account starts nothing new",
       deactivated(member),
-      activeMember(),
+      contact(activeMember()),
       "account_inactive",
     ),
-    ...callerCases(activeMember()),
+    expectCase(
+      "someone removed from a hidden environment asks for a new assessment",
+      stranger,
+      contact(outsider("hidden"), true),
+      "allow",
+    ),
+    expectCase(
+      "someone removed and since deactivated starts nothing new",
+      deactivated(stranger),
+      contact(outsider("hidden"), true),
+      "account_inactive",
+    ),
+    ...callerCases(contact(activeMember())),
   ]),
   policyMatrix(reportUnavailabilityPolicy, [
     expectCase("someone with a relation", reporter, reportTarget(), "allow"),

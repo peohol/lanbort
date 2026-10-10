@@ -19,7 +19,7 @@ import {
   writeCaseEntrySchema,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import type { Kysely, Transaction } from "kysely";
+import { type Kysely, sql, type Transaction } from "kysely";
 import type { z } from "zod";
 import type { Actor } from "../actor";
 import type { Policy } from "../authorization/policy";
@@ -558,7 +558,21 @@ export const openEnvironmentContact = defineCommand({
       { lock: true },
     );
 
-    return access && { resource: access, context: undefined };
+    if (!access) {
+      return null;
+    }
+
+    const removed =
+      actor.kind === "user" &&
+      (
+        await sql<{ removed: boolean }>`
+          select app.removed_from_environment(
+            ${input.environmentId}, ${actor.userId}
+          ) as removed
+        `.execute(tx)
+      ).rows[0]?.removed === true;
+
+    return { resource: { ...access, removed }, context: undefined };
   },
   execute: async ({ tx, actor, input, events, now }) => {
     const userId = actingUserId(actor);

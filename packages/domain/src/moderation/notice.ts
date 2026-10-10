@@ -1,4 +1,4 @@
-import type { MeasureNotice, ModerationMeasureKind } from "@lanbort/contracts";
+import type { MeasureNotice, MeasureNoticeKind } from "@lanbort/contracts";
 import { measureNoticeQuerySchema } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
@@ -11,13 +11,14 @@ type Db = Kysely<Database>;
 
 /**
  * Whom a measure's notice goes to (PS-TRUST-018): the owners of the thing
- * whose publication or loans it stops, or the author of the review or
- * response it takes out. Lifting a block goes to the owners it held back
- * (product owner, 10 October 2026).
+ * whose publication or loans it stops, the author of the review or response
+ * it takes out, or the member whose membership it ends (PS-ENV-021).
+ * Lifting a block goes to the owners it held back (product owner,
+ * 10 October 2026).
  */
 const hits: Record<
-  ModerationMeasureKind,
-  "owners" | "review_author" | "response_author" | null
+  MeasureNoticeKind,
+  "owners" | "review_author" | "response_author" | "member" | null
 > = {
   publication_rejected: "owners",
   publication_blocked: "owners",
@@ -27,6 +28,7 @@ const hits: Record<
   review_text_removed: "review_author",
   review_score_removed: "review_author",
   review_response_removed: "response_author",
+  membership_ended: "member",
 };
 
 /**
@@ -37,6 +39,16 @@ async function loadNotice(db: Db, measureId: string) {
   const row = await db
     .selectFrom("app.moderation_actions as measure")
     .leftJoin("app.objects as object", "object.id", "measure.object_id")
+    .leftJoin(
+      "app.environment_memberships as membership",
+      "membership.id",
+      "measure.membership_id",
+    )
+    .leftJoin(
+      "app.environments as environment",
+      "environment.id",
+      "membership.environment_id",
+    )
     .select([
       "measure.id",
       "measure.kind",
@@ -48,6 +60,8 @@ async function loadNotice(db: Db, measureId: string) {
       "measure.reason",
       "measure.decided_at",
       "object.title as object_title",
+      "membership.user_id as member_user_id",
+      "environment.name as environment_name",
     ])
     .where("measure.id", "=", measureId)
     .executeTakeFirst();
@@ -56,7 +70,7 @@ async function loadNotice(db: Db, measureId: string) {
     return null;
   }
 
-  const kind = row.kind as ModerationMeasureKind;
+  const kind = row.kind as MeasureNoticeKind;
   const review =
     row.review_id === null ? null : await findReportedReview(db, row.review_id);
   const owners =
@@ -73,6 +87,7 @@ async function loadNotice(db: Db, measureId: string) {
     owners,
     review_author: review ? [review.authorUserId] : [],
     response_author: review?.response ? [review.response.authorUserId] : [],
+    member: row.member_user_id ? [row.member_user_id] : [],
   };
 
   return {
@@ -82,6 +97,7 @@ async function loadNotice(db: Db, measureId: string) {
       kind,
       scope: row.scope as MeasureNotice["scope"],
       environmentId: row.environment_id,
+      environmentName: row.environment_name,
       objectId: row.object_id,
       objectTitle: row.object_title,
       loanId: review?.loanId ?? null,

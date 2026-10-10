@@ -11,6 +11,7 @@ import {
   measureNoticeEffect,
   measureNoticeHeading,
   measureNoticeLabel,
+  measureNoticeSubject,
 } from "@/presentation/measure-notice";
 import { pageQueryOrNotFound, requirePageAccount } from "@/server/session";
 import styles from "../../cases.module.css";
@@ -20,12 +21,13 @@ export const metadata: Metadata = { title: "Tiltak – Lånbort" };
 
 /**
  * The notice to whoever a measure hits (PS-TRUST-018, Tomat kjerneflyt 8):
- * what was done to their thing, review or response, where it applies, the
- * reason, and the way to ask for a new assessment: the environment's
- * administrators for a local measure. Lånbort cannot take requests in the
- * app yet (UX-EXC-011), and the page says so. When a block is lifted, the
- * owners are told the thing can be lent again, with nothing to ask about.
- * Nothing on it tells that there was a report or who sent it.
+ * what was done to their thing, review, response or membership
+ * (PS-ENV-021), where it applies, the reason, and the way to ask for a new
+ * assessment: the environment's administrators for a local measure. Lånbort
+ * cannot take requests in the app yet (UX-EXC-011), and the page says so.
+ * When a block is lifted, the owners are told the thing can be lent again,
+ * with nothing to ask about. Nothing on it tells that there was a report or
+ * who sent it.
  */
 export default async function MeasureNoticePage({
   params,
@@ -35,18 +37,18 @@ export default async function MeasureNoticePage({
   await requirePageAccount();
   const { measureId } = await params;
   const notice = await pageQueryOrNotFound(readMeasureNotice, { measureId });
-  const environment = await environmentName(notice.environmentId);
-  const review = notice.objectId === null;
+  // A former member may no longer see the environment, but knew its name.
+  const environment =
+    notice.environmentName ?? (await environmentName(notice.environmentId));
+  const subject = measureNoticeSubject(notice, environment);
   const lifted = liftingMeasureKinds.has(notice.kind);
   const reassessment = !lifted && notice.scope;
 
   return (
     <main>
       <PageHeader
-        title={
-          review ? "Anmeldelsen din" : (notice.objectTitle ?? "Tingen din")
-        }
-        kind={review ? "Anmeldelse" : "Ting"}
+        title={subject.title}
+        kind={subject.kind}
         back={{ href: notificationsHref, label: "Varsler" }}
       />
       <StatusCard

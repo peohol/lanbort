@@ -184,15 +184,22 @@ export default async function NewCasePage({
 
   if (!start) notFound();
 
+  const contact = start.kind === "contact";
   const [environment, subject] = await Promise.all([
-    start.environmentId
-      ? pageQueryOrNotFound(getEnvironment, {
-          environmentId: start.environmentId,
-        })
-      : null,
+    !start.environmentId
+      ? null
+      : contact
+        ? // Whoever was removed from a hidden environment no longer sees
+          // it, but may still ask its administrators for a new assessment
+          // (PS-ENV-021); the command decides who may write.
+          seen(() =>
+            pageQuery(getEnvironment, { environmentId: start.environmentId! }),
+          )
+        : pageQueryOrNotFound(getEnvironment, {
+            environmentId: start.environmentId,
+          }),
     subjectOf(start),
   ]);
-  const contact = start.kind === "contact";
   const title = contact
     ? "Kontakt administratorene"
     : subject?.name

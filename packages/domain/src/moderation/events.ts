@@ -1,5 +1,5 @@
 import {
-  moderationMeasureKindSchema,
+  measureNoticeKindSchema,
   moderationScopeSchema,
   reviewDimensionSchema,
 } from "@lanbort/contracts";
@@ -14,15 +14,18 @@ import { defineEvent } from "../events/catalog";
  * reason, is `app.moderation_actions`.
  */
 
-/** PS-TRUST-016: a measure was taken on a report. */
+/**
+ * PS-TRUST-016: a measure was taken on a report, or, with no case, an
+ * administrator ended a membership (PS-ENV-021).
+ */
 export const moderationMeasureTaken = defineEvent({
   type: "moderation.measure_taken",
   version: 1,
   kind: "audit",
   resourceType: "moderation_measure",
   payload: z.strictObject({
-    caseId: z.uuid(),
-    measure: moderationMeasureKindSchema,
+    caseId: z.uuid().nullable(),
+    measure: measureNoticeKindSchema,
     scope: moderationScopeSchema,
     environmentId: z.uuid().nullable(),
     objectId: z.uuid().nullable(),

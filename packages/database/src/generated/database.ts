@@ -702,13 +702,14 @@ export interface AppLoans {
 }
 
 export interface AppModerationActions {
-  case_id: string;
+  case_id: string | null;
   decided_at: Timestamp;
   decided_by_user_id: string;
   dimension: string | null;
   environment_id: string | null;
   id: Generated<string>;
   kind: string;
+  membership_id: string | null;
   object_id: string | null;
   position: Generated<Int8>;
   reason: string;

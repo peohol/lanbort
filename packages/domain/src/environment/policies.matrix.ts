@@ -43,6 +43,7 @@ import {
   readEnvironmentPolicy,
   rejectMembershipPolicy,
   requestInformationPolicy,
+  removeMemberPolicy,
   respondToTypeChangePolicy,
   submitAnswersPolicy,
   typeChangeProcess,
@@ -517,6 +518,23 @@ export const environmentMatrices = [
   policyMatrix(approveMembershipPolicy, decisionCases()),
   policyMatrix(rejectMembershipPolicy, decisionCases()),
   policyMatrix(requestInformationPolicy, decisionCases()),
+  policyMatrix(removeMemberPolicy, [
+    ...decisionCases().map((testCase) => ({
+      ...testCase,
+      resource: { ...testCase.resource, impartial: true },
+    })),
+    {
+      name: "an administrator involved with the member in an open case",
+      actor: user,
+      resource: {
+        ...access("closed", administrator),
+        target: application,
+        impartial: false,
+      },
+      context: undefined,
+      expected: "conflict_of_interest",
+    },
+  ]),
   policyMatrix(withdrawInvitationPolicy, decisionCases()),
   policyMatrix(listRolesPolicy, administrationCases()),
   policyMatrix(inviteAdministratorPolicy, administrationCases()),

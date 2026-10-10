@@ -308,6 +308,11 @@ export const administeredMembershipSchema = z.strictObject({
   ...membershipFields,
   userId: z.uuid(),
   realName: z.string().nullable(),
+  /**
+   * PS-ENV-021: the viewer may end this active membership: the member holds
+   * no role, and the viewer is impartial toward them.
+   */
+  removable: z.boolean(),
 });
 
 /** Someone barred from new attempts until an administrator lifts it. */

@@ -143,21 +143,30 @@ export const withdrawReportPolicy = casePolicy(
   asParticipant,
 );
 
+/** The environment as the caller stands to it, and whether they were removed. */
+export interface EnvironmentContactAccess extends EnvironmentAccess {
+  /** Their latest membership was ended as a measure (PS-ENV-021). */
+  readonly removed: boolean;
+}
+
 /**
  * PS-COM-010: an active member contacts the environment's administrators.
- * A hidden environment exists only for its members.
+ * A hidden environment exists only for its members. Whoever was removed
+ * from it may still ask its administrators for a new assessment
+ * (PS-TRUST-018).
  */
-export const openEnvironmentContactPolicy = definePolicy<EnvironmentAccess>({
-  action: "case.open_environment_contact",
-  actor: [requireActiveAccount],
-  resource: [
-    canSeeEnvironment,
-    ({ resource }) =>
-      resource.viewer.membership?.state === "active"
-        ? allow
-        : deny("forbidden"),
-  ],
-});
+export const openEnvironmentContactPolicy =
+  definePolicy<EnvironmentContactAccess>({
+    action: "case.open_environment_contact",
+    actor: [requireActiveAccount],
+    resource: [
+      (input) => (input.resource.removed ? allow : canSeeEnvironment(input)),
+      ({ resource }) =>
+        resource.removed || resource.viewer.membership?.state === "active"
+          ? allow
+          : deny("forbidden"),
+    ],
+  });
 
 /**
  * Someone the caller may report about: another user they have a concrete

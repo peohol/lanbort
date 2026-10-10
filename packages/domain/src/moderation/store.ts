@@ -1,5 +1,6 @@
 import type {
   ModerationMeasure,
+  MeasureNoticeKind,
   ModerationMeasureKind,
   ModerationScope,
 } from "@lanbort/contracts";
@@ -16,8 +17,10 @@ type Db = Kysely<Database>;
 export async function insertMeasure(
   db: Db,
   values: {
-    readonly caseId: string;
-    readonly kind: ModerationMeasureKind;
+    /** Null only for a membership's end, which is taken on no case. */
+    readonly caseId: string | null;
+    readonly kind: MeasureNoticeKind;
+    readonly membershipId?: string;
     readonly scope: ModerationScope;
     readonly environmentId: string | null;
     readonly objectId: string | null;
@@ -35,6 +38,7 @@ export async function insertMeasure(
     .values({
       case_id: values.caseId,
       kind: values.kind,
+      membership_id: values.membershipId ?? null,
       scope: values.scope,
       environment_id: values.environmentId,
       object_id: values.objectId,

@@ -4,6 +4,7 @@ import {
   measureNoticeEffect,
   measureNoticeHeading,
   measureNoticeLabel,
+  measureNoticeSubject,
 } from "./measure-notice";
 
 const notice = (overrides: Partial<MeasureNotice>): MeasureNotice => ({
@@ -11,6 +12,7 @@ const notice = (overrides: Partial<MeasureNotice>): MeasureNotice => ({
   kind: "publication_blocked",
   scope: "environment",
   environmentId: "00000000-0000-4000-8000-0000000000e1",
+  environmentName: null,
   objectId: "00000000-0000-4000-8000-0000000000b1",
   objectTitle: "Gassflaske 11 kg",
   loanId: null,
@@ -55,5 +57,35 @@ describe("the notice to whoever a measure hits (PS-TRUST-018)", () => {
         null,
       ),
     ).toBe("Vurderingen «Kommunikasjon» er fjernet");
+  });
+
+  it("tells a removed member what the end of the membership means (PS-ENV-021)", () => {
+    const removed = notice({
+      kind: "membership_ended",
+      environmentName: "Borettslaget Lia",
+      objectId: null,
+      objectTitle: null,
+    });
+
+    expect(measureNoticeSubject(removed, "Borettslaget Lia")).toEqual({
+      title: "Borettslaget Lia",
+      kind: "Miljø",
+    });
+    expect(measureNoticeHeading(removed, "Borettslaget Lia")).toBe(
+      "Medlemskapet ditt i Borettslaget Lia er avsluttet",
+    );
+    expect(measureNoticeEffect(removed, "Borettslaget Lia")).toContain(
+      "Lån som allerede er godkjent, går som før",
+    );
+  });
+
+  it("keeps the review and the thing as the page's subject", () => {
+    expect(measureNoticeSubject(notice({}), null)).toEqual({
+      title: "Gassflaske 11 kg",
+      kind: "Ting",
+    });
+    expect(
+      measureNoticeSubject(notice({ objectId: null, objectTitle: null }), null),
+    ).toEqual({ title: "Anmeldelsen din", kind: "Anmeldelse" });
   });
 });
