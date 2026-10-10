@@ -268,7 +268,7 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 #### Konto og innstillinger
 
 - **Oppgave:** forvalte egen konto, relasjoner, saker og varsler.
-- **Tilstander:** venner, forespørsler og blokkerte; egne saker; varslingsvalg per nivå; profilfelt og synlighet; slette konto, med hva som hindrer sletting.
+- **Tilstander:** venner, forespørsler og blokkerte; egne saker; varslingsvalg per nivå; profilfelt og synlighet; slette konto, med hva som hindrer sletting; logge ut, og på en enhet med privat chat først hva enheten mister (ADR-0010 punkt 7).
 - **Ser / handler:** brukeren selv.
 - **Regler:** UX-IA-003, UX-IA-020, UX-PRIV-001, PS-USR-002, PS-COM-002, PS-COM-003, PS-ADM-004, PS-ADM-005, PS-ADM-012.
 - **Forløp:** begge.
@@ -610,7 +610,6 @@ Disse flatene følger av spesifikasjonen og UX-modellen, men ingen pakke i UI-pl
 
 - **Melding om mulig dødsfall** fra personens side eller et felles lån (PS-COM-015, UX-EXC-008).
 - **Plattformforvalterens inngrep** på kontoer og miljøer, fra en sak i plattformkøen (PS-ADM-015). Venter på OD-0023.
-- **Varsel før utlogging på en enhet med privat chat** (ADR-0010 punkt 7). Konto-sidens «Logg ut» har ikke dette varselet ennå; «Fjern denne enheten» i Mine enheter sier hva enheten mister.
 - Presentasjon og synlighet for andre profilfelt står allerede under «Senere» i UI-planen.
 
 ### Åpne beslutninger som berører flatene

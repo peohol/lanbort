@@ -450,6 +450,61 @@ test("the recovery key brings chat and its backed-up messages back when every de
   }
 });
 
+test("signing out on a device with chat says what it loses, then revokes it and deletes its chat (ADR-0010 §7)", async ({
+  browser,
+}) => {
+  const anna = await person(browser, "Ida Lie");
+  await turnOnChat(anna.page);
+  const chatStores = () =>
+    anna.page.evaluate(async () =>
+      (await indexedDB.databases()).flatMap(({ name }) =>
+        name?.startsWith("lanbort-chat-") ? [name] : [],
+      ),
+    );
+  expect(await chatStores()).not.toEqual([]);
+
+  // While the chat runs in another tab, this one cannot revoke the device,
+  // so it does not sign out past it.
+  const other = await anna.context.newPage();
+  await other.goto("/samtaler/logg-ut");
+  await expect(
+    other.getByText("Åpen i en annen fane", { exact: true }),
+  ).toBeVisible();
+  await expect(other.getByRole("button", { name: "Logg ut" })).toHaveCount(0);
+  await other.close();
+
+  await anna.page.goto("/konto");
+  await anna.page.getByRole("link", { name: "Logg ut" }).click();
+  await expect(anna.page).toHaveURL(/\/samtaler\/logg-ut$/);
+  await expect(
+    anna.page.getByRole("heading", { name: "Logge ut av denne enheten?" }),
+  ).toBeVisible();
+  await expect(
+    anna.page.getByText("Dette er den eneste enheten din med privat chat"),
+  ).toBeVisible();
+  expect(await axeViolations(anna.page)).toEqual([]);
+
+  // «Avbryt» leaves everything as it was.
+  await anna.page.getByRole("link", { name: "Avbryt" }).click();
+  await expect(anna.page).toHaveURL(/\/konto$/);
+  await anna.page.getByRole("link", { name: "Logg ut" }).click();
+  await anna.page.getByRole("button", { name: "Logg ut" }).click();
+  await expect(anna.page).toHaveURL(/\/$/);
+  expect(await chatStores()).toEqual([]);
+
+  // The server knows the device is gone, also after signing in again.
+  await signInThroughApi(anna.context.request, anna.email);
+  const own = await (
+    await anna.context.request.get("/api/chat/devices")
+  ).json();
+  expect(own.currentDeviceId).toBeNull();
+  expect(
+    own.devices.map((d: { revokedAt: string | null }) => d.revokedAt),
+  ).toEqual([expect.any(String)]);
+  expect(unexpected(anna.problems)).toEqual([]);
+  await anna.context.close();
+});
+
 test("a message waits until the friend has turned chat on", async ({
   browser,
 }) => {

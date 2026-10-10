@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { ErrorText } from "@/components/error-text";
 import { Icon } from "@/components/icon";
 import { PageHeader } from "@/components/page-header";
+import { signOut } from "@/components/sign-out-button";
 import { Tag } from "@/components/tag";
 import {
   chatApproveByCodeHref,
@@ -27,6 +28,7 @@ import { Notice } from "./notice";
 import { RecoveryKeyRow } from "./recovery-key";
 import { hasScanner } from "./scanner";
 import { ConfirmSheet } from "./sheet";
+import { currentDevicePoints, securesFirst } from "./sign-out";
 
 const header = (
   <PageHeader
@@ -34,8 +36,6 @@ const header = (
     back={{ href: chatHref, label: "Samtaler" }}
   />
 );
-
-const names = new Intl.ListFormat("nb-NO", { type: "conjunction" });
 
 /**
  * A new device waits to be linked (10): the task comes first, and only
@@ -95,11 +95,12 @@ function Devices({ engine }: { engine: ChatEngine }) {
 
   const live = devices?.devices.filter((d) => d.revokedAt === null) ?? [];
   const isCurrent = (deviceId: string) => deviceId === devices?.currentDeviceId;
-  const others = live.filter((device) => !isCurrent(device.deviceId));
 
   async function removeCurrent() {
     await engine.revokeDevice(devices!.currentDeviceId!);
-    // The device's sign-in ended with it (ADR-0010 §7).
+    // The server ends the device's sign-in with it (ADR-0010 §7); ending it
+    // here as well leaves nothing behind until it has.
+    await signOut(engine.userId);
     router.replace("/");
     router.refresh();
   }
@@ -186,31 +187,9 @@ function Devices({ engine }: { engine: ChatEngine }) {
           <ConfirmSheet
             label="Fjern denne enheten"
             title="Fjerne denne enheten?"
-            points={[
-              {
-                icon: "conversations",
-                text: "Denne enheten mister privat chat og alle samtalene som er lagret her.",
-              },
-              { icon: "signOut", text: "Du logges ut på denne enheten." },
-              others.length > 0
-                ? {
-                    icon: "device",
-                    text: `${names.format(others.map(deviceName))} beholder sine samtaler.`,
-                  }
-                : devices.recovery
-                  ? {
-                      icon: "key",
-                      text: "Meldinger som er sikkerhetskopiert, kan hentes tilbake med gjenopprettingsnøkkelen. Meldinger som ikke er sikkerhetskopiert ennå, er tapt.",
-                    }
-                  : {
-                      icon: "info",
-                      text: "Dette er den eneste enheten din med privat chat. Meldingene her kan ikke hentes tilbake.",
-                    },
-            ]}
+            points={currentDevicePoints(devices)}
             first={
-              // The history can be secured before what cannot be undone.
-              others.length === 0 &&
-              !devices.recovery && (
+              securesFirst(devices) && (
                 <Link
                   className="button button-secondary"
                   href={chatRecoveryKeyHref}
