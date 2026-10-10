@@ -5,7 +5,7 @@ import type {
 } from "@lanbort/contracts";
 import { collectPages } from "../commands/pages";
 import { listOwnEnvironments } from "../environment/queries";
-import { type HomeSource, homeItem } from "../home/source";
+import { type HomeReader, type HomeSource, homeItem } from "../home/source";
 import { actingUserId } from "../objects/state";
 import { listEnvironmentCaseQueue } from "./queries";
 
@@ -34,26 +34,34 @@ export function caseQueueHomeItem(
     : null;
 }
 
+/** The open cases waiting in one environment's queue for the caller. */
+export async function environmentCaseQueueItem(
+  { actor, ifAllowed }: HomeReader,
+  environment: Pick<EnvironmentSummary, "id" | "name">,
+): Promise<HomeItem | null> {
+  const { items: queue } = await collectPages(
+    (cursor) =>
+      ifAllowed(listEnvironmentCaseQueue, {
+        environmentId: environment.id,
+        status: "open",
+        cursor,
+      }),
+    (page) => page.items,
+  );
+
+  return caseQueueHomeItem(environment, queue, actingUserId(actor));
+}
+
 /** The case queues of the environments the caller administers. */
 export const caseQueueHomeSource: HomeSource = {
   name: "case_queues",
-  async items({ actor, query, ifAllowed }) {
-    const userId = actingUserId(actor);
+  async items(reader) {
     const items: HomeItem[] = [];
 
-    for (const environment of await query(listOwnEnvironments, {})) {
+    for (const environment of await reader.query(listOwnEnvironments, {})) {
       if (!environment.roles.includes("administrator")) continue;
 
-      const { items: queue } = await collectPages(
-        (cursor) =>
-          ifAllowed(listEnvironmentCaseQueue, {
-            environmentId: environment.id,
-            status: "open",
-            cursor,
-          }),
-        (page) => page.items,
-      );
-      const item = caseQueueHomeItem(environment, queue, userId);
+      const item = await environmentCaseQueueItem(reader, environment);
 
       if (item) items.push(item);
     }

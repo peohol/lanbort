@@ -24,7 +24,7 @@ import { submitLoanReview } from "../reviews/commands";
 import { sendFriendRequest } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
-import { readHome } from "./queries";
+import { listEnvironmentAdministrationTasks, readHome } from "./queries";
 
 /**
  * WP-60: Home shows what asks something of the caller (UX-IA-005), each
@@ -335,6 +335,25 @@ describe("environments on Home", () => {
     await run(approveMembership, admin, { environmentId, membershipId });
 
     expect(await about(admin, environmentId)).toEqual([]);
+  });
+
+  it("gives one environment's page the same tasks, and nobody else any", async () => {
+    const admin = await user();
+    const environmentId = await environment(admin, { type: "closed" });
+    const other = await environment(admin, { type: "closed" });
+    const applicant = await user();
+    for (const id of [environmentId, other]) {
+      await run(joinEnvironment, applicant, { environmentId: id, answers: [] });
+    }
+    const tasks = (actor: UserActor) =>
+      executeQuery(tick(), listEnvironmentAdministrationTasks, {
+        actor,
+        input: { environmentId },
+      });
+
+    expect(await tasks(admin)).toEqual([await item(admin, environmentId)]);
+    expect(await tasks(applicant)).toEqual([]);
+    expect(await tasks(await user())).toEqual([]);
   });
 
   it("gives administrators publications to approve, except of objects they own", async () => {
