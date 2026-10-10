@@ -246,23 +246,34 @@ describe("invitations", () => {
     });
   });
 
-  it("to co-own an object name it only while it is offered", async () => {
+  it("to co-own an object name and show it only while it is offered (PS-OBJ-021)", async () => {
     const admin = await user();
     const invited = await user();
     const objectId = await create(admin);
+    const imageId = randomUUID();
+    await run(attachObjectImage, admin, {
+      objectId,
+      imageId,
+      byteSize: 1,
+      width: 4,
+      height: 3,
+    });
     const { invitationId } = await run(inviteCoOwner, admin, {
       objectId,
       userId: invited.userId,
     });
 
     expect(await latest(invited, "object.co_owner_invited")).toMatchObject({
-      about: { thing: expect.any(String) },
+      about: {
+        thing: expect.any(String),
+        picture: { through: "object_invitation", invitationId, imageId },
+      },
       standing: "open",
     });
 
     await run(withdrawCoOwnerInvitation, admin, { objectId, invitationId });
     expect(await latest(invited, "object.co_owner_invited")).toMatchObject({
-      about: { thing: null },
+      about: { thing: null, picture: null },
       standing: "lapsed",
     });
   });

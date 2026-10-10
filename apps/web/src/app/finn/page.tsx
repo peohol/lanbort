@@ -253,9 +253,11 @@ async function ObjectSearch({
                       labels.get(object.categoryId),
                     ]}
                   />,
-                  <ContextTag key="where" label="Kontekst" icon="environment">
-                    {describeFoundIn(object)}
-                  </ContextTag>,
+                  ...describeFoundIn(object).map(({ icon, text }) => (
+                    <ContextTag key={icon} label="Kontekst" icon={icon}>
+                      {text}
+                    </ContextTag>
+                  )),
                 ]}
                 status={<Tag tone={status.tone}>{status.label}</Tag>}
               />

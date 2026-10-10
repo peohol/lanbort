@@ -12,11 +12,15 @@ import { defineQuery } from "../commands/query";
 import { canSeeEnvironment } from "../environment/policies";
 import { loadEnvironmentAccess } from "../environment/store";
 import { homeReader, type HomeReader } from "../home/source";
-import { loanPicture, loanRequestPicture } from "../loans/pictures";
+import {
+  coOwnerInvitationPicture,
+  loanPicture,
+  loanRequestPicture,
+} from "../loans/pictures";
 import { readLoan, readLoanRequest } from "../loans/queries";
 import { listNotifications } from "../notifications/queries";
 import { listNotificationsPolicy } from "../notifications/policies";
-import { actingUserId } from "../objects/state";
+import { actingUserId, loadImages } from "../objects/state";
 import { personVisible } from "../people/policies";
 import { loadPeople } from "../people/store";
 import {
@@ -174,20 +178,25 @@ async function invitationAbout(
   const invitation = await db
     .selectFrom("app.object_co_owner_invitations as invitation")
     .innerJoin("app.objects as object", "object.id", "invitation.object_id")
-    .select(["invitation.status", "object.title"])
+    .select(["invitation.status", "object.id as objectId", "object.title"])
     .where("invitation.id", "=", invitationId)
     .where("invitation.invited_user_id", "=", userId)
     .executeTakeFirst();
+  // Its pictures only while asked (`object_invitation.read_image`); a
+  // co-owner reads them as an owner, through what the notification leads to.
+  const pending = invitation?.status === "pending";
+  const images = pending
+    ? ((await loadImages(db, [invitation.objectId])).get(invitation.objectId) ??
+      [])
+    : [];
 
   return {
     about: {
       // The object is shown to the invitee only while they are asked, or
       // once they co-own it.
       thing:
-        invitation?.status === "pending" || invitation?.status === "accepted"
-          ? invitation.title
-          : null,
-      picture: null,
+        pending || invitation?.status === "accepted" ? invitation.title : null,
+      picture: coOwnerInvitationPicture(invitationId, images),
       person: null,
       place: null,
     },
