@@ -192,25 +192,12 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Avklares før:** plattformforvalterens flater designes og vises (etter OD-0023). Til da finnes ingen slik flate i appen.
 - **Anbefaling:** Start alle inngrep fra en sak i plattformkøen, slik at begrunnelse, habilitet og historikk følger saken (PS-TRUST-016, PS-ADM-014), og vis ingen forvalterhandlinger på ordinære person- og miljøsider.
 
+## Avklart
+
 ### OD-0048 — Omtrentlig medlemstall før medlemskap
 - **Lag:** Produktspesifikasjon
-- **Status:** Åpen
-- **Berører:** PS-ENV-001, [visjon 03](vision/03-miljoer.md) («omtrentlig medlemstall»), Finn miljøer i Tomat-designet
-- **Spørsmål:** Visjonen sier at den som ikke er medlem kan se et omtrentlig medlemstall for åpne og lukkede miljøer, og designet for Finn viser for eksempel «ca. 140 medlemmer», men spesifikasjonen sier ikke hvor grovt tallet skal være. Et nøyaktig tall i små miljøer kan avsløre når én bestemt person blir med eller går ut. Hvordan skal tallet rundes, og skal små miljøer vises uten tall? Inntil dette er besluttet, viser Finn ikke medlemstall.
-- **Avhenger av:** Produktvurdering av personvern i små miljøer.
-- **Avklares før:** medlemstallet skal vises i Finn eller på miljøets side for ikke-medlemmer.
-- **Anbefaling:** Vis «under 10 medlemmer» for de minste miljøene, og ellers tallet rundet til nærmeste ti («ca. 140 medlemmer»), slik at én person inn eller ut sjelden endrer det som vises.
-
-### OD-0050 — Varsel til søkeren når en søknad er avgjort
-- **Lag:** Produktspesifikasjon
-- **Status:** Åpen
-- **Berører:** PS-ENV-004, PS-COM (varseltyper), «Innmelding og invitasjon» i [skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md), kjerneflyt 3 i Tomat-designet
-- **Spørsmål:** Designet for kjerneflyt 3 sier «Du får varsel når de har svart» og viser første besøk som medlem åpnet fra et varsel, men spesifikasjonen har ingen varseltype for en godkjent eller avslått søknad, og appen sender ingen. Skal søkeren varsles når søknaden godkjennes, og når den avslås? Inntil dette er besluttet, lover søknadssiden ikke noe varsel, og «Velkommen» vises bare rett etter at man selv har blitt med.
-- **Avhenger av:** Ingen.
-- **Avklares før:** søknadssiden skal love et varsel, eller «Velkommen» skal vises ved første besøk etter en godkjent søknad.
-- **Anbefaling:** Varsle i appen både ved godkjenning og avslag. Godkjenningen lenker til miljøet med «Velkommen». Avslaget sier nøytralt at søknaden ikke ble godkjent, uten begrunnelse.
-
-## Avklart
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Beslutning:** Se [PS-ENV-016](product-spec/02-miljoer.md). Rundet tall: «under 10 medlemmer» for små miljøer, ellers nærmeste ti.
 
 ### OD-0038 — Hva den som rapporterte, får vite når saken lukkes
 - **Lag:** Produktspesifikasjon / UX

@@ -92,6 +92,11 @@ Prosesser som krever administrator kan stå på vent dersom ingen habil administ
 
 Aktive medlemmer ser miljøets medlemsliste og eierne av tingene som er publisert i miljøet, og kan derfra åpne en persons profil og sende venneforespørsel. Som eiere vises bare de medeierne som selv er aktive medlemmer av miljøet; en medeier utenfor miljøet vises ikke for miljøets medlemmer (PS-OBJ-006). Passive medlemmer vises ikke, og ikke-medlemmer ser verken medlemsliste eller eiere. Historisk personvern (PS-ENV-009) gjelder for begge: et medlemskap eller en publisering fra en strengere miljøtype vises ikke bredere før medlemmet har akseptert den nye typen. (Produkteier, 6. oktober 2026, OD-0024.)
 
+### PS-ENV-016 — Omtrentlig medlemstall før medlemskap
+**Forankring:** [Lukket miljø](../vision/03-miljoer.md)
+
+Den som finner et åpent eller lukket miljø, ser et omtrentlig antall aktive medlemmer, aldri det nøyaktige. Under 10 vises som «under 10 medlemmer»; ellers rundes tallet til nærmeste ti («ca. 140 medlemmer»), så én person inn eller ut sjelden endrer det som vises. Avrundingen skjer på serveren, og det nøyaktige tallet sendes ikke til klienten. (Produkteier, 10. oktober 2026, OD-0048.)
+
 ## Miljøtilstand
 
 Normal livssyklus:

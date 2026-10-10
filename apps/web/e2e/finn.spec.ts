@@ -95,7 +95,7 @@ test("Finn finds environments to join, and then the things in them", async ({
   await expect(found).toHaveCount(1);
   await expect(found).toContainText(`Nabolaget ${place}`);
   await expect(found).toContainText("Åpent · bli med med en gang");
-  await expect(found).toContainText("Grünerløkka");
+  await expect(found).toContainText("Grünerløkka · under 10 medlemmer");
 
   await post(page.request, "/api/environments/membership/join", {
     environmentId,

@@ -13,6 +13,10 @@ import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
 import { defineQuery } from "../commands/query";
 import { effectiveState, toArea } from "../environment/model";
+import {
+  approximateMembers,
+  loadApproximateMembers,
+} from "../environment/member-count";
 import { loadEnvironmentAccess } from "../environment/store";
 import { withinAvailability } from "../loans/model";
 import { addDays } from "../objects/availability";
@@ -326,7 +330,7 @@ export const searchEnvironments = defineQuery({
   input: environmentSearchQuerySchema,
   policy: searchEnvironmentsPolicy,
   rateLimit: rateLimits.lookups,
-  load: async ({ db, actor, input }) => {
+  load: async ({ db, actor, input, now }) => {
     if (actor.kind !== "user") {
       return null;
     }
@@ -398,17 +402,27 @@ export const searchEnvironments = defineQuery({
       .orderBy("environment.id")
       .limit(searchResultLimit + 1)
       .execute();
+    const shown = rows.slice(0, searchResultLimit);
+    const members = await loadApproximateMembers(
+      db,
+      shown.map((row) => row.id),
+      now,
+    );
 
-    return { resource: rows, context: undefined };
+    return {
+      resource: { shown, members, more: rows.length > searchResultLimit },
+      context: undefined,
+    };
   },
   present: ({ resource, now }): EnvironmentSearchResult => ({
-    environments: resource.slice(0, searchResultLimit).map((row) => ({
+    environments: resource.shown.map((row) => ({
       id: row.id,
       type: row.type as "open" | "closed",
       name: row.name,
       description: row.description,
       location: row.location,
       area: toArea(row),
+      members: resource.members.get(row.id) ?? approximateMembers(0),
       membershipState:
         row.state === null
           ? null
@@ -420,6 +434,6 @@ export const searchEnvironments = defineQuery({
               now,
             ) as Exclude<MembershipState, "ended">),
     })),
-    more: resource.length > searchResultLimit,
+    more: resource.more,
   }),
 });
