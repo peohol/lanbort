@@ -341,7 +341,10 @@ export const interventionFlows = {
       hint: "Kontoen som videreføres, må være aktiv.",
       usable: takesNewActivity,
     },
-    hidden: ({ continues }) => continues !== null,
+    // Retired already, unless its closure was ended since: then it is
+    // retired again into the same account.
+    hidden: ({ continues, account }) =>
+      continues !== null && account.status === "closing",
     blocked: ({ account }) =>
       account.status === "suspended"
         ? "En suspendert konto avvikles ikke som duplikat. En ny konto ved siden av en suspendert er omgåelse."

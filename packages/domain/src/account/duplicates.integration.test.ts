@@ -212,6 +212,21 @@ describe("retiring a duplicate (PS-ADM-009)", () => {
     expect(await statusOf(other.userId)).toBe("active");
   });
 
+  it("retires an account only from a case about it, not one about the account that continues", async () => {
+    const platform = await steward();
+    const [retired, continued] = await Promise.all([user(), user()]);
+
+    await expect(
+      run(retireDuplicateAccount, platform, {
+        caseId: await about(platform, continued.userId),
+        userId: retired.userId,
+        continuedUserId: continued.userId,
+        basis,
+      }),
+    ).rejects.toMatchObject({ code: "forbidden" });
+    expect(await statusOf(retired.userId)).toBe("active");
+  });
+
   it("retires an account into one other account only", async () => {
     const platform = await steward();
     const [retired, continued, third] = await Promise.all([
@@ -275,7 +290,9 @@ describe("moving a duplicate's objects (PS-ADM-009)", () => {
     ]);
     const alone = await create(retired);
     const shared = await create(retired);
+    const theirs = await create(retired);
     await addCoOwner(retired, shared, coOwner);
+    await addCoOwner(retired, theirs, continued);
     const caseId = await about(platform, retired.userId);
     const subject = async () =>
       (
@@ -293,6 +310,8 @@ describe("moving a duplicate's objects (PS-ADM-009)", () => {
       userId: continued.userId,
       realName: expect.any(String),
     });
+    // A thing the continuing account already owns has nothing left to move.
+    expect(before?.objects).toHaveLength(2);
     expect(before?.objects).toEqual(
       expect.arrayContaining([
         { objectId: alone, title: expect.any(String), coOwners: [] },

@@ -122,6 +122,10 @@ describe("the interventions a steward may choose", () => {
     expect(choices({ status: "active", ...retired })["move-object"]).toBe(
       "Bare når kontoen er avviklet som duplikat og er under avslutning.",
     );
+    // Its closure was ended since, so it may be retired again.
+    expect(choices({ status: "active", ...retired })["retire-duplicate"]).toBe(
+      null,
+    );
 
     const alone = { objectId: userId, title: "Drill", coOwners: [] };
     const duplicate = subject({

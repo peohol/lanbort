@@ -135,9 +135,9 @@ export const retireDuplicateAccount = defineCommand({
       input.caseId,
       now,
       await loadDuplicatePair(tx, input.userId, input.continuedUserId),
-      ({ retired, continued }) => ({
-        userIds: [retired.userId, continued.userId],
-      }),
+      // Only the account that is closed is acted on, so only a case about
+      // it may retire it; one about the continuing account may not.
+      ({ retired }) => ({ userIds: [retired.userId] }),
     ),
   execute: (scope) => intervene(scope, () => retire(scope)),
 });
