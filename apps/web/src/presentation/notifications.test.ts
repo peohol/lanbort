@@ -6,6 +6,7 @@ import {
 import { describe, expect, it } from "vitest";
 import {
   arrangeNotifications,
+  notificationHref,
   notificationWhen,
   notificationWords,
   olderText,
@@ -31,7 +32,12 @@ describe("what a notification says", () => {
   });
 
   it("names who wrote and how many new messages, never what (PS-COM-018)", () => {
-    const about = { thing: null, person: "Aisha Rahman", place: null };
+    const about = {
+      thing: null,
+      picture: null,
+      person: "Aisha Rahman",
+      place: null,
+    };
 
     expect(
       notificationWords({
@@ -78,10 +84,11 @@ describe("what a notification says", () => {
 describe("what it is about, and what became of it", () => {
   const about = {
     thing: "stigen",
+    picture: null,
     person: "Per Lien",
     place: "Borettslaget Lia",
   };
-  const nobody = { thing: null, person: null, place: null };
+  const nobody = { thing: null, picture: null, person: null, place: null };
 
   it("names what the reader may see", () => {
     expect(
@@ -139,6 +146,70 @@ describe("what it is about, and what became of it", () => {
         standing: "declined",
       }).detail,
     ).toBe("Du takket nei.");
+  });
+});
+
+describe("an application's outcome (PS-ENV-017)", () => {
+  const about: {
+    thing: null;
+    picture: null;
+    person: null;
+    place: string | null;
+  } = { thing: null, picture: null, person: null, place: "Verkstedet" };
+  const said = (
+    kind: "environment.membership_approved" | "environment.membership_rejected",
+    detail: string | null,
+    named = about,
+  ) => notificationWords({ kind, detail, about: named }).title;
+
+  it("names the environment and says only what was decided", () => {
+    expect(said("environment.membership_approved", null)).toBe(
+      "Søknaden din til Verkstedet er godkjent",
+    );
+    expect(said("environment.membership_rejected", null)).toBe(
+      "Søknaden din til Verkstedet ble ikke godkjent",
+    );
+    expect(said("environment.membership_approved", "reactivation")).toBe(
+      "Du er aktivt medlem av Verkstedet igjen",
+    );
+    expect(said("environment.membership_rejected", "reactivation")).toBe(
+      "Søknaden din om å bli aktiv igjen i Verkstedet ble ikke godkjent",
+    );
+    expect(
+      said("environment.membership_rejected", "reactivation", {
+        ...about,
+        place: null,
+      }),
+    ).toBe("Søknaden din om å bli aktiv igjen ble ikke godkjent");
+  });
+
+  it("opens the environment with its welcome the first time an approval is followed", () => {
+    const environmentId = "00000000-0000-4000-8000-0000000000e1";
+    const approval: Notification = {
+      id: "00000000-0000-4000-8000-0000000000a1",
+      kind: "environment.membership_approved",
+      level: "action",
+      detail: null,
+      target: { type: "environment", id: environmentId },
+      occurredAt: "2026-10-10T10:00:00.000Z",
+      readAt: null,
+    };
+
+    expect(notificationHref(approval)).toBe(
+      `/miljoer/${environmentId}?velkommen`,
+    );
+    expect(
+      notificationHref({ ...approval, readAt: "2026-10-10T11:00:00.000Z" }),
+    ).toBe(`/miljoer/${environmentId}`);
+    expect(
+      notificationHref({
+        ...approval,
+        kind: "environment.membership_rejected",
+      }),
+    ).toBe(`/miljoer/${environmentId}`);
+    expect(notificationHref({ ...approval, detail: "reactivation" })).toBe(
+      `/miljoer/${environmentId}`,
+    );
   });
 });
 

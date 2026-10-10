@@ -3,10 +3,11 @@ import { ActionButton } from "@/components/action-button";
 import { Icon } from "@/components/icon";
 import { NotificationLink } from "@/components/notification-link";
 import { Tag } from "@/components/tag";
-import { hrefFor } from "@/navigation/targets";
+import { ThingThumbnail } from "@/components/thing-thumbnail";
 import {
   arrangeNotifications,
   notificationContext,
+  notificationHref,
   type NotificationEntry,
   notificationLevelLabels,
   notificationWhen,
@@ -31,12 +32,17 @@ function NotificationRow({
   const context = notificationContext(notification);
   const { title, detail } = notificationWords(notification);
   const more = olderText({ notification, older });
-  const href = hrefFor(notification.target);
+  const href = notificationHref(notification);
   const content = (
     <>
-      <span className={styles.icon}>
-        <Icon name={context.icon} />
-      </span>
+      <ThingThumbnail
+        picture={notification.about.picture}
+        fallback={
+          <span className={styles.icon}>
+            <Icon name={context.icon} />
+          </span>
+        }
+      />
       <span className={styles.text}>
         <span className={styles.meta}>
           <span>

@@ -9,6 +9,8 @@ import {
 } from "@lanbort/contracts";
 import { notificationEmailSubjects } from "@lanbort/domain";
 import type { IconName } from "@/components/icon";
+import { environmentWelcomeHref } from "@/navigation/routes";
+import { hrefFor } from "@/navigation/targets";
 import { calendarDay } from "./dates";
 
 /** What a notification says: one line, and more where there is more. */
@@ -18,6 +20,21 @@ export interface NotificationWords {
 }
 
 type About = DescribedNotification["about"];
+
+/**
+ * Where following a notification leads: its context, and the first time an
+ * approved application is followed, the environment with its welcome
+ * (PS-ENV-017). Null where the context has no page of its own.
+ */
+export function notificationHref(notification: Notification): string | null {
+  const { kind, detail, target, readAt } = notification;
+
+  return kind === "environment.membership_approved" &&
+    detail === null &&
+    readAt === null
+    ? environmentWelcomeHref(target.id)
+    : hrefFor(target);
+}
 
 /**
  * The sentence that names what happened, where the reader may see what it
@@ -86,6 +103,17 @@ const named: Partial<
   "environment.role_invited": ({ place }, detail) =>
     place &&
     `Du er spurt om å bli ${detail === "owner" ? "eier" : "administrator"} i ${place}`,
+  // PS-ENV-017: neutral, never why or who decided.
+  "environment.membership_approved": ({ place }, detail) =>
+    place &&
+    (detail === "reactivation"
+      ? `Du er aktivt medlem av ${place} igjen`
+      : `Søknaden din til ${place} er godkjent`),
+  "environment.membership_rejected": ({ place }, detail) =>
+    place &&
+    (detail === "reactivation"
+      ? `Søknaden din om å bli aktiv igjen i ${place} ble ikke godkjent`
+      : `Søknaden din til ${place} ble ikke godkjent`),
   "environment.membership_review_requested": ({ place }) =>
     place && `En søknad om medlemskap i ${place} venter på behandling`,
   "environment.requirements_changed": ({ place }) =>
@@ -129,6 +157,14 @@ const refinements: Partial<
       ? "Den andre parten sier at overleveringen ikke skjedde"
       : "Den andre parten sier at overleveringen skjedde",
   "loan.return_reported": (detail) => returnTexts[detail ?? ""],
+  "environment.membership_approved": (detail) =>
+    detail === "reactivation"
+      ? "Du er aktivt medlem av et miljø igjen"
+      : undefined,
+  "environment.membership_rejected": (detail) =>
+    detail === "reactivation"
+      ? "Søknaden din om å bli aktiv igjen ble ikke godkjent"
+      : undefined,
   "environment.role_invited": (detail) =>
     detail === "owner"
       ? "Du er spurt om å bli eier av et miljø"

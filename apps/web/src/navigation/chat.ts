@@ -1,3 +1,5 @@
+import type { ChatContext } from "@lanbort/contracts";
+
 /**
  * The pages of private chat (WP-43). They get their own, stricter security
  * headers (ADR-0010 §13), so where they are is decided here, once.
@@ -14,6 +16,18 @@ export const chatLinkHref = `${chatHref}/koble`;
 export const chatResetHref = `${chatHref}/tilbakestill`;
 export const chatConversationHref = (conversationId: string) =>
   `${chatHref}/${conversationId}`;
+/**
+ * Samtaler opened to write to someone (PS-COM-017): their conversation if
+ * there is one, or else the offer to start it where the server allows it.
+ */
+export const chatWithHref = (userId: string, context?: ChatContext) =>
+  `${chatHref}?${new URLSearchParams({
+    med: userId,
+    ...(context?.kind === "loan_request" && { foresporsel: context.requestId }),
+    ...(context?.kind === "object_question" && {
+      sporsmal: context.questionId,
+    }),
+  })}`;
 /** «Om samtalen»: the loans, the security code and the personal choices. */
 export const chatAboutHref = (conversationId: string) =>
   `${chatConversationHref(conversationId)}/om`;

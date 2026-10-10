@@ -185,7 +185,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 - **Oppgave:** bli medlem på den måten typen krever.
 - **Tilstander:** bli med med egenerklæring (åpent); søknad med svar på krav (lukket); mer informasjon etterspurt; godkjent; avslått; invitasjon mottatt og krav å fylle ut (skjult); kan ikke søke igjen (vises nøytralt).
 - **Ser / handler:** den som søker eller er invitert. Svar på krav vises som opplysninger til miljøets medlemsprosess, ikke som profil.
-- **Regler:** UX-JRN-002, UX-PRIV-009, PS-ENV-001, PS-ENV-004, PS-ENV-005, PS-ENV-010, PS-NFR-008.
+- **Regler:** UX-JRN-002, UX-PRIV-009, PS-ENV-001, PS-ENV-004, PS-ENV-005, PS-ENV-010, PS-ENV-017, PS-NFR-008.
 - **Forløp:** normal.
 - **UI-pakke:** WP-84.
 

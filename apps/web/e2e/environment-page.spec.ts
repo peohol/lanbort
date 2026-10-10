@@ -80,6 +80,8 @@ test("an environment is created, applied to, used and left in the browser", asyn
       "Alle kan finne miljøet, men en administrator godkjenner nye medlemmer.",
     ),
   ).toBeVisible();
+  // About how many, never the exact number (PS-ENV-016).
+  await expect(bo.page.getByText("under 10 medlemmer")).toBeVisible();
   await expect(bo.page.getByRole("heading", { name: /Medlemmer/ })).toHaveCount(
     0,
   );
@@ -130,6 +132,25 @@ test("an environment is created, applied to, used and left in the browser", asyn
       (membership: { userId: string }) => membership.userId === bo.id,
     ).id,
   });
+
+  // Bo is told (PS-ENV-017), and the notification opens the environment
+  // with its welcome the first time.
+  await untilOutboxSettles(bo.context.request, async () =>
+    (
+      await (await bo.context.request.get("/api/notifications")).json()
+    ).notifications.some(
+      (notification: { kind: string }) =>
+        notification.kind === "environment.membership_approved",
+    ),
+  );
+  await bo.page.goto("/varsler");
+  await bo.page
+    .getByRole("link", {
+      name: new RegExp(`Søknaden din til ${name} er godkjent`),
+    })
+    .click();
+  await expect(bo.page).toHaveURL(`/miljoer/${environmentId}`);
+  await expect(bo.page.getByText(/^Velkommen, Bo/)).toBeVisible();
 
   // As a member, Bo finds the thing, Anna and the administrators.
   await bo.page.reload();

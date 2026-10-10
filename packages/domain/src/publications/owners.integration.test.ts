@@ -5,6 +5,7 @@ import { executeQuery } from "../commands/query";
 import { leaveEnvironment } from "../environment/membership-commands";
 import { previewLoanRequest } from "../loans/queries";
 import { refreshSearchIndex } from "../search/indexer";
+import { blockUser, removeFriend } from "../social/commands";
 import { searchObjects } from "../search/queries";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
@@ -14,7 +15,16 @@ const db = connectTestDatabase();
 afterAll(() => db.destroy());
 
 const kit = loanTestKit(db);
-const { run, tick, user, member, addCoOwner, published, friendsObject } = kit;
+const {
+  run,
+  tick,
+  user,
+  member,
+  addCoOwner,
+  published,
+  friends,
+  friendsObject,
+} = kit;
 
 /** How a member is shown each owner they may see: name and page. */
 async function shown(...owners: UserActor[]) {
@@ -122,12 +132,44 @@ describe("owners on things in an environment (PS-ENV-015)", () => {
       (await inEnvironment(borrower, environmentId, objectId))?.owners,
     ).toEqual(await shown(owner));
   });
+});
 
-  it("names nobody on a direct request between friends", async () => {
+describe("owners on things shared directly with friends (PS-OBJ-022)", () => {
+  /** A thing of `owner`'s shared with friends, and two co-owners of it. */
+  async function shared() {
     const owner = await user();
-    const friend = await user();
-    const objectId = await friendsObject(owner, friend);
+    const viewer = await user();
+    const friendly = await user();
+    const stranger = await user();
+    const objectId = await friendsObject(owner, viewer);
+    await addCoOwner(owner, objectId, friendly);
+    await addCoOwner(owner, objectId, stranger);
+    await friends(viewer, friendly);
+    const title = `Venn${randomUUID().replaceAll("-", "")}`;
 
-    expect((await preview(friend, objectId)).owners).toEqual([]);
+    return { owner, viewer, friendly, stranger, objectId, title };
+  }
+
+  it("names only the owners the viewer is a friend of", async () => {
+    const { owner, viewer, friendly, objectId, title } = await shared();
+    const expected = await shown(owner, friendly);
+
+    expect((await preview(viewer, objectId)).owners).toEqual(expected);
+    expect((await inFinn(viewer, objectId, title))?.owners).toEqual(expected);
+  });
+
+  it("stops naming an owner when the friendship ends, and hides the thing on a block", async () => {
+    const { owner, viewer, friendly, objectId, title } = await shared();
+
+    await run(removeFriend, friendly, { userId: viewer.userId });
+    expect((await preview(viewer, objectId)).owners).toEqual(
+      await shown(owner),
+    );
+    expect((await inFinn(viewer, objectId, title))?.owners).toEqual(
+      await shown(owner),
+    );
+
+    await run(blockUser, friendly, { userId: viewer.userId });
+    expect(await inFinn(viewer, objectId, title)).toBeUndefined();
   });
 });

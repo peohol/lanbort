@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { thingPictureSchema } from "./loans";
 
 /**
  * Notifications (PS-COM-001–003). A notification only draws attention to
@@ -62,6 +63,8 @@ export const notificationKinds = {
   "social.friend_request_accepted": "information",
   "environment.membership_invited": "action",
   "environment.membership_review_requested": "action",
+  "environment.membership_approved": "action",
+  "environment.membership_rejected": "action",
   "environment.role_invited": "action",
   "environment.type_change_proposed": "action",
   "environment.requirements_changed": "action",
@@ -187,6 +190,8 @@ export const notificationStandingSchema = z.enum(notificationStandings);
 export const describedNotificationSchema = notificationSchema.extend({
   about: z.strictObject({
     thing: z.string().nullable(),
+    /** The thing's first picture, while the reader sees it (PS-OBJ-021). */
+    picture: thingPictureSchema.nullable(),
     person: z.string().nullable(),
     place: z.string().nullable(),
   }),

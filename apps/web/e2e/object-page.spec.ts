@@ -1,9 +1,12 @@
+import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
+import sharp from "sharp";
 import {
   accountId,
   collectBrowserProblems,
   postCommand,
   registerThroughApi,
+  showToFriends,
   today,
   uniqueWord,
   untilOutboxSettles,
@@ -101,6 +104,69 @@ test("a thing has one page, seen by its owner or through an environment", async 
   const direct = await member.goto(`/ting/${objectId}`);
   expect(direct?.status()).toBe(404);
   await members.close();
+  expect(problems).toEqual([]);
+});
+
+/**
+ * Between friends the thing is seen directly (PS-OBJ-020): with its
+ * pictures, read through the friends' own address, and its owner named,
+ * since the viewer is their friend (PS-OBJ-022).
+ */
+test("a friend sees the thing directly, with its pictures and its owner", async ({
+  browser,
+  page,
+  baseURL,
+}) => {
+  const problems = collectBrowserProblems(page);
+  await registerThroughApi(page.request, undefined, "Bo Dahl");
+  const owner = await browser.newContext({ baseURL: baseURL! });
+  await registerThroughApi(owner.request, undefined, "Anna Berg");
+  const annaId = await accountId(owner.request);
+  await postCommand(page.request, "/api/social/friend-requests", {
+    userId: annaId,
+  });
+  await postCommand(owner.request, "/api/social/friend-requests/accept", {
+    userId: await accountId(page.request),
+  });
+  const word = uniqueWord();
+  const { objectId } = await (
+    await postCommand(owner.request, "/api/objects", {
+      title: `Stige ${word}`,
+      categoryId: "annet",
+      description: "Aluminiumsstige, 4 meter.",
+      availability: [{ start: today(), end: null }],
+    })
+  ).json();
+  const upload = await owner.request.post(`/api/objects/${objectId}/images`, {
+    data: await sharp({
+      create: { width: 40, height: 30, channels: 3, background: "#4a7" },
+    })
+      .jpeg()
+      .toBuffer(),
+    headers: { "content-type": "image/jpeg", "Idempotency-Key": randomUUID() },
+  });
+  expect(upload.ok(), await upload.text()).toBe(true);
+  await showToFriends(owner.request, objectId);
+
+  await page.goto(`/ting/${objectId}`);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    `Stige ${word}`,
+  );
+  await expect(page.getByRole("link", { name: "Anna Berg" })).toHaveAttribute(
+    "href",
+    new RegExp(`/personer/${annaId}`),
+  );
+  const picture = page
+    .getByRole("list", { name: `Bilder av Stige ${word}` })
+    .getByRole("img");
+  await expect(picture).toHaveAttribute(
+    "src",
+    new RegExp(`^/api/social/objects/image\\?objectId=${objectId}`),
+  );
+  await expect
+    .poll(() => picture.evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBeGreaterThan(0);
+  await owner.close();
   expect(problems).toEqual([]);
 });
 

@@ -11,6 +11,7 @@ function loan(changes: Partial<Loan> = {}): Loan {
     id,
     requestId: id,
     objectId: id,
+    images: [],
     role: "borrower",
     borrowerUserId: id,
     responsibleLenderId: id,
@@ -205,6 +206,7 @@ function request(changes: Partial<LoanRequest> = {}): LoanRequest {
     role: "lender",
     status: "requested",
     object: { title: "Tilhenger", categoryId: "annet" },
+    images: [],
     responsibility: null,
     borrower: { realName: "Per Lien", profileId: null },
     origin: { kind: "direct" },
@@ -277,6 +279,7 @@ function coOwnerLoan(changes: Partial<CoOwnerLoan> = {}): CoOwnerLoan {
     status: "active",
     agreementVersion: 1,
     title: "Tilhenger",
+    images: [],
     period: { start: "2026-10-05", end: "2026-10-07" },
     transfer: null,
     mayTakeOver: false,
@@ -327,5 +330,31 @@ describe("what a loan asks of a co-owner", () => {
         }),
       ),
     ).toBeNull();
+  });
+});
+
+describe("the thing's picture (PS-OBJ-021)", () => {
+  const imageId = "00000000-0000-4000-8000-0000000000a1";
+  const images = [{ id: imageId, width: 800, height: 600 }];
+
+  it("is read the way the reader sees the thing", () => {
+    expect(loanHomeItem(loan({ images }))?.picture).toEqual({
+      through: "loan",
+      loanId: id,
+      imageId,
+    });
+    expect(loanRequestHomeItem(request({ images }))?.picture).toEqual({
+      through: "loan_request",
+      requestId: id,
+      imageId,
+    });
+    expect(
+      coOwnerLoanHomeItem(coOwnerLoan({ images, mayTakeOver: true }))?.picture,
+    ).toEqual({ through: "owner", objectId: id, imageId });
+  });
+
+  it("is left out when the thing has none", () => {
+    expect(loanHomeItem(loan())?.picture).toBeNull();
+    expect(loanRequestHomeItem(request())?.picture).toBeNull();
   });
 });

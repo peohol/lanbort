@@ -22,6 +22,19 @@
   margin: 0;
 }
 
+/* The thing's picture beside the title (KF7). */
+.thing {
+  display: block;
+  width: 3rem;
+  height: 3rem;
+  object-fit: cover;
+  border-radius: var(--radius-field);
+}
+
+img.thing {
+  background: var(--color-sunken);
+}
+
 /* The way from request to done: done steps as filled dots, the step the
    loan is at as a pill with its word, the rest as rings. Every step is said
    to assistive technology; on a wider screen they are also shown. */

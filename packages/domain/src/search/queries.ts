@@ -33,7 +33,7 @@ import {
   presentFound,
   selectFound,
 } from "../publications/queries";
-import { environmentOwners } from "../publications/owners";
+import { shownOwners } from "../publications/owners";
 import { searchEnvironmentsPolicy, searchObjectsPolicy } from "./policies";
 import { rateLimits } from "../abuse/rate-limits";
 
@@ -260,15 +260,20 @@ export const searchObjects = defineQuery({
         )
         .sort(relevance);
       const shown = matching.slice(0, searchResultLimit);
-      const owners = await environmentOwners(
+      const owners = await shownOwners(
         tx,
         actor.userId,
-        shown.flatMap((candidate) =>
-          candidate.foundIn.map(({ environmentId }) => ({
-            objectId: candidate.objectId,
-            environmentId,
-          })),
-        ),
+        {
+          environments: shown.flatMap((candidate) =>
+            candidate.foundIn.map(({ environmentId }) => ({
+              objectId: candidate.objectId,
+              environmentId,
+            })),
+          ),
+          friends: shown
+            .filter((candidate) => candidate.throughFriends)
+            .map((candidate) => candidate.objectId),
+        },
         now,
       );
 
