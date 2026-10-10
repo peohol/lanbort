@@ -7,6 +7,7 @@ import {
   chatLinkRequestListSchema,
   chatLinkRequestTargetSchema,
   chatLinkStatusSchema,
+  declineChatLinkSchema,
   type DeviceCertificateWire,
   type DeviceRevocationWire,
   ownChatDevicesSchema,
@@ -552,11 +553,14 @@ export const approveChatLink = defineCommand({
  * An existing device declines a device that waits to be linked (ADR-0010
  * §5), instead of letting its code expire: it can no longer be approved,
  * and the new device sees that it was declined and may ask again. Declining
- * one declined already gives the same answer.
+ * one declined already gives the same answer. One that another device
+ * approved meanwhile answers `conflict`, so the caller never takes it as
+ * declined, also once the new device has finished linking and the request
+ * is gone; one that expired unanswered is `not_found`.
  */
 export const declineChatLink = defineCommand({
   name: "chat.decline_link",
-  input: chatLinkRequestTargetSchema,
+  input: declineChatLinkSchema,
   output: chatDoneSchema,
   policy: declineChatLinkPolicy,
   idempotency: "required",
@@ -566,28 +570,42 @@ export const declineChatLink = defineCommand({
     const request = await loadLinkRequest(tx, input.linkRequestId, {
       lock: true,
     });
+    // Only the caller's own devices are looked at, so this tells no one
+    // anything about another account.
+    const linked =
+      request === undefined &&
+      (await tx
+        .selectFrom("app.chat_devices")
+        .select("id")
+        .where("id", "=", input.deviceId)
+        .where("user_id", "=", userId)
+        .executeTakeFirst()) !== undefined;
 
     return {
       resource: {
         hasDevice: device !== null,
-        // A request declined already is still the caller's to decline.
+        // A request declined already is still the caller's to decline, and
+        // one approved, or linked and gone, is still the caller's to be
+        // told about.
         own:
-          request !== undefined &&
-          request.user_id === userId &&
-          request.approved_at === null &&
-          request.expires_at > now,
+          linked ||
+          (request !== undefined &&
+            request.user_id === userId &&
+            (request.approved_at !== null || request.expires_at > now)),
       },
       context: undefined,
     };
   },
   execute: async ({ tx, input, now }) => {
-    await tx
+    const { numUpdatedRows } = await tx
       .updateTable("app.chat_link_requests")
       .set((eb) => ({
         declined_at: eb.fn.coalesce("declined_at", eb.val(now)),
       }))
       .where("id", "=", input.linkRequestId)
-      .execute();
+      .where("approved_at", "is", null)
+      .executeTakeFirstOrThrow();
+    if (numUpdatedRows === 0n) conflict("The device was approved already");
 
     return {};
   },

@@ -15,7 +15,7 @@ import { ErrorText } from "@/components/error-text";
 import { PageHeader } from "@/components/page-header";
 import {
   chatApproveLinkHref,
-  chatDevicesDeclinedHref,
+  chatDevicesAnsweredHref,
   chatDevicesHref,
 } from "@/navigation/chat";
 import { chatApi } from "./api";
@@ -131,8 +131,8 @@ function Confirm({
         <DeclineLink
           request={request}
           label="Ikke godkjenn"
-          onDeclined={() =>
-            router.push(chatDevicesDeclinedHref(request.deviceId))
+          onAnswered={(outcome) =>
+            router.push(chatDevicesAnsweredHref(request.deviceId, outcome))
           }
         />
       </div>

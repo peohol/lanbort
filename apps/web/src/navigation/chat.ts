@@ -6,9 +6,12 @@ import type { ChatContext } from "@lanbort/contracts";
  */
 export const chatHref = "/samtaler";
 export const chatDevicesHref = `${chatHref}/enheter`;
-/** Back in Mine enheter after the device that waited was declined. */
-export const chatDevicesDeclinedHref = (deviceId: string) =>
-  `${chatDevicesHref}?avvist=${encodeURIComponent(deviceId)}`;
+/**
+ * Back in Mine enheter after declining the device that waited, with what
+ * became of it (`declineOutcomes`).
+ */
+export const chatDevicesAnsweredHref = (deviceId: string, outcome: string) =>
+  `${chatDevicesHref}?${new URLSearchParams({ avvisning: outcome, enhet: deviceId })}`;
 /** On an existing device: scan or type the code a new device shows. */
 export const chatApproveLinkHref = `${chatDevicesHref}/koble`;
 /** The same, starting with the field for the code instead of the camera. */

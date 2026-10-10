@@ -21,7 +21,12 @@ import styles from "./chat.module.css";
 import { ChatIcon } from "./chat-icon";
 import { useEngineVersion } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";
-import { DeclineLink } from "./decline-link";
+import {
+  DeclineLink,
+  type DeclineOutcome,
+  DeclineReceipt,
+  declineOutcomes,
+} from "./decline-link";
 import { addedAt, deviceName } from "./device-names";
 import type { ChatEngine } from "./engine";
 import { chatErrorMessage } from "./messages";
@@ -46,10 +51,10 @@ const header = (
  */
 function Waiting({
   requests,
-  onDeclined,
+  onAnswered,
 }: {
   requests: readonly ChatLinkRequest[];
-  onDeclined: (request: ChatLinkRequest) => void;
+  onAnswered: (request: ChatLinkRequest, outcome: DeclineOutcome) => void;
 }) {
   const scan = hasScanner();
   const count = requests.length;
@@ -100,7 +105,7 @@ function Waiting({
             >
               <DeclineLink
                 request={request}
-                onDeclined={() => onDeclined(request)}
+                onAnswered={(outcome) => onAnswered(request, outcome)}
               />
             </div>
           </li>
@@ -110,18 +115,26 @@ function Waiting({
   );
 }
 
+/** A decline the approval page came back with (`chatDevicesAnsweredHref`). */
+function answeredIn(search: URLSearchParams) {
+  const outcome = declineOutcomes.find((o) => o === search.get("avvisning"));
+  const deviceId = search.get("enhet");
+  return outcome && deviceId ? { outcome, deviceId } : null;
+}
+
 function Devices({ engine }: { engine: ChatEngine }) {
   const router = useRouter();
   const version = useEngineVersion(engine);
   const [devices, setDevices] = useState<OwnChatDevices>();
   const [requests, setRequests] = useState<ChatLinkRequest[]>([]);
   const [removed, setRemoved] = useState<string>();
-  // The device declined here, or on the approval page, which comes back
-  // with its id in `?avvist`.
+  // A decline here, or on the approval page, which comes back with it in
+  // the address.
   const search = useSearchParams();
-  const [declined, setDeclined] = useState(() => search.get("avvist"));
+  const [answered, setAnswered] = useState(() => answeredIn(search));
   const [error, setError] = useState<string | null>(null);
 
+  // Loaded again after a device turned out approved, so it is listed below.
   useEffect(() => {
     Promise.all([chatApi.devices(), chatApi.linkRequests()])
       .then(([own, links]) => {
@@ -129,7 +142,7 @@ function Devices({ engine }: { engine: ChatEngine }) {
         setRequests(links.requests);
       })
       .catch((problem: unknown) => setError(chatErrorMessage(problem)));
-  }, [version]);
+  }, [version, answered]);
 
   const live = devices?.devices.filter((d) => d.revokedAt === null) ?? [];
   const isCurrent = (deviceId: string) => deviceId === devices?.currentDeviceId;
@@ -151,23 +164,16 @@ function Devices({ engine }: { engine: ChatEngine }) {
           <p>{removed} er logget ut og kan ikke lese nye meldinger.</p>
         </Notice>
       )}
-      {declined && (
-        <Notice tag="Avvist" tone="positive" role="status">
-          <p>
-            {deviceName({ deviceId: declined })} fikk ikke tilgang til privat
-            chat.
-          </p>
-        </Notice>
-      )}
+      {answered && <DeclineReceipt {...answered} />}
       <ErrorText>{error}</ErrorText>
       {requests.length > 0 && (
         <Waiting
           requests={requests}
-          onDeclined={(answered) => {
+          onAnswered={(request, outcome) => {
             setRequests((now) =>
-              now.filter((r) => r.linkRequestId !== answered.linkRequestId),
+              now.filter((r) => r.linkRequestId !== request.linkRequestId),
             );
-            setDeclined(answered.deviceId);
+            setAnswered({ deviceId: request.deviceId, outcome });
           }}
         />
       )}
