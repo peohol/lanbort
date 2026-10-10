@@ -205,6 +205,12 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Status:** Avklart (produkteier, 10. oktober 2026)
 - **Beslutning:** Se [PS-ADM-015](product-spec/07-administrasjon-og-livssyklus.md). Alle inngrep starter fra en sak i plattformkøen med habilitet, begrunnelse og sporbarhet; uten rapport opprettes et autorisert saksgrunnlag først. Ingen inngrepsknapper på vanlige person- og miljøsider. Bygget på serveren; ikke i appen ennå, og stengt i produksjon til WebAuthn er verifisert der.
 
+### OD-0055 — Hvordan plattformforvalteren finner kontoen eller tingen et saksgrunnlag gjelder
+- **Lag:** UX / Produktspesifikasjon
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Berører:** PS-ADM-015, PS-ADM-009, PS-ADM-010, UX-PRIV-006
+- **Beslutning:** Se [PS-ADM-015](product-spec/07-administrasjon-og-livssyklus.md#ps-adm-015--plattforminngrep-starter-fra-en-sak). Forvalteren peker ut kontoen eller tingen med en direkte lenke til personens eller tingens side, eller med hele e-postadressen, uten fritt navnesøk. Oppslaget er tilgangsstyrt og loggføres.
+
 ### OD-0054 — Eiernavn når en ting er delt direkte med venner
 - **Lag:** Produktspesifikasjon
 - **Status:** Avklart (produkteier, 10. oktober 2026)

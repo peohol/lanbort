@@ -411,7 +411,10 @@ test("an impartial administrator removes a member, who is told neutrally and may
   await expect(perPage.getByRole("main")).toContainText(
     `Begrunnelse: ${reason}`,
   );
-  await expect(perPage.getByRole("main")).not.toContainText(/Eva|rapport/i);
+  // The environment's random name may hold any letters, so it is left out.
+  expect(
+    (await perPage.getByRole("main").innerText()).replaceAll(name, ""),
+  ).not.toMatch(/Eva|rapport/i);
   expect(await axeViolations(perPage)).toEqual([]);
 
   // The hidden environment is gone for Per, but the way back is not.
