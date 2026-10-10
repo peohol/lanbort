@@ -224,7 +224,7 @@ Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) og na
 - **Varsel til den et tiltak rammer (PS-TRUST-018).** Varsel og egen side for tiltaket (`/saker/tiltak/[id]`) med hvor det virker, en kort begrunnelse og veien til ny vurdering, uten å røpe rapporten eller melderen (#144). Eierne får også varsel når en sperre av tingen oppheves (#146).
 - **Trekke en sak (PS-COM-021).** Den som tok kontakt, kan avslutte henvendelsen, og den som rapporterte, kan trekke rapporten. En part kan ikke lukke en mekling (#144).
 - **Mekling når lånet er avklart (PS-COM-022).** Saken viser «Lånet er avklart av partene», «Lukk saken» er neste steg, og saken legges sist i køen (#123).
-- **Ingen aktiv rapport til Lånbort (UX-EXC-011).** Rapport til Lånbort vises som ikke tilgjengelig ennå, med miljøets administratorer som vei videre (#123). Før piloten åpnes, må sikkerhetskritiske meldinger ha en reell, betjent kanal.
+- **Ingen aktiv rapport til Lånbort (UX-EXC-011).** Rapport til Lånbort vises som ikke tilgjengelig ennå, med miljøets administratorer som vei videre (#123), til forvaltningen er slått på (`PLATFORM_STEWARDS_ENABLED`); da er valget, rapporten uten felles miljø og «Send videre til Lånbort» aktive. Før piloten åpnes, må sikkerhetskritiske meldinger ha en reell, betjent kanal.
 
 Gjenstår: plattformforvalternes kø og inngrep, som venter på OD-0023.
 

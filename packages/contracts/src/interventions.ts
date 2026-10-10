@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { basisSchema } from "./account";
-import { caseEntryIdSchema, caseIdSchema } from "./cases";
+import { caseEntryIdSchema, caseIdSchema, casePersonSchema } from "./cases";
 import { objectIdSchema } from "./objects";
 
 /**
@@ -78,9 +78,16 @@ export const caseInterventionsQuerySchema = z.strictObject({
   caseId: caseIdSchema,
 });
 
+/**
+ * The interventions on a case, with the names they need to be read: the
+ * people (none once an account is deleted), environments and things.
+ */
 export const caseInterventionsSchema = z.strictObject({
   caseId: caseIdSchema,
   items: z.array(platformInterventionSchema),
+  people: z.array(casePersonSchema),
+  environments: z.array(z.strictObject({ id: z.uuid(), name: z.string() })),
+  objects: z.array(z.strictObject({ id: z.uuid(), title: z.string() })),
 });
 
 export type OpenPlatformInquiry = z.infer<typeof openPlatformInquirySchema>;

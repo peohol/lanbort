@@ -56,3 +56,5 @@ Etter at angrebufferen er utløpt tilbys «Rapporter problem» fremfor å endre 
 **Forankring:** UX-EXC-009; PS-TRUST-013; OD-0023, OD-0042
 
 Så lenge plattformforvalterne ikke kan behandle saker (OD-0023), tilbyr appen ingen aktiv flyt for å sende en rapport til Lånbort, verken fra brukere eller videre fra miljøets administratorer, fordi den ville endt i en kø ingen behandler. Der muligheten ellers ville stått, sier appen ærlig at rapportering til Lånbort ikke er tilgjengelig ennå, og tilbyr miljøets administratorer der de har mandat til å behandle saken. Appen lover ingen oppfølging og viser ingen kontaktadresse som ikke finnes. Før piloten åpnes, må sikkerhetskritiske meldinger ha en reell, betjent kanal.
+
+Når forvalterne kan behandle saker, følger rapport til Lånbort samme bryter som forvaltningen: Lånbort står som valg ved siden av administratorene, en rapport uten felles miljø går til Lånbort, og administratoren kan sende en rapport videre i «Flere valg» («Plattformforvaltning v1», gruppe 10). Den er av i produksjon til forvaltningen er verifisert der.

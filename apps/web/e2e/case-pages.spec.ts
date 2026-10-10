@@ -3,6 +3,7 @@ import { type Browser, expect, type Page, test } from "@playwright/test";
 import sharp from "sharp";
 import {
   accountId,
+  befriend,
   collectBrowserProblems,
   postCommand,
   registerThroughApi,
@@ -149,10 +150,20 @@ test("a report reaches the administrators, and never the person it is about", as
   await expect(eva.getByRole("heading", { level: 1 })).toHaveText(
     "Rapport om Kim Rapportert",
   );
-  // Lånbort cannot take a report yet, and the page says so (UX-EXC-011).
+  // The administrator sends it on to Lånbort as a report of its own; the
+  // case here goes on as before (PS-TRUST-016, UX-EXC-011).
   await eva.getByText("Flere valg").click();
-  await expect(eva.getByText("Send videre til Lånbort")).toBeVisible();
-  await expect(eva.getByRole("button", { name: /Lånbort/ })).toHaveCount(0);
+  await eva.getByRole("button", { name: "Send videre til Lånbort" }).click();
+  const onward = eva.getByRole("dialog", {
+    name: "Sende rapporten videre til Lånbort?",
+  });
+  await expect(onward).toContainText("så du behandler aldri den saken");
+  await onward
+    .getByLabel("Hva Lånbort bør vurdere")
+    .fill("Det samme er meldt i to andre miljøer.");
+  await onward.getByRole("button", { name: "Send videre til Lånbort" }).click();
+  await expect(onward).toBeHidden();
+  await expect(eva).toHaveURL(caseUrl);
 
   // The reporter withdraws it: nothing is removed, and the administrators
   // may still finish the assessment (PS-COM-021).
@@ -191,6 +202,54 @@ test("a report reaches the administrators, and never the person it is about", as
   await kim.goto("/saker");
   await expect(kim.getByText(/Du har ingen saker\./)).toBeVisible();
   await Promise.all([eva, ola, kim].map((page) => page.context().close()));
+});
+
+test("a report goes to Lånbort when chosen, or when there is no environment in common", async ({
+  browser,
+  baseURL,
+}) => {
+  const eva = await signedIn(browser, baseURL!, "Eva Eier");
+  const ola = await signedIn(browser, baseURL!, "Ola Medlem");
+  const pia = await signedIn(browser, baseURL!, "Pia Venn");
+  const { environmentId } = await (
+    await postCommand(eva.request, "/api/environments", {
+      name: `Lag ${uniqueWord()}`,
+      type: "open",
+    })
+  ).json();
+  await postCommand(ola.request, "/api/environments/membership/join", {
+    environmentId,
+    answers: [],
+  });
+  await befriend(ola.request, pia.request);
+  const [evaId, piaId] = await Promise.all(
+    [eva, pia].map((page) => accountId(page.request)),
+  );
+
+  // In an environment both are in, the reporter chooses (PS-TRUST-013).
+  await ola.goto(`/saker/ny?miljo=${environmentId}&person=${evaId}`);
+  await ola.getByRole("radio", { name: /^Lånbort/ }).check();
+  await ola.getByLabel("Hva har skjedd").fill("Krever betaling for lån.");
+  await ola.getByRole("button", { name: "Send rapporten til Lånbort" }).click();
+  await expect(ola).toHaveURL(/\/saker\/[0-9a-f-]{36}$/);
+  await expect(ola.getByRole("heading", { level: 1 })).toHaveText(
+    "Rapport om Eva Eier",
+  );
+  // The reported administrator never sees it (PS-TRUST-013).
+  expect((await eva.goto(ola.url()))?.status()).toBe(404);
+
+  // Without one, only Lånbort can assess it, and the page says why.
+  await ola.goto(`/saker/ny?person=${piaId}`);
+  const receiver = ola.getByRole("region", { name: "Til Lånbort" });
+  await expect(receiver).toContainText("Dere er ikke i et miljø sammen");
+  await expect(ola.getByRole("radio")).toHaveCount(0);
+  await ola.getByLabel("Hva har skjedd").fill("Truer meg på melding.");
+  await ola.getByRole("button", { name: "Send rapporten til Lånbort" }).click();
+  await expect(ola.getByRole("heading", { level: 1 })).toHaveText(
+    "Rapport om Pia Venn",
+  );
+
+  await Promise.all([eva, ola, pia].map((page) => page.context().close()));
 });
 
 test("a member ends their own contact, and the administrators see who did", async ({

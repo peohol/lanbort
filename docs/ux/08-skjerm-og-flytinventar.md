@@ -352,7 +352,7 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 
 - **Oppgave:** si fra om en person, en ting eller en anmeldelse, eller kontakte miljøets administratorer som funksjon.
 - **Tilstander:** hvor rapporten går (miljøet; rapport til Lånbort vises som ikke tilgjengelig ennå); hva som skjer videre; sendt; saken følges fra Konto; ingen administrator kan behandle nå.
-- **Ser / handler:** aktive medlemmer rapporterer i miljøet og kontakter administratorene. Rapport til Lånbort tilbys ikke før plattformforvalterne kan behandle saker (UX-EXC-011, OD-0023).
+- **Ser / handler:** aktive medlemmer rapporterer i miljøet og kontakter administratorene. Rapport til Lånbort tilbys bare mens plattformforvalterne kan behandle saker (UX-EXC-011, ADR-0011).
 - **Regler:** UX-IA-007, UX-EXC-009, UX-EXC-011, PS-COM-010, PS-TRUST-010, PS-TRUST-013, PS-ENV-014, [visjon 07](../vision/07-tillit-anmeldelser-og-moderering.md) («Rapportering»).
 - **Forløp:** avvik.
 - **UI-pakke:** WP-88.
@@ -490,7 +490,7 @@ Miljøadministrator omfatter miljøets eier, som også er administrator, og admi
 #### Miljøets sakskø og saksbehandling
 
 - **Oppgave:** behandle kontakt, rapporter og mekling i miljøet.
-- **Tilstander:** felles kø; tatt av meg eller en annen; tilbake i køen fordi behandleren mistet rollen; inhabil; forklaringsrunde åpen; forklaringer delt; tiltak på en publisering, med varsel til eieren; rapporten trukket av den som meldte den; lånet avklart av partene, med «Lukk saken» som neste steg; lukket med avslutningsmelding. Å sende en rapport videre til Lånbort tilbys ikke før plattformforvalterne kan behandle saker (UX-EXC-011). Sakstyper: kontakt med administratorene, rapport i miljøet, mekling i et miljølån.
+- **Tilstander:** felles kø; tatt av meg eller en annen; tilbake i køen fordi behandleren mistet rollen; inhabil; forklaringsrunde åpen; forklaringer delt; tiltak på en publisering, med varsel til eieren; rapporten trukket av den som meldte den; lånet avklart av partene, med «Lukk saken» som neste steg; lukket med avslutningsmelding. Å sende en rapport videre til Lånbort tilbys bare mens plattformforvalterne kan behandle saker (UX-EXC-011). Sakstyper: kontakt med administratorene, rapport i miljøet, mekling i et miljølån.
 - **Ser / handler:** habile administratorer. Privat chat åpnes ikke for behandleren.
 - **Regler:** UX-IA-007, UX-PRIV-006, UX-EXC-003, UX-EXC-009, UX-EXC-011, PS-COM-010–014, PS-COM-020–022, PS-USR-009, PS-TRUST-013, PS-TRUST-016, PS-TRUST-018.
 - **Forløp:** avvik.
@@ -512,7 +512,7 @@ Plattformforvalter er en eksplisitt global rolle, ikke det samme som systemutvik
 #### Plattformkø
 
 - **Oppgave:** se plattformsaker som venter og ta dem.
-- **Tilstander:** rapporter til plattformen og rapporter tatt videre fra et miljø (tilbys ikke før forvalterne kan behandle dem, UX-EXC-011); verifiseringssaker om mulig dødsfall; tatt eller ikke; inhabil.
+- **Tilstander:** rapporter til plattformen og rapporter tatt videre fra et miljø (tilbys bare mens forvalterne kan behandle dem, UX-EXC-011); verifiseringssaker om mulig dødsfall; tatt eller ikke; inhabil.
 - **Ser / handler:** habile plattformforvaltere.
 - **Regler:** UX-IA-005, UX-IA-007, UX-PRIV-005, UX-PRIV-006, PS-USR-008, PS-USR-009, PS-NFR-003.
 - **Forløp:** avvik.

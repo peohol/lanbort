@@ -8,6 +8,7 @@ import {
   platformInquiryOpenedSchema,
 } from "@lanbort/contracts";
 import type { AccountStatus } from "../actor";
+import { realNames } from "../account/store";
 import { defineCommand } from "../commands/command";
 import { defineQuery } from "../commands/query";
 import { loadCase } from "../cases/commands";
@@ -232,11 +233,60 @@ export const listCaseInterventions = defineQuery({
               .orderBy("id")
               .execute()
           : [];
+      const ids = (
+        key:
+          | "user_id"
+          | "other_user_id"
+          | "decided_by_user_id"
+          | "environment_id"
+          | "object_id",
+      ) => rows.flatMap((row) => row[key] ?? []);
+      const userIds = [
+        ...new Set([
+          ...ids("user_id"),
+          ...ids("other_user_id"),
+          ...ids("decided_by_user_id"),
+        ]),
+      ];
+      const names = await realNames(tx, userIds);
+      const environmentIds = [...new Set(ids("environment_id"))];
+      const objectIds = [...new Set(ids("object_id"))];
+      const environments =
+        environmentIds.length === 0
+          ? []
+          : await tx
+              .selectFrom("app.environments")
+              .select(["id", "name"])
+              .where("id", "in", environmentIds)
+              .execute();
+      const objects =
+        objectIds.length === 0
+          ? []
+          : await tx
+              .selectFrom("app.objects")
+              .select(["id", "title"])
+              .where("id", "in", objectIds)
+              .execute();
 
-      return { resource: { ...loaded.resource, rows }, context: undefined };
+      return {
+        resource: {
+          ...loaded.resource,
+          rows,
+          people: userIds.map((userId) => ({
+            userId,
+            realName: names.get(userId) ?? null,
+          })),
+          environments,
+          objects,
+        },
+        context: undefined,
+      };
     }),
   present: ({ resource }): CaseInterventions => ({
     caseId: resource.case.id,
+    people: resource.people,
+    environments: resource.environments.map(({ id, name }) => ({ id, name })),
+    objects: resource.objects.map(({ id, title }) => ({ id, title })),
     items: resource.rows.map((row) => ({
       id: row.id,
       kind: row.kind as PlatformInterventionKind,

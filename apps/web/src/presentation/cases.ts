@@ -74,6 +74,10 @@ export const reportTargetLabels: Record<ReportTargetKind, string> = {
   review_response: "et tilsvar på en anmeldelse",
 };
 
+/** What Lånbort assesses (PS-TRUST-013), where a report may go there. */
+export const platformReportHelp =
+  "For alvorlig misbruk, brudd på Lånborts regler og det som gjelder sikkerhet eller lovlighet. En forvalter hos Lånbort tar saken.";
+
 /**
  * A person the case names; a deleted account has no name (UX-PRIV-010).
  * `unnamed` is for someone the case does not name to the viewer.

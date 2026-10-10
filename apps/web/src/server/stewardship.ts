@@ -6,6 +6,7 @@ import type {
 import {
   isDomainError,
   listOwnPasskeys,
+  type QueryDefinition,
   listPlatformCaseQueue,
   maximumStewardPasskeys,
   passkeyConfirmationMaxAgeMs,
@@ -13,7 +14,7 @@ import {
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { platformStewardsEnabled } from "./env";
-import { pageQueryIfAllowed } from "./session";
+import { pageQueryIfAllowed, pageQueryOrNotFound } from "./session";
 
 /**
  * Where the signed-in platform steward stands (ADR-0011, OD-0023): whether
@@ -99,3 +100,27 @@ export const getOpenPlatformCases = cache(async () => {
 
   return { items };
 });
+
+/**
+ * A page's query that a steward may first have to confirm with a passkey
+ * for (a platform case): `confirm` when the session's confirmation is not
+ * fresh, or steward access is off here; otherwise as `pageQueryOrNotFound`.
+ * Only someone who holds the role is ever asked to confirm.
+ */
+export async function stewardPageQuery<I, R, C, O>(
+  query: QueryDefinition<I, R, C, O>,
+  input: I,
+): Promise<O | "confirm"> {
+  try {
+    return await pageQueryOrNotFound(query, input);
+  } catch (error) {
+    if (
+      isDomainError(error) &&
+      error.code === "stronger_authentication_required"
+    ) {
+      return "confirm";
+    }
+
+    throw error;
+  }
+}

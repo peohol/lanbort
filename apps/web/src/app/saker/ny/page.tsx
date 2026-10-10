@@ -23,12 +23,14 @@ import {
 import type { SearchParams } from "@/navigation/list-pages";
 import { caseHref, casesHref } from "@/navigation/routes";
 import { reportTargetLabels } from "@/presentation/cases";
+import { platformStewardsEnabled } from "@/server/env";
 import {
   pageQuery,
   pageQueryOrNotFound,
   requirePageAccount,
 } from "@/server/session";
 import styles from "../cases.module.css";
+import { ReportForm } from "./report-form";
 
 export const metadata: Metadata = { title: "Ny sak – Lånbort" };
 
@@ -39,6 +41,14 @@ const targetOf = ({ kind, id }: ReportSubject) =>
     : kind === "object"
       ? { kind, objectId: id }
       : { kind, reviewId: id };
+
+/** Why only Lånbort can assess a report without an environment. */
+const aloneText: Record<ReportSubject["kind"], string> = {
+  user: "Dere er ikke i et miljø sammen, så rapporten går til Lånbort.",
+  object: "Du ser ikke tingen i et miljø, så rapporten går til Lånbort.",
+  review: "Anmeldelser vurderes av Lånbort.",
+  review_response: "Anmeldelser og tilsvar vurderes av Lånbort.",
+};
 
 /** What a query answers, or null where the reader may not see it. */
 async function seen<T>(read: () => Promise<T>): Promise<T | null> {
@@ -82,44 +92,9 @@ async function subjectOf(start: CaseStart) {
 }
 
 /**
- * Who assesses the report (UX-INT-003): the environment's administrators,
- * the one choice there is now. Lånbort stands beside it as not available
- * yet, since nobody can handle a report there until the platform stewards'
- * stronger sign-in is built (UX-EXC-011, OD-0023).
- */
-function Receiver({ environment }: { environment: string }) {
-  // The choice is shown, not sent: the page decides where the report goes.
-  return (
-    <fieldset className={styles.options}>
-      <legend>Hvem skal vurdere det?</legend>
-      <label className={styles.option}>
-        <input type="radio" defaultChecked />
-        <span>
-          <strong>Administratorene i {environment}</strong>
-          <small>
-            For det som gjelder oppførsel og ting i miljøet. Én av dem tar
-            saken.
-          </small>
-        </span>
-      </label>
-      <label className={styles.option}>
-        <input type="radio" disabled />
-        <span>
-          <strong>Lånbort</strong>
-          <small>
-            Ikke tilgjengelig ennå. Lånbort kan ikke ta imot rapporter i appen
-            ennå.
-          </small>
-        </span>
-      </label>
-    </fieldset>
-  );
-}
-
-/**
  * UX-EXC-011: a report only Lånbort could assess (a review, or what has no
- * environment in common) is not offered until the platform stewards can
- * handle it. The page says so plainly, promises nothing and names no
+ * environment in common) is not offered while the platform stewards cannot
+ * handle it (`PLATFORM_STEWARDS_ENABLED`). The page says so plainly, promises nothing and names no
  * address that does not exist, and offers the environments where the
  * administrators have the mandate instead.
  */
@@ -167,11 +142,31 @@ function NotAvailable({
   );
 }
 
+/** What the case says; the one field either form has. */
+function Body({ label }: { label: string }) {
+  return (
+    <Field
+      id="tekst"
+      label={label}
+      help="Skriv bare det som trengs for saken. Private samtaler blir ikke en del av saken, men du kan sende inn meldinger fra dem senere."
+    >
+      <textarea
+        id="tekst"
+        name="body"
+        rows={6}
+        required
+        maxLength={caseEntryBodySchema.maxLength ?? undefined}
+        {...describedBy("tekst", true)}
+      />
+    </Field>
+  );
+}
+
 /**
  * A new case where it starts (UX-IA-007): a member writes to an
  * environment's administrators (PS-COM-010), or reports a person or a
- * thing to them (PS-TRUST-013). Reporting to Lånbort is not offered yet
- * (UX-EXC-011). The page leads to the case once it is sent; writing again
+ * thing to them or to Lånbort (PS-TRUST-013). Lånbort is offered only
+ * while its stewards can handle cases (UX-EXC-011). The page leads to the case once it is sent; writing again
  * in an open case of the same kind continues it.
  */
 export default async function NewCasePage({
@@ -181,6 +176,7 @@ export default async function NewCasePage({
 }) {
   await requirePageAccount();
   const start = parseCaseStart(await searchParams);
+  const toPlatform = platformStewardsEnabled();
 
   if (!start) notFound();
 
@@ -211,7 +207,7 @@ export default async function NewCasePage({
     </ContextTag>
   );
 
-  if (start.kind === "report" && !environment) {
+  if (start.kind === "report" && !environment && !toPlatform) {
     return (
       <main>
         <PageHeader
@@ -238,41 +234,27 @@ export default async function NewCasePage({
           ? "Du skriver til administratorene som gruppe. Én av dem tar saken, og svaret kommer der. Saken er ikke en privat samtale."
           : "En rapport ber om en vurdering. Den sier ikke at noen har gjort noe galt. Den du rapporterer, får ikke vite om rapporten gjennom saken."}
       </PageHeader>
-      <CommandForm
-        path={
-          contact ? "/api/environments/contact" : "/api/environments/reports"
-        }
-        fixed={
-          start.kind === "contact"
-            ? { environmentId: start.environmentId }
-            : {
-                environmentId: start.environmentId,
-                target: targetOf(start.subject),
-              }
-        }
-        next={caseHref("{caseId}")}
-        submitLabel={
-          contact
-            ? "Send til administratorene"
-            : "Send rapporten til administratorene"
-        }
-      >
-        {!contact && environment && <Receiver environment={environment.name} />}
-        <Field
-          id="tekst"
-          label={contact ? "Melding" : "Hva har skjedd"}
-          help="Skriv bare det som trengs for saken. Private samtaler blir ikke en del av saken, men du kan sende inn meldinger fra dem senere."
+      {start.kind === "contact" ? (
+        <CommandForm
+          path="/api/environments/contact"
+          fixed={{ environmentId: start.environmentId }}
+          next={caseHref("{caseId}")}
+          submitLabel="Send til administratorene"
         >
-          <textarea
-            id="tekst"
-            name="body"
-            rows={6}
-            required
-            maxLength={caseEntryBodySchema.maxLength ?? undefined}
-            {...describedBy("tekst", true)}
-          />
-        </Field>
-      </CommandForm>
+          <Body label="Melding" />
+        </CommandForm>
+      ) : (
+        <ReportForm
+          environment={
+            environment && { id: environment.id, name: environment.name }
+          }
+          target={targetOf(start.subject)}
+          toPlatform={toPlatform}
+          alone={aloneText[start.subject.kind]}
+        >
+          <Body label="Hva har skjedd" />
+        </ReportForm>
+      )}
       {!contact && (
         <p className={styles.footnote}>
           Gjelder det et lån som ikke er levert tilbake? Det avklares på{" "}

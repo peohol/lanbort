@@ -1,6 +1,7 @@
 import type { Case } from "@lanbort/contracts";
 import {
   caseKinds,
+  listCaseInterventions,
   listCaseMeasures,
   measuresFor,
   readCase,
@@ -14,6 +15,7 @@ import { ContextTag } from "@/components/tag";
 import { ThingThumbnail } from "@/components/thing-thumbnail";
 import { caseEvidenceHref, environmentCasesHref } from "@/navigation/cases";
 import { casesHref, loanHref } from "@/navigation/routes";
+import { platformQueueHref } from "@/navigation/stewardship";
 import {
   aboutCase,
   caseImageHref,
@@ -32,15 +34,19 @@ import { formatShortTime } from "@/presentation/dates";
 import { loanStatusLabels } from "@/presentation/loans";
 import { firstImageHref } from "@/presentation/object-images";
 import { chatEnabled } from "@/server/env";
+import { pageQuery, requirePageAccount } from "@/server/session";
 import {
-  pageQuery,
-  pageQueryOrNotFound,
-  requirePageAccount,
-} from "@/server/session";
+  getStewardship,
+  requireStewardship,
+  stewardPageQuery,
+} from "@/server/stewardship";
+import { StewardRole } from "../../forvaltning/steward-role";
+import { StewardStatus } from "../../forvaltning/steward-status";
 import styles from "../cases.module.css";
 import { environmentName } from "../environment-name";
 import { HandlerRole } from "../handler-role";
 import { Entries } from "./entries";
+import { Interventions } from "./interventions";
 import { type AudienceChoice, EntryForm } from "./entry-form";
 import {
   CloseCase,
@@ -238,15 +244,25 @@ export default async function CasePage({
 }) {
   const account = await requirePageAccount();
   const { caseId } = await params;
-  const c = await pageQueryOrNotFound(readCase, { caseId });
+  const c = await stewardPageQuery(readCase, { caseId });
+
+  if (c === "confirm") {
+    return <ConfirmFirst />;
+  }
+
   const asHandler = c.viewer === "handler";
+  const asSteward = asHandler && caseKinds[c.kind].platform;
   const open = c.status === "open";
   const measures = asHandler ? measuresFor(c.kind, c.reportTarget) : [];
-  const [environment, taken] = await Promise.all([
+  const [environment, taken, interventions, steward] = await Promise.all([
     environmentName(c.environmentId),
     asHandler && c.reportTarget !== null
       ? pageQuery(listCaseMeasures, { caseId })
       : null,
+    asSteward && c.kind !== "unavailability_report"
+      ? pageQuery(listCaseInterventions, { caseId })
+      : null,
+    asSteward ? getStewardship() : null,
   ]);
   const handlers = caseKinds[c.kind].platform
     ? "Lånbort"
@@ -286,8 +302,9 @@ export default async function CasePage({
       (entry) =>
         entry.capacity === "party" && entry.authorUserId === account.userId,
     );
-  const back =
-    asHandler && c.environmentId
+  const back = asSteward
+    ? { href: platformQueueHref(), label: "Plattformkøen" }
+    : asHandler && c.environmentId
       ? {
           href: environmentCasesHref(c.environmentId),
           label: "Saker",
@@ -342,7 +359,11 @@ export default async function CasePage({
           )
         }
       />
-      {asHandler && <HandlerRole environment={environment} />}
+      {steward ? (
+        <StewardRole steward={steward} />
+      ) : (
+        asHandler && <HandlerRole environment={environment} />
+      )}
       <StatusCard
         label={handling.label}
         status={step?.title ?? handling.text}
@@ -354,6 +375,14 @@ export default async function CasePage({
       </StatusCard>
       {withdrawal && <p className="quiet">{withdrawal}</p>}
       {asHandler && <Facts c={c} />}
+      {asSteward &&
+        (c.subjectUserId !== null || c.kind === "unavailability_report") && (
+          <Interventions
+            c={c}
+            interventions={interventions}
+            userId={account.userId}
+          />
+        )}
       {asHandler && (
         <TakenMeasures
           c={c}
@@ -411,6 +440,26 @@ export default async function CasePage({
       {!asHandler && open && (
         <ParticipantMoreActions c={c} environment={environment} />
       )}
+    </main>
+  );
+}
+
+/**
+ * A platform case for a steward whose session is not confirmed: nothing
+ * from the case until they confirm with a passkey (Tomat screen 6).
+ */
+async function ConfirmFirst() {
+  const steward = await requireStewardship();
+
+  return (
+    <main>
+      <PageHeader
+        title="Plattformsak"
+        kind="Lånbort"
+        back={{ href: platformQueueHref(), label: "Plattformkøen" }}
+      />
+      <StewardRole steward={steward} />
+      <StewardStatus steward={steward} unassigned={null} />
     </main>
   );
 }
