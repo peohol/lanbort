@@ -133,6 +133,7 @@ const namesNoResource = new Set([
   "chat/devices",
   "chat/inbox",
   "chat/links",
+  "chat/recovery",
   "environments",
   "health",
   "home",
@@ -318,7 +319,11 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
   ).json();
   // The history the lender's phone moves to that device.
   const { archiveId } = await (
-    await postCommand(lender.context, "/api/chat/archives", { partCount: 1 })
+    await postCommand(lender.context, "/api/chat/archives", {
+      purpose: "link",
+      linkRequestId,
+      partCount: 1,
+    })
   ).json();
   await postCommand(lender.context, `/api/chat/archives/${archiveId}/parts/0`, {
     data: Buffer.alloc(16).toString("base64"),
