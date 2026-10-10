@@ -25,6 +25,13 @@ const serverEnvSchema = z.object({
    * exact value `true` turns it on, for local development and CI.
    */
   CHAT_ENABLED: z.string().optional(),
+  /**
+   * Who runs Lånbort and is responsible for its personal data, and the
+   * address where people reach them about security and privacy. Shown on the
+   * privacy page; kept out of the repository, which is public.
+   */
+  OPERATOR_NAME: z.string().min(1).optional(),
+  CONTACT_EMAIL: z.string().min(3).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

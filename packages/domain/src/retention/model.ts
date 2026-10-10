@@ -3,8 +3,9 @@ const day = 24 * 60 * 60 * 1000;
 /**
  * The pilot's retention periods for data that is kept for a while and then
  * goes (OD-0002, docs/implementation/retention.md). Everything else follows
- * the account, the object or the shared history it belongs to. Read by the
- * scheduled job `/api/internal/retention` and nowhere else.
+ * the account, the object or the shared history it belongs to. The
+ * scheduled job `/api/internal/retention` enforces them, and the privacy
+ * page tells users.
  */
 export const pilotRetention = {
   /** In-app notifications, read or not, from when they were made. */

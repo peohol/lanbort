@@ -10,6 +10,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { Tag } from "@/components/tag";
 import {
   accountStateHref,
+  privacyHref,
   blockedHref,
   casesHref,
   friendsHref,
@@ -110,6 +111,11 @@ export default async function AccountPage() {
             icon="info"
             label="Kontoen din"
             detail={accountStatusLabel(account.status)}
+          />
+          <MenuRow
+            href={privacyHref}
+            icon="lock"
+            label="Personvern og sikkerhet"
           />
           <li>
             <SignOutButton className="menu-row">

@@ -137,6 +137,7 @@ export const blockedHref = `${accountHref}/blokkerte`;
 export const notificationChoicesHref = `${accountHref}/varslingsvalg`;
 export const accountStateHref = `${accountHref}/kontoen`;
 export const profilePictureHref = `${accountHref}/profilbilde`;
+export const privacyHref = `${accountHref}/personvern`;
 
 /**
  * Pages that open inside the account when they are reached from it, so
