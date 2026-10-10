@@ -9,14 +9,14 @@ import { ActionButton } from "@/components/action-button";
 import { ConfirmAction } from "@/components/confirm-action";
 import { EmptyState } from "@/components/empty-state";
 import { MoreActions } from "@/components/more-actions";
-import { environmentAdminHref } from "@/navigation/routes";
 import { formatTime } from "@/presentation/dates";
 import {
+  administrationPageHref,
   objectApprovalConsequences,
   publicationStatusLabels,
 } from "@/presentation/environment-admin";
 import { categoryLabel } from "@/presentation/objects";
-import { memberName } from "./memberships-section";
+import { memberName } from "./memberships";
 
 type Reviewed = keyof typeof publicationStatusLabels;
 type Publication = EnvironmentPublicationList["publications"][number];
@@ -37,7 +37,7 @@ export const olderParam = (status: PublicationStatus) => `eldre-${status}`;
  * approval, and each status with what an administrator can do about it.
  * An administrator who owns a thing does not decide on it (PS-USR-009).
  */
-export function PublicationsSection({
+export function Publications({
   environment,
   pages,
   members,
@@ -58,8 +58,7 @@ export function PublicationsSection({
   };
 
   return (
-    <section aria-labelledby="ting">
-      <h2 id="ting">Ting i miljøet</h2>
+    <>
       <p>
         {required
           ? "Nye ting må godkjennes av en administrator før medlemmene ser dem."
@@ -87,7 +86,7 @@ export function PublicationsSection({
 
         return (
           <section key={status} aria-labelledby={headingId}>
-            <h3 id={headingId}>{publicationStatusLabels[status].heading}</h3>
+            <h2 id={headingId}>{publicationStatusLabels[status].heading}</h2>
             <ul className="entries">
               {page.publications.map((publication) => (
                 <PublicationEntry
@@ -105,7 +104,7 @@ export function PublicationsSection({
             {page.nextCursor && (
               <p className="link-row">
                 <a
-                  href={`${environmentAdminHref(environment.id)}?${new URLSearchParams(
+                  href={`${administrationPageHref(environment.id, "things")}?${new URLSearchParams(
                     {
                       ...singles(query),
                       [olderParam(status)]: page.nextCursor,
@@ -119,7 +118,7 @@ export function PublicationsSection({
           </section>
         );
       })}
-    </section>
+    </>
   );
 }
 

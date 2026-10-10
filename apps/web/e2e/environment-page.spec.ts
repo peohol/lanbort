@@ -114,7 +114,10 @@ test("an environment is created, applied to, used and left in the browser", asyn
   });
   await expect(
     administration.getByRole("link", { name: "Behandle 1 innmelding" }),
-  ).toHaveAttribute("href", `/miljoer/${environmentId}/administrer`);
+  ).toHaveAttribute(
+    "href",
+    `/miljoer/${environmentId}/administrer/innmeldinger`,
+  );
   await expect(
     administration.getByRole("link", { name: "Administrer miljøet" }),
   ).toBeVisible();

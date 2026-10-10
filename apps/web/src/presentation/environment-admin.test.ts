@@ -12,6 +12,7 @@ import {
   ownershipRecipients,
   proposalWaitsFor,
   typeChoices,
+  waitingNames,
 } from "./environment-admin";
 
 const membership = (
@@ -148,12 +149,36 @@ describe("Home's administration tasks", () => {
     count: 1,
   });
 
-  it("leads to the environment's administration", () => {
+  it("leads to where each task is done in the administration", () => {
+    const admin = "/miljoer/00000000-0000-4000-8000-000000000003/administrer";
+
     expect(administrationHref(item("environment.review_memberships"))).toBe(
-      "/miljoer/00000000-0000-4000-8000-000000000003/administrer",
+      `${admin}/innmeldinger`,
     );
+    expect(administrationHref(item("environment.review_publications"))).toBe(
+      `${admin}/ting`,
+    );
+    // A missing owner is answered on «Administrer miljøet» itself.
+    expect(administrationHref(item("environment.claim_ownership"))).toBe(admin);
     expect(
       administrationHref(item("environment.answer_invitation")),
     ).toBeNull();
+  });
+});
+
+describe("who or what waits, in a short line", () => {
+  it("names one or two, and counts the rest", () => {
+    expect(waitingNames([])).toBeNull();
+    expect(waitingNames(["Jonas Vik"])).toBe("Jonas Vik");
+    expect(waitingNames(["Jonas Vik", "Erik Sund"])).toBe(
+      "Jonas Vik og Erik Sund",
+    );
+    expect(waitingNames(["Jonas Vik", "Erik Sund", "Mats Dahl"])).toBe(
+      "Jonas Vik, Erik Sund og 1 til",
+    );
+  });
+
+  it("counts also those the page did not list", () => {
+    expect(waitingNames(["Sykkelhenger"], 4)).toBe("Sykkelhenger og 3 til");
   });
 });

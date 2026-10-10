@@ -440,7 +440,7 @@ Miljøadministrator omfatter miljøets eier, som også er administrator, og admi
 - **Ser / handler:** administratorer. Om de kan fjerne eller stenge ute et aktivt medlem, avgjøres i OD-0025.
 - **Regler:** PS-ENV-004, PS-ENV-009, UX-PRIV-009.
 - **Forløp:** avvik.
-- **UI-pakke:** ingen.
+- **UI-pakke:** WP-85 (aktive og passive medlemmer, utestengelser).
 
 #### Publiseringer og forhåndsgodkjenning
 
