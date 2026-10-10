@@ -130,7 +130,7 @@ export interface HistoryTransfer {
   from: "device" | "backup";
 }
 
-/** When the history last changed, and when the backup last caught up. */
+/** When the history or the pinned keys last changed, and when the backup last caught up. */
 interface BackupState {
   changedAt: number;
   backedUpAt: number;
@@ -450,6 +450,8 @@ export class ChatEngine {
   #linkedAt: Promise<string | null> | null = null;
   #backup: BackupState | undefined;
   #backingUp: Promise<void> | null = null;
+  /** The pinned account keys as last saved: the backup carries them. */
+  #pinned: string;
 
   constructor(
     readonly userId: string,
@@ -473,6 +475,7 @@ export class ChatEngine {
     this.#recovery = recovery;
     this.#linked = linked;
     if (linked && addedAt) this.#linkedAt = Promise.resolve(addedAt);
+    this.#pinned = JSON.stringify(trust.snapshot().accountKeys);
   }
 
   /**
@@ -775,6 +778,14 @@ export class ChatEngine {
     }
   }
 
+  /** What the backup holds has changed: the next due backup takes it. */
+  async #backupDue() {
+    if (!this.#recovery) return;
+    const state = await this.#backupState();
+    state.changedAt = Date.now();
+    await this.store.putJson(records.backup, state);
+  }
+
   async #backupState(): Promise<BackupState> {
     this.#backup ??= (await this.store.getJson<BackupState>(
       records.backup,
@@ -798,7 +809,13 @@ export class ChatEngine {
   // Trust
 
   async #saveTrust() {
-    await this.store.putJson(records.trust, this.trust.snapshot());
+    const snapshot = this.trust.snapshot();
+    await this.store.putJson(records.trust, snapshot);
+    const pinned = JSON.stringify(snapshot.accountKeys);
+    if (pinned !== this.#pinned) {
+      this.#pinned = pinned;
+      await this.#backupDue();
+    }
   }
 
   /**
@@ -1095,11 +1112,7 @@ export class ChatEngine {
       records.history(id),
       change(await this.history(id)),
     );
-    if (this.#recovery) {
-      const state = await this.#backupState();
-      state.changedAt = Date.now();
-      await this.store.putJson(records.backup, state);
-    }
+    await this.#backupDue();
   }
 
   /** Adds a received message, never in place of one (`withReceived`). */
