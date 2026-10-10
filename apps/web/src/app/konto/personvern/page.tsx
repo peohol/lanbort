@@ -13,7 +13,8 @@ export const metadata: Metadata = {
 const days = (ms: number) => Math.round(ms / (24 * 60 * 60 * 1000));
 
 /**
- * Who is responsible for the user's data, how long it is kept (OD-0002,
+ * How signing in works (an e-mail code, never a password), who is
+ * responsible for the user's data, how long it is kept (OD-0002,
  * docs/implementation/retention.md), who processes it, and where to report
  * something serious (Port D, docs/implementation/pilot-operations.md).
  */
@@ -38,6 +39,16 @@ export default async function PrivacyPage() {
           Tror du at noen har kommet inn på kontoen din, ser opplysninger de
           ikke skal se, eller bruker Lånbort til å skade noen, {write}. Er noen
           i fare, ring politiet på 112.
+        </p>
+      </section>
+
+      <section aria-labelledby="innlogging">
+        <h2 id="innlogging">Innlogging</h2>
+        <p>
+          Lånbort bruker ikke passord. Du logger inn med en engangskode som vi
+          sender til e-postadressen din, så det finnes ikke noe passord å huske,
+          endre eller miste. Kontoen din er derfor like godt beskyttet som
+          e-posten din, så pass godt på den.
         </p>
       </section>
 
