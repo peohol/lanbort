@@ -6,50 +6,59 @@ import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
 import { Icon } from "@/components/icon";
 import { SignOutButton } from "@/components/sign-out-button";
-import { chatLinkHref, chatResetHref } from "@/navigation/chat";
+import {
+  chatLinkHref,
+  chatResetHref,
+  chatRestoreHref,
+} from "@/navigation/chat";
 import styles from "./chat.module.css";
 import { ChatIcon } from "./chat-icon";
 import { useChat } from "./chat-provider";
+import { chatApi } from "./api";
 import { EncryptionSheet } from "./encryption";
 import { type ChatEngine, createChat } from "./engine";
 import { chatErrorMessage } from "./messages";
+import { Intro } from "./intro";
 import { Notice } from "./notice";
 import { Points } from "./points";
+import { RecoveryKeyFlow, waitingNote } from "./recovery-key";
 
-/** The card a first step on a device stands in (05, 08). */
-function Intro({
-  icon,
-  title,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className={`card ${styles.intro}`} aria-label={title}>
-      <span className={styles.introIcon}>{icon}</span>
-      <h2>{title}</h2>
-      {children}
-    </section>
-  );
-}
-
-/** Slå på privat chat (05): one explanation, one button. */
+/**
+ * Slå på privat chat (05): one explanation, one button. Then, once, the
+ * offer of a recovery key (R1, PS-COM-019) before the conversations.
+ */
 function StartChat() {
   const { userId, started } = useChat();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [engine, setEngine] = useState<ChatEngine>();
 
   async function start() {
     setBusy(true);
     setError(null);
     try {
-      started(await createChat(userId, false), "started");
+      setEngine(await createChat(userId, false));
     } catch (problem) {
       setBusy(false);
       setError(chatErrorMessage(problem));
     }
+  }
+
+  if (engine) {
+    return (
+      <RecoveryKeyFlow
+        engine={engine}
+        alternative={{
+          label: "Ikke nå",
+          run: async () => {
+            await chatApi.answerRecoveryPrompt("offer");
+            started(engine, "started");
+          },
+          note: waitingNote,
+        }}
+        done={() => started(engine, "started")}
+      />
+    );
   }
 
   return (
@@ -89,8 +98,24 @@ function StartChat() {
   );
 }
 
-/** For someone without another device with chat: the last way (17). */
-function NoOtherDevice() {
+/**
+ * For someone without another device with chat: the recovery key if there
+ * is one (R3), else the last way (17).
+ */
+function NoOtherDevice({ recovery }: { recovery: boolean }) {
+  return (
+    <>
+      {recovery && (
+        <Link href={chatRestoreHref} className={styles.centered}>
+          Mistet alle enhetene? Bruk gjenopprettingsnøkkelen
+        </Link>
+      )}
+      <OtherDevicesGone />
+    </>
+  );
+}
+
+function OtherDevicesGone() {
   return (
     <details className={styles.disclosure}>
       <summary>Har du ingen annen enhet med privat chat?</summary>
@@ -181,7 +206,7 @@ export function Setup() {
               Koble til denne enheten
             </a>
           </Intro>
-          <NoOtherDevice />
+          <NoOtherDevice recovery={state.recovery} />
         </>
       );
     case "lost":
@@ -200,7 +225,7 @@ export function Setup() {
             </p>
             <SignOutButton />
           </Notice>
-          <NoOtherDevice />
+          <OtherDevicesGone />
         </>
       );
     case "ready":

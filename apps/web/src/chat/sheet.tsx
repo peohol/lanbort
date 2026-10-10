@@ -67,10 +67,13 @@ export function ConfirmSheet({
   points,
   confirmLabel,
   confirm,
+  first,
 }: {
   label: string;
   title: string;
   points: readonly Point[];
+  /** What can be done first, before what cannot be undone. */
+  first?: ReactNode;
   /** Names what happens, such as «Fjern enheten». */
   confirmLabel: string;
   /** Does it; a failure is shown in the sheet, which then stays open. */
@@ -112,6 +115,7 @@ export function ConfirmSheet({
       >
         <h2 id={titleId}>{title}</h2>
         <Points points={points} />
+        {first}
         <div className="dialog-actions">
           <button type="button" onClick={() => dialog.current?.close()}>
             Avbryt

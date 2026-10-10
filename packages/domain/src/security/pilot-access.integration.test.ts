@@ -748,6 +748,11 @@ const probes: Record<string, (ids: WorldIds) => object> = {
   }),
   "chat.read_archive_part": (ids) => ({ archiveId: ids.archiveId, part: 0 }),
   "chat.delete_archive": (ids) => ({ archiveId: ids.archiveId }),
+  "chat.back_up_history": (ids) => ({
+    archiveId: ids.archiveId,
+    keyId: "AAAAAAAAAAAAAAAAAAAAAA==",
+    backup: Buffer.alloc(32).toString("base64"),
+  }),
 
   // Notifications
   "notification.read": (ids) => ({ notificationId: ids.notificationId }),

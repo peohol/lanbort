@@ -130,7 +130,7 @@ Dokumenter nøkkel-, multi-device- og recovery-modell før meldingsimplementasjo
 **Krav:** PS-COM-004–006, PS-NFR-007; ADR-0003, ADR-0010  
 Ciphertext-lagring, klientkryptering, ingen lesebekreftelser og kontrollert første kontakt.
 
-**Status:** Ferdig bygget, men av for ekte brukere til Port C er oppfylt (se [servergrensen](server-boundary.md#privat-chat-wp-43)). Del 1 er serverens leveringstjeneste. Del 2 er krypteringen i nettleseren, lagringen på enheten, chatsidene, «Mine enheter», kobling med QR-kode eller kode, tilbakestilling og sikkerhetskoden. Kjent og bevisst utsatt: gjenopprettingsnøkkel med sikkerhetskopi, kryptering i en egen Web Worker (ADR-0010 sier «bør»), og reparasjon av en enhet som har kommet i utakt med en gruppe uten å tilbakestille. En ny enhet som venter på godkjenning, må holde siden åpen; lastes den på nytt, må koblingen startes igjen.
+**Status:** Ferdig bygget, men av for ekte brukere til Port C er oppfylt (se [servergrensen](server-boundary.md#privat-chat-wp-43)). Del 1 er serverens leveringstjeneste. Del 2 er krypteringen i nettleseren, lagringen på enheten, chatsidene, «Mine enheter», kobling med QR-kode eller kode, tilbakestilling og sikkerhetskoden. Gjenopprettingsnøkkelen med sikkerhetskopi (ADR-0010 punkt 8, PS-COM-019) er bygget 10. oktober 2026. Kjent og bevisst utsatt: kryptering i en egen Web Worker (ADR-0010 sier «bør»), og reparasjon av en enhet som har kommet i utakt med en gruppe uten å tilbakestille. En ny enhet som venter på godkjenning, må holde siden åpen; lastes den på nytt, må koblingen startes igjen.
 
 ### WP-44 — Lånelogistikk ved blokkering
 **Krav:** PS-COM-007  

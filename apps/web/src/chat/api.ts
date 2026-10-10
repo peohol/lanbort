@@ -2,6 +2,7 @@
 
 import type {
   ChatArchive,
+  ChatArchivePurpose,
   ChatClaimedKeyPackages,
   ChatConversation,
   ChatConversationList,
@@ -9,6 +10,7 @@ import type {
   ChatInbox,
   ChatLinkRequest,
   ChatLinkStatus,
+  ChatRecoveryBackup,
   DeviceCertificateWire,
   DeviceRevocationWire,
   OwnChatDevices,
@@ -91,14 +93,27 @@ export const chatApi = {
     body: { certificate: DeviceCertificateWire; package: string },
   ) => post(`/api/chat/links/${id}/approve`, body),
 
-  /** History archives moved to a device being linked (ADR-0010 §5). */
-  createArchive: (partCount: number) =>
-    post<ChatArchive>("/api/chat/archives", { partCount }),
+  /** History archives, for a device being linked or the backup (ADR-0010 §5, §8). */
+  createArchive: (partCount: number, purpose: ChatArchivePurpose) =>
+    post<ChatArchive>("/api/chat/archives", { partCount, purpose }),
   putArchivePart: (id: string, part: number, data: string) =>
     post<{ complete: boolean }>(`${archive(id)}/parts/${part}`, { data }),
   archivePart: (id: string, part: number) =>
     get<{ data: string }>(`${archive(id)}/parts/${part}`),
   deleteArchive: (id: string) => post(`${archive(id)}/delete`, {}),
+
+  /** The recovery key's backup (ADR-0010 §8, PS-COM-019). */
+  createRecoveryKey: (body: { keyId: string; backup: string }) =>
+    post("/api/chat/recovery", body),
+  backUp: (body: { keyId: string; backup: string; archiveId: string }) =>
+    post("/api/chat/recovery/backup", body),
+  recoveryBackup: () => get<ChatRecoveryBackup>("/api/chat/recovery"),
+  restore: (body: {
+    certificate: DeviceCertificateWire;
+    revocations: DeviceRevocationWire[];
+  }) => post<{ deviceId: string }>("/api/chat/account/restore", body),
+  answerRecoveryPrompt: (prompt: "offer" | "reminder") =>
+    post("/api/chat/recovery/prompt", { prompt }),
 
   conversations: () => get<ChatConversationList>("/api/chat/conversations"),
   start: (body: {

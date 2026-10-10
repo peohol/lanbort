@@ -63,7 +63,10 @@ describe("history archive", () => {
     const { key, parts } = await sealArchive(history);
     const archive = { archiveId: "archive-1", parts: parts.length, key };
 
-    const { sealed } = await approveLink(alice, link.keys, archive);
+    const { sealed } = await approveLink(link.keys, {
+      account: alice,
+      archive,
+    });
     expect(fromUtf8(sealed)).not.toContain("archive-1");
     const opened = await link.open(sealed);
     expect(opened.account.publicKey).toEqual(alice.publicKey);
@@ -78,7 +81,9 @@ describe("history archive", () => {
     expect(opened.archive?.key).toBeInstanceOf(Secret);
 
     // Without history, the package holds the account key alone.
-    const plain = await link.open((await approveLink(alice, link.keys)).sealed);
+    const plain = await link.open(
+      (await approveLink(link.keys, { account: alice })).sealed,
+    );
     expect(plain.archive).toBeUndefined();
   });
 });

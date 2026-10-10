@@ -1,6 +1,6 @@
 "use client";
 
-import { chatLimits } from "@lanbort/contracts";
+import { type ChatArchivePurpose, chatLimits } from "@lanbort/contracts";
 import {
   type LinkedArchive,
   openArchive,
@@ -17,6 +17,8 @@ import type { HistoryEntry } from "./engine";
  * screen 12): only when the user chooses it, and only what this device
  * holds. It is encrypted here under a key that reaches the new device only
  * in the sealed link package; the server stores the ciphertext briefly.
+ * The recovery key's backup (§8) is the same archive, its key sealed in the
+ * backup instead.
  */
 
 /** One conversation's history and how far it has been read. */
@@ -114,13 +116,14 @@ export function mergeHistory(
   );
 }
 
-/** Encrypts the history and stores it, for the link package to point to. */
+/** Encrypts the history and stores it, for a package to point to. */
 export async function sendHistory(
   plaintext: Uint8Array,
+  purpose: ChatArchivePurpose,
 ): Promise<LinkedArchive> {
   const { key, parts } = await sealArchive(plaintext);
   wipe(plaintext);
-  const { archiveId } = await chatApi.createArchive(parts.length);
+  const { archiveId } = await chatApi.createArchive(parts.length, purpose);
 
   for (const [index, part] of parts.entries()) {
     await chatApi.putArchivePart(archiveId, index, toBase64(part));
@@ -129,9 +132,13 @@ export async function sendHistory(
   return { archiveId, parts: parts.length, key };
 }
 
-/** Fetches and opens the moved history, then removes it from the server. */
+/**
+ * Fetches and opens the moved history, then removes it from the server;
+ * a backup's stays, for the backup still points to it.
+ */
 export async function receiveHistory(
   archive: LinkedArchive,
+  { keep = false }: { keep?: boolean } = {},
 ): Promise<Uint8Array> {
   try {
     const parts: Uint8Array[] = [];
@@ -141,6 +148,8 @@ export async function receiveHistory(
     }
     return await openArchive(archive.key.reveal(), parts);
   } finally {
-    await chatApi.deleteArchive(archive.archiveId).catch(() => undefined);
+    if (!keep) {
+      await chatApi.deleteArchive(archive.archiveId).catch(() => undefined);
+    }
   }
 }

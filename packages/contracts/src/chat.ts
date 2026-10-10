@@ -113,6 +113,9 @@ export const chatLimits = {
    */
   archivePartBytes: 512 * 1024,
   archiveParts: 16,
+  recoveryBackupBytes: 4096,
+  /** More than anyone links; a restore revokes them in one request. */
+  devicesPerAccount: 100,
 } as const;
 
 /** AES-GCM's tag on each archive part. */
@@ -186,8 +189,12 @@ export const chatLinkStatusSchema = z.strictObject({
  * A device starts an archive of its history for a device being linked
  * (ADR-0010 §5). Its key goes in the link package, never to the server.
  */
+export const chatArchivePurposeSchema = z.enum(["link", "backup"]);
+
 export const createChatArchiveSchema = z.strictObject({
   partCount: z.number().int().min(1).max(chatLimits.archiveParts),
+  /** For a device being linked, or the recovery key's backup. */
+  purpose: chatArchivePurposeSchema.default("link"),
 });
 
 export const chatArchiveSchema = z.strictObject({
@@ -239,11 +246,67 @@ export const chatDeviceSchema = z.strictObject({
   revocation: deviceRevocationSchema.nullable(),
 });
 
+// The recovery key (ADR-0010 §8, PS-COM-019)
+
+/** Public, derived from the key: which key a backup is under. */
+const recoveryKeyId = base64Bytes(16, 16);
+/** The account key and archive key under the key, with nonce and tag. */
+const recoveryBackup = base64Bytes(chatLimits.recoveryBackupBytes, 29);
+
+/** A new recovery key's first backup; the earlier key stops working. */
+export const createChatRecoveryKeySchema = z.strictObject({
+  keyId: recoveryKeyId,
+  backup: recoveryBackup,
+});
+
+/** A newer backup under the same key, pointing to a complete archive. */
+export const backUpChatHistorySchema = z.strictObject({
+  keyId: recoveryKeyId,
+  backup: recoveryBackup,
+  archiveId: z.uuid(),
+});
+
+/** What a device without chat needs to restore it with the key. */
+export const chatRecoveryBackupSchema = z.strictObject({
+  keyId: recoveryKeyId,
+  backup: recoveryBackup,
+  archive: z
+    .strictObject({
+      archiveId: z.uuid(),
+      parts: z.number().int().min(1).max(chatLimits.archiveParts),
+    })
+    .nullable(),
+});
+
+/**
+ * Restoring with the key (R3): this session's device under the account
+ * key, and a revocation of every other device, all signed with the account
+ * key the backup held.
+ */
+export const restoreChatAccountSchema = z.strictObject({
+  certificate: deviceCertificateSchema,
+  revocations: z.array(deviceRevocationSchema).max(chatLimits.devicesPerAccount),
+});
+
+/** «Ikke nå» to the offer, or an answer to the one reminder. */
+export const answerChatRecoveryPromptSchema = z.strictObject({
+  prompt: z.enum(["offer", "reminder"]),
+});
+
 /** «Mine enheter»: the account's devices and which one this session is. */
 export const ownChatDevicesSchema = z.strictObject({
   accountKey: publicKey.nullable(),
   currentDeviceId: chatDeviceIdSchema.nullable(),
   devices: z.array(chatDeviceSchema),
+  /** The recovery key, if there is one (PS-COM-019). */
+  recovery: z
+    .strictObject({
+      createdAt: z.iso.datetime(),
+      backedUpAt: z.iso.datetime(),
+    })
+    .nullable(),
+  /** Said «Ikke nå», has no key, and has not answered the reminder. */
+  recoveryReminder: z.boolean(),
 });
 
 export const publishChatKeyPackagesSchema = z.strictObject({
@@ -445,6 +508,8 @@ export type OwnChatDevices = z.infer<typeof ownChatDevicesSchema>;
 export type ChatLinkRequest = z.infer<typeof chatLinkRequestSchema>;
 export type ChatLinkStatus = z.infer<typeof chatLinkStatusSchema>;
 export type ChatArchive = z.infer<typeof chatArchiveSchema>;
+export type ChatArchivePurpose = z.infer<typeof chatArchivePurposeSchema>;
+export type ChatRecoveryBackup = z.infer<typeof chatRecoveryBackupSchema>;
 export type ChatConversation = z.infer<typeof chatConversationSchema>;
 export type ChatConversationList = z.infer<typeof chatConversationListSchema>;
 export type ChatDirectory = z.infer<typeof chatDirectorySchema>;

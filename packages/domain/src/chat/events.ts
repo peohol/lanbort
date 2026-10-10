@@ -37,6 +37,19 @@ export const chatDeviceLinked = defineEvent({
   payload: z.strictObject({ approvedByDeviceId: z.uuid() }),
 });
 
+/**
+ * The account's chat came back on a new device with the recovery key
+ * (ADR-0010 §8): the device is under the same account key, and every other
+ * device was revoked.
+ */
+export const chatAccountRestored = defineEvent({
+  type: "chat.account_restored",
+  version: 1,
+  kind: "audit",
+  resourceType: "chat_device",
+  payload: z.strictObject({}),
+});
+
 /** A device was revoked with a signature from its account key (ADR-0010 §7). */
 export const chatDeviceRevoked = defineEvent({
   type: "chat.device_revoked",

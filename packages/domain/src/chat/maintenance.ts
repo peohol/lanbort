@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { AccountDeletionStep } from "../account/deletion";
 import { defineCommand } from "../commands/command";
 import { defineConsumer } from "../outbox/consumer";
+import { expiredArchives } from "./archives";
 import { chatAccountKeyReset, chatDeviceRevoked } from "./events";
 import { chatRetention } from "./model";
 import { purgeChatDeliveryPolicy, restartChatGroupsPolicy } from "./policies";
@@ -22,7 +23,7 @@ async function deleted(query: {
 /**
  * Deletes what the delivery service may no longer keep (ADR-0010 §8):
  * ciphertext no device fetched in time, expired key packages, link
- * requests and history archives. Run by the scheduled job `/api/internal/chat-retention`.
+ * requests and history archives no backup points to. Run by the scheduled job `/api/internal/chat-retention`.
  */
 export const purgeExpiredChat = defineCommand({
   name: "chat.purge_expired",
@@ -52,9 +53,7 @@ export const purgeExpiredChat = defineCommand({
     linkRequests: await deleted(
       tx.deleteFrom("app.chat_link_requests").where("expires_at", "<=", now),
     ),
-    archives: await deleted(
-      tx.deleteFrom("app.chat_archives").where("expires_at", "<=", now),
-    ),
+    archives: await deleted(expiredArchives(tx, now)),
   }),
 });
 
@@ -106,7 +105,7 @@ export const restartChatGroups = defineCommand({
 
 /**
  * PS-ADM-006: a deleted account's chat identity goes with it: its account
- * keys, devices, key packages and what waited for them. The conversations
+ * keys, devices, key packages, recovery backup and what waited for them. The conversations
  * stay for the other participants, closed, without who the account was.
  */
 export const chatAccountDeletionStep: AccountDeletionStep = {
@@ -126,10 +125,13 @@ export const chatAccountDeletionStep: AccountDeletionStep = {
       .deleteFrom("app.chat_link_requests")
       .where("user_id", "=", userId)
       .execute();
-    await db
-      .deleteFrom("app.chat_archives")
-      .where("user_id", "=", userId)
-      .execute();
+    for (const table of [
+      "app.chat_recovery_keys",
+      "app.chat_recovery_prompts",
+      "app.chat_archives",
+    ] as const) {
+      await db.deleteFrom(table).where("user_id", "=", userId).execute();
+    }
     await db
       .deleteFrom("app.chat_devices")
       .where("user_id", "=", userId)

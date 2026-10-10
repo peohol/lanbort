@@ -263,6 +263,22 @@ export interface AppChatParticipants {
   user_id: string;
 }
 
+export interface AppChatRecoveryKeys {
+  account_key_id: string;
+  archive_id: string | null;
+  backed_up_at: Generated<Timestamp>;
+  backup: Buffer;
+  created_at: Generated<Timestamp>;
+  key_id: Buffer;
+  user_id: string;
+}
+
+export interface AppChatRecoveryPrompts {
+  declined_at: Timestamp | null;
+  reminded_at: Timestamp | null;
+  user_id: string;
+}
+
 export interface AppEnvironmentAccessRestrictions {
   environment_id: string;
   id: Generated<string>;
@@ -1010,6 +1026,8 @@ export interface DB {
   "app.chat_link_requests": AppChatLinkRequests;
   "app.chat_messages": AppChatMessages;
   "app.chat_participants": AppChatParticipants;
+  "app.chat_recovery_keys": AppChatRecoveryKeys;
+  "app.chat_recovery_prompts": AppChatRecoveryPrompts;
   "app.environment_access_restrictions": AppEnvironmentAccessRestrictions;
   "app.environment_membership_answers": AppEnvironmentMembershipAnswers;
   "app.environment_memberships": AppEnvironmentMemberships;

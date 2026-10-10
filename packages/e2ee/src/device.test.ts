@@ -157,7 +157,9 @@ describe("linking a device", () => {
     const request = await matchLinkRequest([other.keys, link.keys], shown);
     expect(request).toBe(link.keys);
 
-    const { certificate, sealed } = await approveLink(alice, request!);
+    const { certificate, sealed } = await approveLink(request!, {
+      account: alice,
+    });
     expect(await verifyDeviceCertificate(certificate)).toBe(true);
     const { account, device } = await link.open(sealed);
     expect(account.publicKey).toEqual(alice.publicKey);
@@ -201,7 +203,7 @@ describe("linking a device", () => {
     const alice = await createAccountKey(ALICE);
     const link = await startLink();
     const eavesdropper = await startLink(link.keys.deviceId);
-    const { sealed } = await approveLink(alice, link.keys);
+    const { sealed } = await approveLink(link.keys, { account: alice });
     await expect(eavesdropper.open(sealed)).rejects.toThrow();
 
     const { enc, ct } = JSON.parse(fromUtf8(sealed)) as {

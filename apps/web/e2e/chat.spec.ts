@@ -38,9 +38,14 @@ async function person(browser: Browser, name: string) {
   return { ...opened, email, id: await accountId(opened.context.request) };
 }
 
+/** Turns chat on, and says «Ikke nå» to the recovery key (R1). */
 async function turnOnChat(page: Page) {
   await page.goto("/samtaler");
   await page.getByRole("button", { name: "Slå på privat chat" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Lag en gjenopprettingsnøkkel" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Ikke nå" }).click();
   await expect(
     page.getByRole("heading", { name: "Dine samtaler" }),
   ).toBeVisible();
@@ -270,6 +275,140 @@ test("two friends chat end to end, and a new device is linked with its code", as
     expect(
       someone.problems.filter((problem) => !problem.includes("409 (Conflict)")),
     ).toEqual([]);
+    await someone.context.close();
+  }
+});
+
+test("the recovery key brings chat and its backed-up messages back when every device is lost", async ({
+  browser,
+}) => {
+  test.setTimeout(240_000);
+  const anna = await person(browser, "Hanne Moe");
+  const bo = await person(browser, "Jon Vik");
+  await postCommand(anna.context.request, "/api/social/friend-requests", {
+    userId: bo.id,
+  });
+  await postCommand(bo.context.request, "/api/social/friend-requests/accept", {
+    userId: anna.id,
+  });
+  await turnOnChat(anna.page);
+  await turnOnChat(bo.page);
+
+  // Without a key, Mine enheter says what is at stake (PS-COM-019).
+  await anna.page.goto("/samtaler/enheter");
+  await expect(
+    anna.page.getByRole("heading", { name: "Ingen gjenopprettingsnøkkel" }),
+  ).toBeVisible();
+
+  await anna.page.goto("/samtaler");
+  await anna.page.getByRole("button", { name: "Start samtale" }).click();
+  await expect(
+    anna.page.getByRole("heading", { level: 1, name: "Jon Vik" }),
+  ).toBeVisible();
+  const conversation = anna.page.url();
+  await anna.page.getByLabel("Ny melding").fill("Har du en drill?");
+  await anna.page.getByRole("button", { name: "Send" }).click();
+  await bo.page.goto(conversation);
+  await expectMessage(bo.page, "Har du en drill?");
+  await bo.page.getByLabel("Ny melding").fill("Ja, en god en.");
+  await bo.page.getByRole("button", { name: "Send" }).click();
+  await expectMessage(anna.page, "Ja, en god en.");
+
+  // She said «Ikke nå», and has now written with someone: one reminder.
+  await anna.page.goto("/samtaler");
+  const reminder = anna.page.getByRole("region", {
+    name: "Ta vare på meldingene dine",
+  });
+  await expect(reminder).toBeVisible();
+  expect(await axeViolations(anna.page)).toEqual([]);
+  await reminder
+    .getByRole("link", { name: "Lag gjenopprettingsnøkkel" })
+    .click();
+  await anna.page
+    .getByRole("button", { name: "Lag gjenopprettingsnøkkel" })
+    .click();
+
+  // The key is shown once; «Ferdig» waits for the box (R2).
+  const shown = anna.page.getByLabel(/^Gjenopprettingsnøkkel: /);
+  const key = (await shown.getAttribute("aria-label"))!.replace(
+    "Gjenopprettingsnøkkel: ",
+    "",
+  );
+  expect(key.split(" ")).toHaveLength(13);
+  expect(await axeViolations(anna.page)).toEqual([]);
+  const done = anna.page.getByRole("button", { name: "Ferdig" });
+  await expect(done).toBeDisabled();
+  await anna.page.getByLabel("Jeg har skrevet ned eller lagret nøkkelen").check();
+  await done.click();
+  await expect(
+    anna.page.getByText("Gjenopprettingsnøkkelen er laget."),
+  ).toBeVisible();
+  await anna.page.getByRole("link", { name: "Tilbake til Mine enheter" }).click();
+  await expect(anna.page.getByText("Lag en ny nøkkel")).toBeVisible();
+  await anna.page.goto("/samtaler");
+  await expect(reminder).toHaveCount(0);
+  // The first backup follows the key; wait until the server has it.
+  await expect(async () => {
+    const devices = await (
+      await anna.context.request.get("/api/chat/recovery")
+    ).json();
+    expect(devices.archive).not.toBeNull();
+  }).toPass({ timeout: 20_000 });
+
+  // Every device lost: a new one signs in and brings chat back (R3).
+  const phone = await device(browser);
+  await signInThroughApi(phone.context.request, anna.email);
+  await phone.page.goto("/samtaler");
+  await phone.page
+    .getByRole("link", {
+      name: "Mistet alle enhetene? Bruk gjenopprettingsnøkkelen",
+    })
+    .click();
+  await expect(
+    phone.page.getByRole("heading", { name: "Hent tilbake privat chat" }),
+  ).toBeVisible();
+  expect(await axeViolations(phone.page)).toEqual([]);
+  const field = phone.page.getByLabel("Gjenopprettingsnøkkel");
+  await field.fill(`${key.slice(0, -1)}${key.endsWith("0") ? "1" : "0"}`);
+  await phone.page.getByRole("button", { name: "Hent tilbake" }).click();
+  await expect(
+    phone.page.getByText(
+      "Nøkkelen stemmer ikke. Sjekk at alle 52 tegnene er riktige.",
+    ),
+  ).toBeVisible();
+  // Spaces and small letters do not matter.
+  await field.fill(key.toLowerCase());
+  await phone.page.getByRole("button", { name: "Hent tilbake" }).click();
+  await expect(
+    phone.page.getByText(
+      "Privat chat er hentet tilbake på denne enheten, med meldingene som var sikkerhetskopiert.",
+    ),
+  ).toBeVisible({ timeout: 20_000 });
+  await phone.page.goto(conversation);
+  await expect(
+    messages(phone.page).getByText("Har du en drill?"),
+  ).toBeVisible();
+  await expect(messages(phone.page).getByText("Ja, en god en.")).toBeVisible();
+
+  // The old device is shut out; Jon's device adds the restored one, and
+  // his next message reaches it.
+  await bo.page.goto(conversation);
+  await expect(async () => {
+    await phone.page.goto(conversation);
+    await expect(phone.page.getByLabel("Ny melding")).toBeVisible({
+      timeout: 5_000,
+    });
+  }).toPass({ timeout: 45_000 });
+  await bo.page.reload();
+  await bo.page.getByLabel("Ny melding").fill("Hent den i morgen.");
+  await bo.page.getByRole("button", { name: "Send" }).click();
+  await expectMessage(phone.page, "Hent den i morgen.");
+  const own = await (await phone.context.request.get("/api/chat/devices")).json();
+  expect(
+    own.devices.filter((d: { revokedAt: string | null }) => !d.revokedAt),
+  ).toHaveLength(1);
+
+  for (const someone of [anna, bo, phone]) {
     await someone.context.close();
   }
 });

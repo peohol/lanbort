@@ -25,11 +25,11 @@ select throws_ok(
 select throws_ok(
   $$
     insert into app.chat_archives (user_id, purpose, part_count, expires_at)
-    values ('00000000-0000-4000-8000-0000000000a1', 'backup', 1, now() + interval '1 hour')
+    values ('00000000-0000-4000-8000-0000000000a1', 'other', 1, now() + interval '1 hour')
   $$,
   '23514',
   null,
-  'an archive is only for moving history to a linked device'
+  'an archive is only for a linked device or the recovery key''s backup'
 );
 
 select throws_ok(

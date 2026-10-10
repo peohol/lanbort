@@ -35,8 +35,8 @@ export {
   verifyDeviceRevocation,
 } from "./identity";
 export { openArchive, sealArchive } from "./archive";
+export { type AccountPackage, type LinkedArchive } from "./account-package";
 export {
-  type LinkedArchive,
   type LinkRequestKeys,
   type OpenedLink,
   type PendingLink,
@@ -55,6 +55,17 @@ export {
   importDevice,
   importKeyPackage,
 } from "./persist";
+export {
+  type RecoveryKey,
+  RECOVERY_KEY_LENGTH,
+  createRecoveryKey,
+  exportRecoveryKey,
+  groupRecoveryKey,
+  importRecoveryKey,
+  openRecoveryBackup,
+  readRecoveryKey,
+  sealRecoveryBackup,
+} from "./recovery";
 export { type AccountIdentity, securityCode } from "./safety";
 export { Secret, wipe } from "./secret";
 export { CIPHERSUITE } from "./suite";
