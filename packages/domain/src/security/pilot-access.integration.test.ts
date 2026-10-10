@@ -875,6 +875,7 @@ const elsewhere = randomUUID();
  */
 const personProbes: Record<string, (userId: string) => object> = {
   "account.read_identity_record": (userId) => ({ userId }),
+  "case.read_unavailability_target": (userId) => ({ userId }),
   "case.report_unavailability": (userId) => ({ userId, body: text }),
   "environment_membership.list_invitable": (userId) => ({ userId }),
   // A request first, so the ones after it act on something.

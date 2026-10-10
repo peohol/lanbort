@@ -107,12 +107,20 @@ const reportTargets = (person: Person) =>
 
 /**
  * The rarer steps, in the same place on every person's page (UX-INT-009):
- * remove the friend, block, and report. Removing and blocking show what
+ * remove the friend, block, report, and tell Lånbort that the person may
+ * have died (PS-COM-015). Removing and blocking show what
  * ends, what stays and what the other learns first (UX-INT-007). Someone
  * the reader blocks has none of them, and neither does the reader's own
  * page.
  */
-export function PersonMoreActions({ person }: { person: Person }) {
+export function PersonMoreActions({
+  person,
+  unavailabilityReport,
+}: {
+  person: Person;
+  /** Where to tell Lånbort the person may have died (PS-COM-015). */
+  unavailabilityReport: string | null;
+}) {
   const { relation, realName: name } = person;
   const shared = sharedNames(person);
 
@@ -184,6 +192,11 @@ export function PersonMoreActions({ person }: { person: Person }) {
             ` i ${environment.name}`}
         </Link>
       ))}
+      {unavailabilityReport && (
+        <Link className="button" href={unavailabilityReport}>
+          Si fra om mulig dødsfall
+        </Link>
+      )}
     </MoreActions>
   );
 }
