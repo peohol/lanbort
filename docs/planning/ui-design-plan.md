@@ -170,6 +170,8 @@ Nye flater skal som hovedregel løses med eksisterende komponenter og interaksjo
 
 ## Fase 7 — Administrator- og forvalterflater
 
+**Status:** Første prototype til gjennomgang: [Administrere et miljø v1](<../../design/Lånbort - Administrere et miljø v1.html>). Produktvalgene den avdekket (OD-0051–OD-0053), og OD-0025, OD-0026 og OD-0050, ble avgjort 10. oktober 2026 og står i PS-ENV-017–021 og PS-ADM-015. Plattformforvalternes flater venter på OD-0023.
+
 Administrative funksjoner designes etter at den ordinære brukerflaten har etablert designspråket.
 
 Målet er ikke å skjule nødvendig kompleksitet, men å organisere den rundt konkrete oppgaver og kontekst.
