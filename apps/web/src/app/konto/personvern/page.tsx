@@ -56,7 +56,8 @@ export default async function PrivacyPage() {
         <ul>
           <li>
             Profilen, navnet, e-postadressen og profilbildet ditt, så lenge du
-            har kontoen. Sletter du kontoen, forsvinner de med en gang.
+            har kontoen. Sletter du kontoen, forsvinner de fra Lånbort med en
+            gang, og fra innloggingen og bildelageret kort etter.
           </li>
           <li>Tingene dine og bildene av dem, til du sletter dem.</li>
           <li>
@@ -64,7 +65,10 @@ export default async function PrivacyPage() {
             fordi de også er de andres historikk. Sletter du kontoen, står de
             uten navnet ditt.
           </li>
-          <li>Varsler i {days(pilotRetention.notificationsMs)} dager.</li>
+          <li>
+            Varsler i {days(pilotRetention.notificationsMs)} dager. Gjelder
+            varselet et lån som fortsatt pågår, står det til lånet er over.
+          </li>
           <li>
             Svar du ga for å bli med i et miljø, til{" "}
             {days(pilotRetention.membershipAnswersMs)} dager etter at du gikk
