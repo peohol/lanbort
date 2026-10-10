@@ -82,9 +82,9 @@ test("an environment is created, applied to, used and left in the browser", asyn
   ).toBeVisible();
   // About how many, never the exact number (PS-ENV-016).
   await expect(bo.page.getByText("under 10 medlemmer")).toBeVisible();
-  await expect(bo.page.getByRole("heading", { name: /Andre medlemmer/ })).toHaveCount(
-    0,
-  );
+  await expect(
+    bo.page.getByRole("heading", { name: /Andre medlemmer/ }),
+  ).toHaveCount(0);
   const asks = bo.page.getByRole("region", { name: "For å bli med" });
   await expect(asks.getByText("Hvilken leilighet bor du i?")).toBeVisible();
   await expect(asks.getByText("Jeg godtar husreglene")).toBeVisible();
