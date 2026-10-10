@@ -89,18 +89,28 @@ export function InterventionFlow({
     done: variant?.done ?? record,
     after: () => after,
     replace: true,
+    // The confirmation ran out while the steward wrote; the next send asks
+    // for it again, and what they wrote stays.
+    onFailure: (code) => {
+      if (code === "stronger_authentication_required") setFresh(false);
+    },
   });
   // Read when the page is drawn; a stale confirmation is asked for again.
-  const [fresh] = useState(
+  const [fresh, setFresh] = useState(
     () => freshUntil !== null && new Date(freshUntil).getTime() > Date.now(),
   );
-  const steps = interventionSteps(!fresh);
-  const current = step === 3 ? steps.length - (fresh ? 1 : 2) : step;
+  const [passkeyStep] = useState(!fresh);
+  const steps = interventionSteps(passkeyStep);
+  const current =
+    step === 3 ? steps.length - (passkeyStep && !fresh ? 2 : 1) : step;
 
   async function run(event: FormEvent) {
     event.preventDefault();
     if (!variant) return;
-    if (!fresh && !(await ceremony.run(confirmWithPasskey))) return;
+    if (!fresh) {
+      if (!(await ceremony.run(confirmWithPasskey))) return;
+      setFresh(true);
+    }
 
     await command.run({
       userId,
