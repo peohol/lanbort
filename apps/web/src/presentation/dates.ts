@@ -47,6 +47,18 @@ export function formatWeekday(date: string): string {
   return weekdayFormat.format(new Date(`${date}T00:00:00Z`)).slice(0, 2);
 }
 
+const shortDateFormat = new Intl.DateTimeFormat("nb-NO", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  timeZone: productTimeZone,
+});
+
+/** The day of a moment in few words, for a list: «lør. 10. okt.». */
+export function formatShortDate(at: string): string {
+  return shortDateFormat.format(new Date(at));
+}
+
 /** A moment in few words, for a timeline: «lør. 10. okt., 10:14». */
 export function formatShortTime(at: string): string {
   return shortTimeFormat.format(new Date(at));

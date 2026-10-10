@@ -36,7 +36,8 @@ const within: Record<LayerId, (href: string) => string | null> = {
  * Opened from the app, the layer lies `over` the screen, which is kept as
  * it was and shut off from the keyboard and assistive technology until the
  * layer closes; focus then returns to what opened it. Reached from outside,
- * the layer is the page itself, with nothing under it.
+ * the layer is the page itself, with nothing under it: on a larger screen
+ * a column of the same width in the middle, not a panel over an empty page.
  */
 export function Layer({
   layer,
@@ -145,6 +146,7 @@ export function Layer({
       <div
         ref={panel}
         className="layer"
+        data-page={over ? undefined : ""}
         {...(over && {
           role: "dialog",
           "aria-modal": true,

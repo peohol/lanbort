@@ -1,14 +1,19 @@
 import { getSocialOverview, takesNewActivity } from "@lanbort/domain";
 import type { Metadata } from "next";
-import { ActionButton } from "@/components/action-button";
 import { PageHeader } from "@/components/page-header";
+import { UnblockAction } from "@/components/unblock-action";
 import { minimumAccessText, restingNotice } from "@/presentation/account";
+import { formatShortDate } from "@/presentation/dates";
+import { personName } from "@/presentation/people";
 import { pageQuery, requirePageAccount } from "@/server/session";
-import { People, target } from "../people";
+import { People } from "../people";
 
 export const metadata: Metadata = { title: "Blokkerte – Lånbort" };
 
-/** The people the user has blocked, and lifting a block (PS-USR-006–007). */
+/**
+ * The people the user has blocked, and lifting a block with what it means
+ * (PS-USR-006–007, KF6 screen 20).
+ */
 export default async function BlockedPage() {
   const account = await requirePageAccount();
   const active = takesNewActivity(account.status);
@@ -29,13 +34,13 @@ export default async function BlockedPage() {
         <p className="quiet">Du har ikke blokkert noen.</p>
       ) : (
         <People
-          heading="Du har blokkert"
           people={blocked}
+          detail={({ since }) => `Blokkert ${formatShortDate(since)}`}
           actions={(person) => (
-            <ActionButton
-              label="Opphev blokkering"
-              path="/api/social/blocks/lift"
-              body={target(person)}
+            <UnblockAction
+              userId={person.userId}
+              name={personName(person)}
+              label="Opphev"
             />
           )}
         />
