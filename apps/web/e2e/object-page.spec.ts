@@ -108,6 +108,76 @@ test("a thing has one page, seen by its owner or through an environment", async 
 });
 
 /**
+ * The owner sees the members' questions about the thing in each environment
+ * (PS-OBJ-015), answers them there and may open the private conversation
+ * with whoever asked (PS-COM-006); the asker stays «Et medlem».
+ */
+test("the owner answers questions about the thing and may write to who asked", async ({
+  browser,
+  page,
+  baseURL,
+}) => {
+  const problems = collectBrowserProblems(page);
+  await registerThroughApi(page.request, undefined, "Anna Berg");
+  const word = uniqueWord();
+  const { environmentId } = await (
+    await postCommand(page.request, "/api/environments", {
+      name: `Gården ${word}`,
+      type: "open",
+    })
+  ).json();
+  const { objectId } = await (
+    await postCommand(page.request, "/api/objects", {
+      title: `Stige ${word}`,
+      categoryId: "annet",
+      description: "Aluminiumsstige, 4 meter.",
+      availability: [{ start: today(), end: null }],
+    })
+  ).json();
+  await postCommand(page.request, `/api/objects/${objectId}/publications`, {
+    environmentId,
+  });
+
+  await page.goto(`/ting/${objectId}`);
+  await expect(
+    page.getByRole("heading", { name: "Spørsmål og svar" }),
+  ).toHaveCount(0);
+
+  const members = await browser.newContext({ baseURL: baseURL! });
+  await registerThroughApi(members.request, undefined, "Bo Dahl");
+  const boId = await accountId(members.request);
+  await postCommand(members.request, "/api/environments/membership/join", {
+    environmentId,
+    answers: [],
+  });
+  const { questionId } = await (
+    await postCommand(members.request, "/api/object-questions", {
+      environmentId,
+      objectId,
+      body: "Rekker den opp til takrenna?",
+    })
+  ).json();
+
+  await page.reload();
+  const asked = page.getByRole("region", { name: `Gården ${word}` });
+  await expect(
+    asked.getByText("Et medlem: Rekker den opp til takrenna?"),
+  ).toBeVisible();
+  await expect(
+    asked.getByRole("link", { name: "Start privat samtale" }),
+  ).toHaveAttribute(
+    "href",
+    `/samtaler?${new URLSearchParams({ med: boId, sporsmal: questionId })}`,
+  );
+  await asked.getByText("Svar", { exact: true }).click();
+  await asked.getByLabel("Svaret ditt").fill("Ja, med god margin.");
+  await asked.getByRole("button", { name: "Send svaret" }).click();
+  await expect(asked.getByText("Du: Ja, med god margin.")).toBeVisible();
+  await members.close();
+  expect(problems).toEqual([]);
+});
+
+/**
  * Between friends the thing is seen directly (PS-OBJ-020): with its
  * pictures, read through the friends' own address, and its owner named,
  * since the viewer is their friend (PS-OBJ-022).
