@@ -312,3 +312,112 @@ test("the lender ends the loan at once instead of waiting out the undo time (PS-
   await expect(status.getByRole("button", { name: "Angre" })).toHaveCount(0);
   expect(problems).toEqual([]);
 });
+
+test("a former lender keeps their reviews on the loan's page, and nothing more of the loan", async ({
+  page,
+  playwright,
+  baseURL,
+}) => {
+  const problems = collectBrowserProblems(page);
+  const context = async (name: string) => {
+    const request = await playwright.request.newContext({
+      baseURL: baseURL!,
+      extraHTTPHeaders: { origin: baseURL! },
+    });
+    await registerThroughApi(request, undefined, name);
+    return request;
+  };
+  const anna = page.request;
+  await registerThroughApi(anna, undefined, "Anna Berg");
+  const bo = await context("Bo Dahl");
+  const dag = await context("Dag Lie");
+  const boId = await accountId(bo);
+  await postCommand(anna, "/api/social/friend-requests", { userId: boId });
+  await postCommand(bo, "/api/social/friend-requests/accept", {
+    userId: await accountId(anna),
+  });
+
+  // Dag co-owns the ladder before Bo borrows it.
+  const { objectId } = await (
+    await postCommand(anna, "/api/objects", {
+      title: "Stige",
+      categoryId: "annet",
+      description: "Stige til utlån.",
+      availability: [{ start: today(), end: null }],
+    })
+  ).json();
+  await showToFriends(anna, objectId);
+  const { invitationId } = await (
+    await postCommand(anna, `/api/objects/${objectId}/co-owners/invitations`, {
+      userId: await accountId(dag),
+    })
+  ).json();
+  await postCommand(dag, "/api/object-invitations/accept", { invitationId });
+  const preview = await (
+    await bo.get(`/api/loan-requests/preview?objectId=${objectId}`)
+  ).json();
+  const { requestId } = await (
+    await postCommand(bo, "/api/loan-requests", {
+      objectId,
+      origin: { kind: "direct" },
+      start: { kind: "date", date: today() },
+      end: { kind: "duration", days: 2 },
+      message: "Kan jeg låne den?",
+      termsVersion: preview.termsVersion,
+      responsibilityDeclarationVersion:
+        preview.responsibilityDeclarationVersion,
+    })
+  ).json();
+  await postCommand(anna, `/api/loan-requests/${requestId}/responsibility`, {
+    declarationVersion: preview.responsibilityDeclarationVersion,
+  });
+  const { loanId } = await (
+    await postCommand(anna, `/api/loan-requests/${requestId}/approve`)
+  ).json();
+  const loan = `/api/loans/${loanId}`;
+
+  // Returned and reviewed, then reopened: Dag takes over as lender.
+  await postCommand(anna, `${loan}/handover`, {
+    agreementVersion: 1,
+    outcome: "handed_over",
+  });
+  await postCommand(anna, `${loan}/return`, {
+    agreementVersion: 1,
+    outcome: "received",
+    immediately: true,
+  });
+  await postCommand(anna, `${loan}/reviews`, {
+    loanId,
+    scores: [
+      "pickup_on_time",
+      "return_on_time",
+      "condition_at_return",
+      "communication",
+    ].map((dimension) => ({ dimension, score: 5 })),
+  });
+  await postCommand(bo, `${loan}/return`, {
+    agreementVersion: 1,
+    outcome: "still_has",
+    immediately: true,
+  });
+  const { transferId } = await (
+    await postCommand(anna, `${loan}/responsibility`, {
+      toUserId: await accountId(dag),
+    })
+  ).json();
+  await postCommand(dag, `${loan}/responsibility/${transferId}/accept`);
+  expect((await anna.get(loan)).status()).toBe(404);
+
+  // Anna's review is still hers; what Bo and Dag do now is not.
+  await page.goto(`/lan/${loanId}`);
+  const reviews = page.getByRole("region", { name: "Anmeldelser" });
+  await expect(
+    reviews.getByRole("article", { name: "Din anmeldelse av Bo Dahl" }),
+  ).toBeVisible();
+  await expect(reviews).toContainText(
+    "Lånet er åpnet igjen. Anmeldelsene venter til det er avsluttet på nytt.",
+  );
+  await expect(page.getByText("Tidslinje")).toHaveCount(0);
+  expect(await axeViolations(page)).toEqual([]);
+  expect(problems).toEqual([]);
+});
