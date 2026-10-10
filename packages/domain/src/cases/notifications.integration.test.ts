@@ -16,10 +16,10 @@ import { notificationGenerator } from "../notifications/generator";
 import { notificationCaseQueueProcess } from "../notifications/policies";
 import { listNotifications } from "../notifications/queries";
 import { ConsumerRegistry } from "../outbox/consumer";
-import { processOutboxBatch } from "../outbox/worker";
 import { grantPlatformRole } from "../platform/commands";
 import { platformRoleOpsProcess } from "../platform/policies";
 import { connectTestDatabase } from "../testing/database";
+import { deliverAll } from "../testing/outbox";
 import { registerTestUser } from "../testing/identities";
 import { loanTestKit } from "../testing/loans";
 import {
@@ -62,7 +62,7 @@ const {
 const oneDay = 24 * 60 * 60 * 1000;
 
 async function deliver() {
-  while ((await processOutboxBatch(db, consumers, { batchSize: 100 })).claimed);
+  await deliverAll(db, consumers);
 }
 
 /** What the actor was told since the last call, oldest first. */
