@@ -35,11 +35,11 @@ Siden **Personvern og sikkerhet** under Konto (`/konto/personvern`) sier hvem so
 
 Sikkerhetsfeil fra andre enn deltakerne meldes privat gjennom GitHubs «Report a vulnerability» på repoet ([SECURITY.md](../../SECURITY.md)), som `/.well-known/security.txt` peker til. Filen har en utløpsdato (`Expires`) som må flyttes fram før den passeres. Når plattformkøen åpnes (`PLATFORM_STEWARDS_ENABLED` og minst én forvalter med to nøkler), kan deltakerne også bruke «Rapporter til Lånbort» i appen.
 
-### Egen adresse på lånbort.no (valgfritt)
+### Adressen på lånbort.no
 
-Lånbort.no kan ikke ta imot e-post i dag: domenet har bare oppsett for å sende (Resend), og Vercel, som har DNS-en, videresender ikke e-post. En adresse som `sikkerhet@lånbort.no` trenger derfor en videresendingstjeneste, for eksempel ImprovMX, som sender alt videre til en innboks produkteier allerede leser. Det krever:
+Produkteier har valgt at `CONTACT_EMAIL` skal være `sikkerhet@lånbort.no` (10. oktober 2026). Lånbort.no kan ikke ta imot e-post av seg selv: domenet har bare oppsett for å sende (Resend), og Vercel, som har DNS-en, videresender ikke e-post. Adressen går derfor gjennom gratisplanen til videresendingstjenesten ImprovMX, som sender alt videre til en innboks produkteier allerede leser. Det krever:
 
-1. En konto hos tjenesten, laget av produkteier, med lånbort.no (`xn--lnbort-iua.no`) og aliaset `sikkerhet` som sendes videre til produkteiers adresse. Sjekk vilkårene for gratisplanen før den tas i bruk.
+1. En konto hos tjenesten, laget av produkteier, med lånbort.no (`xn--lnbort-iua.no`) og aliaset `sikkerhet` som sendes videre til produkteiers adresse. Sjekk vilkårene for gratisplanen før den tas i bruk. ImprovMX er et amerikansk selskap som kan behandle e-posten i USA og Europa; siden **Personvern og sikkerhet** sier det.
 2. Tre DNS-poster på selve domenet (`@`) i Vercel: MX `mx1.improvmx.com` med prioritet 10, MX `mx2.improvmx.com` med prioritet 20, og TXT `v=spf1 include:spf.improvmx.com ~all` (ImprovMX sin generelle veiledning, lest 10. oktober 2026). Resends poster ligger på underdomenet `send` og berøres ikke.
 3. En test-e-post til adressen før den settes som `CONTACT_EMAIL`.
 
@@ -54,7 +54,7 @@ Med alvorlig hendelse menes at personopplysninger kan ha kommet på avveie, blit
    - En lekket nøkkel: lag en ny og slett den gamle (Supabase-nøkler og databasepassord, `RESEND_API_KEY`, `SUPABASE_AUTH_SMTP_PASSWORD`, `SUPABASE_ACCESS_TOKEN`), og deploy på nytt der den brukes.
    - Feil i appen som viser eller endrer data den ikke skal: rull tilbake til forrige deploy i Vercel, eller sett prosjektet på pause til feilen er rettet.
    - En deltaker som misbruker Lånbort: utestengelse i miljøet. Til plattformforvaltere kan sperre kontoer (de trenger sterkere innlogging først, ADR-0011), stenges innloggingen i Supabase ved å utestenge brukeren der («ban»). Brukeren slettes ikke.
-2. **Sikre sporene med en gang.** Leverandørenes logger forsvinner av seg selv ([oppbevaring](retention.md#logger-hos-leverandørene)): Vercel etter 1 dag, Supabase etter 7 og Resend etter 30. Ta ut det som gjelder hendelsen før det, og lagre det privat, aldri i dette repoet, som er offentlig.
+2. **Sikre sporene med en gang.** Leverandørenes logger forsvinner av seg selv ([oppbevaring](retention.md#logger-hos-leverandørene)): Vercel etter 1 dag, Supabase og ImprovMX etter 7 og Resend etter 30. Ta ut det som gjelder hendelsen før det, og lagre det privat, aldri i dette repoet, som er offentlig.
 3. **Vurder hvem og hva det gjelder**: hvilke opplysninger, hvor mange, og hvor alvorlig det kan bli for dem.
 4. **Meld fra.**
    - Til Datatilsynet innen 72 timer etter at hendelsen ble kjent, med mindre det er usannsynlig at den gir risiko for noen (personvernforordningen artikkel 33), gjennom skjemaet [Meld avvik til Datatilsynet](https://www.datatilsynet.no/rettigheter-og-plikter/virksomhetenes-plikter/avvik/meld-avvik-til-datatilsynet/). Det som ikke er klart ennå, ettersendes.

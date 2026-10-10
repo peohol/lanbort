@@ -161,16 +161,13 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Spørsmål:** Skal plattformforvaltere kunne utnevnes og fjernes inne i appen, og i så fall av hvem? Inntil dette er besluttet, skjer det bare med den revisjonsloggede driftskommandoen.
 - **Avklares før:** kan vente. Driftskommandoen dekker behovet.
 
+## Avklart
+
 ### OD-0022 — Backupnivå for piloten
 - **Lag:** Arkitektur
-- **Status:** Åpen, anbefaling klar (10. oktober 2026); venter produkteiers bekreftelse (Port D)
+- **Status:** Avklart (produkteier, 10. oktober 2026)
 - **Berører:** PS-NFR-014, [ADR-0009](architecture/decisions/ADR-0009-backup-i-utviklingsfasen.md), WP-72
-- **Spørsmål:** Hvilket backupnivå skal piloten ha, innenfor føringen «sikker løsning uten nye løpende kostnader» (produkteier, 10. oktober 2026)?
-- **Fakta:** Supabase-organisasjonen som har produksjonsprosjektet, er allerede på Pro-planen. Prosjektet får derfor Supabases daglige backup med 7 dagers historikk uten ekstra kostnad. Den har ikke filene i Storage, og den forsvinner med prosjektet.
-- **Anbefaling:** Supabases daglige backup, pluss en egen daglig backup av databasen og alle filene i et privat GitHub-repo med 7 dagers historikk, og en månedlig gjenopprettingsøvelse til et isolert miljø. RPO ≤ 24 timer, RTO ≤ 8 timer. Point-in-Time Recovery og gjenoppretting til et nytt Supabase-prosjekt koster ekstra og velges bort. Se [backup og gjenoppretting](implementation/backup-restore.md#strategi-for-piloten).
-- **Avklares før:** appen åpnes for et eksternt testpanel (Port D).
-
-## Avklart
+- **Beslutning:** To lag uten nye løpende kostnader. Supabases daglige backup med 7 dagers historikk (organisasjonen er på Pro), pluss en egen daglig backup av databasen og alle filene i et privat GitHub-repo med 7 dagers historikk, og en månedlig gjenopprettingsøvelse til et isolert miljø. RPO ≤ 24 timer, RTO ≤ 8 timer. Point-in-Time Recovery og gjenoppretting til et nytt Supabase-prosjekt koster ekstra og er valgt bort. Se [backup og gjenoppretting](implementation/backup-restore.md#strategi-for-piloten).
 
 ### OD-0023 — Registrering og recovery for plattformforvalteres WebAuthn
 - **Lag:** Tverrgående
