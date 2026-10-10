@@ -61,7 +61,9 @@ export function Things({
       <h2 id="ting">Ting i miljøet</h2>
       {things.objects.length === 0 ? (
         <EmptyState action={register(true)}>
-          {paged ? "Ingen flere ting her." : "Ingen ting er delt her ennå."}
+          {paged
+            ? "Ingen flere ting her."
+            : `Ingen ting her ennå. Bli den første som legger ut noe i ${environment.name}.`}
         </EmptyState>
       ) : (
         <>

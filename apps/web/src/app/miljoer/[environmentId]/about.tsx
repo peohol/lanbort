@@ -62,17 +62,22 @@ export function About({ environment }: { environment: Environment }) {
   );
 }
 
-/** The rules and requirements members have met (PS-ENV-005). */
+/**
+ * The rules and requirements members have met (PS-ENV-005), or, before
+ * joining, what joining asks (UX-JRN-002).
+ */
 export function Requirements({
   requirements,
+  heading = "Regler og krav",
 }: {
   requirements: readonly Requirement[];
+  heading?: string;
 }) {
   if (requirements.length === 0) return null;
 
   return (
     <section aria-labelledby="krav" className={styles.card}>
-      <h2 id="krav">Regler og krav</h2>
+      <h2 id="krav">{heading}</h2>
       <dl className="facts">
         {requirements.map(({ id, kind, text }) => (
           <Fragment key={id}>

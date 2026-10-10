@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   answerCommand,
   describeTypeChange,
+  givenAnswers,
   leavingConsequences,
   membershipLabel,
   membershipStep,
   roleName,
+  welcome,
 } from "./environments";
 
 const environment = (
@@ -139,9 +141,89 @@ describe("answerCommand", () => {
     expect(answerCommand(hidden, membershipStep(hidden))).toEqual({
       path: "/api/environments/membership/accept",
       heading: "Bli med",
+      opens: "Bli med",
       label: "Godta invitasjonen til Gården",
+      joins: true,
+      reviewed: false,
     });
     expect(answerCommand(environment({}, {}), { kind: "member" })).toBeNull();
+  });
+
+  it("says when the administrators decide, and when the user is in at once", () => {
+    const closed = environment();
+
+    expect(answerCommand(closed, membershipStep(closed))).toMatchObject({
+      label: "Send søknaden",
+      joins: false,
+      reviewed: true,
+    });
+    expect(
+      answerCommand(closed, { kind: "passive", direct: true }),
+    ).toMatchObject({ joins: false, reviewed: false });
+    expect(
+      answerCommand(environment({ type: "open" }), { kind: "join" }),
+    ).toMatchObject({ joins: true, reviewed: false });
+  });
+});
+
+describe("givenAnswers", () => {
+  const question = {
+    id: "00000000-0000-4000-8000-00000000a001",
+    kind: "information",
+    text: "Hvilken leilighet bor du i?",
+  } as const;
+  const rule = {
+    id: "00000000-0000-4000-8000-00000000a002",
+    kind: "acceptance",
+    text: "Jeg godtar husreglene",
+  } as const;
+
+  it("shows each answer under its question and the rules once", () => {
+    expect(
+      givenAnswers(
+        environment(
+          { requirements: [question, rule] },
+          {
+            state: "pending",
+            answers: [
+              { requirementId: question.id, answer: "H0201" },
+              { requirementId: rule.id, answer: null },
+            ],
+          },
+        ),
+      ),
+    ).toEqual([
+      { term: "Hvilken leilighet bor du i?", value: "H0201" },
+      { term: "Regler", value: "Godtatt" },
+    ]);
+  });
+
+  it("keeps an answer to a changed question, and the rules only once all are accepted", () => {
+    expect(
+      givenAnswers(
+        environment(
+          { requirements: [question, rule] },
+          {
+            state: "pending",
+            answers: [
+              {
+                requirementId: "00000000-0000-4000-8000-00000000a003",
+                answer: "Gammelt svar",
+              },
+            ],
+          },
+        ),
+      ),
+    ).toEqual([{ term: "Et spørsmål som er endret", value: "Gammelt svar" }]);
+    expect(givenAnswers(environment())).toEqual([]);
+  });
+});
+
+describe("welcome", () => {
+  it("greets by first name, or without a name", () => {
+    expect(welcome("Ingrid Berg")).toBe("Velkommen, Ingrid");
+    expect(welcome(null)).toBe("Velkommen");
+    expect(welcome("  ")).toBe("Velkommen");
   });
 });
 

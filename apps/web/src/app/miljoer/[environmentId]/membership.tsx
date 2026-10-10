@@ -1,18 +1,24 @@
 import type { Environment } from "@lanbort/contracts";
 import Link from "next/link";
+import { Fragment } from "react";
 import { ActionButton } from "@/components/action-button";
 import { ConfirmAction } from "@/components/confirm-action";
-import { RequirementAnswers } from "@/components/requirement-answers";
 import { StatusCard } from "@/components/status-card";
 import type { Tone } from "@/components/tag";
 import { newCaseHref } from "@/navigation/cases";
-import { environmentAdminHref, environmentHref } from "@/navigation/routes";
+import {
+  environmentAdminHref,
+  environmentHref,
+  environmentJoinHref,
+  environmentWelcomeHref,
+} from "@/navigation/routes";
 import { formatTime } from "@/presentation/dates";
 import {
   answerCommand,
   describeMembership,
   describeTypeChange,
   environmentRoleNames,
+  givenAnswers,
   leavingConsequences,
   membershipLabel,
   type MembershipStep,
@@ -36,26 +42,35 @@ const stepTones: Record<MembershipStep["kind"], Tone> = {
 
 /**
  * The user's relation to the environment and the next step (UX-INT-001):
- * joining, applying or accepting an invitation with the requirements that
- * apply now (PS-ENV-004–006), following an application, meeting new
- * requirements, answering a proposed weaker type (UX-PRIV-008), taking on
- * a role, and for administrators the way to their tasks. Contact and
- * leaving are on «Om miljøet» (`YourMembership`).
+ * the way to joining, applying, accepting an invitation or meeting new
+ * requirements (PS-ENV-004–006), a bounded task of its own; what a pending
+ * application holds; answering a proposed weaker type (UX-PRIV-008); taking
+ * on a role; and for administrators the way to their tasks. Right after
+ * joining, the card welcomes the new member. Contact and leaving are on
+ * «Om miljøet» (`YourMembership`).
  */
 export function Membership({
   environment,
   step,
+  welcomed,
 }: {
   environment: Environment;
   step: MembershipStep;
+  /** The greeting, on the first visit after joining. */
+  welcomed?: string | undefined;
 }) {
-  const { membership, continuity } = environment;
-  const command = answerCommand(environment, step);
+  const { continuity } = environment;
+  const welcome = step.kind === "member" ? welcomed : undefined;
+  const given =
+    step.kind === "awaiting_review" || step.kind === "information_requested"
+      ? givenAnswers(environment)
+      : [];
+
   return (
     <>
       <StatusCard
         label={membershipLabel(environment, step)}
-        status={describeMembership(environment, step)}
+        status={welcome ?? describeMembership(environment, step)}
         tone={stepTones[step.kind]}
         when={
           step.kind === "transition"
@@ -70,19 +85,27 @@ export function Membership({
             : undefined
         }
         actions={<StepActions environment={environment} step={step} />}
-      />
-      {command && (
-        <section aria-labelledby="medlemskap">
-          <h2 id="medlemskap">{command.heading}</h2>
-          <RequirementAnswers
-            environmentId={environment.id}
-            requirements={environment.requirements}
-            given={membership?.answers ?? []}
-            path={command.path}
-            submitLabel={command.label}
-          />
-        </section>
-      )}
+      >
+        {welcome && (
+          <p>
+            Nå kan du låne av de andre medlemmene og legge ut dine egne ting
+            her. Du finner miljøet under «Dine miljøer» i Hjem.
+          </p>
+        )}
+        {given.length > 0 && (
+          <section aria-labelledby="soknaden-din">
+            <h3 id="soknaden-din">Søknaden din</h3>
+            <dl className="facts">
+              {given.map(({ term, value }, index) => (
+                <Fragment key={index}>
+                  <dt>{term}</dt>
+                  <dd className="message-text">{value}</dd>
+                </Fragment>
+              ))}
+            </dl>
+          </section>
+        )}
+      </StatusCard>
       <TypeChange environment={environment} />
       <RoleInvitations environment={environment} />
     </>
@@ -90,9 +113,10 @@ export function Membership({
 }
 
 /**
- * Steps taken directly on the card: withdrawing or declining, and for an
- * administrator the way to administration whatever their own next step is
- * (new requirements do not take the role away).
+ * Steps taken from the card: the way to the step that sends answers (or the
+ * step itself, when there is nothing to answer), withdrawing or declining,
+ * and for an administrator the way to administration whatever their own
+ * next step is (new requirements do not take the role away).
  */
 function StepActions({
   environment,
@@ -101,8 +125,29 @@ function StepActions({
   environment: Environment;
   step: MembershipStep;
 }) {
+  const command = answerCommand(environment, step);
+
   return (
     <>
+      {command &&
+        (environment.requirements.length > 0 ? (
+          <Link
+            className="button button-primary"
+            href={environmentJoinHref(environment.id)}
+          >
+            {command.opens}
+          </Link>
+        ) : (
+          <ActionButton
+            label={command.label}
+            path={command.path}
+            body={{ environmentId: environment.id, answers: [] }}
+            primary
+            {...(command.joins
+              ? { next: environmentWelcomeHref(environment.id) }
+              : {})}
+          />
+        ))}
       <StepAction environment={environment} step={step} />
       {environment.roles.includes("administrator") && (
         // WP-85's page, built alongside this one: not fetched ahead.
@@ -136,7 +181,22 @@ function StepAction({
     case "information_requested":
     case "confirm":
       return environment.membership?.state === "pending" ? (
-        <ActionButton label="Trekk søknaden" path={leavePath} body={body} />
+        <ConfirmAction
+          label="Trekk søknaden"
+          title="Trekke søknaden?"
+          consequences={{
+            gone: ["Administratorene ser ikke lenger søknaden."],
+            stays: [
+              environment.type === "open"
+                ? "Du kan bli med senere."
+                : "Du kan søke på nytt senere.",
+            ],
+          }}
+          confirmLabel="Trekk søknaden"
+          path={leavePath}
+          body={body}
+          danger
+        />
       ) : null;
     default:
       return null;

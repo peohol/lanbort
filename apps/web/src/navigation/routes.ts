@@ -59,6 +59,17 @@ export const environmentAdminHref = (id: string) =>
 /** «Om miljøet og medlemmer»: what it is, who is in it, your membership. */
 export const environmentAboutHref = (id: string) => `${environmentHref(id)}/om`;
 
+/** Joining, applying or answering requirements, as a bounded task. */
+export const environmentJoinHref = (id: string) =>
+  `${environmentHref(id)}/bli-med`;
+
+/** The query parameter that marks the first visit after joining. */
+export const welcomeParam = "velkommen";
+
+/** The environment right after joining it, where the member is welcomed. */
+export const environmentWelcomeHref = (id: string) =>
+  `${environmentHref(id)}?${welcomeParam}`;
+
 export const newEnvironmentHref = "/miljoer/ny";
 
 /**

@@ -172,49 +172,148 @@ export function membershipLabel(
   }
 }
 
-/** The command, its heading and its button for a step that sends answers. */
+/**
+ * The command for a step that sends answers (PS-ENV-005): its page's
+ * heading, the way to that page from the status card, the button that sends
+ * it, whether the user is a member as soon as it is sent, to be welcomed
+ * on arrival (Tomat kjerneflyt 3), and whether the administrators decide.
+ */
+export interface AnswerCommand {
+  readonly path: string;
+  readonly heading: string;
+  readonly opens: string;
+  readonly label: string;
+  readonly joins: boolean;
+  readonly reviewed: boolean;
+}
+
 export function answerCommand(
   environment: Environment,
   step: MembershipStep,
-): { path: string; heading: string; label: string } | null {
+): AnswerCommand | null {
   const join = "/api/environments/membership/join";
   const answers = "/api/environments/membership/answers";
 
   switch (step.kind) {
     case "join":
-      return { path: join, heading: "Bli med", label: "Bli med" };
+      return {
+        path: join,
+        heading: "Bli med",
+        opens: "Bli med",
+        label: "Bli med",
+        joins: true,
+        reviewed: false,
+      };
     case "apply":
       return {
         path: join,
         heading: "Søk om å bli med",
+        opens: "Søk om å bli med",
         label: "Send søknaden",
+        joins: false,
+        reviewed: true,
       };
     case "confirm":
       return {
         path: join,
         heading: "Bli med",
+        opens: "Bli med",
         label: "Bekreft at du vil bli med",
+        joins: true,
+        reviewed: false,
       };
     case "passive":
       return {
         path: join,
         heading: "Bli aktiv igjen",
+        opens: "Bli aktiv igjen",
         label: step.direct ? "Bli aktiv igjen" : "Be om å bli aktiv igjen",
+        joins: false,
+        reviewed: !step.direct,
       };
     case "accept_invitation":
       return {
         path: "/api/environments/membership/accept",
         heading: "Bli med",
+        opens: "Bli med",
         label: `Godta invitasjonen til ${environment.name}`,
+        joins: true,
+        reviewed: false,
       };
     case "information_requested":
-      return { path: answers, heading: "Svarene dine", label: "Send svarene" };
+      return {
+        path: answers,
+        heading: "Svarene dine",
+        opens: "Se over svarene",
+        label: "Send svarene",
+        joins: false,
+        reviewed: true,
+      };
     case "transition":
-      return { path: answers, heading: "Nye krav", label: "Send svarene" };
+      return {
+        path: answers,
+        heading: "Nye krav",
+        opens: "Se de nye kravene",
+        label: "Send svarene",
+        joins: false,
+        reviewed: false,
+      };
     default:
       return null;
   }
 }
+
+/**
+ * What the user has given to a pending membership, as it was sent (Tomat
+ * kjerneflyt 3): each answer under its question, an answer to a question
+ * the administrators have changed since, and the rules once all of them
+ * are accepted. Only the user's own answers, on their own page
+ * (UX-PRIV-009).
+ */
+export function givenAnswers(
+  environment: Environment,
+): { term: string; value: string }[] {
+  const current = new Map(
+    environment.requirements.map((requirement, index) => [
+      requirement.id,
+      { ...requirement, index },
+    ]),
+  );
+  const order = (id: string) => current.get(id)?.index ?? Infinity;
+  const answers = [...(environment.membership?.answers ?? [])].sort(
+    (a, b) => order(a.requirementId) - order(b.requirementId),
+  );
+  const accepted = new Set(
+    answers.filter((a) => a.answer === null).map((a) => a.requirementId),
+  );
+  const rules = environment.requirements.filter(
+    ({ kind }) => kind === "acceptance",
+  );
+
+  return [
+    ...answers.flatMap(({ requirementId, answer }) =>
+      answer === null
+        ? []
+        : [
+            {
+              term:
+                current.get(requirementId)?.text ?? "Et spørsmål som er endret",
+              value: answer,
+            },
+          ],
+    ),
+    ...(rules.length > 0 && rules.every(({ id }) => accepted.has(id))
+      ? [{ term: "Regler", value: "Godtatt" }]
+      : []),
+  ];
+}
+
+/** The greeting on the first visit as a member (Tomat kjerneflyt 3). */
+export const welcome = (realName: string | null) => {
+  const first = realName?.trim().split(/\s+/)[0];
+
+  return first ? `Velkommen, ${first}` : "Velkommen";
+};
 
 /** What a member who leaves loses and keeps (UX-INT-007). */
 export function leavingConsequences(environment: Environment) {
