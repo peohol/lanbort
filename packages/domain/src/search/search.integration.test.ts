@@ -435,6 +435,7 @@ describe("Finn: environments (WP-61, PS-ENV-001)", () => {
         description: `Felles verktøy for ${name}`,
         location: "Grünerløkka",
         area: null,
+        members: { kind: "fewer_than", count: 10 },
         membershipState: null,
       },
     ]);
@@ -446,6 +447,29 @@ describe("Finn: environments (WP-61, PS-ENV-001)", () => {
         })
       ).environments[0]?.membershipState,
     ).toBe("active");
+  });
+
+  it("shows about how many active members, never the exact number (PS-ENV-016)", async () => {
+    const admin = await user();
+    const name = word();
+    const environmentId = await environment(admin, { name });
+    await indexed();
+    const members = [];
+    for (let joined = 1; joined < 10; joined += 1) {
+      members.push(await member(environmentId, admin));
+    }
+    const shown = async () =>
+      (
+        await executeQuery(domain, searchEnvironments, {
+          actor: await user(),
+          input: { q: name },
+        })
+      ).environments[0]?.members;
+
+    expect(await shown()).toEqual({ kind: "about", count: 10 });
+
+    await run(leaveEnvironment, members[0] as UserActor, { environmentId });
+    expect(await shown()).toEqual({ kind: "fewer_than", count: 10 });
   });
 
   it("never finds a hidden environment, not even for its members", async () => {

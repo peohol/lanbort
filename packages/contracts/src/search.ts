@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { membershipStateSchema } from "./environment";
+import { approximateMembersSchema, membershipStateSchema } from "./environment";
 import { completeNearSearch, geoAreaSchema, nearSearchShape } from "./geo";
 import {
   calendarDateSchema,
@@ -117,6 +117,8 @@ export const foundEnvironmentSchema = z.strictObject({
   description: z.string().nullable(),
   location: z.string().nullable(),
   area: geoAreaSchema.nullable(),
+  /** About how many active members it has (PS-ENV-016). */
+  members: approximateMembersSchema,
   /** The caller's own membership, if they have one. */
   membershipState: membershipStateSchema.exclude(["ended"]).nullable(),
 });

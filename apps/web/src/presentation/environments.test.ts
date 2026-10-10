@@ -2,6 +2,7 @@ import type { Environment, OwnMembership } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import {
   answerCommand,
+  describeMembers,
   describeTypeChange,
   givenAnswers,
   leavingConsequences,
@@ -266,5 +267,19 @@ describe("what members are told", () => {
   it("names the owner, who is also administrator, once", () => {
     expect(roleName(["owner", "administrator"])).toBe("Eier");
     expect(roleName([])).toBeNull();
+  });
+});
+
+describe("about how many members (PS-ENV-016)", () => {
+  it("says it in words, as the server rounded it", () => {
+    expect(describeMembers({ kind: "fewer_than", count: 10 })).toBe(
+      "under 10 medlemmer",
+    );
+    expect(describeMembers({ kind: "about", count: 140 })).toBe(
+      "ca. 140 medlemmer",
+    );
+    expect(describeMembers({ kind: "about", count: 1200 })).toBe(
+      "ca. 1\u00a0200 medlemmer",
+    );
   });
 });

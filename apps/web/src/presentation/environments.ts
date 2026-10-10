@@ -1,4 +1,5 @@
 import type {
+  ApproximateMembers,
   Environment,
   EnvironmentRole,
   EnvironmentType,
@@ -22,6 +23,15 @@ export const environmentTypeExplanations: Record<EnvironmentType, string> = {
   hidden:
     "Bare medlemmene vet at miljøet finnes. Man blir med når en administrator inviterer en.",
 };
+
+const memberCountFormat = new Intl.NumberFormat("nb-NO");
+
+/**
+ * PS-ENV-016: about how many members, as the server rounded it, such as
+ * «under 10 medlemmer» or «ca. 140 medlemmer».
+ */
+export const describeMembers = ({ kind, count }: ApproximateMembers) =>
+  `${kind === "fewer_than" ? "under" : "ca."} ${memberCountFormat.format(count)} medlemmer`;
 
 export const environmentRoleNames: Record<EnvironmentRole, string> = {
   owner: "Eier",
