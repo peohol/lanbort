@@ -10,9 +10,11 @@ if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
-  // Pages answer on the app's public address only (APP_URL, production), so
-  // sessions and links stay on one origin. APIs, and the scheduled jobs
-  // Vercel calls on its own address, answer on every address.
+  // Pages on Vercel's own addresses send people to the app's public address
+  // (APP_URL, production), so sessions and links stay on one origin. The
+  // domain's other names are redirected by Vercel itself, so this can never
+  // loop with them. APIs, and the scheduled jobs Vercel calls on its own
+  // address, answer on every address.
   async redirects() {
     if (!process.env.APP_URL) return [];
     const { host, origin } = new URL(process.env.APP_URL);
@@ -20,6 +22,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/:path((?!api/|_next/).*)",
+        has: [{ type: "host", value: ".*\\.vercel\\.app" }],
         missing: [{ type: "host", value: host.replaceAll(".", "\\.") }],
         destination: `${origin}/:path`,
         permanent: false,
