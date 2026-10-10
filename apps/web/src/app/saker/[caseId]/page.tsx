@@ -375,14 +375,13 @@ export default async function CasePage({
       </StatusCard>
       {withdrawal && <p className="quiet">{withdrawal}</p>}
       {asHandler && <Facts c={c} />}
-      {asSteward &&
-        (c.subjectUserId !== null || c.kind === "unavailability_report") && (
-          <Interventions
-            c={c}
-            interventions={interventions}
-            userId={account.userId}
-          />
-        )}
+      {asSteward && (
+        <Interventions
+          c={c}
+          interventions={interventions}
+          userId={account.userId}
+        />
+      )}
       {asHandler && (
         <TakenMeasures
           c={c}
