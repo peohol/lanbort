@@ -1,4 +1,4 @@
-import type { Loan, LoanActions } from "@lanbort/contracts";
+import type { Loan } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import {
   describeLoanStatus,
@@ -9,63 +9,12 @@ import {
   followingEnd,
   proposalDefaults,
 } from "./loan-status";
-
-const id = "00000000-0000-4000-8000-000000000001";
-const at = "2026-10-03T12:00:00.000Z";
-
-const noActions: LoanActions = {
-  handover: [],
-  return: [],
-  undoReturn: false,
-  amendment: [],
-  responsibility: [],
-  confirmControl: false,
-  proposeAmendment: null,
-  withdrawAmendment: false,
-  cancel: false,
-  offerResponsibility: [],
-  withdrawResponsibility: false,
-  requestMediation: false,
-};
-
-function loan(changes: Partial<Loan> = {}): Loan {
-  return {
-    id,
-    requestId: id,
-    origin: { kind: "direct" },
-    objectId: id,
-    images: [],
-    role: "borrower",
-    borrowerUserId: id,
-    responsibleLenderId: id,
-    status: "reserved",
-    ending: null,
-    period: { start: "2026-10-05", end: "2026-10-07" },
-    agreement: {
-      version: 2,
-      agreedAt: at,
-      objectVersion: 1,
-      title: "Tilhenger",
-      categoryId: "annet",
-      description: "",
-      loanTerms: null,
-      responsibilityDeclarationVersion: null,
-    },
-    amendment: null,
-    handover: { borrower: null, lender: null, answerDueAt: null },
-    return: { borrower: null, lender: null, pending: null },
-    responsibilityTransfer: null,
-    control: null,
-    approvedAt: at,
-    parties: {
-      borrower: { realName: "Ola", profileId: null, pictureId: null },
-      lender: { realName: "Kari", profileId: null, pictureId: null },
-    },
-    mediation: null,
-    actions: noActions,
-    ...changes,
-  };
-}
+import {
+  fixtureAt as at,
+  fixtureId as id,
+  loanFixture as loan,
+  noLoanActions as noActions,
+} from "./loan-fixtures";
 
 /** A day well before the example period, and its handover day. */
 const before = "2026-10-01";

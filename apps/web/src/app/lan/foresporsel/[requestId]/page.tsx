@@ -17,6 +17,7 @@ import {
 } from "@/presentation/dates";
 import {
   describeLoanRequest,
+  loanRequestTitle,
   requestProgress,
   responsibilityDeclaration,
 } from "@/presentation/loan-requests";
@@ -199,7 +200,6 @@ export default async function LoanRequestPage({
         }
       : { kind: "direct" as const };
   const declaration = request.responsibility;
-  const title = request.object?.title ?? "Tingen finnes ikke lenger";
 
   return (
     <main>
@@ -211,11 +211,7 @@ export default async function LoanRequestPage({
             href={(imageId) => loanRequestImageHref(request.id, imageId)}
           />
         }
-        title={
-          lender && request.object
-            ? `${title} til ${personName(request.borrower)}`
-            : title
-        }
+        title={loanRequestTitle(request)}
         back={{ href: loansHref, label: "Lån" }}
         context={<OriginTag origin={request.origin} />}
       />

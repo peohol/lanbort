@@ -376,7 +376,7 @@ test("an empty notification centre says what will come, and leads to the choices
   );
 });
 
-test("Lån shows further pages of a list in place", async ({
+test("Lån groups every open request by whom it waits on, beyond a page, and keeps the ended ones apart", async ({
   page,
   playwright,
   baseURL,
@@ -421,17 +421,28 @@ test("Lån shows further pages of a list in place", async ({
     expect(response.ok(), await response.text()).toBe(true);
   }
 
+  // Every one waits on the owner, also those past the first page.
   await page.goto("/lan?side=borrower");
-  const requests = page.getByRole("region", { name: "Forespørsler" });
-  await expect(requests.getByRole("listitem")).toHaveCount(loanRequestPageSize);
-  await requests.getByRole("link", { name: "Vis flere forespørsler" }).click();
-  await expect(page).toHaveURL(/side=borrower&foresporsler=2#/);
-  await expect(requests.getByRole("listitem")).toHaveCount(
+  const others = page.getByRole("region", { name: "Venter på andre" });
+  await expect(others.getByRole("listitem")).toHaveCount(
     loanRequestPageSize + 1,
   );
   await expect(
-    requests.getByRole("link", { name: "Vis flere forespørsler" }),
-  ).toHaveCount(0);
+    others.getByRole("link", { name: /^Tilhenger Venter på svar fra eieren/ }),
+  ).toHaveCount(loanRequestPageSize + 1);
+  await expect(page.getByRole("region", { name: "Venter på deg" })).toHaveCount(
+    0,
+  );
+
+  // The ended loans lie behind a row of their own, on the same side.
+  await page.getByRole("link", { name: "Avsluttede lån" }).click();
+  await expect(page).toHaveURL("/lan/avsluttede?side=borrower");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Avsluttede lån",
+  );
+  await expect(page.getByText("Ingen avsluttede lån.")).toBeVisible();
+  await page.getByRole("link", { name: "Lån", exact: true }).first().click();
+  await expect(page).toHaveURL(/\/lan(\?side=borrower)?$/);
 });
 
 test("on a phone the areas sit at the bottom, without sideways scrolling", async ({

@@ -83,6 +83,9 @@ test("a borrower follows a loan from its page, and nobody else sees it", async (
 
   // The Lån list leads to the loan's own page.
   await page.goto("/lan");
+  const underWay = page.getByRole("region", { name: "Pågår og kommende" });
+  await expect(underWay).toContainText("Stige fra Anna Berg");
+  await expect(underWay).toContainText("I dag henter du Stige");
   await page.getByRole("link", { name: "Stige" }).click();
   await expect(page).toHaveURL(`/lan/${loanId}`);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
