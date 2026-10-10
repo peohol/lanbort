@@ -59,6 +59,7 @@ import {
 import styles from "../_parts/loan.module.css";
 import { ConditionReports, ReportCondition } from "../_parts/condition";
 import { OriginTag } from "../_parts/origin-tag";
+import { PeriodFields } from "../_parts/period-fields";
 import { Party } from "../_parts/party";
 import { writeHref } from "../_parts/write-href";
 import { Progress } from "../_parts/progress";
@@ -97,7 +98,6 @@ function ProposeAmendment({ loan }: { loan: Loan }) {
 
   const today = calendarDay();
   const help = `Ingenting endres før ${otherParty(loan)} godtar forslaget.`;
-  const endMin = mode === "period" ? today : addDays(today, 1);
   const shown = proposalDefaults(loan.period, mode, today);
 
   return (
@@ -124,29 +124,26 @@ function ProposeAmendment({ loan }: { loan: Loan }) {
       >
         <p className="help">{help}</p>
         {mode === "period" ? (
-          <Field id="ny-start" label="Overlevering">
-            <input
-              id="ny-start"
-              name="period.start"
-              type="date"
-              required
-              min={today}
-              defaultValue={shown.start}
-            />
-          </Field>
+          <PeriodFields defaults={shown} min={today} />
         ) : (
-          <input type="hidden" name="period.start" value={loan.period.start} />
+          <>
+            <input
+              type="hidden"
+              name="period.start"
+              value={loan.period.start}
+            />
+            <Field id="ny-slutt" label="Leveres tilbake">
+              <input
+                id="ny-slutt"
+                name="period.end"
+                type="date"
+                required
+                min={addDays(today, 1)}
+                defaultValue={shown.end}
+              />
+            </Field>
+          </>
         )}
-        <Field id="ny-slutt" label="Leveres tilbake">
-          <input
-            id="ny-slutt"
-            name="period.end"
-            type="date"
-            required
-            min={endMin}
-            defaultValue={shown.end}
-          />
-        </Field>
       </CommandForm>
     </details>
   );

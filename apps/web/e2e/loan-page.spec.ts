@@ -199,7 +199,14 @@ test("a borrower changes, cancels and reviews a loan on its page (WP-87)", async
   // A new return day is only a proposal until Anna accepts it.
   await more();
   await moreActions.getByText("Foreslå ny periode", { exact: true }).click();
-  await moreActions.getByLabel("Leveres tilbake").fill(after(today(), 3));
+  // A later handover day takes the return day along, so the period holds.
+  const end = moreActions.getByLabel("Leveres tilbake");
+  const agreedEnd = await end.inputValue();
+  await moreActions.getByLabel("Overlevering").fill(after(today(), 10));
+  await expect(end).toHaveValue(after(agreedEnd, 10));
+  await expect(end).toHaveAttribute("min", after(today(), 10));
+  await moreActions.getByLabel("Overlevering").fill(today());
+  await end.fill(after(today(), 3));
   await moreActions.getByRole("button", { name: "Send forslaget" }).click();
   await expect(status).toContainText("Du har foreslått ny returdag");
   await expect(status).toContainText("Venter på Anna Berg");

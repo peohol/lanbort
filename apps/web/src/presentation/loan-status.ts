@@ -809,3 +809,17 @@ export function proposalDefaults(
       }
     : period;
 }
+
+/**
+ * PS-LOAN-010: the return day that follows a new handover day, so the loan
+ * keeps its length and the period stays whole (end not before start).
+ * Nothing moves while the new day is not a date.
+ */
+export function followingEnd(
+  period: { start: string; end: string },
+  start: string,
+): string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(start)
+    ? addDays(start, daysBetween(period.start, period.end))
+    : period.end;
+}

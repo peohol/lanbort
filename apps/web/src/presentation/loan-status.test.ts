@@ -6,6 +6,7 @@ import {
   loanSteps,
   loanTitle,
   personName,
+  followingEnd,
   proposalDefaults,
 } from "./loan-status";
 
@@ -579,6 +580,12 @@ describe("where a proposal starts from (PS-LOAN-010)", () => {
       start: "2026-10-09",
       end: "2026-10-11",
     });
+  });
+
+  it("moves the return day with a new handover day, keeping the length", () => {
+    expect(followingEnd(period, "2026-10-20")).toBe("2026-10-22");
+    expect(followingEnd(period, "2026-10-04")).toBe("2026-10-06");
+    expect(followingEnd(period, "")).toBe(period.end);
   });
 
   it("moves only the return day after the handover, to tomorrow at the earliest", () => {
