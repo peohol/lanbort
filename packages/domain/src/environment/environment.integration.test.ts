@@ -449,7 +449,10 @@ describe("closed environments", () => {
         restrict: true,
       }),
     ).toEqual({ membershipId, state: "ended" });
-    expect((await read(applicant, environmentId)).membership).toBeNull();
+    expect(await read(applicant, environmentId)).toMatchObject({
+      membership: null,
+      applicationRejected: true,
+    });
     // The ended application leaves the bar, named so it can be lifted.
     const barred = await memberships(owner, environmentId);
     expect(barred.restrictions).toEqual([
@@ -475,6 +478,22 @@ describe("closed environments", () => {
     ).rejects.toMatchObject({ code: "not_found" });
     expect((await join(applicant, environmentId)).state).toBe("pending");
     expect((await memberships(owner, environmentId)).restrictions).toEqual([]);
+    expect((await read(applicant, environmentId)).applicationRejected).toBe(
+      false,
+    );
+  });
+
+  it("tells the applicant a rejection the same way whether or not it bars them (PS-ENV-017)", async () => {
+    const { owner, applicant, environmentId, membershipId } =
+      await closedWithApplicant();
+
+    await output(rejectMembership, owner, { environmentId, membershipId });
+
+    expect(await read(applicant, environmentId)).toMatchObject({
+      membership: null,
+      applicationRejected: true,
+    });
+    expect((await read(owner, environmentId)).applicationRejected).toBe(false);
   });
 
   it("lets the applicant withdraw", async () => {
@@ -483,6 +502,9 @@ describe("closed environments", () => {
 
     await output(leaveEnvironment, applicant, { environmentId });
 
+    expect((await read(applicant, environmentId)).applicationRejected).toBe(
+      false,
+    );
     expect(await membershipEvents(membershipId)).toContainEqual({
       event_type: "environment_membership.ended",
       payload: {

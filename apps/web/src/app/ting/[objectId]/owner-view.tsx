@@ -8,6 +8,7 @@ import {
   type ObjectCategory,
   type ObjectHistory,
   type ObjectPublication,
+  type ObjectQuestion,
   type OwnAccount,
   type OwnObject,
   type SocialContact,
@@ -20,6 +21,7 @@ import {
   listLoanRequests,
   listLoans,
   listObjectPublications,
+  listObjectQuestions,
   listOwnEnvironments,
   loanHomeItem,
   loanRequestHomeItem,
@@ -68,8 +70,10 @@ import { describeLoanRequest } from "@/presentation/loan-requests";
 import { formatDesiredPeriod, loanStatusLabels } from "@/presentation/loans";
 import { ownImageHref } from "@/presentation/object-images";
 import { availabilityLine, categoryLabel } from "@/presentation/objects";
+import { chatContactLink } from "@/server/chat-contact";
 import { pageQuery } from "@/server/session";
 import styles from "./owner-view.module.css";
+import { QuestionList, questionsId } from "./questions";
 
 /*
  * Links to an environment's page (WP-84) are not prefetched: that page is
@@ -403,6 +407,83 @@ function About({
 /** The words for the owners, one or several (UX-PRIV-003). */
 const onlyOwners = (owned: Owned) =>
   shared(owned) ? "Bare synlig for eierne" : "Bare synlig for deg";
+
+/**
+ * The members' questions about the thing in each environment it is shown
+ * in (PS-OBJ-015), which its owners are told about and answer as «Eieren».
+ * Each question also opens the private conversation with whoever asked,
+ * where the server allows it (PS-COM-006). Left out while nobody has asked.
+ */
+async function OwnerQuestions({
+  owned,
+  publications,
+}: {
+  owned: Owned;
+  publications: readonly ObjectPublication[];
+}) {
+  const asked = (
+    await Promise.all(
+      publications.flatMap(({ status, environment }) =>
+        status === "active" && environment
+          ? [
+              collectPages(
+                (cursor) =>
+                  pageQuery(listObjectQuestions, {
+                    environmentId: environment.id,
+                    objectId: owned.object.id,
+                    cursor,
+                  }),
+                (page) => page.questions,
+              ).then(({ items }) => ({ environment, questions: items })),
+            ]
+          : [],
+      ),
+    )
+  ).filter(({ questions }) => questions.length > 0);
+
+  if (asked.length === 0) return null;
+
+  const contacts = new Map(
+    (
+      await Promise.all(
+        asked
+          .flatMap(({ questions }) => questions)
+          .map(async ({ id, askedByUserId }: ObjectQuestion) => {
+            const link =
+              askedByUserId && askedByUserId !== owned.me
+                ? await chatContactLink(askedByUserId, {
+                    kind: "object_question",
+                    questionId: id,
+                  })
+                : null;
+
+            return link ? [[id, link] as const] : [];
+          }),
+      )
+    ).flat(),
+  );
+
+  return (
+    <section aria-labelledby={questionsId}>
+      <h2 id={questionsId} tabIndex={-1}>
+        Spørsmål og svar
+      </h2>
+      {asked.map(({ environment, questions }) => (
+        <section
+          key={environment.id}
+          aria-labelledby={`${questionsId}-${environment.id}`}
+        >
+          <h3 id={`${questionsId}-${environment.id}`}>{environment.name}</h3>
+          <QuestionList
+            userId={owned.me}
+            questions={questions}
+            contacts={contacts}
+          />
+        </section>
+      ))}
+    </section>
+  );
+}
 
 /**
  * Where the thing is shown, one place a row (PS-OBJ-006, PS-OBJ-017,
@@ -965,6 +1046,9 @@ export async function OwnerView({
         hidden={hidden}
       />
       <Loans owned={owned} entries={entries} />
+      {published && (
+        <OwnerQuestions owned={owned} publications={published.publications} />
+      )}
       {published && (
         <WhereShownSection
           owned={owned}

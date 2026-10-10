@@ -184,7 +184,7 @@ export function Members({
   return (
     <section aria-labelledby="medlemmer">
       <h2 id="medlemmer">
-        Medlemmer <span className="count">({members.length})</span>
+        Andre medlemmer <span className="count">({members.length})</span>
       </h2>
       {members.length === 0 ? (
         <p className="quiet">Det er ingen andre medlemmer her ennå.</p>
@@ -196,7 +196,11 @@ export function Members({
             return (
               <li key={member.userId} className="entry">
                 <PersonName person={member} />
-                {role && <Tag>{role}</Tag>}
+                {role && (
+                  <span>
+                    <Tag>{role}</Tag>
+                  </span>
+                )}
               </li>
             );
           })}

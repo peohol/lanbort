@@ -127,6 +127,27 @@ function presentContinuity(
 }
 
 /**
+ * Whether the user's latest membership here is an application that was
+ * rejected (PS-ENV-017). A new application, or an invitation, comes after
+ * it and ends this.
+ */
+async function lastApplicationRejected(
+  db: Parameters<typeof findContinuity>[0],
+  environmentId: string,
+  userId: string,
+): Promise<boolean> {
+  const latest = await db
+    .selectFrom("app.environment_memberships")
+    .select("end_reason")
+    .where("environment_id", "=", environmentId)
+    .where("user_id", "=", userId)
+    .orderBy("created_at", "desc")
+    .executeTakeFirst();
+
+  return latest?.end_reason === "application_rejected";
+}
+
+/**
  * One environment, as far as the caller may see it (PS-ENV-001): the public
  * details and requirements of an open or closed environment, never its
  * members or administrators; a hidden one only for its own members and
@@ -176,6 +197,10 @@ export const getEnvironment = defineQuery({
                 await loadApproximateMembers(db, [input.environmentId], now)
               ).get(input.environmentId) ?? null),
         answers: own ? ((await answersOf(db, [own.id])).get(own.id) ?? []) : [],
+        applicationRejected:
+          !own && userId !== null
+            ? await lastApplicationRejected(db, input.environmentId, userId)
+            : false,
         continuity,
         typeChange:
           own && access.viewer.membership?.state !== "pending"
@@ -216,6 +241,7 @@ export const getEnvironment = defineQuery({
             now,
           )
         : null,
+      applicationRejected: resource.applicationRejected,
       roles: [...viewer.roles],
       continuity: continuity
         ? presentContinuity(
