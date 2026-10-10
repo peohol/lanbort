@@ -38,17 +38,19 @@ export const describeAvailability = (object: Availability, today: string) =>
 
 /**
  * When the thing can be borrowed, said once: its status, and its periods
- * only when there is more than one to choose from.
+ * unless the status already says it all (one period with no end).
  */
 export function requestAvailability(
   object: Availability,
   today: string,
 ): string {
+  const status = `${describeAvailability(object, today)}.`;
   const periods = object.effectiveAvailability;
+  const [only] = periods;
 
-  return periods.length > 1
-    ? `${describeAvailability(object, today)}. Ledige perioder: ${periods.map(formatInterval).join(", ")}.`
-    : `${describeAvailability(object, today)}.`;
+  if (!only || (periods.length === 1 && only.end === null)) return status;
+  const label = periods.length > 1 ? "Ledige perioder" : "Ledig periode";
+  return `${status} ${label}: ${periods.map(formatInterval).join(", ")}.`;
 }
 
 /** One availability interval, open or bounded (PS-OBJ-003). */

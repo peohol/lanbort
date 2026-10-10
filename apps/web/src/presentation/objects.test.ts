@@ -53,6 +53,9 @@ describe("a thing in the user's words", () => {
         "2026-10-04",
       ),
     ).toBe("Ledig fra mandag 12. oktober.");
+    expect(requestAvailability(found({}), "2026-10-04")).toBe(
+      "Ledig nå. Ledig periode: søndag 4. oktober – tirsdag 20. oktober.",
+    );
     expect(
       requestAvailability(
         found({
