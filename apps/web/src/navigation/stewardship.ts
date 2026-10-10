@@ -85,6 +85,9 @@ export const interventionSlugs = {
   reinstate: "gjeninnsett",
   "start-closure": "avslutt",
   "complete-closure": "fullfor-avslutning",
+  "retire-duplicate": "duplikat",
+  "move-object": "flytt-ting",
+  "link-person": "koble",
   "false-identity": "falsk-identitet",
   "end-roles": "avslutt-roller",
 } as const satisfies Record<InterventionFlowKey, string>;

@@ -9,14 +9,10 @@ import {
   interventionFlows,
   interventionLabels,
   interventionStanding,
-  type subjectOf,
 } from "@/presentation/interventions";
 import { StewardRole } from "../../../../forvaltning/steward-role";
 import { loadInterventionCase } from "../load";
-import {
-  type InterventionVariant,
-  InterventionFlow,
-} from "./intervention-flow";
+import { InterventionFlow } from "./intervention-flow";
 
 export const metadata: Metadata = { title: "Inngrep – Lånbort" };
 
@@ -26,44 +22,15 @@ const recorded = {
   reinstate: "account_reinstated",
   "start-closure": "account_closure_started",
   "complete-closure": "account_closure_completed",
+  "retire-duplicate": "account_retired_as_duplicate",
+  "move-object": "object_moved_from_duplicate",
+  "link-person": "accounts_linked_as_same_person",
   "false-identity": "false_identity_recorded",
   "end-roles": "environment_roles_ended",
 } as const satisfies Record<
   InterventionFlowKey,
   keyof typeof interventionLabels
 >;
-
-/** The ways an intervention can go: one, or one per environment with roles. */
-function variantsOf(
-  key: InterventionFlowKey,
-  subject: ReturnType<typeof subjectOf>,
-): InterventionVariant[] {
-  const flow = interventionFlows[key];
-
-  if (key !== "end-roles") {
-    return [
-      {
-        environmentId: null,
-        label: flow.label,
-        detail: flow.short,
-        title: flow.title(subject, null),
-        rows: flow.consequences(subject, null),
-        whom: subject.name,
-        done: flow.done(subject, null),
-      },
-    ];
-  }
-
-  return subject.account.roles.map((role) => ({
-    environmentId: role.environmentId,
-    label: role.name,
-    detail: `${subject.first} er ${role.owner ? "eier og administrator" : "administrator"}`,
-    title: flow.title(subject, role.name),
-    rows: flow.consequences(subject, role),
-    whom: `${subject.name} i ${role.name}`,
-    done: flow.done(subject, role.name),
-  }));
-}
 
 /**
  * Steps 2–4 of one intervention from the case (PS-ADM-014–015,
@@ -101,14 +68,10 @@ export default async function InterventionPage({
       <StewardRole steward={steward} />
       <InterventionFlow
         path={`/api/cases/${caseId}/interventions/${key}`}
-        userId={subject.account.userId}
+        flowKey={key}
+        subject={subject}
         record={interventionLabels[recorded[key]]}
         caseTitle={title}
-        icon={flow.icon}
-        danger={flow.danger}
-        verb={flow.verb(subject)}
-        variants={variantsOf(key, subject)}
-        choiceLabel={key === "end-roles" ? "Miljøet" : null}
         freshUntil={steward.freshUntil}
         back={interventionHref(caseId)}
         after={caseHref(caseId)}

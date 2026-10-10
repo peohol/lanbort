@@ -124,8 +124,10 @@ export const caseInterventionsQuerySchema = z.strictObject({
 
 /**
  * The account a platform case is about, as its handlers decide what to do
- * with it: its status, the roles it holds in environments (PS-ADM-015) and
- * what still binds it before a closure can be completed (PS-ADM-004).
+ * with it: its status, the roles it holds in environments (PS-ADM-015),
+ * what still binds it before a closure can be completed (PS-ADM-004) and,
+ * once it is retired as a duplicate, the account that continues and the
+ * things that have not moved to it yet (PS-ADM-009).
  */
 export const caseSubjectAccountSchema = z.strictObject({
   userId: z.uuid(),
@@ -138,6 +140,16 @@ export const caseSubjectAccountSchema = z.strictObject({
     }),
   ),
   bindings: z.array(accountBindingSchema),
+  duplicateOf: casePersonSchema.nullable(),
+  /** Empty unless the account is retired as a duplicate. */
+  objects: z.array(
+    z.strictObject({
+      objectId: objectIdSchema,
+      title: z.string(),
+      /** Owners besides the duplicate; only things without any can move. */
+      coOwners: z.array(casePersonSchema),
+    }),
+  ),
 });
 
 /**

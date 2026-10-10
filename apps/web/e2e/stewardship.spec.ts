@@ -17,6 +17,7 @@ import {
   postCommand,
   registerThroughApi,
   signInThroughApi,
+  today,
 } from "./helpers";
 
 /**
@@ -102,6 +103,8 @@ async function device(context: BrowserContext, page: Page) {
 test("a platform steward sets up passkeys, confirms a session and removes one", async ({
   browser,
 }) => {
+  // The whole steward journey, from the first passkey to a moved thing.
+  test.setTimeout(120_000);
   expect(appUrl, "APP_URL must be http://localhost:<port>").toMatch(
     /^http:\/\/localhost:\d+$/,
   );
@@ -275,10 +278,75 @@ test("a platform steward sets up passkeys, confirms a session and removes one", 
   await expect(
     page.getByText("Flere har fortalt om trusler i samtaler."),
   ).toBeVisible();
+
+  // Tor turns out to be a second account of Tora's: the steward retires it
+  // as a duplicate, found by Tora's address, and moves Tor's drill to her
+  // (PS-ADM-009, OD-0055).
+  const toraEmail = newEmail();
+  const tora = await signedIn(browser, toraEmail, true, "Tora Nyland");
+  await postCommand(tor!.request, "/api/objects", {
+    title: "Drill",
+    categoryId: "annet",
+    description: "Slagdrill med to batterier.",
+    availability: [{ start: today(), end: null }],
+  });
+  await page.getByRole("link", { name: "Gjør et inngrep" }).click();
   await expect(
-    page.getByRole("link", { name: "Gjør et inngrep" }),
+    page.getByRole("heading", { name: "Duplikat og identitet" }),
   ).toBeVisible();
-  await Promise.all([ida!.close(), tor!.close()]);
+  await expect(page.getByRole("link", { name: /Flytt en ting/ })).toHaveCount(
+    0,
+  );
+  await page.getByRole("link", { name: /Avvikle som duplikat/ }).click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Avvikle Tor Rapportert som duplikat?",
+    }),
+  ).toBeVisible();
+  const toNext = page.getByRole("button", { name: "Neste: begrunnelse" });
+  await expect(toNext).toBeDisabled();
+  await lookup.fill(torEmail);
+  await page.getByRole("button", { name: "Finn" }).click();
+  await expect(
+    page.getByText("Det er kontoen saken gjelder. Finn den andre kontoen."),
+  ).toBeVisible();
+  await lookup.fill(toraEmail);
+  await page.getByRole("button", { name: "Finn" }).click();
+  await expect(page.getByText("Tora Nyland", { exact: true })).toBeVisible();
+  await expect(page.getByRole("main")).toContainText(
+    "Tora Nyland fortsetter som personens konto.",
+  );
+  expect(await axeViolations(page)).toEqual([]);
+  await toNext.click();
+  await page
+    .getByLabel("Begrunnelse")
+    .fill("Samme person, bekreftet med legitimasjon.");
+  await page.getByRole("button", { name: "Neste: se over" }).click();
+  await page
+    .getByRole("button", { name: "Avvikle Tor Rapportert som duplikat" })
+    .click();
+  await expect(
+    page.getByText("Tor Rapportert · konto under kontrollert avslutning"),
+  ).toBeVisible();
+  await expect(recorded).toContainText(
+    "Tor Rapportert, videreføres som Tora Nyland",
+  );
+
+  await page.getByRole("link", { name: "Gjør et inngrep" }).click();
+  await expect(
+    page.getByRole("link", { name: /Avvikle som duplikat/ }),
+  ).toHaveCount(0);
+  await page.getByRole("link", { name: /Flytt en ting/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Flytte Drill til Tora Nyland?" }),
+  ).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+  await toNext.click();
+  await page.getByLabel("Begrunnelse").fill("Drillen er Toras egen.");
+  await page.getByRole("button", { name: "Neste: se over" }).click();
+  await page.getByRole("button", { name: "Flytt Drill" }).click();
+  await expect(recorded).toContainText("«Drill» fra Tor Rapportert");
+  await Promise.all([ida!.close(), tor!.close(), tora.close()]);
 
   // A new session must be confirmed first, here on the phone.
   const second = await signedIn(browser, email, false);

@@ -160,6 +160,8 @@ describe("interventions from their case (PS-ADM-014–015)", () => {
       status: "suspended",
       roles: [],
       bindings: [],
+      duplicateOf: null,
+      objects: [],
     });
     expect(items).toEqual([
       expect.objectContaining({
