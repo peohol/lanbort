@@ -18,7 +18,7 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm format:check && pnpm build",
     "db:start": "supabase start -x realtime,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor",
     "db:stop": "supabase stop --no-backup",
-    "db:reset": "supabase db reset --local --no-seed",
+    "db:reset": "supabase db reset --local --no-seed && scripts/dev/app-role-login.sh",
     "db:test": "supabase test db --local",
     "db:types": "pnpm --filter @lanbort/database types:generate",
     "db:types:check": "pnpm --filter @lanbort/database types:check",

@@ -75,6 +75,10 @@ jobs:
         run: |
           ref="$(scripts/ops/link-production.sh)"
           echo "PROJECT_REF=$ref" >> "$GITHUB_ENV"
+          # The app's DATABASE_URL goes through this pooler (no password here).
+          if [[ -f supabase/.temp/pooler-url ]]; then
+            echo "Pooler: $(sed 's|^.*@||; s|/.*$||' supabase/.temp/pooler-url)"
+          fi
 
       - name: Run ${{ inputs.action }}
         env:
