@@ -5,6 +5,7 @@ import type {
   LoanRequestRole,
 } from "@lanbort/contracts";
 import type { Tone } from "@/components/tag";
+import { calendarDay } from "./dates";
 import { type LoanProgress, loanStages, personName } from "./loan-status";
 
 /**
@@ -75,18 +76,48 @@ export interface LoanRequestStatusText {
 }
 
 /**
+ * Whether the time asked for has begun or is over, so no approval can give
+ * it whole: approval reserves only from today (PS-LOAN-006).
+ */
+export function requestedTimeHasPassed(
+  request: Pick<LoanRequest, "start" | "end">,
+  today = calendarDay(),
+): boolean {
+  return (
+    (request.start.kind === "date" && request.start.date < today) ||
+    (request.end.kind === "date" && request.end.date < today)
+  );
+}
+
+/**
  * The request's situation for the one who reads it (UX-P04, UX-INT-004):
  * what it waits for, and from whom. The owners are not named to the
- * borrower before an answer; the lender sees who asks.
+ * borrower before an answer; the lender sees who asks. A request whose
+ * time has passed waits for nothing that can come, so it says what each
+ * side can do instead.
  */
 export function describeLoanRequest(
   request: LoanRequest,
+  today = calendarDay(),
 ): LoanRequestStatusText {
   const borrower = request.role === "borrower";
   const name = personName(request.borrower);
 
   switch (request.status) {
     case "requested":
+      if (requestedTimeHasPassed(request, today))
+        return borrower
+          ? {
+              label: "Tiden har passert",
+              text: "Tiden du ba om har begynt, så eieren kan ikke godkjenne den",
+              tone: "warning",
+              body: "Trekk forespørselen og be om en ny tid hvis du fortsatt vil låne.",
+            }
+          : {
+              label: "Venter på deg",
+              text: `Tiden ${name} ba om har begynt, så den kan ikke godkjennes. Avslå forespørselen`,
+              tone: "warning",
+            };
       if (borrower)
         return {
           label: "Venter på eieren",

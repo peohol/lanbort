@@ -21,7 +21,12 @@ import {
 } from "../environment/role-commands";
 import { approveLoanRequest } from "../loans/approval";
 import { declineLoanRequest, withdrawLoanRequest } from "../loans/commands";
-import { inviteCoOwner, withdrawCoOwnerInvitation } from "../objects/co-owners";
+import {
+  acceptCoOwnerInvitation,
+  inviteCoOwner,
+  leaveObject,
+  withdrawCoOwnerInvitation,
+} from "../objects/co-owners";
 import { attachObjectImage } from "../objects/images";
 import { notificationGenerator } from "../notifications/generator";
 import { ConsumerRegistry } from "../outbox/consumer";
@@ -338,6 +343,29 @@ describe("invitations", () => {
     expect(await latest(invited, "object.co_owner_invited")).toMatchObject({
       about: { thing: null, picture: null },
       standing: "lapsed",
+    });
+  });
+
+  it("to co-own an object name it while co-owned, and not after leaving it", async () => {
+    const admin = await user();
+    const invited = await user();
+    const objectId = await create(admin);
+    const { invitationId } = await run(inviteCoOwner, admin, {
+      objectId,
+      userId: invited.userId,
+    });
+    const offered = await latest(invited, "object.co_owner_invited");
+    expect(offered.about.thing).toEqual(expect.any(String));
+    await run(acceptCoOwnerInvitation, invited, { invitationId });
+    expect(await latest(invited, "object.co_owner_invited")).toMatchObject({
+      about: { thing: offered.about.thing },
+      standing: "accepted",
+    });
+
+    await run(leaveObject, invited, { objectId });
+    expect(await latest(invited, "object.co_owner_invited")).toMatchObject({
+      about: { thing: null },
+      standing: "accepted",
     });
   });
 });

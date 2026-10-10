@@ -45,51 +45,91 @@ type Outcome = "allow" | DenialReason;
 
 /**
  * The situations every pair policy is checked against. `expected` gives the
- * outcome for the three kinds of pair policy: sending a request, acting on an
- * existing relation (or reading it), and blocking.
+ * outcome for the four kinds of pair policy: sending a request, acting on an
+ * existing relation (or reading it), only ending one, and blocking.
  */
 const situations: readonly {
   name: string;
   actor?: PolicyCase<SocialPair, void>["actor"];
   resource: SocialPair;
-  expected: { request: Outcome; relation: Outcome; block: Outcome };
+  expected: {
+    request: Outcome;
+    relation: Outcome;
+    ending: Outcome;
+    block: Outcome;
+  };
 }[] = [
   {
     name: "a registered user the actor can reach",
     resource: pair(),
-    expected: { request: "allow", relation: "allow", block: "allow" },
+    expected: {
+      request: "allow",
+      relation: "allow",
+      ending: "allow",
+      block: "allow",
+    },
   },
   {
     name: "a pending request between them",
     resource: pair({
       openFriendship: { id: "f", status: "pending", requesterId: other },
     }),
-    expected: { request: "allow", relation: "allow", block: "allow" },
+    expected: {
+      request: "allow",
+      relation: "allow",
+      ending: "allow",
+      block: "allow",
+    },
   },
   {
     name: "a user who blocks the actor looks like a missing one",
     resource: pair({ blockedByOther: true }),
-    expected: { request: "not_found", relation: "not_found", block: "allow" },
+    expected: {
+      request: "not_found",
+      relation: "not_found",
+      ending: "not_found",
+      block: "allow",
+    },
   },
   {
     name: "a user the actor blocks stays visible to the actor",
     resource: pair({ blockedByActor: true }),
-    expected: { request: "forbidden", relation: "allow", block: "allow" },
+    expected: {
+      request: "forbidden",
+      relation: "allow",
+      ending: "allow",
+      block: "allow",
+    },
   },
   {
     name: "a declined request the actor has to wait out (PS-USR-012)",
     resource: pair({ requestHeldBack: true }),
-    expected: { request: "forbidden", relation: "allow", block: "allow" },
+    expected: {
+      request: "forbidden",
+      relation: "allow",
+      ending: "allow",
+      block: "allow",
+    },
   },
   {
     name: "blocks in both directions",
     resource: pair({ blockedByActor: true, blockedByOther: true }),
-    expected: { request: "forbidden", relation: "allow", block: "allow" },
+    expected: {
+      request: "forbidden",
+      relation: "allow",
+      ending: "allow",
+      block: "allow",
+    },
   },
   {
-    name: "an account that has not completed registration",
+    name: "an account that is not active, or not registered yet",
     resource: pair({ otherActive: false }),
-    expected: { request: "not_found", relation: "not_found", block: "allow" },
+    expected: {
+      request: "not_found",
+      relation: "not_found",
+      ending: "allow",
+      block: "allow",
+    },
   },
   {
     name: "a pair the actor is not part of (manipulated input)",
@@ -97,6 +137,7 @@ const situations: readonly {
     expected: {
       request: "not_found",
       relation: "not_found",
+      ending: "not_found",
       block: "not_found",
     },
   },
@@ -107,6 +148,7 @@ const situations: readonly {
     expected: {
       request: "registration_required",
       relation: "registration_required",
+      ending: "registration_required",
       block: "registration_required",
     },
   },
@@ -117,6 +159,7 @@ const situations: readonly {
     expected: {
       request: "unauthenticated",
       relation: "unauthenticated",
+      ending: "unauthenticated",
       block: "unauthenticated",
     },
   },
@@ -127,6 +170,7 @@ const situations: readonly {
     expected: {
       request: "unauthenticated",
       relation: "unauthenticated",
+      ending: "unauthenticated",
       block: "unauthenticated",
     },
   },
@@ -150,13 +194,14 @@ function matrixFor(
 
 export const socialMatrices = [
   matrixFor(sendFriendRequestPolicy, "request"),
+  ...[acceptFriendRequestPolicy, readSocialRelationPolicy].map((policy) =>
+    matrixFor(policy, "relation"),
+  ),
   ...[
-    acceptFriendRequestPolicy,
     declineFriendRequestPolicy,
     withdrawFriendRequestPolicy,
     removeFriendPolicy,
-    readSocialRelationPolicy,
-  ].map((policy) => matrixFor(policy, "relation")),
+  ].map((policy) => matrixFor(policy, "ending")),
   ...[blockUserPolicy, liftUserBlockPolicy].map((policy) =>
     matrixFor(policy, "block"),
   ),

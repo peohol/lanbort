@@ -23,7 +23,7 @@ import { realNames } from "../account/store";
 import type { Actor } from "../actor";
 import { defineQuery } from "../commands/query";
 import { canSeeEnvironment } from "../environment/policies";
-import { findEnvironment, loadEnvironmentAccess } from "../environment/store";
+import { loadEnvironmentAccess } from "../environment/store";
 import { calendarDate, toApiInterval } from "../objects/availability";
 import {
   currentImages,
@@ -217,27 +217,28 @@ async function visibleEnvironment(
 }
 
 /**
- * The environment a request came through, as the viewer may see it. A
- * lender reads an open request only as an active member there
- * (`visibleToLender`). Anyone else, the borrower who made it and the
- * parties of the loan it became, sees it as long as they can see the
- * environment at all (PS-ENV-001): a hidden one only while a member.
+ * The environment a request came through, as the viewer may see it now:
+ * as long as they can see the environment at all (PS-ENV-001), a hidden
+ * one only while a member. That holds for its lender too, who may be a
+ * co-owner who took over the loan without ever being a member, or have
+ * left since (PS-NFR-002).
  */
 async function describeOrigin(
   db: Db,
   actor: Actor,
   request: LoanRequestRecord,
-  as: "request_lender" | "other",
   now: Date,
 ): Promise<LoanOrigin> {
   if (request.origin === "direct" || request.environmentId === null) {
     return { kind: "direct" };
   }
 
-  const environment =
-    as === "request_lender"
-      ? await findEnvironment(db, request.environmentId)
-      : await visibleEnvironment(db, actor, request.environmentId, now);
+  const environment = await visibleEnvironment(
+    db,
+    actor,
+    request.environmentId,
+    now,
+  );
 
   return {
     kind: "environment",
@@ -349,13 +350,7 @@ async function describe(
       realName: names.get(request.borrowerUserId) ?? null,
       ...linkIn(links, request.borrowerUserId),
     },
-    origin: await describeOrigin(
-      db,
-      actor,
-      request,
-      role === "lender" ? "request_lender" : "other",
-      now,
-    ),
+    origin: await describeOrigin(db, actor, request, now),
     start: request.start,
     end: request.end,
     message: request.message,
@@ -626,7 +621,7 @@ async function loadLoanDetail(
   const images = await currentImages(db, loan.objectId);
   const request = await findLoanRequest(db, loan.requestId);
   const origin: LoanOrigin = request
-    ? await describeOrigin(db, viewer, request, "other", now)
+    ? await describeOrigin(db, viewer, request, now)
     : { kind: "direct" };
 
   return {
@@ -847,6 +842,9 @@ function presentLoan(actor: Actor, resource: LoanDetail, now: Date): Loan {
       id: resource.amendment.id,
       period: toApiPeriod(resource.amendment.period),
       proposedBy: resource.amendment.proposerRole,
+      proposedByYou:
+        actor.kind === "user" &&
+        resource.amendment.proposedByUserId === actor.userId,
       proposedAt: resource.amendment.proposedAt.toISOString(),
     },
     handover: {

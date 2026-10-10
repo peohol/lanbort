@@ -101,6 +101,7 @@ describe("the loan's situation (UX-INT-004, KF7)", () => {
       id,
       period: { start: "2026-10-05", end: "2026-10-08" },
       proposedBy: "borrower" as const,
+      proposedByYou: true,
       proposedAt: at,
     };
 
@@ -108,6 +109,14 @@ describe("the loan's situation (UX-INT-004, KF7)", () => {
       label: "Venter på Kari",
       headline: "Du har foreslått ny returdag: torsdag 8. oktober",
     });
+    // A new lender takes over the side's proposal, but did not make it.
+    expect(
+      headline({
+        role: "lender",
+        status: "active",
+        amendment: { ...amendment, proposedBy: "lender", proposedByYou: false },
+      }),
+    ).toBe("Det er foreslått ny returdag: torsdag 8. oktober");
     expect(
       situation({
         role: "lender",
@@ -122,6 +131,42 @@ describe("the loan's situation (UX-INT-004, KF7)", () => {
       tone: "attention",
       headline: expect.stringMatching(/^Ola foreslår ny periode: tirsdag 6/),
     });
+  });
+
+  it("keeps the handover deadline in sight while a proposal waits", () => {
+    const handover = {
+      borrower: null,
+      lender: { outcome: "not_handed_over", reportedAt: at },
+      answerDueAt: "2026-10-09T10:00:00.000Z",
+    } as const;
+    const amendment = {
+      id,
+      period: { start: "2026-10-07", end: "2026-10-09" },
+      proposedBy: "borrower" as const,
+      proposedByYou: true,
+      proposedAt: at,
+    };
+
+    expect(
+      situation({ status: "awaiting_handover", handover, amendment }).body,
+    ).toEqual([
+      expect.stringMatching(/^Ingenting endres før Kari godtar/),
+      expect.stringMatching(
+        /^Svar innen .+ på at overleveringen ikke skjedde\. Uten svar avsluttes lånet som ikke gjennomført\.$/,
+      ),
+    ]);
+    expect(
+      situation({
+        role: "lender",
+        status: "awaiting_handover",
+        handover,
+        amendment,
+      }).body,
+    ).toContainEqual(
+      expect.stringMatching(
+        /^Du sa at overleveringen ikke skjedde\. Svarer ikke Ola innen /,
+      ),
+    );
   });
 
   it("shows a change of lender to the borrower only when they must answer", () => {
@@ -400,6 +445,7 @@ describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
           id,
           period: { start: "2026-10-05", end: "2026-10-09" },
           proposedBy: "lender",
+          proposedByYou: true,
           proposedAt: at,
         },
         responsibilityTransfer: {
@@ -436,6 +482,7 @@ describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
           id,
           period: { start: "2026-10-05", end: "2026-10-09" },
           proposedBy: "lender",
+          proposedByYou: true,
           proposedAt: at,
         },
         actions: { ...noActions, amendment: ["accept", "decline"] },
@@ -459,6 +506,7 @@ describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
           id,
           period: { start: "2026-10-05", end: "2026-10-09" },
           proposedBy: "lender",
+          proposedByYou: true,
           proposedAt: at,
         },
         responsibilityTransfer: {

@@ -99,6 +99,7 @@ describe("what a loan asks of its party", () => {
       id,
       period: { start: "2026-10-06", end: "2026-10-08" },
       proposedBy: "lender" as const,
+      proposedByYou: true,
       proposedAt: at,
     };
 

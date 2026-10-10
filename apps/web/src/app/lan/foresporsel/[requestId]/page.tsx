@@ -17,6 +17,7 @@ import {
 } from "@/presentation/dates";
 import {
   describeLoanRequest,
+  requestedTimeHasPassed,
   loanRequestTitle,
   requestProgress,
   responsibilityDeclaration,
@@ -160,6 +161,15 @@ function Steps({ request }: { request: LoanRequestDetail }) {
 function approvalNote(request: LoanRequestDetail): ReactNode {
   if (request.role !== "lender" || request.status !== "requested") return null;
   const approval = request.approval;
+
+  if (!approval?.period && requestedTimeHasPassed(request)) {
+    return (
+      <p>
+        Tiden som er ønsket har begynt, så forespørselen kan ikke godkjennes
+        slik den er. Avslå den; låntakeren kan be om en ny tid.
+      </p>
+    );
+  }
 
   if (!approval?.period) {
     return (

@@ -113,13 +113,16 @@ export function loanActions(
           today,
         ) === null,
     ),
-    return: sidePending
-      ? []
-      : sideOutcomes[role].filter(
-          (outcome) =>
-            !repeatsLastStatement(loan.returns, role, outcome) &&
-            returnRefusal(loan, loan.returns, outcome, today) === null,
-        ),
+    // A statement needs the object: once it is deleted, an ended loan's
+    // return can no longer be reopened.
+    return:
+      sidePending || !loan.hasObject
+        ? []
+        : sideOutcomes[role].filter(
+            (outcome) =>
+              !repeatsLastStatement(loan.returns, role, outcome) &&
+              returnRefusal(loan, loan.returns, outcome, today) === null,
+          ),
     undoReturn: ownPending,
     amendment:
       loan.amendment && loan.amendment.proposerRole !== role

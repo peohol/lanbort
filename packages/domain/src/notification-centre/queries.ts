@@ -271,7 +271,17 @@ async function invitationAbout(
   const invitation = await db
     .selectFrom("app.object_co_owner_invitations as invitation")
     .innerJoin("app.objects as object", "object.id", "invitation.object_id")
-    .select(["invitation.status", "object.id as objectId", "object.title"])
+    .leftJoin("app.object_owners as owner", (join) =>
+      join
+        .onRef("owner.object_id", "=", "invitation.object_id")
+        .on("owner.user_id", "=", userId),
+    )
+    .select([
+      "invitation.status",
+      "object.id as objectId",
+      "object.title",
+      "owner.user_id as ownerId",
+    ])
     .where("invitation.id", "=", invitationId)
     .where("invitation.invited_user_id", "=", userId)
     .executeTakeFirst();
@@ -286,9 +296,12 @@ async function invitationAbout(
   return {
     about: {
       // The object is shown to the invitee only while they are asked, or
-      // once they co-own it.
+      // while they co-own it: not after they have left it.
       thing:
-        pending || invitation?.status === "accepted" ? invitation.title : null,
+        pending ||
+        (invitation?.status === "accepted" && invitation.ownerId !== null)
+          ? invitation.title
+          : null,
       picture: coOwnerInvitationPicture(invitationId, images),
       person: null,
       place: null,

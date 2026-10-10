@@ -19,6 +19,32 @@ describe("describeLoanRequest", () => {
     });
   });
 
+  it("says a request whose time has begun cannot be approved", () => {
+    const passed = request({ start: { kind: "date", date: "2026-10-12" } });
+
+    expect(describeLoanRequest(passed, "2026-10-12").label).toBe(
+      "Venter på eieren",
+    );
+    expect(describeLoanRequest(passed, "2026-10-13")).toMatchObject({
+      label: "Tiden har passert",
+      tone: "warning",
+      body: expect.stringMatching(/Trekk forespørselen/),
+    });
+    expect(
+      describeLoanRequest({ ...passed, role: "lender" }, "2026-10-13"),
+    ).toMatchObject({
+      label: "Venter på deg",
+      text: "Tiden Ola Hansen ba om har begynt, så den kan ikke godkjennes. Avslå forespørselen",
+    });
+    // «As soon as possible», but only until a day that is over.
+    expect(
+      describeLoanRequest(
+        request({ end: { kind: "date", date: "2026-10-12" } }),
+        "2026-10-13",
+      ).label,
+    ).toBe("Tiden har passert");
+  });
+
   it("tells the borrower nothing is agreed before an answer", () => {
     expect(describeLoanRequest(request()).body).toMatch(
       /Ingenting er avtalt før eieren godkjenner/,
