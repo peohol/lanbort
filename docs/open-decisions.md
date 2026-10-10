@@ -192,6 +192,15 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Avklares før:** plattformforvalterens flater designes og vises (etter OD-0023). Til da finnes ingen slik flate i appen.
 - **Anbefaling:** Start alle inngrep fra en sak i plattformkøen, slik at begrunnelse, habilitet og historikk følger saken (PS-TRUST-016, PS-ADM-014), og vis ingen forvalterhandlinger på ordinære person- og miljøsider.
 
+### OD-0050 — Varsel til søkeren når en søknad er avgjort
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-ENV-004, PS-COM (varseltyper), «Innmelding og invitasjon» i [skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md), kjerneflyt 3 i Tomat-designet
+- **Spørsmål:** Designet for kjerneflyt 3 sier «Du får varsel når de har svart» og viser første besøk som medlem åpnet fra et varsel, men spesifikasjonen har ingen varseltype for en godkjent eller avslått søknad, og appen sender ingen. Skal søkeren varsles når søknaden godkjennes, og når den avslås? Inntil dette er besluttet, lover søknadssiden ikke noe varsel, og «Velkommen» vises bare rett etter at man selv har blitt med.
+- **Avhenger av:** Ingen.
+- **Avklares før:** søknadssiden skal love et varsel, eller «Velkommen» skal vises ved første besøk etter en godkjent søknad.
+- **Anbefaling:** Varsle i appen både ved godkjenning og avslag. Godkjenningen lenker til miljøet med «Velkommen». Avslaget sier nøytralt at søknaden ikke ble godkjent, uten begrunnelse.
+
 ## Avklart
 
 ### OD-0048 — Omtrentlig medlemstall før medlemskap
