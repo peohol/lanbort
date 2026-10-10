@@ -405,6 +405,88 @@ describe("the return (PS-LOAN-014–015)", () => {
   });
 });
 
+describe("a handover contradicted once the return is under way (PS-LOAN-022)", () => {
+  const notHandedOver = (actor: UserActor, loanId: string) =>
+    run(reportHandover, actor, {
+      loanId,
+      agreementVersion: 1,
+      outcome: "not_handed_over",
+    });
+
+  it("lets the side that said nothing say it was not handed over, keeping the return statements", async () => {
+    const setup = await activeLoan(0, 2);
+    const { owner, borrower, objectId, loanId } = setup;
+    const requestId = await openRequest(setup, dated(12, 13));
+    kit.advanceDays(3);
+    await sayNow(owner, loanId, "not_received");
+    expect((await loanOf(borrower, loanId)).actions.handover).toEqual([
+      "not_handed_over",
+    ]);
+    expect((await loanOf(owner, loanId)).actions.handover).toEqual([]);
+
+    // The lender, who said both, has spoken.
+    await expect(notHandedOver(owner, loanId)).rejects.toMatchObject({
+      ...conflict,
+      fields: ["outcome"],
+    });
+    expect((await notHandedOver(borrower, loanId)).status).toBe("disputed");
+    expect(await statusOf(loanId)).toMatchObject({ status: "disputed" });
+    expect(await loanEvents(loanId)).toContain("loan.handover_disputed");
+    expect(await loanOf(owner, loanId)).toMatchObject({
+      status: "disputed",
+      handover: {
+        borrower: { outcome: "not_handed_over" },
+        lender: { outcome: "handed_over" },
+      },
+      return: { borrower: null, lender: { outcome: "not_received" } },
+    });
+
+    // Nobody knows who has it: nothing is free, and the return waits.
+    expect(await effective(objectId)).toEqual([]);
+    await expect(
+      run(approveLoanRequest, owner, { requestId }),
+    ).rejects.toMatchObject(conflict);
+    await expect(sayNow(owner, loanId, "received")).rejects.toMatchObject(
+      conflict,
+    );
+
+    // The borrower agrees after all: the return is where it was.
+    expect((await handOver(borrower, loanId)).status).toBe("awaiting_return");
+    expect((await sayNow(owner, loanId, "received")).status).toBe("ended");
+  });
+
+  it("makes a late loan disputed, and ends it as not completed when both say so", async () => {
+    const { owner, borrower, loanId } = await reservedLoan(0, 2);
+    await handOver(borrower, loanId);
+    kit.advanceDays(3);
+    expect((await sayNow(borrower, loanId, "still_has")).status).toBe("late");
+
+    // The borrower, who said both, has spoken.
+    await expect(notHandedOver(borrower, loanId)).rejects.toMatchObject(
+      conflict,
+    );
+    expect((await notHandedOver(owner, loanId)).status).toBe("disputed");
+    expect((await notHandedOver(borrower, loanId)).status).toBe("ended");
+    expect(await statusOf(loanId)).toEqual({
+      status: "ended",
+      end_reason: "not_completed",
+      ended_by_user_id: null,
+    });
+    expect(await reservation(loanId)).toBeNull();
+  });
+
+  it("is refused once both sides have spoken about the return", async () => {
+    const { owner, borrower, loanId } = await reservedLoan(0, 2);
+    await handOver(borrower, loanId);
+    await sayNow(borrower, loanId, "returned");
+    await sayNow(owner, loanId, "not_received");
+    expect(await statusOf(loanId)).toMatchObject({ status: "return_disputed" });
+
+    await expect(notHandedOver(owner, loanId)).rejects.toMatchObject(conflict);
+    expect((await loanOf(owner, loanId)).actions.handover).toEqual([]);
+  });
+});
+
 describe("an agreed extension (PS-LOAN-010, PS-LOAN-014)", () => {
   it("makes a late loan active again on a new agreement, keeping the old statements as history", async () => {
     const { owner, borrower, loanId } = await overdueLoan();

@@ -426,17 +426,20 @@ export function handoverVerdict(
 }
 
 /**
- * The stored status a verdict leads to: active once handed over, disputed
- * while the parties disagree (PS-LOAN-013), ended as not completed when both
- * say it was not handed over or the other side let the deadline pass, and
- * reserved for as long as nothing is settled.
+ * The stored status a verdict leads to: handed over, where the return
+ * statements on the agreement (`returned`) put it, so active when nobody has
+ * said anything about the return; disputed while the parties disagree
+ * (PS-LOAN-013), ended as not completed when both say it was not handed
+ * over or the other side let the deadline pass, and reserved for as long as
+ * nothing is settled.
  */
 export function statusAfterHandover(
   verdict: HandoverVerdict,
+  returned: ReturnVerdict,
 ): StoredLoanStatus {
   switch (verdict) {
     case "handed_over":
-      return "active";
+      return statusAfterReturn(returned);
     case "disputed":
       return "disputed";
     case "not_handed_over":
@@ -458,16 +461,25 @@ export function statusAfterHandover(
  * - Once it is active, only the side that has not spoken may still
  *   contradict it; the side that said it was handed over cannot take that
  *   back on its own.
+ * - Once the return is under way, that side may still say it was not
+ *   handed over, as long as it has said nothing about the return either
+ *   (PS-LOAN-022); a disputed return has been spoken to by both.
  * - While it is disputed, either side may change what they say.
  */
 export function handoverRefusal(
   status: StoredLoanStatus,
   period: LoanPeriodInterval,
   reading: HandoverReading,
+  returns: readonly Pick<ReturnStatement, "role">[],
   role: LoanRequestRole,
   outcome: HandoverOutcome,
   today: string,
 ): { readonly message: string; readonly fields: readonly string[] } | null {
+  const silent =
+    reading[role] === null &&
+    !returns.some((statement) => statement.role === role);
+  const settled = { message: "The handover is settled", fields: ["outcome"] };
+
   switch (status) {
     case "ended":
       return { message: "The loan has ended", fields: [] };
@@ -480,15 +492,14 @@ export function handoverRefusal(
         ? { message: "The handover day is not over", fields: ["outcome"] }
         : null;
     case "active":
-      return reading[role] === null
-        ? null
-        : { message: "The handover is settled", fields: ["outcome"] };
+      return silent ? null : settled;
     case "disputed":
       return null;
     case "awaiting_return":
     case "late":
+      return silent && outcome === "not_handed_over" ? null : settled;
     case "return_disputed":
-      return { message: "The handover is settled", fields: ["outcome"] };
+      return settled;
   }
 }
 
