@@ -1,10 +1,30 @@
-/* A thing's picture at the start of a row, the size of the row's icon. */
+/* A thing's picture (ThingThumbnail), square at one of three sizes. */
 .thumbnail {
   display: block;
   flex: none;
+  object-fit: cover;
+}
+
+/* Behind a picture that is still on its way. */
+.picture {
+  background: var(--color-sunken);
+}
+
+/* The size of a row's icon. */
+.row {
   width: 2.375rem;
   height: 2.375rem;
-  object-fit: cover;
-  background: var(--color-sunken);
+  border-radius: var(--radius-s);
+}
+
+.title {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-field);
+}
+
+.card {
+  width: 4rem;
+  height: 4rem;
   border-radius: var(--radius-s);
 }

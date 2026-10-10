@@ -47,7 +47,8 @@ import {
   personName,
   proposalDefaults,
 } from "@/presentation/loan-status";
-import { loanImageHref } from "@/presentation/object-images";
+import { firstImageHref, loanImageHref } from "@/presentation/object-images";
+import { ThingThumbnail } from "@/components/thing-thumbnail";
 import { basisNote, hiddenUntil, scoreLines } from "@/presentation/reviews";
 import { chatContactLink } from "@/server/chat-contact";
 import { chatEnabled } from "@/server/env";
@@ -64,7 +65,6 @@ import { PeriodFields } from "../_parts/period-fields";
 import { Party } from "../_parts/party";
 import { Progress } from "../_parts/progress";
 import { Steps } from "../_parts/steps";
-import { ThingPicture } from "../_parts/thing-picture";
 import { Timeline } from "../_parts/timeline";
 import { CoOwnerLoan } from "./co-owner-loan";
 import { ReviewForm } from "./review-form";
@@ -639,9 +639,12 @@ export default async function LoanPage({
       <PageHeader
         kind="Lån"
         picture={
-          <ThingPicture
-            images={loan.images}
-            href={(imageId) => loanImageHref(loan.id, imageId)}
+          <ThingThumbnail
+            src={firstImageHref(loan.images, (imageId) =>
+              loanImageHref(loan.id, imageId),
+            )}
+            size="title"
+            placeholder
           />
         }
         title={loanTitle(loan)}

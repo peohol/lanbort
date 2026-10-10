@@ -15,6 +15,7 @@ export function ActionButton({
   idempotent = true,
   primary = false,
   next,
+  replace = false,
 }: {
   label: string;
   path: string;
@@ -23,12 +24,15 @@ export function ActionButton({
   primary?: boolean;
   /** Where to go once done, instead of reading the page again. */
   next?: string;
+  /** The page is done with once the step is taken: `next` takes its place. */
+  replace?: boolean;
 }) {
   const command = useCommand({
     path,
     done: label,
     idempotent,
     after: next ? () => next : "refresh",
+    replace,
   });
 
   return (

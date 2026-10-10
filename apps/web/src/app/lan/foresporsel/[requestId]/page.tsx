@@ -23,14 +23,17 @@ import {
 } from "@/presentation/loan-requests";
 import { personName } from "@/presentation/loan-status";
 import { formatDesiredPeriod } from "@/presentation/loans";
-import { loanRequestImageHref } from "@/presentation/object-images";
+import {
+  firstImageHref,
+  loanRequestImageHref,
+} from "@/presentation/object-images";
 import { chatContactLink } from "@/server/chat-contact";
+import { ThingThumbnail } from "@/components/thing-thumbnail";
 import { pageQueryOrNotFound, requirePageAccount } from "@/server/session";
 import styles from "../../_parts/loan.module.css";
 import { OriginTag } from "../../_parts/origin-tag";
 import { Party } from "../../_parts/party";
 import { Progress } from "../../_parts/progress";
-import { ThingPicture } from "../../_parts/thing-picture";
 
 export const metadata: Metadata = { title: "Forespørsel – Lånbort" };
 
@@ -212,9 +215,12 @@ export default async function LoanRequestPage({
       <PageHeader
         kind="Forespørsel"
         picture={
-          <ThingPicture
-            images={request.images}
-            href={(imageId) => loanRequestImageHref(request.id, imageId)}
+          <ThingThumbnail
+            src={firstImageHref(request.images, (imageId) =>
+              loanRequestImageHref(request.id, imageId),
+            )}
+            size="title"
+            placeholder
           />
         }
         title={loanRequestTitle(request)}

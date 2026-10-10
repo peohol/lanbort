@@ -66,6 +66,7 @@ export function AreaMap({
       ...(searched ? [searched] : []),
     ]);
     let map: { remove(): void } | undefined;
+    let observer: ResizeObserver | undefined;
     let cancelled = false;
 
     if (!bounds) return;
@@ -75,10 +76,11 @@ export function AreaMap({
         if (cancelled || !container.current) return;
 
         maplibre.setWorkerUrl(mapWorkerUrl(maplibre.getVersion()));
+        const fit = { padding: 24, maxZoom: 14 };
         const created = new maplibre.Map({
           container: container.current,
           bounds,
-          fitBoundsOptions: { padding: 24, maxZoom: 14 },
+          fitBoundsOptions: fit,
           cooperativeGestures: true,
           attributionControl: { compact: true },
           locale,
@@ -139,6 +141,19 @@ export function AreaMap({
         created.addControl(
           new maplibre.NavigationControl({ showCompass: false }),
         );
+
+        // The page may settle its width after the map is made, as when a
+        // column narrows: the map follows its box, and until the user has
+        // moved it, it shows the areas in the middle again.
+        let moved = false;
+        created.on("movestart", (event) => {
+          if (event.originalEvent) moved = true;
+        });
+        observer = new ResizeObserver(() => {
+          created.resize();
+          if (!moved) created.fitBounds(bounds, { ...fit, animate: false });
+        });
+        observer.observe(container.current);
         map = created;
       })
       // No WebGL, or the library could not load: the list still says it all.
@@ -146,6 +161,7 @@ export function AreaMap({
 
     return () => {
       cancelled = true;
+      observer?.disconnect();
       map?.remove();
     };
   }, [shown]);
