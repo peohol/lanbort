@@ -61,11 +61,13 @@ export type MembershipStep =
   /** Nobody takes new members while it winds down (PS-ENV-012). */
   | { readonly kind: "closed_to_new" }
   | { readonly kind: "join" }
-  /**
-   * After a rejected application, applying again is the same step; the
-   * page never says whether it is barred (PS-ENV-017).
-   */
+  /** After a rejected application, applying again is the same step. */
   | { readonly kind: "apply"; readonly rejected: boolean }
+  /**
+   * Barred from new attempts (PS-ENV-020): no way to apply, or to become
+   * active again, until the administrators lift it.
+   */
+  | { readonly kind: "barred"; readonly passive: boolean }
   | { readonly kind: "accept_invitation" }
   | { readonly kind: "awaiting_review"; readonly reactivation: boolean }
   | { readonly kind: "information_requested" }
@@ -81,6 +83,7 @@ export function membershipStep(environment: Environment): MembershipStep {
 
   if (!membership) {
     if (!takesMembers) return { kind: "closed_to_new" };
+    if (environment.restricted) return { kind: "barred", passive: false };
     return environment.type === "open"
       ? { kind: "join" }
       : { kind: "apply", rejected: environment.applicationRejected };
@@ -106,6 +109,8 @@ export function membershipStep(environment: Environment): MembershipStep {
     if (membership.reviewStage !== null) {
       return { kind: "awaiting_review", reactivation: true };
     }
+
+    if (environment.restricted) return { kind: "barred", passive: true };
 
     // A member who did not accept a weaker type, and every member of an open
     // environment, becomes active again directly (PS-ENV-008).
@@ -142,6 +147,11 @@ export function describeMembership(
       return step.rejected
         ? "Søknaden ble ikke godkjent."
         : "Du er ikke medlem. En administrator ser på søknaden din før du blir med.";
+    case "barred":
+      // PS-ENV-020: as neutral as the rejection, never why or who decided.
+      return step.passive
+        ? "Du er passivt medlem. Du kan ikke søke om å bli med nå."
+        : "Du kan ikke søke om å bli med nå.";
     case "accept_invitation":
       return "Du er invitert til miljøet. Les reglene og godta invitasjonen for å bli med.";
     case "awaiting_review":
@@ -182,6 +192,11 @@ export function membershipLabel(
         : environmentTypeNames[environment.type];
     case "join":
       return environmentTypeNames[environment.type];
+    case "barred":
+      if (step.passive) return "Passivt medlem";
+      return environment.applicationRejected
+        ? "Ikke godkjent"
+        : environmentTypeNames[environment.type];
     case "accept_invitation":
       return "Invitert";
     case "awaiting_review":

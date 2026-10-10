@@ -115,7 +115,7 @@ Når administratorene ber søkeren om mer informasjon, kan de skrive ett kort, v
 ### PS-ENV-020 — Den som er stengt ute, ser at de ikke kan søke nå
 **Forankring:** [Krav ved innmelding](../vision/03-miljoer.md); PS-ENV-004, PS-ENV-017, PS-NFR-002
 
-Den som avslås og samtidig stenges ute fra nye forsøk, får det samme nøytrale avslaget som andre (PS-ENV-017), uten begrunnelse og uten hvem som avgjorde. Etterpå sier miljøets side «Du kan ikke søke om å bli med nå», uten aktiv søknadsknapp. Dette vises bare i et miljø personen fortsatt kan se, og røper aldri at et skjult miljø finnes. Ikke bygget ennå. (Produkteier, 10. oktober 2026, OD-0053.)
+Den som avslås og samtidig stenges ute fra nye forsøk, får det samme nøytrale avslaget som andre (PS-ENV-017), uten begrunnelse og uten hvem som avgjorde. Etterpå sier miljøets side «Du kan ikke søke om å bli med nå», uten aktiv søknadsknapp. Dette vises bare i et miljø personen fortsatt kan se, og røper aldri at et skjult miljø finnes. (Produkteier, 10. oktober 2026, OD-0053.)
 
 ### PS-ENV-021 — Administratorene kan avslutte et aktivt medlemskap
 **Forankring:** [Kontinuitet ved avvikling, utestengelse og manglende administrasjon](../vision/03-miljoer.md); PS-ENV-004, PS-TRUST-013, PS-TRUST-016, PS-TRUST-018

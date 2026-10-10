@@ -516,9 +516,11 @@ describe("closed environments", () => {
         restrict: true,
       }),
     ).toEqual({ membershipId, state: "ended" });
+    // PS-ENV-020: the applicant's page says they cannot apply now.
     expect(await read(applicant, environmentId)).toMatchObject({
       membership: null,
       applicationRejected: true,
+      restricted: true,
     });
     // The ended application leaves the bar, named so it can be lifted.
     const barred = await memberships(owner, environmentId);
@@ -545,9 +547,10 @@ describe("closed environments", () => {
     ).rejects.toMatchObject({ code: "not_found" });
     expect((await join(applicant, environmentId)).state).toBe("pending");
     expect((await memberships(owner, environmentId)).restrictions).toEqual([]);
-    expect((await read(applicant, environmentId)).applicationRejected).toBe(
-      false,
-    );
+    expect(await read(applicant, environmentId)).toMatchObject({
+      applicationRejected: false,
+      restricted: false,
+    });
   });
 
   it("tells the applicant a rejection the same way whether or not it bars them (PS-ENV-017)", async () => {
@@ -559,8 +562,12 @@ describe("closed environments", () => {
     expect(await read(applicant, environmentId)).toMatchObject({
       membership: null,
       applicationRejected: true,
+      restricted: false,
     });
-    expect((await read(owner, environmentId)).applicationRejected).toBe(false);
+    expect(await read(owner, environmentId)).toMatchObject({
+      applicationRejected: false,
+      restricted: false,
+    });
   });
 
   it("lets the applicant withdraw", async () => {

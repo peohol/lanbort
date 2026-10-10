@@ -276,10 +276,15 @@ export const environmentSchema = z.strictObject({
   membership: ownMembershipSchema.nullable(),
   /**
    * PS-ENV-017: the caller's last application here was not approved, and
-   * they have not applied again since. Never why, who decided, or whether a
-   * new application is barred (PS-ENV-004).
+   * they have not applied again since. Never why or who decided.
    */
   applicationRejected: z.boolean(),
+  /**
+   * PS-ENV-020: the caller is barred from new attempts here (PS-ENV-004),
+   * so the page offers no way to apply. Only ever about the caller, in an
+   * environment they can see; never why or who decided.
+   */
+  restricted: z.boolean(),
   roles: z.array(environmentRoleSchema),
   /** Null without a current membership. */
   continuity: environmentContinuitySchema.nullable(),

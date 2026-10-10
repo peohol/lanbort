@@ -249,6 +249,8 @@ function Decision({
             gone: [rejected],
             affects: [
               `${name} kan ikke prøve igjen før en administrator opphever utestengelsen.`,
+              // PS-ENV-020: what the person sees, and what not.
+              `${name} får det samme avslaget og ser på miljøets side at det ikke går an å søke nå, men ikke hvorfor eller hvem som avgjorde.`,
             ],
           }}
           confirmLabel={`Avvis og steng ute ${name}`}
