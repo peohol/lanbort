@@ -4,7 +4,10 @@ import {
   deny,
   type ResourceRule,
 } from "../authorization/policy";
-import { requireActiveAccount } from "../authorization/rules";
+import {
+  requireActiveAccount,
+  requireMinimumAccess,
+} from "../authorization/rules";
 import { asHandler, casePolicy } from "../cases/policies";
 import type { EnvironmentAccess } from "../environment/model";
 import { canSeeEnvironment } from "../environment/policies";
@@ -62,10 +65,35 @@ export const listCaseMeasuresPolicy = casePolicy(
   asHandler,
 );
 
+/**
+ * Who a measure hits, as they stand to it now: the current owners of the
+ * thing, or the author of the review or response. Lifting a block hits
+ * nobody.
+ */
+export interface MeasureNoticeResource {
+  readonly affected: readonly string[];
+}
+
+/**
+ * PS-TRUST-018: whoever a measure hits reads why and where, also with
+ * minimum access; to anyone else it does not exist.
+ */
+export const readMeasureNoticePolicy = definePolicy<MeasureNoticeResource>({
+  action: "moderation.read_notice",
+  actor: [requireMinimumAccess],
+  resource: [
+    ({ actor, resource }) =>
+      actor.kind === "user" && resource.affected.includes(actor.userId)
+        ? allow
+        : deny("not_found"),
+  ],
+});
+
 export const moderationPolicies = [
   reportInEnvironmentPolicy,
   reportToPlatformPolicy,
   escalateReportPolicy,
   takeModerationMeasurePolicy,
   listCaseMeasuresPolicy,
+  readMeasureNoticePolicy,
 ];

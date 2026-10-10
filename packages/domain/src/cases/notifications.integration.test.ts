@@ -17,7 +17,11 @@ import { notificationCaseQueueProcess } from "../notifications/policies";
 import { listNotifications } from "../notifications/queries";
 import { ConsumerRegistry } from "../outbox/consumer";
 import { grantPlatformRole } from "../platform/commands";
-import { reportInEnvironment } from "../moderation/commands";
+import {
+  reportInEnvironment,
+  takeModerationMeasure,
+} from "../moderation/commands";
+import { readMeasureNotice } from "../moderation/notice";
 import { platformRoleOpsProcess } from "../platform/policies";
 import { connectTestDatabase } from "../testing/database";
 import { deliverAll } from "../testing/outbox";
@@ -418,5 +422,58 @@ describe("ending a case by the one who opened it (PS-COM-021)", () => {
       ).rejects.toMatchObject(conflict);
     }
     expect((await read(admin, caseId)).status).toBe("open");
+  });
+});
+
+describe("the notice to whoever a measure hits (PS-TRUST-018)", () => {
+  it("tells the owner what was done, where and why, and nothing of the report", async () => {
+    const { environmentId, admin, owner, objectId, requester } =
+      await environmentWithAdministrators();
+    const { caseId } = await run(reportInEnvironment, requester, {
+      environmentId,
+      target: { kind: "object", objectId },
+      body: "Flasken er fylt med propan.",
+    });
+    await run(claimCase, admin, { caseId });
+    await told(owner);
+    await told(requester);
+
+    const { measureId } = await run(takeModerationMeasure, admin, {
+      caseId,
+      measure: "publication_blocked",
+      reason: "Fylt gassflaske står på listen over det som ikke lånes ut.",
+    });
+
+    expect(await told(owner)).toEqual([
+      {
+        kind: "moderation.measure_taken",
+        detail: "publication_blocked",
+        target: { type: "moderation_measure", id: measureId },
+      },
+    ]);
+    // The reporter is not told which measure was taken (PS-COM-020).
+    expect(await told(requester)).toEqual([]);
+
+    const notice = (actor: UserActor) =>
+      executeQuery(tick(), readMeasureNotice, {
+        actor,
+        input: { measureId },
+      });
+    expect(await notice(owner)).toEqual({
+      id: measureId,
+      kind: "publication_blocked",
+      scope: "environment",
+      environmentId,
+      objectId,
+      objectTitle: expect.any(String),
+      loanId: null,
+      dimension: null,
+      reason: "Fylt gassflaske står på listen over det som ikke lånes ut.",
+      decidedAt: expect.any(String),
+    });
+    // Nobody else learns that it exists.
+    for (const other of [requester, admin]) {
+      await expect(notice(other)).rejects.toMatchObject({ code: "not_found" });
+    }
   });
 });

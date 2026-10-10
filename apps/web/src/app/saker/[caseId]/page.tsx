@@ -1,8 +1,6 @@
 import type { Case } from "@lanbort/contracts";
 import {
   caseKinds,
-  getEnvironment,
-  isDomainError,
   listCaseMeasures,
   measuresFor,
   readCase,
@@ -37,6 +35,7 @@ import {
   requirePageAccount,
 } from "@/server/session";
 import styles from "../cases.module.css";
+import { environmentName } from "../environment-name";
 import { HandlerRole } from "../handler-role";
 import { Entries } from "./entries";
 import { type AudienceChoice, EntryForm } from "./entry-form";
@@ -52,18 +51,6 @@ import {
 } from "./handling";
 
 export const metadata: Metadata = { title: "Saken – Lånbort" };
-
-/** The environment's name, if the viewer may still see it (PS-ENV-009). */
-async function environmentName(environmentId: string | null) {
-  if (environmentId === null) return null;
-
-  try {
-    return (await pageQuery(getEnvironment, { environmentId }))?.name ?? null;
-  } catch (error) {
-    if (isDomainError(error)) return null;
-    throw error;
-  }
-}
 
 /** Who a handler may write to, and what each choice means. */
 function audiencesFor(c: Case, handlers: string): AudienceChoice[] {

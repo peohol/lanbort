@@ -5,6 +5,7 @@ import type { NotificationRule } from "./rule";
 import { caseRules } from "./rules/cases";
 import { chatRules } from "./rules/chat";
 import { loanRules } from "./rules/loans";
+import { moderationRules } from "./rules/moderation";
 import { objectRules } from "./rules/objects";
 import { relationRules } from "./rules/relations";
 import { recordNotifications } from "./store";
@@ -14,6 +15,7 @@ export const notificationRules: readonly NotificationRule[] = [
   ...loanRules,
   ...relationRules,
   ...caseRules,
+  ...moderationRules,
   ...objectRules,
   ...chatRules,
 ];

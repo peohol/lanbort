@@ -91,6 +91,7 @@ const resourceKeys = new Set([
   "imageId",
   "caseId",
   "correctsEntryId",
+  "measureId",
   "questionId",
   "notificationId",
   "notificationIds",
@@ -261,6 +262,9 @@ async function hiddenWorld() {
       imageId,
       pictureId: pictureId!,
       caseId,
+      // No measure is taken in this world; the notice's own test shows
+      // that nobody but whoever a real one hits learns it exists.
+      measureId: randomUUID(),
       questionId,
       conversationId,
       linkRequestId,
@@ -695,6 +699,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     reason: text,
   }),
   "moderation.list_measures": (ids) => ({ caseId: ids.caseId }),
+  "moderation.read_notice": (ids) => ({ measureId: ids.measureId }),
 
   // Chat (ADR-0010)
   "chat.start_conversation": (ids) => ({

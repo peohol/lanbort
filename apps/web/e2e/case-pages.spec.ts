@@ -5,6 +5,7 @@ import {
   postCommand,
   registerThroughApi,
   uniqueWord,
+  untilOutboxSettles,
 } from "./helpers";
 
 /**
@@ -224,4 +225,81 @@ test("a member ends their own contact, and the administrators see who did", asyn
     eva.getByText("Ola Medlem avsluttet henvendelsen"),
   ).toBeVisible();
   await Promise.all([eva, ola].map((page) => page.context().close()));
+});
+
+test("the owner of a blocked thing is told what, where and why, never of the report", async ({
+  browser,
+  baseURL,
+}) => {
+  const eva = await signedIn(browser, baseURL!, "Eva Eier");
+  const jonas = await signedIn(browser, baseURL!, "Jonas Vik");
+  const kari = await signedIn(browser, baseURL!, "Kari Nordmann");
+  const name = `Lia ${uniqueWord()}`;
+  const { environmentId } = await (
+    await postCommand(eva.request, "/api/environments", { name, type: "open" })
+  ).json();
+  for (const member of [jonas, kari]) {
+    await postCommand(member.request, "/api/environments/membership/join", {
+      environmentId,
+      answers: [],
+    });
+  }
+  const { objectId } = await (
+    await postCommand(jonas.request, "/api/objects", {
+      title: "Gassflaske 11 kg",
+      categoryId: "annet",
+      description: "Full.",
+      availability: [{ start: "2030-07-01", end: null }],
+    })
+  ).json();
+  await postCommand(jonas.request, `/api/objects/${objectId}/publications`, {
+    environmentId,
+  });
+  const { caseId } = await (
+    await postCommand(kari.request, "/api/environments/reports", {
+      environmentId,
+      target: { kind: "object", objectId },
+      body: "Flasken er fylt med propan.",
+    })
+  ).json();
+  await postCommand(eva.request, `/api/cases/${caseId}/claim`, {});
+  await postCommand(eva.request, `/api/cases/${caseId}/measures`, {
+    measure: "publication_blocked",
+    reason: "Fylt gassflaske står på listen over det som ikke kan lånes ut.",
+  });
+
+  // A required notice to the owner (PS-TRUST-018).
+  await untilOutboxSettles(jonas.request, async () =>
+    (
+      await (await jonas.request.get("/api/notifications")).json()
+    ).notifications.some(
+      (notification: { kind: string }) =>
+        notification.kind === "moderation.measure_taken",
+    ),
+  );
+  await jonas.goto("/varsler");
+  await jonas
+    .getByRole("link", {
+      name: /Tingen din er sperret for publisering i et miljø/,
+    })
+    .click();
+  await expect(jonas).toHaveURL(/\/saker\/tiltak\/[0-9a-f-]{36}$/);
+  await expect(jonas.getByRole("heading", { level: 1 })).toHaveText(
+    "Gassflaske 11 kg",
+  );
+  await expect(statusCard(jonas)).toContainText(
+    `Publiseringen er sperret i ${name}`,
+  );
+  await expect(statusCard(jonas)).toContainText(
+    "Begrunnelse: Fylt gassflaske står på listen over det som ikke kan lånes ut.",
+  );
+  await expect(
+    jonas.getByRole("link", { name: "Be om ny vurdering" }),
+  ).toHaveAttribute("href", `/saker/ny?kontakt=${environmentId}`);
+  // Nothing says there was a report, or who sent it.
+  await expect(jonas.getByText(/rapport|Kari/i)).toHaveCount(0);
+
+  // Nobody else learns that the measure exists.
+  expect((await kari.goto(jonas.url()))?.status()).toBe(404);
+  await Promise.all([eva, jonas, kari].map((page) => page.context().close()));
 });
