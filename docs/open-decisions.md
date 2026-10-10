@@ -170,6 +170,14 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Anbefaling:** Supabases daglige backup, pluss en egen daglig backup av databasen og alle filene i et privat GitHub-repo med 7 dagers historikk, og en månedlig gjenopprettingsøvelse til et isolert miljø. RPO ≤ 24 timer, RTO ≤ 8 timer. Point-in-Time Recovery og gjenoppretting til et nytt Supabase-prosjekt koster ekstra og velges bort. Se [backup og gjenoppretting](implementation/backup-restore.md#strategi-for-piloten).
 - **Avklares før:** appen åpnes for et eksternt testpanel (Port D).
 
+### OD-0055 — Hvordan plattformforvalteren finner kontoen eller tingen et saksgrunnlag gjelder
+- **Lag:** UX / Produktspesifikasjon
+- **Status:** Åpen (10. oktober 2026)
+- **Berører:** PS-ADM-015, PS-ADM-009, PS-ADM-010, UX-PRIV-006
+- **Spørsmål:** Når en forvalter åpner eget saksgrunnlag uten rapport, eller avvikler en duplikatkonto, må hen peke ut en konto eller ting. Skal forvalteren kunne søke på navn blant alle kontoer, eller bare finne fram fra noe hen allerede har: lenken til personens eller tingens side, eller hele e-postadressen?
+- **Anbefaling:** Lenke eller hel e-postadresse, uten navnesøk. Da får ingen forvalter bla i alle kontoer, og den vanlige synligheten gjelder fortsatt.
+- **Avklares før:** forvalterflatene bygges i appen.
+
 ## Avklart
 
 ### OD-0023 — Registrering og recovery for plattformforvalteres WebAuthn
