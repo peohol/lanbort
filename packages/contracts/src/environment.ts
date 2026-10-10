@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { geoAreaSchema } from "./geo";
-import { personLinkShape } from "./social";
+import { personLinkShape, sharedEnvironmentSchema } from "./social";
 
 /** PS-ENV-001: the three privacy types of an environment. */
 export const environmentTypeSchema = z.enum(["open", "closed", "hidden"]);
@@ -152,6 +152,14 @@ export const membershipDecisionSchema = z.strictObject({
 });
 
 export const inviteMemberSchema = z.strictObject({ userId: z.uuid() });
+
+/**
+ * PS-ENV-018: the environments the caller administers that a person they
+ * may see can be invited to now, for «Inviter til …» on the person's page.
+ */
+export const invitableEnvironmentsSchema = z.strictObject({
+  environments: z.array(sharedEnvironmentSchema),
+});
 
 /**
  * An administrator changes the type (PS-ENV-007–008). A stricter type applies
@@ -405,3 +413,4 @@ export type EnvironmentMemberships = z.infer<
 >;
 export type EnvironmentMember = z.infer<typeof environmentMemberSchema>;
 export type EnvironmentMembers = z.infer<typeof environmentMembersSchema>;
+export type InvitableEnvironments = z.infer<typeof invitableEnvironmentsSchema>;

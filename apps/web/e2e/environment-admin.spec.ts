@@ -1,6 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import {
   accountId,
+  befriend,
   axeViolations,
   collectBrowserProblems,
   postCommand,
@@ -347,6 +349,7 @@ test("an impartial administrator removes a member, who is told neutrally and may
   const per = await browser.newContext({ baseURL: baseURL! });
   const perPage = await per.newPage();
   await registerThroughApi(per.request, undefined, "Per Lien");
+  await befriend(page.request, per.request);
   await postCommand(page.request, "/api/environments/memberships/invite", {
     environmentId,
     userId: await accountId(per.request),
@@ -420,5 +423,71 @@ test("an impartial administrator removes a member, who is told neutrally and may
   await expect(perPage).toHaveURL(/\/saker\/[0-9a-f-]{36}$/);
 
   await per.close();
+  expect(problems).toEqual([]);
+});
+
+test("an administrator invites someone from a shared environment from that person's page, and nobody they cannot see (PS-ENV-018)", async ({
+  browser,
+  page,
+  baseURL,
+}) => {
+  const problems = collectBrowserProblems(page);
+  await registerThroughApi(page.request, undefined, "Eva Eier");
+  const word = uniqueWord();
+  const environment = async (name: string, type: string) =>
+    (
+      await (
+        await postCommand(page.request, "/api/environments", { name, type })
+      ).json()
+    ).environmentId as string;
+  const shared = await environment(`Gata ${word}`, "open");
+  const hidden = await environment(`Kretsen ${word}`, "hidden");
+
+  // Per is no friend of Eva's; she sees him because both are in Gata.
+  const per = await browser.newContext({ baseURL: baseURL! });
+  await registerThroughApi(per.request, undefined, "Per Lien");
+  await postCommand(per.request, "/api/environments/membership/join", {
+    environmentId: shared,
+    answers: [],
+  });
+  const stranger = await browser.newContext({ baseURL: baseURL! });
+  await registerThroughApi(stranger.request);
+
+  await page.goto(`/personer/${await accountId(per.request)}`);
+  const invite = page.getByRole("region", {
+    name: "Inviter til et miljø du administrerer",
+  });
+  // An open environment needs no invitation.
+  await expect(invite.getByRole("group")).toHaveCount(1);
+  expect(await axeViolations(page)).toEqual([]);
+  await invite
+    .getByRole("group", { name: `Kretsen ${word}` })
+    .getByRole("button", { name: `Inviter til Kretsen ${word}` })
+    .click();
+  await expect(invite).toBeHidden();
+  expect(await (await per.request.get("/api/environments")).json()).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ id: hidden, membershipState: "pending" }),
+    ]),
+  );
+
+  // Someone Eva cannot see has no page, and cannot be invited either: the
+  // same answer as for an account that does not exist.
+  const strangerId = await accountId(stranger.request);
+  expect((await page.request.get(`/personer/${strangerId}`)).status()).toBe(
+    404,
+  );
+  for (const userId of [strangerId, randomUUID()]) {
+    const response = await page.request.post(
+      "/api/environments/memberships/invite",
+      {
+        data: { environmentId: hidden, userId },
+        headers: { "Idempotency-Key": randomUUID() },
+      },
+    );
+    expect(response.status()).toBe(404);
+  }
+
+  await Promise.all([per.close(), stranger.close()]);
   expect(problems).toEqual([]);
 });

@@ -10,6 +10,7 @@ import {
 import { executeQuery } from "../commands/query";
 import { ConsumerRegistry } from "../outbox/consumer";
 import { blockUser } from "../social/commands";
+import { acquaint } from "../testing/acquaintance";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
 import {
@@ -135,6 +136,7 @@ async function member(environmentId: string, owner: UserActor) {
   if (type === "open") {
     await output(joinEnvironment, actor, { environmentId, answers: [] });
   } else {
+    await acquaint(db, owner, actor);
     await output(inviteMember, owner, { environmentId, userId: actor.userId });
     await output(acceptInvitation, actor, { environmentId, answers: [] });
   }
@@ -255,6 +257,7 @@ describe("administrator invitations (PS-ENV-003)", () => {
     const ordinary = await member(environmentId, owner);
     const blocker = await member(environmentId, owner);
     const invited = await user();
+    await acquaint(db, owner, invited);
     await output(inviteMember, owner, {
       environmentId,
       userId: invited.userId,
@@ -588,6 +591,7 @@ describe("winding down (PS-ENV-012)", () => {
       applicant,
       { environmentId, answers: [] },
     );
+    await acquaint(db, owner, invited);
     await output(inviteMember, owner, {
       environmentId,
       userId: invited.userId,
@@ -760,6 +764,7 @@ describe("temporary ownerlessness (PS-ENV-013–014)", () => {
     const owner = await user();
     const environmentId = await environment(owner, { type: "closed" });
     const ordinary = await user();
+    await acquaint(db, owner, ordinary);
     await output(inviteMember, owner, {
       environmentId,
       userId: ordinary.userId,

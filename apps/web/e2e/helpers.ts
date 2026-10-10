@@ -105,6 +105,20 @@ export async function accountId(request: APIRequestContext): Promise<string> {
   return (await (await request.get("/api/account")).json()).userId;
 }
 
+/**
+ * Makes the two accounts friends, so either may invite the other to an
+ * environment: an administrator invites only someone they may see in
+ * Lånbort (PS-ENV-018).
+ */
+export async function befriend(a: APIRequestContext, b: APIRequestContext) {
+  await postCommand(a, "/api/social/friend-requests", {
+    userId: await accountId(b),
+  });
+  await postCommand(b, "/api/social/friend-requests/accept", {
+    userId: await accountId(a),
+  });
+}
+
 /** Today's date in Norway, as the API takes dates. */
 export const today = () =>
   new Intl.DateTimeFormat("en-CA", {

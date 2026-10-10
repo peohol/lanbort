@@ -13,13 +13,14 @@
 }
 
 @media (min-width: 72rem) {
-  /* The left parts (header, why, «Dere to», between, things, more) each
+  /* The left parts (header, why, «Dere to», between, invite, things,
+     more) each
      take an auto row; the last row is flexible, so a long right column
      grows into it instead of spreading the left parts apart. */
   .page {
     display: grid;
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    grid-template-rows: repeat(6, auto) 1fr;
+    grid-template-rows: repeat(7, auto) 1fr;
     align-items: start;
     column-gap: var(--space-6);
   }

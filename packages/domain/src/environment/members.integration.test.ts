@@ -11,6 +11,7 @@ import { executeQuery } from "../commands/query";
 import { isDomainError } from "../errors";
 import { ConsumerRegistry } from "../outbox/consumer";
 import { blockUser, liftUserBlock } from "../social/commands";
+import { acquaint } from "../testing/acquaintance";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
 import { createEnvironment, updateRequirements } from "./environment-commands";
@@ -113,16 +114,19 @@ describe("the member list (WP-84, vision 03)", () => {
       await user(),
       await user(),
     ];
+    await acquaint(db, owner, member);
     await run(inviteMember, owner, {
       environmentId: closed,
       userId: member.userId,
     });
     await run(acceptInvitation, member, { environmentId: closed, answers: [] });
     await join(applicant, closed);
+    await acquaint(db, owner, invitee);
     await run(inviteMember, owner, {
       environmentId: closed,
       userId: invitee.userId,
     });
+    await acquaint(db, owner, resting);
     await run(inviteMember, owner, {
       environmentId: closed,
       userId: resting.userId,

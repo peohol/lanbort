@@ -15,6 +15,7 @@ import {
 import { executeQuery } from "../commands/query";
 import { ConsumerRegistry } from "../outbox/consumer";
 import { blockUser, liftUserBlock } from "../social/commands";
+import { acquaint } from "../testing/acquaintance";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser, testIdentity } from "../testing/identities";
 import {
@@ -537,6 +538,7 @@ describe("closed environments", () => {
     await expect(join(applicant, environmentId)).rejects.toMatchObject({
       code: "forbidden",
     });
+    await acquaint(db, owner, applicant);
     await expect(
       run(inviteMember, owner, { environmentId, userId: applicant.userId }),
     ).rejects.toMatchObject({ code: "conflict" });
@@ -650,6 +652,7 @@ describe("closed environments", () => {
       requirements: [rules],
     });
 
+    await acquaint(db, owner, invitee);
     const { membershipId } = await output(inviteMember, owner, {
       environmentId,
       userId: invitee.userId,
@@ -726,6 +729,7 @@ describe("hidden environments (PS-NFR-002)", () => {
     const invitee = await user();
     const bystander = await user();
 
+    await acquaint(db, owner, invitee);
     const { membershipId } = await output(inviteMember, owner, {
       environmentId,
       userId: invitee.userId,
@@ -787,6 +791,8 @@ describe("hidden environments (PS-NFR-002)", () => {
     const decliner = await user();
     const withdrawn = await user();
 
+    await acquaint(db, owner, decliner);
+    await acquaint(db, owner, withdrawn);
     await output(inviteMember, owner, {
       environmentId,
       userId: decliner.userId,
@@ -817,6 +823,13 @@ describe("hidden environments (PS-NFR-002)", () => {
       ).rejects.toMatchObject({ code: "not_found" });
     }
 
+    // PS-ENV-018: someone the administrator cannot see in Lånbort looks
+    // the same as an account that does not exist.
+    await expect(
+      run(inviteMember, owner, { environmentId, userId: invitee.userId }),
+    ).rejects.toMatchObject({ code: "not_found" });
+
+    await acquaint(db, owner, invitee);
     const input = { environmentId, userId: invitee.userId };
     const key = randomUUID();
     const [first, retry] = await Promise.all([
@@ -860,10 +873,12 @@ describe("hidden environments (PS-NFR-002)", () => {
     );
 
     // Without a block, and once it is lifted, the invitation goes through.
+    await acquaint(db, owner, unrelated);
     await expect(
       output(inviteMember, owner, { environmentId, userId: unrelated.userId }),
     ).resolves.toMatchObject({ state: "pending" });
     await output(liftUserBlock, owner, { userId: blockedByOwner.userId });
+    await acquaint(db, owner, blockedByOwner);
     await expect(
       output(inviteMember, owner, {
         environmentId,
@@ -876,6 +891,8 @@ describe("hidden environments (PS-NFR-002)", () => {
     const { owner, environmentId } = await hidden();
     const member = await user();
     const invitee = await user();
+    await acquaint(db, owner, member);
+    await acquaint(db, owner, invitee);
     await output(inviteMember, owner, { environmentId, userId: member.userId });
     await output(acceptInvitation, member, {
       environmentId,
@@ -903,6 +920,7 @@ describe("hidden environments (PS-NFR-002)", () => {
   it("serialize an invitation against a block placed at the same time", async () => {
     const { owner, environmentId } = await hidden();
     const other = await user();
+    await acquaint(db, owner, other);
 
     const [invited] = await Promise.allSettled([
       run(inviteMember, owner, { environmentId, userId: other.userId }),
@@ -923,6 +941,7 @@ describe("hidden environments (PS-NFR-002)", () => {
   it("let members see the environment but not administer it", async () => {
     const { owner, environmentId } = await hidden();
     const member = await user();
+    await acquaint(db, owner, member);
     await output(inviteMember, owner, { environmentId, userId: member.userId });
     await output(acceptInvitation, member, {
       environmentId,

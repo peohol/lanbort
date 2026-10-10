@@ -7,13 +7,17 @@ import type {
   EnvironmentRole,
   EnvironmentSummary,
   EnvironmentType,
+  InvitableEnvironments,
   MembershipState,
   OwnMembership,
   TypeChangeProposal,
 } from "@lanbort/contracts";
+import { socialTargetSchema } from "@lanbort/contracts";
 import { sql } from "kysely";
 import { z } from "zod";
+import { evaluate } from "../authorization/policy";
 import { defineQuery } from "../commands/query";
+import { loadPeople } from "../people/store";
 import { loadApproximateMembers } from "./member-count";
 import {
   type AdministratorRecord,
@@ -23,6 +27,7 @@ import {
   pendingRoleInvitations,
 } from "./continuity-store";
 import {
+  acceptsNewActivity,
   activeFrom,
   type ContinuityRecord,
   effectiveState,
@@ -36,11 +41,15 @@ import {
 import {
   concealedSpans,
   type HistoryPosition,
+  isConcealed,
   mayExposeHistory,
+  toPosition,
   type TypePeriod,
   widenedAfterPassivation,
 } from "./privacy";
 import {
+  inviteMemberPolicy,
+  listInvitableEnvironmentsPolicy,
   listMembersPolicy,
   listMembershipsPolicy,
   listRolesPolicy,
@@ -54,6 +63,7 @@ import {
   loadEnvironmentAccess,
 } from "./store";
 import {
+  concealedHistory,
   createdOutside,
   currentResponses,
   findOpenProposal,
@@ -709,5 +719,118 @@ export const listRoles = defineQuery({
       invitedByUserId: invitation.invitedByUserId,
       createdAt: invitation.createdAt.toISOString(),
     })),
+  }),
+});
+
+/**
+ * PS-ENV-018: the environments the caller may invite a person to now, for
+ * «Inviter til …» on the person's page: closed or hidden ones they
+ * administer that take members, where the person is neither a member nor
+ * invited, nor barred as far as the caller may know (PS-ENV-009). Asked
+ * only about someone the caller may see, and never across a block, so it
+ * looks up no account and tells of no environment the caller is not in.
+ */
+export const listInvitableEnvironments = defineQuery({
+  name: "environment_membership.list_invitable",
+  input: socialTargetSchema,
+  policy: listInvitableEnvironmentsPolicy,
+  rateLimit: rateLimits.lookups,
+  load: async ({ db, actor, input, now }) => {
+    if (actor.kind !== "user") {
+      return null;
+    }
+
+    return inSnapshot(db, async (tx) => {
+      const person = (
+        await loadPeople(tx, actor.userId, [input.userId], now)
+      ).get(input.userId);
+
+      if (!person) {
+        return null;
+      }
+
+      const { pair } = person;
+      const reachable =
+        pair !== null &&
+        pair.otherActive &&
+        !pair.blockedByActor &&
+        !pair.blockedByOther;
+      const administered = reachable
+        ? await tx
+            .selectFrom("app.environment_role_grants as grant")
+            .innerJoin(
+              "app.environments as environment",
+              "environment.id",
+              "grant.environment_id",
+            )
+            .select("environment.id")
+            .where("grant.user_id", "=", actor.userId)
+            .where("grant.role", "=", "administrator")
+            .where("grant.revoked_at", "is", null)
+            .where("environment.type", "<>", "open")
+            .where(({ not, exists, selectFrom }) =>
+              not(
+                exists(
+                  selectFrom("app.environment_memberships as membership")
+                    .select("membership.id")
+                    .whereRef(
+                      "membership.environment_id",
+                      "=",
+                      "environment.id",
+                    )
+                    .where("membership.user_id", "=", input.userId)
+                    .where("membership.state", "<>", "ended"),
+                ),
+              ),
+            )
+            .orderBy("environment.name")
+            .execute()
+        : [];
+      const environments: InvitableEnvironments["environments"] = [];
+
+      for (const { id } of administered) {
+        const access = await loadEnvironmentAccess(tx, id, actor, now);
+
+        if (
+          !access ||
+          !acceptsNewActivity(access.environment) ||
+          !evaluate(inviteMemberPolicy, {
+            actor,
+            now,
+            resource: access,
+            context: undefined,
+          }).allowed
+        ) {
+          continue;
+        }
+
+        const bar = await tx
+          .selectFrom("app.environment_access_restrictions")
+          .select("position")
+          .where("environment_id", "=", id)
+          .where("user_id", "=", input.userId)
+          .where("lifted_at", "is", null)
+          .executeTakeFirst();
+
+        // A bar the caller may not know of is lifted by inviting, as if
+        // there were none (PS-ENV-009); one they know of is lifted first.
+        if (
+          bar &&
+          !isConcealed(
+            await concealedHistory(tx, id, activeFrom(access.ownMembership)),
+            toPosition(bar.position),
+          )
+        ) {
+          continue;
+        }
+
+        environments.push({ id, name: access.environment.name });
+      }
+
+      return { resource: { ...person, environments }, context: undefined };
+    });
+  },
+  present: ({ resource }): InvitableEnvironments => ({
+    environments: resource.environments,
   }),
 });

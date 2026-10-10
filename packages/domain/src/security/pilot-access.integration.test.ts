@@ -37,6 +37,7 @@ import {
   uploadProfilePicture,
 } from "../index";
 import { testChatAccount, testChatDevice } from "../testing/chat";
+import { acquaint } from "../testing/acquaintance";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
 import { loanTestKit } from "../testing/loans";
@@ -175,6 +176,7 @@ async function hiddenWorld() {
   });
 
   const invitee = await user();
+  await acquaint(db, admin, invitee);
   const { membershipId } = await run(inviteMember, admin, {
     environmentId,
     userId: invitee.userId,
@@ -826,6 +828,7 @@ const personProbes: Record<string, (userId: string) => object> = {
   "account.start_closure": (userId) => ({ userId, basis: text }),
   "account.suspend": (userId) => ({ userId, basis: text }),
   "case.report_unavailability": (userId) => ({ userId, body: text }),
+  "environment_membership.list_invitable": (userId) => ({ userId }),
   // A request first, so the ones after it act on something.
   "friendship.request": (userId) => ({ userId }),
   "friendship.accept": (userId) => ({ userId }),

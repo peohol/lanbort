@@ -53,7 +53,8 @@ export function pictureVisible(person: PersonRelation): boolean {
   }
 }
 
-const visibleToActor: ResourceRule<PersonRelation, void> = ({
+/** The caller may open the person's page (WP-86). */
+export const personVisibleToActor: ResourceRule<PersonRelation, void> = ({
   actor,
   resource,
 }) =>
@@ -67,7 +68,7 @@ const visibleToActor: ResourceRule<PersonRelation, void> = ({
 export const readPersonPolicy = definePolicy<PersonRelation, void>({
   action: "person.read",
   actor: [requireActiveAccount],
-  resource: [visibleToActor],
+  resource: [personVisibleToActor],
 });
 
 /** A person's profile picture, for those who may see it. */

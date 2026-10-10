@@ -26,6 +26,7 @@ import { ConsumerRegistry } from "../outbox/consumer";
 import { publishObject } from "../publications/commands";
 import { publishToFriends } from "../publications/friends";
 import { acceptFriendRequest, sendFriendRequest } from "../social/commands";
+import { acquaint } from "./acquaintance";
 import { registerTestUser } from "./identities";
 
 const oneHour = 60 * 60 * 1000;
@@ -140,6 +141,7 @@ export function loanTestKit(
     if (type === "open") {
       await run(joinEnvironment, actor, { environmentId, answers: [] });
     } else {
+      await acquaint(db, admin, actor, clock);
       await run(inviteMember, admin, { environmentId, userId: actor.userId });
       await run(acceptInvitation, actor, { environmentId, answers: [] });
     }

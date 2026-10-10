@@ -316,6 +316,10 @@ function RequestInformation({
  * who are neither members nor barred. An open environment needs no
  * invitation.
  */
+/** PS-ENV-018: who else may be invited, and where. */
+const elsewhere =
+  "Du kan invitere vennene dine her, og andre du kan se i Lånbort fra siden deres.";
+
 function Invite({
   environment,
   candidates,
@@ -336,8 +340,8 @@ function Invite({
       <h2 id="inviter">Inviter</h2>
       <p className="help">
         {environment.type === "hidden"
-          ? "Bare de dere inviterer, kan bli med i et skjult miljø. Du kan invitere vennene dine."
-          : "Du kan invitere vennene dine. Andre kan søke fra miljøets side."}
+          ? `Bare de dere inviterer, kan bli med i et skjult miljø. ${elsewhere}`
+          : `${elsewhere} Ellers kan alle søke fra miljøets side.`}
       </p>
       {candidates.length === 0 ? (
         <p className="quiet">Ingen av vennene dine kan inviteres nå.</p>

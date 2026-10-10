@@ -15,6 +15,8 @@ import { DomainError } from "../errors";
 import type { EventRecorder } from "../events/recorder";
 import { moderationMeasureTaken } from "../moderation/events";
 import { insertMeasure } from "../moderation/store";
+import { personVisible } from "../people/policies";
+import { loadPeople } from "../people/store";
 import { lockPair, socialRelationBetween } from "../social/pair";
 import { lapseInvitationsOf } from "./continuity-store";
 import {
@@ -521,6 +523,25 @@ export const inviteMember = defineCommand({
       throw new DomainError("not_found", "No such account");
     }
 
+    // PS-ENV-018: only someone the administrator may see in Lånbort now, so
+    // an invitation never reaches, or tells of, anyone else. An invitation
+    // is new contact between the two (PS-USR-006): a block in either
+    // direction stops it too. Both look like an account that does not
+    // exist, so it never reveals who blocked whom. The pair lock orders it
+    // against a friendship or a block changing at the same time.
+    const inviter = userIdOf(actor);
+    await lockPair(tx, inviter, input.userId);
+    const person = (await loadPeople(tx, inviter, [input.userId], now)).get(
+      input.userId,
+    );
+    if (
+      !person ||
+      !personVisible(person) ||
+      (await socialRelationBetween(tx, inviter, input.userId)).blockedEitherWay
+    ) {
+      throw new DomainError("not_found", "No such account");
+    }
+
     if (invitee.membership_id !== null) {
       conflict("Already a member or invited");
     }
@@ -539,7 +560,7 @@ export const inviteMember = defineCommand({
       // lifts it, so the invitation goes exactly as if there were none.
       await tx
         .updateTable("app.environment_access_restrictions")
-        .set({ lifted_at: now, lifted_by_user_id: userIdOf(actor) })
+        .set({ lifted_at: now, lifted_by_user_id: inviter })
         .where("environment_id", "=", environment.id)
         .where("user_id", "=", input.userId)
         .where("lifted_at", "is", null)
@@ -548,18 +569,6 @@ export const inviteMember = defineCommand({
         resourceId: environment.id,
         payload: { userId: input.userId },
       });
-    }
-
-    // An invitation is new contact between the two (PS-USR-006): a block in
-    // either direction stops it, and looks like an account that does not
-    // exist so it never reveals who blocked whom. The pair lock orders it
-    // against a block being placed at the same time.
-    const inviter = userIdOf(actor);
-    await lockPair(tx, inviter, input.userId);
-    if (
-      (await socialRelationBetween(tx, inviter, input.userId)).blockedEitherWay
-    ) {
-      throw new DomainError("not_found", "No such account");
     }
 
     const membership = await tx

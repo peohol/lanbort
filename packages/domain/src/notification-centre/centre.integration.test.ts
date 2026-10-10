@@ -30,6 +30,7 @@ import {
   sendFriendRequest,
   withdrawFriendRequest,
 } from "../social/commands";
+import { acquaint } from "../testing/acquaintance";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
 import { deliverAll } from "../testing/outbox";
@@ -250,6 +251,7 @@ describe("invitations", () => {
     const admin = await user();
     const hidden = await environment(admin, { type: "hidden" });
     const invited = await user();
+    await acquaint(db, admin, invited);
     const { membershipId } = await run(inviteMember, admin, {
       environmentId: hidden,
       userId: invited.userId,
@@ -275,6 +277,7 @@ describe("invitations", () => {
     const admin = await user();
     const closed = await environment(admin, { type: "closed" });
     const invited = await user();
+    await acquaint(db, admin, invited);
     await run(inviteMember, admin, {
       environmentId: closed,
       userId: invited.userId,

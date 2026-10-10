@@ -10,6 +10,7 @@ import {
   readProfilePicturePolicy,
 } from "./policies";
 import type { PersonRelation } from "./store";
+import { listInvitableEnvironmentsPolicy } from "../environment/policies";
 
 const viewer = testUserActor();
 const other = "00000000-0000-4000-8000-0000000000c3";
@@ -73,6 +74,36 @@ const pictured = (
 const ownProfile: OwnProfile = { userId: viewer.userId };
 
 export const peopleMatrices = [
+  // PS-ENV-018: where someone may be invited is asked only about a person
+  // the caller may see.
+  policyMatrix(listInvitableEnvironmentsPolicy, [
+    expectCase("a friend", viewer, person(friends), "allow"),
+    expectCase(
+      "an active member of a shared environment",
+      viewer,
+      person({}, { shareEnvironment: true }),
+      "allow",
+    ),
+    expectCase("a stranger", viewer, person(), "not_found"),
+    expectCase(
+      "a friend who blocks the viewer",
+      viewer,
+      person({ ...friends, blockedByOther: true }),
+      "not_found",
+    ),
+    expectCase(
+      "a relation seen from someone else's side",
+      testUserActor(),
+      person(friends),
+      "not_found",
+    ),
+    expectCase(
+      "an account that has not completed registration",
+      pendingAccount,
+      person(friends),
+      "registration_required",
+    ),
+  ]),
   policyMatrix(readPersonPolicy, [
     expectCase(
       "their own page",
