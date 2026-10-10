@@ -11,6 +11,7 @@ import {
   notificationWords,
   olderText,
 } from "./notifications";
+import { passkeysHref } from "@/navigation/stewardship";
 
 describe("what a notification says", () => {
   it("has a sentence for every kind", () => {
@@ -221,21 +222,45 @@ describe("an application's outcome (PS-ENV-017)", () => {
       readAt: null,
     };
 
-    expect(notificationHref(approval)).toBe(
+    expect(notificationHref(approval, true)).toBe(
       `/miljoer/${environmentId}?velkommen`,
     );
     expect(
-      notificationHref({ ...approval, readAt: "2026-10-10T11:00:00.000Z" }),
+      notificationHref(
+        { ...approval, readAt: "2026-10-10T11:00:00.000Z" },
+        true,
+      ),
     ).toBe(`/miljoer/${environmentId}`);
     expect(
-      notificationHref({
-        ...approval,
-        kind: "environment.membership_rejected",
-      }),
+      notificationHref(
+        {
+          ...approval,
+          kind: "environment.membership_rejected",
+        },
+        true,
+      ),
     ).toBe(`/miljoer/${environmentId}`);
-    expect(notificationHref({ ...approval, detail: "reactivation" })).toBe(
-      `/miljoer/${environmentId}`,
-    );
+    expect(
+      notificationHref({ ...approval, detail: "reactivation" }, true),
+    ).toBe(`/miljoer/${environmentId}`);
+  });
+
+  it("leads a steward's passkey notice to their passkeys only while stewards are on", () => {
+    const notice: Notification = {
+      id: "00000000-0000-4000-8000-0000000000a2",
+      kind: "steward.passkeys_changed",
+      level: "required",
+      detail: "added",
+      target: {
+        type: "steward_access",
+        id: "00000000-0000-4000-8000-0000000000b1",
+      },
+      occurredAt: "2026-10-10T10:00:00.000Z",
+      readAt: null,
+    };
+
+    expect(notificationHref(notice, true)).toBe(passkeysHref);
+    expect(notificationHref(notice, false)).toBeNull();
   });
 });
 

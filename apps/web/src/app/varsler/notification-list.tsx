@@ -14,6 +14,7 @@ import {
   notificationWords,
   olderText,
 } from "@/presentation/notifications";
+import { platformStewardsEnabled } from "@/server/env";
 import styles from "./notifications.module.css";
 
 /**
@@ -32,7 +33,7 @@ function NotificationRow({
   const context = notificationContext(notification);
   const { title, detail } = notificationWords(notification);
   const more = olderText({ notification, older });
-  const href = notificationHref(notification);
+  const href = notificationHref(notification, platformStewardsEnabled());
   const content = (
     <>
       <ThingThumbnail

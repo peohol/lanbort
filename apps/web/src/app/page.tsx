@@ -12,6 +12,7 @@ import {
 } from "@/navigation/routes";
 import { notificationHref } from "@/presentation/notifications";
 import { queueCounts, stewardStanding } from "@/presentation/stewardship";
+import { platformStewardsEnabled } from "@/server/env";
 import { getPageAccount, pageQuery } from "@/server/session";
 import { getOpenPlatformCases, getStewardship } from "@/server/stewardship";
 
@@ -69,7 +70,10 @@ export default async function HomePage({
     return (
       <NotificationRedirect
         notificationId={notification.id}
-        href={notificationHref(notification) ?? notificationsHref}
+        href={
+          notificationHref(notification, platformStewardsEnabled()) ??
+          notificationsHref
+        }
       />
     );
   }
