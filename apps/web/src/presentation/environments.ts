@@ -61,7 +61,11 @@ export type MembershipStep =
   /** Nobody takes new members while it winds down (PS-ENV-012). */
   | { readonly kind: "closed_to_new" }
   | { readonly kind: "join" }
-  | { readonly kind: "apply" }
+  /**
+   * After a rejected application, applying again is the same step; the
+   * page never says whether it is barred (PS-ENV-017).
+   */
+  | { readonly kind: "apply"; readonly rejected: boolean }
   | { readonly kind: "accept_invitation" }
   | { readonly kind: "awaiting_review"; readonly reactivation: boolean }
   | { readonly kind: "information_requested" }
@@ -77,7 +81,9 @@ export function membershipStep(environment: Environment): MembershipStep {
 
   if (!membership) {
     if (!takesMembers) return { kind: "closed_to_new" };
-    return { kind: environment.type === "open" ? "join" : "apply" };
+    return environment.type === "open"
+      ? { kind: "join" }
+      : { kind: "apply", rejected: environment.applicationRejected };
   }
 
   if (membership.reviewStage === "information_requested") {
@@ -132,7 +138,10 @@ export function describeMembership(
     case "join":
       return "Du er ikke medlem. Du kan bli med med en gang.";
     case "apply":
-      return "Du er ikke medlem. En administrator ser på søknaden din før du blir med.";
+      // PS-ENV-017: neutral, never why or who decided.
+      return step.rejected
+        ? "Søknaden ble ikke godkjent."
+        : "Du er ikke medlem. En administrator ser på søknaden din før du blir med.";
     case "accept_invitation":
       return "Du er invitert til miljøet. Les reglene og godta invitasjonen for å bli med.";
     case "awaiting_review":
@@ -164,8 +173,11 @@ export function membershipLabel(
   switch (step.kind) {
     case "closed_to_new":
       return "Avvikles";
-    case "join":
     case "apply":
+      return step.rejected
+        ? "Ikke godkjent"
+        : environmentTypeNames[environment.type];
+    case "join":
       return environmentTypeNames[environment.type];
     case "accept_invitation":
       return "Invitert";
@@ -219,7 +231,7 @@ export function answerCommand(
       return {
         path: join,
         heading: "Søk om å bli med",
-        opens: "Søk om å bli med",
+        opens: step.rejected ? "Søk på nytt" : "Søk om å bli med",
         label: "Send søknaden",
         joins: false,
         reviewed: true,

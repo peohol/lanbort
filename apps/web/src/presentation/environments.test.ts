@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   answerCommand,
   describeMembers,
+  describeMembership,
   describeTypeChange,
   givenAnswers,
   leavingConsequences,
@@ -30,6 +31,7 @@ const environment = (
   requiresObjectApproval: false,
   requirements: [],
   members: null,
+  applicationRejected: false,
   membership: membership && {
     id: "00000000-0000-4000-8000-0000000000f1",
     state: "active",
@@ -53,7 +55,10 @@ describe("membershipStep", () => {
     expect(membershipStep(environment({ type: "open" }))).toEqual({
       kind: "join",
     });
-    expect(membershipStep(environment())).toEqual({ kind: "apply" });
+    expect(membershipStep(environment())).toEqual({
+      kind: "apply",
+      rejected: false,
+    });
     expect(membershipStep(environment({ state: "winding_down" }))).toEqual({
       kind: "closed_to_new",
     });
@@ -241,6 +246,29 @@ describe("membershipLabel", () => {
     );
     const member = environment({}, {});
     expect(membershipLabel(member, membershipStep(member))).toBe("Medlem");
+  });
+});
+
+describe("a rejected application (PS-ENV-017)", () => {
+  it("says so neutrally and leaves applying again as it was", () => {
+    const rejected = environment({ applicationRejected: true });
+    const step = membershipStep(rejected);
+
+    expect(step).toEqual({ kind: "apply", rejected: true });
+    expect(membershipLabel(rejected, step)).toBe("Ikke godkjent");
+    expect(describeMembership(rejected, step)).toBe(
+      "Søknaden ble ikke godkjent.",
+    );
+    expect(answerCommand(rejected, step)).toMatchObject({
+      opens: "Søk på nytt",
+      reviewed: true,
+    });
+  });
+
+  it("gives way to joining an environment that has become open", () => {
+    expect(
+      membershipStep(environment({ type: "open", applicationRejected: true })),
+    ).toEqual({ kind: "join" });
   });
 });
 
