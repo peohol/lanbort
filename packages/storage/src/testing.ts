@@ -1,3 +1,4 @@
+import type { StorageArchive, StoredFile } from "./archive";
 import type { FileStore } from "./object-store";
 
 /** An in-memory file store for tests. Never used by production code. */
@@ -17,5 +18,32 @@ export class MemoryFileStore implements FileStore {
 
   async remove(key: string) {
     this.files.delete(key);
+  }
+}
+
+/** An in-memory archive of several buckets for tests. */
+export class MemoryStorageArchive implements StorageArchive {
+  readonly stored = new Map<string, { file: StoredFile; bytes: Uint8Array }>();
+
+  constructor(readonly buckets: readonly string[]) {}
+
+  async files() {
+    return [...this.stored.values()].map(({ file }) => file);
+  }
+
+  async get(bucket: string, key: string) {
+    const stored = this.stored.get(`${bucket}/${key}`);
+    if (!stored) throw new Error(`No file ${bucket}/${key}`);
+    return stored.bytes;
+  }
+
+  async put(file: StoredFile, bytes: Uint8Array) {
+    if (!this.buckets.includes(file.bucket)) {
+      throw new Error(`No bucket ${file.bucket}`);
+    }
+    this.stored.set(`${file.bucket}/${file.key}`, {
+      file: { ...file, size: bytes.length },
+      bytes,
+    });
   }
 }

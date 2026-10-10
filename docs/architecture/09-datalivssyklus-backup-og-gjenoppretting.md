@@ -42,7 +42,7 @@ Pilotmål, som gjelder fra et eksternt brukerpanel (Port D):
 - periodisk restore-test til isolert miljø
 - separat sikkerhetskopi/versjonering av nødvendige mediefiler i samsvar med retention
 
-Hvordan målene nås, og om betalt backup eller kontinuerlig/PITR-backup skal brukes, besluttes av produkteier før piloten (ADR-0009).
+Hvordan målene nås, besluttes av produkteier før piloten (OD-0022). Oppsettet og øvelsene står i [backup og gjenoppretting](../implementation/backup-restore.md#strategi-for-piloten).
 
 ## Restore
 

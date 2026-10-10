@@ -205,6 +205,9 @@ importers:
       '@lanbort/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@lanbort/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       kysely:
         specifier: 0.29.6
         version: 0.29.6
