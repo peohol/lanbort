@@ -1,0 +1,5 @@
+Contact: https://github.com/peohol/lanbort/security/advisories/new
+Expires: 2027-10-01T00:00:00.000Z
+Preferred-Languages: no, en
+Canonical: https://www.xn--lnbort-iua.no/.well-known/security.txt
+Policy: https://github.com/peohol/lanbort/blob/main/SECURITY.md

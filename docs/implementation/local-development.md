@@ -60,9 +60,9 @@ SQL-filene i `supabase/migrations/` er den autoritative skjemahistorikken. Den l
 
 ### Hostet produksjon
 
-Produksjon er Vercel-prosjektet bak <https://lanbort.vercel.app> og Supabase-prosjektet som står som `project_id` under `[remotes.production]` i `supabase/config.toml`. Skjema og Auth-innstillinger endres bare med Supabase CLI gjennom GitHub-arbeidsflyten **Supabase production** (`.github/workflows/supabase-production.yml`), som startes manuelt fra `main` og trenger repo-hemmeligheten `SUPABASE_ACCESS_TOKEN`:
+Produksjon er Vercel-prosjektet bak <https://www.lånbort.no> (`www.xn--lnbort-iua.no`, som er `APP_URL`; sidene på Vercels egne adresser, som lanbort.vercel.app, sender videre dit, mens API-ene og de planlagte jobbene svarer overalt) og Supabase-prosjektet som står som `project_id` under `[remotes.production]` i `supabase/config.toml`. Skjema og Auth-innstillinger endres bare med Supabase CLI gjennom GitHub-arbeidsflyten **Supabase production** (`.github/workflows/supabase-production.yml`), som startes manuelt fra `main` og trenger repo-hemmeligheten `SUPABASE_ACCESS_TOKEN`:
 
-- `migrate-dry-run`, deretter `migrate`: kjører nye migrasjoner og viser historikken etterpå.
+- `migrate-dry-run`, deretter `migrate`: kjører nye migrasjoner og viser historikken etterpå. En migrasjon som er eldre enn den nyeste i produksjon (merget etter at en senere ble kjørt), krever `include_all`; se først at den ikke bygger på noe den senere endret.
 - `config-diff`, deretter `config-push`: setter Auth-innstillinger og e-postmaler fra `supabase/config.toml`.
 - `status`: viser migrasjonshistorikken lokalt mot hostet.
 - `repair`: bare for å rette en historikk som ikke stemmer med det som faktisk er i databasen, etter at det er kontrollert.
@@ -102,4 +102,4 @@ Se [servergrense og autorisasjon](server-boundary.md) for hvordan nye API-er, po
 
 - Utenfor chatsidene tillater CSP `'unsafe-inline'` for skript, fordi Next.js trenger det uten nonce-basert CSP. Chatsidene (`/samtaler`) har nonce-basert CSP uten det. `next dev` får i tillegg `'unsafe-eval'`, aldri produksjonsbygget.
 - Privat chat er bare på der `CHAT_ENABLED=true` (lokalt og i CI, fra `.env.example`). Den skal ikke settes i et hostet miljø med ekte brukere før Port C er oppfylt.
-- Det finnes et hostet produksjonsmiljø (se [hostet produksjon](#hostet-produksjon)), men ikke noe staging-miljø. Serveren trenger `SUPABASE_SECRET_KEY` i plattformens hemmelighetslager for objektbilder; uten den svarer bilde-API-ene `unavailable`. E-postvarsler trenger `RESEND_API_KEY` (hemmelig), `NOTIFICATION_EMAIL_FROM` (avsender på et verifisert domene) og `APP_URL` (appens offentlige adresse); uten dem venter e-postkøen. Lokalt og i CI sendes ingen varslings-e-post.
+- Det finnes et hostet produksjonsmiljø (se [hostet produksjon](#hostet-produksjon)), men ikke noe staging-miljø. Serveren trenger `SUPABASE_SECRET_KEY` i plattformens hemmelighetslager for objektbilder; uten den svarer bilde-API-ene `unavailable`. E-postvarsler trenger `RESEND_API_KEY` (hemmelig), `NOTIFICATION_EMAIL_FROM` (avsender på et verifisert domene) og `APP_URL` (appens offentlige adresse); uten dem venter e-postkøen. Lokalt og i CI sendes ingen varslings-e-post. Siden «Personvern og sikkerhet» viser hvem som driver Lånbort og hvor man melder fra, fra `OPERATOR_NAME` og `CONTACT_EMAIL`; de settes bare i plattformen, siden repoet er offentlig.

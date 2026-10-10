@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { anonymousActor, type UserActor } from "../actor";
 import { allow, definePolicy, deny } from "../authorization/policy";
-import { requireUser } from "../authorization/rules";
+import { requireActiveAccount, requireUser } from "../authorization/rules";
 import { DomainError } from "../errors";
 import { defineEvent } from "../events/catalog";
 import { ConsumerRegistry, defineConsumer } from "../outbox/consumer";
@@ -255,6 +255,48 @@ describe("idempotent commands (WP-14)", () => {
     const { events, outbox } = await persisted(markerId);
     expect(events).toHaveLength(1);
     expect(outbox).toHaveLength(1);
+  });
+
+  it("replays a completed request that changed what its actor may do", async () => {
+    const deactivateSelf = defineCommand({
+      name: "test.deactivate_self",
+      input: z.strictObject({}),
+      output: z.strictObject({ done: z.boolean() }),
+      policy: definePolicy<void, void>({
+        action: "test.deactivate_self",
+        actor: [requireActiveAccount],
+      }),
+      idempotency: "required",
+      load: async () => ({ resource: undefined, context: undefined }),
+      // Stands in for «Deaktiver kontoen»: the caller's session now carries
+      // the inactive account.
+      execute: async () => ({ done: true }),
+    });
+    const actor = await user();
+    const request = { actor, input: {}, idempotencyKey: randomUUID() };
+    await executeCommand(domain, deactivateSelf, request);
+
+    // The response was lost; the retry comes from the now inactive account.
+    const inactive: UserActor = { ...actor, accountStatus: "deactivated" };
+    await expect(
+      executeCommand(domain, deactivateSelf, { ...request, actor: inactive }),
+    ).resolves.toEqual({ output: { done: true }, replayed: true });
+    await expect(
+      executeCommand(domain, deactivateSelf, {
+        ...request,
+        actor: inactive,
+        idempotencyKey: randomUUID(),
+      }),
+    ).rejects.toMatchObject({ code: "account_inactive" });
+
+    // Another account gets nothing from it.
+    const other: UserActor = {
+      ...(await user()),
+      accountStatus: "deactivated",
+    };
+    await expect(
+      executeCommand(domain, deactivateSelf, { ...request, actor: other }),
+    ).rejects.toMatchObject({ code: "account_inactive" });
   });
 
   it("rejects the same key with different input instead of replaying", async () => {

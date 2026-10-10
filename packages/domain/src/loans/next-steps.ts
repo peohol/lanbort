@@ -108,6 +108,7 @@ export function loanActions(
           loan.status,
           loan.period,
           loan.handover,
+          loan.returns,
           role,
           outcome,
           today,

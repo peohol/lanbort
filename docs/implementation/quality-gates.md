@@ -43,6 +43,7 @@ Må være oppfylt:
 - backup/restore WP-72 er gjennomført, også én gjenoppretting mot et hostet miljø
 - backupnivået for piloten er besluttet av produkteier (ADR-0009), satt opp i produksjon og verifisert med en gjenoppretting; før denne beslutningen er betalt backup ingen forutsetning for noen port
 - rate limiting og misbruksvern er aktivert
+- sikkerhetskritiske henvendelser har en betjent kanal: `CONTACT_EMAIL` i produksjon er en adresse produkteier leser, og GitHubs private sårbarhetsmeldinger er slått på ([pilot-operations](pilot-operations.md#henvendelser-om-sikkerhet-og-personvern))
 - produksjonshemmeligheter er skilt fra utvikling
 - OD-0002 har minst en eksplisitt pilot-retentionpolicy
 - OD-0006 er avgjort ([PS-OBJ-018](../product-spec/03-utlansobjekter.md))

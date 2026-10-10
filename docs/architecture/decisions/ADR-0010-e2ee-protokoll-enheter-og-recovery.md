@@ -159,6 +159,8 @@ Serveren:
 - tar imot og leverer ciphertext, velkomstmeldinger (welcome) og koblingspakker
 - **bestemmer rekkefølgen:** nøyaktig én commit vinner hver epoke. En commit godtas bare hvis epoken i meldingshodet er samtalens nåværende epoke; ellers avvises den, og avsenderen henter vinneren og prøver igjen. Klienten tar i bruk sin egen commit først når serveren har godtatt den (`PendingCommit.accept()`), eller forkaster den (`discard()`). Mens den venter, sender og mottar enheten ingenting i samtalen, så commiten alltid gjelder tilstanden den ble laget fra.
 - **autoriserer** etter ADR-0002: at sendende enhet tilhører sesjonens konto og ikke er tilbakekalt, at kontoen er deltaker, at samtalen er åpen, og at reglene for blokkering og første kontakt (PS-COM-006) er oppfylt
+- tar bare ut av leveringen enheter den selv allerede har stengt ute (tilbakekalt, under erstattet kontonøkkel eller slettet), så en deltaker ikke kan stenge en annens levende enhet ute fra leveringen; kryptografisk fjerning avgjøres uansett av mottakerne (punkt 4)
+- kobler ikke flere enn 100 levende enheter til én konto, så en gjenoppretting alltid kan tilbakekalle alle de andre i én forespørsel
 - sletter levert ciphertext (punkt 8)
 
 Serveren importerer aldri `@lanbort/e2ee`. En test (`boundary.test.ts`) feiler hvis noen modul utenom klientkomponenter (`"use client"`) gjør det, også sider, layout og proxy i webappen, som kjører på serveren.

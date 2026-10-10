@@ -41,7 +41,7 @@ Appens egne logger har bare hendelsesnavn, rute, status, varighet og feilkode, a
 | Supabase (Pro) | API-, database- og innloggingslogger | 7 dager |
 | Resend | Sendte e-poster med mottakeradresse | 30 dager |
 
-Tidene er leverandørenes egne (dokumentasjonen deres, lest 10. oktober 2026), og Lånbort betaler ikke for lengre lagring. Ved en alvorlig hendelse må det som trengs, tas ut innen disse fristene.
+Tidene er leverandørenes egne (dokumentasjonen deres, lest 10. oktober 2026), og Lånbort betaler ikke for lengre lagring. Ved en alvorlig hendelse må det som trengs, tas ut innen disse fristene ([alvorlige hendelser](pilot-operations.md#alvorlige-hendelser)).
 
 ## Ved pilotens slutt
 
