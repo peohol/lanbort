@@ -134,6 +134,8 @@ function Steps({ request }: { request: LoanRequestDetail }) {
           path={`${path}/approve`}
           body={{}}
           next={loanHref("{loanId}")}
+          // The approved request is done with: the loan takes its place.
+          replace
           primary
         />
       )}
