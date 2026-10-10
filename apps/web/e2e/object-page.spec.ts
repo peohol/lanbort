@@ -175,7 +175,7 @@ test("the owner answers questions about the thing and may write to who asked", a
     await reader.goto("/varsler");
     await reader.getByRole("link", { name: title }).first().click();
     await expect(reader).toHaveURL(
-      `/ting/${objectId}?miljo=${environmentId}#sporsmal`,
+      `/ting/${objectId}?miljo=${environmentId}#sporsmal-${questionId}`,
     );
   };
   await followNotification(

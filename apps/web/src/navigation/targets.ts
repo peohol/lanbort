@@ -10,6 +10,7 @@ import {
   loanRequestHref,
   objectQuestionHref,
   personHref,
+  questionAnchor,
 } from "./routes";
 
 interface Place {
@@ -40,7 +41,7 @@ const targetPages: Record<NotificationTargetType, Place | null> = {
   case: { href: caseHref, anchor: (id) => `sak-${id}` },
   object_question: {
     href: objectQuestionHref,
-    anchor: (id) => `sporsmal-${id}`,
+    anchor: questionAnchor,
   },
   object_subscription: null,
   chat_device: entryOn(chatDevicesHref, (id) => `enhet-${id}`),
