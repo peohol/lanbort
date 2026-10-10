@@ -82,7 +82,7 @@ test("an environment is created, applied to, used and left in the browser", asyn
   ).toBeVisible();
   // About how many, never the exact number (PS-ENV-016).
   await expect(bo.page.getByText("under 10 medlemmer")).toBeVisible();
-  await expect(bo.page.getByRole("heading", { name: /Medlemmer/ })).toHaveCount(
+  await expect(bo.page.getByRole("heading", { name: /Andre medlemmer/ })).toHaveCount(
     0,
   );
   const asks = bo.page.getByRole("region", { name: "For å bli med" });
@@ -203,7 +203,7 @@ test("an environment is created, applied to, used and left in the browser", asyn
   );
   await expect(
     bo.page
-      .getByRole("region", { name: /Medlemmer/ })
+      .getByRole("region", { name: /Andre medlemmer/ })
       .getByRole("link", { name: "Anna Berg" }),
   ).toHaveAttribute("href", `/personer/${annaId}`);
   await expect(

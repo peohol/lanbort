@@ -578,190 +578,194 @@ export function ObjectForm(props: ObjectFormProps) {
 
   if (step === "review") {
     return (
-      <div className={styles.form}>
+      <>
         {header}
-        {progress}
-        <ReviewGroup
-          heading={formStepNames.about}
-          onChange={() => go(stepOf("about"))}
-          rows={[
-            [objectFieldLabels.title, content.title],
-            [
-              objectFieldLabels.categoryId,
-              categoryLabel(categories, content.categoryId),
-            ],
-            ["Bilder", images.length === 0 ? "Ingen" : images.length],
-            [
-              objectFieldLabels.description,
-              <span key="beskrivelse" className="message-text">
-                {content.description}
-              </span>,
-            ],
-          ]}
-        />
-        <ReviewGroup
-          heading={formStepNames.when}
-          onChange={() => go(stepOf("when"))}
-          rows={[
-            [
-              "Ledig",
-              content.availability.length === 0
-                ? "Ingen perioder. Den kan ikke lånes ut før du legger inn en."
-                : availabilityLine(content.availability, today),
-            ],
-            [
-              "Vilkår",
-              <span key="vilkar" className="message-text">
-                {content.loanTerms ?? "Ingen egne vilkår"}
-              </span>,
-            ],
-          ]}
-        />
-        {props.mode === "create" && (
+        <div className={styles.form}>
+          {progress}
           <ReviewGroup
-            heading={formStepNames.who}
-            onChange={() => go(stepOf("who"))}
+            heading={formStepNames.about}
+            onChange={() => go(stepOf("about"))}
             rows={[
-              ...props.environments.map(
-                (environment) =>
-                  [
-                    environment.name,
-                    published.includes(environment.id)
-                      ? "Publiseres"
-                      : "Ikke valgt",
-                  ] as const,
-              ),
-              ["Venner", friends ? "Publiseres" : "Ikke valgt"] as const,
+              [objectFieldLabels.title, content.title],
+              [
+                objectFieldLabels.categoryId,
+                categoryLabel(categories, content.categoryId),
+              ],
+              ["Bilder", images.length === 0 ? "Ingen" : images.length],
+              [
+                objectFieldLabels.description,
+                <span key="beskrivelse" className="message-text">
+                  {content.description}
+                </span>,
+              ],
             ]}
           />
-        )}
-        {editing ? (
-          <>
-            <p>
-              {nothingToSave
-                ? "Du har ikke endret noe."
-                : `Du endrer: ${[
-                    ...changed.map((field) => objectFieldLabels[field]),
-                    ...(imagesChanged ? ["Bilder"] : []),
-                  ]
-                    .join(", ")
-                    .toLowerCase()}.`}
-            </p>
-            {changed.includes("loanTerms") && (
-              <p className="waiting">{changedTermsNotice}</p>
-            )}
-          </>
-        ) : (
-          <p className={styles.outcome}>
-            {publishAs
-              ? publishOutcome(choice, content.title)
-              : "Ingen kan se den ennå. Uten miljø eller venner lagres tingen bare for deg. Du kan publisere den senere fra tingens side."}
-          </p>
-        )}
-        {newer && base && (
-          <NewerVersion
-            base={base.draft}
-            latest={newer}
-            categories={categories}
-            busy={pending}
-            onKeepMine={() => keepMine(newer)}
-            onTakeSaved={() => takeSaved(newer)}
+          <ReviewGroup
+            heading={formStepNames.when}
+            onChange={() => go(stepOf("when"))}
+            rows={[
+              [
+                "Ledig",
+                content.availability.length === 0
+                  ? "Ingen perioder. Den kan ikke lånes ut før du legger inn en."
+                  : availabilityLine(content.availability, today),
+              ],
+              [
+                "Vilkår",
+                <span key="vilkar" className="message-text">
+                  {content.loanTerms ?? "Ingen egne vilkår"}
+                </span>,
+              ],
+            ]}
           />
-        )}
-        {!newer && !nothingToSave && (
-          <div className={styles.submit}>
-            <BusyButton
-              type="button"
-              className="button-primary"
-              busy={pending}
-              busyNote={editing ? "lagrer …" : "publiserer …"}
-              onClick={() => void save()}
-            >
-              {editing
-                ? "Lagre endringene"
-                : (publishAs ?? "Lagre uten å publisere")}
-            </BusyButton>
-            {!editing && publishAs && !publishing && (
-              <p className={styles.private}>
-                <button
-                  type="button"
-                  className="button-quiet"
-                  aria-describedby="bare-for-deg"
-                  onClick={() => void save({ publish: false })}
-                >
-                  Lagre uten å publisere
-                </button>
-                <span id="bare-for-deg" className="help">
-                  Da er den bare synlig for deg.
-                </span>
+          {props.mode === "create" && (
+            <ReviewGroup
+              heading={formStepNames.who}
+              onChange={() => go(stepOf("who"))}
+              rows={[
+                ...props.environments.map(
+                  (environment) =>
+                    [
+                      environment.name,
+                      published.includes(environment.id)
+                        ? "Publiseres"
+                        : "Ikke valgt",
+                    ] as const,
+                ),
+                ["Venner", friends ? "Publiseres" : "Ikke valgt"] as const,
+              ]}
+            />
+          )}
+          {editing ? (
+            <>
+              <p>
+                {nothingToSave
+                  ? "Du har ikke endret noe."
+                  : `Du endrer: ${[
+                      ...changed.map((field) => objectFieldLabels[field]),
+                      ...(imagesChanged ? ["Bilder"] : []),
+                    ]
+                      .join(", ")
+                      .toLowerCase()}.`}
               </p>
-            )}
-            {createdId && failure && (
-              <Link className="button" href={objectHref(createdId)}>
-                Gå til tingen
-              </Link>
-            )}
-          </div>
-        )}
-        <ErrorText>
-          {failure &&
-            (createdId
-              ? `Tingen er registrert, men ikke alt ble fullført. ${errorMessage(failure)}`
-              : errorMessage(failure))}
-        </ErrorText>
-        {discardDialog}
-      </div>
+              {changed.includes("loanTerms") && (
+                <p className="waiting">{changedTermsNotice}</p>
+              )}
+            </>
+          ) : (
+            <p className={styles.outcome}>
+              {publishAs
+                ? publishOutcome(choice, content.title)
+                : "Ingen kan se den ennå. Uten miljø eller venner lagres tingen bare for deg. Du kan publisere den senere fra tingens side."}
+            </p>
+          )}
+          {newer && base && (
+            <NewerVersion
+              base={base.draft}
+              latest={newer}
+              categories={categories}
+              busy={pending}
+              onKeepMine={() => keepMine(newer)}
+              onTakeSaved={() => takeSaved(newer)}
+            />
+          )}
+          {!newer && !nothingToSave && (
+            <div className={styles.submit}>
+              <BusyButton
+                type="button"
+                className="button-primary"
+                busy={pending}
+                busyNote={editing ? "lagrer …" : "publiserer …"}
+                onClick={() => void save()}
+              >
+                {editing
+                  ? "Lagre endringene"
+                  : (publishAs ?? "Lagre uten å publisere")}
+              </BusyButton>
+              {!editing && publishAs && !publishing && (
+                <p className={styles.private}>
+                  <button
+                    type="button"
+                    className="button-quiet"
+                    aria-describedby="bare-for-deg"
+                    onClick={() => void save({ publish: false })}
+                  >
+                    Lagre uten å publisere
+                  </button>
+                  <span id="bare-for-deg" className="help">
+                    Da er den bare synlig for deg.
+                  </span>
+                </p>
+              )}
+              {createdId && failure && (
+                <Link className="button" href={objectHref(createdId)}>
+                  Gå til tingen
+                </Link>
+              )}
+            </div>
+          )}
+          <ErrorText>
+            {failure &&
+              (createdId
+                ? `Tingen er registrert, men ikke alt ble fullført. ${errorMessage(failure)}`
+                : errorMessage(failure))}
+          </ErrorText>
+          {discardDialog}
+        </div>
+      </>
     );
   }
 
   return (
-    <div className={styles.form}>
+    <>
       {header}
-      {progress}
-      <form onSubmit={next}>
-        {step === "about" && (
-          <AboutStep
-            draft={draft}
-            set={set}
-            categories={categories}
-            editing={editing !== null}
-            images={images}
-            onAddImages={(added) =>
-              setImages((current) => [...current, ...added])
-            }
-            onRemoveImage={removeImage}
-            titleField={titleField}
-          />
-        )}
-        {step === "when" && (
-          <WhenStep
-            draft={draft}
-            set={set}
-            today={today}
-            mode={mode}
-            onMode={chooseMode}
-            overlapping={overlapping}
-            termsNotice={
-              changed.includes("loanTerms") ? changedTermsNotice : null
-            }
-          />
-        )}
-        {step === "who" && props.mode === "create" && (
-          <WhoStep
-            environments={props.environments}
-            published={published}
-            onPublished={setPublished}
-            friends={friends}
-            onFriends={setFriends}
-            preselected={props.preselected}
-          />
-        )}
-        <button type="submit" className={styles.next}>
-          Videre
-        </button>
-      </form>
-      {discardDialog}
-    </div>
+      <div className={styles.form}>
+        {progress}
+        <form onSubmit={next}>
+          {step === "about" && (
+            <AboutStep
+              draft={draft}
+              set={set}
+              categories={categories}
+              editing={editing !== null}
+              images={images}
+              onAddImages={(added) =>
+                setImages((current) => [...current, ...added])
+              }
+              onRemoveImage={removeImage}
+              titleField={titleField}
+            />
+          )}
+          {step === "when" && (
+            <WhenStep
+              draft={draft}
+              set={set}
+              today={today}
+              mode={mode}
+              onMode={chooseMode}
+              overlapping={overlapping}
+              termsNotice={
+                changed.includes("loanTerms") ? changedTermsNotice : null
+              }
+            />
+          )}
+          {step === "who" && props.mode === "create" && (
+            <WhoStep
+              environments={props.environments}
+              published={published}
+              onPublished={setPublished}
+              friends={friends}
+              onFriends={setFriends}
+              preselected={props.preselected}
+            />
+          )}
+          <button type="submit" className={styles.next}>
+            Videre
+          </button>
+        </form>
+        {discardDialog}
+      </div>
+    </>
   );
 }
 

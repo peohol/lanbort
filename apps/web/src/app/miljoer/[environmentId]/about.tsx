@@ -60,13 +60,25 @@ export function About({ environment }: { environment: Environment }) {
           </>
         )}
       </dl>
-      {area && (
-        <AreaMap
-          areas={[{ id: environment.id, name: environment.name, area }]}
-          searched={null}
-        />
-      )}
+      <EnvironmentArea environment={environment} />
     </section>
+  );
+}
+
+/** The environment's approximate area on a map, if it has one (WP-62). */
+export function EnvironmentArea({
+  environment: { id, name, area },
+}: {
+  environment: Environment;
+}) {
+  return (
+    area && (
+      <AreaMap
+        areas={[{ id, name, area }]}
+        searched={null}
+        caption="Omtrentlig område for miljøet."
+      />
+    )
   );
 }
 
