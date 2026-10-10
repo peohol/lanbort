@@ -50,6 +50,25 @@ describe("cases", () => {
         }),
       ),
     ).toBe("Rapport om «Gassflaske»");
+    expect(
+      caseTitle(
+        summary({
+          kind: "platform_inquiry",
+          reportTarget: "user",
+          subjectUserId: mats,
+          people: [{ userId: mats, realName: "Mats" }],
+        }),
+      ),
+    ).toBe("Saksgrunnlag om Mats");
+    expect(
+      caseTitle(
+        summary({
+          kind: "platform_inquiry",
+          reportTarget: "object",
+          title: "Gassflaske",
+        }),
+      ),
+    ).toBe("Saksgrunnlag om «Gassflaske»");
   });
 
   it("names a contact from the reader's side", () => {

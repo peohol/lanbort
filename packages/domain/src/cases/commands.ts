@@ -327,13 +327,20 @@ async function writeAsHandler(
     invalid("toUserId", "Only an entry to one participant names them");
   }
 
-  if (
-    input.toUserId !== undefined &&
-    !(await loadParticipants(tx, c.id)).some(
-      (participant) => participant.userId === input.toUserId,
-    )
-  ) {
-    invalid("toUserId", "Not a participant of the case");
+  if (audience !== "handlers") {
+    const participants = await loadParticipants(tx, c.id);
+
+    // A steward's own inquiry has no parties to write to (PS-ADM-015).
+    if (participants.length === 0) {
+      invalid("audience", "Nobody takes part in the case");
+    }
+
+    if (
+      input.toUserId !== undefined &&
+      !participants.some((participant) => participant.userId === input.toUserId)
+    ) {
+      invalid("toUserId", "Not a participant of the case");
+    }
   }
 
   if (c.status === "open") {

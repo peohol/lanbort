@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import type { UserActor } from "../actor";
 import { suspendAccount } from "../account/lifecycle";
-import { claimCase, closeCase } from "../cases/commands";
+import { claimCase, closeCase, writeCaseEntry } from "../cases/commands";
 import { readCase } from "../cases/queries";
 import { executeQuery } from "../commands/query";
 import {
@@ -98,6 +98,19 @@ describe("a steward's own inquiry (PS-ADM-015)", () => {
     expect(JSON.stringify(await eventsFor("case", caseId))).not.toContain(
       basis,
     );
+    // Nobody takes part, so the steward writes to the handlers only.
+    await expect(
+      run(writeCaseEntry, platform, {
+        caseId,
+        body: "Til partene",
+        audience: "parties",
+      }),
+    ).rejects.toMatchObject({ code: "invalid_input", fields: ["audience"] });
+    await run(writeCaseEntry, platform, {
+      caseId,
+      body: "Internt notat",
+      audience: "handlers",
+    });
 
     // Never about the steward's own account or thing.
     await expect(

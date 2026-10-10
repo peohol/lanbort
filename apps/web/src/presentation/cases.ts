@@ -118,6 +118,9 @@ export function caseTitle(
       return c.title ? `Mekling om ${c.title}` : caseKindLabels[c.kind];
     case "unavailability_report":
       return `Melding om ${subject()}`;
+    case "platform_inquiry":
+      if (c.reportTarget === "user") return `Saksgrunnlag om ${subject()}`;
+      return c.title ? `Saksgrunnlag om «${c.title}»` : caseKindLabels[c.kind];
     default:
       if (c.reportTarget === "user") return `Rapport om ${subject()}`;
       if (c.reportTarget === "object" && c.title) {
