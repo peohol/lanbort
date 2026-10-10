@@ -10,7 +10,7 @@ import {
   registrationHref,
   signInHref,
 } from "@/navigation/routes";
-import { hrefFor } from "@/navigation/targets";
+import { notificationHref } from "@/presentation/notifications";
 import { getPageAccount, pageQuery } from "@/server/session";
 
 /**
@@ -67,7 +67,7 @@ export default async function HomePage({
     return (
       <NotificationRedirect
         notificationId={notification.id}
-        href={hrefFor(notification.target) ?? notificationsHref}
+        href={notificationHref(notification) ?? notificationsHref}
       />
     );
   }
