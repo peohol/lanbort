@@ -413,6 +413,11 @@ export const chatConversationSchema = z.strictObject({
   waiting: z.boolean(),
   /** The caller gets no notifications of its messages (PS-COM-018). */
   muted: z.boolean(),
+  /**
+   * When it was started: a device linked later shows that earlier messages
+   * are on the devices that got them (13).
+   */
+  startedAt: z.iso.datetime(),
   lastActivityAt: z.iso.datetime(),
 });
 

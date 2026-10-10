@@ -4,6 +4,7 @@ import type { HistoryEntry } from "./engine";
 import {
   historyLost,
   mergeHistory,
+  missesEarlier,
   packHistory,
   unpackHistory,
 } from "./history-transfer";
@@ -137,5 +138,26 @@ describe("moving history to a linked device", () => {
     expect(historyLost(new ChatApiError("internal_error"))).toBe(false);
     expect(historyLost(new ChatApiError("not_found"))).toBe(true);
     expect(historyLost(new Error("does not open"))).toBe(true);
+  });
+});
+
+describe("the note on when a device was linked (13)", () => {
+  const linkedAt = "2026-10-10T10:30:00.000Z";
+  const before = "2026-10-10T10:00:00.000Z";
+
+  it("shows in a conversation started before the device was linked", () => {
+    expect(missesEarlier(linkedAt, before, [])).toBe(true);
+    expect(missesEarlier(linkedAt, before, [entry("a", 45)])).toBe(true);
+  });
+
+  it("does not show in one started after", () => {
+    expect(missesEarlier(linkedAt, "2026-10-10T10:40:00.000Z", [])).toBe(false);
+  });
+
+  it("does not show once earlier messages were moved here", () => {
+    expect(missesEarlier(linkedAt, before, [entry("a", 10)])).toBe(false);
+    expect(
+      missesEarlier(linkedAt, before, [entry("a", 10, { sentAt: null })]),
+    ).toBe(true);
   });
 });

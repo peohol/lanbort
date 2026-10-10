@@ -187,3 +187,19 @@ export const historyLost = (error: unknown) =>
   !(error instanceof ChatApiError) ||
   error.code === "not_found" ||
   error.code === "forbidden";
+
+/**
+ * Whether a conversation may have messages from before this device was
+ * linked that never came here (13): it was started earlier, and nothing
+ * from before the link was moved here.
+ */
+export const missesEarlier = (
+  linkedAt: string,
+  startedAt: string,
+  history: readonly HistoryEntry[],
+) =>
+  Date.parse(startedAt) < Date.parse(linkedAt) &&
+  !history.some(
+    ({ sentAt }) =>
+      sentAt !== null && Date.parse(sentAt) < Date.parse(linkedAt),
+  );

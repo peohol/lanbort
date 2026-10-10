@@ -395,6 +395,7 @@ async function presentConversation(
     joined: device !== null && members.includes(device.id),
     waiting: waiting !== undefined,
     muted: (participant?.muted_at ?? null) !== null,
+    startedAt: conversation.createdAt.toISOString(),
     lastActivityAt: conversation.lastActivityAt.toISOString(),
   };
 }

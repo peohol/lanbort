@@ -51,6 +51,17 @@ async function turnOnChat(page: Page) {
   ).toBeVisible();
 }
 
+/**
+ * The problems apart from those the test expects: a message encrypted
+ * before a device joined is refused and sent again under the group's new
+ * keys, and the tablet's failed fetches; the browser logs both.
+ */
+const unexpected = (problems: readonly string[]) =>
+  problems.filter(
+    (problem) =>
+      !/(409 \(Conflict\)|503 \(Service Unavailable\))/.test(problem),
+  );
+
 /** The conversation's messages, apart from the list beside them. */
 const messages = (page: Page) =>
   page.getByRole("region", { name: "Meldinger" });
@@ -224,10 +235,21 @@ test("two friends chat end to end, and a new device is linked with its code", as
   await expect(
     messages(laptop.page).getByText("Hei Bo, kan jeg låne stigen?"),
   ).toHaveCount(0);
+  // It says when it was linked, and where the earlier messages are (13).
+  const linkedNote = (page: Page) =>
+    messages(page).getByText(
+      /^Denne enheten ble koblet til .+\. Meldinger fra før finnes på enhetene som mottok dem\.$/,
+    );
+  await expect(linkedNote(laptop.page)).toBeVisible();
   await bo.page.getByLabel("Ny melding").fill("Hent den når du vil.");
   await bo.page.getByRole("button", { name: "Send" }).click();
   await expectMessage(laptop.page, "Hent den når du vil.");
   await expectMessage(anna.page, "Hent den når du vil.");
+
+  // Done with the laptop: closed first, so its next sync is not refused
+  // while the test goes on.
+  expect(unexpected(laptop.problems)).toEqual([]);
+  await laptop.context.close();
 
   // Anna removes the laptop from her phone: it is shut out of chat.
   await anna.page.goto("/samtaler/enheter");
@@ -279,17 +301,10 @@ test("two friends chat end to end, and a new device is linked with its code", as
   await expect(
     messages(tablet.page).getByText("Hent den når du vil."),
   ).toBeVisible();
+  await expect(linkedNote(tablet.page)).toHaveCount(0);
 
-  for (const someone of [anna, bo, laptop, tablet]) {
-    // A message encrypted before a device joined is refused and sent again
-    // under the group's new keys; the browser logs the refusal.
-    // The tablet's failed fetches are logged too.
-    expect(
-      someone.problems.filter(
-        (problem) =>
-          !/(409 \(Conflict\)|503 \(Service Unavailable\))/.test(problem),
-      ),
-    ).toEqual([]);
+  for (const someone of [anna, bo, tablet]) {
+    expect(unexpected(someone.problems)).toEqual([]);
     await someone.context.close();
   }
 });
@@ -495,6 +510,11 @@ test("a loan's page leads to the parties' conversation, or offers to start it (K
     bo.context.request,
     "Sag",
   );
+  const drillId = await agreeLoan(
+    anna.context.request,
+    bo.context.request,
+    "Drill",
+  );
   await turnOnChat(anna.page);
   await turnOnChat(bo.page);
 
@@ -507,12 +527,30 @@ test("a loan's page leads to the parties' conversation, or offers to start it (K
   await expect(bo.page).toHaveURL(/\/samtaler\/[0-9a-f-]+$/);
   const conversation = bo.page.url();
 
-  // Once it exists, both parties' pages of the loan lead to it.
-  await bo.page.goto(`/lan/${loanId}`);
-  await lender
-    .getByRole("link", { name: "Gå til samtalen med Gro Hauge" })
-    .click();
-  await expect(bo.page).toHaveURL(conversation);
+  // Once it exists, both parties' pages of the loan lead to it. The loan it
+  // was opened from is first among theirs, and the way back leads to it
+  // (UX-IA-014).
+  for (const { id, title } of [
+    { id: loanId, title: "Sag" },
+    { id: drillId, title: "Drill" },
+  ]) {
+    await bo.page.goto(`/lan/${id}`);
+    await lender
+      .getByRole("link", { name: "Gå til samtalen med Gro Hauge" })
+      .click();
+    await expect(bo.page).toHaveURL(conversation);
+    await expect(
+      bo.page
+        .getByRole("region", { name: /Lån mellom dere/ })
+        .getByRole("link")
+        .first(),
+    ).toContainText(title);
+    await expect(
+      bo.page
+        .getByRole("navigation", { name: "Du er her" })
+        .getByRole("link", { name: title }),
+    ).toHaveAttribute("href", `/lan/${id}`);
+  }
   await anna.page.goto(`/lan/${loanId}`);
   await expect(
     anna.page

@@ -16,6 +16,7 @@ import { announce } from "@/components/announcer";
 import { BusyButton } from "@/components/busy-button";
 import { announceDataChanged } from "@/components/data-changed";
 import { ErrorText } from "@/components/error-text";
+import { useStack } from "@/components/navigation-stack";
 import { PageHeader } from "@/components/page-header";
 import { PlaceBar } from "@/components/place-bar";
 import { Icon } from "@/components/icon";
@@ -32,6 +33,7 @@ import {
 } from "./chat-home";
 import { ChatIcon } from "./chat-icon";
 import { useEngineVersion } from "./chat-provider";
+import { addedAt } from "./device-names";
 import { ReadyChat } from "./chat-setup";
 import { EncryptionLine } from "./encryption";
 import {
@@ -41,8 +43,9 @@ import {
   type HistoryEntry,
   shortMessageRoom,
 } from "./engine";
+import { missesEarlier } from "./history-transfer";
 import { LinkRow } from "./link-row";
-import type { ChatLoan, ChatLoans } from "./loans";
+import { type ChatLoan, type ChatLoans, cameFromFirst } from "./loans";
 import { chatErrorMessage } from "./messages";
 import { Notice } from "./notice";
 import { dayHeading, messageTime, sameDay } from "./time";
@@ -82,11 +85,12 @@ const nearEnd = () =>
 
 /** «Lån mellom dere» (02): links to the loans, never an action here. */
 function LoansBetween({ loans }: { loans: readonly ChatLoan[] }) {
+  const shown = cameFromFirst(loans, useStack()?.entries ?? []);
   return (
     <section className={styles.loans} aria-labelledby="lan-mellom-dere">
       <h2 id="lan-mellom-dere">Lån mellom dere · {loans.length}</h2>
       <ul>
-        {loans.map((loan) => (
+        {shown.map((loan) => (
           <LinkRow
             key={loan.id}
             href={loan.href}
@@ -332,6 +336,18 @@ function Conversation({
   const online = useOnline();
   const [info, setInfo] = useState<ChatConversation>();
   const [history, setHistory] = useState<HistoryEntry[]>();
+  const [linkedAt, setLinkedAt] = useState<string | null>(null);
+  useEffect(() => {
+    let current = true;
+    engine
+      .linkedAt()
+      .then((at) => current && setLinkedAt(at))
+      // Without it the note is left out; the conversation works as before.
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [engine]);
   const [divider, setDivider] = useState<string | null>(null);
   const [status, setStatus] = useState<{
     joined: boolean;
@@ -456,6 +472,13 @@ function Conversation({
   const loan = logistics ? loanOf(loans, info.loanId) : undefined;
   const between = !logistics && others[0] ? loans[others[0].userId] : undefined;
   const changed = others.filter((o) => engine.keyChanged(o.userId));
+  const linkedSince =
+    linkedAt &&
+    info &&
+    history &&
+    missesEarlier(linkedAt, info.startedAt, history)
+      ? linkedAt
+      : null;
   const canWrite = info?.open === true && status?.joined === true;
 
   return (
@@ -553,8 +576,16 @@ function Conversation({
         <h2 id="meldinger" className="visually-hidden">
           Meldinger
         </h2>
-        {history?.length === 0 && (
-          <p className="quiet">Ingen meldinger på denne enheten ennå.</p>
+        {linkedSince ? (
+          <p className={styles.since}>
+            <Icon name="clock" />
+            Denne enheten ble koblet til {addedAt(linkedSince)}. Meldinger fra
+            før finnes på enhetene som mottok dem.
+          </p>
+        ) : (
+          history?.length === 0 && (
+            <p className="quiet">Ingen meldinger på denne enheten ennå.</p>
+          )
         )}
         {history && history.length > 0 && (
           <Messages

@@ -269,7 +269,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0045 — Én privat samtale per person eller per lån
 - **Lag:** Produktspesifikasjon / UX
 - **Status:** Avklart (produkteier, 9. oktober 2026)
-- **Beslutning:** Se [PS-COM-017](product-spec/05-kommunikasjon-varsler-og-saker.md). Én privat samtale per personpar, med lenker til og fra lånene; logistikk-kanalen ved blokkering er egen per lån. Én samtale per par er bygget (WP-43). Lenkene er delvis bygget: «Skriv til» fra en venns side og utlånerens «Skriv til» fra forespørselen og lånet; «Gå til samtalen med …» fra forespørselen og lånet, låntakerens lenke og lenken fra et spørsmål om en ting gjenstår.
+- **Beslutning:** Se [PS-COM-017](product-spec/05-kommunikasjon-varsler-og-saker.md). Én privat samtale per personpar, med lenker til og fra lånene; logistikk-kanalen ved blokkering er egen per lån. Én samtale per par er bygget (WP-43). Lenkene er bygget: «Skriv til» fra en venns side; fra forespørselen og lånet «Gå til samtalen med …», eller «Skriv til» der reglene lar leseren starte samtalen (PS-COM-006); «Start privat samtale» fra et spørsmål om en ting; og fra samtalen til lånene mellom partene, der lånet samtalen ble åpnet fra står først (UX-IA-014).
 
 ### OD-0043 — Varsler om nye meldinger i privat chat
 - **Lag:** Produktspesifikasjon / UX
