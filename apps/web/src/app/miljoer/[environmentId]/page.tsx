@@ -2,6 +2,7 @@ import {
   calendarDate,
   getEnvironment,
   listEnvironmentObjects,
+  readHome,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
 import { MenuList, MenuRow } from "@/components/menu-list";
@@ -19,6 +20,7 @@ import {
   requirePageAccount,
 } from "@/server/session";
 import { About, MembersOnly, Requirements } from "./about";
+import { AdministrationTasks } from "./administration-tasks";
 import { environmentBack } from "./back";
 import { Things } from "./member-content";
 import { ForgetParam } from "./forget-param";
@@ -53,12 +55,21 @@ export default async function EnvironmentPage({
   const step = membershipStep(environment);
   const active = environment.membership?.state === "active";
   const after = query[afterParam];
-  const things = active
-    ? await pageQuery(listEnvironmentObjects, {
-        environmentId,
-        ...(typeof after === "string" ? { cursor: after } : {}),
-      })
-    : null;
+  const administrator = environment.roles.includes("administrator");
+  const [things, home] = await Promise.all([
+    active
+      ? pageQuery(listEnvironmentObjects, {
+          environmentId,
+          ...(typeof after === "string" ? { cursor: after } : {}),
+        })
+      : null,
+    // The administrators' tasks here, counted as on Home (UX-JRN-012).
+    administrator && active ? pageQuery(readHome, {}) : null,
+  ]);
+  const tasks =
+    home?.sections
+      .find(({ section }) => section === "administration")
+      ?.items.filter(({ target }) => target.id === environmentId) ?? [];
   const role = roleName(environment.roles);
   const member = environment.membership !== null;
 
@@ -78,6 +89,9 @@ export default async function EnvironmentPage({
         step={step}
         welcomed={welcomeParam in query ? welcome(account.realName) : undefined}
       />
+      {administrator && (
+        <AdministrationTasks environmentId={environmentId} tasks={tasks} />
+      )}
       {things && (
         <Things
           environment={environment}
