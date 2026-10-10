@@ -490,7 +490,8 @@ test("signing out on a device with chat says what it loses, then revokes it and 
   await anna.page.getByRole("link", { name: "Logg ut" }).click();
   await anna.page.getByRole("button", { name: "Logg ut" }).click();
   await expect(anna.page).toHaveURL(/\/$/);
-  expect(await chatStores()).toEqual([]);
+  // The page may still be navigating, which ends a read, so read again.
+  await expect.poll(() => chatStores().catch(() => null)).toEqual([]);
 
   // The server knows the device is gone, also after signing in again.
   await signInThroughApi(anna.context.request, anna.email);
