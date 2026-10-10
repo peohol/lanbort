@@ -1,5 +1,7 @@
+import { chatLimits } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import {
+  MAX_PINNED_ACCOUNTS,
   RECOVERY_KEY_LENGTH,
   Secret,
   approveLink,
@@ -91,7 +93,7 @@ describe("recovery key", () => {
     const alice = await createAccountKey("account-alice");
     const { key } = await createRecoveryKey();
     const link = await startLink();
-    const { sealed } = await approveLink(link.keys, {
+    const { sealed } = await approveLink(link.keys, link.code, {
       account: alice,
       recovery: key,
     });
@@ -99,5 +101,36 @@ describe("recovery key", () => {
     expect(opened.recovery?.id).toEqual(key.id);
     expect(opened.recovery?.backupKey).toBeInstanceOf(Secret);
     expect(opened.recovery?.backupKey.reveal()).toEqual(key.backupKey.reveal());
+  });
+
+  it("carries the pinned contact keys, at most a package's worth", async () => {
+    const alice = await createAccountKey("account-alice");
+    const { key } = await createRecoveryKey();
+    const pinned = Object.fromEntries(
+      Array.from({ length: MAX_PINNED_ACCOUNTS }, (_, i) => [
+        `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
+        toBase64(new Uint8Array(32).fill(i % 256)),
+      ]),
+    );
+
+    const backup = await sealRecoveryBackup(key, { account: alice, pinned });
+    expect(backup.length).toBeLessThanOrEqual(chatLimits.recoveryBackupBytes);
+    const restored = await openRecoveryBackup(key, alice.accountId, backup);
+    expect(restored.pinned).toEqual(pinned);
+
+    const link = await startLink();
+    const { sealed } = await approveLink(link.keys, link.code, {
+      account: alice,
+      pinned,
+    });
+    expect(sealed.length).toBeLessThanOrEqual(chatLimits.linkPackageBytes);
+    expect((await link.open(sealed)).pinned).toEqual(pinned);
+
+    await expect(
+      sealRecoveryBackup(key, {
+        account: alice,
+        pinned: { ...pinned, extra: toBase64(new Uint8Array(32)) },
+      }),
+    ).rejects.toThrow("Invalid pinned account keys");
   });
 });

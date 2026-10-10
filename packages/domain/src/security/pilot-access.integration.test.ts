@@ -49,6 +49,9 @@ import {
   reachableByUsers,
 } from "../testing/operations";
 
+/** A link request's commitment; the server stores it as it is (ADR-0010 §5). */
+const linkCommitment = Buffer.alloc(32, 7).toString("base64");
+
 /**
  * WP-70: the authorization and privacy security test that quality gate D
  * needs, aimed at the pilot as it is built. Where each feature tests its own
@@ -234,6 +237,7 @@ async function hiddenWorld() {
       deviceId: linking.deviceId,
       deviceKey: linking.deviceKey,
       linkKey: linking.deviceKey,
+      commitment: linkCommitment,
     },
   );
   const { archiveId } = await run(createChatArchive, lender, {

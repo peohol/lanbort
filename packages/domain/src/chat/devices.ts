@@ -256,6 +256,7 @@ interface LinkRequestRow {
   device_id: string;
   device_key: Buffer;
   link_key: Buffer;
+  commitment: Buffer | null;
   created_at: Date;
   expires_at: Date;
   approved_at: Date | null;
@@ -269,6 +270,7 @@ const linkRequestColumns = [
   "device_id",
   "device_key",
   "link_key",
+  "commitment",
   "created_at",
   "expires_at",
   "approved_at",
@@ -350,6 +352,7 @@ export const requestChatLink = defineCommand({
         device_id: input.deviceId,
         device_key: fromBase64(input.deviceKey),
         link_key: fromBase64(input.linkKey),
+        commitment: fromBase64(input.commitment),
         created_at: now,
         expires_at: new Date(now.getTime() + chatRetention.linkRequestMs),
       })
@@ -422,6 +425,8 @@ export const listChatLinkRequests = defineQuery({
           .where("user_id", "=", device.userId)
           .where("approved_at", "is", null)
           .where("expires_at", ">", now)
+          // One from before commitments cannot be matched; it just expires.
+          .where("commitment", "is not", null)
           .orderBy("created_at")
           .execute()
       : [];
@@ -438,6 +443,7 @@ export const listChatLinkRequests = defineQuery({
         deviceId: request.device_id,
         deviceKey: toBase64(request.device_key),
         linkKey: toBase64(request.link_key),
+        commitment: toBase64(request.commitment!),
         createdAt: request.created_at.toISOString(),
         expiresAt: request.expires_at.toISOString(),
       })),

@@ -19,7 +19,6 @@ export const hasScanner = () =>
 
 export interface ShownLink {
   code: string;
-  linkKey?: Uint8Array;
 }
 
 /** Reads link QR codes from the camera until one is found or it is stopped. */

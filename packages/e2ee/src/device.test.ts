@@ -13,7 +13,6 @@ import {
   importAccountKey,
   importDevice,
   importKeyPackage,
-  linkCode,
   matchLinkRequest,
   normalizeLinkCode,
   observeAccountKey,
@@ -22,6 +21,8 @@ import {
   startLink,
   verifyDeviceCertificate,
 } from "./index";
+import { decodeBase32 } from "./base32";
+import { commit } from "./linking";
 import { fromBase64, fromUtf8, toBase64, utf8 } from "./suite";
 
 /**
@@ -148,7 +149,10 @@ describe("linking a device", () => {
     const alice = await createAccountKey(ALICE);
     const link = await startLink();
     expect(link.code).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
-    expect(await linkCode(link.keys)).toBe(link.code);
+    // The server gets the keys and the commitment, never the code.
+    expect(JSON.stringify(Object.values(link.keys).map(String))).not.toContain(
+      link.code,
+    );
 
     // The existing device reads the QR code and finds the matching request
     // among the ones the server lists.
@@ -157,7 +161,7 @@ describe("linking a device", () => {
     const request = await matchLinkRequest([other.keys, link.keys], shown);
     expect(request).toBe(link.keys);
 
-    const { certificate, sealed } = await approveLink(request!, {
+    const { certificate, sealed } = await approveLink(request!, shown.code, {
       account: alice,
     });
     expect(await verifyDeviceCertificate(certificate)).toBe(true);
@@ -180,30 +184,33 @@ describe("linking a device", () => {
   it("finds no request when the server swapped a key", async () => {
     const link = await startLink();
     const attacker = await startLink(link.keys.deviceId);
-    const swappedLinkKey = { ...link.keys, linkKey: attacker.keys.linkKey };
-    const swappedDeviceKey = {
-      ...link.keys,
-      deviceKey: attacker.keys.deviceKey,
-    };
+    const forgeries = [
+      { ...link.keys, linkKey: attacker.keys.linkKey },
+      { ...link.keys, deviceKey: attacker.keys.deviceKey },
+      // The server cannot make a commitment of its own: it lacks the code.
+      { ...attacker.keys, commitment: link.keys.commitment },
+      attacker.keys,
+    ];
 
-    for (const forged of [swappedLinkKey, swappedDeviceKey]) {
+    for (const forged of forgeries) {
       await expect(
         matchLinkRequest([forged], { code: link.code }),
       ).resolves.toBeUndefined();
+      await expect(
+        approveLink(forged, link.code, {
+          account: await createAccountKey(ALICE),
+        }),
+      ).rejects.toThrow("The code is not this request's");
     }
-    await expect(
-      matchLinkRequest([link.keys], {
-        code: link.code,
-        linkKey: attacker.keys.linkKey,
-      }),
-    ).resolves.toBeUndefined();
   });
 
   it("does not let another device open the sealed package", async () => {
     const alice = await createAccountKey(ALICE);
     const link = await startLink();
     const eavesdropper = await startLink(link.keys.deviceId);
-    const { sealed } = await approveLink(link.keys, { account: alice });
+    const { sealed } = await approveLink(link.keys, link.code, {
+      account: alice,
+    });
     await expect(eavesdropper.open(sealed)).rejects.toThrow();
 
     const { enc, ct } = JSON.parse(fromUtf8(sealed)) as {
@@ -216,10 +223,30 @@ describe("linking a device", () => {
     await expect(link.open(tampered)).rejects.toThrow();
   });
 
+  it("refuses a package from a device that was never shown the code", async () => {
+    // The server knows the new device's keys, so it can seal an account key
+    // of its own to them under a secret it picked. The new device's own
+    // secret then does not open the inner layer.
+    const link = await startLink();
+    const serverAccount = await createAccountKey(ALICE);
+    const serverCode = (await startLink()).code;
+    const serverSecret = decodeBase32(serverCode, 26, 16)!;
+    const forged = {
+      ...link.keys,
+      commitment: await commit(serverSecret, link.keys),
+    };
+    const { sealed } = await approveLink(forged, serverCode, {
+      account: serverAccount,
+    });
+    await expect(link.open(sealed)).rejects.toThrow();
+  });
+
   it("ignores QR codes that are not link codes", () => {
     expect(readLinkQr("https://example.com")).toBeUndefined();
-    expect(readLinkQr("LANBORT-LINK:1:abc")).toBeUndefined();
     expect(readLinkQr("LANBORT-LINK:1:abc:short")).toBeUndefined();
+    expect(readLinkQr("LANBORT-LINK:2:short")).toBeUndefined();
+    // 26 characters whose top bits are not zero carry no 128-bit secret.
+    expect(readLinkQr(`LANBORT-LINK:2:Z${"0".repeat(25)}`)).toBeUndefined();
   });
 });
 

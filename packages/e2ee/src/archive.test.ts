@@ -82,7 +82,7 @@ describe("history archive", () => {
     const { key, parts } = await sealArchive(history);
     const archive = { archiveId: "archive-1", parts: parts.length, key };
 
-    const { sealed } = await approveLink(link.keys, {
+    const { sealed } = await approveLink(link.keys, link.code, {
       account: alice,
       archive,
     });
@@ -101,7 +101,7 @@ describe("history archive", () => {
 
     // Without history, the package holds the account key alone.
     const plain = await link.open(
-      (await approveLink(link.keys, { account: alice })).sealed,
+      (await approveLink(link.keys, link.code, { account: alice })).sealed,
     );
     expect(plain.archive).toBeUndefined();
   });
