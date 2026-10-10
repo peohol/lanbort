@@ -7,14 +7,18 @@ import type { Metadata } from "next";
 import { MenuList, MenuRow } from "@/components/menu-list";
 import { PageHeader } from "@/components/page-header";
 import { Tag } from "@/components/tag";
-import { environmentAboutHref, environmentHref } from "@/navigation/routes";
-import { membershipStep, roleName } from "@/presentation/environments";
+import {
+  environmentAboutHref,
+  environmentHref,
+  welcomeParam,
+} from "@/navigation/routes";
+import { membershipStep, roleName, welcome } from "@/presentation/environments";
 import {
   pageQuery,
   pageQueryOrNotFound,
   requirePageAccount,
 } from "@/server/session";
-import { About, MembersOnly } from "./about";
+import { About, MembersOnly, Requirements } from "./about";
 import { environmentBack } from "./back";
 import { Things } from "./member-content";
 import { Membership } from "./membership";
@@ -28,7 +32,8 @@ const afterParam = "etter";
  * An environment as a context (UX-IA-004, WP-84, Tomat kjerneflyt 3):
  * before joining, what it is and what it asks of members (UX-JRN-002) and
  * the way in; for active members its things, with the rest («Om miljøet
- * og medlemmer») a page away. What the caller may see is decided by each
+ * og medlemmer») a page away. Arriving right after joining, the new member
+ * is welcomed. What the caller may see is decided by each
  * query's own policy; a hidden environment looks like nothing at all to
  * outsiders (UX-PRIV-002).
  */
@@ -39,7 +44,7 @@ export default async function EnvironmentPage({
   params: Promise<{ environmentId: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requirePageAccount();
+  const account = await requirePageAccount();
   const [{ environmentId }, query] = await Promise.all([params, searchParams]);
   const environment = await pageQueryOrNotFound(getEnvironment, {
     environmentId,
@@ -66,7 +71,11 @@ export default async function EnvironmentPage({
       >
         {environment.location}
       </PageHeader>
-      <Membership environment={environment} step={step} />
+      <Membership
+        environment={environment}
+        step={step}
+        welcomed={welcomeParam in query ? welcome(account.realName) : undefined}
+      />
       {things && (
         <Things
           environment={environment}
@@ -91,6 +100,10 @@ export default async function EnvironmentPage({
       ) : (
         <>
           <About environment={environment} />
+          <Requirements
+            requirements={environment.requirements}
+            heading="For å bli med"
+          />
           <MembersOnly />
         </>
       )}

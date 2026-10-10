@@ -1,7 +1,7 @@
 "use client";
 
 import type { Requirement } from "@lanbort/contracts";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { CommandForm } from "./command-form";
 import { Field } from "./field";
 
@@ -16,7 +16,8 @@ interface GivenAnswer {
  * command (PS-ENV-005): a text answer to each question and an explicit
  * acceptance of each rule, every one of them required, so the server is
  * only asked once all are met. Answers already given are filled in. With no
- * requirements, it is just the button.
+ * requirements, it is just the button. A `note` says, just above it, who
+ * sees what is sent.
  *
  * The answers are given to the membership process, not to a profile
  * (UX-PRIV-009), and the help says so.
@@ -27,6 +28,8 @@ export function RequirementAnswers({
   given = [],
   path,
   submitLabel,
+  next,
+  note,
   secondary = false,
 }: {
   environmentId: string;
@@ -34,6 +37,9 @@ export function RequirementAnswers({
   given?: readonly GivenAnswer[];
   path: string;
   submitLabel: string;
+  /** Where the user lands once it is sent; the page is read again otherwise. */
+  next?: string;
+  note?: ReactNode;
   secondary?: boolean;
 }) {
   const [answers, setAnswers] = useState<Record<string, string | boolean>>(() =>
@@ -48,6 +54,7 @@ export function RequirementAnswers({
     <CommandForm
       path={path}
       submitLabel={submitLabel}
+      {...(next ? { next } : {})}
       secondary={secondary}
       fixed={{
         environmentId,
@@ -91,6 +98,7 @@ export function RequirementAnswers({
           </div>
         );
       })}
+      {note && <p className="help">{note}</p>}
     </CommandForm>
   );
 }

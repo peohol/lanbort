@@ -82,12 +82,29 @@ test("an environment is created, applied to, used and left in the browser", asyn
   await expect(bo.page.getByRole("heading", { name: /Medlemmer/ })).toHaveCount(
     0,
   );
+  const asks = bo.page.getByRole("region", { name: "For å bli med" });
+  await expect(asks.getByText("Hvilken leilighet bor du i?")).toBeVisible();
+  await expect(asks.getByText("Jeg godtar husreglene")).toBeVisible();
+
+  // Applying is a task of its own, and the page shows what was sent.
+  await bo.page.getByRole("link", { name: "Søk om å bli med" }).click();
+  await expect(bo.page).toHaveURL(`/miljoer/${environmentId}/bli-med`);
+  await expect(bo.page.getByRole("heading", { level: 1 })).toHaveText(name);
+  await expect(bo.page.getByRole("link", { name: "Avbryt" })).toBeVisible();
+  await expect(
+    bo.page.getByText(/Administratorene ser navnet ditt og svarene over/),
+  ).toBeVisible();
+  expect(await axeViolations(bo.page)).toEqual([]);
   await bo.page.getByLabel("Hvilken leilighet bor du i?").fill("H0201");
   await bo.page.getByLabel("Jeg godtar husreglene").check();
   await bo.page.getByRole("button", { name: "Send søknaden" }).click();
+  await expect(bo.page).toHaveURL(`/miljoer/${environmentId}`);
   await expect(
     bo.page.getByText("Søknaden din venter på svar fra administratorene."),
   ).toBeVisible();
+  const sent = bo.page.getByRole("region", { name: "Søknaden din" });
+  await expect(sent.getByText("H0201")).toBeVisible();
+  await expect(sent.getByText("Godtatt")).toBeVisible();
 
   const { memberships } = await (
     await page.request.get(
@@ -182,11 +199,17 @@ test("an invitation to a hidden environment is accepted on its page, and members
   });
   await bo.page.goto(`/miljoer/${environmentId}`);
   await expect(bo.page.getByText(/Du er invitert til miljøet/)).toBeVisible();
+  await bo.page.getByRole("link", { name: "Bli med" }).click();
   await bo.page.getByLabel("Jeg holder miljøet for meg selv").check();
   await bo.page
     .getByRole("button", { name: `Godta invitasjonen til ${name}` })
     .click();
+
+  // The first visit as a member welcomes; later visits do not.
+  await expect(bo.page.getByText("Velkommen, Bo")).toBeVisible();
+  await bo.page.goto(`/miljoer/${environmentId}`);
   await expect(bo.page.getByText("Du er medlem.")).toBeVisible();
+  await expect(bo.page.getByText("Velkommen, Bo")).toHaveCount(0);
   await bo.page.getByRole("link", { name: "Om miljøet og medlemmer" }).click();
   await expect(bo.page.getByRole("link", { name: "Eva Eier" })).toBeVisible();
   await bo.page.goto(`/miljoer/${environmentId}`);
