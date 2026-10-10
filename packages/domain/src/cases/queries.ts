@@ -281,7 +281,6 @@ async function toList(
   db: Db,
   page: Awaited<ReturnType<typeof listCases>>,
   viewer: { readonly userId: string; readonly asHandler: boolean },
-  now: Date,
 ): Promise<CaseList> {
   const ids = page.items.map(({ record }) => record.id);
   const participants = await loadParticipantsOf(db, ids);
@@ -362,7 +361,7 @@ export const listOwnCases = defineQuery({
       );
 
       return {
-        resource: await toList(tx, page, { userId, asHandler: false }, now),
+        resource: await toList(tx, page, { userId, asHandler: false }),
         context: undefined,
       };
     }),
@@ -412,12 +411,10 @@ export const listEnvironmentCaseQueue = defineQuery({
       return {
         resource: {
           ...access,
-          list: await toList(
-            tx,
-            page,
-            { userId: actingUserId(actor), asHandler: true },
-            now,
-          ),
+          list: await toList(tx, page, {
+            userId: actingUserId(actor),
+            asHandler: true,
+          }),
         },
         context: undefined,
       };
@@ -444,7 +441,7 @@ export const listPlatformCaseQueue = defineQuery({
       );
 
       return {
-        resource: await toList(tx, page, { userId, asHandler: true }, now),
+        resource: await toList(tx, page, { userId, asHandler: true }),
         context: undefined,
       };
     }),
