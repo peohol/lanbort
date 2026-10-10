@@ -432,6 +432,8 @@ const fresh = () => !S.prod && S.confirmedAt !== null && S.clock - S.confirmedAt
 const enough = () => S.pks.length >= 2;
 const strong = () => fresh() && enough();
 const left = () => 10 - (S.clock - S.confirmedAt);
+/* In production Nora gets nothing as a steward: no cases reach Lånbort and passkeys are off. */
+const noraLog = () => S.prod ? [] : S.log.nora;
 const tellNora = k => S.log.nora.unshift({ t:PK_NOTE[k], s:PK_DETAIL, at:hhmm(S.clock), mail:true });
 const tellOth = (who, t, s) => S.log.oth.unshift({ who:PEOPLE[who] ? PEOPLE[who].name : who, t, s, at:hhmm(S.clock) });
 const visibleCases = () => Object.entries(S.cases).filter(([, c]) => !c.own && !c.recused);
@@ -512,13 +514,13 @@ function gate(what) {
 function vHjem() {
   const n = unheld().length, own = S.cases.stige;
   let rows;
-  if (S.prod) rows = `<div style="padding:4px 8px 12px">${prodBanner()}</div>`;
+  if (S.prod) rows = '';
   else if (!enough()) rows = mr({ lead:tic('key'), t:S.pks.length ? 'Legg til en passkey til' : 'Sett opp passkeys', s:S.pks.length ? 'Forvalterhandlingene er stengt til du har to' : 'Med registreringskoden fra driftsansvarlig', act:A('go', S.pks.length ? 'add' : 'setup') });
   else if (!fresh()) rows = mr({ lead:tic('inbox'), t:'Plattformsaker', s:'Bekreft med passkey for å se dem', end:lockEnd, act:A('go', 'queue') });
   else rows = mr({ lead:tic('inbox'), t:n ? `Behandle ${n} plattformsaker` : 'Se plattformkøen', s:n ? 'Ingen har tatt dem ennå' : 'Ingen saker venter', act:A('go', 'queue') });
-  return `<div class="hdr"><span class="hi hq pt" tabindex="-1">Hjem</span>${bell(S.log.nora.length)}${av('nora')}</div><div class="scr">${flash(S.flash)}
-${sec('For Lånbort')}<div class="cd" style="padding:12px 4px 2px;gap:0">${mr({ t:'Forvaltning', s:'Du er plattformforvalter', act:A('go', 'hub') })}${rows}</div>
-${sec('Uavklart')}${menu([mr({ lead:tic('flag', 'n'), t:own.title, s:S.anders ? 'Venter på Lånbort' : 'Ingen kan behandle saken nå', act:A('go', 'own') })])}
+  return `<div class="hdr"><span class="hi hq pt" tabindex="-1">Hjem</span>${bell(noraLog().length)}${av('nora')}</div><div class="scr">${flash(S.flash)}
+${S.prod ? '' : `${sec('For Lånbort')}<div class="cd" style="padding:12px 4px 2px;gap:0">${mr({ t:'Forvaltning', s:'Du er plattformforvalter', act:A('go', 'hub') })}${rows}</div>`}
+${S.prod ? '' : `${sec('Uavklart')}${menu([mr({ lead:tic('flag', 'n'), t:own.title, s:S.anders ? 'Venter på Lånbort' : 'Ingen kan behandle saken nå', act:A('go', 'own') })])}`}
 ${sec('Kommer')}${menu([mr({ lead:tic('lan', 'n'), t:'Hent Sykkelpumpe hos Per Lien', s:'I morgen 18.00' })])}
 ${sec('Dine miljøer')}${menu([mr({ t:ENV, s:'Medlem' })])}
 </div>${nav('hjem')}`;
@@ -654,7 +656,7 @@ const FAM = {
     run:x => { x.acc.status = 'closing'; }, tell:x => [[x.key, 'Kontoen er under avslutning', 'Ser hva som må fullføres.']],
     done:x => `Avslutningen av ${x.who} er startet.` },
   complete:{ label:'Fullfør avslutningen', icon:'x', danger:true, short:'Ingenting binder kontoen lenger.',
-    ok:x => x.acc.status !== 'closing' ? 'Bare for en konto under kontrollert avslutning.' : x.acc.bindings.length ? `Kan ikke fullføres ennå. Dette binder fortsatt kontoen: ${x.acc.bindings.join(' og ')}.` : true,
+    ok:x => { const tied = [...x.acc.bindings, ...x.acc.roles.filter(r => r.owner).map(r => `eierskapet i ${r.env}, som må gis videre eller avvikles først`)]; return x.acc.status !== 'closing' ? 'Bare for en konto under kontrollert avslutning.' : tied.length ? `Kan ikke fullføres ennå. Dette binder fortsatt kontoen: ${tied.join(' og ')}.` : true; },
     hide:x => x.acc.status !== 'closing',
     title:x => `Fullføre avslutningen av ${x.who}?`, verb:() => 'Fullfør avslutningen', record:'Fullført avslutning', whom:x => x.who,
     cons:x => [
@@ -884,7 +886,7 @@ ${err(S.err)}${b('btn', fresh() ? 'Lag passkey' : 'Bekreft og lag passkey', 'mkp
 const curTitle = () => S.cur.v === 'case' ? S.cases[S.cur.id].title : S.cur.v === 'flow' ? S.cases[S.flow.id].title : TITLE[S.cur.v];
 const cancelBtn = b('bn', 'Avbryt', 'cancel');
 const SHEETS = {
-  admmore:() => sheet({ over:S.cases.gass.title, title:'Flere valg', body:`<div class="cd ol" style="padding:2px 4px;gap:0">${mr({ lead:ic('out'), t:'Legg saken tilbake i køen', end:'' })}${mr({ lead:ic('shield'), t:'Send videre til Lånbort', s:'Lånbort får en egen rapport om det samme. Saken her fortsetter som før.', end:'', act:A('escsheet') })}${mr({ lead:ic('block'), t:'Erklær deg inhabil', end:'', danger:true })}</div>`, actions:b('bn', 'Lukk', 'cancel') }),
+  admmore:() => sheet({ over:S.cases.gass.title, title:'Flere valg', body:`<div class="cd ol" style="padding:2px 4px;gap:0">${mr({ lead:ic('out'), t:'Legg saken tilbake i køen', end:'' })}${S.prod ? mr({ lead:ic('shield'), t:'Send videre til Lånbort', s:'Ikke tilgjengelig ennå. Lånbort kan ikke ta imot rapporter i appen ennå.', end:'', dis:true }) : mr({ lead:ic('shield'), t:'Send videre til Lånbort', s:'Lånbort får en egen rapport om det samme. Saken her fortsetter som før.', end:'', act:A('escsheet') })}${mr({ lead:ic('block'), t:'Erklær deg inhabil', end:'', danger:true })}</div>`, actions:b('bn', 'Lukk', 'cancel') }),
   esc:() => sheet({ over:S.cases.gass.title, title:'Sende rapporten videre til Lånbort?', rows:[
     ['flag', BLUE, 'Lånbort får en egen rapport om det samme, med det du skriver her. En forvalter tar den.'],
     ['doc', BLUE, `Saken i ${ENV} fortsetter som før, og tiltakene dere har gjort, står.`],
@@ -927,11 +929,13 @@ function sysDialog() {
 /* Hvem som behandler hva, er PS-TRUST-013: miljøets regler lokalt, alvorlig misbruk og plattformens regler hos Lånbort. */
 const LB_HELP = 'For alvorlig misbruk, brudd på Lånborts regler og det som gjelder sikkerhet eller lovlighet. En forvalter hos Lånbort tar saken.';
 function vReport() {
-  const r = S.rep, toLb = r.to === 'lb', who = PEOPLE.mats.name;
+  const r = S.rep, toLb = r.to === 'lb' && !S.prod, who = PEOPLE.mats.name;
+  const off = 'Ikke tilgjengelig ennå. Lånbort kan ikke ta imot rapporter i appen ennå.';
+  if (S.prod && !r.env) return page(`${pageHead(`Rapporter ${who}`, { kicker:'Rapport' })}${statusCard({ p:pill('p-wt', 'lock', 'Ikke tilgjengelig ennå'), h:'Du kan ikke rapportere til Lånbort ennå', s:'Lånbort kan ikke ta imot rapporter i appen ennå. Der dere er i samme miljø, kan administratorene der vurdere det.' })}`);
   const choice = r.env
     ? `${sec('Hvem skal vurdere det?')}${radios('Hvem skal vurdere det?', [
         option(!toLb, `Administratorene i ${ENV}`, 'For det som gjelder miljøets regler og tingene her. Én av dem tar saken.', A('repto', 'adm')),
-        option(toLb, 'Lånbort', LB_HELP, A('repto', 'lb'))])}`
+        S.prod ? option(false, 'Lånbort', off, '', true) : option(toLb, 'Lånbort', LB_HELP, A('repto', 'lb'))])}`
     : `${sec('Til Lånbort')}<div class="cd ol"><span class="s" style="color:#1E2733">Dere er ikke i et miljø sammen, så rapporten går til Lånbort. ${LB_HELP}</span></div>`;
   return page(`${pageHead(`Rapporter ${who}`, { kicker:'Rapport' })}
 <span class="s" style="padding:0 4px">En rapport ber om en vurdering. Den sier ikke at noen har gjort noe galt. Den du rapporterer, får ikke vite om rapporten gjennom saken.</span>
@@ -1032,7 +1036,7 @@ const ACT = {
   iref:r => { S.inq.ref = r; },
   repto:k => { S.rep.to = k; },
   esc:() => { S.sheet = { k:'admmore' }; },
-  escsheet:() => { S.sheet = { k:'esc' }; },
+  escsheet:() => { if (!S.prod) S.sheet = { k:'esc' }; },
   inext:() => { const q = S.inq; if (q.step === 1 && !q.ref) { S.err = 'Velg hva saken gjelder.'; return; } if (q.step === 2 && !q.basis.trim()) { S.err = 'Skriv grunnlaget for saken.'; return; } q.step += 1; S.focus = 'top'; },
   iprev:() => { S.inq.step = Math.max(1, S.inq.step - 1); S.focus = 'top'; },
   iopen:() => { const q = S.inq; withPasskey(() => openInquiry(q.type, q.ref, q.basis.trim())); },
@@ -1076,7 +1080,7 @@ function renderLive() {
   const root = document.getElementById('live');
   const ae = document.activeElement, key = ae && root.contains(ae) && ae.dataset && ae.dataset.act ? `${ae.dataset.act}|${ae.dataset.arg || ''}` : null;
   root.innerHTML = `<div><div class="who"><span class="num">N</span>Nora Lunde, plattformforvalter</div><div class="ph" role="group" aria-label="Nora Lunde sin telefon">${sb(hhmm(S.clock).replace('.', ':'))}${screen()}</div></div>
-<div class="stack">${logCol('Det Nora får beskjed om', S.log.nora, x => x.mail ? 'FORVALTNING · OGSÅ E-POST' : 'SAKER', 'Ingenting ennå.')}${logCol('Det andre merker', S.log.oth, x => x.who.toUpperCase(), 'Ingenting ennå.')}</div>`;
+<div class="stack">${logCol('Det Nora får beskjed om', noraLog(), x => x.mail ? 'FORVALTNING · OGSÅ E-POST' : 'SAKER', 'Ingenting ennå.')}${logCol('Det andre merker', S.log.oth, x => x.who.toUpperCase(), 'Ingenting ennå.')}</div>`;
   const dlg = root.querySelector('.sysw') || root.querySelector('[role="dialog"]');
   let hit = null;
   if (dlg && (S.focus === 'dialog' || S.focus === 'top')) hit = dlg.querySelector('button:not([disabled])');
@@ -1109,7 +1113,7 @@ const GROUPS = [
   { h:'6 · Åpne saksgrunnlag', s:'Når et inngrep ikke starter fra en rapport, åpner forvalteren først en sak om en konto eller en ting. Grunnlaget blir sakens første innlegg, bare for behandlerne. Forvalteren har saken med en gang, og den det gjelder, ser den aldri.' },
   { h:'7 · Inhabil og ingen habil forvalter', s:'Den som er involvert, ser saken bare som part, aldri i køen. Erklærer en forvalter seg inhabil, går saken tilbake til de andre. Finnes ingen habil forvalter, sier saken det rett ut, uten en knapp videre.' },
   { h:'8 · Passkeys', s:'Forvalterrollen virker med minst to passkeys, høyst ti. Den første legges til med registreringskoden fra driftsansvarlig, den neste fra en økt som nettopp er bekreftet med passkey. Navnet gis når passkeyen lages. Listen har ingen omdøping, og den siste kan ikke fjernes.' },
-  { h:'9 · Produksjon før verifisering', s:'Til passkeys er prøvd og verifisert på det faste domenet, er forvaltningen slått av i produksjon. En liten stripe sier det der rollen ellers ville virket.' },
+  { h:'9 · Produksjon før verifisering', s:'Til passkeys er prøvd og verifisert på det faste domenet, er forvaltningen slått av i produksjon. Forvalteren ser appen som alle andre: Hjem viser ikke «For Lånbort», og Forvaltning, plattformkøen og passkeys finnes ikke. Rapport til Lånbort og «Send videre til Lånbort» står som «Ikke tilgjengelig ennå», som i kjerneflyt 8.' },
   { h:'10 · Rapportere til Lånbort', s:'Når forvalterne kan behandle saker, blir det som står som «Ikke tilgjengelig ennå» i kjerneflyt 8 aktivt (UX-EXC-011): Lånbort som valg i rapporten, rapporten når dere ikke har et miljø felles, og «Send videre til Lånbort» for administratorene. Hvem som vurderer hva, er PS-TRUST-013. Det følger samme bryter som forvaltningen, så det er av i produksjon til den er verifisert.' }
 ];
 const PRESETS = [
@@ -1158,8 +1162,8 @@ const PRESETS = [
   { g:7, k:'pk-remove', l:'Fjerne en passkey', clip:844, set:() => { thirdPk(); route(H, HUB, ['pks']); S.sheet = { k:'rm', id:'p2' }; }, cap:'Fjerning krever også fersk bekreftelse. Arket sier om du havner under to.' },
   { g:7, k:'pk-last', l:'Den siste kan ikke fjernes', set:() => { firstPk(); stale(); route(H, HUB, ['pks']); }, cap:'Med én passkey er «Fjern» borte og erstattet av grunnen. Statuskortet sier at handlingene er stengt.' },
   { g:7, k:'pk-confirm', l:'Bekreft med passkey', clip:844, set:() => { stale(); route(H, HUB); S.sheet = { k:'pk' }; }, cap:'Samme ark fra alle steder bekreftelsen trengs: køen, saken, inngrep, saksgrunnlag og passkeys.' },
-  { g:8, k:'prod-hjem', l:'Hjem i produksjon', set:() => { S.prod = true; route(H); }, cap:'Stripen sier at forvaltningen er av. Ingen kø og ingen passkeys.' },
-  { g:8, k:'prod-hub', l:'Forvaltning i produksjon', set:() => { S.prod = true; route(H, HUB); }, cap:'Radene finnes, men er stengt, så forvalteren ser hva som kommer, uten å kunne bruke det.' },
+  { g:8, k:'prod-hjem', l:'Hjem i produksjon', set:() => { S.prod = true; route(H); }, cap:'Hjem som for alle andre: ingen «For Lånbort», ingen plattformsaker og ingen varsler om dem.' },
+  { g:8, k:'prod-rep', l:'Rapport i produksjon', set:() => { S.prod = true; route(H, ['rep']); S.rep = { env:true, to:'adm' }; }, cap:'Lånbort er med som valg, men stengt med «Ikke tilgjengelig ennå», som i kjerneflyt 8. Det samme gjelder «Send videre til Lånbort».' },
   { g:9, k:'rep-env', l:'Rapport med valget Lånbort', set:() => { route(H, ['rep']); S.rep = { env:true, to:'lb' }; }, cap:'Valget fra kjerneflyt 8, nå aktivt. Teksten under Lånbort er fra PS-TRUST-013. Knappen sier hvem rapporten går til.' },
   { g:9, k:'rep-none', l:'Rapport uten felles miljø', set:() => { route(H, ['rep']); S.rep = { env:false, to:'lb' }; }, cap:'Uten et miljø dere har felles, kan bare Lånbort vurdere det. Før var dette «Du kan ikke rapportere til Lånbort ennå».' },
   { g:9, k:'rep-adm', l:'Administratoren sender videre', clip:844, set:() => { route(H, ['admcase']); S.sheet = { k:'esc' }; }, cap:'Det en administrator i miljøet gjør i «Flere valg». Rapporten i miljøet består (PS-TRUST-016), og Lånbort får sin egen.' }
@@ -1178,7 +1182,7 @@ function renderBoard() {
   };
   document.getElementById('sections').innerHTML = GROUPS.map((g, gi) => `<section class="odx" style="display:flex;flex-direction:column;gap:16px"><div class="gh"><span class="hq" style="font-size:24px">${g.h}</span><span class="s">${g.s}</span></div><div class="lane">${PRESETS.filter(p => p.g === gi).map(p => { const { time, body } = snap(p); return phone({ num:p.num, label:p.l, time, body, clip:p.clip, cap:p.cap }); }).join('')}${notes[gi] || ''}</div></section>`).join('');
   document.getElementById('today').innerHTML = phone({ num:'00', label:'Nora i dag', time:'09:05', body:`<div class="hdr"><span class="hi hq">Hjem</span>${bell(0)}${av('nora')}</div><div class="scr">${sec('Kommer')}${menu([mr({ lead:tic('lan', 'n'), t:'Hent Sykkelpumpe hos Per Lien', s:'I morgen 18.00' })])}${sec('Dine miljøer')}${menu([mr({ t:ENV, s:'Medlem' })])}</div>${nav('hjem')}`,
-    cap:'En plattformforvalter ser appen som alle andre. Ingen kø, ingen inngrep og ingen passkeys i appen.' })
+    cap:'Før dette ble bygget: en plattformforvalter ser appen som alle andre. Ingen kø, ingen inngrep og ingen passkeys i appen. Slik er det også i produksjon til forvaltningen er slått på.' })
     + note('Det som finnes på serveren', '<span class="s" style="color:#1E2733">Passkeys, plattformkøen, saksgrunnlag og inngrepene er bygget på serveren, men har ingen flate i appen og er slått av i produksjon til passkeys er verifisert der.</span>');
   const pick = document.getElementById('pick');
   pick.innerHTML = GROUPS.map((g, gi) => `<optgroup label="${g.h}">${PRESETS.filter(p => p.g === gi).map(p => `<option value="${p.k}">${p.num} · ${p.l}</option>`).join('')}</optgroup>`).join('');
@@ -1200,7 +1204,7 @@ live.addEventListener('keydown', e => {
 document.getElementById('pick').addEventListener('change', e => applyPreset(e.target.value));
 document.getElementById('tick').addEventListener('click', () => { S.clock += 11; renderLive(); });
 document.getElementById('opt-anders').addEventListener('change', e => { S.anders = e.target.checked; renderLive(); });
-document.getElementById('opt-prod').addEventListener('change', e => { S.prod = e.target.checked; S.sheet = null; S.sys = null; renderLive(); });
+document.getElementById('opt-prod').addEventListener('change', e => { S.prod = e.target.checked; S.sheet = null; S.sys = null; if (S.prod) route(H); renderLive(); });
 document.getElementById('reset').addEventListener('click', () => { document.getElementById('pick').value = 'hjem'; applyPreset('hjem'); });
 document.getElementById('opt-mark').addEventListener('change', e => document.getElementById('L').classList.toggle('nomark', !e.target.checked));
 renderBoard();
