@@ -1,18 +1,12 @@
 import {
-  closeLoanLogisticsSchema,
   type LoanLogistics,
-  loanLogisticsChannelSchema,
   loanLogisticsQuerySchema,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
-import { defineCommand } from "../commands/command";
 import { defineQuery } from "../commands/query";
-import { DomainError } from "../errors";
 import { inSnapshot } from "../objects/state";
-import { loanLogisticsClosedForSafety } from "./events";
 import {
-  closeChannel,
   findChannel,
   findChannelsOf,
   joins,
@@ -20,7 +14,6 @@ import {
   presentChannel,
 } from "./logistics-store";
 import {
-  closeLoanLogisticsPolicy,
   type LoanResource,
   readLoanLogisticsPolicy,
 } from "./policies";
@@ -31,8 +24,9 @@ import { findLoan } from "./reservations";
  * closes ordinary private chat but never the loan (PS-USR-007): while it is
  * in progress, its parties get a narrow channel of their own for short
  * practical messages about the handover, the return, times, places and the
- * object. The database opens and closes it with the block and the loan; the
- * domain reads it and closes it early as a safety measure. Its messages are
+ * object. The database alone opens and closes it, with the block and the
+ * loan: neither party can close it while the loan is in progress, only mute
+ * or archive the conversation for themselves (OD-0020). Its messages are
  * end-to-end encrypted in a chat conversation of its own kind
  * (`chat/loan-logistics.ts`), which takes them only while it is open.
  */
@@ -104,49 +98,4 @@ export const readLoanLogistics = defineQuery({
   present: ({ resource }): LoanLogistics => ({
     channels: resource.channels.map(presentChannel),
   }),
-});
-
-/**
- * PS-COM-007: closes the loan's open logistics channel early, for good,
- * because of harassment or a particular risk. Further follow-up goes through
- * the loan's structured actions and, where relevant, a case. The loan gets
- * no new channel with the same parties, also after a new block.
- *
- * Who may take the measure is not decided (OD-0020); until it is, only its
- * dedicated process can, and nothing runs it. Closing a channel already
- * closed for safety gives it back unchanged; one closed otherwise is final
- * already (`conflict`).
- */
-export const closeLoanLogisticsForSafety = defineCommand({
-  name: "loan_logistics.close_for_safety",
-  input: closeLoanLogisticsSchema,
-  output: loanLogisticsChannelSchema,
-  policy: closeLoanLogisticsPolicy,
-  idempotency: "required",
-  load: async ({ tx, input }) => {
-    const channel = await findChannel(tx, input.channelId, { lock: "update" });
-
-    return channel && { resource: channel, context: undefined };
-  },
-  execute: async ({ tx, resource, events, now }) => {
-    if (resource.closeReason === "safety") {
-      return presentChannel(resource);
-    }
-
-    if (resource.closedAt !== null) {
-      throw new DomainError("conflict", "The channel has closed already");
-    }
-
-    await closeChannel(tx, resource.id, "safety", now);
-    events.record(loanLogisticsClosedForSafety, {
-      resourceId: resource.id,
-      payload: { loanId: resource.loanId },
-    });
-
-    return presentChannel({
-      ...resource,
-      closedAt: now,
-      closeReason: "safety",
-    });
-  },
 });

@@ -8,7 +8,9 @@ import { loanIdSchema } from "./loans";
  * actions, and its two parties get a narrow channel for short practical
  * messages about the handover, the return, times, places and the object.
  * It is its own kind of conversation, never ordinary chat, and only ever
- * about this one loan. The server alone opens and closes it.
+ * about this one loan. The server alone opens and closes it; neither party
+ * can close it while the loan is in progress, only mute or archive it for
+ * themselves (OD-0020).
  */
 export const loanLogisticsChannelIdSchema = z.uuid();
 
@@ -16,14 +18,11 @@ export const loanLogisticsChannelIdSchema = z.uuid();
  * Why a channel no longer accepts messages:
  * - `loan_ended`: the loan has ended;
  * - `parties_changed`: the responsible lender changed, so the channel no
- *   longer joins the loan's parties;
- * - `safety`: it was closed early because of harassment or a particular
- *   risk. Further follow-up goes through the loan's structured actions.
+ *   longer joins the loan's parties.
  */
 export const loanLogisticsCloseReasonSchema = z.enum([
   "loan_ended",
   "parties_changed",
-  "safety",
 ]);
 
 export const loanLogisticsChannelSchema = z.strictObject({
@@ -48,15 +47,6 @@ export const loanLogisticsSchema = z.strictObject({
 });
 
 /**
- * OD-0020: closes the loan's open channel early, for good, because of
- * harassment or a particular risk. Who may do it is not decided; until it
- * is, only a dedicated process can.
- */
-export const closeLoanLogisticsSchema = z.strictObject({
-  channelId: loanLogisticsChannelIdSchema,
-});
-
-/**
  * The channel's encrypted conversation (ADR-0010, WP-43): started by either
  * party while the channel is open, and the same one whoever asks again.
  */
@@ -70,7 +60,6 @@ export type LoanLogisticsCloseReason = z.infer<
 export type LoanLogisticsChannel = z.infer<typeof loanLogisticsChannelSchema>;
 export type LoanLogisticsQuery = z.infer<typeof loanLogisticsQuerySchema>;
 export type LoanLogistics = z.infer<typeof loanLogisticsSchema>;
-export type CloseLoanLogistics = z.infer<typeof closeLoanLogisticsSchema>;
 export type StartLoanLogisticsChat = z.infer<
   typeof startLoanLogisticsChatSchema
 >;

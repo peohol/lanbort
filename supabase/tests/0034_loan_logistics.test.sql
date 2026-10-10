@@ -1,6 +1,6 @@
 begin;
 
-select plan(19);
+select plan(17);
 
 select ok(
   not has_table_privilege(role_name, 'app.loan_logistics_channels', 'SELECT'),
@@ -179,19 +179,25 @@ select throws_ok(
   'a channel is never deleted'
 );
 
--- OD-0020: closed as a safety measure, it stays closed, and no new block
--- opens another between the same parties.
-update app.loan_logistics_channels set closed_at = now(), close_reason = 'safety'
-where loan_id = '00000000-0000-4000-8000-000000000301';
+-- OD-0020: nobody closes the channel while the loan is in progress; only
+-- the loan's end and a change of its parties do.
+select throws_ok(
+  $$ update app.loan_logistics_channels set closed_at = now(), close_reason = 'safety'
+     where loan_id = '00000000-0000-4000-8000-000000000301' $$,
+  '23514',
+  null,
+  'there is no early closing as a safety measure'
+);
 
 select throws_ok(
-  $$ update app.loan_logistics_channels set closed_at = null, close_reason = null
+  $$ update app.loan_logistics_channels set closed_at = now(), close_reason = 'loan_ended'
      where loan_id = '00000000-0000-4000-8000-000000000301' $$,
   '23001',
   null,
-  'a closed channel never opens again'
+  'a channel does not close as ended while the loan is in progress'
 );
 
+-- Lifting the block and placing it again keeps the one open channel.
 update app.user_blocks set lifted_at = now()
 where blocked_id in ('00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000b1');
 insert into app.user_blocks (blocker_id, blocked_id) values
@@ -200,21 +206,19 @@ insert into app.user_blocks (blocker_id, blocked_id) values
 select results_eq(
   $$ select * from pg_temp.channels('00000000-0000-4000-8000-000000000301') $$,
   $$ values ('00000000-0000-4000-8000-0000000000b1'::uuid,
-       '00000000-0000-4000-8000-0000000000a1'::uuid, false, 'safety'::text) $$,
-  'a new block opens no channel after a safety closure'
+       '00000000-0000-4000-8000-0000000000a1'::uuid, true, null::text) $$,
+  'the channel stays open through a new block'
 );
 
 select throws_ok(
   $$ insert into app.loan_logistics_channels (loan_id, borrower_user_id, lender_user_id)
      values ('00000000-0000-4000-8000-000000000301',
        '00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-0000000000a1') $$,
-  '23001',
+  '23505',
   null,
-  'nor can one be added by hand'
+  'nor can another be added by hand'
 );
 
--- A restore keeps a safety closure on its own when there is no channel to
--- close (WP-72); no other closed channel can be added.
 select throws_ok(
   $$ insert into app.loan_logistics_channels (loan_id, borrower_user_id, lender_user_id,
        closed_at, close_reason)
@@ -223,29 +227,7 @@ select throws_ok(
        now(), 'loan_ended') $$,
   '23001',
   null,
-  'only a safety closure is added closed'
-);
-
-select throws_ok(
-  $$ insert into app.loan_logistics_channels (loan_id, borrower_user_id, lender_user_id,
-       closed_at, close_reason)
-     values ('00000000-0000-4000-8000-000000000302',
-       '00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-0000000000d1',
-       now(), 'safety') $$,
-  '23001',
-  null,
-  'a safety closure is between people who were the loan''s parties'
-);
-
-select throws_ok(
-  $$ insert into app.loan_logistics_channels (loan_id, borrower_user_id, lender_user_id,
-       closed_at, close_reason)
-     values ('00000000-0000-4000-8000-000000000301',
-       '00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-0000000000a1',
-       now(), 'safety') $$,
-  '23001',
-  null,
-  'a safety closure is kept once'
+  'no channel is added closed'
 );
 
 -- Cia's loan: the block opens a channel, and cancelling the loan closes it
@@ -266,15 +248,6 @@ select results_eq(
   'the channel closes when the loan ends'
 );
 
-select lives_ok(
-  $$ insert into app.loan_logistics_channels (loan_id, borrower_user_id, lender_user_id,
-       closed_at, close_reason)
-     values ('00000000-0000-4000-8000-000000000302',
-       '00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-0000000000a1',
-       now(), 'safety') $$,
-  'a safety closure between the loan''s parties is kept on its own'
-);
-
 -- A block between parties of a loan that has ended opens nothing.
 update app.user_blocks set lifted_at = now()
 where blocker_id = '00000000-0000-4000-8000-0000000000c1';
@@ -284,7 +257,7 @@ insert into app.user_blocks (blocker_id, blocked_id) values
 select is(
   (select count(*) from app.loan_logistics_channels
    where loan_id = '00000000-0000-4000-8000-000000000302'),
-  2::bigint,
+  1::bigint,
   'a block on an ended loan opens no channel'
 );
 
