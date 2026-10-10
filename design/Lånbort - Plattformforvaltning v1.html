@@ -627,7 +627,7 @@ const FAM = {
       ['ting', BLUE, `Ting som allerede er overlevert, følges til de er levert tilbake. ${x.first} beholder tilgangen som trengs til det.`],
       ...ownsRoles(x),
       ['undo', GREY, 'Kan oppheves fra en sak. Lån som ble stanset, kommer ikke tilbake.']],
-    run:x => { x.stopped = x.acc.bindings.some(t => t.startsWith('et reservert')); x.acc.bindings = x.acc.bindings.filter(t => !t.startsWith('et reservert')); },
+    run:x => { x.acc.status = 'suspended'; x.stopped = x.acc.bindings.some(t => t.startsWith('et reservert')); x.acc.bindings = x.acc.bindings.filter(t => !t.startsWith('et reservert')); },
     tell:x => [[x.key, 'Kontoen er stanset av Lånbort', 'Ser hva som fortsatt kan gjøres. Ikke rapporten og ikke hvem som rapporterte.'], ...(x.stopped ? [['ola', 'Lånet av Trillebår kan ikke gjennomføres', 'På grunn av en begrensning hos Lånbort. Ikke som kansellering, og ikke hvorfor.']] : [])],
     done:x => `Kontoen til ${x.who} er suspendert. Inngrepet står i saken.` },
   reinstate:{ label:'Gjeninnsett kontoen', icon:'undo', short:'Opphever suspensjonen eller en avslutning som ikke er fullført.',
@@ -755,6 +755,7 @@ function picker(F, x) {
 }
 function vFlow() {
   const f = S.flow, c = S.cases[f.id], x = ctx(), F = FAM[f.fam];
+  if (S.prod) return page(`${pageHead(F ? F.label : 'Velg inngrep', { kicker:c.title })}${platStrip()}${prodBanner()}`);
   const pk = f.pk || (f.step === 4 && !fresh());
   const steps = pk ? ['Velg', 'Konsekvenser', 'Begrunnelse', 'Passkey', 'Bekreft'] : ['Velg', 'Konsekvenser', 'Begrunnelse', 'Bekreft'];
   const cur = f.step < 4 ? f.step - 1 : pk && !fresh() ? 3 : steps.length - 1;
@@ -778,6 +779,7 @@ ${err(S.err)}${b(F.danger ? 'bdf' : 'btn', F.verb(x), 'run', '', fresh() ? F.ico
 }
 function doRun() {
   const x = ctx(), F = FAM[S.flow.fam];
+  if (S.prod) { S.err = 'Forvaltningen er ikke slått på her ennå.'; return; }
   if (!enough()) { S.err = 'Forvalterhandlingene er stengt fordi du har under to passkeys.'; return; }
   F.run(x);
   x.c.ints.unshift({ icon:F.icon, label:F.record, whom:F.whom(x), basis:S.flow.basis.trim(), by:'nora', at:now() });
@@ -1096,7 +1098,7 @@ const take = (id, fam, o) => { hold(id); S.flow = { id, step:4, fam, sel:'sel' i
 const siriCase = () => { const id = openInquiry('acc', 'sirih', B.siriBasis); S.log.oth = []; return id; };
 const noPks = () => { S.pks = []; S.confirmedAt = null; S.log.nora.unshift({ t:PK_NOTE.enrollment_code, s:PK_DETAIL, at:'08.40', mail:true }); };
 const firstPk = () => { noPks(); S.pks = [{ id:'p1', name:'iPhone', via:'code', created:now(), last:now() }]; S.confirmedAt = S.clock; tellNora('added'); };
-const thirdPk = () => S.pks.push({ id:'p3', name:'MacBook', via:'passkey', created:'8. okt. 10.15', last:'8. okt. 10.15' });
+const thirdPk = () => (S.nextPk = Math.max(S.nextPk, 4), S.pks.push({ id:'p3', name:'MacBook', via:'passkey', created:'8. okt. 10.15', last:'8. okt. 10.15' }));
 
 const GROUPS = [
   { h:'1 · Forvaltning start', s:'Forvalteren kommer inn fra Hjem, under «For Lånbort», som administratorene har «Som administrator». «Forvaltning» er en oppgaveside som «Administrer miljøet»: det som venter først, så verktøyene, så det som ikke finnes i appen. Rollestripen sier at du forvalter for Lånbort, og hvor lenge passkey-bekreftelsen gjelder.' },
