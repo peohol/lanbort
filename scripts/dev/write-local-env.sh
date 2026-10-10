@@ -24,7 +24,10 @@ sed \
   -e "s|^SUPABASE_PUBLISHABLE_KEY=.*|SUPABASE_PUBLISHABLE_KEY=${publishable_key}|" \
   -e "s|^SUPABASE_SECRET_KEY=.*|SUPABASE_SECRET_KEY=$(value_of SECRET_KEY)|" \
   -e "s|^MAILPIT_URL=.*|MAILPIT_URL=$(value_of MAILPIT_URL)|" \
-  -e "s|^DATABASE_URL=.*|DATABASE_URL=$(value_of DB_URL)|" \
+  -e "s|^DATABASE_URL=.*|DATABASE_URL=$(value_of DB_URL | sed 's|//[^@]*@|//lanbort_app:lanbort_app@|')|" \
+  -e "s|^ADMIN_DATABASE_URL=.*|ADMIN_DATABASE_URL=$(value_of DB_URL)|" \
   .env.example > .env
+
+ADMIN_DATABASE_URL="$(value_of DB_URL)" scripts/dev/app-role-login.sh
 
 echo "Wrote .env for the local Supabase stack."

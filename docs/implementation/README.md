@@ -74,7 +74,7 @@ Bevisst utsatt:
 - hvem som kan utnevne plattformforvaltere i appen er ikke bestemt, så det skjer foreløpig bare via driftskommandoen
 - WebAuthn som sterkere autentisering for plattformforvaltere (ADR-0011) er besluttet, men må bygges før slike handlinger tas i reell bruk (Port D); til da avvises de
 - endring av e-postadresse og synlighet per profilfelt (Fase 2)
-- egen databaserolle med minste privilegium for appen, og innstilling av hostet Supabase Auths egne grenser per IP når innlogging går via serveren (appens egne grenser per klient kom i WP-73), før pilot (Port D)
+- appens egen databaserolle med minste privilegium (`lanbort_app`, [local-development](local-development.md)) og Auths grenser i produksjon ([pilot-operations](pilot-operations.md#grenser-for-innlogging)) kom før pilot (Port D)
 
 ### Fase 2 — Sosial modell, miljøer og objekter
 Mål: brukere kan etablere de kontekstene og objektene som senere lån bygger på.

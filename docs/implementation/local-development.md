@@ -69,7 +69,7 @@ Produksjon er Vercel-prosjektet bak <https://www.lånbort.no> (`www.xn--lnbort-i
 
 Migrasjoner kjøres aldri mot produksjon på andre måter, for da får historikken versjoner som ikke finnes i repoet.
 
-Appens servere kjører i Vercels region `arn1` (Stockholm), samme sted som databasen, og Vercel Cron kjører de planlagte jobbene etter tidsplanen i `apps/web/vercel.json`. Appen kobler seg til databasen gjennom Supabase sin «Transaction pooler» (port 6543), fordi Vercel ikke når den direkte databaseadressen, som bare finnes på IPv6.
+Appens servere kjører i Vercels region `arn1` (Stockholm), samme sted som databasen, og Vercel Cron kjører de planlagte jobbene etter tidsplanen i `apps/web/vercel.json`. Appen kobler seg til databasen gjennom Supabase sin «Transaction pooler» (port 6543), fordi Vercel ikke når den direkte databaseadressen, som bare finnes på IPv6. Den kobler seg til som sin egen rolle, `lanbort_app` (brukernavnet `lanbort_app.<prosjektref>` i pooleren), som bare kan lese og skrive appens data og kjøre appens funksjoner. Den eier ingenting, kan ikke endre skjemaet eller slå av vaktene på tabeller som bare skal vokse, og når ikke Auths eller Storages tabeller (migrasjonen `app_server_role`, pgTAP 0053). Rollen lages av migrasjonene uten innlogging; passordet settes én gang i produksjon som en ferdig SCRAM-hash (`alter role lanbort_app login password 'SCRAM-SHA-256$…'`), så klarteksten aldri når databasen eller loggene, og står ellers bare i `DATABASE_URL` i Vercel. Arbeidsflyten skriver poolerens adresse i loggen. Går noe galt, rulles Vercel tilbake til forrige deploy, som har den gamle `DATABASE_URL`.
 
 Produksjon er en lukket pilot: bare adresser produkteier har lagt til, får en innloggingskode ([drift av piloten](pilot-operations.md)).
 
@@ -77,7 +77,7 @@ Innloggingskodene sendes gjennom Resend fra det verifiserte domenet lånbort.no 
 
 ### Testdatabase
 
-CI starter en isolert lokal Supabase-database, bygger den fra alle migrasjoner, kjører pgTAP-testene, kontrollerer at genererte typer stemmer med skjemaet og kjører alle `*.integration.test.ts` mot databasen (`pnpm test:integration`, som krever `DATABASE_URL`). Ingen delt eller hostet database brukes i testene.
+CI starter en isolert lokal Supabase-database, bygger den fra alle migrasjoner, kjører pgTAP-testene, kontrollerer at genererte typer stemmer med skjemaet og kjører alle `*.integration.test.ts` mot databasen (`pnpm test:integration`, som krever `DATABASE_URL`). Testene og appen bruker serverens egen rolle, slik produksjon gjør; `ADMIN_DATABASE_URL` er eierens tilkobling, bare for testoppsett i Auths tabeller og for drift. `pnpm env:local` og `pnpm db:reset` gir rollen det lokale passordet fra `.env.example`. Ingen delt eller hostet database brukes i testene.
 
 ## CI-kontroller
 

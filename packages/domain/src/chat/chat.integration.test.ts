@@ -21,7 +21,10 @@ import {
   testChatAccount,
   testChatDevice,
 } from "../testing/chat";
-import { connectTestDatabase } from "../testing/database";
+import {
+  connectAdminTestDatabase,
+  connectTestDatabase,
+} from "../testing/database";
 import { loanTestKit } from "../testing/loans";
 import { deliverAll } from "../testing/outbox";
 import { askObjectQuestion } from "../questions/commands";
@@ -88,7 +91,9 @@ const linkCommitment = Buffer.alloc(32, 7).toString("base64");
  * (and `pnpm ops:restore finish` in another package leaves these alone).
  */
 const db = connectTestDatabase();
-afterAll(() => db.destroy());
+// Auth's sessions are out of the server role's reach.
+const admin = connectAdminTestDatabase();
+afterAll(() => Promise.all([db.destroy(), admin.destroy()]));
 
 const consumers = new ConsumerRegistry([
   chatSessionEnding({ db: () => db }),
@@ -118,9 +123,11 @@ const newSession = (actor: UserActor): UserActor => ({
 async function providerSession(actor: UserActor): Promise<UserActor> {
   const session = newSession(actor);
   const authUser = randomUUID();
-  await sql`insert into auth.users (id) values (${authUser}::uuid)`.execute(db);
+  await sql`insert into auth.users (id) values (${authUser}::uuid)`.execute(
+    admin,
+  );
   await sql`insert into auth.sessions (id, user_id) values (${session.authentication.sessionId}::uuid, ${authUser}::uuid)`.execute(
-    db,
+    admin,
   );
   return session;
 }
@@ -130,7 +137,7 @@ const sessionLives = async (actor: UserActor) =>
     await sql<{
       id: string;
     }>`select id from auth.sessions where id = ${actor.authentication.sessionId}::uuid`.execute(
-      db,
+      admin,
     )
   ).rows.length === 1;
 
