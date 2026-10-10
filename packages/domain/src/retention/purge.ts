@@ -16,8 +16,8 @@ async function deleted(query: {
  * Deletes what the pilot's retention policy no longer keeps (OD-0002,
  * `pilotRetention`). Run by the scheduled job `/api/internal/retention`;
  * safe to run repeatedly and concurrently. It records no event: what it
- * deletes is not history anyone relies on, and a restore that brings some of
- * it back is put right by the next run.
+ * deletes is not history anyone relies on, and `pnpm ops:restore finish`
+ * runs it again on what a restore brings back.
  */
 export const purgeExpiredData = defineCommand({
   name: "data.purge_expired",

@@ -143,6 +143,7 @@ describe("ops:restore", () => {
     expect(outcome.message).toMatch(
       /Chat: \d+ conversations start new groups\./,
     );
+    expect(outcome.message).toMatch(/Retention: \d+ expired rows deleted\./);
     expect(outcome.message).toMatch(/Not ready to open \(\d+\.\d s\)\.$/);
   });
 });
