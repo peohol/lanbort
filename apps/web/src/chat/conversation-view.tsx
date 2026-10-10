@@ -41,6 +41,7 @@ import {
   type HistoryEntry,
   shortMessageRoom,
 } from "./engine";
+import { LinkRow } from "./link-row";
 import type { ChatLoan, ChatLoans } from "./loans";
 import { chatErrorMessage } from "./messages";
 import { Notice } from "./notice";
@@ -85,15 +86,13 @@ function LoansBetween({ loans }: { loans: readonly ChatLoan[] }) {
       <h2 id="lan-mellom-dere">Lån mellom dere · {loans.length}</h2>
       <ul>
         {loans.map((loan) => (
-          <li key={loan.id}>
-            <Link href={loan.href} className={styles.loanLink}>
-              <span>
-                <strong>{loan.title}</strong>
-                <small>{loan.status}</small>
-              </span>
-              <Icon name="chevron" />
-            </Link>
-          </li>
+          <LinkRow
+            key={loan.id}
+            href={loan.href}
+            title={loan.title}
+            detail={loan.status}
+            picture={loan.picture}
+          />
         ))}
       </ul>
       <p>Avtaler og bekreftelser gjør dere i lånet.</p>

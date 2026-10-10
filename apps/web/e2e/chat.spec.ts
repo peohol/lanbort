@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { type Browser, expect, type Page, test } from "@playwright/test";
+import sharp from "sharp";
 import {
   accountId,
   agreeLoan,
@@ -70,6 +72,31 @@ test("two friends chat end to end, and a new device is linked with its code", as
   await postCommand(bo.context.request, "/api/social/friend-requests/accept", {
     userId: anna.id,
   });
+  // Bo lends Anna his ladder, which has a picture.
+  const loanId = await agreeLoan(
+    bo.context.request,
+    anna.context.request,
+    "Stige",
+  );
+  const { objectId } = await (
+    await bo.context.request.get(`/api/loans/${loanId}`)
+  ).json();
+  const upload = await bo.context.request.post(
+    `/api/objects/${objectId}/images`,
+    {
+      data: await sharp({
+        create: { width: 40, height: 30, channels: 3, background: "#4a7" },
+      })
+        .jpeg()
+        .toBuffer(),
+      headers: {
+        "content-type": "image/jpeg",
+        "Idempotency-Key": randomUUID(),
+      },
+    },
+  );
+  expect(upload.ok(), await upload.text()).toBe(true);
+  const { imageId } = await upload.json();
 
   await turnOnChat(anna.page);
   await turnOnChat(bo.page);
@@ -81,6 +108,11 @@ test("two friends chat end to end, and a new device is linked with its code", as
     anna.page.getByRole("heading", { level: 1, name: "Bo Dahl" }),
   ).toBeVisible();
   const conversation = anna.page.url();
+  // The loan between them shows its thing's picture (PS-OBJ-021).
+  const between = anna.page.getByRole("region", { name: /Lån mellom dere/ });
+  await expect(
+    between.getByRole("link", { name: /Stige/ }).locator("img"),
+  ).toHaveAttribute("src", `/api/loans/${loanId}/images/${imageId}`);
   await anna.page.getByLabel("Ny melding").fill("Hei Bo, kan jeg låne stigen?");
   await anna.page.getByRole("button", { name: "Send" }).click();
   await expect(

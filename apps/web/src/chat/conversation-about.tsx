@@ -5,14 +5,12 @@ import {
   type ChatDirectory,
   productTimeZone,
 } from "@lanbort/contracts";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { announce } from "@/components/announcer";
 import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
 import { PageHeader } from "@/components/page-header";
-import { Icon } from "@/components/icon";
 import { chatConversationHref, chatHref } from "@/navigation/chat";
 import { personHref } from "@/navigation/routes";
 import { chatApi } from "./api";
@@ -21,6 +19,7 @@ import { loanOf, nameOf } from "./chat-home";
 import { useEngineVersion } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";
 import type { ChatEngine } from "./engine";
+import { LinkRow } from "./link-row";
 import type { ChatLoan, ChatLoans } from "./loans";
 import { chatErrorMessage } from "./messages";
 
@@ -35,28 +34,6 @@ const dayFormat = new Intl.DateTimeFormat("nb-NO", {
 /** «Olas», «Hans'»: whose something is, in Norwegian. */
 const whose = (name: string) =>
   /[sxz]$/i.test(name) ? `${name}'` : `${name}s`;
-
-function LinkRow({
-  href,
-  title,
-  detail,
-}: {
-  href: string;
-  title: string;
-  detail: string;
-}) {
-  return (
-    <li>
-      <Link href={href} className={styles.loanLink}>
-        <span>
-          <strong>{title}</strong>
-          <small>{detail}</small>
-        </span>
-        <Icon name="chevron" />
-      </Link>
-    </li>
-  );
-}
 
 /** The 60 digits both compare, as 12 groups of 5 (ADR-0010 §3). */
 function SecurityCode({
@@ -207,6 +184,7 @@ function About({
                 detail={
                   item.kind === "loan" ? `Lån · ${item.status}` : item.status
                 }
+                picture={item.picture}
               />
             ))}
             {others.map((person) =>
