@@ -18,6 +18,7 @@ import { readLoan } from "../loans/queries";
 import { grantPlatformRole, revokePlatformRole } from "../platform/commands";
 import { platformRoleOpsProcess } from "../platform/policies";
 import { blockUser } from "../social/commands";
+import { platformQueueIds } from "../testing/cases";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
 import { loanTestKit } from "../testing/loans";
@@ -868,14 +869,7 @@ describe("a report that a user may have died or be permanently unavailable (PS-C
       executeQuery(tick(), listPlatformCaseQueue, { actor: weak, input: {} }),
     ).rejects.toMatchObject({ code: "stronger_authentication_required" });
 
-    expect(
-      (
-        await executeQuery(tick(), listPlatformCaseQueue, {
-          actor: handler,
-          input: {},
-        })
-      ).items.map((item) => item.id),
-    ).toContain(caseId);
+    expect(await platformQueueIds(tick(), handler)).toContain(caseId);
     expect(await read(handler, caseId)).toMatchObject({
       viewer: "handler",
       subjectUserId: subject.userId,
