@@ -110,7 +110,7 @@ En administrator kan invitere sine venner og andre eksisterende brukere som admi
 ### PS-ENV-019 — Ett valgfritt spørsmål når administratorene ber om mer informasjon
 **Forankring:** [Krav ved innmelding](../vision/03-miljoer.md); PS-ENV-004, UX-PRIV-009
 
-Når administratorene ber søkeren om mer informasjon, kan de skrive ett kort, valgfritt og konkret spørsmål knyttet til søknaden. Søkeren ser spørsmålet ordrett på søknaden, avsendt som «Administratorene i [miljøet]», og får ett handlingsvarsel i appen. Uten spørsmål får søkeren bare standardoppfordringen om å se over svarene og sende dem på nytt. Spørsmålet er ingen privat samtale, kopieres ikke til profilen og følger søknadens tilgang og sletting. Ikke bygget ennå. (Produkteier, 10. oktober 2026, OD-0052.)
+Når administratorene ber søkeren om mer informasjon, kan de skrive ett kort, valgfritt og konkret spørsmål knyttet til søknaden. Søkeren ser spørsmålet ordrett på søknaden, avsendt som «Administratorene i [miljøet]», og får ett handlingsvarsel i appen. Uten spørsmål får søkeren bare standardoppfordringen om å se over svarene og sende dem på nytt. Spørsmålet er ingen privat samtale, kopieres ikke til profilen og følger søknadens tilgang og sletting. (Produkteier, 10. oktober 2026, OD-0052.)
 
 ### PS-ENV-020 — Den som er stengt ute, ser at de ikke kan søke nå
 **Forankring:** [Krav ved innmelding](../vision/03-miljoer.md); PS-ENV-004, PS-ENV-017, PS-NFR-002

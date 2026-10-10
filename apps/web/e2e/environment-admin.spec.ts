@@ -6,6 +6,7 @@ import {
   registerThroughApi,
   today,
   uniqueWord,
+  untilOutboxSettles,
 } from "./helpers";
 
 /**
@@ -239,5 +240,91 @@ test("a barred applicant stays listed until the bar is lifted", async ({
     applications.getByRole("button", { name: "Godkjenn Ola Vest" }),
   ).toBeVisible();
   await ola.close();
+  expect(problems).toEqual([]);
+});
+
+/**
+ * PS-ENV-019: the administrators ask for more with one short question. The
+ * applicant is notified, reads it verbatim on the application, from the
+ * administrators as a group, and it goes once the answers are sent again.
+ */
+test("administrators ask an applicant one question, which the applicant reads verbatim", async ({
+  browser,
+  page,
+  baseURL,
+}) => {
+  const problems = collectBrowserProblems(page);
+  await registerThroughApi(page.request, undefined, "Eva Eier");
+  const name = `Borettslaget ${uniqueWord()}`;
+  const { environmentId } = await (
+    await postCommand(page.request, "/api/environments", {
+      name,
+      type: "closed",
+      requirements: [{ kind: "information", text: "Hvilken leilighet?" }],
+    })
+  ).json();
+  const kari = await browser.newContext({ baseURL: baseURL! });
+  const kariPage = await kari.newPage();
+  await registerThroughApi(kari.request, undefined, "Kari Nord");
+  const { requirements } = await (
+    await kari.request.get(
+      `/api/environments/details?environmentId=${environmentId}`,
+    )
+  ).json();
+  await postCommand(kari.request, "/api/environments/membership/join", {
+    environmentId,
+    answers: [{ requirementId: requirements[0].id, answer: "H0201" }],
+  });
+  const question = "Står du på kontrakten for H0201?";
+
+  await page.goto(`/miljoer/${environmentId}/administrer/innmeldinger`);
+  await page.getByRole("button", { name: "Be om mer informasjon" }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Be Kari Nord om mer informasjon?",
+  });
+  await expect(
+    dialog.getByText(new RegExp(`fra «Administratorene i ${name}»`)),
+  ).toBeVisible();
+  await dialog
+    .getByLabel("Spørsmål til Kari Nord (valgfritt)")
+    .fill(`${question}  `);
+  await dialog.getByRole("button", { name: "Be om mer informasjon" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(
+    page.getByText("Venter på mer informasjon fra søkeren"),
+  ).toBeVisible();
+  await expect(page.getByText(`«${question}»`)).toBeVisible();
+
+  // The applicant is told who asks, never what, and reads it on the page.
+  await untilOutboxSettles(kari.request, async () =>
+    (
+      await (await kari.request.get("/api/notifications")).json()
+    ).notifications.some(
+      (notification: { kind: string }) =>
+        notification.kind === "environment.membership_information_requested",
+    ),
+  );
+  await kariPage.goto("/varsler");
+  await kariPage
+    .getByRole("link", {
+      name: new RegExp(`Administratorene i ${name} ber om mer informasjon`),
+    })
+    .click();
+  await expect(kariPage).toHaveURL(`/miljoer/${environmentId}`);
+  const status = kariPage.getByRole("region", { name: "Status" });
+  await expect(status.getByText(`Administratorene i ${name}`)).toBeVisible();
+  await expect(status.getByText(`«${question}»`)).toBeVisible();
+  await expect(status).not.toContainText("Eva");
+  await expect(status).not.toContainText("Se over svarene dine");
+
+  await status.getByRole("link", { name: "Se over svarene" }).click();
+  await expect(kariPage.getByText(`«${question}»`)).toBeVisible();
+  await kariPage.getByRole("button", { name: "Send svarene" }).click();
+  await expect(
+    kariPage.getByText("Søknaden din venter på svar fra administratorene."),
+  ).toBeVisible();
+  await expect(kariPage.getByText(`«${question}»`)).toHaveCount(0);
+
+  await kari.close();
   expect(problems).toEqual([]);
 });

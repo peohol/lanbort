@@ -275,6 +275,7 @@ export interface AppEnvironmentMemberships {
   ended_at: Timestamp | null;
   environment_id: string;
   id: Generated<string>;
+  information_question: string | null;
   invited_by_user_id: string | null;
   origin: string;
   passive_position: Int8 | null;

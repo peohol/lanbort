@@ -81,6 +81,17 @@ const optional = <T extends z.ZodType>(schema: T) =>
 
 export const maxRequirements = 20;
 
+/**
+ * PS-ENV-019 (OD-0052): the one short, optional question the administrators
+ * may send with a request for more information. Blank means none.
+ */
+export const maxInformationQuestionLength = 300;
+export const informationQuestionSchema = z.preprocess(
+  (value) =>
+    typeof value === "string" && value.trim() === "" ? undefined : value,
+  multiLine(maxInformationQuestionLength).optional(),
+);
+
 export const environmentDetailsSchema = z.strictObject({
   name: singleLine(100),
   description: optional(multiLine(2000)),
@@ -180,6 +191,11 @@ const membershipFields = {
   /** Current requirements this membership has not answered or accepted. */
   unmetRequirementIds: z.array(z.uuid()),
   answers: z.array(givenAnswerSchema),
+  /**
+   * PS-ENV-019: the administrators' question, verbatim, while the
+   * application waits on the applicant; null when they wrote none.
+   */
+  informationQuestion: z.string().nullable(),
 };
 
 export const ownMembershipSchema = z.strictObject(membershipFields);

@@ -27,6 +27,7 @@ import { loadPeople } from "../people/store";
 import {
   friendRequestStanding,
   invitationStanding,
+  informationRequestStanding,
   membershipInvitationStanding,
   requestStanding,
 } from "./standing";
@@ -154,7 +155,12 @@ async function environmentAbout(
       .allowed;
   const membership = await db
     .selectFrom("app.environment_memberships")
-    .select(["state", "origin", "end_reason as endReason"])
+    .select([
+      "state",
+      "origin",
+      "end_reason as endReason",
+      "review_stage as reviewStage",
+    ])
     .where("environment_id", "=", environmentId)
     .where("user_id", "=", userId)
     .orderBy("created_at", "desc")
@@ -178,6 +184,8 @@ async function environmentAbout(
       switch (kind) {
         case "environment.membership_invited":
           return membershipInvitationStanding(membership ?? null);
+        case "environment.membership_information_requested":
+          return informationRequestStanding(membership ?? null);
         case "environment.role_invited": {
           const invitation = roleInvitations.find(
             ({ role }) => role === detail,

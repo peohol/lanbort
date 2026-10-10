@@ -41,6 +41,7 @@ const environment = (
     transitionDeadline: null,
     unmetRequirementIds: [],
     answers: [],
+    informationQuestion: null,
     ...membership,
   },
   roles: [],
@@ -246,6 +247,34 @@ describe("membershipLabel", () => {
     );
     const member = environment({}, {});
     expect(membershipLabel(member, membershipStep(member))).toBe("Medlem");
+  });
+});
+
+describe("a request for more information (PS-ENV-019)", () => {
+  const asked = (informationQuestion: string | null) =>
+    environment(
+      {},
+      {
+        state: "pending",
+        reviewStage: "information_requested",
+        informationQuestion,
+      },
+    );
+
+  it("asks the applicant to look over the answers when the administrators wrote nothing", () => {
+    const plain = asked(null);
+
+    expect(describeMembership(plain, membershipStep(plain))).toBe(
+      "Administratorene ber om mer informasjon før de svarer. Se over svarene dine og send dem på nytt.",
+    );
+  });
+
+  it("leaves the standard prompt out when their question is shown", () => {
+    const question = asked("Hvilken oppgang bor du i?");
+
+    expect(describeMembership(question, membershipStep(question))).toBe(
+      "Administratorene ber om mer informasjon før de svarer.",
+    );
   });
 });
 

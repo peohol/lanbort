@@ -189,7 +189,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0052 — Hva søkeren får når administratorene ber om mer informasjon
 - **Lag:** Produktspesifikasjon
 - **Status:** Avklart (produkteier, 10. oktober 2026)
-- **Beslutning:** Se [PS-ENV-019](product-spec/02-miljoer.md). Ett kort, valgfritt spørsmål på søknaden, vist ordrett og avsendt som «Administratorene i [miljøet]», og ett handlingsvarsel i appen. Uten tekst gjelder standardoppfordringen. Ingen privat chat eller kopi til profilen. Ikke bygget.
+- **Beslutning:** Se [PS-ENV-019](product-spec/02-miljoer.md). Ett kort, valgfritt spørsmål på søknaden, vist ordrett og avsendt som «Administratorene i [miljøet]», og ett handlingsvarsel i appen. Uten tekst gjelder standardoppfordringen. Ingen privat chat eller kopi til profilen. Bygget.
 
 ### OD-0053 — Hva den som er stengt ute fra nye forsøk, får vite
 - **Lag:** Produktspesifikasjon

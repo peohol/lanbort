@@ -93,6 +93,7 @@ function presentMembership(
       new Set(answers.map((answer) => answer.requirementId)),
     ).map((requirement) => requirement.id),
     answers: answers.map((answer) => ({ ...answer })),
+    informationQuestion: membership.informationQuestion,
   };
 }
 

@@ -2,6 +2,7 @@ import {
   environmentRoleInvited,
   environmentTypeChangeProposed,
   membershipActivated,
+  membershipInformationRequested,
   membershipInvited,
   membershipRejected,
   membershipReviewRequested,
@@ -112,6 +113,24 @@ export const relationRules = [
           payload.reactivation ? "reactivation" : null,
         );
       },
+    ),
+  ),
+  // PS-ENV-019: the applicant hears that the administrators ask for more,
+  // while the application still waits on them. The question itself is read
+  // on the application, never carried by the notification.
+  notifyOn(membershipInformationRequested, ({ db, event, payload }) =>
+    whileStill(
+      membership(db, event.resourceId).where(
+        "review_stage",
+        "=",
+        "information_requested",
+      ),
+      () =>
+        tell(
+          [payload.userId],
+          "environment.membership_information_requested",
+          environment(payload.environmentId),
+        ),
     ),
   ),
   // PS-ENV-017: the applicant hears the outcome of their own application,

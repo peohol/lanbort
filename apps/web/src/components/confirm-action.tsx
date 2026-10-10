@@ -1,10 +1,10 @@
 "use client";
 
-import { useId, useRef } from "react";
+import { type FormEvent, type ReactNode, useId, useRef } from "react";
 import { BusyButton } from "./busy-button";
 import type { ErrorMessages } from "./error-messages";
 import { ErrorText } from "./error-text";
-import { fillHref } from "./form-body";
+import { fillHref, formBody, formValues } from "./form-body";
 import { Icon, type IconName } from "./icon";
 import { useCommand } from "./use-command";
 
@@ -54,6 +54,8 @@ export function ConsequenceList({
  * dialog that shows what disappears, what stays and who is affected, and a
  * confirm button that names what happens (UX-INT-003). The native dialog
  * keeps focus inside, closes on Escape and returns focus to the button.
+ * Fields given as `children` sit between the consequences and the buttons
+ * and are sent with `body`, as `CommandForm` sends them.
  */
 export function ConfirmAction({
   label,
@@ -68,6 +70,7 @@ export function ConfirmAction({
   idempotent = true,
   messages,
   next,
+  children,
 }: {
   /** The button that opens the dialog. */
   label: string;
@@ -88,9 +91,12 @@ export function ConfirmAction({
   messages?: ErrorMessages;
   /** The page to go to once done, filled from the answer (`CommandForm`). */
   next?: string | undefined;
+  /** Fields that go with the command, such as an optional message. */
+  children?: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const formId = useId();
   const command = useCommand({
     path,
     done: confirmLabel,
@@ -99,8 +105,11 @@ export function ConfirmAction({
     after: next ? (data) => fillHref(next, data) : "refresh",
   });
 
-  async function confirm() {
-    if (await command.run(body)) dialog.current?.close();
+  async function confirm(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const fields = formBody(formValues(event.currentTarget), { ...body });
+
+    if (await command.run(fields)) dialog.current?.close();
   }
 
   return (
@@ -118,15 +127,18 @@ export function ConfirmAction({
       <dialog ref={dialog} className="dialog" aria-labelledby={titleId}>
         <h2 id={titleId}>{title}</h2>
         <ConsequenceList consequences={consequences} />
+        <form id={formId} onSubmit={(event) => void confirm(event)}>
+          {children}
+        </form>
         <div className="dialog-actions">
           <button type="button" onClick={() => dialog.current?.close()}>
             Avbryt
           </button>
           <BusyButton
-            type="button"
+            type="submit"
+            form={formId}
             className={danger ? "button-danger" : "button-primary"}
             busy={command.pending}
-            onClick={() => void confirm()}
           >
             {confirmLabel}
           </BusyButton>

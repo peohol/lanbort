@@ -89,6 +89,7 @@ const application: MembershipRecord = {
   state: "pending",
   origin: "application",
   reviewStage: "submitted",
+  informationQuestion: null,
   activatedPosition: null,
   activationRevision: null,
   transitionDeadline: null,

@@ -75,6 +75,24 @@ export function membershipInvitationStanding(
   }
 }
 
+/**
+ * A request for more information (PS-ENV-019), by the application it was
+ * about: open while it waits on the applicant, answered once they sent
+ * their answers again, and otherwise no longer waiting.
+ */
+export function informationRequestStanding(
+  membership: { readonly reviewStage: string | null } | null,
+): NotificationStanding {
+  switch (membership?.reviewStage) {
+    case "information_requested":
+      return "open";
+    case "submitted":
+      return "accepted";
+    default:
+      return "lapsed";
+  }
+}
+
 /** An invitation to a role, or to co-own an object, by how it was closed. */
 export function invitationStanding(
   outcome: string | null,

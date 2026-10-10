@@ -1561,6 +1561,11 @@ body:has(> .layer) .app-shell .layer {
   padding-left: 1.25rem;
 }
 
+/* Fields that go with a confirmation, between its consequences and buttons. */
+.dialog form:not(:empty) {
+  margin-bottom: var(--space-4);
+}
+
 /* The buttons keep the order they are reached in: «Avbryt», then the
    confirming step, which lands nearest the thumb where they stack. */
 .dialog-actions {

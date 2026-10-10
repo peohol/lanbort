@@ -1,4 +1,5 @@
 import {
+  informationQuestionSchema,
   inviteMemberSchema,
   membershipDecisionSchema,
   membershipStateSchema,
@@ -734,17 +735,19 @@ export const rejectMembership = defineCommand({
 });
 
 /**
- * Asks the applicant to add to or change the answers. The conversation itself
- * belongs to the case system (WP-45), not to private chat.
+ * Asks the applicant to add to or change the answers, with one short,
+ * optional question (PS-ENV-019). The question stays with the application,
+ * never in private chat, events or logs; the database drops it once the
+ * application moves on.
  */
 export const requestInformation = defineCommand({
   name: "environment_membership.request_information",
-  input: decisionInput,
+  input: decisionInput.extend({ question: informationQuestionSchema }),
   output: membershipOutput,
   policy: requestInformationPolicy,
   idempotency: "required",
   load: loadDecision,
-  execute: async ({ tx, resource, events, now }) => {
+  execute: async ({ tx, input, resource, events, now }) => {
     const membership = await settleMembership(tx, resource.target, now, events);
 
     if (membership.reviewStage !== "submitted") {
@@ -753,7 +756,11 @@ export const requestInformation = defineCommand({
 
     await tx
       .updateTable("app.environment_memberships")
-      .set({ review_stage: "information_requested", updated_at: now })
+      .set({
+        review_stage: "information_requested",
+        information_question: input.question ?? null,
+        updated_at: now,
+      })
       .where("id", "=", membership.id)
       .execute();
     events.record(membershipInformationRequested, {
@@ -842,6 +849,7 @@ export const expireTransitions = defineCommand({
         transitionDeadline: row.transition_deadline,
         passiveReason: null,
         passivePosition: null,
+        informationQuestion: null,
       })),
       now,
       events,

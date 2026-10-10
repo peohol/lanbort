@@ -9,6 +9,9 @@ import { executeQuery } from "../commands/query";
 import {
   acceptInvitation,
   inviteMember,
+  joinEnvironment,
+  requestInformation,
+  submitAnswers,
   withdrawInvitation,
 } from "../environment/membership-commands";
 import {
@@ -182,6 +185,31 @@ describe("a friend request", () => {
       about: { person: null },
       standing: "lapsed",
     });
+  });
+});
+
+describe("a request for more information (PS-ENV-019)", () => {
+  it("waits on the applicant until the answers are sent again", async () => {
+    const admin = await user();
+    const closed = await environment(admin, { type: "closed" });
+    const applicant = await user();
+    const { membershipId } = await run(joinEnvironment, applicant, {
+      environmentId: closed,
+      answers: [],
+    });
+
+    await run(requestInformation, admin, {
+      environmentId: closed,
+      membershipId,
+    });
+    expect(
+      await latest(applicant, "environment.membership_information_requested"),
+    ).toMatchObject({ about: { place: expect.any(String) }, standing: "open" });
+
+    await run(submitAnswers, applicant, { environmentId: closed, answers: [] });
+    expect(
+      await latest(applicant, "environment.membership_information_requested"),
+    ).toMatchObject({ standing: "accepted" });
   });
 });
 
