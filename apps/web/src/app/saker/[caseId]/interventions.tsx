@@ -1,5 +1,8 @@
 import type { Case, CaseInterventions } from "@lanbort/contracts";
+import Link from "next/link";
 import { Fragment } from "react";
+import { Icon } from "@/components/icon";
+import { interventionHref } from "@/navigation/stewardship";
 import { formatShortTime } from "@/presentation/dates";
 import {
   decidedBy,
@@ -19,10 +22,13 @@ export function Interventions({
   c,
   interventions,
   userId,
+  holding,
 }: {
   c: Case;
   interventions: CaseInterventions | null;
   userId: string;
+  /** The reader holds the open case, so they may intervene from it. */
+  holding: boolean;
 }) {
   if (c.kind === "unavailability_report") {
     return (
@@ -74,6 +80,14 @@ export function Interventions({
             </li>
           ))}
         </ol>
+      )}
+      {holding && interventions?.account && (
+        <p>
+          <Link className="button" href={interventionHref(c.id)}>
+            <Icon name="shield" />
+            Gjør et inngrep
+          </Link>
+        </p>
       )}
     </section>
   );

@@ -1,5 +1,6 @@
 import {
   type CaseInterventions,
+  type CaseSubjectAccount,
   caseInterventionsQuerySchema,
   endEnvironmentRolesResultSchema,
   endEnvironmentRolesSchema,
@@ -7,7 +8,10 @@ import {
   type PlatformInterventionKind,
   platformInquiryOpenedSchema,
 } from "@lanbort/contracts";
+import type { Database } from "@lanbort/database";
+import type { Kysely } from "kysely";
 import type { AccountStatus } from "../actor";
+import { accountBindingSources, loadBindings } from "../account/bindings";
 import { realNames } from "../account/store";
 import { defineCommand } from "../commands/command";
 import { defineQuery } from "../commands/query";
@@ -206,8 +210,53 @@ export const endEnvironmentRoles = defineCommand({
 });
 
 /**
+ * The account a case is about, as an intervention would find it: its
+ * status, the environments where it holds a role, and its bindings.
+ */
+async function loadSubjectAccount(
+  tx: Kysely<Database>,
+  userId: string,
+): Promise<CaseSubjectAccount | null> {
+  const user = await tx
+    .selectFrom("app.users")
+    .select("status")
+    .where("id", "=", userId)
+    .executeTakeFirst();
+
+  if (!user) {
+    return null;
+  }
+
+  const grants = await tx
+    .selectFrom("app.environment_role_grants as g")
+    .innerJoin("app.environments as e", "e.id", "g.environment_id")
+    .select(["e.id", "e.name", "g.role"])
+    .where("g.user_id", "=", userId)
+    .where("g.revoked_at", "is", null)
+    .orderBy("e.name")
+    .execute();
+  const roles = new Map<string, CaseSubjectAccount["roles"][number]>();
+
+  for (const grant of grants) {
+    const role = roles.get(grant.id);
+    roles.set(grant.id, {
+      environmentId: grant.id,
+      name: grant.name,
+      owner: (role?.owner ?? false) || grant.role === "owner",
+    });
+  }
+
+  return {
+    userId,
+    status: user.status as AccountStatus,
+    roles: [...roles.values()],
+    bindings: await loadBindings(tx, userId, accountBindingSources),
+  };
+}
+
+/**
  * PS-ADM-014: the interventions taken from a case, with their bases, for
- * whoever may handle it.
+ * whoever may handle it, and the account it is about as it stands now.
  */
 export const listCaseInterventions = defineQuery({
   name: "case.read_interventions",
@@ -267,6 +316,11 @@ export const listCaseInterventions = defineQuery({
               .select(["id", "title"])
               .where("id", "in", objectIds)
               .execute();
+      const subjectUserId = loaded.resource.case.subjectUserId;
+      const account =
+        standing.holdsRole && !standing.involved && subjectUserId
+          ? await loadSubjectAccount(tx, subjectUserId)
+          : null;
 
       return {
         resource: {
@@ -278,12 +332,14 @@ export const listCaseInterventions = defineQuery({
           })),
           environments,
           objects,
+          account,
         },
         context: undefined,
       };
     }),
   present: ({ resource }): CaseInterventions => ({
     caseId: resource.case.id,
+    account: resource.account,
     people: resource.people,
     environments: resource.environments.map(({ id, name }) => ({ id, name })),
     objects: resource.objects.map(({ id, title }) => ({ id, title })),

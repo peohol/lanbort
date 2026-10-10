@@ -24,7 +24,7 @@ import { useCommand } from "./use-command";
  */
 
 /** One ceremony at a time, with its failure said where it was started. */
-function useCeremony() {
+export function useCeremony() {
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<PasskeyFailure | null>(null);
 

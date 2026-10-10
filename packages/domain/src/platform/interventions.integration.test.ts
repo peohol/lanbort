@@ -153,7 +153,14 @@ describe("interventions from their case (PS-ADM-014–015)", () => {
 
     await suspend(platform, caseId, target.userId);
 
-    const { items, people } = await interventionsOf(platform, caseId);
+    const { items, people, account } = await interventionsOf(platform, caseId);
+    // The account as an intervention now finds it.
+    expect(account).toEqual({
+      userId: target.userId,
+      status: "suspended",
+      roles: [],
+      bindings: [],
+    });
     expect(items).toEqual([
       expect.objectContaining({
         kind: "account_suspended",
@@ -273,6 +280,9 @@ describe("ending roles in an environment (PS-ADM-015)", () => {
       kind: "user",
       userId: admin.userId,
     });
+    expect((await interventionsOf(platform, aboutAdmin)).account).toMatchObject(
+      { roles: [{ environmentId, name: expect.any(String), owner: false }] },
+    );
     const ended = await run(endEnvironmentRoles, platform, {
       caseId: aboutAdmin,
       environmentId,

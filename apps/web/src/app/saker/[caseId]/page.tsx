@@ -1,4 +1,4 @@
-import type { Case } from "@lanbort/contracts";
+import type { AccountStatus, Case } from "@lanbort/contracts";
 import {
   caseKinds,
   listCaseInterventions,
@@ -31,6 +31,7 @@ import {
   withdrawalText,
 } from "@/presentation/cases";
 import { formatShortTime } from "@/presentation/dates";
+import { accountStatusLabels } from "@/presentation/interventions";
 import { loanStatusLabels } from "@/presentation/loans";
 import { firstImageHref } from "@/presentation/object-images";
 import { chatEnabled } from "@/server/env";
@@ -64,7 +65,9 @@ export const metadata: Metadata = { title: "Saken – Lånbort" };
 /** Who a handler may write to, and what each choice means. */
 function audiencesFor(c: Case, handlers: string): AudienceChoice[] {
   const name = (userId: string) => personIn(c.people, userId);
-  const asFunction = `Partene ser innlegget som fra «${handlers.toLowerCase()}», ikke fra deg.`;
+  // «administratorene i …» mid-sentence; Lånbort keeps its capital.
+  const from = caseKinds[c.kind].platform ? handlers : handlers.toLowerCase();
+  const asFunction = `Partene ser innlegget som fra «${from}», ikke fra deg.`;
   const single = c.participants.length === 1 ? c.participants[0] : null;
   const internal: AudienceChoice = {
     value: "handlers",
@@ -110,7 +113,14 @@ function audiencesFor(c: Case, handlers: string): AudienceChoice[] {
 }
 
 /** The facts a handler weighs the case by (PS-COM-011). */
-function Facts({ c }: { c: Case }) {
+function Facts({
+  c,
+  accountStatus = null,
+}: {
+  c: Case;
+  /** How the account a platform case is about stands, for its stewards. */
+  accountStatus?: AccountStatus | null;
+}) {
   const rows: [string, ReactNode][] = [];
   const name = (userId: string | null) => personIn(c.people, userId);
 
@@ -142,7 +152,14 @@ function Facts({ c }: { c: Case }) {
             ? reportTargetLabels[c.reportTarget]
             : null;
 
-    if (subject) rows.push(["Gjelder", subject]);
+    if (subject) {
+      rows.push([
+        "Gjelder",
+        accountStatus
+          ? `${subject} · konto ${accountStatusLabels[accountStatus]}`
+          : subject,
+      ]);
+    }
     rows.push([
       c.kind === "environment_contact" ? "Fra" : "Meldt av",
       openerOf(c) ?? "Tidligere bruker",
@@ -374,12 +391,15 @@ export default async function CasePage({
         {step?.body ?? handling.detail}
       </StatusCard>
       {withdrawal && <p className="quiet">{withdrawal}</p>}
-      {asHandler && <Facts c={c} />}
+      {asHandler && (
+        <Facts c={c} accountStatus={interventions?.account?.status ?? null} />
+      )}
       {asSteward && (
         <Interventions
           c={c}
           interventions={interventions}
           userId={account.userId}
+          holding={holding}
         />
       )}
       {asHandler && (

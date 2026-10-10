@@ -1808,3 +1808,95 @@ fieldset {
     scroll-behavior: auto !important;
   }
 }
+
+/* A flow's steps (`Stepper`): dots joined by lines, the current step named. */
+.stepper {
+  display: flex;
+  align-items: center;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-s);
+}
+
+.stepper li {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+}
+
+.stepper li:first-child {
+  flex: 0 0 auto;
+}
+
+.stepper li:not(:first-child)::before {
+  content: "";
+  flex: 1;
+  min-width: var(--space-2);
+  height: 1.5px;
+  margin: 0 var(--space-1);
+  background: var(--color-border);
+}
+
+.stepper span {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.stepper span::before {
+  content: "";
+  flex: none;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--color-muted);
+}
+
+.stepper .done span::before {
+  background: var(--color-muted);
+  box-shadow: none;
+}
+
+.stepper .current span {
+  padding: 0.25rem 0.75rem 0.25rem 0.5625rem;
+  border-radius: 999px;
+  background: var(--color-accent-strong);
+  color: var(--color-on-accent);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.stepper .current span::before {
+  background: var(--color-on-accent);
+  box-shadow: none;
+}
+
+/* What a step does, one line each (`ConsequenceRows`). */
+.consequence-rows {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.consequence-rows li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.consequence-rows svg {
+  flex: none;
+  margin-top: 0.125rem;
+  color: var(--color-muted);
+}
+
+.consequence-rows .ends svg {
+  color: var(--color-danger);
+}
+
+.consequence-rows .goes_on svg {
+  color: var(--color-info-strong);
+}

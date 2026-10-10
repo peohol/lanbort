@@ -9,9 +9,12 @@ import {
   test,
 } from "@playwright/test";
 import {
+  accountId,
   axeViolations,
+  befriend,
   collectBrowserProblems,
   newEmail,
+  postCommand,
   registerThroughApi,
   signInThroughApi,
 } from "./helpers";
@@ -40,14 +43,19 @@ function ops(script: string, ...args: string[]): string {
 /** The page's status card. */
 const status = (page: Page) => page.getByRole("region", { name: "Status" });
 
-async function signedIn(browser: Browser, email: string, register: boolean) {
+async function signedIn(
+  browser: Browser,
+  email: string,
+  register: boolean,
+  name = "Nora Forvalter",
+) {
   const context = await browser.newContext({
     baseURL: appUrl,
     extraHTTPHeaders: { origin: appUrl },
   });
 
   await (register
-    ? registerThroughApi(context.request, email, "Nora Forvalter")
+    ? registerThroughApi(context.request, email, name)
     : signInThroughApi(context.request, email));
 
   return context;
@@ -160,6 +168,73 @@ test("a platform steward sets up passkeys, confirms a session and removes one", 
   ).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
   expect(problems).toEqual([]);
+
+  // A report to Lånbort about Tor: the steward takes it and suspends the
+  // account from the case, with the basis, then reinstates it
+  // (PS-ADM-014–015).
+  const [ida, tor] = await Promise.all(
+    [
+      ["Ida Melder", newEmail()],
+      ["Tor Rapportert", newEmail()],
+    ].map(([name, address]) => signedIn(browser, address!, true, name)),
+  );
+  await befriend(ida!.request, tor!.request);
+  const { caseId } = await (
+    await postCommand(ida!.request, "/api/cases/platform-reports", {
+      target: { kind: "user", userId: await accountId(tor!.request) },
+      body: "Ber om betaling for lån og truer når noen sier nei.",
+    })
+  ).json();
+  await page.goto(`/saker/${caseId}`);
+  await page.getByRole("button", { name: "Ta saken" }).click();
+  await expect(page.getByText("Tor Rapportert · konto aktiv")).toBeVisible();
+  await page.getByRole("link", { name: "Gjør et inngrep" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Velg inngrep" }),
+  ).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+  await expect(page.getByRole("link", { name: /Gjeninnsett/ })).toHaveCount(0);
+  await page.getByRole("link", { name: /Suspender kontoen/ }).click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Suspendere kontoen til Tor Rapportert?",
+    }),
+  ).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+  await page.getByRole("button", { name: "Neste: begrunnelse" }).click();
+  await page
+    .getByLabel("Begrunnelse")
+    .fill("Flere meldinger om trusler etter avslag.");
+  await page.getByRole("button", { name: "Neste: se over" }).click();
+  await page.getByRole("button", { name: "Suspender kontoen" }).click();
+  await expect(page).toHaveURL(new RegExp(`/saker/${caseId}$`));
+  await expect(
+    page.getByText("Tor Rapportert · konto suspendert"),
+  ).toBeVisible();
+  const recorded = page.getByRole("region", { name: /Inngrep/ });
+  await expect(recorded).toContainText("Suspendert konto");
+  await expect(recorded).toContainText(
+    "Flere meldinger om trusler etter avslag.",
+  );
+  await expect(recorded).toContainText("Deg");
+  expect(await axeViolations(page)).toEqual([]);
+  // Tor's own account says it is suspended.
+  expect((await (await tor!.request.get("/api/account")).json()).status).toBe(
+    "suspended",
+  );
+
+  await page.getByRole("link", { name: "Gjør et inngrep" }).click();
+  await expect(
+    page.getByRole("link", { name: /Suspender kontoen/ }),
+  ).toHaveCount(0);
+  await page.getByRole("link", { name: /Gjeninnsett kontoen/ }).click();
+  await page.getByRole("button", { name: "Neste: begrunnelse" }).click();
+  await page.getByLabel("Begrunnelse").fill("Avklart med begge parter.");
+  await page.getByRole("button", { name: "Neste: se over" }).click();
+  await page.getByRole("button", { name: "Gjeninnsett kontoen" }).click();
+  await expect(page.getByText("Tor Rapportert · konto aktiv")).toBeVisible();
+  await expect(recorded).toContainText("Gjeninnsatt konto");
+  await Promise.all([ida!.close(), tor!.close()]);
 
   // A new session must be confirmed first, here on the phone.
   const second = await signedIn(browser, email, false);
