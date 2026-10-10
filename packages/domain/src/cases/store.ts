@@ -822,6 +822,27 @@ export async function caseHandlers(
 }
 
 /**
+ * The thing the case names (PS-OBJ-021): a reported object, or the object
+ * of a mediated loan; null for any other case, or once it is gone.
+ */
+export async function caseObjectId(
+  db: Db,
+  c: Pick<CaseRecord, "loanId" | "objectId">,
+): Promise<string | null> {
+  if (c.objectId !== null || c.loanId === null) {
+    return c.objectId;
+  }
+
+  const loan = await db
+    .selectFrom("app.loans")
+    .select("object_id")
+    .where("id", "=", c.loanId)
+    .executeTakeFirst();
+
+  return loan?.object_id ?? null;
+}
+
+/**
  * What the case is about, by name: the loan's title in its current
  * agreement and the reported object's title, while each exists.
  */

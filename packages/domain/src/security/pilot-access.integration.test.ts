@@ -666,6 +666,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
 
   // Cases and moderation
   "case.read": (ids) => ({ caseId: ids.caseId }),
+  "case.read_image": (ids) => ({ caseId: ids.caseId, imageId: ids.imageId }),
   "case.write": (ids) => ({ caseId: ids.caseId, body: text }),
   "case.claim": (ids) => ({ caseId: ids.caseId }),
   "case.release": (ids) => ({ caseId: ids.caseId }),
@@ -1201,6 +1202,7 @@ describe("conflict of interest (PS-USR-009)", () => {
     expect(await outcomes(world, world.actors.lender)).toEqual({
       ...everyCaseOperation("conflict_of_interest"),
       "case.read": "ok",
+      "case.read_image": "ok",
       "case.write": "ok",
       // A party never ends a mediation.
       ...openerSteps("conflict"),

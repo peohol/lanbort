@@ -15,6 +15,7 @@ import {
   listPlatformCaseQueuePolicy,
   openCaseRoundPolicy,
   openEnvironmentContactPolicy,
+  readCaseImagePolicy,
   readCasePolicy,
   recuseFromCasePolicy,
   releaseCasePolicy,
@@ -297,6 +298,7 @@ const reportTarget = (overrides: Partial<ReportTarget> = {}): ReportTarget => ({
 
 export const caseMatrices = [
   caseMatrix(readCasePolicy, "party"),
+  caseMatrix(readCaseImagePolicy, "party"),
   caseMatrix(writeCaseEntryPolicy, "party"),
   caseMatrix(claimCasePolicy, "handler"),
   caseMatrix(releaseCasePolicy, "handler"),

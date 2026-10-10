@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { type Browser, expect, type Page, test } from "@playwright/test";
+import sharp from "sharp";
 import {
   accountId,
   collectBrowserProblems,
@@ -227,7 +229,7 @@ test("a member ends their own contact, and the administrators see who did", asyn
   await Promise.all([eva, ola].map((page) => page.context().close()));
 });
 
-test("the owner of a blocked thing is told what, where and why, never of the report", async ({
+test("the owner of a blocked thing is told what, where and why, never of the report, and its picture follows its name", async ({
   browser,
   baseURL,
 }) => {
@@ -262,6 +264,28 @@ test("the owner of a blocked thing is told what, where and why, never of the rep
       body: "Flasken er fylt med propan.",
     })
   ).json();
+  const upload = await jonas.request.post(`/api/objects/${objectId}/images`, {
+    data: await sharp({
+      create: { width: 40, height: 30, channels: 3, background: "#4a7" },
+    })
+      .jpeg()
+      .toBuffer(),
+    headers: { "content-type": "image/jpeg", "Idempotency-Key": randomUUID() },
+  });
+  expect(upload.ok(), await upload.text()).toBe(true);
+  const { imageId } = await upload.json();
+
+  // Whoever reads the case sees the thing's picture by its name
+  // (PS-OBJ-021); its owner, whom the report is about, never gets it.
+  const src = `/api/cases/${caseId}/images/${imageId}`;
+  await eva.goto(`/saker/${caseId}`);
+  const picture = eva.locator(".page-picture img");
+  await expect(picture).toHaveAttribute("src", src);
+  await expect
+    .poll(() => picture.evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBeGreaterThan(0);
+  expect((await jonas.request.get(src)).status()).toBe(404);
+
   await postCommand(eva.request, `/api/cases/${caseId}/claim`, {});
   await postCommand(eva.request, `/api/cases/${caseId}/measures`, {
     measure: "publication_blocked",

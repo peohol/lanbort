@@ -12,6 +12,10 @@ import type { IconName } from "@/components/icon";
 import type { Tone } from "@/components/tag";
 import { formatShortTime } from "./dates";
 
+/** A picture of the thing a case names, behind the case's policy (PS-OBJ-021). */
+export const caseImageHref = (caseId: string, imageId: string) =>
+  `/api/cases/${caseId}/images/${imageId}`;
+
 /** What kind of case it is, in the user's words. */
 export const caseKindLabels: Record<CaseKind, string> = {
   environment_contact: "Kontakt med administratorene",

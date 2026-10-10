@@ -15,6 +15,7 @@ import { caseEvidenceHref, environmentCasesHref } from "@/navigation/cases";
 import { casesHref, loanHref } from "@/navigation/routes";
 import {
   aboutCase,
+  caseImageHref,
   caseKindTitle,
   caseTitle,
   describeHandling,
@@ -34,6 +35,7 @@ import {
   pageQueryOrNotFound,
   requirePageAccount,
 } from "@/server/session";
+import { ThingPicture } from "../../lan/_parts/thing-picture";
 import styles from "../cases.module.css";
 import { environmentName } from "../environment-name";
 import { HandlerRole } from "../handler-role";
@@ -310,6 +312,15 @@ export default async function CasePage({
           opener: openerOf(c),
         })}
         kind={caseKindTitle[c.kind]}
+        // The thing it names, with its picture (PS-OBJ-021).
+        picture={
+          (c.loanTitle ?? c.objectTitle) !== null && (
+            <ThingPicture
+              images={c.images}
+              href={(imageId) => caseImageHref(c.id, imageId)}
+            />
+          )
+        }
         back={back}
         context={
           environment && (

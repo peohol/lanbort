@@ -109,6 +109,12 @@ export function casePolicy(
 /** A participant sees what was written for them, a handler all of it. */
 export const readCasePolicy = casePolicy("case.read", asParticipantOrHandler);
 
+/** PS-OBJ-021: the pictures of the thing a case names, as the case. */
+export const readCaseImagePolicy = casePolicy(
+  "case.read_image",
+  asParticipantOrHandler,
+);
+
 /** A participant writes when it is their turn; a handler while acting. */
 export const writeCaseEntryPolicy = casePolicy(
   "case.write",
@@ -194,6 +200,7 @@ export const listPlatformCaseQueuePolicy = definePolicy<unknown, void>({
 
 export const casePolicies = [
   readCasePolicy,
+  readCaseImagePolicy,
   writeCaseEntryPolicy,
   claimCasePolicy,
   releaseCasePolicy,
