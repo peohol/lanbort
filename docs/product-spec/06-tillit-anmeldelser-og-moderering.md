@@ -88,3 +88,8 @@ Tredjepartsopplysninger, private kontekstlekkasjer eller regelstridig tekst kan 
 **Forankring:** VP-15, VP-16, VP-17
 
 Et tiltak skal registrere hvem/hva det gjelder, omfang, begrunnelse, beslutningstaker og tidspunkt. Et lokalt tiltak skal ikke få global effekt uten separat grunnlag.
+
+### PS-TRUST-018 — Den et tiltak rammer, får beskjed med begrunnelse og en vei til ny vurdering
+**Forankring:** VP-15, VP-16; PS-TRUST-016, PS-COM-003; OD-0039
+
+Når et modereringstiltak rammer en publisering, en ting, en anmeldelse eller et tilsvar, får eieren eller forfatteren et påkrevd varsel. Varselet sier hva som ble gjort, hvor det virker og en kort, saklig begrunnelse, og gir en vei til å be om ny vurdering gjennom riktig kanal: administratorene i miljøet for et lokalt tiltak, og Lånbort for et plattformtiltak. Varselet røper ikke at det fantes en rapport, hvem som sendte den, eller annet saksinnhold.

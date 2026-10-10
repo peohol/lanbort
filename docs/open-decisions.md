@@ -51,7 +51,7 @@ Når spørsmålet er avgjort:
 
 ## Status før UI-arbeidet
 
-Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. Gjennomgangen av kjerneflyt 5 (samtaler og enheter) samme dag avdekket [OD-0043](#od-0043--varsler-om-nye-meldinger-i-privat-chat), [OD-0044](#od-0044--når-gjenopprettingsnøkkelen-for-privat-chat-tilbys) og [OD-0045](#od-0045--én-privat-samtale-per-person-eller-per-lån), som ble avgjort samme dag. Designet for lånets side og anmeldelser avdekket [OD-0033](#od-0033--hvordan-skade-mangel-eller-tap-registreres-på-et-lån)–[OD-0036](#od-0036--varsel-når-anmeldelsene-blir-synlige), som ble avgjort samme dag. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
+Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. Gjennomgangen av kjerneflyt 5 (samtaler og enheter) samme dag avdekket [OD-0043](#od-0043--varsler-om-nye-meldinger-i-privat-chat), [OD-0044](#od-0044--når-gjenopprettingsnøkkelen-for-privat-chat-tilbys) og [OD-0045](#od-0045--én-privat-samtale-per-person-eller-per-lån), som ble avgjort samme dag. Designet for lånets side og anmeldelser avdekket [OD-0033](#od-0033--hvordan-skade-mangel-eller-tap-registreres-på-et-lån)–[OD-0036](#od-0036--varsel-når-anmeldelsene-blir-synlige), som ble avgjort samme dag. Designet for rapportering, saker og konfliktløsning avdekket OD-0038–OD-0042, som også ble avgjort samme dag. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
 
 ## Åpne
 
@@ -211,6 +211,31 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Anbefaling:** Varsle i appen både ved godkjenning og avslag. Godkjenningen lenker til miljøet med «Velkommen». Avslaget sier nøytralt at søknaden ikke ble godkjent, uten begrunnelse.
 
 ## Avklart
+
+### OD-0038 — Hva den som rapporterte, får vite når saken lukkes
+- **Lag:** Produktspesifikasjon / UX
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [PS-COM-020](product-spec/05-kommunikasjon-varsler-og-saker.md). En rapport eller mekling lukkes med en kort avslutningsmelding til partene, uten konfidensielle vurderinger, tiltak mot andre, andres beskyttede opplysninger eller hvem som rapporterte. En mekling kan få en nøytral oppsummering av om partene ble enige. Ikke bygget ennå; kravene står under WP-88 i [UI-arbeidspakkene](implementation/ui-work-packages.md#wp-88--saker-og-arbeidskø).
+
+### OD-0039 — Hva den et modereringstiltak rammer, får vite
+- **Lag:** Produktspesifikasjon
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [PS-TRUST-018](product-spec/06-tillit-anmeldelser-og-moderering.md). Et påkrevd varsel med tiltaket, omfanget, en kort begrunnelse og en vei til ny vurdering, uten å røpe rapporten, melderen eller saksinnhold. Ikke bygget ennå; kravene står under WP-88.
+
+### OD-0040 — Om den som åpnet en sak, kan trekke den
+- **Lag:** Produktspesifikasjon
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [PS-COM-021](product-spec/05-kommunikasjon-varsler-og-saker.md). En henvendelse kan avsluttes av den som tok kontakt. En rapport kan trekkes, men det sletter ikke innsendte opplysninger og stanser ikke en nødvendig vurdering. En mekling lukkes bare av en habil administrator. Ikke bygget ennå; kravene står under WP-88.
+
+### OD-0041 — Åpen mekling når partene selv avklarer lånet
+- **Lag:** Produktspesifikasjon / UX
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [PS-COM-022](product-spec/05-kommunikasjon-varsler-og-saker.md). Ingen automatisk lukking. Saken viser lånets status og at partene har avklart det, med «Lukk saken» som neste steg, uten å gå foran tidskritiske saker i køen. Appen lukker allerede ikke automatisk; visningen er ikke bygget.
+
+### OD-0042 — Rapporter til Lånbort før plattformforvalterne kan behandle dem
+- **Lag:** Produktspesifikasjon / UX
+- **Status:** Avklart (produkteier, 9. oktober 2026)
+- **Beslutning:** Se [UX-EXC-011](ux/03-avvik-konflikter-og-unntaksforlop.md). Anbefalingen ble avvist. Til plattformforvalterne kan behandle saker (OD-0023), tilbyr appen ingen aktiv flyt for rapport til Lånbort; den sier ærlig at det ikke er tilgjengelig ennå og tilbyr miljøets administratorer der de har mandat. Før piloten åpnes, må sikkerhetskritiske meldinger ha en reell, betjent kanal. Appen tilbyr flyten i dag; endringen i brukerflaten står under WP-88, og data og tilgangsregler på serveren er uendret.
 
 ### OD-0033 — Hvordan skade, mangel eller tap registreres på et lån
 - **Lag:** Produktspesifikasjon / UX
