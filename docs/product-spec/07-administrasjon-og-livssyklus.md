@@ -93,7 +93,7 @@ Kontrollert kontoavslutning, eierskapsoverføring, suspensjon og andre særinngr
 ### PS-ADM-015 — Plattforminngrep starter fra en sak
 **Forankring:** VP-15, VP-16; PS-ADM-014, PS-TRUST-016, UX-IA-007
 
-Plattformforvalterens inngrep mot kontoer og miljøer, også mot misbruk av en administrator- eller eierrolle, gjøres fra en sak i plattformkøen, med habilitet, begrunnelse og sporbarhet. Kommer initiativet ikke fra en rapport, opprettes et autorisert saksgrunnlag først. Vanlige person- og miljøsider har ingen inngrepsknapper. Ikke bygget ennå, og stengt til WebAuthn for plattformforvaltere er på plass (ADR-0011, OD-0023). (Produkteier, 10. oktober 2026, OD-0026.)
+Plattformforvalterens inngrep mot kontoer og miljøer, også mot misbruk av en administrator- eller eierrolle, gjøres fra en sak i plattformkøen, med habilitet, begrunnelse og sporbarhet. Kommer initiativet ikke fra en rapport, opprettes et autorisert saksgrunnlag først. Vanlige person- og miljøsider har ingen inngrepsknapper. (Produkteier, 10. oktober 2026, OD-0026.) Bygget på serveren: eget saksgrunnlag, inngrep mot kontoer og miljøroller fra saken, og registrering med grunnlag. Forvalterflatene i appen er ikke bygget, og plattforminngrep er stengt i produksjon til WebAuthn for plattformforvaltere er verifisert der (ADR-0011).
 
 ## Pilotregel for inaktivitet
 

@@ -33,6 +33,8 @@ const {
   run,
   user,
   steward,
+  about,
+  aboutObject,
   create,
   addCoOwner,
   friends,
@@ -94,19 +96,24 @@ async function basisInEvents(resourceType: string, resourceId: string) {
   );
 }
 
-const retire = (
+const retire = async (
   platform: UserActor,
   retired: UserActor,
   continued: UserActor,
 ) =>
   run(retireDuplicateAccount, platform, {
+    caseId: await about(platform, retired.userId),
     userId: retired.userId,
     continuedUserId: continued.userId,
     basis,
   });
 
-const move = (platform: UserActor, objectId: string) =>
-  run(moveDuplicateObject, platform, { objectId, basis });
+const move = async (platform: UserActor, objectId: string) =>
+  run(moveDuplicateObject, platform, {
+    caseId: await aboutObject(platform, objectId),
+    objectId,
+    basis,
+  });
 
 describe("retiring a duplicate (PS-ADM-009)", () => {
   it("closes the duplicate, records the link with its basis, and moves nothing social", async () => {
@@ -184,8 +191,16 @@ describe("retiring a duplicate (PS-ADM-009)", () => {
       user(),
       user(),
     ]);
-    await run(suspendAccount, platform, { userId: suspended.userId, basis });
-    await run(suspendAccount, platform, { userId: inactive.userId, basis });
+    await run(suspendAccount, platform, {
+      caseId: await about(platform, suspended.userId),
+      userId: suspended.userId,
+      basis,
+    });
+    await run(suspendAccount, platform, {
+      caseId: await about(platform, inactive.userId),
+      userId: inactive.userId,
+      basis,
+    });
 
     await expect(retire(platform, suspended, other)).rejects.toMatchObject({
       code: "forbidden",
@@ -211,7 +226,11 @@ describe("retiring a duplicate (PS-ADM-009)", () => {
 
     // Into the same account again, after a closure was ended, the closure
     // starts again on the same link.
-    await run(reinstateAccount, platform, { userId: retired.userId, basis });
+    await run(reinstateAccount, platform, {
+      caseId: await about(platform, retired.userId),
+      userId: retired.userId,
+      basis,
+    });
     expect(await retire(platform, retired, continued)).toEqual({
       userId: retired.userId,
       status: "closing",
@@ -397,6 +416,7 @@ describe("moving a duplicate's objects (PS-ADM-009)", () => {
     // Nothing binds the duplicate any more: its closure completes, and it
     // leaves the object then.
     await run(completeAccountClosure, platform, {
+      caseId: await about(platform, owner.userId),
       userId: owner.userId,
       basis,
     });
@@ -431,7 +451,11 @@ describe("moving a duplicate's objects (PS-ADM-009)", () => {
     const [retired, continued] = await Promise.all([user(), user()]);
     const objectId = await create(retired);
     await retire(platform, retired, continued);
-    await run(reinstateAccount, platform, { userId: retired.userId, basis });
+    await run(reinstateAccount, platform, {
+      caseId: await about(platform, retired.userId),
+      userId: retired.userId,
+      basis,
+    });
 
     await expect(move(platform, objectId)).rejects.toMatchObject({
       code: "forbidden",
@@ -457,12 +481,14 @@ describe("false identity (PS-ADM-010)", () => {
     const socialBefore = await socialOf(borrower.userId);
 
     const { id } = await run(recordFalseIdentity, platform, {
+      caseId: await about(platform, borrower.userId),
       userId: borrower.userId,
       basis,
     });
     // Recording it again returns the same finding.
     expect(
       await run(recordFalseIdentity, platform, {
+        caseId: await about(platform, borrower.userId),
         userId: borrower.userId,
         basis,
       }),
@@ -486,13 +512,19 @@ describe("false identity (PS-ADM-010)", () => {
     const [earlier, friend] = await Promise.all([user(), user()]);
     await friends(earlier, friend);
     await run(recordFalseIdentity, platform, {
+      caseId: await about(platform, earlier.userId),
       userId: earlier.userId,
       basis,
     });
-    await run(suspendAccount, platform, { userId: earlier.userId, basis });
+    await run(suspendAccount, platform, {
+      caseId: await about(platform, earlier.userId),
+      userId: earlier.userId,
+      basis,
+    });
     const later = await user();
 
     const { id } = await run(linkSamePerson, platform, {
+      caseId: await about(platform, later.userId),
       userId: later.userId,
       linkedUserId: earlier.userId,
       basis,
@@ -500,6 +532,7 @@ describe("false identity (PS-ADM-010)", () => {
     // The same pair, either way round, is one link.
     expect(
       await run(linkSamePerson, platform, {
+        caseId: await about(platform, earlier.userId),
         userId: earlier.userId,
         linkedUserId: later.userId,
         basis,
@@ -545,11 +578,13 @@ describe("false identity (PS-ADM-010)", () => {
     const platform = await steward();
     const [retired, continued] = await Promise.all([user(), user()]);
     await run(recordFalseIdentity, platform, {
+      caseId: await about(platform, retired.userId),
       userId: retired.userId,
       basis,
     });
     await retire(platform, retired, continued);
     await run(completeAccountClosure, platform, {
+      caseId: await about(platform, retired.userId),
       userId: retired.userId,
       basis,
     });
@@ -603,7 +638,11 @@ describe("races", () => {
 
     const results = await Promise.allSettled([
       move(platform, objectId),
-      run(suspendAccount, platform, { userId: continued.userId, basis }),
+      run(suspendAccount, platform, {
+        caseId: await about(platform, continued.userId),
+        userId: continued.userId,
+        basis,
+      }),
     ]);
 
     expect(results[1].status).toBe("fulfilled");

@@ -94,7 +94,7 @@ export const accountDeletionCheckSchema = z.strictObject({
 });
 
 /** Why the platform intervened, as the steward wrote it (PS-ADM-014). */
-const basisSchema = z
+export const basisSchema = z
   .string()
   .trim()
   .min(1)
@@ -102,11 +102,18 @@ const basisSchema = z
   .regex(/^[^\p{Cc}]*$/u);
 
 /**
+ * PS-ADM-015: every intervention is taken from the platform case it rests
+ * on, which the steward holds and which is about whom it is taken toward.
+ */
+const fromCase = { caseId: z.uuid() };
+
+/**
  * PS-ADM-014: a platform steward's intervention on an account, always with
- * its basis. The basis is stored with the change only, never in events or
- * logs.
+ * its basis. The basis is stored with the intervention only, never in
+ * events or logs.
  */
 export const accountInterventionSchema = z.strictObject({
+  ...fromCase,
   userId: z.uuid(),
   basis: basisSchema,
 });
@@ -117,6 +124,7 @@ export const accountInterventionSchema = z.strictObject({
  */
 export const retireDuplicateAccountSchema = z
   .strictObject({
+    ...fromCase,
     userId: z.uuid(),
     continuedUserId: z.uuid(),
     basis: basisSchema,
@@ -131,6 +139,7 @@ export const retireDuplicateAccountSchema = z
  */
 export const linkSamePersonSchema = z
   .strictObject({
+    ...fromCase,
     userId: z.uuid(),
     linkedUserId: z.uuid(),
     basis: basisSchema,
@@ -144,6 +153,7 @@ export const linkSamePersonSchema = z
  * account that continues, with the basis for the transfer (PS-ADM-014).
  */
 export const moveDuplicateObjectSchema = z.strictObject({
+  ...fromCase,
   objectId: z.uuid(),
   basis: basisSchema,
 });

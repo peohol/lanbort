@@ -208,6 +208,8 @@ function handlerStep(
       ? "Vurder om publiseringen skal avvises eller sperres i miljøet. Saken kan også lukkes uten tiltak."
       : "Det finnes ingen tiltak i miljøet for en rapport om en person. Du kan skrive til den som rapporterte, eller lukke saken.",
     platform_report: "Vurder rapporten, og lukk saken når den er vurdert.",
+    platform_inquiry:
+      "Saken er grunnlaget for inngrep uten rapport. Lukk den når vurderingen er ferdig.",
     unavailability_report:
       "Meldingen endrer ingenting av seg selv. Lukk saken når den er vurdert.",
   };

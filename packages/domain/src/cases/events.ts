@@ -2,6 +2,7 @@ import {
   caseAudienceSchema,
   caseCapacitySchema,
   caseKindSchema,
+  platformInterventionKindSchema,
 } from "@lanbort/contracts";
 import { z } from "zod";
 import { type EventKind, defineEvent } from "../events/catalog";
@@ -66,3 +67,17 @@ export const caseClosed = caseEvent("closed", "audit", {});
 export const caseContactEnded = caseEvent("contact_ended", "domain", {});
 
 export const caseReportWithdrawn = caseEvent("report_withdrawn", "domain", {});
+
+/**
+ * PS-ADM-014, PS-ADM-015: a platform steward took an intervention from the
+ * case (`app.platform_interventions`); never its basis or whom it was
+ * toward.
+ */
+export const caseInterventionRecorded = caseEvent(
+  "intervention_recorded",
+  "audit",
+  {
+    interventionId: z.uuid(),
+    kind: platformInterventionKindSchema,
+  },
+);

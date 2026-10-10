@@ -26,6 +26,10 @@ export const caseEntryIdSchema = z.uuid();
  *   changes no account, loan or access by itself (PS-COM-015).
  * - `environment_report` / `platform_report`: a report to the environment's
  *   administrators or to the platform stewards (WP-52, moderation.ts).
+ * - `platform_inquiry`: a platform steward's own basis for intervening when
+ *   no report has come in (PS-ADM-015, «autorisert saksgrunnlag»). The
+ *   steward who opens it handles it; it has no participants
+ *   (interventions.ts).
  */
 export const caseKindSchema = z.enum([
   "environment_contact",
@@ -33,6 +37,7 @@ export const caseKindSchema = z.enum([
   "unavailability_report",
   "environment_report",
   "platform_report",
+  "platform_inquiry",
 ]);
 
 export const caseStatusSchema = z.enum(["open", "closed"]);

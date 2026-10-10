@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import {
   type CreateEnvironment,
+  type OpenPlatformInquiry,
   responsibilityDeclarationVersion,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
@@ -23,6 +24,7 @@ import { addDays, calendarDate } from "../objects/availability";
 import { acceptCoOwnerInvitation, inviteCoOwner } from "../objects/co-owners";
 import { createObject } from "../objects/commands";
 import { ConsumerRegistry } from "../outbox/consumer";
+import { openPlatformInquiry } from "../platform/intervention-commands";
 import { publishObject } from "../publications/commands";
 import { publishToFriends } from "../publications/friends";
 import { acceptFriendRequest, sendFriendRequest } from "../social/commands";
@@ -90,8 +92,8 @@ export function loanTestKit(
 
   /**
    * A platform steward whose session has the stronger authentication the
-   * role needs. No real session gets it until OD-0010 is decided; tests use
-   * it to show what steward actions do once one can.
+   * role needs, as a fresh passkey confirmation leaves it (ADR-0011;
+   * `testing/stewards.ts` goes through the ceremonies themselves).
    */
   async function steward(): Promise<UserActor> {
     const actor = await user();
@@ -112,6 +114,41 @@ export function loanTestKit(
       authentication: { ...actor.authentication, assurance: "aal2" },
     };
   }
+
+  /**
+   * PS-ADM-015: the case a steward's interventions toward an account or a
+   * thing are taken from, as the steward's own inquiry, which they hold.
+   */
+  async function inquiry(
+    actor: UserActor,
+    target: OpenPlatformInquiry["target"],
+  ): Promise<string> {
+    const { caseId } = await run(openPlatformInquiry, actor, {
+      target,
+      basis: "Grunnlag for inngrep",
+    });
+
+    return caseId;
+  }
+
+  const inquiries = new Map<string, Promise<string>>();
+
+  /** The steward's one inquiry about the target, opened the first time. */
+  function inquiryOnce(
+    actor: UserActor,
+    target: OpenPlatformInquiry["target"],
+  ): Promise<string> {
+    const key = `${actor.userId}:${JSON.stringify(target)}`;
+    const opened = inquiries.get(key) ?? inquiry(actor, target);
+    inquiries.set(key, opened);
+
+    return opened;
+  }
+
+  const about = (actor: UserActor, userId: string) =>
+    inquiryOnce(actor, { kind: "user", userId });
+  const aboutObject = (actor: UserActor, objectId: string) =>
+    inquiryOnce(actor, { kind: "object", objectId });
 
   async function environment(
     owner: UserActor,
@@ -340,6 +377,9 @@ export function loanTestKit(
     run,
     user,
     steward,
+    inquiry,
+    about,
+    aboutObject,
     environment,
     join,
     member,

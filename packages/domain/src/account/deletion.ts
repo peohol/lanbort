@@ -34,6 +34,7 @@ import { loadObjectState } from "../objects/state";
 import { defineConsumer, OutboxDeliveryError } from "../outbox/consumer";
 import { profilePictureDeletionStep } from "../people/pictures";
 import { platformRoleRevoked, stewardPasskeyRemoved } from "../platform/events";
+import { intervene } from "../platform/interventions";
 import { chatAccountDeletionStep } from "../chat/maintenance";
 import { reviewRightsStep } from "../reviews/account-deletion";
 import { friendshipEndedByAccountDeletion } from "../social/events";
@@ -48,6 +49,7 @@ import {
   type AccountStatusChange,
   changeAccountStatus,
   loadAccountForChange,
+  loadAccountFromCase,
   loadOwnAccountForChange,
 } from "./lifecycle";
 import {
@@ -401,28 +403,38 @@ export function defineAccountDeletion(
         ),
     }),
 
-    /** A steward completes a controlled closure (PS-ADM-014). */
+    /**
+     * A steward completes a controlled closure, from its case (PS-ADM-014,
+     * PS-ADM-015).
+     */
     completeAccountClosure: defineCommand({
       name: "account.complete_closure",
       input: accountInterventionSchema,
       output: accountLifecycleResultSchema,
       policy: completeAccountClosurePolicy,
       idempotency: "required",
-      load: ({ tx, input }) => loadAccountForChange(tx, input.userId),
-      execute: ({ tx, actor, input, resource, events, now }) =>
-        deleteAccount(
-          tx,
-          {
-            account: resource,
-            reason: "platform",
-            actor,
-            basis: input.basis,
+      load: ({ tx, actor, input, now }) =>
+        loadAccountFromCase(tx, actor, input, now),
+      execute: (scope) =>
+        intervene(scope, async () => ({
+          result: await deleteAccount(
+            scope.tx,
+            {
+              account: scope.resource,
+              reason: "platform",
+              actor: scope.actor,
+              basis: scope.input.basis,
+            },
+            steps,
+            sources,
+            scope.events,
+            scope.now,
+          ),
+          taken: {
+            kind: "account_closure_completed",
+            userId: scope.resource.userId,
           },
-          steps,
-          sources,
-          events,
-          now,
-        ),
+        })),
     }),
 
     /** PS-ADM-004: what the user must finish before deleting the account. */

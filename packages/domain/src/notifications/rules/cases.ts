@@ -87,10 +87,12 @@ const backInQueue = ({ db, event, now }: RuleInput<unknown>) =>
  */
 export const caseRules = [
   // The other party of a mediation is part of it from the start, and the
-  // handlers can take it.
+  // handlers can take it. A steward's own inquiry is theirs at once.
   notifyOn(caseOpened, async (input) => [
     ...(await toParticipants("case.opened")(input)),
-    ...(await backInQueue(input)),
+    ...((await findCase(input.db, input.event.resourceId))?.assigneeUserId
+      ? []
+      : await backInQueue(input)),
   ]),
   // A participant's entry reaches the handler who has the case; a
   // handler's reaches the participants who see it (in a mediation, a

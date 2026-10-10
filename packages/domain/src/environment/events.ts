@@ -55,6 +55,7 @@ export const roleRevokeReasonSchema = z.enum([
   "transferred",
   "account_departed",
   "type_change_not_accepted",
+  "platform_intervention",
 ]);
 
 export const environmentRoleRevoked = defineEvent({

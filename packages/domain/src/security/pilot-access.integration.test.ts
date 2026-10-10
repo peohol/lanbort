@@ -36,6 +36,7 @@ import {
   uploadObjectImage,
   uploadProfilePicture,
 } from "../index";
+import { testUserActor } from "../testing/actors";
 import { testChatAccount, testChatDevice } from "../testing/chat";
 import { acquaint } from "../testing/acquaintance";
 import { connectTestDatabase } from "../testing/database";
@@ -580,6 +581,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
   "object.consent_to_deletion": (ids) => ({ objectId: ids.objectId }),
   "object.withdraw_deletion_consent": (ids) => ({ objectId: ids.objectId }),
   "account.move_duplicate_object": (ids) => ({
+    caseId: ids.caseId,
     objectId: ids.objectId,
     basis: text,
   }),
@@ -713,6 +715,55 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     target: { kind: "object", objectId: ids.objectId },
     body: text,
   }),
+  // A steward's interventions, from a case (PS-ADM-015).
+  "case.open_platform_inquiry": (ids) => ({
+    target: { kind: "object", objectId: ids.objectId },
+    basis: text,
+  }),
+  "case.read_interventions": (ids) => ({ caseId: ids.caseId }),
+  "account.suspend": (ids) => ({
+    caseId: ids.caseId,
+    userId: ids.userId,
+    basis: text,
+  }),
+  "account.reinstate": (ids) => ({
+    caseId: ids.caseId,
+    userId: ids.userId,
+    basis: text,
+  }),
+  "account.start_closure": (ids) => ({
+    caseId: ids.caseId,
+    userId: ids.userId,
+    basis: text,
+  }),
+  "account.complete_closure": (ids) => ({
+    caseId: ids.caseId,
+    userId: ids.userId,
+    basis: text,
+  }),
+  "account.retire_duplicate": (ids) => ({
+    caseId: ids.caseId,
+    userId: ids.userId,
+    continuedUserId: bystander.userId,
+    basis: text,
+  }),
+  "account.link_same_person": (ids) => ({
+    caseId: ids.caseId,
+    userId: ids.userId,
+    linkedUserId: bystander.userId,
+    basis: text,
+  }),
+  "account.record_false_identity": (ids) => ({
+    caseId: ids.caseId,
+    userId: ids.userId,
+    basis: text,
+  }),
+  "environment_role.end_by_platform": (ids) => ({
+    caseId: ids.caseId,
+    environmentId: ids.environmentId,
+    userId: ids.userId,
+    basis: text,
+  }),
   "moderation.take_measure": (ids) => ({
     caseId: ids.caseId,
     measure: "object_blocked",
@@ -816,22 +867,7 @@ const elsewhere = randomUUID();
  * at `userId`. The coverage test below fails when one is missing.
  */
 const personProbes: Record<string, (userId: string) => object> = {
-  "account.complete_closure": (userId) => ({ userId, basis: text }),
-  "account.link_same_person": (userId) => ({
-    userId,
-    linkedUserId: elsewhere,
-    basis: text,
-  }),
   "account.read_identity_record": (userId) => ({ userId }),
-  "account.record_false_identity": (userId) => ({ userId, basis: text }),
-  "account.reinstate": (userId) => ({ userId, basis: text }),
-  "account.retire_duplicate": (userId) => ({
-    userId,
-    continuedUserId: elsewhere,
-    basis: text,
-  }),
-  "account.start_closure": (userId) => ({ userId, basis: text }),
-  "account.suspend": (userId) => ({ userId, basis: text }),
   "case.report_unavailability": (userId) => ({ userId, body: text }),
   "environment_membership.list_invitable": (userId) => ({ userId }),
   // A request first, so the ones after it act on something.
@@ -1157,8 +1193,21 @@ describe("co-owner boundaries", () => {
 });
 
 /** Every operation on a case, picked up as it is added. */
-const caseOperations = probed.filter((operation) =>
-  operation.inputKeys.has("caseId"),
+/** Whether only a platform steward gets past the operation's actor rules. */
+const stewardsOnly = ({ definition }: Operation) =>
+  !evaluateActor(definition.policy as Policy<never, never>, {
+    actor: testUserActor(),
+    now: new Date(),
+  }).allowed;
+
+/** What a case's participants and handlers do with it. */
+const caseOperations = probed.filter(
+  (operation) => operation.inputKeys.has("caseId") && !stewardsOnly(operation),
+);
+
+/** A steward's interventions from a platform case (PS-ADM-015). */
+const interventionOperations = probed.filter(
+  (operation) => operation.inputKeys.has("caseId") && stewardsOnly(operation),
 );
 const openerOperations = ["case.end_contact", "case.withdraw_report"];
 
@@ -1386,7 +1435,10 @@ describe("privileged platform access stays closed without the steward's passkeys
     });
     const steward = await stewardReporting(["totp"]);
 
-    for (const operation of caseOperations) {
+    expect(interventionOperations.map(({ name }) => name)).toContain(
+      "account.suspend",
+    );
+    for (const operation of [...caseOperations, ...interventionOperations]) {
       expect(
         await attempt(
           kit.tick(),

@@ -15,7 +15,11 @@ import {
   requireSystemProcess,
   requireUser,
 } from "../authorization/rules";
-import { platformStewardAccess } from "../platform/policies";
+import {
+  type FromCase,
+  fromItsCase,
+  platformStewardAccess,
+} from "../platform/policies";
 import { statesBefore, takesNewActivity } from "./model";
 
 export interface AccountResource {
@@ -151,15 +155,17 @@ export const releaseAccountIdentityPolicy = definePolicy<AccountResource, void>(
 );
 
 /**
- * PS-ADM-003, PS-ADM-014: a platform steward's intervention on someone
- * else's account, recorded with its basis. Closed until stronger
- * authentication is decided (OD-0010, `platformStewardAccess`).
+ * PS-ADM-003, PS-ADM-014, PS-ADM-015: a platform steward's intervention on
+ * someone else's account, from the platform case it rests on and recorded
+ * with its basis. Only with a fresh passkey confirmation
+ * (`platformStewardAccess`, ADR-0011).
  */
 function interventionPolicy(action: string, to: AccountStatus) {
-  return definePolicy<AccountResource, void>({
+  return definePolicy<AccountResource & FromCase, void>({
     action,
     actor: [...platformStewardAccess],
     resource: [
+      fromItsCase,
       requireNotInvolved(({ resource }) => [resource.userId]),
       canMove(to, "platform"),
     ],
@@ -213,15 +219,16 @@ const retirableStates: readonly AccountStatus[] = [
 /**
  * PS-ADM-009, PS-ADM-014: a steward who has verified that two accounts
  * belong to the same person retires one of them; the other, which is
- * active, continues. Closed until OD-0010, like every intervention.
+ * active, continues. From a case, like every intervention (PS-ADM-015).
  */
 export const retireDuplicateAccountPolicy = definePolicy<
-  DuplicateRetirementResource,
+  DuplicateRetirementResource & FromCase,
   void
 >({
   action: "account.retire_duplicate",
   actor: [...platformStewardAccess],
   resource: [
+    fromItsCase,
     requireNotInvolved(({ resource }) => [
       resource.retired.userId,
       resource.continued.userId,
@@ -250,10 +257,13 @@ const notInvolvedInRecord = requireNotInvolved<AccountRecordResource, void>(
  * PS-ADM-010: a steward links two accounts of the same person, for security
  * work only.
  */
-export const linkSamePersonPolicy = definePolicy<AccountRecordResource, void>({
+export const linkSamePersonPolicy = definePolicy<
+  AccountRecordResource & FromCase,
+  void
+>({
   action: "account.link_same_person",
   actor: [...platformStewardAccess],
-  resource: [notInvolvedInRecord],
+  resource: [fromItsCase, notInvolvedInRecord],
 });
 
 /**
@@ -262,12 +272,13 @@ export const linkSamePersonPolicy = definePolicy<AccountRecordResource, void>({
  * claimed no identity.
  */
 export const recordFalseIdentityPolicy = definePolicy<
-  AccountRecordResource,
+  AccountRecordResource & FromCase,
   void
 >({
   action: "account.record_false_identity",
   actor: [...platformStewardAccess],
   resource: [
+    fromItsCase,
     notInvolvedInRecord,
     ({ resource }) =>
       resource.status === "pending_registration" ? deny("forbidden") : allow,
@@ -304,12 +315,13 @@ export interface DuplicateObjectResource {
  * continuing account): other owners decide themselves who joins them.
  */
 export const moveDuplicateObjectPolicy = definePolicy<
-  DuplicateObjectResource,
+  DuplicateObjectResource & FromCase,
   void
 >({
   action: "account.move_duplicate_object",
   actor: [...platformStewardAccess],
   resource: [
+    fromItsCase,
     requireNotInvolved(({ resource }) => [
       ...resource.ownerIds,
       ...(resource.link ? [resource.link.continued.userId] : []),

@@ -1,4 +1,4 @@
-import type { StewardPasskeys } from "@lanbort/contracts";
+import type { CaseKind, StewardPasskeys } from "@lanbort/contracts";
 import type { AccountStatus, UserActor } from "../actor";
 import {
   allow,
@@ -6,10 +6,12 @@ import {
   definePolicy,
   deny,
   type PolicyInput,
+  type ResourceRule,
 } from "../authorization/policy";
 import {
   requireActiveAccount,
   requireAssurance,
+  requireNotInvolved,
   requirePlatformRole,
   requireSystemProcess,
   userRule,
@@ -212,6 +214,111 @@ export const resetStewardPasskeysPolicy = definePolicy<StewardTarget>({
   resource: [activeSteward],
 });
 
+/**
+ * PS-ADM-015: a platform steward's intervention is taken from a case in the
+ * platform queue (`platform/interventions.ts`): one of these kinds.
+ */
+export const interventionCaseKinds: readonly CaseKind[] = [
+  "platform_report",
+  "platform_inquiry",
+];
+
+/** The case an intervention is taken from, as the steward stands to it. */
+export interface InterventionCase {
+  readonly id: string;
+  readonly kind: CaseKind;
+  /** The steward may handle cases of its kind (`app.case_handler_role`). */
+  readonly holdsRole: boolean;
+  /** The steward is involved in it (`app.case_involved`). */
+  readonly involved: boolean;
+  /** The intervention is toward what the case is about. */
+  readonly about: boolean;
+}
+
+export interface FromCase {
+  readonly fromCase: InterventionCase;
+}
+
+/**
+ * PS-ADM-015, PS-USR-009: only from a platform case the steward may
+ * handle, is not involved in, and that is about the intervention's target.
+ * A case of another queue looks like one that does not exist.
+ */
+export const fromItsCase: ResourceRule<FromCase, void> = ({
+  resource: { fromCase },
+}) => {
+  if (!fromCase.holdsRole) {
+    return deny("not_found");
+  }
+
+  if (!interventionCaseKinds.includes(fromCase.kind)) {
+    return deny("forbidden");
+  }
+
+  if (fromCase.involved) {
+    return deny("conflict_of_interest");
+  }
+
+  return fromCase.about ? allow : deny("forbidden");
+};
+
+/** What a steward's own inquiry is about, as the command found it. */
+export type InquiryTarget =
+  | {
+      readonly kind: "user";
+      readonly userId: string;
+      readonly status: AccountStatus;
+    }
+  | {
+      readonly kind: "object";
+      readonly objectId: string;
+      readonly ownerIds: readonly string[];
+    };
+
+/**
+ * PS-ADM-015: without a report, a steward opens a case of their own about
+ * someone else's account or thing, with the basis as its first entry
+ * («autorisert saksgrunnlag»). An account that never completed
+ * registration, or is deleted, is not there to intervene on.
+ */
+export const openPlatformInquiryPolicy = definePolicy<InquiryTarget, void>({
+  action: "case.open_platform_inquiry",
+  actor: [...platformStewardAccess],
+  resource: [
+    ({ resource }) =>
+      resource.kind === "user" &&
+      (resource.status === "pending_registration" ||
+        resource.status === "deleted")
+        ? deny("not_found")
+        : allow,
+    requireNotInvolved(({ resource }) =>
+      resource.kind === "user" ? [resource.userId] : resource.ownerIds,
+    ),
+  ],
+});
+
+/** The roles someone holds in one environment, as the command locked them. */
+export interface EnvironmentRolesTarget {
+  readonly environmentId: string;
+  readonly userId: string;
+}
+
+/**
+ * PS-ADM-015: a steward ends the administrator and owner roles someone
+ * misuses in an environment, from the case about them.
+ */
+export const endEnvironmentRolesPolicy = definePolicy<
+  EnvironmentRolesTarget & FromCase,
+  void
+>({
+  action: "environment_role.end_by_platform",
+  actor: [...platformStewardAccess],
+  resource: [
+    fromItsCase,
+    requireNotInvolved(({ resource }) => [resource.userId]),
+  ],
+});
+
 export const platformPolicies = [
   grantPlatformRolePolicy,
   revokePlatformRolePolicy,
@@ -223,4 +330,6 @@ export const platformPolicies = [
   listOwnPasskeysPolicy,
   issueEnrollmentCodePolicy,
   resetStewardPasskeysPolicy,
+  openPlatformInquiryPolicy,
+  endEnvironmentRolesPolicy,
 ];

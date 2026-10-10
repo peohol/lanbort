@@ -909,6 +909,19 @@ export interface AppOutboxMessages {
   status: Generated<string>;
 }
 
+export interface AppPlatformInterventions {
+  basis: string;
+  case_id: string;
+  decided_at: Timestamp;
+  decided_by_user_id: string;
+  environment_id: string | null;
+  id: Generated<string>;
+  kind: string;
+  object_id: string | null;
+  other_user_id: string | null;
+  user_id: string | null;
+}
+
 export interface AppPlatformRoleGrants {
   grant_reason: string;
   granted_at: Generated<Timestamp>;
@@ -1133,6 +1146,7 @@ export interface DB {
   "app.object_subscriptions": AppObjectSubscriptions;
   "app.objects": AppObjects;
   "app.outbox_messages": AppOutboxMessages;
+  "app.platform_interventions": AppPlatformInterventions;
   "app.platform_role_grants": AppPlatformRoleGrants;
   "app.profile_pictures": AppProfilePictures;
   "app.profiles": AppProfiles;
