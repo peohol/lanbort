@@ -77,6 +77,7 @@ export const caseActionKindSchema = z.enum([
   "statements_shared",
   "recused",
   "closed",
+  "withdrawn",
 ]);
 
 /**
@@ -293,6 +294,8 @@ export const caseSchema = z.strictObject({
   escalatedFromCaseId: caseIdSchema.nullable(),
   openedAt: z.iso.datetime(),
   closedAt: z.iso.datetime().nullable(),
+  /** When its reporter withdrew a report (PS-COM-021); it may still be open. */
+  withdrawnAt: z.iso.datetime().nullable(),
   handling: caseHandlingSchema,
   /** The responsible handler; handlers only. */
   assigneeUserId: z.uuid().nullable(),

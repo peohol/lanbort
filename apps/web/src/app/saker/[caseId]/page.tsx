@@ -26,6 +26,7 @@ import {
   participantTurn,
   personIn,
   reportTargetLabels,
+  withdrawalText,
 } from "@/presentation/cases";
 import { formatShortTime } from "@/presentation/dates";
 import { loanStatusLabels } from "@/presentation/loans";
@@ -44,6 +45,7 @@ import {
   HandlerMoreActions,
   Handling,
   History,
+  ParticipantMoreActions,
   ShareStatements,
   TakeCase,
   TakenMeasures,
@@ -261,6 +263,7 @@ export default async function CasePage({
   // A handler writes and acts once they have taken the case (UX-INT-001).
   const holding = asHandler && open && c.assigneeUserId === account.userId;
   const writes = asHandler ? holding : c.mayWrite;
+  const withdrawal = withdrawalText(c, { asHandler, environment });
   const step =
     asHandler && open
       ? handlerStep(c, account.userId, measures.length > 0)
@@ -339,6 +342,7 @@ export default async function CasePage({
       >
         {step?.body ?? handling.detail}
       </StatusCard>
+      {withdrawal && <p className="quiet">{withdrawal}</p>}
       {asHandler && <Facts c={c} />}
       {asHandler && (
         <TakenMeasures
@@ -393,6 +397,9 @@ export default async function CasePage({
       )}
       {asHandler && open && (
         <HandlerMoreActions c={c} userId={account.userId} />
+      )}
+      {!asHandler && open && (
+        <ParticipantMoreActions c={c} environment={environment} />
       )}
     </main>
   );

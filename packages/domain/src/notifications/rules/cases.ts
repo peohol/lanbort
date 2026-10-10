@@ -2,10 +2,12 @@ import type { NotificationKind, NotificationTarget } from "@lanbort/contracts";
 import {
   caseAssigned,
   caseClosed,
+  caseContactEnded,
   caseEntryAdded,
   caseOpened,
   caseRecused,
   caseReleased,
+  caseReportWithdrawn,
   caseRoundOpened,
   caseStatementsShared,
 } from "../../cases/events";
@@ -49,6 +51,29 @@ const toParticipants =
       kind,
       caseTarget(event.resourceId),
     );
+
+/**
+ * The handler who has the case, told `kind`; while nobody has it, those who
+ * may take it from the queue (a closed case is in no queue).
+ */
+const toHandling =
+  (kind: NotificationKind) =>
+  async ({ db, event, now }: RuleInput<unknown>) => {
+    const c = await findCase(db, event.resourceId);
+
+    if (!c) {
+      return [];
+    }
+
+    return tell(
+      c.assigneeUserId !== null &&
+        (await isCaseHandler(db, c.id, c.assigneeUserId, now))
+        ? [c.assigneeUserId]
+        : await caseHandlers(db, c.id, now),
+      kind,
+      caseTarget(c.id),
+    );
+  };
 
 /** The handlers, told that the case is waiting in the queue again. */
 const backInQueue = ({ db, event, now }: RuleInput<unknown>) =>
@@ -114,6 +139,9 @@ export const caseRules = [
   ),
   notifyOn(caseStatementsShared, toParticipants("case.statements_shared")),
   notifyOn(caseClosed, toParticipants("case.closed")),
+  // What the one who opened it did to end it (PS-COM-021).
+  notifyOn(caseContactEnded, toHandling("case.contact_ended")),
+  notifyOn(caseReportWithdrawn, toHandling("case.report_withdrawn")),
   // Nobody ended it, so both parties are told, and the owners who are to
   // confirm having the object back (PS-LOAN-018–019).
   notifyOn(loanEndedUnresolved, async ({ db, event, payload }) => {

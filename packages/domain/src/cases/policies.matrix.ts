@@ -9,6 +9,7 @@ import {
   type CaseResource,
   claimCasePolicy,
   closeCasePolicy,
+  endContactPolicy,
   listEnvironmentCaseQueuePolicy,
   listOwnCasesPolicy,
   listPlatformCaseQueuePolicy,
@@ -21,6 +22,7 @@ import {
   reportUnavailabilityPolicy,
   shareCaseStatementsPolicy,
   transferCasePolicy,
+  withdrawReportPolicy,
   writeCaseEntryPolicy,
 } from "./policies";
 
@@ -137,6 +139,8 @@ interface Situation {
   readonly resource: CaseResource;
   readonly party: "allow" | DenialReason;
   readonly handler: "allow" | DenialReason;
+  /** A step only a participant takes (PS-COM-021). */
+  readonly participant: "allow" | DenialReason;
 }
 
 const situations = (kind: CaseRecord["kind"]): Situation[] => {
@@ -151,6 +155,7 @@ const situations = (kind: CaseRecord["kind"]): Situation[] => {
       resource: standing(kind, opener),
       party: "allow",
       handler: "forbidden",
+      participant: "allow",
     },
     {
       name: "its participant who also holds the handler's role",
@@ -158,6 +163,7 @@ const situations = (kind: CaseRecord["kind"]): Situation[] => {
       resource: standing(kind, opener, { holdsRole: true }),
       party: "allow",
       handler: "conflict_of_interest",
+      participant: "allow",
     },
     {
       name: "a handler who is not involved",
@@ -165,6 +171,7 @@ const situations = (kind: CaseRecord["kind"]): Situation[] => {
       resource: standing(kind, handler, { holdsRole: true }),
       party: "allow",
       handler: "allow",
+      participant: "forbidden",
     },
     {
       name: "its participant whose account is deactivated (PS-ADM-002)",
@@ -172,6 +179,7 @@ const situations = (kind: CaseRecord["kind"]): Situation[] => {
       resource: standing(kind, opener),
       party: "allow",
       handler: "forbidden",
+      participant: "allow",
     },
     {
       name: "a handler whose account is deactivated handles nothing",
@@ -179,6 +187,7 @@ const situations = (kind: CaseRecord["kind"]): Situation[] => {
       resource: standing(kind, handler, { holdsRole: true }),
       party: "account_inactive",
       handler: "account_inactive",
+      participant: "forbidden",
     },
     {
       name: "a handler who is involved",
@@ -186,6 +195,7 @@ const situations = (kind: CaseRecord["kind"]): Situation[] => {
       resource: standing(kind, handler, { holdsRole: true, involved: true }),
       party: "conflict_of_interest",
       handler: "conflict_of_interest",
+      participant: "forbidden",
     },
     {
       name: "someone without the handler's role does not see it",
@@ -193,6 +203,7 @@ const situations = (kind: CaseRecord["kind"]): Situation[] => {
       resource: standing(kind, stranger),
       party: "not_found",
       handler: "not_found",
+      participant: "not_found",
     },
     ...((platform
       ? [
@@ -202,6 +213,7 @@ const situations = (kind: CaseRecord["kind"]): Situation[] => {
             resource: standing(kind, weakSteward, { holdsRole: true }),
             party: "stronger_authentication_required",
             handler: "stronger_authentication_required",
+            participant: "forbidden",
           },
         ]
       : []) satisfies Situation[]),
@@ -213,6 +225,7 @@ const situations = (kind: CaseRecord["kind"]): Situation[] => {
             resource: standing(kind, subject, { holdsRole: true }),
             party: "not_found",
             handler: "not_found",
+            participant: "not_found",
           },
         ]
       : []) satisfies Situation[]),
@@ -221,7 +234,7 @@ const situations = (kind: CaseRecord["kind"]): Situation[] => {
 
 export const caseMatrix = (
   policy: Policy<CaseResource, void>,
-  side: "party" | "handler",
+  side: "party" | "handler" | "participant",
 ) =>
   policyMatrix(policy, [
     ...(
@@ -292,6 +305,8 @@ export const caseMatrices = [
   caseMatrix(shareCaseStatementsPolicy, "handler"),
   caseMatrix(recuseFromCasePolicy, "handler"),
   caseMatrix(closeCasePolicy, "handler"),
+  caseMatrix(endContactPolicy, "participant"),
+  caseMatrix(withdrawReportPolicy, "participant"),
   policyMatrix(openEnvironmentContactPolicy, [
     expectCase("an active member", member, activeMember(), "allow"),
     expectCase(

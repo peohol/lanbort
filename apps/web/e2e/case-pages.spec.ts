@@ -151,6 +151,24 @@ test("a report reaches the administrators, and never the person it is about", as
   await expect(eva.getByText("Send videre til Lånbort")).toBeVisible();
   await expect(eva.getByRole("button", { name: /Lånbort/ })).toHaveCount(0);
 
+  // The reporter withdraws it: nothing is removed, and the administrators
+  // may still finish the assessment (PS-COM-021).
+  await ola.getByText("Flere valg").click();
+  await ola.getByRole("button", { name: "Trekk rapporten" }).click();
+  await ola
+    .getByRole("dialog")
+    .getByRole("button", { name: "Trekk rapporten" })
+    .click();
+  await expect(ola.getByText(/^Du trakk rapporten/)).toBeVisible();
+  await expect(entry(ola, "Truende meldinger i lobbyen.")).toBeVisible();
+  await expect(
+    ola.getByRole("button", { name: "Trekk rapporten" }),
+  ).toHaveCount(0);
+  await eva.reload();
+  await expect(
+    eva.getByText(/^Ola Medlem trakk rapporten .+dere kan likevel/),
+  ).toBeVisible();
+
   // A report is closed with a closing message to the reporter (PS-COM-020).
   await eva.getByRole("button", { name: "Ta saken" }).click();
   await expect(statusCard(eva)).toContainText("Du har saken");
@@ -170,4 +188,40 @@ test("a report reaches the administrators, and never the person it is about", as
   await kim.goto("/saker");
   await expect(kim.getByText(/Du har ingen saker\./)).toBeVisible();
   await Promise.all([eva, ola, kim].map((page) => page.context().close()));
+});
+
+test("a member ends their own contact, and the administrators see who did", async ({
+  browser,
+  baseURL,
+}) => {
+  const eva = await signedIn(browser, baseURL!, "Eva Eier");
+  const ola = await signedIn(browser, baseURL!, "Ola Medlem");
+  const name = `Lia ${uniqueWord()}`;
+  const { environmentId } = await (
+    await postCommand(eva.request, "/api/environments", { name, type: "open" })
+  ).json();
+  await postCommand(ola.request, "/api/environments/membership/join", {
+    environmentId,
+    answers: [],
+  });
+
+  await ola.goto(`/saker/ny?kontakt=${environmentId}`);
+  await ola.getByLabel("Melding").fill("Kan vi få en felles stige?");
+  await ola.getByRole("button", { name: "Send til administratorene" }).click();
+  await expect(ola).toHaveURL(/\/saker\/[0-9a-f-]{36}$/);
+  const caseUrl = ola.url();
+
+  // Nothing disappears, so nothing asks to confirm (PS-COM-021).
+  await ola.getByText("Flere valg").click();
+  await ola.getByRole("button", { name: "Avslutt henvendelsen" }).click();
+  await expect(statusCard(ola)).toContainText("Saken er lukket");
+  await expect(ola.getByRole("textbox")).toHaveCount(0);
+
+  await eva.goto(caseUrl);
+  await expect(statusCard(eva)).toContainText("Saken er lukket");
+  await eva.getByText("Historikk", { exact: true }).click();
+  await expect(
+    eva.getByText("Ola Medlem avsluttet henvendelsen"),
+  ).toBeVisible();
+  await Promise.all([eva, ola].map((page) => page.context().close()));
 });

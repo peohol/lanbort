@@ -10,6 +10,7 @@ import type {
 import { caseKinds } from "@lanbort/domain";
 import type { IconName } from "@/components/icon";
 import type { Tone } from "@/components/tag";
+import { formatShortTime } from "./dates";
 
 /** What kind of case it is, in the user's words. */
 export const caseKindLabels: Record<CaseKind, string> = {
@@ -42,7 +43,11 @@ export function handlerFunction(kind: CaseKind, environment: string | null) {
     : "Miljøets administratorer";
 }
 
-const handlersInSentence = (kind: CaseKind, environment: string | null) =>
+/** Who handles a case of `kind`, inside a sentence. */
+export const handlersInSentence = (
+  kind: CaseKind,
+  environment: string | null,
+) =>
   caseKinds[kind].platform
     ? "Lånbort"
     : environment
@@ -308,11 +313,15 @@ const returnReasons: Record<CaseQueueReturnReason, string> = {
   membership_ended: "saksbehandleren ikke lenger er medlem",
 };
 
-/** One step of the handling, for its handlers (UX-IA-008). */
+/**
+ * One step of the handling, for its handlers (UX-IA-008). The one who
+ * opened the case may have ended it themselves (PS-COM-021).
+ */
 export function describeAction(
   action: Case["history"][number],
-  people: Case["people"],
+  c: Pick<Case, "people" | "participants">,
 ): string {
+  const { people } = c;
   const actor = personIn(people, action.actorUserId);
   const target = personIn(people, action.targetUserId);
 
@@ -334,8 +343,29 @@ export function describeAction(
     case "recused":
       return `${actor} trådte til side som inhabil`;
     case "closed":
-      return `${actor} lukket saken`;
+      return c.participants.some(({ userId }) => userId === action.actorUserId)
+        ? `${actor} avsluttet henvendelsen`
+        : `${actor} lukket saken`;
+    case "withdrawn":
+      return `${actor} trakk rapporten`;
   }
+}
+
+/**
+ * PS-COM-021: a withdrawn report that is still open, said so that nobody
+ * takes it for deleted or stopped.
+ */
+export function withdrawalText(
+  c: Pick<Case, "kind" | "status" | "withdrawnAt" | "people" | "participants">,
+  viewer: { readonly asHandler: boolean; readonly environment: string | null },
+): string | null {
+  if (c.withdrawnAt === null || c.status !== "open") return null;
+
+  const when = formatShortTime(c.withdrawnAt);
+
+  return viewer.asHandler
+    ? `${openerOf(c) ?? "Den som rapporterte"} trakk rapporten ${when}. Det som er sendt inn, blir stående, og dere kan likevel fullføre vurderingen og gjøre tiltak hvis det trengs.`
+    : `Du trakk rapporten ${when}. Det du har skrevet, blir stående, og ${handlersInSentence(c.kind, viewer.environment)} kan likevel fullføre vurderingen.`;
 }
 
 /** A measure as its button names it (UX-INT-003). */

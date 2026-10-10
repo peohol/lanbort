@@ -98,6 +98,12 @@ export const caseKinds: Record<
      * `app.case_closes_with_message`).
      */
     readonly closingMessage: boolean;
+    /**
+     * What the one who opened it may do to end it (PS-COM-021): close a
+     * contact, or withdraw a report, which stays open for its assessment.
+     * Nobody who takes part closes a mediation.
+     */
+    readonly openerEnds: "close" | "withdraw" | null;
   }
 > = {
   environment_contact: {
@@ -105,30 +111,35 @@ export const caseKinds: Record<
     separateStatements: false,
     platform: false,
     closingMessage: false,
+    openerEnds: "close",
   },
   loan_mediation: {
     turns: true,
     separateStatements: true,
     platform: false,
     closingMessage: true,
+    openerEnds: null,
   },
   unavailability_report: {
     turns: true,
     separateStatements: false,
     platform: true,
     closingMessage: false,
+    openerEnds: "withdraw",
   },
   environment_report: {
     turns: true,
     separateStatements: false,
     platform: false,
     closingMessage: true,
+    openerEnds: "withdraw",
   },
   platform_report: {
     turns: true,
     separateStatements: false,
     platform: true,
     closingMessage: true,
+    openerEnds: "withdraw",
   },
 };
 

@@ -183,6 +183,10 @@ export const readCase = defineQuery({
       escalatedFromCaseId: c.escalatedFromCaseId,
       openedAt: c.openedAt.toISOString(),
       closedAt: c.closedAt?.toISOString() ?? null,
+      withdrawnAt:
+        resource.actions
+          .find(({ kind }) => kind === "withdrawn")
+          ?.at.toISOString() ?? null,
       handling: handlingOf(assigneeUserId, handlerAvailable),
       assigneeUserId: asParty ? null : assigneeUserId,
       mayWrite: asParty

@@ -670,6 +670,8 @@ const probes: Record<string, (ids: WorldIds) => object> = {
   "case.share_statements": (ids) => ({ caseId: ids.caseId }),
   "case.recuse": (ids) => ({ caseId: ids.caseId }),
   "case.close": (ids) => ({ caseId: ids.caseId }),
+  "case.end_contact": (ids) => ({ caseId: ids.caseId }),
+  "case.withdraw_report": (ids) => ({ caseId: ids.caseId }),
   "case.escalate": (ids) => ({ caseId: ids.caseId, body: text }),
   "case.open_environment_contact": (ids) => ({
     environmentId: ids.environmentId,
@@ -1114,6 +1116,7 @@ describe("co-owner boundaries", () => {
 const caseOperations = probed.filter((operation) =>
   operation.inputKeys.has("caseId"),
 );
+const openerOperations = ["case.end_contact", "case.withdraw_report"];
 
 describe("conflict of interest (PS-USR-009)", () => {
   /**
@@ -1173,13 +1176,18 @@ describe("conflict of interest (PS-USR-009)", () => {
 
   const everyCaseOperation = (answer: string) =>
     Object.fromEntries(caseOperations.map(({ name }) => [name, answer]));
+  /** What only the one who opened a case does to end it (PS-COM-021). */
+  const openerSteps = (answer: string) =>
+    Object.fromEntries(openerOperations.map((name) => [name, answer]));
 
   it("refuses an administrator who co-owns the object every case operation", async () => {
     const world = await mediation();
 
-    expect(await outcomes(world, world.actors.coOwner)).toEqual(
-      everyCaseOperation("conflict_of_interest"),
-    );
+    expect(await outcomes(world, world.actors.coOwner)).toEqual({
+      ...everyCaseOperation("conflict_of_interest"),
+      // Not a participant either.
+      ...openerSteps("forbidden"),
+    });
   });
 
   it("lets an administrator who is a party take part only as a party", async () => {
@@ -1189,6 +1197,8 @@ describe("conflict of interest (PS-USR-009)", () => {
       ...everyCaseOperation("conflict_of_interest"),
       "case.read": "ok",
       "case.write": "ok",
+      // A party never ends a mediation.
+      ...openerSteps("conflict"),
     });
   });
 
@@ -1330,7 +1340,13 @@ describe("privileged platform access stays closed (OD-0010)", () => {
           probes[operation.name]!({ ...world.ids, caseId }),
         ),
         operation.name,
-      ).toEqual({ refused: "stronger_authentication_required", fields: [] });
+      ).toEqual({
+        // What only the reporter does is refused before any steward access.
+        refused: openerOperations.includes(operation.name)
+          ? "forbidden"
+          : "stronger_authentication_required",
+        fields: [],
+      });
     }
 
     await expect(

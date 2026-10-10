@@ -1,7 +1,11 @@
 begin;
 
-select plan(9);
+select plan(17);
 
+-- PS-COM-020: a report or a mediation is closed with a closing message.
+-- PS-COM-021: a member closes their own contact, a reporter withdraws their
+-- report, and nobody else who takes part closes a case.
+--
 -- Anna (a1) founded and administers the environment (e1). Bo (b1) reports
 -- Cia (c1), a member there too, and contacts the administrators.
 insert into app.users (id, status, adult_confirmed_at) values
@@ -150,6 +154,92 @@ select lives_ok(
   $$ select pg_temp.close('00000000-0000-4000-8000-000000000502');
      select pg_temp.check_now() $$,
   'a contact is closed without one'
+);
+
+-- Bo contacts the administrators again and reports Cia again.
+insert into app.cases (id, kind, environment_id, opened_by_user_id, opened_at)
+values ('00000000-0000-4000-8000-000000000503', 'environment_contact',
+  '00000000-0000-4000-8000-0000000000e1', '00000000-0000-4000-8000-0000000000b1', now());
+insert into app.cases (id, kind, environment_id, report_target, subject_user_id,
+  opened_by_user_id, opened_at)
+values ('00000000-0000-4000-8000-000000000504', 'environment_report',
+  '00000000-0000-4000-8000-0000000000e1', 'user',
+  '00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-0000000000b1', now());
+insert into app.case_participants (case_id, user_id, role, may_write, joined_at) values
+  ('00000000-0000-4000-8000-000000000503', '00000000-0000-4000-8000-0000000000b1',
+    'requester', true, now()),
+  ('00000000-0000-4000-8000-000000000504', '00000000-0000-4000-8000-0000000000b1',
+    'reporter', true, now());
+
+-- `who` takes the participant's step `kind` in case `c`.
+create function pg_temp.act(c uuid, kind text, who uuid)
+returns void
+language sql
+as $$
+  insert into app.case_actions (case_id, kind, actor_user_id, at)
+  values (c, kind, who, now());
+$$;
+
+select throws_ok(
+  $$ select pg_temp.act('00000000-0000-4000-8000-000000000503', 'closed',
+       '00000000-0000-4000-8000-0000000000c1') $$,
+  '23001',
+  null,
+  'nobody else closes a member''s contact'
+);
+
+select throws_ok(
+  $$ select pg_temp.act('00000000-0000-4000-8000-000000000504', 'closed',
+       '00000000-0000-4000-8000-0000000000b1') $$,
+  '23001',
+  null,
+  'a reporter does not close their report'
+);
+
+select throws_ok(
+  $$ select pg_temp.act('00000000-0000-4000-8000-000000000503', 'withdrawn',
+       '00000000-0000-4000-8000-0000000000b1') $$,
+  '23001',
+  null,
+  'a contact is not withdrawn'
+);
+
+select lives_ok(
+  $$ select pg_temp.act('00000000-0000-4000-8000-000000000503', 'closed',
+       '00000000-0000-4000-8000-0000000000b1');
+     update app.cases set status = 'closed', closed_at = now()
+     where id = '00000000-0000-4000-8000-000000000503';
+     select pg_temp.check_now() $$,
+  'the member closes their own contact'
+);
+
+select throws_ok(
+  $$ select pg_temp.act('00000000-0000-4000-8000-000000000504', 'withdrawn',
+       '00000000-0000-4000-8000-0000000000a1') $$,
+  '23001',
+  null,
+  'only the reporter withdraws a report'
+);
+
+select lives_ok(
+  $$ select pg_temp.act('00000000-0000-4000-8000-000000000504', 'withdrawn',
+       '00000000-0000-4000-8000-0000000000b1');
+     select pg_temp.check_now() $$,
+  'the reporter withdraws their report'
+);
+
+select is(
+  (select status from app.cases where id = '00000000-0000-4000-8000-000000000504'),
+  'open',
+  'a withdrawn report stays open for its assessment'
+);
+
+select throws_ok(
+  $$ select pg_temp.act('00000000-0000-4000-8000-000000000504', 'withdrawn',
+       '00000000-0000-4000-8000-0000000000b1') $$,
+  '23001',
+  null,
+  'a report is withdrawn once'
 );
 
 select * from finish();

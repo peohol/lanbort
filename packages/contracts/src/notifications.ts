@@ -77,6 +77,8 @@ export const notificationKinds = {
   "case.entry_added": "action",
   "case.statements_shared": "information",
   "case.closed": "information",
+  "case.contact_ended": "information",
+  "case.report_withdrawn": "information",
   "object.question_asked": "action",
   "object.question_replied": "information",
   "object.available": "information",
