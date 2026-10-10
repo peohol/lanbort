@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { MenuList, MenuRow } from "@/components/menu-list";
 import { PageHeader } from "@/components/page-header";
 import { PasskeyConfirm, RemovePasskey } from "@/components/passkey-actions";
@@ -24,8 +23,6 @@ export const metadata: Metadata = { title: "Passkeys – Lånbort" };
 export default async function PasskeysPage() {
   await requirePageAccount();
   const steward = await requireStewardship();
-
-  if (!steward.enabled) notFound();
 
   const { passkeys, minimum, maximum } = steward;
   const fresh = steward.freshUntil !== null;

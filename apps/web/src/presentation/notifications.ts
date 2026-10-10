@@ -26,10 +26,17 @@ type About = DescribedNotification["about"];
 /**
  * Where following a notification leads: its context, and the first time an
  * approved application is followed, the environment with its welcome
- * (PS-ENV-017). Null where the context has no page of its own.
+ * (PS-ENV-017). Null where the context has no page of its own, as a
+ * steward's own access has none while `stewards` are off here: the notice
+ * is then read in the centre.
  */
-export function notificationHref(notification: Notification): string | null {
+export function notificationHref(
+  notification: Notification,
+  stewards: boolean,
+): string | null {
   const { kind, detail, target, readAt } = notification;
+
+  if (target.type === "steward_access" && !stewards) return null;
 
   return kind === "environment.membership_approved" &&
     detail === null &&

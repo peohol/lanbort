@@ -62,18 +62,14 @@ export default async function StewardshipPage() {
         <h2 id="forvaltning">Forvaltning</h2>
         <MenuList label="forvaltning">
           <MenuRow
-            href={steward.enabled ? passkeysHref : undefined}
+            href={passkeysHref}
             icon="lock"
             label="Passkeys"
-            detail={
-              steward.enabled
-                ? passkeyCountText(
-                    steward.passkeys.length,
-                    steward.minimum,
-                    steward.maximum,
-                  )
-                : "Slått av i produksjon"
-            }
+            detail={passkeyCountText(
+              steward.passkeys.length,
+              steward.minimum,
+              steward.maximum,
+            )}
           />
         </MenuList>
       </section>
