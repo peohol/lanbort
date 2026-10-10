@@ -140,6 +140,19 @@ export function mergeHistory(
   );
 }
 
+/**
+ * The history with a received message added, unless one with its id is
+ * already there. The id comes from the sender, who must not be able to
+ * replace a message, theirs or anyone else's.
+ */
+export const withReceived = (
+  history: readonly HistoryEntry[],
+  entry: HistoryEntry,
+): HistoryEntry[] =>
+  history.some((known) => known.id === entry.id)
+    ? [...history]
+    : [...history, entry];
+
 type WithoutParts<T> = T extends unknown ? Omit<T, "partCount"> : never;
 
 /** What an archive is for: a device's link request, or the backup. */

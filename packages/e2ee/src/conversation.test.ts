@@ -22,6 +22,7 @@ import {
   encodeCertificate,
   observeAccountKey,
   revokeDevice,
+  settleParticipants,
 } from "./index";
 import { utf8 } from "./suite";
 
@@ -254,6 +255,16 @@ describe("private chat over MLS (ADR-0010)", () => {
       false,
     );
     expect(currentlyTrusted(alice1.policy, bob1.device.certificate)).toBe(true);
+
+    // Until a commit removes it, what the revoked device sends is not shown.
+    const meanwhile = await send(lost, "Send koden til boden hit");
+    for (const member of remaining) {
+      await expect(conversationOf(member).receive(meanwhile)).resolves.toEqual({
+        kind: "untrusted",
+        sender: lost.ref,
+      });
+    }
+
     const pending = await conversationOf(alice1).remove([lost.ref]);
     pending.accept();
     for (const member of remaining.filter((m) => m !== alice1)) {
@@ -522,5 +533,25 @@ describe("private chat over MLS (ADR-0010)", () => {
     expect(structuredClone(alice1.device.signingKey)).toEqual({});
     expect(Object.keys(alice1.device.signingKey)).toEqual([]);
     expect(containsBytes(bundle.published, signingKey)).toBe(false);
+  });
+});
+
+describe("who a conversation is between", () => {
+  it("takes exactly two accounts, one of them this device's own", () => {
+    expect(settleParticipants(ALICE, [], [BOB, ALICE])).toEqual(
+      [ALICE, BOB].sort(),
+    );
+    expect(settleParticipants(ALICE, [], [BOB, EVE])).toBeUndefined();
+    expect(settleParticipants(ALICE, [], [ALICE, BOB, EVE])).toBeUndefined();
+    expect(settleParticipants(ALICE, [], [ALICE])).toBeUndefined();
+  });
+
+  it("refuses a directory that swaps the other account later", () => {
+    expect(settleParticipants(ALICE, [ALICE, BOB], [BOB, ALICE])).toEqual(
+      [ALICE, BOB].sort(),
+    );
+    expect(
+      settleParticipants(ALICE, [ALICE, BOB], [ALICE, EVE]),
+    ).toBeUndefined();
   });
 });

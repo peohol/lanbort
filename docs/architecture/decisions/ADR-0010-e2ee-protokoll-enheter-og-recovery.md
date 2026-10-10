@@ -89,6 +89,8 @@ Dette sjekkes av hver klient for hvert medlem som legges til, hver nøkkeloppdat
 - Bare forslagene `add`, `remove` og `update` godtas i en commit. Alt annet MLS tillater (reinit, eksterne forslag, PSK, endring av gruppeutvidelser) avvises av klienten.
 - En enhet kan bare fjernes når mottakerens egen enhet ikke lenger stoler på den: den er tilbakekalt med signatur fra sin kontonøkkel, kontoen har fått ny kontonøkkel, eller kontoen er ikke lenger deltaker. Hver mottaker sjekker dette selv og avviser ellers hele commiten, så én deltaker kan ikke kaste ut en annens enhet.
 - Korte meldinger fylles opp til 1024 byte før kryptering, så lengden ikke røper innholdet.
+- Hver samtale er mellom nøyaktig to kontoer, der den ene er enhetens egen, og det endres aldri. Klienten husker de to kontoene første gang den ser samtalen, og bruker ikke en katalog fra serveren som legger til en tredje konto eller bytter ut den andre. Serveren kan dermed ikke smugle inn en ekstra deltaker («spøkelsesbruker»).
+- Meldings-ID-en ligger inne i den krypterte meldingen og kommer fra avsenderen. En mottatt melding legges bare til hvis ID-en er ny, så en deltaker kan ikke erstatte eller endre en melding som allerede står i historikken.
 
 ## 5. Ny enhet (kobling)
 
@@ -118,7 +120,7 @@ Hvor ofte en enhet skal rotere gruppenøkler uten medlemsendring, settes ett ste
 1. Brukeren fjerner den tapte enheten under «Mine enheter».
 2. Den godkjente enheten signerer en tilbakekalling. Serveren logger den tapte enheten ut og slutter å levere til den og å godta meldinger fra den.
 3. Tilbakekallingen leveres til alle deltakernes enheter. Deretter får alle samtaler den tapte enheten var med i, en commit som fjerner den; den godtas bare av enheter som har verifisert tilbakekallingen. Både kontoens egne og kontaktenes enheter gjør dette så snart de får tilbakekallingen, og alltid før de legger til nye medlemmer.
-4. Klienter godtar ikke senere en tilbakekalt enhet, heller ikke fra en gammel nøkkelpakke.
+4. Klienter godtar ikke senere en tilbakekalt enhet, heller ikke fra en gammel nøkkelpakke. Det en enhet som ikke lenger er tiltrodd, sender før commiten som fjerner den, vises ikke.
 
 Serveren kan holde en tilbakekalling tilbake fra en kontakt. Det gir ikke den tapte enheten tilgang: den er fjernet kryptografisk fra kontoens egne grupper, og serveren har stengt sesjonen. Dette er en kjent, akseptert restrisiko.
 
