@@ -1,7 +1,9 @@
 import type {
   Environment,
   EnvironmentMember,
+  EnvironmentObject,
   EnvironmentObjectList,
+  ObjectSearchResult,
 } from "@lanbort/contracts";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
@@ -42,10 +44,6 @@ export function Things({
   /** Not the first page: offer the way back to it. */
   paged: boolean;
 }) {
-  const origin = {
-    kind: "environment",
-    environmentId: environment.id,
-  } as const;
   const register = (primary: boolean) =>
     environment.state === "active" ? (
       <Link
@@ -68,28 +66,14 @@ export function Things({
       ) : (
         <>
           <ThingCards>
-            {things.objects.map((thing) => {
-              const status = availabilityStatus(thing, today);
-
-              return (
-                <ThingCard
-                  key={thing.publicationId}
-                  href={objectHref(thing.objectId, origin)}
-                  title={thing.title}
-                  image={firstImageHref(thing.images, (imageId) =>
-                    environmentImageHref(
-                      environment.id,
-                      thing.objectId,
-                      imageId,
-                    ),
-                  )}
-                  details={[
-                    thing.ownedByYou ? "Din ting" : ownersDetail(thing.owners),
-                  ]}
-                  status={<Tag tone={status.tone}>{status.label}</Tag>}
-                />
-              );
-            })}
+            {things.objects.map((thing) => (
+              <EnvironmentThing
+                key={thing.publicationId}
+                environment={environment}
+                thing={thing}
+                today={today}
+              />
+            ))}
           </ThingCards>
           {environment.state === "active" && (
             <div className="actions">{register(false)}</div>
@@ -106,6 +90,83 @@ export function Things({
           )}
         </nav>
       )}
+    </section>
+  );
+}
+
+/** A thing as the environment shows it: its owners here, and whether it is free. */
+function EnvironmentThing({
+  environment,
+  thing,
+  today,
+}: {
+  environment: Environment;
+  thing: Omit<EnvironmentObject, "publicationId">;
+  today: string;
+}) {
+  const status = availabilityStatus(thing, today);
+
+  return (
+    <ThingCard
+      href={objectHref(thing.objectId, {
+        kind: "environment",
+        environmentId: environment.id,
+      })}
+      title={thing.title}
+      image={firstImageHref(thing.images, (imageId) =>
+        environmentImageHref(environment.id, thing.objectId, imageId),
+      )}
+      details={[thing.ownedByYou ? "Din ting" : ownersDetail(thing.owners)]}
+      status={<Tag tone={status.tone}>{status.label}</Tag>}
+    />
+  );
+}
+
+/**
+ * The things in the environment that match a search (Tomat kjerneflyt 3,
+ * «Søk i …»): the best matches as in Finn, with the way back to all of
+ * them.
+ */
+export function FoundThings({
+  environment,
+  q,
+  found,
+  today,
+}: {
+  environment: Environment;
+  q: string;
+  found: ObjectSearchResult;
+  today: string;
+}) {
+  const count = found.objects.length;
+
+  return (
+    <section aria-labelledby="treff">
+      <h2 id="treff">
+        {count === 0 ? "Ingen treff" : `${count} ting`} for «{q}»
+      </h2>
+      {count === 0 ? (
+        <p className="quiet">Ingen ting i miljøet passer med søket.</p>
+      ) : (
+        <ThingCards>
+          {found.objects.map((thing) => (
+            <EnvironmentThing
+              key={thing.objectId}
+              environment={environment}
+              thing={thing}
+              today={today}
+            />
+          ))}
+        </ThingCards>
+      )}
+      {found.more && (
+        <p className="quiet">
+          Viser de beste treffene. Gjør søket mer presist for å finne flere.
+        </p>
+      )}
+      <p className="link-row">
+        <Link href={environmentHref(environment.id)}>Vis alle ting</Link>
+      </p>
     </section>
   );
 }
