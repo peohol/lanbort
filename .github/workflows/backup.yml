@@ -1,0 +1,145 @@
+name: Backup
+
+# A backup of the hosted production project beside Supabase's own daily
+# backups, which hold neither the files in Storage nor survive the project
+# (OD-0022, docs/implementation/backup-restore.md): a logical database dump
+# and every file. Called by other workflows:
+# - restore-drill.yml in this repository restores it into an isolated,
+#   temporary Supabase stack on the runner and checks it. Nothing is stored.
+# - the private backup repository stores it there as a release for
+#   `keep-days` days and drills a restore of the stored copy.
+# The log holds counts and times only, never data.
+
+on:
+  workflow_call:
+    inputs:
+      keep-days:
+        description: Days to keep the backup as a release in the calling repository, which must be private. 0 stores nothing.
+        type: number
+        default: 0
+      drill:
+        description: Restore the backup into an isolated stack and check it.
+        type: boolean
+        default: true
+    secrets:
+      SUPABASE_ACCESS_TOKEN:
+        required: true
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+    steps:
+      - name: Check out Lånbort
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          # The caller may be another repository; the tools live here.
+          repository: peohol/lanbort
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install pnpm
+        run: npm install --global --allow-scripts=pnpm pnpm@12.8.1
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Link the production project
+        run: |
+          ref="$(scripts/ops/link-production.sh)"
+          echo "PROJECT_REF=$ref" >> "$GITHUB_ENV"
+          echo "BACKUP=$RUNNER_TEMP/backup" >> "$GITHUB_ENV"
+
+      - name: Dump the database
+        run: scripts/ops/backup.sh dump "$BACKUP/database"
+
+      - name: Copy the files
+        run: |
+          key="$(curl --fail --silent --show-error \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/api-keys?reveal=true" |
+            jq -r 'first(.[] | select(.type == "secret") | .api_key) // first(.[] | select(.name == "service_role") | .api_key) // empty')"
+          if [[ -z "$key" ]]; then
+            echo "::error::No server key for the production project."
+            exit 1
+          fi
+          echo "::add-mask::$key"
+          SUPABASE_URL="https://$PROJECT_REF.supabase.co" SUPABASE_SECRET_KEY="$key" \
+            pnpm --silent ops:storage export --to "$BACKUP/files"
+
+      - name: Store the backup in this private repository
+        if: inputs.keep-days > 0
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          KEEP_DAYS: ${{ inputs.keep-days }}
+        run: |
+          if [[ "$(gh repo view "$GH_REPO" --json visibility --jq .visibility)" != "PRIVATE" ]]; then
+            echo "::error::A backup holds personal data and is only stored in a private repository."
+            exit 1
+          fi
+          name="backup-$(date -u +%Y%m%dT%H%MZ)"
+          tar -C "$BACKUP" -czf "$RUNNER_TEMP/$name.tar.gz" .
+          gh release create "$name" "$RUNNER_TEMP/$name.tar.gz" --title "$name" \
+            --notes "Database dump taken $(cat "$BACKUP/database/taken-at"), with the files in Storage." \
+            --latest=false
+
+          # What was stored is what the drill restores.
+          mkdir "$RUNNER_TEMP/stored"
+          gh release download "$name" --dir "$RUNNER_TEMP/stored"
+          cmp "$RUNNER_TEMP/$name.tar.gz" "$RUNNER_TEMP/stored/$name.tar.gz"
+          mkdir "$RUNNER_TEMP/restored"
+          tar -C "$RUNNER_TEMP/restored" -xzf "$RUNNER_TEMP/stored/$name.tar.gz"
+          echo "BACKUP=$RUNNER_TEMP/restored" >> "$GITHUB_ENV"
+
+          # Older backups go: they hold what has since been deleted.
+          cutoff="$(date -u -d "-$KEEP_DAYS days" +%s)"
+          gh release list --limit 1000 --json tagName,createdAt \
+            --jq '.[] | select(.tagName | startswith("backup-")) | "\(.tagName) \(.createdAt)"' |
+            while read -r tag created; do
+              if (( $(date -u -d "$created" +%s) < cutoff )); then
+                gh release delete "$tag" --yes --cleanup-tag
+              fi
+            done
+
+      - name: Restore into an isolated stack
+        if: inputs.drill
+        run: |
+          echo "RESTORE_STARTED=$(date +%s)" >> "$GITHUB_ENV"
+          scripts/ops/backup.sh restore "$BACKUP/database" "$RUNNER_TEMP/stack" > "$RUNNER_TEMP/stack.env"
+          echo "::add-mask::$(sed -n 's/^SUPABASE_SECRET_KEY=//p' "$RUNNER_TEMP/stack.env")"
+          cat "$RUNNER_TEMP/stack.env" >> "$GITHUB_ENV"
+
+      - name: Finish the restore
+        if: inputs.drill
+        run: |
+          # Nothing was erased after a backup this fresh. A real restore takes
+          # the journal from the database it replaces.
+          : > "$RUNNER_TEMP/journal"
+          pnpm ops:restore finish --journal "$RUNNER_TEMP/journal"
+
+      - name: Restore the files
+        if: inputs.drill
+        run: pnpm --silent ops:storage import --from "$BACKUP/files"
+
+      - name: Check the restored copy
+        if: inputs.drill
+        run: |
+          pnpm ops:restore verify
+          seconds=$(( $(date +%s) - RESTORE_STARTED ))
+          {
+            echo "### Restore drill"
+            echo "Backup taken $(cat "$BACKUP/database/taken-at"); restored, finished and checked in ${seconds} s (target: 8 hours)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Stop the isolated stack
+        if: always() && inputs.drill
+        run: scripts/ops/backup.sh stop "$RUNNER_TEMP/stack" || true

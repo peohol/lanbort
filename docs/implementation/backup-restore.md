@@ -1,48 +1,68 @@
 # Backup og gjenoppretting
 
-> **Status:** Gjeldende fra WP-72, tilpasset gratisplanen i utviklingsfasen (ADR-0009). Forankret i [datalivssyklus, backup og gjenoppretting](../architecture/09-datalivssyklus-backup-og-gjenoppretting.md), [threat model](../architecture/08-sikkerhet-og-threat-model.md) («Backup-/restore-lekkasje») og PS-NFR-014. Kort sagt: en gjenoppretting skal få tjenesten tilbake uten at noe som var slettet eller begrenset, blir synlig igjen.
+> **Status:** Gjeldende fra WP-72, med backupnivået for piloten fra OD-0022 (10. oktober 2026). Forankret i [datalivssyklus, backup og gjenoppretting](../architecture/09-datalivssyklus-backup-og-gjenoppretting.md), [threat model](../architecture/08-sikkerhet-og-threat-model.md) («Backup-/restore-lekkasje») og PS-NFR-014. Kort sagt: en gjenoppretting skal få tjenesten tilbake uten at noe som var slettet eller begrenset, blir synlig igjen.
 
-## Strategi i utviklingsfasen
+## Strategi for piloten
 
-Hostede miljøer ligger på Supabase Free, som ikke har automatisk backup ([ADR-0009](../architecture/decisions/ADR-0009-backup-i-utviklingsfasen.md)). Det er akseptert i denne fasen. Betalt backup er ingen forutsetning for noen arbeidspakke eller kvalitetsport før produkteier har vurdert backupnivået på nytt før et eksternt brukerpanel (Port D).
+Produksjonsprosjektet ligger i en Supabase-organisasjon på Pro-planen. Valget for piloten står i [OD-0022](../open-decisions.md); det gir tre lag uten nye løpende kostnader:
+
+| Lag | Hva | Dekker | Hvor lenge |
+| --- | --- | --- | --- |
+| Supabases daglige backup | Hele databasen, tatt av Supabase hver natt (inkludert i planen) | Feil i data, en mislykket migrasjon, sletting ved en feil | 7 dager |
+| Egen backup (arbeidsflyten «Backup») | Logisk dump av databasen og alle filene i Storage, lagret i et privat GitHub-repo utenfor Supabase | Det Supabases backup ikke har: bildene, og tap av hele prosjektet | 7 dager |
+| Gjenoppbygging | Migrasjonene i repoet | Skjema, regler og lagringsbøtter, uten innhold | alltid |
+
+Målene for piloten ([arkitektur 09](../architecture/09-datalivssyklus-backup-og-gjenoppretting.md)): RPO ≤ 24 timer (begge backupene er daglige) og RTO ≤ 8 timer. En backup holder det som var slettet da den ble tatt, så slettede data er borte fra alle backuper senest 7 dager etter slettingen. Journalen i [fremgangsmåten](#fremgangsmåte) hindrer at det kommer tilbake ved en gjenoppretting.
 
 | Situasjon | Hva som gjøres |
 | --- | --- |
-| Databasen er tapt eller ødelagt, og det finnes ingen dump | Bygg den opp igjen fra migrasjonene i repoet (`pnpm exec supabase db push --db-url "$DB_URL"` mot et tomt prosjekt). Skjema, regler og lagringsbøtter kommer tilbake; innholdet er tapt. |
-| Det finnes en manuell dump | Gjenopprett dumpen etter [fremgangsmåten](#fremgangsmåte) under. Alt etter dumpen går tapt, bortsett fra slettinger og begrensninger som journalen gjør på nytt. |
+| Data er feil eller slettet ved en feil, prosjektet finnes | Gjenopprett Supabases backup fra natten før (steg 4) og fullfør (steg 5). |
+| Prosjektet er tapt, eller bildene er det | Gjenopprett den egne backupen til et nytt prosjekt (steg 4) og legg tilbake filene (`pnpm ops:storage import`). |
+| Det finnes ingen backup | Bygg databasen opp igjen fra migrasjonene (`pnpm exec supabase db push --db-url "$DB_URL"` mot et tomt prosjekt). Innholdet er tapt. |
 | Avledede data (søkeindeks) er feil | `pnpm ops:restore finish` eller den planlagte jobben bygger dem på nytt fra domenetabellene. |
 
-Pilotmålene i [arkitektur 09](../architecture/09-datalivssyklus-backup-og-gjenoppretting.md) (RPO ≤ 24 timer, RTO ≤ 8 timer) gjelder fra piloten, ikke nå. Etterarbeidet (`pnpm ops:restore finish`) tok rundt to sekunder i øvelsen, så RTO avhenger i praksis av hvor lang tid selve gjenopprettingen tar.
+Tilgang: Supabases backup kan bare hentes og gjenopprettes av medlemmer av Supabase-organisasjonen. Den egne backupen ligger som releaser i et privat repo som bare produkteier har tilgang til, og arbeidsflyten nekter å lagre i et offentlig repo. GitHub krypterer lagringen; en egen krypteringsnøkkel ville måtte ligge på samme sted for at gjenopprettingsøvelsen skal kunne bruke den, og ville derfor ikke beskytte mot noe mer.
 
-Verken en dump eller en Supabase-backup inneholder filene i Supabase Storage (objektbilder), bare databasen. Ved gjenoppretting i samme prosjekt blir en fil lastet opp etter backupen foreldreløs og slettes av etterarbeidet. Ved gjenoppretting til et nytt prosjekt blir filene liggende i det gamle prosjektet, som derfor avvikles (steg 8 i fremgangsmåten). En fil som er slettet, kommer aldri tilbake.
+### Egen backup og øvelse
 
-## Manuell dump ved milepæler
+`.github/workflows/backup.yml` gjør jobben og kalles av to arbeidsflyter:
 
-Ta en dump før en risikabel endring på et hostet miljø med data som er verdt å beholde, for eksempel før en stor migrasjon. Supabase CLI (som følger med repoet) virker mot gratisplanen. Bruk tilkoblingsstrengen fra **Connect** i prosjektet (Session pooler hvis nettverket bare har IPv4):
+- **«Restore drill»** i dette repoet, hver måned og ved behov: tar en backup av produksjon og gjenoppretter den til en isolert, midlertidig Supabase-stakk på GitHub-maskinen, slik en gjenoppretting til et nytt prosjekt går, med `finish`, filene og sjekkene. Ingenting lagres, og loggen har bare tider og antall. Produksjon blir bare lest.
+- **Det private backup-repoet**, hver natt: lagrer backupen som en release, laster den ned igjen, sjekker at den er lik, øver gjenopprettingen av den lagrede kopien og sletter releaser eldre enn 7 dager. Repoet trenger hemmeligheten `SUPABASE_ACCESS_TOKEN`, og har bare denne arbeidsflyten:
 
-```sh
-pnpm exec supabase db dump --db-url "$DB_URL" -f roles.sql --role-only
-pnpm exec supabase db dump --db-url "$DB_URL" -f schema.sql
-pnpm exec supabase db dump --db-url "$DB_URL" -f data.sql --use-copy --data-only
-pnpm exec supabase db dump --db-url "$DB_URL" -f history_schema.sql --schema supabase_migrations
-pnpm exec supabase db dump --db-url "$DB_URL" -f history_data.sql --use-copy --data-only --schema supabase_migrations
-```
+  ```yaml
+  name: Backup
+  on:
+    schedule:
+      - cron: "41 2 * * *"
+    workflow_dispatch:
+  permissions:
+    contents: write
+  concurrency:
+    group: backup
+  jobs:
+    backup:
+      uses: peohol/lanbort/.github/workflows/backup.yml@main
+      with:
+        keep-days: 7
+        drill: true
+      secrets:
+        SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+  ```
 
-De to siste filene er migrasjonshistorikken, som `pnpm ops:restore finish` sjekker mot repoet. Noter tidspunktet dumpen ble tatt.
-
-Dumpen inneholder personopplysninger og alt som var slettet frem til da. Den skal derfor krypteres, lagres utenfor repoet og utenfor Supabase-prosjektet, og eldre dumps slettes når en ny er tatt.
+Verktøyene kan også kjøres for hånd: `scripts/ops/backup.sh dump|restore|stop` og `pnpm ops:storage export|import` (filene i alle bøttene, med sjekksummer; utskriften har bare antall). Arbeidsflyten «Supabase production» med `backups` viser Supabases daglige backuper.
 
 ## Fremgangsmåte
 
-Fremgangsmåten er den samme om backupen er en manuell dump eller, senere, en backup Supabase har tatt. Bare steg 4 er forskjellig.
+Fremgangsmåten er den samme om backupen er den egne eller Supabases. Bare steg 4 er forskjellig.
 
-1. **Velg backup.** Bruk siste dump eller backup før hendelsen. Noter tidspunktet.
+1. **Velg backup.** Bruk siste backup før hendelsen. Noter tidspunktet (den egne backupen har det i `database/taken-at`).
 2. **Steng appen.** Sett Vercel-prosjektet på pause, så verken brukere eller planlagte jobber skriver til databasen mens den gjenopprettes og før den er sjekket.
 3. **Ta ut journalen fra databasen som erstattes**, hvis den fortsatt kan leses:
    `pnpm ops:restore journal --since <backupens tidspunkt minus én time> --out <fil>`
    med `DATABASE_URL` mot den. Journalen inneholder bare ID-er og koder for det som ble slettet eller begrenset etter backupen, aldri navn, kontaktopplysninger eller fritekst. Filen overskrives aldri. Den må tas ut **før** en gjenoppretting i samme prosjekt, fordi den overskriver databasen.
 4. **Gjenopprett**, helst til et nytt prosjekt, aldri over en database som er i bruk:
-   - **Manuell dump:** i et nytt, tomt prosjekt med `DB_URL` mot det:
+   - **Egen backup:** last ned releasen fra det private repoet og pakk den ut. I et nytt, tomt prosjekt med `DB_URL` mot det, fra mappen `database`:
      ```sh
      psql --single-transaction --variable ON_ERROR_STOP=1 \
        --file roles.sql --file schema.sql \
@@ -51,8 +71,8 @@ Fremgangsmåten er den samme om backupen er en manuell dump eller, senere, en ba
      psql --single-transaction --variable ON_ERROR_STOP=1 \
        --file history_schema.sql --file history_data.sql --dbname "$DB_URL"
      ```
-     Sett deretter appens miljøvariabler til det nye prosjektet.
-   - **Backup tatt av Supabase** (bare på betalt plan): Database → Backups. Prosjektet er utilgjengelig mens det pågår.
+     Legg tilbake filene med `SUPABASE_URL` og `SUPABASE_SECRET_KEY` mot det nye prosjektet: `pnpm ops:storage import --from <mappen>/files`. Sett deretter appens miljøvariabler til det nye prosjektet. `scripts/ops/backup.sh restore` gjør det samme mot en lokal stakk.
+   - **Supabases backup:** Database → Backups → Restore i prosjektet. Det overskriver databasen, og prosjektet er utilgjengelig mens det pågår. Filene i Storage berøres ikke.
 5. **Fullfør:** `pnpm ops:restore finish --journal <fil>` med `DATABASE_URL` mot den gjenopprettede databasen. Kommandoen
    - stopper med en gang hvis databasen ikke har akkurat migrasjonene i repoet (kjør da migrasjonene først),
    - gjør slettinger og begrensninger fra journalen på nytt med domenets egne kommandoer, som systemprosessen `ops.restore`,
@@ -81,16 +101,17 @@ Kan en journalpost ikke gjøres trygt på nytt, sier kommandoen `Needs handling`
 
 ## Kjente begrensninger
 
-- **Ingen automatisk backup i utviklingsfasen.** Alt etter siste manuelle dump kan gå tapt, og uten dump er alt innhold tapt (ADR-0009).
+- **Inntil et døgn går tapt** (RPO). Supabases Point-in-Time Recovery ville gitt minutter, men koster ekstra og er valgt bort for piloten (OD-0022).
 - **Databasen som erstattes, kan ikke leses.** Da finnes ingen journal, og det som ble slettet etter backupen, kommer tilbake. Slettinger brukerne ba om i tidsrommet, må da gjøres på nytt for hånd. Jo nyere backupen er, desto kortere er tidsrommet.
-- **Bildefiler** har ingen egen backup. Gjenopprettes databasen til et nytt prosjekt, følger bildene ikke med og må kopieres fra det gamle prosjektet hvis det fortsatt finnes. Separat sikkerhetskopi av mediefiler (arkitektur 09) avhenger av oppbevaringstidene i OD-0002.
+- **Bildefiler** følger bare den egne backupen. Gjenopprettes Supabases backup, blir filene stående som de er; en fil lastet opp etter backupen blir foreldreløs og slettes av etterarbeidet, og en fil slettet etter backupen kommer ikke tilbake (bildet mangler da på tingen).
+- **Den egne backupen avhenger av hemmeligheten** `SUPABASE_ACCESS_TOKEN` i det private repoet. GitHub sender e-post til eieren når den planlagte kjøringen feiler.
 - **E-postvarsler** som var sendt etter backupen, kan sendes én gang til.
 
 ## Øvelsen
 
-`packages/domain/src/restore/restore.integration.test.ts` kjører i CI-jobben `database`. Den tar en ekte backup (`pg_dump`) av en isolert database, gjør slettinger og begrensninger etter backupen, tar ut journalen, gjenoppretter backupen (`pg_restore`) til en ny isolert database og fullfører. Deretter sjekker den at ingenting slettet eller begrenset er tilbake, at Finn bare finner det som fortsatt er tilbudt, at sjekkene består, at tiden er innenfor RTO, og at en ny kjøring ikke gjør noe to ganger.
+To øvelser holder gjenopprettingen i stand:
 
-### Gjenstår
+- `packages/domain/src/restore/restore.integration.test.ts` kjører i CI-jobben `database`. Den tar en ekte backup (`pg_dump`) av en isolert database, gjør slettinger og begrensninger etter backupen, tar ut journalen, gjenoppretter backupen (`pg_restore`) til en ny isolert database og fullfører. Deretter sjekker den at ingenting slettet eller begrenset er tilbake, at Finn bare finner det som fortsatt er tilbudt, at sjekkene består, at tiden er innenfor RTO, og at en ny kjøring ikke gjør noe to ganger.
+- «Restore drill» (månedlig) og det private backup-repoet (hver natt) gjenoppretter en ekte backup av produksjon, med filene, til en isolert stakk og noterer tiden mot RTO i kjøringens sammendrag.
 
-- **Når et hostet miljø med data finnes:** ta den første manuelle dumpen og gjenopprett den én gang til et isolert prosjekt etter fremgangsmåten over, med `finish` og en journal, og noter faktisk tid mot RTO. Kommandoene for dump og gjenoppretting følger Supabases egen veiledning, men er ennå ikke øvd mot et hostet prosjekt.
-- **Før et eksternt testpanel (Port D):** produkteier beslutter backupnivået for piloten (ADR-0009; utsatt dit 6. oktober 2026), for eksempel betalt plan med daglig backup, planlagte krypterte dumps på gratisplanen eller lengre RPO for en liten pilot.
+Ikke øvd: gjenoppretting av Supabases egen backup. Den skjer i selve prosjektet (eller til et nytt prosjekt, som koster ekstra), og blir derfor ikke øvd mot produksjon.

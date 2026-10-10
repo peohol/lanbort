@@ -19,7 +19,8 @@ function container(): string {
     throw new Error("supabase/config.toml has no project_id");
   }
 
-  return `supabase_db_${projectId}`;
+  // The CLI names the stack after SUPABASE_PROJECT_ID when it is set.
+  return `supabase_db_${process.env.SUPABASE_PROJECT_ID ?? projectId}`;
 }
 
 const asAdmin = ["-U", "supabase_admin"];
