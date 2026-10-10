@@ -223,7 +223,15 @@ describe("private messages as case documentation (PS-COM-013)", () => {
     await expect(attempt([])).rejects.toMatchObject({ code: "invalid_input" });
 
     // Nothing was written, so the party still has their first statement.
-    const { caseId } = await attempt([message(owner, "Hei", 10, chat)]);
+    // Identifiers count however they are written.
+    const copy = message(owner, "Hei", 10, chat);
+    const { caseId } = await attempt([
+      {
+        ...copy,
+        conversationId: copy.conversationId.toUpperCase(),
+        senderUserId: copy.senderUserId.toUpperCase(),
+      },
+    ]);
     expect(await copiesIn(borrower, caseId)).toHaveLength(1);
   });
 

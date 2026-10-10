@@ -522,7 +522,12 @@ export async function copiesFromOwnConversations(
   submitterId: string,
   copies: readonly { conversationId: string; senderUserId: string }[],
 ): Promise<boolean> {
-  const conversationIds = [...new Set(copies.map((c) => c.conversationId))];
+  // UUIDs are accepted in any case; the database returns them in lower case.
+  const key = (conversationId: string, userId: string) =>
+    `${conversationId}:${userId}`.toLowerCase();
+  const conversationIds = [
+    ...new Set(copies.map((c) => c.conversationId.toLowerCase())),
+  ];
 
   if (conversationIds.length === 0) {
     return true;
@@ -534,13 +539,13 @@ export async function copiesFromOwnConversations(
     .where("conversation_id", "in", conversationIds)
     .execute();
   const inConversation = new Set(
-    participants.map((p) => `${p.conversation_id}:${p.user_id}`),
+    participants.map((p) => key(p.conversation_id, p.user_id)),
   );
 
   return copies.every(
     (copy) =>
-      inConversation.has(`${copy.conversationId}:${submitterId}`) &&
-      inConversation.has(`${copy.conversationId}:${copy.senderUserId}`),
+      inConversation.has(key(copy.conversationId, submitterId)) &&
+      inConversation.has(key(copy.conversationId, copy.senderUserId)),
   );
 }
 
