@@ -35,9 +35,9 @@ Siden **Personvern og sikkerhet** under Konto (`/konto/personvern`) sier hvem so
 
 Sikkerhetsfeil fra andre enn deltakerne meldes privat gjennom GitHubs «Report a vulnerability» på repoet ([SECURITY.md](../../SECURITY.md)), som `/.well-known/security.txt` peker til. Filen har en utløpsdato (`Expires`) som må flyttes fram før den passeres. Når plattformkøen åpnes (`PLATFORM_STEWARDS_ENABLED` og minst én forvalter med to nøkler), kan deltakerne også bruke «Rapporter til Lånbort» i appen.
 
-### Egen adresse på lånbort.no (valgfritt)
+### Adressen på lånbort.no
 
-Lånbort.no kan ikke ta imot e-post i dag: domenet har bare oppsett for å sende (Resend), og Vercel, som har DNS-en, videresender ikke e-post. En adresse som `sikkerhet@lånbort.no` trenger derfor en videresendingstjeneste, for eksempel ImprovMX, som sender alt videre til en innboks produkteier allerede leser. Det krever:
+Produkteier har valgt at `CONTACT_EMAIL` skal være `sikkerhet@lånbort.no` (10. oktober 2026). Lånbort.no kan ikke ta imot e-post av seg selv: domenet har bare oppsett for å sende (Resend), og Vercel, som har DNS-en, videresender ikke e-post. Adressen går derfor gjennom gratisplanen til videresendingstjenesten ImprovMX, som sender alt videre til en innboks produkteier allerede leser. Det krever:
 
 1. En konto hos tjenesten, laget av produkteier, med lånbort.no (`xn--lnbort-iua.no`) og aliaset `sikkerhet` som sendes videre til produkteiers adresse. Sjekk vilkårene for gratisplanen før den tas i bruk.
 2. Tre DNS-poster på selve domenet (`@`) i Vercel: MX `mx1.improvmx.com` med prioritet 10, MX `mx2.improvmx.com` med prioritet 20, og TXT `v=spf1 include:spf.improvmx.com ~all` (ImprovMX sin generelle veiledning, lest 10. oktober 2026). Resends poster ligger på underdomenet `send` og berøres ikke.
