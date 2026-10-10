@@ -10,6 +10,7 @@ import {
   acceptInvitation,
   inviteMember,
   joinEnvironment,
+  rejectMembership,
   requestInformation,
   submitAnswers,
   withdrawInvitation,
@@ -58,19 +59,26 @@ const {
   ask,
 } = kit;
 
-/** The reader's latest notification of `kind`, as the centre describes it. */
-async function latest(
+/** The reader's notifications of `kind`, newest first, as the centre describes them. */
+async function every(
   actor: UserActor,
   kind: NotificationKind,
-): Promise<DescribedNotification> {
+): Promise<DescribedNotification[]> {
   await deliverAll(db, consumers);
   const { notifications } = await executeQuery(tick(), readNotificationCentre, {
     actor,
     input: {},
   });
-  const found = notifications.find(
-    (notification) => notification.kind === kind,
-  );
+
+  return notifications.filter((notification) => notification.kind === kind);
+}
+
+/** The reader's latest notification of `kind`, as the centre describes it. */
+async function latest(
+  actor: UserActor,
+  kind: NotificationKind,
+): Promise<DescribedNotification> {
+  const [found] = await every(actor, kind);
 
   if (!found) throw new Error(`No ${kind}`);
 
@@ -210,6 +218,30 @@ describe("a request for more information (PS-ENV-019)", () => {
     expect(
       await latest(applicant, "environment.membership_information_requested"),
     ).toMatchObject({ standing: "accepted" });
+  });
+
+  it("keeps each request's own outcome when the administrators ask again or decide", async () => {
+    const admin = await user();
+    const closed = await environment(admin, { type: "closed" });
+    const applicant = await user();
+    const { membershipId } = await run(joinEnvironment, applicant, {
+      environmentId: closed,
+      answers: [],
+    });
+    const standings = async () =>
+      (
+        await every(applicant, "environment.membership_information_requested")
+      ).map(({ standing }) => standing);
+    const requestMore = () =>
+      run(requestInformation, admin, { environmentId: closed, membershipId });
+
+    await requestMore();
+    await run(submitAnswers, applicant, { environmentId: closed, answers: [] });
+    await requestMore();
+    expect(await standings()).toEqual(["open", "accepted"]);
+
+    await run(rejectMembership, admin, { environmentId: closed, membershipId });
+    expect(await standings()).toEqual(["lapsed", "accepted"]);
   });
 });
 

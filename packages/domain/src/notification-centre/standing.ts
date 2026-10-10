@@ -76,21 +76,48 @@ export function membershipInvitationStanding(
 }
 
 /**
- * A request for more information (PS-ENV-019), by the application it was
- * about: open while it waits on the applicant, answered once they sent
- * their answers again, and otherwise no longer waiting.
+ * The reader's requests for more information in one environment and their
+ * answers to them, oldest first, and the membership that waits on them now.
+ */
+export interface InformationRequestHistory {
+  readonly steps: readonly {
+    readonly membershipId: string;
+    readonly kind: "requested" | "answered";
+    readonly occurredAt: Date;
+  }[];
+  readonly waitingMembershipId: string | null;
+}
+
+/**
+ * A request for more information (PS-ENV-019), by the request it told of,
+ * the last one made by the time it occurred: answered once the applicant
+ * sent their answers after it, open while that request still waits on them,
+ * and otherwise no longer waiting. Each request keeps its own outcome when
+ * the administrators ask again or decide.
  */
 export function informationRequestStanding(
-  membership: { readonly reviewStage: string | null } | null,
+  history: InformationRequestHistory,
+  occurredAt: string,
 ): NotificationStanding {
-  switch (membership?.reviewStage) {
-    case "information_requested":
-      return "open";
-    case "submitted":
-      return "accepted";
-    default:
-      return "lapsed";
-  }
+  const at = Date.parse(occurredAt);
+  const index = history.steps.reduce(
+    (last, step, i) =>
+      step.kind === "requested" && step.occurredAt.getTime() <= at ? i : last,
+    -1,
+  );
+  const request = history.steps[index];
+
+  if (!request) return "lapsed";
+
+  const next = history.steps
+    .slice(index + 1)
+    .find((step) => step.membershipId === request.membershipId);
+
+  if (next) return next.kind === "answered" ? "accepted" : "lapsed";
+
+  return history.waitingMembershipId === request.membershipId
+    ? "open"
+    : "lapsed";
 }
 
 /** An invitation to a role, or to co-own an object, by how it was closed. */

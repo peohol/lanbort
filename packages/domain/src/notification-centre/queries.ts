@@ -9,6 +9,10 @@ import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
 import type { Actor } from "../actor";
 import { defineQuery } from "../commands/query";
+import {
+  membershipAnswersSubmitted,
+  membershipInformationRequested,
+} from "../environment/events";
 import { canSeeEnvironment } from "../environment/policies";
 import { loadEnvironmentAccess } from "../environment/store";
 import { homeReader, type HomeReader } from "../home/source";
@@ -27,6 +31,7 @@ import { loadPeople } from "../people/store";
 import {
   friendRequestStanding,
   invitationStanding,
+  type InformationRequestHistory,
   informationRequestStanding,
   membershipInvitationStanding,
   requestStanding,
@@ -140,6 +145,56 @@ async function personAbout({ db, userId, now }: Reading, personId: string) {
   };
 }
 
+const informationRequestSteps = new Map([
+  [membershipInformationRequested.type, "requested"],
+  [membershipAnswersSubmitted.type, "answered"],
+] as const);
+
+/**
+ * The reader's requests for more information and their answers, by the
+ * events of their own memberships in one environment (PS-ENV-019).
+ */
+async function informationRequestHistory(
+  db: Db,
+  memberships: readonly { id: string; reviewStage: string | null }[],
+): Promise<InformationRequestHistory> {
+  const steps =
+    memberships.length === 0
+      ? []
+      : await db
+          .selectFrom("app.audit_events")
+          .select([
+            "resource_id as membershipId",
+            "event_type",
+            "occurred_at as occurredAt",
+          ])
+          .where(
+            "resource_type",
+            "=",
+            membershipInformationRequested.resourceType,
+          )
+          .where(
+            "resource_id",
+            "in",
+            memberships.map(({ id }) => id),
+          )
+          .where("event_type", "in", [...informationRequestSteps.keys()])
+          .orderBy("position")
+          .execute();
+
+  return {
+    steps: steps.flatMap(({ membershipId, event_type, occurredAt }) => {
+      const kind = informationRequestSteps.get(event_type);
+
+      return kind ? [{ membershipId, kind, occurredAt }] : [];
+    }),
+    waitingMembershipId:
+      memberships[0]?.reviewStage === "information_requested"
+        ? memberships[0].id
+        : null,
+  };
+}
+
 /**
  * An environment by name only while the reader can see it (PS-ENV-001),
  * and the reader's own invitations there.
@@ -153,9 +208,10 @@ async function environmentAbout(
     access !== null &&
     canSeeEnvironment({ actor, now, resource: access, context: undefined })
       .allowed;
-  const membership = await db
+  const memberships = await db
     .selectFrom("app.environment_memberships")
     .select([
+      "id",
       "state",
       "origin",
       "end_reason as endReason",
@@ -164,7 +220,9 @@ async function environmentAbout(
     .where("environment_id", "=", environmentId)
     .where("user_id", "=", userId)
     .orderBy("created_at", "desc")
-    .executeTakeFirst();
+    .execute();
+  const membership = memberships[0];
+  const informationRequests = await informationRequestHistory(db, memberships);
   const roleInvitations = await db
     .selectFrom("app.environment_role_invitations")
     .select(["role", "outcome"])
@@ -180,12 +238,17 @@ async function environmentAbout(
       person: null,
       place: visible ? access.environment.name : null,
     },
-    standing: ({ kind, detail }) => {
+    standing: (notification) => {
+      const { kind, detail } = notification;
+
       switch (kind) {
         case "environment.membership_invited":
           return membershipInvitationStanding(membership ?? null);
         case "environment.membership_information_requested":
-          return informationRequestStanding(membership ?? null);
+          return informationRequestStanding(
+            informationRequests,
+            notification.occurredAt,
+          );
         case "environment.role_invited": {
           const invitation = roleInvitations.find(
             ({ role }) => role === detail,
