@@ -65,6 +65,8 @@ describe("reviews in words (UX-JRN-010)", () => {
     const reviews: LoanReviews = {
       loanId: id,
       role: "borrower",
+      title: "Tilhenger",
+      counterpart: { realName: "Kari", profileId: null, pictureId: null },
       window: {
         status: "open",
         basis: "returned",

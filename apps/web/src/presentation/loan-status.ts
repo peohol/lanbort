@@ -38,10 +38,19 @@ export const sentence = (text: string) =>
  * lender, «Stige fra Kari» for the borrower.
  */
 export function loanTitle(loan: Loan): string {
-  return loan.role === "lender"
-    ? `${loan.agreement.title} til ${personName(loan.parties.borrower)}`
-    : `${loan.agreement.title} fra ${personName(loan.parties.lender)}`;
+  return partyTitle(
+    loan.role,
+    loan.agreement.title,
+    personName(loan.parties[otherSide(loan.role)]),
+  );
 }
+
+/** A loan's title for one of its sides, given the other one's name. */
+export const partyTitle = (
+  role: LoanRequestRole,
+  title: string,
+  other: string,
+) => `${title} ${role === "lender" ? "til" : "fra"} ${other}`;
 
 /** Whether what the parties disagree about is the return, not the handover. */
 const aboutReturn = (loan: Loan) =>
