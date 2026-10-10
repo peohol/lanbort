@@ -346,41 +346,44 @@ ${sec('Innlegg')}
   cap:'Avslutningsmeldingen (PS-COM-020) sier at saken er behandlet, men ikke hva Lånbort fant ut eller gjorde.' });
 
 /* ---------- 2 · Avvise en ventende enhet ---------- */
+const WAITING = [['Enhet 9C2E', '19.39'], ['Enhet 4B71', '19.40']];
+const waitingRow = ([name, time]) => mr({ lead:tic('device', 'n'), t:name, s:`Ba om tilgang kl. ${time}`, end:'<span class="q" style="color:#C4122F">Avvis</span>' });
 const devicesTop = (waiting, extra = '') => `${backbar('Samtaler')}
 <div class="scr">
 ${pageHead('Mine enheter')}${extra}
-${waiting ? `<div class="cd">${pill('p-dg', 'device', 'Venter på deg')}<span class="hq now">En enhet vil koble til privat chat</span><span class="s">Skann koden som vises på den nye enheten.</span>
+${waiting.length ? `<div class="cd">${pill('p-dg', 'device', 'Venter på deg')}<span class="hq now">${waiting.length === 1 ? 'En enhet vil' : `${waiting.length} enheter vil`} koble til privat chat</span><span class="s">Skann koden som vises på den nye enheten.</span>
 <button class="btn" type="button">${ic('scan')}Skann koden</button>
 <span class="q" style="align-self:center">Skriv inn koden i stedet</span>
-<button class="bdo" type="button">Avvis enheten</button></div>` : ''}
+<div style="display:flex;flex-direction:column;border-top:1px solid #E3E6EA">${waiting.map(waitingRow).join('')}</div></div>` : ''}
 ${sec('Disse kan lese samtalene dine')}
-<div class="cd" style="padding:2px 4px;gap:0">${mr({ lead:tic('device', 'n'), t:'iPhone', s:'Denne enheten · lagt til 3. mars', end:'' })}${mr({ lead:tic('device', 'n'), t:'Mac', s:'Lagt til 12. mai', end:'<span class="q">Fjern</span>' })}</div>`;
+<div class="cd" style="padding:2px 4px;gap:0">${mr({ lead:tic('device', 'n'), t:'Enhet 7F3A', s:'Denne enheten · lagt til 3. mars', end:'' })}${mr({ lead:tic('device', 'n'), t:'Enhet D20B', s:'Lagt til 12. mai', end:'<span class="q">Fjern</span>' })}</div>`;
 
-const devicesWaiting = phone({ label:'Mine enheter · en enhet venter', time:'19:40', body:`${devicesTop(true)}</div>`,
-  cap:'Oppgavekortet fra skjerm 10 får en tredje knapp, «Avvis enheten», med signalrød kant fordi den sier nei. Venter flere enheter, avvises alle som venter, og knappen heter «Avvis enhetene».' });
+const devicesWaiting = phone({ label:'Mine enheter · to enheter venter', time:'19:40', body:`${devicesTop(WAITING)}</div>`,
+  cap:'Oppgavekortet fra skjerm 10 viser hver enhet som venter, med navnet fra skjerm 14 og når den ba om tilgang. Hver rad har sin egen «Avvis» i signalrødt, slik «Fjern» står på enhetene under. Bare den valgte forespørselen avvises; venter én enhet, står det én rad.' });
 
-const declineSheet = phone({ label:'Avvise enheten?', time:'19:40', body:`${devicesTop(true)}</div>
-${sheet({ over:'Mine enheter', title:'Avvise enheten?', rows:[
+const declineSheet = phone({ label:'Avvise Enhet 9C2E?', time:'19:40', body:`${devicesTop(WAITING)}</div>
+${sheet({ over:'Mine enheter', title:'Avvise Enhet 9C2E?', rows:[
   ['lock', GREY, 'Enheten får ikke tilgang til privat chat.'],
   ['device', GREY, 'Den som ba om tilgang, får vite at den ble avvist, og kan be på nytt.'],
   ['shield', RED, 'Ba ikke du om dette? Da har noen logget inn på kontoen din med en kode fra e-posten din. Sørg for at ingen andre kommer inn på e-posten din.']
 ], actions:`<button class="bdf" type="button">Avvis enheten</button><button class="bn" type="button">Avbryt</button>` })}`,
-  cap:'Samme ark som når en enhet fjernes (skjerm 15–16). Siste punkt følger av at innlogging skjer med kode på e-post: den som ba om tilgang, har vært inne på kontoen.' });
+  cap:'Samme ark som når en enhet fjernes (skjerm 15–16), med navnet på den valgte enheten i tittelen. Siste punkt følger av at innlogging skjer med kode på e-post: den som ba om tilgang, har vært inne på kontoen.' });
 
 const confirmScreen = phone({ label:'Gi denne enheten tilgang? · Ikke godkjenn', time:'19:41', body:`${backbar('Mine enheter')}
 <div class="scr">
 ${pageHead('Gi denne enheten tilgang til privat chat?')}
-<div class="cd" style="padding:2px 4px;gap:0">${mr({ lead:tic('device', 'n'), t:'Chrome på Windows', s:'Ba om tilgang kl. 19.39', end:'' })}</div>
+<div class="cd" style="padding:2px 4px;gap:0">${mr({ lead:tic('device', 'n'), t:'Enhet 9C2E', s:'Ba om tilgang kl. 19.39', end:'' })}</div>
 ${stl([['sam', GREY, 'Den kan lese og sende meldinger fra nå av.'], ['shield', GREY, 'Godkjenn bare hvis det er din enhet og du har den foran deg.']])}
 <span class="lbl">Tidligere meldinger</span>
-<div class="opt on" role="radio" aria-checked="true"><span class="rd"></span><span class="f1"><span class="t2" style="display:block">Bare nye meldinger</span><span class="s2" style="display:block">Enheten ser meldinger fra nå av.</span></span></div>
+<div class="opt on" role="radio" aria-checked="true"><span class="rd"></span><span class="f1"><span class="t2" style="display:block">Bare nye meldinger</span><span class="s2" style="display:block">Enheten ser meldinger fra nå av. Tidligere meldinger blir på enhetene som har dem.</span></span></div>
+<div class="opt" role="radio" aria-checked="false"><span class="rd"></span><span class="f1"><span class="t2" style="display:block">Overfør meldingene herfra</span><span class="s2" style="display:block">Krypteres til den nye enheten. Bare det som ligger på denne enheten, følger med.</span></span></div>
 <button class="btn" type="button">Godkjenn enheten</button>
 <button class="bdo" type="button">Ikke godkjenn</button>
 </div>`,
-  cap:'Etter skanning eller kode (skjerm 12). «Ikke godkjenn» avviser nå forespørselen i stedet for bare å gå tilbake, og åpner det samme arket som over. Kanten blir signalrød.' });
+  cap:'Etter skanning eller kode (skjerm 12), som før med begge valgene for tidligere meldinger. «Ikke godkjenn» avviser nå denne ene forespørselen i stedet for bare å gå tilbake, og åpner det samme arket som over. Kanten blir signalrød.' });
 
-const declined = phone({ label:'Avvist · tilbake i Mine enheter', time:'19:41', body:`${devicesTop(false, `<div class="cd" role="status">${pill('p-on', 'check', 'Avvist')}<span class="s" style="color:#1E2733">Enheten fikk ikke tilgang til privat chat.</span></div>`)}</div>`,
-  cap:'Kvitteringen står øverst, som når en enhet er fjernet. Oppgavekortet er borte, og Hjem teller den ikke lenger.' });
+const declined = phone({ label:'Avvist · tilbake i Mine enheter', time:'19:41', body:`${devicesTop(WAITING.slice(1), `<div class="cd" role="status">${pill('p-on', 'check', 'Avvist')}<span class="s" style="color:#1E2733">Enhet 9C2E fikk ikke tilgang til privat chat.</span></div>`)}</div>`,
+  cap:'Kvitteringen står øverst, som når en enhet er fjernet. Bare den avviste raden er borte; den andre enheten venter fortsatt. Venter ingen flere, er oppgavekortet borte, og Hjem teller det ikke lenger.' });
 
 const newDevice = phone({ label:'Den nye enheten', time:'19:41', body:`${backbar('Samtaler')}
 <div class="scr">
@@ -401,7 +404,7 @@ ${pageHead('Logge ut av denne enheten?')}
 ${stl([
   ['sam', GREY, 'Denne enheten mister privat chat og alle samtalene som er lagret her.'],
   ['out', GREY, 'Du logges ut på denne enheten.'],
-  last ? ['info', RED, 'Dette er den eneste enheten din med privat chat. Meldingene her kan ikke hentes tilbake.'] : ['device', GREY, 'Mac beholder sine samtaler.']
+  last ? ['info', RED, 'Dette er den eneste enheten din med privat chat. Meldingene her kan ikke hentes tilbake.'] : ['device', GREY, 'Enhet D20B beholder sine samtaler.']
 ])}
 ${last ? '<button class="bn" type="button">Lag gjenopprettingsnøkkel først</button>' : ''}
 <button class="bdf" type="button">Logg ut</button>
