@@ -68,7 +68,6 @@ const header = (
   <PageHeader
     title="Logge ut av denne enheten?"
     back={{ href: accountHref, label: "Konto" }}
-    task
   />
 );
 
@@ -129,6 +128,9 @@ function WithChat({ engine }: { engine: ChatEngine }) {
         >
           Logg ut
         </BusyButton>
+        <Link className="button" href={accountHref}>
+          Avbryt
+        </Link>
       </div>
     </>
   );
@@ -161,6 +163,9 @@ export function ChatSignOut() {
             ]}
           />
           <SignOutButton className="button-danger" />
+          <Link className="button" href={accountHref}>
+            Avbryt
+          </Link>
         </div>
       )}
     </>
