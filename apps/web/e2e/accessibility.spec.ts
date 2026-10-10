@@ -35,6 +35,7 @@ interface World {
   readonly thing: string;
   readonly cases: { own: string; handled: string; environmentId: string };
   readonly friendId: string;
+  readonly joinable: string;
 }
 
 /** The signed-in pages, each in the state where it has the most to show. */
@@ -50,6 +51,10 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
   { name: "Mine ting", path: () => "/mine-ting" },
   { name: "Egen ting", path: ({ ownThing }) => `/ting/${ownThing}` },
   {
+    name: "Rediger tingen",
+    path: ({ ownThing }) => `/ting/${ownThing}/rediger`,
+  },
+  {
     name: "Registrer en ting",
     path: ({ environmentId }) => `/ting/ny?miljo=${environmentId}`,
   },
@@ -63,6 +68,15 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
     name: "Om miljøet",
     path: ({ environmentId }) => `/miljoer/${environmentId}/om`,
   },
+  {
+    name: "Ting fra en venn",
+    path: ({ ladder }) => `/ting/${ladder}`,
+  },
+  {
+    name: "Bli med i et miljø",
+    path: ({ joinable }) => `/miljoer/${joinable}/bli-med`,
+  },
+  { name: "Opprett et miljø", path: () => "/miljoer/ny" },
   {
     name: "Be om å låne",
     path: ({ ladder, environmentId }) =>
@@ -80,7 +94,11 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
   { name: "Varsler", path: () => "/varsler" },
   { name: "Konto", path: () => "/konto" },
   { name: "Venner", path: () => "/konto/venner" },
+  { name: "Blokkerte", path: () => "/konto/blokkerte" },
+  { name: "Varslingsvalg", path: () => "/konto/varslingsvalg" },
+  { name: "Profilbilde", path: () => "/konto/profilbilde" },
   { name: "Kontoen din", path: () => "/konto/kontoen" },
+  { name: "Saker i Konto", path: () => "/konto/saker" },
   { name: "Saker", path: () => "/saker" },
   { name: "Saken", path: ({ cases }) => `/saker/${cases.own}` },
   { name: "Saken å behandle", path: ({ cases }) => `/saker/${cases.handled}` },
@@ -96,6 +114,10 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
   {
     name: "Person som låntaker",
     path: ({ friendId }) => `/personer/${friendId}/som-laantaker`,
+  },
+  {
+    name: "Person som utlåner",
+    path: ({ friendId }) => `/personer/${friendId}/som-utlaaner`,
   },
 ];
 
@@ -241,6 +263,17 @@ test.beforeAll(async ({ browser, playwright }) => {
     environmentId: boden,
     answers: [],
   });
+  // A closed environment Bo is not in, whose joining asks for something.
+  const { environmentId: joinable } = await (
+    await postCommand(cleo.request, "/api/environments", {
+      name: `Hagelaget ${place}`,
+      type: "closed",
+      requirements: [
+        { kind: "information", text: "Hvilken parsell har du?" },
+        { kind: "acceptance", text: "Jeg rydder etter meg" },
+      ],
+    })
+  ).json();
   const cases = {
     own: await contact(bo, environmentId, "Hvem har nøkkelen til boden?"),
     handled: await contact(cleo.request, boden, "Kan jeg låne nøkkelen?"),
@@ -265,6 +298,7 @@ test.beforeAll(async ({ browser, playwright }) => {
     thing,
     cases,
     friendId: anna.id,
+    joinable,
   };
   signedIn = await context.storageState();
   await context.close();
