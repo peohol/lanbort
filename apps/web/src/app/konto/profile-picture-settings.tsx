@@ -101,6 +101,18 @@ export function ProfilePictureSettings({
     });
     setSaving(false);
 
+    // The lost answer's upload was saved, as it was cropped then: the
+    // page shows it, and saving another crop is a new upload.
+    if (!result.ok && result.code === "idempotency_key_reused") {
+      setUploadKey(crypto.randomUUID());
+      setPhoto(null);
+      setError(
+        "Bildet ble lagret før forbindelsen brøt, slik det var beskåret da. Velg bildet på nytt hvis du vil endre det.",
+      );
+      router.refresh();
+      return;
+    }
+
     if (!result.ok) {
       setError(
         errorMessage(result.code, {

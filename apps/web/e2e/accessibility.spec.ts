@@ -648,9 +648,9 @@ test("without a network the page says so, and keeps what was filled in", async (
   await expect(announcer(page)).toContainText("Du er uten nett");
   await page.getByRole("button", { name: "Send kode" }).click();
   await expect(
-    page.getByRole("alert").filter({ hasText: "Fikk ikke kontakt" }),
+    page.getByRole("alert").filter({ hasText: "Fikk ikke svar" }),
   ).toHaveText(
-    "Fikk ikke kontakt med Lånbort. Det du har fylt ut er beholdt. Prøv igjen.",
+    "Fikk ikke svar fra Lånbort, så vi vet ikke om det kom fram. Det du har fylt ut er beholdt. Prøv igjen; det blir ikke gjort to ganger.",
   );
   await expect(page.getByLabel("E-postadresse")).toHaveValue(email);
 

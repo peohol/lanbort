@@ -26,15 +26,30 @@ export interface CommandOptions<T> {
   readonly replace?: boolean | undefined;
   /** What a failure means here, where the general words are not enough. */
   readonly messages?: ErrorMessages;
+  /** What else a failure leads to here, beyond saying it. */
+  readonly onFailure?: (code: ApiFailureCode) => void;
 }
+
+/**
+ * Failures that say the page no longer shows what holds: what the user
+ * acted on changed, is gone or is no longer theirs to act on, or an
+ * earlier send whose answer was lost already did it. The page is read
+ * again, so the user sees what holds now before anything is sent again.
+ */
+const staleFailures: ReadonlySet<ApiFailureCode> = new Set([
+  "conflict",
+  "idempotency_key_reused",
+  "not_found",
+  "forbidden",
+  "account_inactive",
+]);
 
 /**
  * One command from a button, a form or a dialog. One idempotency key per
  * control until the command is done, so a retry after a network error
  * cannot act twice (UX-INT-006), and sending again afterwards is new.
  * On success the page is read again, or the user led on, so it shows the
- * authoritative state (UX-INT-005). A conflict reads the page again too:
- * what the user acted on has changed, and the page shows what holds now.
+ * authoritative state (UX-INT-005). A stale page is read again too.
  */
 export function useCommand<T = unknown>({
   path,
@@ -43,6 +58,7 @@ export function useCommand<T = unknown>({
   after = "refresh",
   replace = false,
   messages,
+  onFailure,
 }: CommandOptions<T>) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -64,7 +80,13 @@ export function useCommand<T = unknown>({
 
     if (!result.ok) {
       setFailure(result.code);
-      if (result.code === "conflict") router.refresh();
+      // The lost answer's send was done, with what the user had then; what
+      // they send after seeing the page again is a new command.
+      if (result.code === "idempotency_key_reused") {
+        setIdempotencyKey(crypto.randomUUID());
+      }
+      if (staleFailures.has(result.code)) router.refresh();
+      onFailure?.(result.code);
       return false;
     }
 
