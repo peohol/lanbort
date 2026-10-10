@@ -769,7 +769,8 @@ export class ChatEngine {
   /**
    * Pins first-seen account keys, records revocations and key changes. A
    * directory that does not name the conversation's two accounts, the same
-   * as before, is not used: the conversation is out of step instead.
+   * as before, is not used: the group is dropped, so nothing more is read
+   * or sent in it, and the conversation is out of step.
    */
   async #applyDirectory(conversationId: string, directory: ChatDirectory) {
     const record = await this.#record(conversationId);
@@ -779,10 +780,13 @@ export class ChatEngine {
       directory.accounts.map(({ userId }) => userId),
     );
     if (!participants) {
-      if (record.problem !== "out_of_sync") {
-        record.problem = "out_of_sync";
-        await this.store.putJson(records.conversation(conversationId), record);
+      // A list stored before this rule may itself be wrong.
+      if (!settleParticipants(this.userId, [], record.participants)) {
+        record.participants.splice(0, Infinity);
       }
+      record.problem = "out_of_sync";
+      await this.#dropGroup(conversationId);
+      await this.store.putJson(records.conversation(conversationId), record);
       return;
     }
 
@@ -1165,6 +1169,8 @@ export class ChatEngine {
     if (group) {
       try {
         const received = await group.receive(bytes);
+        // From a device no longer trusted: not shown at all (ADR-0010 §7).
+        if (received.kind === "untrusted") return;
         await this.#saveGroup(id, group);
         const body =
           received.kind === "message"

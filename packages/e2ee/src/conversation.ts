@@ -252,7 +252,9 @@ export interface PendingCommit {
 
 export type Received =
   | { kind: "message"; sender: DeviceRef; plaintext: Uint8Array }
-  | { kind: "commit"; epoch: bigint };
+  | { kind: "commit"; epoch: bigint }
+  /** From a device this one no longer trusts; nothing to show. */
+  | { kind: "untrusted"; sender: DeviceRef };
 
 function decode<W extends MLSMessage["wireformat"]>(
   bytes: Uint8Array,
@@ -507,7 +509,8 @@ export class Conversation {
     // commit removes it. What it sends meanwhile is not shown (§7). The
     // state is left as it was, so nothing it still holds is wiped.
     if (sender && !currentlyTrusted(this.#policy, sender.certificate)) {
-      throw new Error("sender no longer trusted");
+      const { accountId, deviceId } = sender.certificate;
+      return { kind: "untrusted", sender: { accountId, deviceId } };
     }
     const result = await processPrivateMessage(
       this.#state,

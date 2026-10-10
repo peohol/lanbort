@@ -259,9 +259,10 @@ describe("private chat over MLS (ADR-0010)", () => {
     // Until a commit removes it, what the revoked device sends is not shown.
     const meanwhile = await send(lost, "Send koden til boden hit");
     for (const member of remaining) {
-      await expect(conversationOf(member).receive(meanwhile)).rejects.toThrow(
-        "sender no longer trusted",
-      );
+      await expect(conversationOf(member).receive(meanwhile)).resolves.toEqual({
+        kind: "untrusted",
+        sender: lost.ref,
+      });
     }
 
     const pending = await conversationOf(alice1).remove([lost.ref]);
