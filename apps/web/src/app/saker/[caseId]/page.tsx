@@ -11,6 +11,7 @@ import { Fragment, type ReactNode } from "react";
 import { PageHeader } from "@/components/page-header";
 import { StatusCard } from "@/components/status-card";
 import { ContextTag } from "@/components/tag";
+import { ThingThumbnail } from "@/components/thing-thumbnail";
 import { caseEvidenceHref, environmentCasesHref } from "@/navigation/cases";
 import { casesHref, loanHref } from "@/navigation/routes";
 import {
@@ -29,13 +30,13 @@ import {
 } from "@/presentation/cases";
 import { formatShortTime } from "@/presentation/dates";
 import { loanStatusLabels } from "@/presentation/loans";
+import { firstImageHref } from "@/presentation/object-images";
 import { chatEnabled } from "@/server/env";
 import {
   pageQuery,
   pageQueryOrNotFound,
   requirePageAccount,
 } from "@/server/session";
-import { ThingPicture } from "../../lan/_parts/thing-picture";
 import styles from "../cases.module.css";
 import { environmentName } from "../environment-name";
 import { HandlerRole } from "../handler-role";
@@ -315,9 +316,12 @@ export default async function CasePage({
         // The thing it names, with its picture (PS-OBJ-021).
         picture={
           (c.loanTitle ?? c.objectTitle) !== null && (
-            <ThingPicture
-              images={c.images}
-              href={(imageId) => caseImageHref(c.id, imageId)}
+            <ThingThumbnail
+              src={firstImageHref(c.images, (imageId) =>
+                caseImageHref(c.id, imageId),
+              )}
+              size="title"
+              placeholder
             />
           )
         }
