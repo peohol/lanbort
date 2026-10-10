@@ -246,11 +246,84 @@ async function loadSubjectAccount(
     });
   }
 
+  const duplicate = await tx
+    .selectFrom("app.account_links")
+    .select("linked_user_id")
+    .where("kind", "=", "duplicate")
+    .where("user_id", "=", userId)
+    .executeTakeFirst();
+
   return {
     userId,
     status: user.status as AccountStatus,
     roles: [...roles.values()],
     bindings: await loadBindings(tx, userId, accountBindingSources),
+    ...(duplicate
+      ? await loadDuplicateState(tx, userId, duplicate.linked_user_id)
+      : { duplicateOf: null, objects: [] }),
+  };
+}
+
+/**
+ * The account a duplicate continues as, and the things the duplicate still
+ * owns that it does not, with their other owners (PS-ADM-009).
+ */
+async function loadDuplicateState(
+  tx: Kysely<Database>,
+  userId: string,
+  continuedUserId: string,
+): Promise<Pick<CaseSubjectAccount, "duplicateOf" | "objects">> {
+  const objects = await tx
+    .selectFrom("app.objects as object")
+    .innerJoin("app.object_owners as owner", "owner.object_id", "object.id")
+    .select(["object.id", "object.title"])
+    .where("owner.user_id", "=", userId)
+    .where((eb) =>
+      eb.not(
+        eb.exists(
+          eb
+            .selectFrom("app.object_owners as continued")
+            .select("continued.object_id")
+            .whereRef("continued.object_id", "=", "object.id")
+            .where("continued.user_id", "=", continuedUserId),
+        ),
+      ),
+    )
+    .orderBy("object.title")
+    .orderBy("object.id")
+    .execute();
+  const others =
+    objects.length === 0
+      ? []
+      : await tx
+          .selectFrom("app.object_owners")
+          .select(["object_id", "user_id"])
+          .where(
+            "object_id",
+            "in",
+            objects.map(({ id }) => id),
+          )
+          .where("user_id", "!=", userId)
+          .orderBy("added_at")
+          .execute();
+  const names = await realNames(tx, [
+    continuedUserId,
+    ...others.map(({ user_id }) => user_id),
+  ]);
+  const person = (id: string) => ({
+    userId: id,
+    realName: names.get(id) ?? null,
+  });
+
+  return {
+    duplicateOf: person(continuedUserId),
+    objects: objects.map(({ id, title }) => ({
+      objectId: id,
+      title,
+      coOwners: others
+        .filter(({ object_id }) => object_id === id)
+        .map(({ user_id }) => person(user_id)),
+    })),
   };
 }
 

@@ -4,11 +4,9 @@ import {
   basisSchema,
   type OpenPlatformInquiry,
   type PlatformInquiryOpened,
-  type PlatformLookupResult,
 } from "@lanbort/contracts";
 import Link from "next/link";
-import { type FormEvent, useId, useRef, useState } from "react";
-import { postJson } from "@/components/api-client";
+import { type FormEvent, useId, useState } from "react";
 import { BusyButton } from "@/components/busy-button";
 import { ConsequenceRows } from "@/components/consequence-rows";
 import { errorMessage } from "@/components/error-messages";
@@ -20,7 +18,7 @@ import { confirmWithPasskey, passkeyErrorMessage } from "@/components/passkeys";
 import { Stepper } from "@/components/stepper";
 import { useCommand } from "@/components/use-command";
 import { caseHref } from "@/navigation/routes";
-import { lookupOf, stewardshipHref } from "@/navigation/stewardship";
+import { stewardshipHref } from "@/navigation/stewardship";
 import {
   foundText,
   inquiryConsequences,
@@ -28,8 +26,7 @@ import {
   inquiryKinds,
 } from "@/presentation/inquiry";
 import styles from "../../saker/cases.module.css";
-
-type Found = NonNullable<PlatformLookupResult["found"]>;
+import { type Found, SubjectLookup } from "../subject-lookup";
 
 const steps = ["Gjelder", "Grunnlag", "Bekreft"];
 
@@ -50,10 +47,7 @@ export function InquiryFlow({ freshUntil }: { freshUntil: string | null }) {
   const id = useId();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [kind, setKind] = useState<InquiryKind>("user");
-  const [query, setQuery] = useState("");
   const [found, setFound] = useState<Found | null>(null);
-  const [lookupNote, setLookupNote] = useState<string | null>(null);
-  const [looking, setLooking] = useState(false);
   const [basis, setBasis] = useState("");
   const ceremony = useCeremony();
   const command = useCommand<PlatformInquiryOpened>({
@@ -79,55 +73,10 @@ export function InquiryFlow({ freshUntil }: { freshUntil: string | null }) {
     return confirmed;
   }
   const texts = inquiryKinds[kind];
-  // The latest lookup; an answer to an earlier one no longer stands.
-  const lookups = useRef(0);
-
-  /** What was found no longer stands, nor a lookup still on its way. */
-  function forget() {
-    lookups.current += 1;
-    setFound(null);
-    setLookupNote(null);
-    setLooking(false);
-  }
 
   function choose(next: InquiryKind) {
     setKind(next);
-    forget();
-  }
-
-  async function lookUp(event: FormEvent) {
-    event.preventDefault();
-    forget();
-    const lookup = lookupOf(kind, query);
-
-    if (!lookup) {
-      setLookupNote(texts.unreadable);
-      return;
-    }
-
-    const current = lookups.current;
-    setLooking(true);
-    const send = () =>
-      postJson<PlatformLookupResult>("/api/platform/lookups", lookup);
-    let result = await send();
-    // The confirmation ran out since the page was drawn: confirm, then once more.
-    if (
-      !result.ok &&
-      result.code === "stronger_authentication_required" &&
-      (await confirm())
-    ) {
-      result = await send();
-    }
-    if (current !== lookups.current) return;
-    setLooking(false);
-
-    if (!result.ok) {
-      setLookupNote(passkeyErrorMessage(result.code));
-    } else if (!result.data.found) {
-      setLookupNote(texts.none);
-    } else {
-      setFound(result.data.found);
-    }
+    setFound(null);
   }
 
   async function open(event: FormEvent) {
@@ -153,48 +102,35 @@ export function InquiryFlow({ freshUntil }: { freshUntil: string | null }) {
       <Stepper steps={steps} current={step - 1} />
       {step === 1 && (
         <>
-          <form onSubmit={(event) => void lookUp(event)}>
-            <h2>Hva gjelder saksgrunnlaget?</h2>
-            <fieldset className={styles.options}>
-              <legend>Gjelder</legend>
-              {(Object.keys(inquiryKinds) as InquiryKind[]).map((each) => (
-                <label key={each} className={styles.option}>
-                  <input
-                    type="radio"
-                    name={`${id}-gjelder`}
-                    checked={kind === each}
-                    onChange={() => choose(each)}
-                  />
-                  <span>
-                    <strong>{inquiryKinds[each].label}</strong>
-                    <small>{inquiryKinds[each].detail}</small>
-                  </span>
-                </label>
-              ))}
-            </fieldset>
-            <Field id={`${id}-finn`} label={texts.field} help={texts.help}>
-              <input
-                id={`${id}-finn`}
-                type="text"
-                inputMode={kind === "user" ? "email" : "url"}
-                autoComplete="off"
-                spellCheck={false}
-                required
-                maxLength={2000}
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                  forget();
-                }}
-                {...describedBy(`${id}-finn`, true)}
-              />
-            </Field>
-            <div className="actions">
-              <BusyButton type="submit" busy={looking} busyNote="finner …">
-                Finn
-              </BusyButton>
-            </div>
-          </form>
+          <h2>Hva gjelder saksgrunnlaget?</h2>
+          <fieldset className={styles.options}>
+            <legend>Gjelder</legend>
+            {(Object.keys(inquiryKinds) as InquiryKind[]).map((each) => (
+              <label key={each} className={styles.option}>
+                <input
+                  type="radio"
+                  name={`${id}-gjelder`}
+                  checked={kind === each}
+                  onChange={() => choose(each)}
+                />
+                <span>
+                  <strong>{inquiryKinds[each].label}</strong>
+                  <small>{inquiryKinds[each].detail}</small>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+          <SubjectLookup
+            key={kind}
+            id={`${id}-finn`}
+            kind={kind}
+            confirm={confirm}
+            onFound={(each) => {
+              setFound(each);
+              return null;
+            }}
+            onChange={() => setFound(null)}
+          />
           <div role="status">
             {shown && (
               <div className="card">
@@ -206,7 +142,6 @@ export function InquiryFlow({ freshUntil }: { freshUntil: string | null }) {
                 </p>
               </div>
             )}
-            {lookupNote && <p className="help">{lookupNote}</p>}
           </div>
           <div className="actions">
             <button

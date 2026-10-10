@@ -7,26 +7,26 @@ import { ConsequenceRows } from "@/components/consequence-rows";
 import Link from "next/link";
 import { ErrorText } from "@/components/error-text";
 import { describedBy, Field } from "@/components/field";
-import { Icon, type IconName } from "@/components/icon";
+import { Icon } from "@/components/icon";
 import { useCeremony } from "@/components/passkey-actions";
 import { confirmWithPasskey, passkeyErrorMessage } from "@/components/passkeys";
 import { Stepper } from "@/components/stepper";
 import { useCommand } from "@/components/use-command";
-import type { ConsequenceRow } from "@/presentation/interventions";
+import { foundText } from "@/presentation/inquiry";
+import {
+  type InterventionFlowKey,
+  type InterventionPick,
+  type Subject,
+  interventionChoice,
+  interventionFlows,
+  interventionVariant,
+} from "@/presentation/interventions";
+import {
+  type Found,
+  SubjectLookup,
+} from "../../../../forvaltning/subject-lookup";
 import styles from "../../../cases.module.css";
 import { interventionSteps } from "../steps";
-
-/** One way the intervention can go: in which environment, for roles. */
-export interface InterventionVariant {
-  /** The environment it is taken in, where it needs one. */
-  readonly environmentId: string | null;
-  readonly label: string;
-  readonly detail: string;
-  readonly title: string;
-  readonly rows: readonly ConsequenceRow[];
-  readonly whom: string;
-  readonly done: string;
-}
 
 /** What a refused intervention means here. */
 const failures = {
@@ -41,36 +41,28 @@ const basisHelp =
 
 /**
  * Steps 2–4 of an intervention (PS-ADM-014–015, «Plattformforvaltning
- * v1»): the consequences, the basis and a last look before it is done,
- * confirming with a passkey first when this session's confirmation no
- * longer counts. The command decides; the case shows what was done.
+ * v1»): the consequences, with what it is taken in or toward where it
+ * needs that, the basis and a last look before it is done, confirming with
+ * a passkey first when this session's confirmation no longer counts. The
+ * command decides; the case shows what was done.
  */
 export function InterventionFlow({
   path,
-  userId,
+  flowKey,
+  subject,
   record,
   caseTitle,
-  icon,
-  danger,
-  verb,
-  variants,
-  choiceLabel,
   freshUntil,
   back,
   after,
 }: {
   path: string;
+  flowKey: InterventionFlowKey;
   /** The account the case is about. */
-  userId: string;
+  subject: Subject;
   /** What the case will record, as its handlers read it. */
   record: string;
   caseTitle: string;
-  icon: IconName;
-  danger: boolean;
-  verb: string;
-  variants: readonly InterventionVariant[];
-  /** What the steward chooses between, where there is more than one. */
-  choiceLabel: string | null;
   freshUntil: string | null;
   /** The choices of intervention, for «Velg et annet inngrep». */
   back: string;
@@ -79,14 +71,21 @@ export function InterventionFlow({
 }) {
   const id = useId();
   const errorId = `${id}-feil`;
+  const flow = interventionFlows[flowKey];
+  const choice = interventionChoice(flowKey, subject);
+  const open = choice?.options?.filter(({ disabled }) => !disabled) ?? [];
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [chosen, setChosen] = useState(variants.length === 1 ? 0 : null);
+  // A found account carries how it stands, as the steward checks it.
+  const [pick, setPick] = useState<
+    (InterventionPick & { readonly detail?: string }) | null
+  >(open.length === 1 ? open[0]! : null);
   const [basis, setBasis] = useState("");
-  const variant = chosen === null ? null : variants[chosen]!;
+  const variant = interventionVariant(flowKey, subject, pick);
+  const ready = !choice || pick !== null;
   const ceremony = useCeremony();
   const command = useCommand({
     path,
-    done: variant?.done ?? record,
+    done: variant.done,
     after: () => after,
     replace: true,
     // The confirmation ran out while the steward wrote; the next send asks
@@ -104,26 +103,39 @@ export function InterventionFlow({
   const current =
     step === 3 ? steps.length - (passkeyStep && !fresh ? 2 : 1) : step;
 
-  async function run(event: FormEvent) {
-    event.preventDefault();
-    if (!variant) return;
-    if (!fresh) {
-      if (!(await ceremony.run(confirmWithPasskey))) return;
-      setFresh(true);
-    }
-
-    await command.run({
-      userId,
-      basis,
-      ...(variant.environmentId
-        ? { environmentId: variant.environmentId }
-        : {}),
-    });
+  /** A passkey confirmation now, which counts for the rest of the flow. */
+  async function confirm() {
+    const confirmed = await ceremony.run(confirmWithPasskey);
+    if (confirmed) setFresh(true);
+    return confirmed;
   }
 
-  function next(event: FormEvent) {
+  async function run(event: FormEvent) {
     event.preventDefault();
-    if (variant) setStep(step === 1 ? 2 : 3);
+    if (!ready) return;
+    if (!fresh && !(await confirm())) return;
+
+    await command.run({ basis, ...variant.fields });
+  }
+
+  function next(event?: FormEvent) {
+    event?.preventDefault();
+    if (ready) setStep(step === 1 ? 2 : 3);
+  }
+
+  /** Why a found account cannot be picked here, or null once it is. */
+  function found(account: Found): string | null {
+    if (account.kind !== "user") return null;
+    if (account.involved) return "Du kan ikke velge din egen konto.";
+    if (account.userId === subject.account.userId) {
+      return "Det er kontoen saken gjelder. Finn den andre kontoen.";
+    }
+    if (!choice?.usable(account.status)) {
+      return "Den kontoen er ikke aktiv eller kan ikke brukes her.";
+    }
+
+    setPick({ id: account.userId, ...foundText(account) });
+    return null;
   }
 
   const error =
@@ -134,38 +146,70 @@ export function InterventionFlow({
     <>
       <Stepper steps={steps} current={current} />
       {step === 1 && (
-        <form onSubmit={next}>
-          {variant && <h2>{variant.title}</h2>}
-          {choiceLabel && (
+        <>
+          {(pick || !choice?.options) && (
+            <>
+              <h2>{variant.title}</h2>
+              <ConsequenceRows rows={variant.rows} />
+            </>
+          )}
+          {choice?.options && (
             <fieldset className={styles.options}>
-              <legend>{choiceLabel}</legend>
-              {variants.map((each, index) => (
-                <label key={each.label} className={styles.option}>
+              <legend>{choice.label}</legend>
+              {choice.options.map((option) => (
+                <label key={option.id} className={styles.option}>
                   <input
                     type="radio"
                     name={`${id}-valg`}
-                    checked={chosen === index}
-                    onChange={() => setChosen(index)}
-                    required
+                    checked={pick?.id === option.id}
+                    disabled={option.disabled}
+                    onChange={() => setPick(option)}
                   />
                   <span>
-                    <strong>{each.label}</strong>
-                    <small>{each.detail}</small>
+                    <strong>{option.name}</strong>
+                    <small>{option.detail}</small>
                   </span>
                 </label>
               ))}
             </fieldset>
           )}
-          {variant && <ConsequenceRows rows={variant.rows} />}
+          {choice && !choice.options && (
+            <section aria-labelledby={`${id}-velg`}>
+              <h3 id={`${id}-velg`}>{choice.label}</h3>
+              <SubjectLookup
+                id={`${id}-finn`}
+                kind="user"
+                confirm={confirm}
+                onFound={found}
+                onChange={() => setPick(null)}
+              />
+              <div role="status">
+                {pick && (
+                  <div className="card">
+                    <p>
+                      <strong>{pick.name}</strong>
+                    </p>
+                    <p className="help">{pick.detail}</p>
+                  </div>
+                )}
+              </div>
+              {choice.hint && <p className="help">{choice.hint}</p>}
+            </section>
+          )}
           <div className="actions">
-            <button type="submit" className="button-primary">
+            <button
+              type="button"
+              className="button-primary"
+              disabled={!ready}
+              onClick={() => next()}
+            >
               Neste: begrunnelse
             </button>
             <Link className="button" href={back}>
               Velg et annet inngrep
             </Link>
           </div>
-        </form>
+        </>
       )}
       {step === 2 && (
         <form onSubmit={next}>
@@ -200,7 +244,7 @@ export function InterventionFlow({
           </div>
         </form>
       )}
-      {step === 3 && variant && (
+      {step === 3 && ready && (
         <form onSubmit={(event) => void run(event)}>
           <h2>{variant.title}</h2>
           <dl className="facts card">
@@ -227,12 +271,12 @@ export function InterventionFlow({
           <div className="actions">
             <BusyButton
               type="submit"
-              className={danger ? "button-danger" : "button-primary"}
+              className={flow.danger ? "button-danger" : "button-primary"}
               busy={ceremony.pending || command.pending}
               busyNote={ceremony.pending ? "venter på passkeyen …" : "sender …"}
             >
-              <Icon name={fresh ? icon : "lock"} />
-              {verb}
+              <Icon name={fresh ? flow.icon : "lock"} />
+              {variant.verb}
             </BusyButton>
             <button type="button" onClick={() => setStep(2)}>
               Tilbake

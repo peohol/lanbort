@@ -11,6 +11,7 @@ import { publishObject } from "../publications/commands";
 import { submitLoanReview } from "../reviews/commands";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
+import { listCaseInterventions } from "../platform/intervention-commands";
 import { completeAccountClosure } from "./deletion";
 import {
   linkSamePerson,
@@ -211,6 +212,21 @@ describe("retiring a duplicate (PS-ADM-009)", () => {
     expect(await statusOf(other.userId)).toBe("active");
   });
 
+  it("retires an account only from a case about it, not one about the account that continues", async () => {
+    const platform = await steward();
+    const [retired, continued] = await Promise.all([user(), user()]);
+
+    await expect(
+      run(retireDuplicateAccount, platform, {
+        caseId: await about(platform, continued.userId),
+        userId: retired.userId,
+        continuedUserId: continued.userId,
+        basis,
+      }),
+    ).rejects.toMatchObject({ code: "forbidden" });
+    expect(await statusOf(retired.userId)).toBe("active");
+  });
+
   it("retires an account into one other account only", async () => {
     const platform = await steward();
     const [retired, continued, third] = await Promise.all([
@@ -265,6 +281,54 @@ describe("retiring a duplicate (PS-ADM-009)", () => {
 });
 
 describe("moving a duplicate's objects (PS-ADM-009)", () => {
+  it("shows the duplicate's case which account continues and which things are left to move", async () => {
+    const platform = await steward();
+    const [retired, continued, coOwner] = await Promise.all([
+      user(),
+      user(),
+      user(),
+    ]);
+    const alone = await create(retired);
+    const shared = await create(retired);
+    const theirs = await create(retired);
+    await addCoOwner(retired, shared, coOwner);
+    await addCoOwner(retired, theirs, continued);
+    const caseId = await about(platform, retired.userId);
+    const subject = async () =>
+      (
+        await executeQuery(kit.domain, listCaseInterventions, {
+          actor: platform,
+          input: { caseId },
+        })
+      ).account;
+
+    expect(await subject()).toMatchObject({ duplicateOf: null, objects: [] });
+
+    await retire(platform, retired, continued);
+    const before = await subject();
+    expect(before?.duplicateOf).toEqual({
+      userId: continued.userId,
+      realName: expect.any(String),
+    });
+    // A thing the continuing account already owns has nothing left to move.
+    expect(before?.objects).toHaveLength(2);
+    expect(before?.objects).toEqual(
+      expect.arrayContaining([
+        { objectId: alone, title: expect.any(String), coOwners: [] },
+        {
+          objectId: shared,
+          title: expect.any(String),
+          coOwners: [{ userId: coOwner.userId, realName: expect.any(String) }],
+        },
+      ]),
+    );
+
+    await move(platform, alone);
+    expect((await subject())?.objects.map(({ objectId }) => objectId)).toEqual([
+      shared,
+    ]);
+  });
+
   it("moves an object with no loan, and ends its publications outside the continuing account's environments", async () => {
     const platform = await steward();
     const { admin, environmentId, owner, objectId, publicationId } =
