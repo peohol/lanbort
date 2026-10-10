@@ -1,11 +1,13 @@
-import type {
-  AdministeredMembership,
-  EnvironmentMemberships,
-  EnvironmentRoles,
+import {
+  type AdministeredMembership,
+  type EnvironmentMemberships,
+  type EnvironmentRoles,
+  maxModerationReasonLength,
 } from "@lanbort/contracts";
 import type { ReactNode } from "react";
 import { ActionButton } from "@/components/action-button";
 import { ConfirmAction } from "@/components/confirm-action";
+import { describedBy, Field, helpId } from "@/components/field";
 import { MoreActions } from "@/components/more-actions";
 import { Tag } from "@/components/tag";
 import { formatTime } from "@/presentation/dates";
@@ -20,13 +22,16 @@ import { memberName } from "./memberships";
  * The environment's members as its administrators see them (PS-ENV-004,
  * PS-ENV-006): who must answer a new requirement by when, who is active
  * and in which role, who is passive and why. Nothing given to the
- * membership process is shown here (UX-PRIV-009).
+ * membership process is shown here (UX-PRIV-009). An impartial
+ * administrator may remove an active member who holds no role (PS-ENV-021).
  */
 export function Members({
+  environmentId,
   memberships,
   holders,
   ownUserId,
 }: {
+  environmentId: string;
   memberships: readonly AdministeredMembership[];
   holders: EnvironmentRoles["holders"];
   ownUserId: string;
@@ -61,6 +66,11 @@ export function Members({
           const held = roles.get(member.userId);
           return held ? capitalized(describeRoles(held)) : "Medlem";
         }}
+        actions={(member) =>
+          member.removable && (
+            <RemoveMember environmentId={environmentId} member={member} />
+          )
+        }
       />
       <MemberList
         id="passive"
@@ -91,6 +101,7 @@ function MemberList({
   name = memberName,
   detail,
   tag,
+  actions,
 }: {
   id: string;
   heading: string;
@@ -98,6 +109,7 @@ function MemberList({
   name?: (member: AdministeredMembership) => string;
   detail: (member: AdministeredMembership) => string;
   tag?: (member: AdministeredMembership) => ReactNode;
+  actions?: (member: AdministeredMembership) => ReactNode;
 }) {
   if (members.length === 0) return null;
 
@@ -107,15 +119,90 @@ function MemberList({
         {heading} <span className="count">({members.length})</span>
       </h2>
       <ul className="entries">
-        {members.map((member) => (
-          <li key={member.id} className="entry">
-            <strong>{name(member)}</strong>
-            <span className="entry-detail">{detail(member)}</span>
-            {tag && <span>{tag(member)}</span>}
-          </li>
-        ))}
+        {members.map((member) => {
+          const nameId = `medlem-${member.id}`;
+          const action = actions?.(member);
+
+          return (
+            <li key={member.id} className="entry">
+              <strong id={nameId}>{name(member)}</strong>
+              <span className="entry-detail">{detail(member)}</span>
+              {tag && <span>{tag(member)}</span>}
+              {action && (
+                <div className="actions" role="group" aria-labelledby={nameId}>
+                  {action}
+                </div>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </section>
+  );
+}
+
+/**
+ * PS-ENV-021: ending an active membership as a local measure, with a
+ * factual reason kept with it. Barring new attempts is a choice of its own.
+ * The member is told neutrally, never who reported them.
+ */
+function RemoveMember({
+  environmentId,
+  member,
+}: {
+  environmentId: string;
+  member: AdministeredMembership;
+}) {
+  const name = memberName(member);
+  const reasonId = `begrunnelse-${member.id}`;
+  const reasonHelp = "Kort og saklig. Lagres med tiltaket.";
+  const restrictId = `steng-ute-${member.id}`;
+
+  return (
+    <ConfirmAction
+      label="Fjern fra miljøet"
+      title={`Fjerne ${name} fra miljøet?`}
+      consequences={{
+        stays: [
+          `Lån som er godkjent, fortsetter, og ${name} beholder innsynet som trengs i dem.`,
+        ],
+        gone: [
+          `Tingene til ${name} forsvinner fra miljøet. Forespørsler herfra som ikke er godkjent, avsluttes, som når noen melder seg ut.`,
+        ],
+        affects: [
+          `${name} får nøytral beskjed om tiltaket, hva det betyr, og hvordan ${name} ber om en ny vurdering, men ikke hvem som eventuelt rapporterte.`,
+        ],
+      }}
+      confirmLabel={`Fjern ${name} fra miljøet`}
+      path="/api/environments/memberships/remove"
+      body={{ environmentId, membershipId: member.id }}
+      danger
+    >
+      <Field id={reasonId} label="Begrunnelse" help={reasonHelp}>
+        <textarea
+          id={reasonId}
+          name="reason"
+          rows={3}
+          required
+          maxLength={maxModerationReasonLength}
+          {...describedBy(reasonId, reasonHelp)}
+        />
+      </Field>
+      <div className="checkbox">
+        <input
+          id={restrictId}
+          name="restrict"
+          type="checkbox"
+          aria-describedby={helpId(restrictId)}
+        />
+        <label htmlFor={restrictId}>
+          {`Steng ${name} også ute fra nye forsøk`}
+        </label>
+      </div>
+      <p id={helpId(restrictId)} className="help">
+        {`Et eget valg. Da kan ${name} verken søke eller inviteres før en administrator opphever det.`}
+      </p>
+    </ConfirmAction>
   );
 }
 

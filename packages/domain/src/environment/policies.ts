@@ -203,6 +203,27 @@ export const withdrawInvitationPolicy = decisionPolicy(
   "environment_membership.withdraw_invitation",
 );
 
+/** A membership an administrator would end, and their stand toward it. */
+export interface RemovableMembership extends AdministeredMembership {
+  /** No open case in the environment involves them both (PS-USR-009). */
+  readonly impartial: boolean;
+}
+
+/**
+ * PS-ENV-021: an impartial administrator ends another's membership. Who
+ * holds a role, and whether it is active, the command decides.
+ */
+export const removeMemberPolicy = definePolicy<RemovableMembership, void>({
+  action: "environment_membership.remove",
+  actor: [requireActiveAccount],
+  resource: [
+    ...administration,
+    requireNotInvolved(({ resource }) => [resource.target.userId]),
+    ({ resource }) =>
+      resource.impartial ? allow : deny("conflict_of_interest"),
+  ],
+});
+
 /** A pending role invitation and the environment it belongs to. */
 export interface RoleInvitationAccess extends EnvironmentAccess {
   readonly invitation: RoleInvitationRecord;
@@ -403,6 +424,7 @@ export const environmentPolicies = [
   rejectMembershipPolicy,
   requestInformationPolicy,
   withdrawInvitationPolicy,
+  removeMemberPolicy,
   expireTransitionsPolicy,
   listRolesPolicy,
   inviteAdministratorPolicy,

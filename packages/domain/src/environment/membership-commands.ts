@@ -1,4 +1,5 @@
 import {
+  endMembershipSchema,
   informationQuestionSchema,
   inviteMemberSchema,
   membershipDecisionSchema,
@@ -6,12 +7,14 @@ import {
   requirementAnswersSchema,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 import type { Actor } from "../actor";
 import { defineCommand } from "../commands/command";
 import { DomainError } from "../errors";
 import type { EventRecorder } from "../events/recorder";
+import { moderationMeasureTaken } from "../moderation/events";
+import { insertMeasure } from "../moderation/store";
 import { lockPair, socialRelationBetween } from "../social/pair";
 import { lapseInvitationsOf } from "./continuity-store";
 import {
@@ -47,6 +50,7 @@ import {
   joinEnvironmentPolicy,
   leaveEnvironmentPolicy,
   rejectMembershipPolicy,
+  removeMemberPolicy,
   requestInformationPolicy,
   submitAnswersPolicy,
   withdrawInvitationPolicy,
@@ -54,6 +58,7 @@ import {
 import {
   answersOf,
   currentRequirements,
+  findActiveRoles,
   findMembership,
   passivate,
   saveAnswers,
@@ -668,6 +673,42 @@ export async function closeReactivationRequest(
 }
 
 /**
+ * Bars the member's new attempts to join until an administrator lifts it
+ * (PS-ENV-004); a bar already in place stays as it is.
+ */
+async function barNewAttempts(
+  tx: Tx,
+  membership: MembershipRecord,
+  imposedBy: string,
+  now: Date,
+  events: EventRecorder,
+): Promise<void> {
+  const imposed = await tx
+    .insertInto("app.environment_access_restrictions")
+    .values({
+      environment_id: membership.environmentId,
+      user_id: membership.userId,
+      imposed_at: now,
+      imposed_by_user_id: imposedBy,
+    })
+    .onConflict((onConflict) =>
+      onConflict
+        .columns(["environment_id", "user_id"])
+        .where("lifted_at", "is", null)
+        .doNothing(),
+    )
+    .returning("id")
+    .executeTakeFirst();
+
+  if (imposed) {
+    events.record(environmentRestrictionImposed, {
+      resourceId: membership.environmentId,
+      payload: { userId: membership.userId },
+    });
+  }
+}
+
+/**
  * Rejecting an application ends it; rejecting a reactivation leaves the
  * member passive. Either can also bar new attempts (PS-ENV-004).
  */
@@ -702,35 +743,109 @@ export const rejectMembership = defineCommand({
     });
 
     if (restricted) {
-      const imposed = await tx
-        .insertInto("app.environment_access_restrictions")
-        .values({
-          environment_id: membership.environmentId,
-          user_id: membership.userId,
-          imposed_at: now,
-          imposed_by_user_id: userIdOf(actor),
-        })
-        .onConflict((onConflict) =>
-          onConflict
-            .columns(["environment_id", "user_id"])
-            .where("lifted_at", "is", null)
-            .doNothing(),
-        )
-        .returning("id")
-        .executeTakeFirst();
-
-      if (imposed) {
-        events.record(environmentRestrictionImposed, {
-          resourceId: membership.environmentId,
-          payload: { userId: membership.userId },
-        });
-      }
+      await barNewAttempts(tx, membership, userIdOf(actor), now, events);
     }
 
     return {
       membershipId: membership.id,
       state: reactivation ? ("passive" as const) : ("ended" as const),
     };
+  },
+});
+
+/**
+ * PS-ENV-021: an impartial administrator ends an active membership as a
+ * local measure, with the reason, and may bar new attempts as a separate
+ * choice. Loans already approved go on; the database ends the member's
+ * publications and the requests that are not approved, as when someone
+ * leaves. A member who holds a role hands it over or has it removed first.
+ */
+export const removeMember = defineCommand({
+  name: "environment_membership.remove",
+  input: endMembershipSchema,
+  output: membershipOutput,
+  policy: removeMemberPolicy,
+  idempotency: "required",
+  load: async (args) => {
+    const loaded = await loadDecision(args);
+
+    if (!loaded) {
+      return null;
+    }
+
+    const impartial =
+      args.actor.kind === "user" &&
+      (
+        await sql<{ impartial: boolean }>`
+          select app.administrator_impartial(
+            ${args.input.environmentId}, ${args.actor.userId},
+            ${loaded.resource.target.userId}
+          ) as impartial
+        `.execute(args.tx)
+      ).rows[0]?.impartial === true;
+
+    return { resource: { ...loaded.resource, impartial }, context: undefined };
+  },
+  execute: async ({ tx, actor, input, resource, events, now }) => {
+    const membership = await settleMembership(tx, resource.target, now, events);
+
+    if (membership.state !== "active") {
+      conflict("Only an active membership is ended this way");
+    }
+
+    if (
+      (await findActiveRoles(tx, membership.environmentId, membership.userId))
+        .length > 0
+    ) {
+      conflict("The member holds a role in the environment");
+    }
+
+    const decidedBy = userIdOf(actor);
+    const measureId = await insertMeasure(tx, {
+      caseId: null,
+      kind: "membership_ended",
+      scope: "environment",
+      environmentId: membership.environmentId,
+      membershipId: membership.id,
+      objectId: null,
+      reviewId: null,
+      dimension: null,
+      reason: input.reason,
+      decidedByUserId: decidedBy,
+      removedText: null,
+      removedScore: null,
+      now,
+    });
+    await endMembership(tx, membership, "removed", now);
+    events.record(membershipEnded, {
+      resourceId: membership.id,
+      payload: { ...eventPayload(membership), reason: "removed" },
+    });
+    events.record(moderationMeasureTaken, {
+      resourceId: measureId,
+      payload: {
+        caseId: null,
+        measure: "membership_ended",
+        scope: "environment",
+        environmentId: membership.environmentId,
+        objectId: null,
+        reviewId: null,
+        dimension: null,
+      },
+    });
+    await lapseInvitationsOf(
+      tx,
+      membership.environmentId,
+      membership.userId,
+      now,
+      events,
+    );
+
+    if (input.restrict === true) {
+      await barNewAttempts(tx, membership, decidedBy, now, events);
+    }
+
+    return { membershipId: membership.id, state: "ended" as const };
   },
 });
 

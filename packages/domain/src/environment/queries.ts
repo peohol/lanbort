@@ -443,10 +443,30 @@ export const listMemberships = defineQuery({
       .orderBy("restriction.position")
       .execute();
 
+    // PS-ENV-021: whom the caller may remove, as the database decides it.
+    const active = memberships
+      .filter((membership) => membership.state === "active")
+      .map((membership) => membership.id);
+    const removable = new Set(
+      actor.kind === "user" && active.length > 0
+        ? (
+            await db
+              .selectFrom("app.environment_memberships")
+              .select("id")
+              .where("id", "in", active)
+              .where(
+                sql<boolean>`app.membership_removable(id, ${actor.userId})`,
+              )
+              .execute()
+          ).map(({ id }) => id)
+        : [],
+    );
+
     return {
       resource: {
         ...access,
         memberships,
+        removable,
         requirements: await currentRequirements(db, input.environmentId),
         answers: await answersOf(
           db,
@@ -467,6 +487,7 @@ export const listMemberships = defineQuery({
       ),
       userId: membership.userId,
       realName: membership.realName,
+      removable: resource.removable.has(membership.id),
     })),
     restrictions: resource.restrictions.map((row) => ({
       id: row.id,

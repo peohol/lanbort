@@ -75,18 +75,34 @@ export const moderationMeasureKindSchema = z.enum([
 ]);
 
 /**
+ * What a notice can tell of (PS-TRUST-018): the measures taken on reports,
+ * and `membership_ended`, an administrator ending an active membership,
+ * which is taken on no case (PS-ENV-021).
+ */
+export const measureNoticeKindSchema = z.enum([
+  ...moderationMeasureKindSchema.options,
+  "membership_ended",
+]);
+
+/**
  * The measures that lift an earlier one: they hit nobody, and those the
  * earlier one hit are told, as plain information, that it no longer applies
  * (PS-TRUST-018).
  */
-export const liftingMeasureKinds: ReadonlySet<ModerationMeasureKind> = new Set([
+export const liftingMeasureKinds: ReadonlySet<MeasureNoticeKind> = new Set([
   "object_unblocked",
 ]);
 
 export const moderationScopeSchema = z.enum(["environment", "platform"]);
 
+export const maxModerationReasonLength = 2000;
+
 /** The reason a measure is taken on, recorded with it (PS-TRUST-016). */
-export const moderationReasonSchema = z.string().trim().min(1).max(2000);
+export const moderationReasonSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(maxModerationReasonLength);
 
 /**
  * The acting handler of an open report takes a measure on what it is about,
@@ -98,6 +114,17 @@ export const takeModerationMeasureSchema = z.strictObject({
   measure: moderationMeasureKindSchema,
   dimension: reviewDimensionSchema.optional(),
   reason: moderationReasonSchema,
+});
+
+/**
+ * PS-ENV-021: an impartial administrator ends an active membership, with
+ * the reason, and may also bar new attempts (PS-ENV-004).
+ */
+export const endMembershipSchema = z.strictObject({
+  environmentId: z.uuid(),
+  membershipId: z.uuid(),
+  reason: moderationReasonSchema,
+  restrict: z.boolean().optional(),
 });
 
 export const moderationMeasureIdSchema = z.uuid();
@@ -140,9 +167,15 @@ export const measureNoticeQuerySchema = z.strictObject({
  */
 export const measureNoticeSchema = z.strictObject({
   id: moderationMeasureIdSchema,
-  kind: moderationMeasureKindSchema,
+  kind: measureNoticeKindSchema,
   scope: moderationScopeSchema,
   environmentId: z.uuid().nullable(),
+  /**
+   * The environment a membership was ended in, which its former member
+   * knew; null otherwise, where the page names the environment only as the
+   * reader may see it now.
+   */
+  environmentName: z.string().nullable(),
   objectId: objectIdSchema.nullable(),
   /** The thing's title, while it exists. */
   objectTitle: z.string().nullable(),
@@ -164,6 +197,8 @@ export const caseMeasuresSchema = z.strictObject({
 });
 
 export type ModerationMeasureKind = z.infer<typeof moderationMeasureKindSchema>;
+export type MeasureNoticeKind = z.infer<typeof measureNoticeKindSchema>;
+export type EndMembership = z.infer<typeof endMembershipSchema>;
 export type ModerationScope = z.infer<typeof moderationScopeSchema>;
 export type TakeModerationMeasure = z.infer<typeof takeModerationMeasureSchema>;
 export type ModerationMeasureResult = z.infer<

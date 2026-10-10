@@ -437,7 +437,7 @@ Miljøadministrator omfatter miljøets eier, som også er administrator, og admi
 
 - **Oppgave:** se medlemmene og hvem som er stengt ute fra nye forsøk.
 - **Tilstander:** aktive og passive medlemmer; hvem som er stengt ute fra nye forsøk, og oppheving av det.
-- **Ser / handler:** administratorer. En habil administrator kan avslutte et aktivt medlemskap med begrunnelse og velge separat om personen også stenges ute (PS-ENV-021, ikke bygget).
+- **Ser / handler:** administratorer. En habil administrator kan avslutte et aktivt medlemskap med begrunnelse og velge separat om personen også stenges ute (PS-ENV-021).
 - **Regler:** PS-ENV-004, PS-ENV-009, PS-ENV-021, PS-TRUST-016, PS-TRUST-018, UX-PRIV-009.
 - **Forløp:** avvik.
 - **UI-pakke:** WP-85 (aktive og passive medlemmer, utestengelser).
@@ -609,7 +609,6 @@ Scenariene i [UX-scenariovalideringen](07-scenariovalidering.md) ligger alle på
 Disse flatene følger av spesifikasjonen og UX-modellen, men ingen pakke i UI-planen bygger dem ennå:
 
 - **Melding om mulig dødsfall** fra personens side eller et felles lån (PS-COM-015, UX-EXC-008).
-- **Å avslutte et aktivt medlemskap** fra Medlemmer og utestengelse (PS-ENV-021). Vedtatt, men ikke bygget; resten av flaten er bygget i WP-85.
 - **Plattformforvalterens inngrep** på kontoer og miljøer, fra en sak i plattformkøen (PS-ADM-015). Venter på OD-0023.
 - **Varsel før utlogging på en enhet med privat chat** (ADR-0010 punkt 7). Konto-sidens «Logg ut» har ikke dette varselet ennå; «Fjern denne enheten» i Mine enheter sier hva enheten mister.
 - Presentasjon og synlighet for andre profilfelt, og demping og arkivering av lånesamtalen, står allerede under «Senere» i UI-planen.
@@ -636,5 +635,4 @@ Til disse er bygget, gjør appen det som står i siste kolonne. Prototypen for f
 | Regel      | Flater                                                    | Til den er bygget                                                  |
 | ---------- | --------------------------------------------------------- | ------------------------------------------------------------------ |
 | PS-ENV-018 | Innmeldinger og invitasjoner, personens side              | Administratorene inviterer bare egne venner                        |
-| PS-ENV-021 | Medlemmer og utestengelse                                 | Ingen handling for å fjerne et aktivt medlem                       |
 | PS-ADM-015 | Inngrep på kontoer, inngrep i et miljø                    | Ingen flate (også stengt til OD-0023)                              |

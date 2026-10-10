@@ -120,7 +120,7 @@ Den som avslås og samtidig stenges ute fra nye forsøk, får det samme nøytral
 ### PS-ENV-021 — Administratorene kan avslutte et aktivt medlemskap
 **Forankring:** [Kontinuitet ved avvikling, utestengelse og manglende administrasjon](../vision/03-miljoer.md); PS-ENV-004, PS-TRUST-013, PS-TRUST-016, PS-TRUST-018
 
-En habil administrator kan avslutte et aktivt medlemskap som et lokalt modereringstiltak, med en saklig begrunnelse som lagres sporbart (PS-TRUST-016). Om personen også stenges ute fra nye forsøk, velges separat. Godkjente lån og det innsynet partene trenger i dem, består. Den det gjelder, får nøytral beskjed om tiltaket og konsekvensene, med en vei til ny vurdering hos administratorene (PS-TRUST-018), uten å få vite hvem som eventuelt rapporterte. Ikke bygget ennå: til det er bygget, har administratorene ingen slik handling, og den vises ikke. (Produkteier, 10. oktober 2026, OD-0025.)
+En habil administrator kan avslutte et aktivt medlemskap som et lokalt modereringstiltak, med en saklig begrunnelse som lagres sporbart (PS-TRUST-016). Om personen også stenges ute fra nye forsøk, velges separat. Godkjente lån og det innsynet partene trenger i dem, består. Den det gjelder, får nøytral beskjed om tiltaket og konsekvensene, med en vei til ny vurdering hos administratorene (PS-TRUST-018), uten å få vite hvem som eventuelt rapporterte. Den som har en rolle i miljøet, gir den fra seg eller fratas den først, så miljøet aldri står uten kontinuitet (PS-ENV-003). Den som er fjernet, kan fortsatt kontakte administratorene for å be om en ny vurdering, også når miljøet er skjult. (Produkteier, 10. oktober 2026, OD-0025.)
 
 ## Miljøtilstand
 

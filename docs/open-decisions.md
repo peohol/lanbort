@@ -199,7 +199,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0025 — Fjerning og utestengelse av aktive medlemmer i et miljø
 - **Lag:** Produktspesifikasjon
 - **Status:** Avklart (produkteier, 10. oktober 2026)
-- **Beslutning:** Se [PS-ENV-021](product-spec/02-miljoer.md). En habil administrator kan avslutte et aktivt medlemskap med saklig, sporbar begrunnelse og velge separat om personen også stenges ute. Godkjente lån og nødvendig partsinnsyn består; den det gjelder får nøytral beskjed med vei til ny vurdering, uten å få vite hvem som rapporterte. Ikke bygget; til da vises ingen slik handling.
+- **Beslutning:** Se [PS-ENV-021](product-spec/02-miljoer.md). En habil administrator kan avslutte et aktivt medlemskap med saklig, sporbar begrunnelse og velge separat om personen også stenges ute. Godkjente lån og nødvendig partsinnsyn består; den det gjelder får nøytral beskjed med vei til ny vurdering, uten å få vite hvem som rapporterte.
 
 ### OD-0026 — Hvor plattformforvalterens inngrep på kontoer og miljøer gjøres
 - **Lag:** UX

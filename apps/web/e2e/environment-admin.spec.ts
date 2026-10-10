@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import {
   accountId,
+  axeViolations,
   collectBrowserProblems,
   postCommand,
   registerThroughApi,
@@ -326,5 +327,98 @@ test("administrators ask an applicant one question, which the applicant reads ve
   await expect(kariPage.getByText(`«${question}»`)).toHaveCount(0);
 
   await kari.close();
+  expect(problems).toEqual([]);
+});
+
+test("an impartial administrator removes a member, who is told neutrally and may ask for a new assessment (PS-ENV-021)", async ({
+  browser,
+  page,
+  baseURL,
+}) => {
+  const problems = collectBrowserProblems(page);
+  await registerThroughApi(page.request, undefined, "Eva Eier");
+  const name = `Kretsen ${uniqueWord()}`;
+  const { environmentId } = await (
+    await postCommand(page.request, "/api/environments", {
+      name,
+      type: "hidden",
+    })
+  ).json();
+  const per = await browser.newContext({ baseURL: baseURL! });
+  const perPage = await per.newPage();
+  await registerThroughApi(per.request, undefined, "Per Lien");
+  await postCommand(page.request, "/api/environments/memberships/invite", {
+    environmentId,
+    userId: await accountId(per.request),
+  });
+  await postCommand(per.request, "/api/environments/membership/accept", {
+    environmentId,
+    answers: [],
+  });
+  const reason = "Har gjentatte ganger lånt ut andres ting videre.";
+
+  await page.goto(`/miljoer/${environmentId}/administrer/medlemmer`);
+  // Only Per: never the administrator themselves.
+  await expect(
+    page.getByRole("button", { name: "Fjern fra miljøet" }),
+  ).toHaveCount(1);
+  await page
+    .getByRole("group", { name: "Per Lien" })
+    .getByRole("button", { name: "Fjern fra miljøet" })
+    .click();
+  const dialog = page.getByRole("dialog", {
+    name: "Fjerne Per Lien fra miljøet?",
+  });
+  await expect(
+    dialog.getByText(/Lån som er godkjent, fortsetter/),
+  ).toBeVisible();
+  await expect(
+    dialog.getByLabel("Steng Per Lien også ute fra nye forsøk"),
+  ).not.toBeChecked();
+  expect(await axeViolations(page)).toEqual([]);
+  await dialog.getByLabel("Begrunnelse").fill(reason);
+  await dialog.getByLabel("Steng Per Lien også ute fra nye forsøk").check();
+  await dialog
+    .getByRole("button", { name: "Fjern Per Lien fra miljøet" })
+    .click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole("group", { name: "Per Lien" })).toHaveCount(1);
+  await expect(
+    page.getByRole("region", { name: "Stengt ute fra nye forsøk" }),
+  ).toContainText("Per Lien");
+
+  // Per is told what it means and why, never who decided or reported.
+  await untilOutboxSettles(per.request, async () =>
+    (
+      await (await per.request.get("/api/notifications")).json()
+    ).notifications.some(
+      (notification: { kind: string }) =>
+        notification.kind === "moderation.measure_taken",
+    ),
+  );
+  await perPage.goto("/varsler");
+  await perPage
+    .getByRole("link", { name: /Medlemskapet ditt i et miljø er avsluttet/ })
+    .click();
+  await expect(perPage).toHaveURL(/\/saker\/tiltak\/[0-9a-f-]{36}$/);
+  await expect(perPage.getByRole("heading", { level: 1 })).toHaveText(name);
+  await expect(perPage.getByRole("main")).toContainText(
+    `Medlemskapet ditt i ${name} er avsluttet`,
+  );
+  await expect(perPage.getByRole("main")).toContainText(
+    `Begrunnelse: ${reason}`,
+  );
+  await expect(perPage.getByRole("main")).not.toContainText(/Eva|rapport/i);
+  expect(await axeViolations(perPage)).toEqual([]);
+
+  // The hidden environment is gone for Per, but the way back is not.
+  await perPage.getByRole("link", { name: "Be om ny vurdering" }).click();
+  await perPage.getByLabel("Melding").fill("Jeg vil be om en ny vurdering.");
+  await perPage
+    .getByRole("button", { name: "Send til administratorene" })
+    .click();
+  await expect(perPage).toHaveURL(/\/saker\/[0-9a-f-]{36}$/);
+
+  await per.close();
   expect(problems).toEqual([]);
 });

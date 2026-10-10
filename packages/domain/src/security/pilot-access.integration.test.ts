@@ -392,6 +392,11 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     environmentId: ids.environmentId,
     membershipId: ids.membershipId,
   }),
+  "environment_membership.remove": (ids) => ({
+    environmentId: ids.environmentId,
+    membershipId: ids.membershipId,
+    reason: text,
+  }),
   "environment_membership.request_information": (ids) => ({
     environmentId: ids.environmentId,
     membershipId: ids.membershipId,

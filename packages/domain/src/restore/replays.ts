@@ -1112,7 +1112,8 @@ const windDownReplay: RestoreReplay = {
 
 /**
  * PS-TRUST-016: a publication measure's effect is its own entry
- * (`environment_publication.rejected`/`blocked`). Platform measures on
+ * (`environment_publication.rejected`/`blocked`), and so is a membership's
+ * end (`environment_membership.ended`, PS-ENV-021). Platform measures on
  * objects and reviews wait for someone to deal with them.
  */
 const moderationReplay: RestoreReplay = {
@@ -1124,7 +1125,8 @@ const moderationReplay: RestoreReplay = {
     if (
       measure === "publication_rejected" ||
       measure === "publication_blocked" ||
-      measure === "object_unblocked"
+      measure === "object_unblocked" ||
+      measure === "membership_ended"
     ) {
       return "unchanged";
     }

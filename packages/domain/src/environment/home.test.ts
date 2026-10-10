@@ -166,6 +166,7 @@ describe("an administrator's tasks", () => {
       ...membership({ state: "pending", reviewStage: row.reviewStage }),
       userId: row.userId,
       realName: null,
+      removable: false,
     })),
     restrictions: [],
   });

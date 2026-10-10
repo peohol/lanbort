@@ -32,6 +32,7 @@ export default async function MembersPage({
     <main>
       <AdministrationHeader environment={environment} page="members" />
       <Members
+        environmentId={environmentId}
         memberships={memberships.memberships}
         holders={roles.holders}
         ownUserId={account.userId}

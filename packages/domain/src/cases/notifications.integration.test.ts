@@ -465,6 +465,7 @@ describe("the notice to whoever a measure hits (PS-TRUST-018)", () => {
       kind: "publication_blocked",
       scope: "environment",
       environmentId,
+      environmentName: null,
       objectId,
       objectTitle: expect.any(String),
       loanId: null,
