@@ -33,7 +33,17 @@ Auth ser bare serveren, så grensene per klient og per e-postadresse ligger i se
 
 Siden **Personvern og sikkerhet** under Konto (`/konto/personvern`) sier hvem som driver Lånbort og er ansvarlig for opplysningene, hva som lagres og hvor lenge ([oppbevaring](retention.md)), hvilke leverandører som behandler dem, og hvor man melder fra om noe alvorlig eller ber om innsyn, retting og sletting. Navnet og adressen er `OPERATOR_NAME` og `CONTACT_EMAIL` i Vercel, ikke i repoet, som er offentlig. Produkteier leser adressen og tar kontakt med Claude når noe må gjøres.
 
-Sikkerhetsfeil fra andre enn deltakerne meldes privat gjennom GitHubs «Report a vulnerability» på repoet ([SECURITY.md](../../SECURITY.md)).
+Sikkerhetsfeil fra andre enn deltakerne meldes privat gjennom GitHubs «Report a vulnerability» på repoet ([SECURITY.md](../../SECURITY.md)), som `/.well-known/security.txt` peker til. Filen har en utløpsdato (`Expires`) som må flyttes fram før den passeres. Når plattformkøen åpnes (`PLATFORM_STEWARDS_ENABLED` og minst én forvalter med to nøkler), kan deltakerne også bruke «Rapporter til Lånbort» i appen.
+
+### Egen adresse på lånbort.no (valgfritt)
+
+Lånbort.no kan ikke ta imot e-post i dag: domenet har bare oppsett for å sende (Resend), og Vercel, som har DNS-en, videresender ikke e-post. En adresse som `sikkerhet@lånbort.no` trenger derfor en videresendingstjeneste, for eksempel ImprovMX, som sender alt videre til en innboks produkteier allerede leser. Det krever:
+
+1. En konto hos tjenesten, laget av produkteier, med lånbort.no (`xn--lnbort-iua.no`) og aliaset `sikkerhet` som sendes videre til produkteiers adresse. Sjekk vilkårene for gratisplanen før den tas i bruk.
+2. Tre DNS-poster på selve domenet (`@`) i Vercel: MX `mx1.improvmx.com` med prioritet 10, MX `mx2.improvmx.com` med prioritet 20, og TXT `v=spf1 include:spf.improvmx.com ~all` (ImprovMX sin generelle veiledning, lest 10. oktober 2026). Resends poster ligger på underdomenet `send` og berøres ikke.
+3. En test-e-post til adressen før den settes som `CONTACT_EMAIL`.
+
+DNS-endringer gjøres bare med produkteiers uttrykkelige ja.
 
 ## Alvorlige hendelser
 

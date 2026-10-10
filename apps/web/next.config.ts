@@ -10,6 +10,22 @@ if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  // Pages answer on the app's public address only (APP_URL, production), so
+  // sessions and links stay on one origin. APIs, and the scheduled jobs
+  // Vercel calls on its own address, answer on every address.
+  async redirects() {
+    if (!process.env.APP_URL) return [];
+    const { host, origin } = new URL(process.env.APP_URL);
+
+    return [
+      {
+        source: "/:path((?!api/|_next/).*)",
+        missing: [{ type: "host", value: host.replaceAll(".", "\\.") }],
+        destination: `${origin}/:path`,
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {
