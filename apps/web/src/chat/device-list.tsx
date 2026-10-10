@@ -2,7 +2,7 @@
 
 import type { ChatLinkRequest, OwnChatDevices } from "@lanbort/contracts";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ErrorText } from "@/components/error-text";
 import { Icon } from "@/components/icon";
@@ -21,6 +21,7 @@ import styles from "./chat.module.css";
 import { ChatIcon } from "./chat-icon";
 import { useEngineVersion } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";
+import { DeclineLink } from "./decline-link";
 import { addedAt, deviceName } from "./device-names";
 import type { ChatEngine } from "./engine";
 import { chatErrorMessage } from "./messages";
@@ -42,8 +43,15 @@ const header = (
  * while one does. The camera page is loaded anew, since only it may use
  * the camera.
  */
-function Waiting({ count }: { count: number }) {
+function Waiting({
+  requests,
+  onDeclined,
+}: {
+  requests: readonly ChatLinkRequest[];
+  onDeclined: () => void;
+}) {
   const scan = hasScanner();
+  const count = requests.length;
   return (
     <section className={`card ${styles.intro}`} aria-labelledby="venter">
       <Tag tone="attention">Venter på deg</Tag>
@@ -72,6 +80,10 @@ function Waiting({ count }: { count: number }) {
           Skriv inn koden
         </a>
       )}
+      <DeclineLink
+        linkRequestIds={requests.map((request) => request.linkRequestId)}
+        onDeclined={onDeclined}
+      />
     </section>
   );
 }
@@ -82,6 +94,9 @@ function Devices({ engine }: { engine: ChatEngine }) {
   const [devices, setDevices] = useState<OwnChatDevices>();
   const [requests, setRequests] = useState<ChatLinkRequest[]>([]);
   const [removed, setRemoved] = useState<string>();
+  // Declined here, or on the approval page, which comes back with `?avvist`.
+  const search = useSearchParams();
+  const [declined, setDeclined] = useState(() => search.has("avvist"));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -113,8 +128,21 @@ function Devices({ engine }: { engine: ChatEngine }) {
           <p>{removed} er logget ut og kan ikke lese nye meldinger.</p>
         </Notice>
       )}
+      {declined && (
+        <Notice tag="Avvist" tone="positive" role="status">
+          <p>Enheten fikk ikke tilgang til privat chat.</p>
+        </Notice>
+      )}
       <ErrorText>{error}</ErrorText>
-      {requests.length > 0 && <Waiting count={requests.length} />}
+      {requests.length > 0 && (
+        <Waiting
+          requests={requests}
+          onDeclined={() => {
+            setRequests([]);
+            setDeclined(true);
+          }}
+        />
+      )}
 
       <h2 className={styles.sectionHeading}>Disse kan lese samtalene dine</h2>
       <ul className={styles.list}>

@@ -506,6 +506,76 @@ test("signing out on a device with chat says what it loses, then revokes it and 
   await anna.context.close();
 });
 
+test("a device that waits to be linked can be declined, and ask again", async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const anna = await person(browser, "Siri Dahl");
+  await turnOnChat(anna.page);
+  const laptop = await device(browser);
+  await signInThroughApi(laptop.context.request, anna.email);
+  const newCode = async () => {
+    await laptop.page.goto("/samtaler/koble");
+    return (await laptop.page.locator("p.link-code").textContent())!;
+  };
+
+  // From Mine enheter: the waiting card's «Avvis enheten» (10).
+  await newCode();
+  await anna.page.goto("/samtaler/enheter");
+  await anna.page.getByRole("button", { name: "Avvis enheten" }).click();
+  const sheet = anna.page.getByRole("dialog", { name: "Avvise enheten?" });
+  await expect(sheet.getByText("Ba ikke du om dette?")).toBeVisible();
+  expect(await axeViolations(anna.page)).toEqual([]);
+  await sheet.getByRole("button", { name: "Avvis enheten" }).click();
+  await expect(
+    anna.page.getByText("Enheten fikk ikke tilgang til privat chat."),
+  ).toBeVisible();
+  await expect(
+    anna.page.getByRole("heading", { name: /vil koble til privat chat/ }),
+  ).toHaveCount(0);
+
+  // The new device is told, instead of waiting for its code to run out.
+  await expect(
+    laptop.page.getByRole("heading", { name: "Koblingen ble avvist" }),
+  ).toBeVisible({ timeout: 20_000 });
+  expect(await axeViolations(laptop.page)).toEqual([]);
+
+  // A new code; «Ikke godkjenn» after it was typed declines it too (12).
+  await laptop.page.getByRole("button", { name: "Lag ny kode" }).click();
+  const code = (await laptop.page.locator("p.link-code").textContent())!;
+  await anna.page.goto("/samtaler/enheter/koble?kode");
+  await anna.page.getByLabel("Kode fra den nye enheten").fill(code);
+  await anna.page.getByRole("button", { name: "Fortsett" }).click();
+  await anna.page.getByRole("button", { name: "Ikke godkjenn" }).click();
+  await anna.page
+    .getByRole("dialog", { name: "Avvise enheten?" })
+    .getByRole("button", { name: "Avvis enheten" })
+    .click();
+  await expect(anna.page).toHaveURL(/\/samtaler\/enheter\?avvist$/);
+  await expect(
+    anna.page.getByText("Enheten fikk ikke tilgang til privat chat."),
+  ).toBeVisible();
+  await expect(
+    laptop.page.getByRole("heading", { name: "Koblingen ble avvist" }),
+  ).toBeVisible({ timeout: 20_000 });
+
+  // Asked again, it can still be approved.
+  await laptop.page.getByRole("button", { name: "Lag ny kode" }).click();
+  const last = (await laptop.page.locator("p.link-code").textContent())!;
+  await anna.page.goto("/samtaler/enheter/koble?kode");
+  await anna.page.getByLabel("Kode fra den nye enheten").fill(last);
+  await anna.page.getByRole("button", { name: "Fortsett" }).click();
+  await anna.page.getByRole("button", { name: "Godkjenn enheten" }).click();
+  await expect(
+    laptop.page.getByRole("heading", { name: "Dine samtaler" }),
+  ).toBeVisible({ timeout: 20_000 });
+
+  expect(unexpected([...anna.problems, ...laptop.problems])).toEqual([]);
+  for (const someone of [anna, laptop]) {
+    await someone.context.close();
+  }
+});
+
 test("a message waits until the friend has turned chat on", async ({
   browser,
 }) => {

@@ -2,6 +2,7 @@
 
 import type { ChatLinkRequest } from "@lanbort/contracts";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   type FormEvent,
   useEffect,
@@ -12,12 +13,17 @@ import { announce } from "@/components/announcer";
 import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
 import { PageHeader } from "@/components/page-header";
-import { chatApproveLinkHref, chatDevicesHref } from "@/navigation/chat";
+import {
+  chatApproveLinkHref,
+  chatDevicesDeclinedHref,
+  chatDevicesHref,
+} from "@/navigation/chat";
 import { chatApi } from "./api";
 import styles from "./chat.module.css";
 import { ChatIcon } from "./chat-icon";
 import { loadedPath } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";
+import { DeclineLink } from "./decline-link";
 import { deviceName } from "./device-names";
 import type { ChatEngine, MatchedLinkRequest } from "./engine";
 import { chatErrorMessage } from "./messages";
@@ -63,6 +69,7 @@ function Confirm({
   busy: boolean;
   approve: (moveHistory: boolean) => void;
 }) {
+  const router = useRouter();
   const [move, setMove] = useState(false);
   return (
     <>
@@ -121,9 +128,11 @@ function Confirm({
         >
           Godkjenn enheten
         </BusyButton>
-        <Link href={chatDevicesHref} className="button">
-          Ikke godkjenn
-        </Link>
+        <DeclineLink
+          linkRequestIds={[request.linkRequestId]}
+          label="Ikke godkjenn"
+          onDeclined={() => router.push(chatDevicesDeclinedHref)}
+        />
       </div>
     </>
   );

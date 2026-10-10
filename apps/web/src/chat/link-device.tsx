@@ -31,6 +31,7 @@ type Phase =
       minutes: number;
     }
   | { kind: "expired"; minutes: number }
+  | { kind: "declined" }
   | { kind: "failed"; reason: string };
 
 const minutesLeft = (expiresAt: string) =>
@@ -91,6 +92,11 @@ export function LinkDevice() {
       chatApi
         .linkStatus(phase.status.linkRequestId)
         .then(async (status) => {
+          if (status.declined) {
+            clearInterval(interval);
+            setPhase({ kind: "declined" });
+            return;
+          }
           if (status.package === null || finishing.current) return;
           finishing.current = true;
           const engine = await completeDeviceLink(userId, phase.link, {
@@ -165,6 +171,26 @@ export function LinkDevice() {
               tide. Lag en ny og skann den fra den andre enheten.
             </p>
             <button type="button" className="button-primary" onClick={again}>
+              Lag ny kode
+            </button>
+          </Notice>
+        </>
+      );
+    case "declined":
+      return (
+        <>
+          {header("Koble til denne enheten")}
+          <Notice
+            tag="Avvist"
+            icon="info"
+            title="Koblingen ble avvist"
+            role="status"
+          >
+            <p>
+              Den ble avvist fra en annen enhet med privat chat på kontoen. Var
+              det en feil, kan du lage en ny kode og prøve igjen.
+            </p>
+            <button type="button" className="button-secondary" onClick={again}>
               Lag ny kode
             </button>
           </Notice>

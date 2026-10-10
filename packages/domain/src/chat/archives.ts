@@ -25,7 +25,7 @@ import {
   readChatArchivePartPolicy,
 } from "./policies";
 import { fromBase64, toBase64 } from "./signatures";
-import { lockChatAccount, sessionDevice } from "./store";
+import { lockChatAccount, pendingLinkRequest, sessionDevice } from "./store";
 
 /**
  * History archives (ADR-0010 §5, §8). When a new device is linked, the
@@ -186,8 +186,7 @@ const archiveWanted = async (
         .select("id")
         .where("id", "=", input.linkRequestId)
         .where("user_id", "=", userId)
-        .where("approved_at", "is", null)
-        .where("expires_at", ">", now)
+        .where(pendingLinkRequest(now))
         .executeTakeFirst()
     : await tx
         .selectFrom("app.chat_recovery_keys")

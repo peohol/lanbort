@@ -194,6 +194,8 @@ export const chatLinkStatusSchema = z.strictObject({
   expiresAt: z.iso.datetime(),
   /** The sealed package once an existing device has approved. */
   package: base64Bytes(chatLimits.linkPackageBytes).nullable(),
+  /** An existing device declined it; it may ask again with a new code. */
+  declined: z.boolean(),
 });
 
 // History archives

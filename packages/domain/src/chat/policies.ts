@@ -140,6 +140,12 @@ export const approveChatLinkPolicy = definePolicy<OwnChatResource, void>({
   resource: [sessionDevice, ownResource],
 });
 
+export const declineChatLinkPolicy = definePolicy<OwnChatResource, void>({
+  action: "chat.decline_link",
+  actor: [requireActiveAccount],
+  resource: [sessionDevice, ownResource],
+});
+
 /**
  * History archives (ADR-0010 §5): the approving device stores its history
  * for the new one; only the account's own devices see an archive.
@@ -366,6 +372,7 @@ export const chatPolicies = [
   finishChatLinkPolicy,
   listChatLinkRequestsPolicy,
   approveChatLinkPolicy,
+  declineChatLinkPolicy,
   createChatArchivePolicy,
   putChatArchivePartPolicy,
   readChatArchivePartPolicy,

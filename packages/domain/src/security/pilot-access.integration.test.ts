@@ -815,6 +815,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     certificate: bystanderDevice.certificate,
     package: "AAECAw==",
   }),
+  "chat.decline_link": (ids) => ({ linkRequestId: ids.linkRequestId }),
   "chat.create_archive": (ids) => ({
     purpose: "link",
     linkRequestId: ids.linkRequestId,

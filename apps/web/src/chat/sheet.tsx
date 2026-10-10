@@ -3,7 +3,7 @@
 import { type ReactNode, useId, useRef, useState } from "react";
 import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
-import { Icon } from "@/components/icon";
+import { Icon, type IconName } from "@/components/icon";
 import styles from "./chat.module.css";
 import { chatErrorMessage } from "./messages";
 import { type Point, Points } from "./points";
@@ -68,6 +68,7 @@ export function ConfirmSheet({
   confirmLabel,
   confirm,
   first,
+  icon = "trash",
 }: {
   label: string;
   title: string;
@@ -78,6 +79,8 @@ export function ConfirmSheet({
   confirmLabel: string;
   /** Does it; a failure is shown in the sheet, which then stays open. */
   confirm: () => Promise<void>;
+  /** Beside both buttons' labels; none for a step that deletes nothing. */
+  icon?: IconName | null;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -104,7 +107,7 @@ export function ConfirmSheet({
         className="button-danger"
         onClick={() => dialog.current?.showModal()}
       >
-        <Icon name="trash" />
+        {icon && <Icon name={icon} />}
         {label}
       </button>
       <dialog
@@ -126,7 +129,7 @@ export function ConfirmSheet({
             busy={busy}
             onClick={() => void run()}
           >
-            <Icon name="trash" />
+            {icon && <Icon name={icon} />}
             {confirmLabel}
           </BusyButton>
         </div>

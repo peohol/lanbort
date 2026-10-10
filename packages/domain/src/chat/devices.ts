@@ -35,6 +35,7 @@ import { readKeyPackage } from "./mls";
 import { chatRetention, keyPackagesPerDevice } from "./model";
 import {
   approveChatLinkPolicy,
+  declineChatLinkPolicy,
   finishChatLinkPolicy,
   listChatLinkRequestsPolicy,
   publishChatKeyPackagesPolicy,
@@ -56,6 +57,7 @@ import {
   devicesOf,
   loadDevice,
   lockChatAccount,
+  pendingLinkRequest,
   presentDevice,
   sessionDevice,
   shutOut,
@@ -261,6 +263,7 @@ interface LinkRequestRow {
   created_at: Date;
   expires_at: Date;
   approved_at: Date | null;
+  declined_at: Date | null;
   package: Buffer | null;
 }
 
@@ -275,6 +278,7 @@ const linkRequestColumns = [
   "created_at",
   "expires_at",
   "approved_at",
+  "declined_at",
   "package",
 ] as const;
 
@@ -305,10 +309,23 @@ const ownSessionRequest = (
   request.user_id === actor.userId &&
   request.session_id === actor.authentication.sessionId;
 
+/** The account's request, still waiting for an answer (`pendingLinkRequest`). */
+const pendingFor = (
+  request: LinkRequestRow | undefined,
+  userId: string,
+  now: Date,
+): request is LinkRequestRow =>
+  request !== undefined &&
+  request.user_id === userId &&
+  request.approved_at === null &&
+  request.declined_at === null &&
+  request.expires_at > now;
+
 const linkStatus = (request: LinkRequestRow) => ({
   linkRequestId: request.id,
   expiresAt: request.expires_at.toISOString(),
   package: request.package ? toBase64(request.package) : null,
+  declined: request.declined_at !== null,
 });
 
 /**
@@ -424,8 +441,7 @@ export const listChatLinkRequests = defineQuery({
           .selectFrom("app.chat_link_requests")
           .select(linkRequestColumns)
           .where("user_id", "=", device.userId)
-          .where("approved_at", "is", null)
-          .where("expires_at", ">", now)
+          .where(pendingLinkRequest(now))
           // One from before commitments cannot be matched; it just expires.
           .where("commitment", "is not", null)
           .orderBy("created_at")
@@ -475,11 +491,7 @@ export const approveChatLink = defineCommand({
     return {
       resource: {
         hasDevice: device !== null,
-        own:
-          request !== undefined &&
-          request.user_id === userId &&
-          request.approved_at === null &&
-          request.expires_at > now,
+        own: pendingFor(request, userId, now),
         device,
         request,
       },
@@ -533,6 +545,51 @@ export const approveChatLink = defineCommand({
     });
 
     return { deviceId: request.device_id };
+  },
+});
+
+/**
+ * An existing device declines a device that waits to be linked (ADR-0010
+ * §5), instead of letting its code expire: it can no longer be approved,
+ * and the new device sees that it was declined and may ask again. Declining
+ * one declined already gives the same answer.
+ */
+export const declineChatLink = defineCommand({
+  name: "chat.decline_link",
+  input: chatLinkRequestTargetSchema,
+  output: chatDoneSchema,
+  policy: declineChatLinkPolicy,
+  idempotency: "required",
+  load: async ({ tx, actor, input, now }) => {
+    const userId = actingUserId(actor);
+    const device = await sessionDevice(tx, actor);
+    const request = await loadLinkRequest(tx, input.linkRequestId, {
+      lock: true,
+    });
+
+    return {
+      resource: {
+        hasDevice: device !== null,
+        // A request declined already is still the caller's to decline.
+        own:
+          request !== undefined &&
+          request.user_id === userId &&
+          request.approved_at === null &&
+          request.expires_at > now,
+      },
+      context: undefined,
+    };
+  },
+  execute: async ({ tx, input, now }) => {
+    await tx
+      .updateTable("app.chat_link_requests")
+      .set((eb) => ({
+        declined_at: eb.fn.coalesce("declined_at", eb.val(now)),
+      }))
+      .where("id", "=", input.linkRequestId)
+      .execute();
+
+    return {};
   },
 });
 

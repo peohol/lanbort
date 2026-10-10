@@ -51,6 +51,7 @@ import {
 } from "./archives";
 import {
   approveChatLink,
+  declineChatLink,
   finishChatLink,
   listChatLinkRequests,
   publishChatKeyPackages,
@@ -481,6 +482,95 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
         commitment: linkCommitment,
       }),
     ).rejects.toMatchObject(conflict);
+  });
+
+  it("declines a device that waits to be linked, which may then ask again", async () => {
+    const alice = await chatUser();
+    const laptop = newSession(alice.actor);
+    const deviceId = randomUUID();
+    const deviceKey = testChatDevice(alice.account).deviceKey;
+    const ask = () =>
+      run(requestChatLink, laptop, {
+        deviceId,
+        deviceKey,
+        linkKey: deviceKey,
+      });
+    const status = (linkRequestId: string) =>
+      executeQuery(tick(), readChatLinkStatus, {
+        actor: laptop,
+        input: { linkRequestId },
+      });
+    const pending = async () =>
+      (
+        await executeQuery(tick(), listChatLinkRequests, {
+          actor: alice.actor,
+          input: {},
+        })
+      ).requests.map((request) => request.linkRequestId);
+
+    const { linkRequestId, declined } = await ask();
+    expect(declined).toBe(false);
+
+    // Only a device of the same account declines, and not the new one
+    // itself, which has no device yet.
+    const bob = await chatUser();
+    await expect(
+      run(declineChatLink, bob.actor, { linkRequestId }),
+    ).rejects.toMatchObject(notFound);
+    await expect(
+      run(declineChatLink, laptop, { linkRequestId }),
+    ).rejects.toMatchObject(forbidden);
+
+    await run(declineChatLink, alice.actor, { linkRequestId });
+    expect(await status(linkRequestId)).toMatchObject({
+      package: null,
+      declined: true,
+    });
+    expect(await pending()).toEqual([]);
+    // Declined twice is declined once.
+    await run(declineChatLink, alice.actor, { linkRequestId });
+
+    // It can no longer be approved, nor get a history archive.
+    await expect(
+      run(approveChatLink, alice.actor, {
+        linkRequestId,
+        certificate: alice.account.certify(deviceId, deviceKey),
+        package: "c2VhbGVk",
+      }),
+    ).rejects.toMatchObject(notFound);
+    await expect(
+      run(createChatArchive, alice.actor, {
+        purpose: "link",
+        linkRequestId,
+        partCount: 1,
+      }),
+    ).rejects.toMatchObject(conflict);
+
+    // A new code is a new request, which can be approved.
+    const again = await ask();
+    expect(again.declined).toBe(false);
+    expect(await pending()).toEqual([again.linkRequestId]);
+    await run(approveChatLink, alice.actor, {
+      linkRequestId: again.linkRequestId,
+      certificate: alice.account.certify(deviceId, deviceKey),
+      package: "c2VhbGVk",
+    });
+    // An approved request cannot be declined.
+    await expect(
+      run(declineChatLink, alice.actor, {
+        linkRequestId: again.linkRequestId,
+      }),
+    ).rejects.toMatchObject(notFound);
+    expect(await status(again.linkRequestId)).toMatchObject({
+      package: "c2VhbGVk",
+      declined: false,
+    });
+
+    // The database keeps a request to one answer.
+    await expect(
+      sql`update app.chat_link_requests set declined_at = now()
+          where id = ${again.linkRequestId}`.execute(db),
+    ).rejects.toThrow(/chat_link_requests_one_answer/);
   });
 
   it("links no more devices than a restore can revoke at once", async () => {
