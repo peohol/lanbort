@@ -615,9 +615,15 @@ describe("winding down (PS-ENV-012)", () => {
       run(cancelEnvironmentWindDown, owner, { environmentId }),
     ).rejects.toMatchObject({ code: "conflict" });
 
-    const results = await Promise.all([settle(), settle()]);
-    expect(results.reduce((sum, r) => sum + r.finalized, 0)).toBeGreaterThan(0);
-    expect(await settle()).toMatchObject({ finalized: 0 });
+    // settle() is global and the clock has moved, so other files' wind-downs
+    // may finalize too; count this environment's own finalization instead.
+    await Promise.all([settle(), settle()]);
+    await settle();
+    expect(
+      (await environmentEvents(environmentId)).filter(
+        (event) => event === "environment.wind_down_finalized",
+      ),
+    ).toHaveLength(1);
 
     const pending = await db
       .selectFrom("app.environment_memberships")
