@@ -1,3 +1,4 @@
+import type { EnvironmentRole } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql, type Transaction } from "kysely";
 import { z } from "zod";
@@ -334,7 +335,8 @@ export const settleContinuity = defineCommand({
  * the remaining administrators, or winding down if there are none. Where the
  * user was the last administrator of an ownerless environment, nobody can
  * take over any more and it winds down at once. Nobody else gains authority,
- * and nothing escalates to platform stewards (PS-ENV-014).
+ * and nothing escalates to platform stewards (PS-ENV-014). Returns the roles
+ * that ended.
  */
 export async function releaseRolesIn(
   tx: Kysely<Database>,
@@ -344,7 +346,7 @@ export async function releaseRolesIn(
   by: ChangedBy,
   now: Date,
   events: EventRecorder,
-): Promise<void> {
+): Promise<EnvironmentRole[]> {
   const ended = await revokeRoles(
     tx,
     environment.id,
@@ -360,7 +362,7 @@ export async function releaseRolesIn(
 
   if (ended.includes("owner")) {
     await vacateOwnership(tx, environment, userId, now, events);
-    return;
+    return ended;
   }
 
   const { vacancy } = await findContinuity(tx, environment.id);
@@ -368,6 +370,8 @@ export async function releaseRolesIn(
     await closeVacancy(tx, environment.id, vacancy.id, null, now, events);
     await startWindDown(tx, environment.id, "ownerless", null, now, events);
   }
+
+  return ended;
 }
 
 /**

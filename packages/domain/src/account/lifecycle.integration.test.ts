@@ -51,6 +51,7 @@ const {
   run,
   user,
   steward,
+  inquiry,
   create,
   addCoOwner,
   friends,
@@ -429,15 +430,27 @@ describe("suspension (PS-ADM-003, PS-ADM-014)", () => {
     });
 
     await run(suspendAccount, platform, {
+      caseId: await inquiry(platform, {
+        kind: "user",
+        userId: later.borrower.userId,
+      }),
       userId: later.borrower.userId,
       basis: "Gjentatte brudd på vilkårene",
     });
     await run(suspendAccount, platform, {
+      caseId: await inquiry(platform, {
+        kind: "user",
+        userId: handedOver.borrower.userId,
+      }),
       userId: handedOver.borrower.userId,
       basis: "Gjentatte brudd på vilkårene",
     });
     kit.advance(oneDay);
     await run(suspendAccount, platform, {
+      caseId: await inquiry(platform, {
+        kind: "user",
+        userId: pastHandover.borrower.userId,
+      }),
       userId: pastHandover.borrower.userId,
       basis: "Gjentatte brudd på vilkårene",
     });
@@ -465,8 +478,16 @@ describe("suspension (PS-ADM-003, PS-ADM-014)", () => {
     const platform = await steward();
     const target = await user();
     const basis = "Melding fra politiet om bedrageri";
+    const caseId = await inquiry(platform, {
+      kind: "user",
+      userId: target.userId,
+    });
 
-    await run(suspendAccount, platform, { userId: target.userId, basis });
+    await run(suspendAccount, platform, {
+      caseId,
+      userId: target.userId,
+      basis,
+    });
 
     expect(await changes(target.userId)).toEqual([
       {
@@ -481,8 +502,16 @@ describe("suspension (PS-ADM-003, PS-ADM-014)", () => {
     expect(
       JSON.stringify(await eventsFor("user", target.userId)),
     ).not.toContain(basis);
+    // Not even from a case another steward opened about them.
     await expect(
-      run(suspendAccount, platform, { userId: platform.userId, basis }),
+      run(suspendAccount, platform, {
+        caseId: await inquiry(await steward(), {
+          kind: "user",
+          userId: platform.userId,
+        }),
+        userId: platform.userId,
+        basis,
+      }),
     ).rejects.toMatchObject({ code: "conflict_of_interest" });
     // The user cannot end it themselves.
     await expect(
@@ -490,6 +519,7 @@ describe("suspension (PS-ADM-003, PS-ADM-014)", () => {
     ).rejects.toMatchObject({ code: "forbidden" });
 
     await run(reinstateAccount, platform, {
+      caseId,
       userId: target.userId,
       basis: "Saken er avklart",
     });
@@ -504,6 +534,7 @@ describe("suspension (PS-ADM-003, PS-ADM-014)", () => {
     const target = await user();
 
     await run(startAccountClosure, platform, {
+      caseId: await inquiry(platform, { kind: "user", userId: target.userId }),
       userId: target.userId,
       basis: "Kontrollert avslutning etter henvendelse",
     });
@@ -517,7 +548,7 @@ describe("suspension (PS-ADM-003, PS-ADM-014)", () => {
     ).rejects.toMatchObject({ code: "account_inactive" });
   });
 
-  it("stays closed to every real session until stronger authentication is decided (OD-0010)", async () => {
+  it("stays closed to a session the provider calls stronger (ADR-0011)", async () => {
     const identity = testIdentity({
       authentication: {
         sessionId: randomUUID(),
@@ -545,7 +576,11 @@ describe("suspension (PS-ADM-003, PS-ADM-014)", () => {
     const target = await user();
 
     await expect(
-      run(suspendAccount, real, { userId: target.userId, basis: "Test" }),
+      run(suspendAccount, real, {
+        caseId: randomUUID(),
+        userId: target.userId,
+        basis: "Test",
+      }),
     ).rejects.toMatchObject({ code: "stronger_authentication_required" });
     expect(await account(target.userId)).toMatchObject({ status: "active" });
   });

@@ -1,5 +1,6 @@
 import { type AccountStatus, anonymousActor, systemActor } from "../actor";
 import { policyMatrix } from "../authorization/policy-matrix";
+import type { InterventionCase } from "../platform/policies";
 import { testUserActor } from "../testing/actors";
 import {
   accountIdentityCleanupProcess,
@@ -68,41 +69,99 @@ const stewardWithoutStrongAuth = testUserActor({
   platformRoles: ["platform_steward"],
 });
 
+/** The platform case an intervention is taken from, as the steward stands to it. */
+const onCase = <R>(resource: R, standing: Partial<InterventionCase> = {}) => ({
+  ...resource,
+  fromCase: {
+    id: "00000000-0000-4000-8000-0000000000ca",
+    kind: "platform_report" as const,
+    holdsRole: true,
+    involved: false,
+    about: true,
+    ...standing,
+  },
+});
+
+/** PS-ADM-015: the case every intervention is taken from. */
+function caseRules<R>(resource: R) {
+  return [
+    {
+      name: "also from the steward's own inquiry",
+      actor: steward,
+      resource: onCase(resource, { kind: "platform_inquiry" }),
+      context: undefined,
+      expected: "allow" as const,
+    },
+    {
+      name: "not from a case of another queue",
+      actor: steward,
+      resource: onCase(resource, {
+        kind: "environment_report",
+        holdsRole: false,
+      }),
+      context: undefined,
+      expected: "not_found" as const,
+    },
+    {
+      name: "not from a report of unavailability",
+      actor: steward,
+      resource: onCase(resource, { kind: "unavailability_report" }),
+      context: undefined,
+      expected: "forbidden" as const,
+    },
+    {
+      name: "not from a case the steward is involved in",
+      actor: steward,
+      resource: onCase(resource, { involved: true }),
+      context: undefined,
+      expected: "conflict_of_interest" as const,
+    },
+    {
+      name: "not toward someone or something the case is not about",
+      actor: steward,
+      resource: onCase(resource, { about: false }),
+      context: undefined,
+      expected: "forbidden" as const,
+    },
+  ];
+}
+
 /** The cases every steward intervention shares, for a target in `from`. */
 function interventionCases(from: AccountStatus, refused: AccountStatus) {
   return [
+    ...caseRules(account(from)),
     {
       name: `steward intervenes on an account that is ${from}`,
       actor: steward,
-      resource: account(from),
+      resource: onCase(account(from)),
       context: undefined,
       expected: "allow" as const,
     },
     {
       name: `not on an account that is ${refused}`,
       actor: steward,
-      resource: account(refused),
+      resource: onCase(account(refused)),
       context: undefined,
       expected: "forbidden" as const,
     },
     {
       name: "never on the steward's own account",
       actor: steward,
-      resource: own(steward, from),
+      resource: onCase(own(steward, from)),
       context: undefined,
       expected: "conflict_of_interest" as const,
     },
     {
       name: "not without stronger authentication",
       actor: stewardWithoutStrongAuth,
-      resource: account(from),
+      resource: onCase(account(from)),
       context: undefined,
       expected: "stronger_authentication_required" as const,
     },
     {
       name: "an ordinary user cannot intervene",
       actor: active,
-      resource: account(from),
+      resource: onCase(account(from)),
       context: undefined,
       expected: "forbidden" as const,
     },
@@ -113,7 +172,7 @@ function interventionCases(from: AccountStatus, refused: AccountStatus) {
         userId: testUserActor().userId,
         accountStatus: "suspended",
       }),
-      resource: account(from),
+      resource: onCase(account(from)),
       context: undefined,
       expected: "account_inactive" as const,
     },
@@ -496,96 +555,105 @@ export const accountMatrices = [
     {
       name: "steward retires an active duplicate of an active account",
       actor: steward,
-      resource: pair("active", "active"),
+      resource: onCase(pair("active", "active")),
       context: undefined,
       expected: "allow",
     },
     {
       name: "a deactivated or dormant duplicate too",
       actor: steward,
-      resource: pair("dormant", "active"),
+      resource: onCase(pair("dormant", "active")),
       context: undefined,
       expected: "allow",
     },
     {
       name: "one already under closure is linked",
       actor: steward,
-      resource: pair("closing", "active"),
+      resource: onCase(pair("closing", "active")),
       context: undefined,
       expected: "allow",
     },
     {
       name: "never a suspended account: that is a way around the suspension",
       actor: steward,
-      resource: pair("suspended", "active"),
+      resource: onCase(pair("suspended", "active")),
       context: undefined,
       expected: "forbidden",
     },
     {
       name: "the account that continues must be active",
       actor: steward,
-      resource: pair("active", "suspended"),
+      resource: onCase(pair("active", "suspended")),
       context: undefined,
       expected: "forbidden",
     },
     {
       name: "not a deleted account",
       actor: steward,
-      resource: pair("deleted", "active"),
+      resource: onCase(pair("deleted", "active")),
       context: undefined,
       expected: "forbidden",
     },
-    ...stewardCases(pair("active", "active"), {
-      retired: account("active"),
-      continued: own(steward, "active"),
-    }),
+    ...caseRules(pair("active", "active")),
+    ...stewardCases(
+      onCase(pair("active", "active")),
+      onCase({
+        retired: account("active"),
+        continued: own(steward, "active"),
+      }),
+    ),
   ]),
   policyMatrix(linkSamePersonPolicy, [
     {
       name: "steward links two accounts of the same person",
       actor: steward,
-      resource: record("active", testUserActor().userId),
+      resource: onCase(record("active", testUserActor().userId)),
       context: undefined,
       expected: "allow",
     },
     {
       name: "a deleted account can still be linked for security",
       actor: steward,
-      resource: record("deleted", testUserActor().userId),
+      resource: onCase(record("deleted", testUserActor().userId)),
       context: undefined,
       expected: "allow",
     },
+    ...caseRules(record("active", testUserActor().userId)),
     ...stewardCases(
-      record("active", testUserActor().userId),
-      record("active", steward.userId),
+      onCase(record("active", testUserActor().userId)),
+      onCase(record("active", steward.userId)),
     ),
   ]),
   policyMatrix(recordFalseIdentityPolicy, [
     {
       name: "steward records a false identity",
       actor: steward,
-      resource: record("active"),
+      resource: onCase(record("active")),
       context: undefined,
       expected: "allow",
     },
     {
       name: "also on a suspended account",
       actor: steward,
-      resource: record("suspended"),
+      resource: onCase(record("suspended")),
       context: undefined,
       expected: "allow",
     },
     {
       name: "an unregistered account has claimed no identity",
       actor: steward,
-      resource: record("pending_registration"),
+      resource: onCase(record("pending_registration")),
       context: undefined,
       expected: "forbidden",
     },
-    ...stewardCases(record("active"), {
-      ...own(steward),
-      involvedUserIds: [steward.userId],
-    }),
+    ...caseRules(record("active")),
+    ...stewardCases(
+      onCase(record("active")),
+      onCase({
+        ...own(steward),
+        involvedUserIds: [steward.userId],
+      }),
+    ),
   ]),
   policyMatrix(readAccountIdentityRecordPolicy, [
     {
@@ -611,41 +679,44 @@ export const accountMatrices = [
     {
       name: "steward moves a closing duplicate's own object",
       actor: steward,
-      resource: duplicateObject("closing", "active"),
+      resource: onCase(duplicateObject("closing", "active")),
       context: undefined,
       expected: "allow",
     },
     {
       name: "not before the duplicate is under closure",
       actor: steward,
-      resource: duplicateObject("active", "active"),
+      resource: onCase(duplicateObject("active", "active")),
       context: undefined,
       expected: "forbidden",
     },
     {
       name: "not to an account that is no longer active",
       actor: steward,
-      resource: duplicateObject("closing", "deactivated"),
+      resource: onCase(duplicateObject("closing", "deactivated")),
       context: undefined,
       expected: "forbidden",
     },
     {
       name: "not an object other people own too",
       actor: steward,
-      resource: duplicateObject("closing", "active", [testUserActor().userId]),
+      resource: onCase(
+        duplicateObject("closing", "active", [testUserActor().userId]),
+      ),
       context: undefined,
       expected: "forbidden",
     },
     {
       name: "not an object of an account that is no duplicate",
       actor: steward,
-      resource: { ...duplicateObject("closing", "active"), link: null },
+      resource: onCase({ ...duplicateObject("closing", "active"), link: null }),
       context: undefined,
       expected: "forbidden",
     },
+    ...caseRules(duplicateObject("closing", "active")),
     ...stewardCases(
-      duplicateObject("closing", "active"),
-      duplicateObject("closing", "active", [steward.userId]),
+      onCase(duplicateObject("closing", "active")),
+      onCase(duplicateObject("closing", "active", [steward.userId])),
     ),
   ]),
   policyMatrix(reauthenticatePolicy, [

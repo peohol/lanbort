@@ -25,6 +25,11 @@ import {
   objectCommitmentSources,
 } from "../objects/commitments";
 import { loadObjectState } from "../objects/state";
+import {
+  type InterventionScope,
+  intervene,
+  withInterventionCase,
+} from "../platform/interventions";
 import { blockedWithAny, lockPairsWith } from "../social/pair";
 import {
   accountFalseIdentityRecorded,
@@ -37,6 +42,7 @@ import {
   type AccountRecordResource,
   type AccountResource,
   type DuplicateObjectResource,
+  type DuplicateRetirementResource,
   linkSamePersonPolicy,
   moveDuplicateObjectPolicy,
   readAccountIdentityRecordPolicy,
@@ -122,60 +128,91 @@ export const retireDuplicateAccount = defineCommand({
   output: accountLifecycleResultSchema,
   policy: retireDuplicateAccountPolicy,
   idempotency: "required",
-  load: ({ tx, input }) =>
-    loadDuplicatePair(tx, input.userId, input.continuedUserId),
-  execute: async ({ tx, actor, input, resource, events, now }) => {
-    const { retired, continued } = resource;
-    const existing = await tx
-      .selectFrom("app.account_links")
-      .select("linked_user_id")
-      .where("kind", "=", "duplicate")
-      .where("user_id", "=", retired.userId)
-      .executeTakeFirst();
-
-    if (existing && existing.linked_user_id !== continued.userId) {
-      conflict("Already retired as a duplicate of another account", [
-        "continuedUserId",
-      ]);
-    }
-
-    const result =
-      retired.status === "closing"
-        ? { userId: retired.userId, status: retired.status }
-        : await changeAccountStatus(
-            tx,
-            {
-              account: retired,
-              to: "closing",
-              reason: "platform",
-              actor,
-              basis: input.basis,
-            },
-            events,
-            now,
-          );
-
-    if (!existing) {
-      await tx
-        .insertInto("app.account_links")
-        .values({
-          kind: "duplicate",
-          user_id: retired.userId,
-          linked_user_id: continued.userId,
-          basis: input.basis,
-          recorded_by_user_id: actingStewardId(actor),
-          recorded_at: now,
-        })
-        .execute();
-      events.record(accountRetiredAsDuplicate, {
-        resourceId: retired.userId,
-        payload: { continuedUserId: continued.userId },
-      });
-    }
-
-    return result;
-  },
+  load: async ({ tx, actor, input, now }) =>
+    withInterventionCase(
+      tx,
+      actor,
+      input.caseId,
+      now,
+      await loadDuplicatePair(tx, input.userId, input.continuedUserId),
+      ({ retired, continued }) => ({
+        userIds: [retired.userId, continued.userId],
+      }),
+    ),
+  execute: (scope) => intervene(scope, () => retire(scope)),
 });
+
+async function retire({
+  tx,
+  actor,
+  input,
+  resource,
+  events,
+  now,
+}: InterventionScope & {
+  readonly input: z.infer<typeof retireDuplicateAccountSchema>;
+  readonly resource: DuplicateRetirementResource;
+}) {
+  const { retired, continued } = resource;
+  const existing = await tx
+    .selectFrom("app.account_links")
+    .select("linked_user_id")
+    .where("kind", "=", "duplicate")
+    .where("user_id", "=", retired.userId)
+    .executeTakeFirst();
+
+  if (existing && existing.linked_user_id !== continued.userId) {
+    conflict("Already retired as a duplicate of another account", [
+      "continuedUserId",
+    ]);
+  }
+
+  const result =
+    retired.status === "closing"
+      ? { userId: retired.userId, status: retired.status }
+      : await changeAccountStatus(
+          tx,
+          {
+            account: retired,
+            to: "closing",
+            reason: "platform",
+            actor,
+            basis: input.basis,
+          },
+          events,
+          now,
+        );
+
+  if (!existing) {
+    await tx
+      .insertInto("app.account_links")
+      .values({
+        kind: "duplicate",
+        user_id: retired.userId,
+        linked_user_id: continued.userId,
+        basis: input.basis,
+        recorded_by_user_id: actingStewardId(actor),
+        recorded_at: now,
+      })
+      .execute();
+    events.record(accountRetiredAsDuplicate, {
+      resourceId: retired.userId,
+      payload: { continuedUserId: continued.userId },
+    });
+  }
+
+  return {
+    result,
+    taken:
+      existing && retired.status === "closing"
+        ? null
+        : ({
+            kind: "account_retired_as_duplicate",
+            userId: retired.userId,
+            otherUserId: continued.userId,
+          } as const),
+  };
+}
 
 /** The accounts a record concerns; null unless every one exists. */
 async function loadRecordAccounts(
@@ -217,51 +254,67 @@ export const linkSamePerson = defineCommand({
   output: accountRecordResultSchema,
   policy: linkSamePersonPolicy,
   idempotency: "required",
-  load: ({ tx, input }) =>
-    loadRecordAccounts(tx, input.userId, [input.linkedUserId]),
-  execute: async ({ tx, actor, input, events, now }) => {
-    const [first, second] = [input.userId, input.linkedUserId].sort() as [
-      string,
-      string,
-    ];
-    const inserted = await tx
-      .insertInto("app.account_links")
-      .values({
-        kind: "same_person",
-        user_id: first,
-        linked_user_id: second,
-        basis: input.basis,
-        recorded_by_user_id: actingStewardId(actor),
-        recorded_at: now,
-      })
-      .onConflict((conflicting) =>
-        conflicting
-          .columns(["user_id", "linked_user_id"])
-          .where("kind", "=", "same_person")
-          .doNothing(),
-      )
-      .returning("id")
-      .executeTakeFirst();
+  load: async ({ tx, actor, input, now }) =>
+    withInterventionCase(
+      tx,
+      actor,
+      input.caseId,
+      now,
+      await loadRecordAccounts(tx, input.userId, [input.linkedUserId]),
+      ({ involvedUserIds }) => ({ userIds: involvedUserIds }),
+    ),
+  execute: (scope) =>
+    intervene(scope, async () => {
+      const { tx, actor, input, events, now } = scope;
+      const [first, second] = [input.userId, input.linkedUserId].sort() as [
+        string,
+        string,
+      ];
+      const inserted = await tx
+        .insertInto("app.account_links")
+        .values({
+          kind: "same_person",
+          user_id: first,
+          linked_user_id: second,
+          basis: input.basis,
+          recorded_by_user_id: actingStewardId(actor),
+          recorded_at: now,
+        })
+        .onConflict((conflicting) =>
+          conflicting
+            .columns(["user_id", "linked_user_id"])
+            .where("kind", "=", "same_person")
+            .doNothing(),
+        )
+        .returning("id")
+        .executeTakeFirst();
 
-    if (inserted) {
-      events.record(accountsLinkedAsSamePerson, {
-        resourceId: first,
-        payload: { linkedUserId: second },
-      });
+      if (inserted) {
+        events.record(accountsLinkedAsSamePerson, {
+          resourceId: first,
+          payload: { linkedUserId: second },
+        });
 
-      return { id: inserted.id };
-    }
+        return {
+          result: { id: inserted.id },
+          taken: {
+            kind: "accounts_linked_as_same_person",
+            userId: input.userId,
+            otherUserId: input.linkedUserId,
+          },
+        };
+      }
 
-    const { id } = await tx
-      .selectFrom("app.account_links")
-      .select("id")
-      .where("kind", "=", "same_person")
-      .where("user_id", "=", first)
-      .where("linked_user_id", "=", second)
-      .executeTakeFirstOrThrow();
+      const { id } = await tx
+        .selectFrom("app.account_links")
+        .select("id")
+        .where("kind", "=", "same_person")
+        .where("user_id", "=", first)
+        .where("linked_user_id", "=", second)
+        .executeTakeFirstOrThrow();
 
-    return { id };
-  },
+      return { result: { id }, taken: null };
+    }),
 });
 
 /**
@@ -278,42 +331,55 @@ export const recordFalseIdentity = defineCommand({
   output: accountRecordResultSchema,
   policy: recordFalseIdentityPolicy,
   idempotency: "required",
-  load: ({ tx, input }) => loadRecordAccounts(tx, input.userId, []),
-  execute: async ({ tx, actor, input, events, now }) => {
-    const finding: AccountIdentityFinding = "false_identity";
-    const inserted = await tx
-      .insertInto("app.account_identity_findings")
-      .values({
-        user_id: input.userId,
-        finding,
-        basis: input.basis,
-        recorded_by_user_id: actingStewardId(actor),
-        recorded_at: now,
-      })
-      .onConflict((conflicting) =>
-        conflicting.columns(["user_id", "finding"]).doNothing(),
-      )
-      .returning("id")
-      .executeTakeFirst();
+  load: async ({ tx, actor, input, now }) =>
+    withInterventionCase(
+      tx,
+      actor,
+      input.caseId,
+      now,
+      await loadRecordAccounts(tx, input.userId, []),
+      ({ userId }) => ({ userIds: [userId] }),
+    ),
+  execute: (scope) =>
+    intervene(scope, async () => {
+      const { tx, actor, input, events, now } = scope;
+      const finding: AccountIdentityFinding = "false_identity";
+      const inserted = await tx
+        .insertInto("app.account_identity_findings")
+        .values({
+          user_id: input.userId,
+          finding,
+          basis: input.basis,
+          recorded_by_user_id: actingStewardId(actor),
+          recorded_at: now,
+        })
+        .onConflict((conflicting) =>
+          conflicting.columns(["user_id", "finding"]).doNothing(),
+        )
+        .returning("id")
+        .executeTakeFirst();
 
-    if (inserted) {
-      events.record(accountFalseIdentityRecorded, {
-        resourceId: input.userId,
-        payload: {},
-      });
+      if (inserted) {
+        events.record(accountFalseIdentityRecorded, {
+          resourceId: input.userId,
+          payload: {},
+        });
 
-      return { id: inserted.id };
-    }
+        return {
+          result: { id: inserted.id },
+          taken: { kind: "false_identity_recorded", userId: input.userId },
+        };
+      }
 
-    const { id } = await tx
-      .selectFrom("app.account_identity_findings")
-      .select("id")
-      .where("user_id", "=", input.userId)
-      .where("finding", "=", finding)
-      .executeTakeFirstOrThrow();
+      const { id } = await tx
+        .selectFrom("app.account_identity_findings")
+        .select("id")
+        .where("user_id", "=", input.userId)
+        .where("finding", "=", finding)
+        .executeTakeFirstOrThrow();
 
-    return { id };
-  },
+      return { result: { id }, taken: null };
+    }),
 });
 
 /**
@@ -515,71 +581,88 @@ export function defineMoveDuplicateObject(
     output: moveDuplicateObjectResultSchema,
     policy: moveDuplicateObjectPolicy,
     idempotency: "required",
-    load: ({ tx, input }) => loadDuplicateObject(tx, input.objectId),
-    execute: async ({ tx, actor, input, resource, events, now }) => {
-      const { objectId, link } = resource;
+    load: async ({ tx, actor, input, now }) =>
+      withInterventionCase(
+        tx,
+        actor,
+        input.caseId,
+        now,
+        await loadDuplicateObject(tx, input.objectId),
+        ({ objectId, ownerIds }) => ({ userIds: ownerIds, objectId }),
+      ),
+    execute: (scope) =>
+      intervene(scope, async () => {
+        const { tx, actor, input, resource, events, now } = scope;
+        const { objectId, link } = resource;
 
-      if (!link) {
-        throw new Error("The policy admits only a duplicate's object");
-      }
-
-      const retiredId = link.retired.userId;
-      const continuedId = link.continued.userId;
-
-      if (resource.ownerIds.includes(continuedId)) {
-        conflict("The continuing account already owns the object");
-      }
-
-      await lockPairsWith(tx, continuedId, [retiredId]);
-
-      if (await blockedWithAny(tx, continuedId, [retiredId])) {
-        conflict("The accounts block each other");
-      }
-
-      await tx
-        .insertInto("app.object_owners")
-        .values({ object_id: objectId, user_id: continuedId, added_at: now })
-        .execute();
-      await tx
-        .insertInto("app.account_object_transfers")
-        .values({
-          link_id: link.id,
-          object_id: objectId,
-          from_user_id: retiredId,
-          to_user_id: continuedId,
-          basis: input.basis,
-          moved_by_user_id: actingStewardId(actor),
-          moved_at: now,
-        })
-        .execute();
-      events.record(objectMovedFromDuplicate, {
-        resourceId: objectId,
-        payload: { fromUserId: retiredId, toUserId: continuedId },
-      });
-
-      await tx
-        .updateTable("app.object_co_owner_invitations")
-        .set({ status: "closed", ended_at: now })
-        .where("object_id", "=", objectId)
-        .where("status", "=", "pending")
-        .execute();
-      await endPublicationsBeyond(tx, objectId, continuedId, now);
-
-      const commitments = await loadCommitments(tx, objectId, sources);
-      const formerOwnerLeft = !commitments.some(
-        (commitment) => commitment.responsibleOwnerId === retiredId,
-      );
-
-      if (formerOwnerLeft) {
-        const object = await loadObjectState(tx, objectId);
-
-        if (object) {
-          await removeOwner(tx, object, retiredId, events, now);
+        if (!link) {
+          throw new Error("The policy admits only a duplicate's object");
         }
-      }
 
-      return { objectId, formerOwnerLeft };
-    },
+        const retiredId = link.retired.userId;
+        const continuedId = link.continued.userId;
+
+        if (resource.ownerIds.includes(continuedId)) {
+          conflict("The continuing account already owns the object");
+        }
+
+        await lockPairsWith(tx, continuedId, [retiredId]);
+
+        if (await blockedWithAny(tx, continuedId, [retiredId])) {
+          conflict("The accounts block each other");
+        }
+
+        await tx
+          .insertInto("app.object_owners")
+          .values({ object_id: objectId, user_id: continuedId, added_at: now })
+          .execute();
+        await tx
+          .insertInto("app.account_object_transfers")
+          .values({
+            link_id: link.id,
+            object_id: objectId,
+            from_user_id: retiredId,
+            to_user_id: continuedId,
+            basis: input.basis,
+            moved_by_user_id: actingStewardId(actor),
+            moved_at: now,
+          })
+          .execute();
+        events.record(objectMovedFromDuplicate, {
+          resourceId: objectId,
+          payload: { fromUserId: retiredId, toUserId: continuedId },
+        });
+
+        await tx
+          .updateTable("app.object_co_owner_invitations")
+          .set({ status: "closed", ended_at: now })
+          .where("object_id", "=", objectId)
+          .where("status", "=", "pending")
+          .execute();
+        await endPublicationsBeyond(tx, objectId, continuedId, now);
+
+        const commitments = await loadCommitments(tx, objectId, sources);
+        const formerOwnerLeft = !commitments.some(
+          (commitment) => commitment.responsibleOwnerId === retiredId,
+        );
+
+        if (formerOwnerLeft) {
+          const object = await loadObjectState(tx, objectId);
+
+          if (object) {
+            await removeOwner(tx, object, retiredId, events, now);
+          }
+        }
+
+        return {
+          result: { objectId, formerOwnerLeft },
+          taken: {
+            kind: "object_moved_from_duplicate",
+            userId: retiredId,
+            objectId,
+          },
+        };
+      }),
   });
 }
 

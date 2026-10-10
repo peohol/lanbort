@@ -141,6 +141,15 @@ export const caseKinds: Record<
     closingMessage: true,
     openerEnds: "withdraw",
   },
+  // A steward's own basis for intervening (PS-ADM-015): nobody takes part,
+  // so it closes without a closing message.
+  platform_inquiry: {
+    turns: false,
+    separateStatements: false,
+    platform: true,
+    closingMessage: false,
+    openerEnds: null,
+  },
 };
 
 /** The kinds the platform stewards handle (`app.case_platform_kind`). */

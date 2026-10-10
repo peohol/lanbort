@@ -372,6 +372,11 @@ export async function insertCase(
     .returning("id")
     .executeTakeFirstOrThrow();
 
+  // A steward's own inquiry has nobody taking part (PS-ADM-015).
+  if (values.participants.length === 0) {
+    return id;
+  }
+
   await db
     .insertInto("app.case_participants")
     .values(

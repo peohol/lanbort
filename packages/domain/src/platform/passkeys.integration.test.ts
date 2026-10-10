@@ -74,7 +74,10 @@ async function auditOf(userId: string) {
     .execute();
 }
 
-/** The security notices the steward got about their passkeys, oldest first. */
+/**
+ * The security notices the steward got about their passkeys, oldest first
+ * by delivery; within one delivery their order is not fixed.
+ */
 async function toldAbout(steward: Awaited<ReturnType<typeof testSteward>>) {
   await deliverAll(db, consumers);
   const actor = await steward.signIn();
@@ -349,10 +352,10 @@ describe("steward passkeys (ADR-0011, OD-0023)", () => {
         })
       ).passkeys.map((passkey) => passkey.id);
     const [lostId, keptId] = await ids();
-    expect(await toldAbout(steward)).toEqual([
+    expect((await toldAbout(steward)).sort()).toEqual([
+      "added",
+      "added",
       "enrollment_code",
-      "added",
-      "added",
     ]);
 
     // Removing takes a fresh confirmation.
@@ -383,7 +386,10 @@ describe("steward passkeys (ADR-0011, OD-0023)", () => {
       new TestPasskey(testSite),
     );
     expect(mayAct(await steward.signIn())).toBe("allow");
-    expect((await toldAbout(steward)).slice(3)).toEqual(["removed", "added"]);
+    expect((await toldAbout(steward)).slice(3).sort()).toEqual([
+      "added",
+      "removed",
+    ]);
 
     // Someone else's passkey is not found.
     const other = await testSteward(domain);
@@ -433,10 +439,10 @@ describe("steward passkeys (ADR-0011, OD-0023)", () => {
     );
     expect(removed).toHaveLength(2);
     // The reset is told once, not per passkey it removed.
-    expect((await toldAbout(steward)).slice(3)).toEqual([
+    expect((await toldAbout(steward)).slice(3).sort()).toEqual([
+      "added",
+      "added",
       "reset",
-      "added",
-      "added",
     ]);
     // Events name only ids, never a code, a key or a reason.
     for (const event of await auditOf((await steward.signIn()).userId)) {

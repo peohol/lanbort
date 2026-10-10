@@ -23,6 +23,7 @@ export const caseKindLabels: Record<CaseKind, string> = {
   unavailability_report: "Melding om at noen kan være utilgjengelig",
   environment_report: "Rapport",
   platform_report: "Rapport til Lånbort",
+  platform_inquiry: "Saksgrunnlag for inngrep",
 };
 
 /** The icon of each kind, in lists and on Home (Tomat kjerneflyt 8). */
@@ -32,6 +33,7 @@ export const caseKindIcons: Record<CaseKind, IconName> = {
   unavailability_report: "person",
   environment_report: "flag",
   platform_report: "flag",
+  platform_inquiry: "flag",
 };
 
 /**
@@ -116,6 +118,9 @@ export function caseTitle(
       return c.title ? `Mekling om ${c.title}` : caseKindLabels[c.kind];
     case "unavailability_report":
       return `Melding om ${subject()}`;
+    case "platform_inquiry":
+      if (c.reportTarget === "user") return `Saksgrunnlag om ${subject()}`;
+      return c.title ? `Saksgrunnlag om «${c.title}»` : caseKindLabels[c.kind];
     default:
       if (c.reportTarget === "user") return `Rapport om ${subject()}`;
       if (c.reportTarget === "object" && c.title) {

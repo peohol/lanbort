@@ -206,7 +206,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0026 — Hvor plattformforvalterens inngrep på kontoer og miljøer gjøres
 - **Lag:** UX
 - **Status:** Avklart (produkteier, 10. oktober 2026)
-- **Beslutning:** Se [PS-ADM-015](product-spec/07-administrasjon-og-livssyklus.md). Alle inngrep starter fra en sak i plattformkøen med habilitet, begrunnelse og sporbarhet; uten rapport opprettes et autorisert saksgrunnlag først. Ingen inngrepsknapper på vanlige person- og miljøsider. Ikke bygget, og stengt til WebAuthn/OD-0023.
+- **Beslutning:** Se [PS-ADM-015](product-spec/07-administrasjon-og-livssyklus.md). Alle inngrep starter fra en sak i plattformkøen med habilitet, begrunnelse og sporbarhet; uten rapport opprettes et autorisert saksgrunnlag først. Ingen inngrepsknapper på vanlige person- og miljøsider. Bygget på serveren; ikke i appen ennå, og stengt i produksjon til WebAuthn er verifisert der.
 
 ### OD-0054 — Eiernavn når en ting er delt direkte med venner
 - **Lag:** Produktspesifikasjon

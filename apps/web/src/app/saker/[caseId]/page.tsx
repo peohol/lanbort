@@ -60,6 +60,18 @@ function audiencesFor(c: Case, handlers: string): AudienceChoice[] {
   const name = (userId: string) => personIn(c.people, userId);
   const asFunction = `Partene ser innlegget som fra «${handlers.toLowerCase()}», ikke fra deg.`;
   const single = c.participants.length === 1 ? c.participants[0] : null;
+  const internal: AudienceChoice = {
+    value: "handlers",
+    label: "Internt notat",
+    icon: "lock",
+    audience: "handlers",
+    help: "Bare dere som behandler saken, ser notatet.",
+  };
+
+  // A steward's own inquiry has nobody to write to (PS-ADM-015).
+  if (c.participants.length === 0) {
+    return [internal];
+  }
 
   return [
     single
@@ -87,13 +99,7 @@ function audiencesFor(c: Case, handlers: string): AudienceChoice[] {
           toUserId: participant.userId,
           help: `Bare ${name(participant.userId)} ser innlegget, som fra administratorene.`,
         }))),
-    {
-      value: "handlers",
-      label: "Internt notat",
-      icon: "lock",
-      audience: "handlers",
-      help: "Bare dere som behandler saken, ser notatet.",
-    },
+    internal,
   ];
 }
 
@@ -208,6 +214,8 @@ function handlerStep(
       ? "Vurder om publiseringen skal avvises eller sperres i miljøet. Saken kan også lukkes uten tiltak."
       : "Det finnes ingen tiltak i miljøet for en rapport om en person. Du kan skrive til den som rapporterte, eller lukke saken.",
     platform_report: "Vurder rapporten, og lukk saken når den er vurdert.",
+    platform_inquiry:
+      "Saken er grunnlaget for inngrep uten rapport. Lukk den når vurderingen er ferdig.",
     unavailability_report:
       "Meldingen endrer ingenting av seg selv. Lukk saken når den er vurdert.",
   };

@@ -3,6 +3,9 @@ import { policyMatrix } from "../authorization/policy-matrix";
 import { testUserActor } from "../testing/actors";
 import {
   beginPasskeyConfirmationPolicy,
+  endEnvironmentRolesPolicy,
+  type InterventionCase,
+  openPlatformInquiryPolicy,
   beginPasskeyRegistrationPolicy,
   finishPasskeyConfirmationPolicy,
   finishPasskeyRegistrationPolicy,
@@ -96,6 +99,7 @@ export const platformMatrices = [
     })),
   ]),
   ...passkeyMatrices(),
+  ...interventionMatrices(),
 ];
 
 /** OD-0023: a steward's own passkeys, and the operational commands. */
@@ -339,5 +343,153 @@ function passkeyMatrices() {
     ]),
     opsMatrix(issueEnrollmentCodePolicy),
     opsMatrix(resetStewardPasskeysPolicy),
+  ];
+}
+
+/** PS-ADM-015: a steward's own inquiry, and an intervention in an environment. */
+function interventionMatrices() {
+  const someone = "00000000-0000-4000-8000-000000000003";
+  const withoutStrongAuth = testUserActor({
+    platformRoles: ["platform_steward"],
+  });
+  const notSteward = [
+    {
+      name: "not without stronger authentication",
+      actor: withoutStrongAuth,
+      expected: "stronger_authentication_required" as const,
+    },
+    {
+      name: "an ordinary user cannot",
+      actor: testUserActor(),
+      expected: "forbidden" as const,
+    },
+    {
+      name: "anonymous caller",
+      actor: anonymousActor,
+      expected: "unauthenticated" as const,
+    },
+  ];
+  const user = (status: "active" | "pending_registration" | "deleted") => ({
+    kind: "user" as const,
+    userId: someone,
+    status,
+  });
+  const object = (ownerIds: readonly string[]) => ({
+    kind: "object" as const,
+    objectId: "00000000-0000-4000-8000-000000000004",
+    ownerIds,
+  });
+  const roles = (standing: Partial<InterventionCase> = {}) => ({
+    environmentId: "00000000-0000-4000-8000-000000000005",
+    userId: someone,
+    fromCase: {
+      id: "00000000-0000-4000-8000-000000000006",
+      kind: "platform_report" as const,
+      holdsRole: true,
+      involved: false,
+      about: true,
+      ...standing,
+    },
+  });
+
+  return [
+    policyMatrix(openPlatformInquiryPolicy, [
+      {
+        name: "a steward opens an inquiry about someone's account",
+        actor: steward,
+        resource: user("active"),
+        context: undefined,
+        expected: "allow",
+      },
+      {
+        name: "or about someone else's thing",
+        actor: steward,
+        resource: object([someone]),
+        context: undefined,
+        expected: "allow",
+      },
+      {
+        name: "never about the steward's own account",
+        actor: steward,
+        resource: { ...user("active"), userId: steward.userId },
+        context: undefined,
+        expected: "conflict_of_interest",
+      },
+      {
+        name: "never about a thing the steward owns",
+        actor: steward,
+        resource: object([someone, steward.userId]),
+        context: undefined,
+        expected: "conflict_of_interest",
+      },
+      {
+        name: "not about an account that never completed registration",
+        actor: steward,
+        resource: user("pending_registration"),
+        context: undefined,
+        expected: "not_found",
+      },
+      {
+        name: "not about a deleted account",
+        actor: steward,
+        resource: user("deleted"),
+        context: undefined,
+        expected: "not_found",
+      },
+      ...notSteward.map((row) => ({
+        ...row,
+        resource: user("active"),
+        context: undefined,
+      })),
+    ]),
+    policyMatrix(endEnvironmentRolesPolicy, [
+      {
+        name: "a steward ends someone's roles from the report about them",
+        actor: steward,
+        resource: roles(),
+        context: undefined,
+        expected: "allow",
+      },
+      {
+        name: "or from the steward's own inquiry",
+        actor: steward,
+        resource: roles({ kind: "platform_inquiry" }),
+        context: undefined,
+        expected: "allow",
+      },
+      {
+        name: "not from a case of another queue",
+        actor: steward,
+        resource: roles({ kind: "environment_report", holdsRole: false }),
+        context: undefined,
+        expected: "not_found",
+      },
+      {
+        name: "not from a case the steward is involved in",
+        actor: steward,
+        resource: roles({ involved: true }),
+        context: undefined,
+        expected: "conflict_of_interest",
+      },
+      {
+        name: "not toward someone the case is not about",
+        actor: steward,
+        resource: roles({ about: false }),
+        context: undefined,
+        expected: "forbidden",
+      },
+      {
+        name: "never the steward's own roles",
+        actor: steward,
+        resource: { ...roles(), userId: steward.userId },
+        context: undefined,
+        expected: "conflict_of_interest",
+      },
+      ...notSteward.map((row) => ({
+        ...row,
+        resource: roles(),
+        context: undefined,
+      })),
+    ]),
   ];
 }

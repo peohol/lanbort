@@ -3,6 +3,7 @@ import {
   type AccountLifecycleResult,
   accountLifecycleResultSchema,
   type AccountStatusReason,
+  type PlatformInterventionKind,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
@@ -14,6 +15,8 @@ import { releaseEnvironmentRoles } from "../environment/continuity-commands";
 import { DomainError } from "../errors";
 import type { EventRecorder } from "../events/recorder";
 import { stopReservedLoansOf } from "../loans/account-lifecycle";
+import { intervene, withInterventionCase } from "../platform/interventions";
+import type { FromCase } from "../platform/policies";
 import {
   accountClosureStarted,
   accountDeactivated,
@@ -223,11 +226,32 @@ export const makeAccountDormant = defineCommand({
     ),
 });
 
-/** A platform steward's intervention, with its basis (PS-ADM-014). */
+/** The account an intervention is toward, with the case it is taken from. */
+export async function loadAccountFromCase(
+  tx: Db,
+  actor: Actor,
+  input: { readonly caseId: string; readonly userId: string },
+  now: Date,
+) {
+  return withInterventionCase(
+    tx,
+    actor,
+    input.caseId,
+    now,
+    await loadAccountForChange(tx, input.userId),
+    (account) => ({ userIds: [account.userId] }),
+  );
+}
+
+/**
+ * A platform steward's intervention, from its case and with its basis
+ * (PS-ADM-014, PS-ADM-015).
+ */
 function intervention(
   name: string,
-  policy: Policy<AccountResource, void>,
+  policy: Policy<AccountResource & FromCase, void>,
   to: AccountStatusChange["to"],
+  kind: PlatformInterventionKind,
 ) {
   return defineCommand({
     name,
@@ -235,20 +259,24 @@ function intervention(
     output: accountLifecycleResultSchema,
     policy,
     idempotency: "required",
-    load: ({ tx, input }) => loadAccountForChange(tx, input.userId),
-    execute: ({ tx, actor, input, resource, events, now }) =>
-      changeAccountStatus(
-        tx,
-        {
-          account: resource,
-          to,
-          reason: "platform",
-          actor,
-          basis: input.basis,
-        },
-        events,
-        now,
-      ),
+    load: ({ tx, actor, input, now }) =>
+      loadAccountFromCase(tx, actor, input, now),
+    execute: (scope) =>
+      intervene(scope, async () => ({
+        result: await changeAccountStatus(
+          scope.tx,
+          {
+            account: scope.resource,
+            to,
+            reason: "platform",
+            actor: scope.actor,
+            basis: scope.input.basis,
+          },
+          scope.events,
+          scope.now,
+        ),
+        taken: { kind, userId: scope.resource.userId },
+      })),
   });
 }
 
@@ -257,6 +285,7 @@ export const suspendAccount = intervention(
   "account.suspend",
   suspendAccountPolicy,
   "suspended",
+  "account_suspended",
 );
 
 /** Ends a suspension, or a closure that was not completed. */
@@ -264,6 +293,7 @@ export const reinstateAccount = intervention(
   "account.reinstate",
   reinstateAccountPolicy,
   "active",
+  "account_reinstated",
 );
 
 /**
@@ -274,4 +304,5 @@ export const startAccountClosure = intervention(
   "account.start_closure",
   startAccountClosurePolicy,
   "closing",
+  "account_closure_started",
 );

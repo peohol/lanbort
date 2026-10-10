@@ -49,6 +49,7 @@ const {
   run,
   user,
   steward,
+  about,
   create,
   addCoOwner,
   friends,
@@ -449,9 +450,14 @@ describe("deleting an account (PS-ADM-005–006)", () => {
     const target = await user();
     const basis = "Kontrollert avslutning etter henvendelse";
 
-    await run(startAccountClosure, platform, { userId: target.userId, basis });
+    await run(startAccountClosure, platform, {
+      caseId: await about(platform, target.userId),
+      userId: target.userId,
+      basis,
+    });
     await expect(remove(target)).rejects.toMatchObject({ code: "forbidden" });
     await run(completeAccountClosure, platform, {
+      caseId: await about(platform, target.userId),
       userId: target.userId,
       basis,
     });

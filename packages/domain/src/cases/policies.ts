@@ -121,6 +121,15 @@ export const writeCaseEntryPolicy = casePolicy(
   asParticipantOrHandler,
 );
 
+/**
+ * PS-ADM-014: the platform interventions taken from the case, with their
+ * bases, for whoever may handle it; never for its participants.
+ */
+export const readCaseInterventionsPolicy = casePolicy(
+  "case.read_interventions",
+  asHandler,
+);
+
 export const claimCasePolicy = casePolicy("case.claim", asHandler);
 export const releaseCasePolicy = casePolicy("case.release", asHandler);
 export const transferCasePolicy = casePolicy("case.transfer", asHandler);
@@ -211,6 +220,7 @@ export const casePolicies = [
   readCasePolicy,
   readCaseImagePolicy,
   writeCaseEntryPolicy,
+  readCaseInterventionsPolicy,
   claimCasePolicy,
   releaseCasePolicy,
   transferCasePolicy,
