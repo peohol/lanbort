@@ -38,6 +38,11 @@ dump() {
     -x storage.buckets_vectors -x storage.vector_indexes
   supabase db dump "${source[@]}" -f "$dir/history_schema.sql" --schema supabase_migrations
   supabase db dump "${source[@]}" -f "$dir/history_data.sql" --use-copy --data-only --schema supabase_migrations
+  # The linked project's service versions (`supabase link` writes them), so
+  # a restore runs the Auth and Storage whose tables the dump holds.
+  if [[ -z "${SOURCE_DB_URL:-}" ]] && compgen -G "supabase/.temp/*-version" > /dev/null; then
+    cp supabase/.temp/*-version "$dir/"
+  fi
 }
 
 restore_stack_id="lanbort-restore"
@@ -50,6 +55,10 @@ restore() {
 
   mkdir -p "$work"
   supabase init --workdir "$work" --force > /dev/null
+  if compgen -G "$dir/*-version" > /dev/null; then
+    mkdir -p "$work/supabase/.temp"
+    cp "$dir"/*-version "$work/supabase/.temp/"
+  fi
   # Own name and ports (543xx -> 553xx), so it never touches another stack.
   sed -i \
     -e "s/^project_id = .*/project_id = \"${restore_stack_id}\"/" \
@@ -59,17 +68,20 @@ restore() {
     -x realtime,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor,mailpit > /dev/null
 
   # As the local superuser: a dump may grant platform settings (roles.sql)
-  # that only the platform's own admin may grant.
+  # that only the platform's own admin may grant. An error names only the
+  # file, line and SQLSTATE, since its message can quote a value.
   docker exec "$db" mkdir -p /tmp/restore
   for file in roles schema data history_schema history_data; do
     docker cp "$dir/$file.sql" "$db:/tmp/restore/$file.sql" > /dev/null
   done
   docker exec "$db" psql --quiet --single-transaction --variable ON_ERROR_STOP=1 \
+    --variable VERBOSITY=sqlstate --variable SHOW_CONTEXT=never \
     --username supabase_admin --dbname postgres \
     --file /tmp/restore/roles.sql --file /tmp/restore/schema.sql \
     --command 'SET session_replication_role = replica' \
     --file /tmp/restore/data.sql > /dev/null
   docker exec "$db" psql --quiet --single-transaction --variable ON_ERROR_STOP=1 \
+    --variable VERBOSITY=sqlstate --variable SHOW_CONTEXT=never \
     --username supabase_admin --dbname postgres \
     --file /tmp/restore/history_schema.sql --file /tmp/restore/history_data.sql > /dev/null
   docker exec "$db" rm -rf /tmp/restore
