@@ -93,6 +93,7 @@ describe("a co-owner who owned the object when the loan was approved", () => {
       title: expect.any(String),
       categoryId: expect.any(String),
       loanTerms: "Må vaskes etter bruk.",
+      images: [],
       parties: {
         borrower: expect.objectContaining({ realName: "Test Testesen" }),
         lender: expect.objectContaining({ realName: "Test Testesen" }),

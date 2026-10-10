@@ -399,6 +399,33 @@ export async function removeImage(
   return version;
 }
 
+/** Where one image's file is kept, and its type. */
+export interface ImageFile {
+  readonly key: string;
+  readonly contentType: string;
+}
+
+/** The file of the object's image `imageId`, or null if it has none such. */
+export async function findImageFile(
+  db: Kysely<Database>,
+  objectId: string,
+  imageId: string,
+): Promise<ImageFile | null> {
+  const image = await db
+    .selectFrom("app.object_images")
+    .select(["id", "content_type"])
+    .where("id", "=", imageId)
+    .where("object_id", "=", objectId)
+    .executeTakeFirst();
+
+  return image
+    ? {
+        key: objectImageKey(objectId, image.id),
+        contentType: image.content_type,
+      }
+    : null;
+}
+
 /** Authorizes reading one image of an object; its file comes from the store. */
 export const objectImageFile = defineQuery({
   name: "object.read_image",
@@ -409,24 +436,11 @@ export const objectImageFile = defineQuery({
   policy: readObjectPolicy,
   load: async ({ db, input }) => {
     const state = await loadObjectState(db, input.objectId);
-    const image =
-      state &&
-      (await db
-        .selectFrom("app.object_images")
-        .select(["id", "content_type"])
-        .where("id", "=", input.imageId)
-        .where("object_id", "=", state.objectId)
-        .executeTakeFirst());
+    const file =
+      state && (await findImageFile(db, state.objectId, input.imageId));
 
-    return state && image
-      ? {
-          resource: {
-            ...state,
-            key: objectImageKey(state.objectId, image.id),
-            contentType: image.content_type,
-          },
-          context: undefined,
-        }
+    return state && file
+      ? { resource: { ...state, ...file }, context: undefined }
       : null;
   },
   present: ({ resource }) => ({
@@ -451,7 +465,7 @@ export function readObjectImage(
 export async function readImageFile<I, R, C>(
   domain: Pick<DomainContext, "db" | "clock">,
   store: ImageStore,
-  query: QueryDefinition<I, R, C, { key: string; contentType: string }>,
+  query: QueryDefinition<I, R, C, ImageFile>,
   request: { actor: Actor; input: unknown },
 ): Promise<{ bytes: Uint8Array; contentType: string }> {
   const file = await executeQuery(domain, query, request);

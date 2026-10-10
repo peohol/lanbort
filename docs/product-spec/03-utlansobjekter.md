@@ -45,6 +45,11 @@ Et objekt kan eksplisitt publiseres til venner som et eget publiseringsvalg ved 
 
 Som en miljøpublisering endrer valget ikke objektet selv. Det følger de samme grensene som andre måter å finne objektet på: den som ser må være venn med en nåværende eier, og verken blokkering mot en eier, frysing eller sperre for nye lån gjør objektet synlig. Slås valget av eller forsvinner vennskapet, avsluttes ikke-godkjente direkte forespørsler nøytralt (PS-LOAN-002). Godkjente lån fortsetter.
 
+### PS-OBJ-021 — Den som ser tingens navn, ser også bildene
+**Forankring:** PS-OBJ-001; avklarer OD-0049 (produkteier, 10. oktober 2026)
+
+Alle som får se navnet på en ting, skal også kunne se bildene av den, slik de er nå. Det gjelder også gjennom et lån eller en låneforespørsel: partene ser tingens bilder så lenge de ser lånet eller forespørselen, også etter at det er avsluttet, og selv om de ikke lenger finner tingen der forespørselen kom fra. Bildene er ikke en del av avtalen (PS-OBJ-012); en slettet ting har ingen bilder.
+
 ### PS-OBJ-007 — Medeierskap krever aksept
 **Forankring:** [Medeierskap](../vision/04-utlansobjekter.md)
 

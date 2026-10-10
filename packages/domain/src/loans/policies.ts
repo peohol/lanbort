@@ -710,10 +710,31 @@ export const readLoanConditionReportsPolicy = loanPartyPolicy<LoanResource>(
   requireLoanStanding,
 );
 
+/**
+ * PS-OBJ-021: whoever sees the thing's name sees its pictures. A request's
+ * parties see them as they see the request, also once it has ended.
+ */
+export const readLoanRequestImagePolicy = partyPolicy(
+  "loan_request.read_image",
+  ["borrower", "lender"],
+  requireMinimumAccess,
+);
+
+/**
+ * PS-OBJ-021: the thing's pictures for the loan's parties, as they see the
+ * loan, also after it ended.
+ */
+export const readLoanImagePolicy = loanPartyPolicy<LoanResource>(
+  "loan.read_image",
+  bothSides,
+  requireLoanStanding,
+);
+
 export const loanRequestPolicies = [
   createLoanRequestPolicy,
   previewLoanRequestPolicy,
   readLoanRequestPolicy,
+  readLoanRequestImagePolicy,
   withdrawLoanRequestPolicy,
   declineLoanRequestPolicy,
   approveLoanRequestPolicy,
@@ -721,6 +742,7 @@ export const loanRequestPolicies = [
   acceptResponsibilityPolicy,
   listLoanRequestsPolicy,
   readLoanPolicy,
+  readLoanImagePolicy,
   readLoanHistoryPolicy,
   readLoanLogisticsPolicy,
   closeLoanLogisticsPolicy,

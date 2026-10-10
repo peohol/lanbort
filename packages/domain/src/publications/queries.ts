@@ -41,7 +41,7 @@ import {
 } from "../objects/availability";
 import { loadAvailabilityBlocks } from "../objects/blocks";
 import {
-  objectImageKey,
+  findImageFile,
   type ImageStore,
   readImageFile,
 } from "../objects/images";
@@ -677,17 +677,11 @@ export const publishedImageFile = defineQuery({
         actor,
         now,
       );
-      const image =
-        access &&
-        (await tx
-          .selectFrom("app.object_images")
-          .select(["id", "content_type"])
-          .where("id", "=", input.imageId)
-          .where("object_id", "=", input.objectId)
-          .executeTakeFirst());
+      const file =
+        access && (await findImageFile(tx, input.objectId, input.imageId));
       const viewerId = viewerIdOf(actor);
 
-      if (!access || !image || !viewerId) {
+      if (!access || !file || !viewerId) {
         return null;
       }
 
@@ -714,8 +708,7 @@ export const publishedImageFile = defineQuery({
           access,
           discoverable,
           underReview,
-          key: objectImageKey(input.objectId, image.id),
-          contentType: image.content_type,
+          ...file,
         },
         context: undefined,
       };
