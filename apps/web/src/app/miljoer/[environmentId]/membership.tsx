@@ -32,6 +32,7 @@ const stepTones: Record<MembershipStep["kind"], Tone> = {
   closed_to_new: "neutral",
   join: "neutral",
   apply: "neutral",
+  barred: "neutral",
   accept_invitation: "waiting",
   awaiting_review: "waiting",
   information_requested: "warning",
@@ -128,8 +129,10 @@ function StepActions({
   step: MembershipStep;
 }) {
   const command = answerCommand(environment, step);
-  // After a rejection the way on is elsewhere first (Tomat kjerneflyt 3).
-  const rejected = step.kind === "apply" && step.rejected;
+  // After a rejection, or while barred, the way on is elsewhere first
+  // (Tomat kjerneflyt 3, PS-ENV-020).
+  const rejected =
+    (step.kind === "apply" && step.rejected) || step.kind === "barred";
 
   return (
     <>

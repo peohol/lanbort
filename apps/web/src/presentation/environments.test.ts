@@ -32,6 +32,7 @@ const environment = (
   requirements: [],
   members: null,
   applicationRejected: false,
+  restricted: false,
   membership: membership && {
     id: "00000000-0000-4000-8000-0000000000f1",
     state: "active",
@@ -298,6 +299,42 @@ describe("a rejected application (PS-ENV-017)", () => {
     expect(
       membershipStep(environment({ type: "open", applicationRejected: true })),
     ).toEqual({ kind: "join" });
+  });
+});
+
+describe("someone barred from new attempts (PS-ENV-020)", () => {
+  it("says they cannot apply now and offers no way to", () => {
+    const barred = environment({ applicationRejected: true, restricted: true });
+    const step = membershipStep(barred);
+
+    expect(step).toEqual({ kind: "barred", passive: false });
+    expect(describeMembership(barred, step)).toBe(
+      "Du kan ikke søke om å bli med nå.",
+    );
+    expect(membershipLabel(barred, step)).toBe("Ikke godkjent");
+    expect(answerCommand(barred, step)).toBeNull();
+  });
+
+  it("holds in an open environment and for a passive member", () => {
+    expect(
+      membershipStep(environment({ type: "open", restricted: true })),
+    ).toEqual({ kind: "barred", passive: false });
+
+    const passive = environment(
+      { restricted: true },
+      { state: "passive", passiveReason: "requirements_not_met" },
+    );
+    const step = membershipStep(passive);
+
+    expect(step).toEqual({ kind: "barred", passive: true });
+    expect(membershipLabel(passive, step)).toBe("Passivt medlem");
+    expect(answerCommand(passive, step)).toBeNull();
+  });
+
+  it("leaves a winding-down environment as it was", () => {
+    expect(
+      membershipStep(environment({ state: "winding_down", restricted: true })),
+    ).toEqual({ kind: "closed_to_new" });
   });
 });
 

@@ -243,6 +243,7 @@ export const getEnvironment = defineQuery({
           )
         : null,
       applicationRejected: resource.applicationRejected,
+      restricted: viewer.restricted,
       roles: [...viewer.roles],
       continuity: continuity
         ? presentContinuity(

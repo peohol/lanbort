@@ -194,7 +194,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0053 — Hva den som er stengt ute fra nye forsøk, får vite
 - **Lag:** Produktspesifikasjon
 - **Status:** Avklart (produkteier, 10. oktober 2026)
-- **Beslutning:** Se [PS-ENV-020](product-spec/02-miljoer.md). Nøytralt avslag som i PS-ENV-017; etterpå sier miljøsiden «Du kan ikke søke om å bli med nå», uten aktiv søknadsknapp, og skjulte miljøer røpes ikke. Ikke bygget.
+- **Beslutning:** Se [PS-ENV-020](product-spec/02-miljoer.md). Nøytralt avslag som i PS-ENV-017; etterpå sier miljøsiden «Du kan ikke søke om å bli med nå», uten aktiv søknadsknapp, og skjulte miljøer røpes ikke. Bygget.
 
 ### OD-0025 — Fjerning og utestengelse av aktive medlemmer i et miljø
 - **Lag:** Produktspesifikasjon

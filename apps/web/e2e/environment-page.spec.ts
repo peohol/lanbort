@@ -1,4 +1,4 @@
-import { type Browser, expect, test } from "@playwright/test";
+import { type Browser, expect, type Page, test } from "@playwright/test";
 import {
   accountId,
   axeViolations,
@@ -234,11 +234,13 @@ test("an environment is created, applied to, used and left in the browser", asyn
   expect(problems).toEqual([]);
 });
 
-test("a rejected application is said neutrally on the environment's page (PS-ENV-017)", async ({
-  browser,
-  page,
-  baseURL,
-}) => {
+/** Anna's closed environment, where she has rejected Bo's application. */
+async function rejectedApplication(
+  browser: Browser,
+  page: Page,
+  baseURL: string,
+  options: { restrict?: true } = {},
+) {
   await registerThroughApi(page.request, undefined, "Anna Berg");
   const { environmentId } = await (
     await postCommand(page.request, "/api/environments", {
@@ -246,7 +248,7 @@ test("a rejected application is said neutrally on the environment's page (PS-ENV
       type: "closed",
     })
   ).json();
-  const bo = await person(browser, baseURL!, "Bo Lien");
+  const bo = await person(browser, baseURL, "Bo Lien");
   const { membershipId } = await (
     await postCommand(bo.context.request, "/api/environments/membership/join", {
       environmentId,
@@ -256,7 +258,22 @@ test("a rejected application is said neutrally on the environment's page (PS-ENV
   await postCommand(page.request, "/api/environments/memberships/reject", {
     environmentId,
     membershipId,
+    ...options,
   });
+
+  return { environmentId, bo };
+}
+
+test("a rejected application is said neutrally on the environment's page (PS-ENV-017)", async ({
+  browser,
+  page,
+  baseURL,
+}) => {
+  const { environmentId, bo } = await rejectedApplication(
+    browser,
+    page,
+    baseURL!,
+  );
 
   await bo.page.goto(`/miljoer/${environmentId}`);
   const status = bo.page.getByRole("region", { name: "Status" });
@@ -276,6 +293,37 @@ test("a rejected application is said neutrally on the environment's page (PS-ENV
   await expect(
     bo.page.getByText("Søknaden din venter på svar fra administratorene."),
   ).toBeVisible();
+  await bo.context.close();
+});
+
+test("someone barred from new attempts sees that they cannot apply now (PS-ENV-020)", async ({
+  browser,
+  page,
+  baseURL,
+}) => {
+  const { environmentId, bo } = await rejectedApplication(
+    browser,
+    page,
+    baseURL!,
+    { restrict: true },
+  );
+
+  await bo.page.goto(`/miljoer/${environmentId}`);
+  const status = bo.page.getByRole("region", { name: "Status" });
+  await expect(
+    status.getByText("Du kan ikke søke om å bli med nå."),
+  ).toBeVisible();
+  await expect(status).not.toContainText(/Anna|administrator/i);
+  await expect(status.getByRole("button")).toHaveCount(0);
+  await expect(
+    status.getByRole("link", { name: "Finn andre miljøer" }),
+  ).toBeVisible();
+  await expect(status.getByRole("link")).toHaveCount(1);
+  expect(await axeViolations(bo.page)).toEqual([]);
+
+  // The way to applying is gone too.
+  await bo.page.goto(`/miljoer/${environmentId}/bli-med`);
+  await expect(bo.page).toHaveURL(`/miljoer/${environmentId}`);
   await bo.context.close();
 });
 

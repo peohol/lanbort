@@ -44,6 +44,7 @@ function environment(changes: Partial<Environment> = {}): Environment {
     requirements: [],
     members: null,
     applicationRejected: false,
+    restricted: false,
     membership: membership(),
     roles: [],
     continuity: null,
