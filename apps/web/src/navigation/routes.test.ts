@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  objectQuestionsHref,
   notificationLinkHref,
   personHref,
   personRoleHref,
@@ -52,6 +53,18 @@ describe("person addresses", () => {
     expect(personHref("abc", "lender")).toBe("/personer/abc?rolle=utlaaner");
     expect(personRoleHref("abc", "borrower")).toBe(
       "/personer/abc/som-laantaker",
+    );
+  });
+});
+
+describe("question addresses", () => {
+  it("lead to the thing in the environment it was asked in, at its questions", () => {
+    expect(objectQuestionsHref("o1", "e1", "q1")).toBe(
+      "/ting/o1?miljo=e1#sporsmal-q1",
+    );
+    // An older question is on a later page of the list.
+    expect(objectQuestionsHref("o1", "e1", "q1", 3)).toBe(
+      "/ting/o1?miljo=e1&sporsmal=3#sporsmal-q1",
     );
   });
 });

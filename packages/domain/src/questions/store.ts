@@ -250,6 +250,7 @@ export function presentQuestion(
   return {
     id: question.id,
     publicationId: question.publicationId,
+    environmentId: question.environmentId,
     objectId: question.objectId,
     askedByUserId: shown(question.askedByUserId),
     createdAt: question.createdAt.toISOString(),

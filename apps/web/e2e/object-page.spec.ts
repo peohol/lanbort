@@ -158,7 +158,30 @@ test("the owner answers questions about the thing and may write to who asked", a
     })
   ).json();
 
-  await page.reload();
+  // The notification leads the owner to the questions (PS-OBJ-015).
+  const followNotification = async (
+    reader: typeof page,
+    title: string | RegExp,
+  ) => {
+    await untilOutboxSettles(reader.request, async () =>
+      (
+        await (await reader.request.get("/api/notifications")).json()
+      ).notifications.some(
+        (notification: { kind: string; target: { id: string } }) =>
+          notification.kind.startsWith("object.question_") &&
+          notification.target.id === questionId,
+      ),
+    );
+    await reader.goto("/varsler");
+    await reader.getByRole("link", { name: title }).first().click();
+    await expect(reader).toHaveURL(
+      `/ting/${objectId}?miljo=${environmentId}#sporsmal-${questionId}`,
+    );
+  };
+  await followNotification(
+    page,
+    /Det er stilt et spørsmål om et objekt du eier/,
+  );
   const asked = page.getByRole("region", { name: `Gården ${word}` });
   await expect(
     asked.getByText("Et medlem: Rekker den opp til takrenna?"),
@@ -173,6 +196,11 @@ test("the owner answers questions about the thing and may write to who asked", a
   await asked.getByLabel("Svaret ditt").fill("Ja, med god margin.");
   await asked.getByRole("button", { name: "Send svaret" }).click();
   await expect(asked.getByText("Du: Ja, med god margin.")).toBeVisible();
+
+  // Bo is told about the answer and led to it, through the environment.
+  const bo = await members.newPage();
+  await followNotification(bo, /nytt innlegg i en spørsmålstråd/);
+  await expect(bo.getByText("Eieren: Ja, med god margin.")).toBeVisible();
   await members.close();
   expect(problems).toEqual([]);
 });
