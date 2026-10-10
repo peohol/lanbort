@@ -18,6 +18,8 @@ import type { Consequences } from "@/components/confirm-action";
 import type { Tone } from "@/components/tag";
 import { environmentAdminHref } from "@/navigation/routes";
 import { environmentRoleNames } from "./environments";
+import { homeItemHref } from "./home-items";
+import { administrationText } from "./home-tasks";
 
 /**
  * The words of environment administration (WP-85, UX-JRN-012): what each
@@ -284,6 +286,38 @@ export const administrationHref = (item: HomeItem): string | null =>
   administrationTasks.has(item.kind)
     ? administrationPageHref(item.target.id, administrationTasks.get(item.kind))
     : null;
+
+/** A task waiting on the administrators, as a row in «Venter på dere». */
+export interface WaitingTask {
+  readonly kind: HomeItemKind;
+  readonly href: string;
+  readonly label: string;
+  readonly count: number;
+}
+
+const waitingLabels: Partial<Record<HomeItemKind, string>> = {
+  "environment.review_memberships": "Innmeldinger",
+  "environment.review_publications": "Ting til godkjenning",
+};
+
+/**
+ * «Venter på dere» (UX-JRN-012): every counted task, each leading where it
+ * is done. Memberships and things have pages here; any other task, such as
+ * each kind of case, says what to do and leads where Home sends it, so no
+ * kind is ever left out. A missing owner is the page's status card.
+ */
+export const waitingTasks = (tasks: readonly HomeItem[]): WaitingTask[] =>
+  tasks
+    .filter((item) => item.kind !== "environment.claim_ownership")
+    .map((item) => ({
+      kind: item.kind,
+      href:
+        administrationHref(item) ??
+        homeItemHref(item) ??
+        administrationPageHref(item.target.id),
+      label: waitingLabels[item.kind] ?? administrationText(item),
+      count: item.count ?? 1,
+    }));
 
 /** «3 aktive», «1 aktiv». */
 export const counted = (count: number, one: string, many: string) =>

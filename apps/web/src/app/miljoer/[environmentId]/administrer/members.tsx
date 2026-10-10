@@ -137,11 +137,18 @@ export function Restrictions({
   return (
     <section aria-labelledby="stengt-ute">
       <h2 id="stengt-ute">
-        Stengt ute fra nye forsøk{" "}
-        <span className="count">({restrictions.length})</span>
+        Stengt ute fra nye forsøk
+        {restrictions.length > 0 && (
+          <>
+            {" "}
+            <span className="count">({restrictions.length})</span>
+          </>
+        )}
       </h2>
       {restrictions.length === 0 ? (
-        <p className="quiet">Ingen er stengt ute.</p>
+        // Bars from a stricter type may be hidden from this administrator
+        // (PS-ENV-009), so an empty list says only what they can see.
+        <p className="quiet">Ingen utestengelser du kan se.</p>
       ) : (
         <ul className="entries">
           {restrictions.map((restriction) => {

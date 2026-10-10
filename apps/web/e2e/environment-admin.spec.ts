@@ -214,7 +214,9 @@ test("a barred applicant stays listed until the bar is lifted", async ({
   });
   await expect(barred.getByText(/Kan ikke søke eller inviteres/)).toBeVisible();
   await barred.getByRole("button", { name: "Opphev utestengelsen" }).click();
-  await expect(barredList.getByText("Ingen er stengt ute.")).toBeVisible();
+  await expect(
+    barredList.getByText("Ingen utestengelser du kan se."),
+  ).toBeVisible();
   expect((await apply()).ok()).toBe(true);
 
   // Bars from before the administrator came are lifted without the page

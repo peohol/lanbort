@@ -3,6 +3,7 @@ import type {
   EnvironmentMemberships,
   EnvironmentRoles,
   HomeItem,
+  HomeItemKind,
 } from "@lanbort/contracts";
 import {
   listEnvironmentAdministrationTasks,
@@ -30,6 +31,7 @@ import {
   awaitsDecision,
   counted,
   waitingNames,
+  waitingTasks,
   windDownConsequences,
 } from "@/presentation/environment-admin";
 import { pageQuery, pageQueryOrNotFound } from "@/server/session";
@@ -75,41 +77,24 @@ export default async function EnvironmentAdministrationPage({
   const decisions =
     count("environment.review_memberships") +
     count("environment.review_publications");
-  const cases = count("environment.handle_cases");
-  const waiting = (
-    [
-      {
-        href: administrationPageHref(environmentId, "memberships"),
-        label: "Innmeldinger",
-        icon: "person",
-        count: count("environment.review_memberships"),
-        detail: waitingNames(
-          memberships.memberships
-            .filter((m) => awaitsDecision(m) && m.userId !== account.userId)
-            .map(memberName),
-        ),
-      },
-      {
-        href: administrationPageHref(environmentId, "things"),
-        label: "Ting til godkjenning",
-        icon: "things",
-        count: count("environment.review_publications"),
-        detail: waitingNames(
-          pending.publications
-            .filter((publication) => !publication.ownedByYou)
-            .map((publication) => publication.object.title),
-          count("environment.review_publications"),
-        ),
-      },
-      {
-        href: environmentCasesHref(environmentId),
-        label: "Saker",
-        icon: "flag",
-        count: cases,
-        detail: null,
-      },
-    ] satisfies WaitingRow[]
-  ).filter((row) => row.count > 0);
+  const waiting = waitingTasks(tasks ?? []);
+  const casesWait = waiting.some(
+    (task) => task.href === environmentCasesHref(environmentId),
+  );
+  // Who or what waits, where the page already has it.
+  const details: Partial<Record<HomeItemKind, string | null>> = {
+    "environment.review_memberships": waitingNames(
+      memberships.memberships
+        .filter((m) => awaitsDecision(m) && m.userId !== account.userId)
+        .map(memberName),
+    ),
+    "environment.review_publications": waitingNames(
+      pending.publications
+        .filter((publication) => !publication.ownedByYou)
+        .map((publication) => publication.object.title),
+      count("environment.review_publications"),
+    ),
+  };
 
   return (
     <main>
@@ -131,14 +116,14 @@ export default async function EnvironmentAdministrationPage({
         <section aria-labelledby="venter">
           <h2 id="venter">Venter på dere</h2>
           <MenuList label="venter">
-            {waiting.map((row) => (
+            {waiting.map((task) => (
               <MenuRow
-                key={row.label}
-                href={row.href}
-                icon={row.icon}
-                label={row.label}
-                detail={row.detail}
-                end={<Tag tone="attention">{row.count} venter</Tag>}
+                key={task.kind}
+                href={task.href}
+                icon={waitingIcons[task.kind] ?? "flag"}
+                label={task.label}
+                detail={details[task.kind]}
+                end={<Tag tone="attention">{task.count} venter</Tag>}
               />
             ))}
           </MenuList>
@@ -163,12 +148,12 @@ export default async function EnvironmentAdministrationPage({
                 detail={row.detail}
               />
             ))}
-          {cases === 0 && (
+          {!casesWait && (
             <MenuRow
               href={environmentCasesHref(environmentId)}
               icon="flag"
               label="Saker"
-              detail="Ingen venter"
+              detail="Ingen saker venter på dere"
             />
           )}
         </MenuList>
@@ -191,13 +176,10 @@ export default async function EnvironmentAdministrationPage({
   );
 }
 
-interface WaitingRow {
-  href: string;
-  label: string;
-  icon: IconName;
-  count: number;
-  detail: string | null;
-}
+const waitingIcons: Partial<Record<HomeItemKind, IconName>> = {
+  "environment.review_memberships": "person",
+  "environment.review_publications": "things",
+};
 
 /** The environment's own pages, each with a line on how it stands now. */
 function environmentRows(
