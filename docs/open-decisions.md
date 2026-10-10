@@ -51,7 +51,7 @@ Når spørsmålet er avgjort:
 
 ## Status før UI-arbeidet
 
-Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. Gjennomgangen av kjerneflyt 5 (samtaler og enheter) samme dag avdekket [OD-0043](#od-0043--varsler-om-nye-meldinger-i-privat-chat), [OD-0044](#od-0044--når-gjenopprettingsnøkkelen-for-privat-chat-tilbys) og [OD-0045](#od-0045--én-privat-samtale-per-person-eller-per-lån), som ble avgjort samme dag. Designet for lånets side og anmeldelser avdekket [OD-0033](#od-0033--hvordan-skade-mangel-eller-tap-registreres-på-et-lån)–[OD-0036](#od-0036--varsel-når-anmeldelsene-blir-synlige), som ble avgjort samme dag. Designet for rapportering, saker og konfliktløsning avdekket OD-0038–OD-0042, som også ble avgjort samme dag. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
+Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. Gjennomgangen av kjerneflyt 5 (samtaler og enheter) samme dag avdekket [OD-0043](#od-0043--varsler-om-nye-meldinger-i-privat-chat), [OD-0044](#od-0044--når-gjenopprettingsnøkkelen-for-privat-chat-tilbys) og [OD-0045](#od-0045--én-privat-samtale-per-person-eller-per-lån), som ble avgjort samme dag. Designet for lånets side og anmeldelser avdekket [OD-0033](#od-0033--hvordan-skade-mangel-eller-tap-registreres-på-et-lån)–[OD-0036](#od-0036--varsel-når-anmeldelsene-blir-synlige), som ble avgjort samme dag. Designet for rapportering, saker og konfliktløsning avdekket OD-0038–OD-0042, som også ble avgjort samme dag. Designet for administrator- og forvalterflatene (fase 7) avdekket [OD-0051](#od-0051--hvem-administratorene-kan-invitere)–[OD-0053](#od-0053--hva-den-som-er-stengt-ute-fra-nye-forsøk-får-vite), som er åpne, og viser anbefalingene i OD-0025 og OD-0026 som forslag. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
 
 ## Åpne
 
@@ -209,6 +209,33 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Avhenger av:** Ingen.
 - **Avklares før:** søknadssiden skal love et varsel, eller «Velkommen» skal vises ved første besøk etter en godkjent søknad.
 - **Anbefaling:** Varsle i appen både ved godkjenning og avslag. Godkjenningen lenker til miljøet med «Velkommen». Avslaget sier nøytralt at søknaden ikke ble godkjent, uten begrunnelse.
+
+### OD-0051 — Hvem administratorene kan invitere
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-ENV-010, PS-NFR-002, [visjon 03](vision/03-miljoer.md) («Invitasjoner og tips»), «Innmeldinger og invitasjoner» i [skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md), designet for administrator- og forvalterflatene (fase 7)
+- **Spørsmål:** Et skjult miljø får bare nye medlemmer ved en konto-bundet invitasjon fra en administrator, og en lukket invitasjon er forhåndsgodkjenning. Spesifikasjonen sier at invitasjonen går til en eksisterende konto, men ikke hvordan administratoren finner kontoen. Appen lar i dag bare administratorene invitere sine egne venner. Skal de også kunne invitere andre de allerede kan se i Lånbort, for eksempel medlemmer av et annet miljø de er med i, og skal de kunne finne en konto på e-postadresse eller navn? Et søk som svarer forskjellig for adresser med og uten konto, røper hvem som bruker Lånbort.
+- **Avhenger av:** Produktvurdering av personvern mot behovet for å invitere uten vennskap.
+- **Avklares før:** invitasjoner skal kunne sendes til andre enn administratorens venner. Til da tilbys bare venner.
+- **Anbefaling:** Tilby «Inviter til miljøet» på personens side for alle administratoren allerede kan se der, i tillegg til vennelisten. Ikke søk på e-postadresse eller navn.
+
+### OD-0052 — Hva søkeren får når administratorene ber om mer informasjon
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-ENV-004, PS-COM (varseltyper), UX-PRIV-009, kjerneflyt 3 i Tomat-designet, designet for administrator- og forvalterflatene (fase 7)
+- **Spørsmål:** Innmeldingsflyten har steget «eventuell mer informasjon», og designet for kjerneflyt 3 viser et konkret spørsmål fra administratorene til søkeren. Appen lar i dag administratorene bare be søkeren se over svarene og sende dem på nytt, uten tekst, og søkeren får ingen varsel, bare en melding når miljøets side åpnes. Skal administratoren kunne skrive et spørsmål, hvor skal det stå, og skal søkeren varsles?
+- **Avhenger av:** Ingen. Spørsmålet hører til søknaden, ikke privat chat.
+- **Avklares før:** administratorene skal kunne skrive til søkeren, eller søkeren skal varsles om at noe venter på dem.
+- **Anbefaling:** La administratoren skrive et kort, valgfritt spørsmål som vises på søknaden, avsendt som «administratorene i miljøet», og send søkeren et handlingsvarsel. Spørsmålet slettes sammen med søknaden.
+
+### OD-0053 — Hva den som er stengt ute fra nye forsøk, får vite
+- **Lag:** Produktspesifikasjon
+- **Status:** Åpen
+- **Berører:** PS-ENV-004, PS-NFR-002, UX-P09, [visjon 03](vision/03-miljoer.md) («Krav ved innmelding»), designet for administrator- og forvalterflatene (fase 7)
+- **Spørsmål:** Administratorene kan avslå en søknad og samtidig stenge søkeren ute fra nye forsøk, men spesifikasjonen sier ikke hva søkeren ser. I dag ser det ut som et vanlig avslag, og miljøets side tilbyr fortsatt å søke, slik at søkeren først får et avslag når en ny søknad sendes. Skal søkeren få vite at de ikke kan søke igjen, og i så fall når og med hvilke ord?
+- **Avhenger av:** OD-0050 (om søkeren varsles om avslaget).
+- **Avklares før:** søknadssiden eller miljøets side skal si noe annet enn i dag til den som er stengt ute.
+- **Anbefaling:** Samme nøytrale avslag som ellers, men uten «du kan søke på nytt». Miljøets side sier rolig at man ikke kan søke om å bli med nå, uten grunn og uten å si hvem som avgjorde det.
 
 ## Avklart
 

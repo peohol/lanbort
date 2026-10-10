@@ -631,3 +631,6 @@ Til en beslutning finnes, viser UI-et ikke funksjonen den gjelder.
 | OD-0023    | Plattformkø og alle plattformforvalterflater              | Vises ikke                                                         |
 | OD-0025    | Medlemmer og utestengelse                                 | Ingen handling for å fjerne et aktivt medlem                       |
 | OD-0026    | Inngrep på kontoer, inngrep i et miljø                    | Ingen flate                                                        |
+| OD-0051    | Innmeldinger og invitasjoner                              | Administratorene inviterer bare egne venner                        |
+| OD-0052    | Innmeldinger og invitasjoner, innmelding og invitasjon    | «Be om mer informasjon» uten tekst og uten varsel til søkeren      |
+| OD-0053    | Innmeldinger og invitasjoner, miljøets side               | Den som er stengt ute, ser et vanlig avslag                        |
