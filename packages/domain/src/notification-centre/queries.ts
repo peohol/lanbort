@@ -22,6 +22,7 @@ import { listNotifications } from "../notifications/queries";
 import { listNotificationsPolicy } from "../notifications/policies";
 import { actingUserId, loadImages } from "../objects/state";
 import { personVisible } from "../people/policies";
+import { readLoanReviews } from "../reviews/queries";
 import { loadPeople } from "../people/store";
 import {
   friendRequestStanding,
@@ -76,6 +77,27 @@ async function loanAbout({ reader, userId }: Reading, loanId: string) {
         loan.origin.kind === "environment"
           ? (loan.origin.environment?.name ?? null)
           : null,
+    },
+  };
+}
+
+/**
+ * The reviews after a loan, named by their thing and the other party of the
+ * reviews: also to a former party, such as the lender before a change, who
+ * keeps their reviews but sees nothing more of the loan.
+ */
+async function reviewsAbout(reading: Reading, loanId: string) {
+  const reviews = await reading.reader.ifAllowed(readLoanReviews, { loanId });
+
+  if (!reviews) return nobody;
+
+  const { about } = await loanAbout(reading, loanId);
+
+  return {
+    about: {
+      ...about,
+      thing: reviews.title,
+      person: reviews.counterpart.realName,
     },
   };
 }
@@ -236,7 +258,7 @@ const describers: Partial<
   >
 > = {
   loan: loanAbout,
-  loan_reviews: loanAbout,
+  loan_reviews: reviewsAbout,
   loan_request: requestAbout,
   user: personAbout,
   environment: environmentAbout,

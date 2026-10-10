@@ -5,6 +5,7 @@ import type {
   EnvironmentType,
   HomeItem,
   HomeItemKind,
+  MembershipPassiveReason,
   PublicationStatus,
 } from "@lanbort/contracts";
 import {
@@ -17,6 +18,8 @@ import type { Consequences } from "@/components/confirm-action";
 import type { Tone } from "@/components/tag";
 import { environmentAdminHref } from "@/navigation/routes";
 import { environmentRoleNames } from "./environments";
+import { homeItemHref } from "./home-items";
+import { administrationText } from "./home-tasks";
 
 /**
  * The words of environment administration (WP-85, UX-JRN-012): what each
@@ -239,14 +242,110 @@ export const windDownConsequences: Consequences = {
   ],
 };
 
-/** Home's tasks for administrators lead to the administration (UX-JRN-012). */
-const administrationTasks: ReadonlySet<HomeItemKind> = new Set([
-  "environment.review_memberships",
-  "environment.review_publications",
-  "environment.claim_ownership",
+/**
+ * The administration's own pages (UX-JRN-012, UX-IA-020): «Administrer
+ * miljøet» gathers what waits and leads to each task on a page of its own.
+ */
+export const administrationPages = {
+  memberships: {
+    segment: "innmeldinger",
+    title: "Innmeldinger og invitasjoner",
+  },
+  members: { segment: "medlemmer", title: "Medlemmer" },
+  things: { segment: "ting", title: "Ting i miljøet" },
+  roles: { segment: "roller", title: "Roller og eierskap" },
+  settings: { segment: "innstillinger", title: "Innstillinger og krav" },
+  type: { segment: "miljotype", title: "Miljøtype" },
+} as const;
+
+export type AdministrationPage = keyof typeof administrationPages;
+
+/** «Administrer miljøet», or one of its pages. */
+export const administrationPageHref = (
+  environmentId: string,
+  page?: AdministrationPage,
+) =>
+  page
+    ? `${environmentAdminHref(environmentId)}/${administrationPages[page].segment}`
+    : environmentAdminHref(environmentId);
+
+/**
+ * Home's tasks for administrators lead to where each is done (UX-JRN-012);
+ * a missing owner is answered on «Administrer miljøet» itself.
+ */
+const administrationTasks: ReadonlyMap<
+  HomeItemKind,
+  AdministrationPage | undefined
+> = new Map([
+  ["environment.review_memberships", "memberships"],
+  ["environment.review_publications", "things"],
+  ["environment.claim_ownership", undefined],
 ]);
 
 export const administrationHref = (item: HomeItem): string | null =>
   administrationTasks.has(item.kind)
-    ? environmentAdminHref(item.target.id)
+    ? administrationPageHref(item.target.id, administrationTasks.get(item.kind))
     : null;
+
+/** A task waiting on the administrators, as a row in «Venter på dere». */
+export interface WaitingTask {
+  readonly kind: HomeItemKind;
+  readonly href: string;
+  readonly label: string;
+  readonly count: number;
+}
+
+const waitingLabels: Partial<Record<HomeItemKind, string>> = {
+  "environment.review_memberships": "Innmeldinger",
+  "environment.review_publications": "Ting til godkjenning",
+};
+
+/**
+ * «Venter på dere» (UX-JRN-012): every counted task, each leading where it
+ * is done. Memberships and things have pages here; any other task, such as
+ * each kind of case, says what to do and leads where Home sends it, so no
+ * kind is ever left out. A missing owner is the page's status card.
+ */
+export const waitingTasks = (tasks: readonly HomeItem[]): WaitingTask[] =>
+  tasks
+    .filter((item) => item.kind !== "environment.claim_ownership")
+    .map((item) => ({
+      kind: item.kind,
+      href:
+        administrationHref(item) ??
+        homeItemHref(item) ??
+        administrationPageHref(item.target.id),
+      label: waitingLabels[item.kind] ?? administrationText(item),
+      count: item.count ?? 1,
+    }));
+
+/** «3 aktive», «1 aktiv». */
+export const counted = (count: number, one: string, many: string) =>
+  `${count} ${count === 1 ? one : many}`;
+
+const names = new Intl.ListFormat("nb", { type: "conjunction" });
+
+/**
+ * Who or what waits, in a short line: «Jonas Vik og Erik Sund», and past
+ * `shown`, «Jonas Vik, Erik Sund og 3 til». `total` counts also those not
+ * listed.
+ */
+export function waitingNames(
+  listed: readonly string[],
+  total = listed.length,
+  shown = 2,
+): string | null {
+  if (listed.length === 0) return null;
+  const first = listed.slice(0, shown);
+  const rest = total - first.length;
+
+  return rest > 0
+    ? names.format([...first, `${rest} til`])
+    : names.format(first);
+}
+
+/** Why a member is passive (PS-ENV-006, PS-ENV-008), as administrators see it. */
+export const passiveReasonTexts: Record<MembershipPassiveReason, string> = {
+  requirements_not_met: "Svarte ikke på et nytt krav innen fristen",
+  type_change_not_accepted: "Godtok ikke at miljøet ble åpent",
+};

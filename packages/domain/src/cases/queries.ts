@@ -8,6 +8,8 @@ import {
   environmentCaseQueueQuerySchema,
   platformCaseQueueQuerySchema,
 } from "@lanbort/contracts";
+import type { Database } from "@lanbort/database";
+import type { Kysely } from "kysely";
 import { realNames } from "../account/store";
 import { defineQuery } from "../commands/query";
 import { loadEnvironmentAccess } from "../environment/store";
@@ -23,6 +25,7 @@ import {
   sharedUpTo,
   sharedWithParties,
   visibleToParticipant,
+  caseKinds,
 } from "./model";
 import {
   listEnvironmentCaseQueuePolicy,
@@ -38,8 +41,13 @@ import {
   loadCaseTitles,
   loadEntries,
   loadHandlingState,
+  loadClarified,
+  loadLoanStatuses,
   loadParticipants,
+  loadParticipantsOf,
 } from "./store";
+
+type Db = Kysely<Database>;
 
 /** What is read for a caller the policy will turn away. */
 const nothingRead = {
@@ -47,6 +55,8 @@ const nothingRead = {
   entries: [] as EntryRecord[],
   actions: [] as ActionRecord[],
   titles: { loanTitle: null, objectTitle: null },
+  loanStatus: null,
+  loanClarified: false,
   handlers: [] as string[],
   names: new Map<string, string>(),
 };
@@ -130,6 +140,12 @@ export const readCase = defineQuery({
           actions,
           handling,
           titles: await loadCaseTitles(tx, c),
+          loanStatus:
+            c.kind === "loan_mediation" && c.loanId !== null
+              ? ((await loadLoanStatuses(tx, [c.loanId], now)).get(c.loanId) ??
+                null)
+              : null,
+          loanClarified: await loadClarified(tx, c.id, now),
           handlers,
           names: await realNames(
             tx,
@@ -209,6 +225,13 @@ export const readCase = defineQuery({
           })),
       loanTitle: resource.titles.loanTitle,
       objectTitle: resource.titles.objectTitle,
+      loan:
+        resource.loanStatus === null
+          ? null
+          : {
+              status: resource.loanStatus,
+              clarified: resource.loanClarified,
+            },
       handlers: asParty
         ? []
         : resource.handlers.filter((handler) => handler !== userId),
@@ -247,36 +270,72 @@ function peopleNamedIn(
   }));
 }
 
-function summary(
-  item: {
-    readonly record: CaseRecord;
-    readonly assigneeUserId: string | null;
-    readonly handlerAvailable: boolean;
-  },
-  asHandler: boolean,
-): CaseSummary {
-  const { record } = item;
+type ListedCase = Awaited<ReturnType<typeof listCases>>["items"][number];
+
+/**
+ * The page of cases as the caller sees them: as a participant, whether it
+ * is their turn; as a handler, who has it and who takes part. Both see what
+ * it is about, and whether a mediated loan is clarified (PS-COM-022).
+ */
+async function toList(
+  db: Db,
+  page: Awaited<ReturnType<typeof listCases>>,
+  viewer: { readonly userId: string; readonly asHandler: boolean },
+): Promise<CaseList> {
+  const ids = page.items.map(({ record }) => record.id);
+  const participants = await loadParticipantsOf(db, ids);
+  const named = (item: ListedCase) => [
+    ...(item.record.subjectUserId === null ? [] : [item.record.subjectUserId]),
+    ...(viewer.asHandler
+      ? [
+          ...(participants.get(item.record.id) ?? []).map(
+            ({ userId }) => userId,
+          ),
+          ...(item.assigneeUserId === null ? [] : [item.assigneeUserId]),
+        ]
+      : []),
+  ];
+  const names = await realNames(db, page.items.flatMap(named));
 
   return {
-    id: record.id,
-    kind: record.kind,
-    status: record.status,
-    environmentId: record.environmentId,
-    loanId: record.loanId,
-    openedAt: record.openedAt.toISOString(),
-    closedAt: record.closedAt?.toISOString() ?? null,
-    handling: handlingOf(item.assigneeUserId, item.handlerAvailable),
-    assigneeUserId: asHandler ? item.assigneeUserId : null,
+    items: page.items.map((item): CaseSummary => {
+      const { record } = item;
+      const own = participants
+        .get(record.id)
+        ?.find(({ userId }) => userId === viewer.userId);
+
+      return {
+        id: record.id,
+        kind: record.kind,
+        status: record.status,
+        environmentId: record.environmentId,
+        loanId: record.loanId,
+        openedAt: record.openedAt.toISOString(),
+        closedAt: record.closedAt?.toISOString() ?? null,
+        handling: handlingOf(item.assigneeUserId, item.handlerAvailable),
+        assigneeUserId: viewer.asHandler ? item.assigneeUserId : null,
+        reportTarget: record.reportTarget,
+        subjectUserId: record.subjectUserId,
+        title: item.title,
+        participantUserIds: viewer.asHandler
+          ? (participants.get(record.id) ?? []).map(({ userId }) => userId)
+          : [],
+        yourTurn:
+          !viewer.asHandler &&
+          record.status === "open" &&
+          caseKinds[record.kind].turns &&
+          (own?.mayWrite ?? false),
+        loanClarified:
+          record.kind === "loan_mediation" ? item.loanClarified : null,
+        people: [...new Set(named(item))].map((userId) => ({
+          userId,
+          realName: names.get(userId) ?? null,
+        })),
+      };
+    }),
+    nextCursor: page.nextCursor,
   };
 }
-
-const toList = (
-  page: Awaited<ReturnType<typeof listCases>>,
-  asHandler: boolean,
-): CaseList => ({
-  items: page.items.map((item) => summary(item, asHandler)),
-  nextCursor: page.nextCursor,
-});
 
 /** The caller's own cases as a participant, newest first (UX-IA-007). */
 export const listOwnCases = defineQuery({
@@ -301,7 +360,10 @@ export const listOwnCases = defineQuery({
         { cursor: input.cursor, pageSize: casePageSize, now },
       );
 
-      return { resource: toList(page, false), context: undefined };
+      return {
+        resource: await toList(tx, page, { userId, asHandler: false }),
+        context: undefined,
+      };
     }),
   present: ({ resource }) => resource,
 });
@@ -337,12 +399,23 @@ export const listEnvironmentCaseQueue = defineQuery({
                   .where("c.environment_id", "=", input.environmentId)
                   .where("c.status", "=", input.status)
                   .where(handledBy(actor.userId, now)),
-              { cursor: input.cursor, pageSize: casePageSize, now },
+              {
+                cursor: input.cursor,
+                pageSize: casePageSize,
+                now,
+                clarifiedLast: true,
+              },
             )
           : { items: [], nextCursor: null };
 
       return {
-        resource: { ...access, list: toList(page, true) },
+        resource: {
+          ...access,
+          list: await toList(tx, page, {
+            userId: actingUserId(actor),
+            asHandler: true,
+          }),
+        },
         context: undefined,
       };
     }),
@@ -367,7 +440,10 @@ export const listPlatformCaseQueue = defineQuery({
         { cursor: input.cursor, pageSize: casePageSize, now },
       );
 
-      return { resource: toList(page, true), context: undefined };
+      return {
+        resource: await toList(tx, page, { userId, asHandler: true }),
+        context: undefined,
+      };
     }),
   present: ({ resource }) => resource,
 });

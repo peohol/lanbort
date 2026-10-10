@@ -65,19 +65,28 @@ async function deliver() {
   await deliverAll(db, consumers);
 }
 
-/** What the actor was told since the last call, oldest first. */
-const seen = new Map<string, number>();
+/**
+ * What the actor was told since the last call, in the order it happened.
+ * Test files share the outbox, so another file's worker may write one of
+ * these notifications after a later one: the list's own order is when each
+ * was written, the event's time is when it happened.
+ */
+const seen = new Set<string>();
 async function told(actor: UserActor) {
   await deliver();
   const { notifications } = await executeQuery(tick(), listNotifications, {
     actor,
     input: {},
   });
-  const all = [...notifications].reverse();
-  const from = seen.get(actor.userId) ?? 0;
-  seen.set(actor.userId, all.length);
+  const fresh = [...notifications]
+    .reverse()
+    .filter(({ id }) => !seen.has(id))
+    .sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt));
+  for (const { id } of fresh) {
+    seen.add(id);
+  }
 
-  return all.slice(from).map(({ kind, detail, target }: Notification) => ({
+  return fresh.map(({ kind, detail, target }: Notification) => ({
     kind,
     detail,
     target,

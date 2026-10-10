@@ -12,7 +12,11 @@ import { ConsumerRegistry } from "../outbox/consumer";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
 import { acceptFriendRequest, sendFriendRequest } from "../social/commands";
-import { startTestVote, testVoteDays } from "../testing/type-changes";
+import {
+  serializeTypeChanges,
+  startTestVote,
+  testVoteDays,
+} from "../testing/type-changes";
 import {
   releaseDepartedUser,
   startEnvironmentWindDown,
@@ -54,6 +58,7 @@ import {
 
 const db = connectTestDatabase();
 afterAll(() => db.destroy());
+serializeTypeChanges(db);
 
 // Tests move the clock past proposal deadlines.
 let clock = new Date();

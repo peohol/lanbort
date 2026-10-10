@@ -1,0 +1,270 @@
+/* Cases in Tomat (kjerneflyt 8): the handler's role, entries as cards with
+   who wrote them and who sees them, the writer's audience and choices as
+   cards. Built from the shared tokens in globals.css. */
+
+/* «Du behandler som administrator i …» (UX-PRIV-005): the capacity the
+   reader acts in, above everything they do in it. */
+.role {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-m);
+  background: var(--color-info-soft);
+  color: var(--color-info-strong);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.section {
+  margin: 0 0 var(--space-5);
+}
+
+/* A heading with a quiet note at its end, such as «eldste først». */
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.sectionHead > :last-child {
+  color: var(--color-muted);
+  font-size: var(--text-s);
+}
+
+.facts {
+  margin: 0 0 var(--space-5);
+}
+
+.facts dl {
+  margin: 0;
+}
+
+.entries {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-low);
+}
+
+.entry:target {
+  outline: 3px solid var(--color-focus);
+}
+
+/* What a handler writes is the function's: a mark at its side. */
+.handlerEntry {
+  box-shadow:
+    inset 3px 0 0 var(--color-accent),
+    var(--shadow-low);
+}
+
+/* An internal note never reaches the parties: no surface, a dashed edge. */
+.note {
+  background: transparent;
+  box-shadow: none;
+  border: 1.5px dashed var(--color-border-strong);
+}
+
+/* With large text the time wraps under the name rather than widening the
+   card. */
+.entryHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  line-height: 1.3;
+}
+
+.entryHead strong {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.entryHead time {
+  color: var(--color-muted);
+  font-size: var(--text-s);
+  white-space: nowrap;
+}
+
+/* The function's mark where a person would have a picture. */
+.function {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--color-info-soft);
+  color: var(--color-info-strong);
+}
+
+.body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Who sees it, or what it corrects: quiet, with an icon. */
+.aside {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-s);
+  font-weight: 700;
+}
+
+.aside a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+}
+
+.copies {
+  border-left: 3px solid var(--color-border);
+  padding-left: var(--space-3);
+}
+
+/* Choices as cards (the receiver of a report, a measure): the chosen one
+   is outlined in the accent, a choice not available yet is quiet. */
+.options {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  border: 0;
+}
+
+.options legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+  font-weight: 700;
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1.5px var(--color-border);
+  cursor: pointer;
+}
+
+.option:has(input:checked) {
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+.option:has(input:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.option:has(input:disabled) {
+  cursor: default;
+  color: var(--color-muted);
+  box-shadow: inset 0 0 0 1.5px var(--color-border);
+}
+
+.option input {
+  flex: none;
+  width: 1.375rem;
+  height: 1.375rem;
+  margin: 0.1rem 0 0;
+  accent-color: var(--color-accent);
+}
+
+.option span {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.option small {
+  color: var(--color-muted);
+  font-size: var(--text-s);
+}
+
+/* The handler's audience: one row of pills, the chosen one filled. */
+.audiences {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  border: 0;
+}
+
+.audiences legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+  font-weight: 700;
+}
+
+.audiences label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--target);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1.5px var(--color-border);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.audiences label:has(input:checked) {
+  background: var(--color-accent-strong);
+  color: var(--color-on-accent);
+  box-shadow: none;
+}
+
+.audiences label:has(input:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.audiences input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* A step that is not offered yet, said plainly where it would have been
+   (UX-EXC-011). */
+.unavailable {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.unavailable strong {
+  color: var(--color-text);
+}
+
+.footnote {
+  color: var(--color-muted);
+  font-size: var(--text-s);
+}
+
+.factLine {
+  display: block;
+}

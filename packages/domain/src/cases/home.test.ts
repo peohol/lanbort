@@ -1,6 +1,6 @@
 import type { CaseSummary } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
-import { caseQueueHomeItem } from "./home";
+import { caseQueueHomeItems } from "./home";
 
 const me = "00000000-0000-4000-8000-000000000001";
 const other = "00000000-0000-4000-8000-000000000002";
@@ -16,13 +16,20 @@ const summary = (changes: Partial<CaseSummary> = {}): CaseSummary => ({
   closedAt: null,
   handling: "queued",
   assigneeUserId: null,
+  reportTarget: null,
+  subjectUserId: null,
+  title: null,
+  participantUserIds: [],
+  yourTurn: false,
+  loanClarified: null,
+  people: [],
   ...changes,
 });
 
 describe("the case queue on Home", () => {
   it("counts the open cases nobody has taken, and the caller's own", () => {
     expect(
-      caseQueueHomeItem(
+      caseQueueHomeItems(
         environment,
         [
           summary(),
@@ -32,22 +39,43 @@ describe("the case queue on Home", () => {
         ],
         me,
       ),
-    ).toMatchObject({
-      kind: "environment.handle_cases",
-      target: { type: "environment", id: environment.id },
-      title: "Lag",
-      count: 2,
-    });
+    ).toEqual([
+      expect.objectContaining({
+        kind: "environment.handle_cases",
+        target: { type: "environment", id: environment.id },
+        title: "Lag",
+        count: 2,
+      }),
+    ]);
+  });
+
+  it("has one task per kind of case, in the same order every time", () => {
+    expect(
+      caseQueueHomeItems(
+        environment,
+        [
+          summary({ kind: "environment_report", reportTarget: "object" }),
+          summary({ kind: "loan_mediation" }),
+          summary({ kind: "environment_report", reportTarget: "user" }),
+          summary(),
+        ],
+        me,
+      ).map(({ kind, count }) => [kind, count]),
+    ).toEqual([
+      ["environment.handle_cases", 1],
+      ["environment.mediate_loans", 1],
+      ["environment.review_reports", 2],
+    ]);
   });
 
   it("asks nothing when every case is another administrator's", () => {
     expect(
-      caseQueueHomeItem(
+      caseQueueHomeItems(
         environment,
         [summary({ assigneeUserId: other, handling: "assigned" })],
         me,
       ),
-    ).toBeNull();
-    expect(caseQueueHomeItem(environment, [], me)).toBeNull();
+    ).toEqual([]);
+    expect(caseQueueHomeItems(environment, [], me)).toEqual([]);
   });
 });

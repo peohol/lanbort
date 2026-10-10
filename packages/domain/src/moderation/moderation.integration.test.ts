@@ -42,7 +42,10 @@ import { listCaseMeasures } from "./queries";
 const db = connectTestDatabase();
 afterAll(() => db.destroy());
 
-const kit = loanTestKit(db);
+// The review tests publish every review whose window is over as of their
+// clock, which they move weeks ahead; the reviews reported here must stay
+// open past where they get.
+const kit = loanTestKit(db, { startInDays: 1500 });
 const {
   run,
   tick,

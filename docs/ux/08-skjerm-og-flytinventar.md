@@ -185,7 +185,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 - **Oppgave:** bli medlem på den måten typen krever.
 - **Tilstander:** bli med med egenerklæring (åpent); søknad med svar på krav (lukket); mer informasjon etterspurt; godkjent; avslått; invitasjon mottatt og krav å fylle ut (skjult); kan ikke søke igjen (vises nøytralt).
 - **Ser / handler:** den som søker eller er invitert. Svar på krav vises som opplysninger til miljøets medlemsprosess, ikke som profil.
-- **Regler:** UX-JRN-002, UX-PRIV-009, PS-ENV-001, PS-ENV-004, PS-ENV-005, PS-ENV-010, PS-ENV-017, PS-NFR-008.
+- **Regler:** UX-JRN-002, UX-PRIV-009, PS-ENV-001, PS-ENV-004, PS-ENV-005, PS-ENV-010, PS-ENV-017, PS-ENV-019, PS-ENV-020, PS-NFR-008.
 - **Forløp:** normal.
 - **UI-pakke:** WP-84.
 
@@ -429,7 +429,7 @@ Miljøadministrator omfatter miljøets eier, som også er administrator, og admi
 - **Oppgave:** vurdere søknader og invitere til miljøet.
 - **Tilstander:** søknad med svar på krav; be om mer informasjon; godkjenn; avslå; avslå og steng for nye forsøk; passivt medlem som vil bli aktivt igjen; invitasjon sendt eller trukket; ingenting venter.
 - **Ser / handler:** administratorer. Bare administratorer kan invitere til et skjult miljø.
-- **Regler:** UX-PRIV-009, PS-ENV-004, PS-ENV-005, PS-ENV-010, PS-NFR-008, [visjon 03](../vision/03-miljoer.md) («Krav ved innmelding»).
+- **Regler:** UX-PRIV-009, PS-ENV-004, PS-ENV-005, PS-ENV-010, PS-ENV-017–020, PS-NFR-008, [visjon 03](../vision/03-miljoer.md) («Krav ved innmelding»).
 - **Forløp:** normal.
 - **UI-pakke:** WP-85.
 
@@ -437,10 +437,10 @@ Miljøadministrator omfatter miljøets eier, som også er administrator, og admi
 
 - **Oppgave:** se medlemmene og hvem som er stengt ute fra nye forsøk.
 - **Tilstander:** aktive og passive medlemmer; hvem som er stengt ute fra nye forsøk, og oppheving av det.
-- **Ser / handler:** administratorer. Om de kan fjerne eller stenge ute et aktivt medlem, avgjøres i OD-0025.
-- **Regler:** PS-ENV-004, PS-ENV-009, UX-PRIV-009.
+- **Ser / handler:** administratorer. En habil administrator kan avslutte et aktivt medlemskap med begrunnelse og velge separat om personen også stenges ute (PS-ENV-021, ikke bygget).
+- **Regler:** PS-ENV-004, PS-ENV-009, PS-ENV-021, PS-TRUST-016, PS-TRUST-018, UX-PRIV-009.
 - **Forløp:** avvik.
-- **UI-pakke:** ingen.
+- **UI-pakke:** WP-85 (aktive og passive medlemmer, utestengelser).
 
 #### Publiseringer og forhåndsgodkjenning
 
@@ -540,8 +540,8 @@ Plattformforvalter er en eksplisitt global rolle, ikke det samme som systemutvik
 
 - **Oppgave:** suspendere og gjeninnsette, avslutte en konto kontrollert, og håndtere duplikater og falsk identitet.
 - **Tilstander:** konsekvens for pågående lån (forespørsler avsluttes nøytralt, reserverte lån stanses, overleverte følges til retur); begrunnelse; registrert; opphevet (stansede reservasjoner kommer ikke tilbake).
-- **Ser / handler:** habile plattformforvaltere. Hvor inngrepene gjøres, avgjøres i OD-0026.
-- **Regler:** UX-EXC-007, PS-ADM-003, PS-ADM-009, PS-ADM-010, PS-ADM-014, PS-LOAN-011, PS-LOAN-021.
+- **Ser / handler:** habile plattformforvaltere, fra en sak i plattformkøen (PS-ADM-015). Stengt til OD-0023.
+- **Regler:** UX-EXC-007, PS-ADM-015, PS-ADM-003, PS-ADM-009, PS-ADM-010, PS-ADM-014, PS-LOAN-011, PS-LOAN-021.
 - **Forløp:** avvik.
 - **UI-pakke:** ingen.
 
@@ -549,8 +549,8 @@ Plattformforvalter er en eksplisitt global rolle, ikke det samme som systemutvik
 
 - **Oppgave:** stanse en administrators rettigheter eller overføre eierskap kontrollert når rollen misbrukes.
 - **Tilstander:** begrunnelse; gjennomført; miljøets medlemmer ser bare resultatet.
-- **Ser / handler:** habile plattformforvaltere. Hvor inngrepet gjøres, avgjøres i OD-0026.
-- **Regler:** PS-ADM-014, PS-TRUST-016, [visjon 03](../vision/03-miljoer.md) («Administrasjon»).
+- **Ser / handler:** habile plattformforvaltere, fra en sak i plattformkøen (PS-ADM-015). Stengt til OD-0023.
+- **Regler:** PS-ADM-015, PS-ADM-014, PS-TRUST-016, [visjon 03](../vision/03-miljoer.md) («Administrasjon»).
 - **Forløp:** avvik.
 - **UI-pakke:** ingen.
 
@@ -609,8 +609,8 @@ Scenariene i [UX-scenariovalideringen](07-scenariovalidering.md) ligger alle på
 Disse flatene følger av spesifikasjonen og UX-modellen, men ingen pakke i UI-planen bygger dem ennå:
 
 - **Melding om mulig dødsfall** fra personens side eller et felles lån (PS-COM-015, UX-EXC-008).
-- **Medlemmer og utestengelse** for administratorer, inkludert å oppheve at noen er stengt ute (PS-ENV-004). Fjerning av aktive medlemmer venter på OD-0025.
-- **Plattformforvalterens inngrep** på kontoer og miljøer. Venter på OD-0023 og OD-0026.
+- **Å avslutte et aktivt medlemskap** fra Medlemmer og utestengelse (PS-ENV-021). Vedtatt, men ikke bygget; resten av flaten er bygget i WP-85.
+- **Plattformforvalterens inngrep** på kontoer og miljøer, fra en sak i plattformkøen (PS-ADM-015). Venter på OD-0023.
 - **Varsel før utlogging på en enhet med privat chat** (ADR-0010 punkt 7). Konto-sidens «Logg ut» har ikke dette varselet ennå; «Fjern denne enheten» i Mine enheter sier hva enheten mister.
 - **Gjenopprettingsnøkkel og overføring av gammel historikk** for privat chat (ADR-0010 punkt 5 og 8, PS-COM-019). Begge er vedtatt som valgfrie for brukeren, men ikke bygget; til da er kobling fra en annen enhet eller tilbakestilling de eneste veiene.
 - Presentasjon og synlighet for andre profilfelt, og demping og arkivering av lånesamtalen, står allerede under «Senere» i UI-planen.
@@ -629,5 +629,15 @@ Til en beslutning finnes, viser UI-et ikke funksjonen den gjelder.
 | OD-0018    | Egen kontostatus                                          | Ingen automatisk dvale                                             |
 | OD-0019    | Tingens side for andre                                    | «Følg» varsler bare når tingen blir ledig igjen                    |
 | OD-0023    | Plattformkø og alle plattformforvalterflater              | Vises ikke                                                         |
-| OD-0025    | Medlemmer og utestengelse                                 | Ingen handling for å fjerne et aktivt medlem                       |
-| OD-0026    | Inngrep på kontoer, inngrep i et miljø                    | Ingen flate                                                        |
+
+### Vedtatt, men ikke bygget
+
+Til disse er bygget, gjør appen det som står i siste kolonne. Prototypen for fase 7 viser begge deler, med en bryter.
+
+| Regel      | Flater                                                    | Til den er bygget                                                  |
+| ---------- | --------------------------------------------------------- | ------------------------------------------------------------------ |
+| PS-ENV-018 | Innmeldinger og invitasjoner, personens side              | Administratorene inviterer bare egne venner                        |
+| PS-ENV-019 | Innmeldinger og invitasjoner, innmelding og invitasjon    | «Be om mer informasjon» uten tekst og uten varsel til søkeren      |
+| PS-ENV-020 | Innmeldinger og invitasjoner, miljøets side               | Den som er stengt ute, ser et vanlig avslag                        |
+| PS-ENV-021 | Medlemmer og utestengelse                                 | Ingen handling for å fjerne et aktivt medlem                       |
+| PS-ADM-015 | Inngrep på kontoer, inngrep i et miljø                    | Ingen flate (også stengt til OD-0023)                              |
