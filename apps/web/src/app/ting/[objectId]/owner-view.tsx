@@ -64,11 +64,8 @@ import {
   shownPlaces,
   withdrawable,
 } from "@/presentation/object-owners";
-import {
-  formatDesiredPeriod,
-  loanRequestStatusLabels,
-  loanStatusLabels,
-} from "@/presentation/loans";
+import { describeLoanRequest } from "@/presentation/loan-requests";
+import { formatDesiredPeriod, loanStatusLabels } from "@/presentation/loans";
 import { ownImageHref } from "@/presentation/object-images";
 import { availabilityLine, categoryLabel } from "@/presentation/objects";
 import { pageQuery } from "@/server/session";
@@ -284,7 +281,7 @@ function requestEntry(request: LoanRequest): LoanEntry {
     id: anchorFor(target.type, request.id),
     href: hrefFor(target),
     title: `Forespørsel: ${formatDesiredPeriod(request.start, request.end)}`,
-    detail: loanRequestStatusLabels[request.status],
+    detail: describeLoanRequest(request).text,
     waiting: waiting(loanRequestHomeItem(request)),
     steps: [],
   };

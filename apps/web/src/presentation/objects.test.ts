@@ -11,6 +11,7 @@ import {
   listSeparator,
   ownersLabel,
   ownThingStatus,
+  requestAvailability,
   seenBecause,
 } from "./objects";
 
@@ -43,6 +44,28 @@ describe("a thing in the user's words", () => {
     expect(
       describeAvailability(found({ effectiveAvailability: [] }), "2026-10-04"),
     ).toBe("Ikke ledig for nye lån nå");
+  });
+
+  it("says once when a thing can be asked for, its periods only when there are several", () => {
+    expect(
+      requestAvailability(
+        found({ effectiveAvailability: [{ start: "2026-10-12", end: null }] }),
+        "2026-10-04",
+      ),
+    ).toBe("Ledig fra mandag 12. oktober.");
+    expect(
+      requestAvailability(
+        found({
+          effectiveAvailability: [
+            { start: "2026-10-04", end: "2026-10-06" },
+            { start: "2026-10-12", end: null },
+          ],
+        }),
+        "2026-10-04",
+      ),
+    ).toBe(
+      "Ledig nå. Ledige perioder: søndag 4. oktober – tirsdag 6. oktober, Fra mandag 12. oktober.",
+    );
   });
 
   it("gives availability a tone that matches its words", () => {

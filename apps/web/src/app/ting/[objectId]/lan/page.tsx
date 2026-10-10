@@ -14,7 +14,7 @@ import {
   objectHref,
   type ObjectOrigin,
 } from "@/navigation/routes";
-import { describeAvailability, formatInterval } from "@/presentation/objects";
+import { requestAvailability } from "@/presentation/objects";
 import { pageQueryOrNotFound, requirePageAccount } from "@/server/session";
 import { RequestForm } from "./request-form";
 
@@ -66,7 +66,7 @@ export default async function RequestPage({
           termsVersion={object.termsVersion}
           loanTerms={object.loanTerms}
           declarationVersion={object.responsibilityDeclarationVersion}
-          availability={`${describeAvailability(object, today)}. Ledig: ${object.effectiveAvailability.map(formatInterval).join(", ")}.`}
+          availability={requestAvailability(object, today)}
           from={{ href: back, label: object.title }}
           today={today}
         />

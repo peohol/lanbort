@@ -295,7 +295,7 @@ export function RequestForm({
             />
           </Field>
           {declarationVersion !== null && (
-            <fieldset>
+            <fieldset className={styles.declaration}>
               <legend>Ansvarserklæring</legend>
               <p>Når dere låner direkte mellom venner, gjelder dette:</p>
               <ul>

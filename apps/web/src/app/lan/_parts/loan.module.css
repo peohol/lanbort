@@ -278,8 +278,15 @@ img.thing {
   color: var(--color-muted);
 }
 
+/* KF7: the dimension takes the room it needs, its score stays whole at the end. */
 .review :global(.facts) {
   margin: 0;
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+
+.review :global(.facts) dd {
+  text-align: end;
+  white-space: nowrap;
 }
 
 .quote {
@@ -379,4 +386,25 @@ img.thing {
 
 .statedBy strong {
   color: var(--color-text);
+}
+
+/* The responsibility declaration (PS-LOAN-003): its points close together,
+   and the box to tick beside what it accepts, also on a phone. */
+.declaration p,
+.declaration ul {
+  margin: 0;
+}
+
+.declaration ul {
+  display: grid;
+  gap: var(--space-1);
+  padding-inline-start: 1.25rem;
+}
+
+.declaration :global(.checkbox) {
+  flex-wrap: nowrap;
+}
+
+.declaration :global(.checkbox) input {
+  flex: none;
 }

@@ -266,7 +266,10 @@ export default async function LoanRequestPage({
           />
         )}
         {declaration && open(request) && (
-          <section className={styles.flat} aria-labelledby="ansvar">
+          <section
+            className={`${styles.flat} ${styles.declaration}`}
+            aria-labelledby="ansvar"
+          >
             <h2 id="ansvar">Ansvarserklæring</h2>
             <p>Lånet er direkte mellom venner. Begge må godta dette:</p>
             <ul>

@@ -36,6 +36,21 @@ export function availabilityStatus(
 export const describeAvailability = (object: Availability, today: string) =>
   availabilityStatus(object, today).label;
 
+/**
+ * When the thing can be borrowed, said once: its status, and its periods
+ * only when there is more than one to choose from.
+ */
+export function requestAvailability(
+  object: Availability,
+  today: string,
+): string {
+  const periods = object.effectiveAvailability;
+
+  return periods.length > 1
+    ? `${describeAvailability(object, today)}. Ledige perioder: ${periods.map(formatInterval).join(", ")}.`
+    : `${describeAvailability(object, today)}.`;
+}
+
 /** One availability interval, open or bounded (PS-OBJ-003). */
 export function formatInterval({ start, end }: AvailabilityInterval): string {
   if (end === null) return `Fra ${formatDay(start)}`;
