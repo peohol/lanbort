@@ -45,12 +45,36 @@ const read = (actor: UserActor, caseId: string) =>
 const copiesIn = async (actor: UserActor, caseId: string) =>
   (await read(actor, caseId)).entries.flatMap((entry) => entry.privateMessages);
 
+/** A private conversation between two users, as chat records it. */
+async function conversation(a: UserActor, b: UserActor): Promise<string> {
+  const [low, high] = [a.userId, b.userId].sort();
+  const { id } = await db
+    .insertInto("app.chat_conversations")
+    .values({
+      kind: "private",
+      user_low_id: low,
+      user_high_id: high,
+      opened_via: "friendship",
+      created_by_user_id: a.userId,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  await db
+    .insertInto("app.chat_participants")
+    .values(
+      [a, b].map(({ userId }) => ({ conversation_id: id, user_id: userId })),
+    )
+    .execute();
+
+  return id;
+}
+
 /** A message as the party's device has it, sent `minutesAgo` before now. */
 function message(
   sender: UserActor,
   body: string,
   minutesAgo: number,
-  conversationId = randomUUID(),
+  conversationId: string,
 ): PrivateMessageCopy {
   return {
     conversationId,
@@ -82,9 +106,9 @@ async function disputedLoan() {
 describe("private messages as case documentation (PS-COM-013)", () => {
   it("follow the statement they were submitted with, in the order they were sent", async () => {
     const { loanId, owner, borrower, admin } = await disputedLoan();
-    const conversation = randomUUID();
-    const later = message(owner, "Jeg kommer ikke i dag.", 30, conversation);
-    const earlier = message(borrower, "Er du hjemme kl. 18?", 90, conversation);
+    const chat = await conversation(owner, borrower);
+    const later = message(owner, "Jeg kommer ikke i dag.", 30, chat);
+    const earlier = message(borrower, "Er du hjemme kl. 18?", 90, chat);
 
     const { caseId, entryId } = await run(requestLoanMediation, borrower, {
       loanId,
@@ -123,6 +147,7 @@ describe("private messages as case documentation (PS-COM-013)", () => {
 
   it("are submitted only by a participant, never by a handler or an outsider", async () => {
     const { loanId, owner, borrower, admin } = await disputedLoan();
+    const chat = await conversation(owner, borrower);
     const { caseId } = await run(requestLoanMediation, borrower, {
       loanId,
       body: "Jeg fikk aldri tingen.",
@@ -134,14 +159,14 @@ describe("private messages as case documentation (PS-COM-013)", () => {
         caseId,
         body: "Her er det de skrev.",
         audience: "parties",
-        privateMessages: [message(owner, "Hei", 10)],
+        privateMessages: [message(owner, "Hei", 10, chat)],
       }),
     ).rejects.toMatchObject(invalidCopy);
     await expect(
       run(writeCaseEntry, await user(), {
         caseId,
         body: "Se her.",
-        privateMessages: [message(owner, "Hei", 10)],
+        privateMessages: [message(owner, "Hei", 10, chat)],
       }),
     ).rejects.toMatchObject(notFound);
 
@@ -150,7 +175,7 @@ describe("private messages as case documentation (PS-COM-013)", () => {
     await run(writeCaseEntry, borrower, {
       caseId,
       body: "Dette skrev hun etterpå.",
-      privateMessages: [message(owner, "Den er levert.", 5)],
+      privateMessages: [message(owner, "Den er levert.", 5, chat)],
     });
     expect(await copiesIn(admin, caseId)).toEqual([
       expect.objectContaining({ body: "Den er levert." }),
@@ -159,6 +184,9 @@ describe("private messages as case documentation (PS-COM-013)", () => {
 
   it("are refused as a whole when a message cannot be what it claims", async () => {
     const { loanId, owner, borrower } = await disputedLoan();
+    const chat = await conversation(owner, borrower);
+    const stranger = await user();
+    const theirs = await conversation(owner, stranger);
     const attempt = (privateMessages: PrivateMessageCopy[]) =>
       run(requestLoanMediation, borrower, {
         loanId,
@@ -167,28 +195,44 @@ describe("private messages as case documentation (PS-COM-013)", () => {
       });
 
     // Sent in the future, by nobody, or the same message twice.
-    await expect(attempt([message(owner, "Snart", -60)])).rejects.toMatchObject(
-      invalidCopy,
-    );
     await expect(
-      attempt([{ ...message(owner, "Hei", 10), senderUserId: randomUUID() }]),
+      attempt([message(owner, "Snart", -60, chat)]),
     ).rejects.toMatchObject(invalidCopy);
-    const twice = message(owner, "Hei", 10);
+    await expect(
+      attempt([
+        { ...message(owner, "Hei", 10, chat), senderUserId: randomUUID() },
+      ]),
+    ).rejects.toMatchObject(invalidCopy);
+
+    // Only from a conversation the party is in, sent by one who is in it:
+    // never naming someone outside it, nor someone else's conversation.
+    await expect(
+      attempt([message(stranger, "Hei", 10, chat)]),
+    ).rejects.toMatchObject(invalidCopy);
+    await expect(
+      attempt([message(owner, "Hei", 10, theirs)]),
+    ).rejects.toMatchObject(invalidCopy);
+    await expect(
+      attempt([message(owner, "Hei", 10, randomUUID())]),
+    ).rejects.toMatchObject(invalidCopy);
+
+    const twice = message(owner, "Hei", 10, chat);
     await expect(attempt([twice, twice])).rejects.toMatchObject({
       code: "invalid_input",
     });
     await expect(attempt([])).rejects.toMatchObject({ code: "invalid_input" });
 
     // Nothing was written, so the party still has their first statement.
-    const { caseId } = await attempt([message(owner, "Hei", 10)]);
+    const { caseId } = await attempt([message(owner, "Hei", 10, chat)]);
     expect(await copiesIn(borrower, caseId)).toHaveLength(1);
   });
 
   it("are bounded per participant and case", async () => {
     const { environmentId, owner, borrower } = await published();
+    const chat = await conversation(owner, borrower);
     const batch = () =>
       Array.from({ length: privateMessageCopyLimit }, (_, index) =>
-        message(owner, `Melding ${index}`, 60),
+        message(owner, `Melding ${index}`, 60, chat),
       );
     const { caseId } = await run(openEnvironmentContact, borrower, {
       environmentId,
@@ -209,7 +253,7 @@ describe("private messages as case documentation (PS-COM-013)", () => {
       run(writeCaseEntry, borrower, {
         caseId,
         body: "Og en til.",
-        privateMessages: [message(owner, "Hei", 10)],
+        privateMessages: [message(owner, "Hei", 10, chat)],
       }),
     ).rejects.toMatchObject(invalidCopy);
     // Writing without a copy goes on as before.
@@ -218,7 +262,12 @@ describe("private messages as case documentation (PS-COM-013)", () => {
 
   it("go with a report, and stay behind when an administrator escalates it", async () => {
     const { environmentId, admin, owner, borrower } = await published();
-    const threat = message(owner, "Du skal få angre på dette.", 60);
+    const threat = message(
+      owner,
+      "Du skal få angre på dette.",
+      60,
+      await conversation(owner, borrower),
+    );
 
     const { caseId } = await run(reportInEnvironment, borrower, {
       environmentId,
@@ -244,10 +293,11 @@ describe("private messages as case documentation (PS-COM-013)", () => {
 
   it("cannot be changed, removed or added to an entry afterwards in the database", async () => {
     const { loanId, owner, borrower, admin } = await disputedLoan();
+    const chat = await conversation(owner, borrower);
     const { caseId, entryId } = await run(requestLoanMediation, borrower, {
       loanId,
       body: "Se meldingen.",
-      privateMessages: [message(owner, "Hei", 10)],
+      privateMessages: [message(owner, "Hei", 10, chat)],
     });
 
     await expect(

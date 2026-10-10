@@ -788,7 +788,8 @@ const probes: Record<string, (ids: WorldIds) => object> = {
 
 /**
  * A private message copied into a case (WP-46) quotes its conversation's id
- * as evidence the party vouches for; it addresses no conversation.
+ * as evidence the party vouches for; it reads nothing from the conversation,
+ * and the conversation must be one the party is in.
  */
 const namesResource = (operation: Operation, key: string) =>
   resourceKeys.has(key) &&
