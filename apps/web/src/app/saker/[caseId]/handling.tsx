@@ -1,7 +1,8 @@
-import type {
-  Case,
-  ModerationMeasure,
-  ModerationMeasureKind,
+import {
+  type Case,
+  caseEntryBodySchema,
+  type ModerationMeasure,
+  type ModerationMeasureKind,
 } from "@lanbort/contracts";
 import { caseKinds } from "@lanbort/domain";
 import { ActionButton } from "@/components/action-button";
@@ -19,6 +20,7 @@ import {
   personIn,
 } from "@/presentation/cases";
 import { formatShortTime } from "@/presentation/dates";
+import { platformStewardsEnabled } from "@/server/env";
 import styles from "../cases.module.css";
 import { CloseWithMessage } from "./close-case";
 import { MeasureForm } from "./measure-form";
@@ -180,9 +182,10 @@ export function Handling({
 
 /**
  * The rarer steps for a handler (UX-INT-009): giving the case back or on,
- * and stepping aside as not impartial (PS-USR-009). Taking a report on to
- * Lånbort is not offered until the platform stewards can handle it
- * (UX-EXC-011); the row says so where it would have been.
+ * and stepping aside as not impartial (PS-USR-009). An environment report
+ * goes on to Lånbort as a report of its own while the platform stewards can
+ * handle it (PS-TRUST-016, UX-EXC-011); otherwise the row says it is not
+ * available yet.
  */
 export function HandlerMoreActions({ c, userId }: { c: Case; userId: string }) {
   const mine = c.assigneeUserId === userId;
@@ -215,13 +218,44 @@ export function HandlerMoreActions({ c, userId }: { c: Case; userId: string }) {
           </Field>
         </CommandForm>
       )}
-      {acting && c.kind === "environment_report" && (
-        <p className={styles.unavailable}>
-          <strong>Send videre til Lånbort</strong>
-          Ikke tilgjengelig ennå. Lånbort kan ikke ta imot rapporter i appen
-          ennå.
-        </p>
-      )}
+      {acting &&
+        c.kind === "environment_report" &&
+        (platformStewardsEnabled() ? (
+          <ConfirmAction
+            label="Send videre til Lånbort"
+            title="Sende rapporten videre til Lånbort?"
+            consequences={{
+              gone: [],
+              stays: [
+                "Saken her fortsetter som før, og tiltakene dere har gjort, står.",
+              ],
+              affects: [
+                "Lånbort får en egen rapport om det samme, med det du skriver her. En forvalter tar den.",
+                "Du er den som rapporterte til Lånbort, så du behandler aldri den saken som forvalter.",
+              ],
+            }}
+            confirmLabel="Send videre til Lånbort"
+            path={casePath(c, "escalate")}
+            body={{}}
+            icon="flag"
+          >
+            <Field id="til-lanbort" label="Hva Lånbort bør vurdere">
+              <textarea
+                id="til-lanbort"
+                name="body"
+                rows={4}
+                required
+                maxLength={caseEntryBodySchema.maxLength ?? undefined}
+              />
+            </Field>
+          </ConfirmAction>
+        ) : (
+          <p className={styles.unavailable}>
+            <strong>Send videre til Lånbort</strong>
+            Ikke tilgjengelig ennå. Lånbort kan ikke ta imot rapporter i appen
+            ennå.
+          </p>
+        ))}
       <ConfirmAction
         label="Erklær deg inhabil"
         title="Erklære deg inhabil?"

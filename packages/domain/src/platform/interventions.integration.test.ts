@@ -153,7 +153,7 @@ describe("interventions from their case (PS-ADM-014–015)", () => {
 
     await suspend(platform, caseId, target.userId);
 
-    const { items } = await interventionsOf(platform, caseId);
+    const { items, people } = await interventionsOf(platform, caseId);
     expect(items).toEqual([
       expect.objectContaining({
         kind: "account_suspended",
@@ -162,6 +162,11 @@ describe("interventions from their case (PS-ADM-014–015)", () => {
         decidedByUserId: platform.userId,
       }),
     ]);
+    // With the names a handler reads it by.
+    expect(people.map(({ userId }) => userId).sort()).toEqual(
+      [target.userId, platform.userId].sort(),
+    );
+    expect(people.every(({ realName }) => realName !== null)).toBe(true);
     const recorded = (await eventsFor("case", caseId)).filter(
       (event) => event.event_type === "case.intervention_recorded",
     );
@@ -290,12 +295,16 @@ describe("ending roles in an environment (PS-ADM-015)", () => {
         basis,
       }),
     ).toMatchObject({ ended: [] });
-    expect((await interventionsOf(platform, aboutAdmin)).items).toEqual([
+    const recorded = await interventionsOf(platform, aboutAdmin);
+    expect(recorded.items).toEqual([
       expect.objectContaining({
         kind: "environment_roles_ended",
         userId: admin.userId,
         environmentId,
       }),
+    ]);
+    expect(recorded.environments).toEqual([
+      { id: environmentId, name: expect.any(String) },
     ]);
 
     // The owner's place opens for whoever may take it on (PS-ENV-013);
