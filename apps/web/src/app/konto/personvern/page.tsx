@@ -89,6 +89,10 @@ export default async function PrivacyPage() {
           </li>
           <li>Vercel kjører appen, i Stockholm.</li>
           <li>Resend sender e-postene, fra Irland.</li>
+          <li>
+            ImprovMX sender e-post til kontaktadressen videre, fra USA eller
+            Europa.
+          </li>
         </ul>
         <p>
           De får bare det som trengs for å gjøre jobben, og lagrer det etter

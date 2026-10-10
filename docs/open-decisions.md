@@ -161,24 +161,13 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Spørsmål:** Skal plattformforvaltere kunne utnevnes og fjernes inne i appen, og i så fall av hvem? Inntil dette er besluttet, skjer det bare med den revisjonsloggede driftskommandoen.
 - **Avklares før:** kan vente. Driftskommandoen dekker behovet.
 
+## Avklart
+
 ### OD-0022 — Backupnivå for piloten
 - **Lag:** Arkitektur
-- **Status:** Åpen, anbefaling klar (10. oktober 2026); venter produkteiers bekreftelse (Port D)
+- **Status:** Avklart (produkteier, 10. oktober 2026)
 - **Berører:** PS-NFR-014, [ADR-0009](architecture/decisions/ADR-0009-backup-i-utviklingsfasen.md), WP-72
-- **Spørsmål:** Hvilket backupnivå skal piloten ha, innenfor føringen «sikker løsning uten nye løpende kostnader» (produkteier, 10. oktober 2026)?
-- **Fakta:** Supabase-organisasjonen som har produksjonsprosjektet, er allerede på Pro-planen. Prosjektet får derfor Supabases daglige backup med 7 dagers historikk uten ekstra kostnad. Den har ikke filene i Storage, og den forsvinner med prosjektet.
-- **Anbefaling:** Supabases daglige backup, pluss en egen daglig backup av databasen og alle filene i et privat GitHub-repo med 7 dagers historikk, og en månedlig gjenopprettingsøvelse til et isolert miljø. RPO ≤ 24 timer, RTO ≤ 8 timer. Point-in-Time Recovery og gjenoppretting til et nytt Supabase-prosjekt koster ekstra og velges bort. Se [backup og gjenoppretting](implementation/backup-restore.md#strategi-for-piloten).
-- **Avklares før:** appen åpnes for et eksternt testpanel (Port D).
-
-### OD-0055 — Hvordan plattformforvalteren finner kontoen eller tingen et saksgrunnlag gjelder
-- **Lag:** UX / Produktspesifikasjon
-- **Status:** Åpen (10. oktober 2026)
-- **Berører:** PS-ADM-015, PS-ADM-009, PS-ADM-010, UX-PRIV-006
-- **Spørsmål:** Når en forvalter åpner eget saksgrunnlag uten rapport, eller avvikler en duplikatkonto, må hen peke ut en konto eller ting. Skal forvalteren kunne søke på navn blant alle kontoer, eller bare finne fram fra noe hen allerede har: lenken til personens eller tingens side, eller hele e-postadressen?
-- **Anbefaling:** Lenke eller hel e-postadresse, uten navnesøk. Da får ingen forvalter bla i alle kontoer, og den vanlige synligheten gjelder fortsatt.
-- **Avklares før:** forvalterflatene bygges i appen.
-
-## Avklart
+- **Beslutning:** To lag uten nye løpende kostnader. Supabases daglige backup med 7 dagers historikk (organisasjonen er på Pro), pluss en egen daglig backup av databasen og alle filene i et privat GitHub-repo med 7 dagers historikk, og en månedlig gjenopprettingsøvelse til et isolert miljø. RPO ≤ 24 timer, RTO ≤ 8 timer. Point-in-Time Recovery og gjenoppretting til et nytt Supabase-prosjekt koster ekstra og er valgt bort. Se [backup og gjenoppretting](implementation/backup-restore.md#strategi-for-piloten).
 
 ### OD-0023 — Registrering og recovery for plattformforvalteres WebAuthn
 - **Lag:** Tverrgående
@@ -215,6 +204,12 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Lag:** UX
 - **Status:** Avklart (produkteier, 10. oktober 2026)
 - **Beslutning:** Se [PS-ADM-015](product-spec/07-administrasjon-og-livssyklus.md). Alle inngrep starter fra en sak i plattformkøen med habilitet, begrunnelse og sporbarhet; uten rapport opprettes et autorisert saksgrunnlag først. Ingen inngrepsknapper på vanlige person- og miljøsider. Bygget på serveren; ikke i appen ennå, og stengt i produksjon til WebAuthn er verifisert der.
+
+### OD-0055 — Hvordan plattformforvalteren finner kontoen eller tingen et saksgrunnlag gjelder
+- **Lag:** UX / Produktspesifikasjon
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Berører:** PS-ADM-015, PS-ADM-009, PS-ADM-010, UX-PRIV-006
+- **Beslutning:** Se [PS-ADM-015](product-spec/07-administrasjon-og-livssyklus.md#ps-adm-015--plattforminngrep-starter-fra-en-sak). Forvalteren peker ut kontoen eller tingen med en direkte lenke til personens eller tingens side, eller med hele e-postadressen, uten fritt navnesøk. Oppslaget er tilgangsstyrt og loggføres.
 
 ### OD-0054 — Eiernavn når en ting er delt direkte med venner
 - **Lag:** Produktspesifikasjon
