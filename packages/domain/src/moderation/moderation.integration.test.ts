@@ -3,11 +3,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { systemActor, type UserActor } from "../actor";
 import { resolveUserActor } from "../account/identity";
 import { claimCase, closeCase } from "../cases/commands";
-import {
-  caseImageFile,
-  listPlatformCaseQueue,
-  readCase,
-} from "../cases/queries";
+import { caseImageFile, readCase } from "../cases/queries";
 import { executeQuery } from "../commands/query";
 import {
   acceptRoleInvitation,
@@ -25,6 +21,7 @@ import { respondToLoanReview, submitLoanReview } from "../reviews/commands";
 import { readLoanReviews } from "../reviews/queries";
 import { blockUser, sendFriendRequest } from "../social/commands";
 import { readTrustProfile } from "../trust/queries";
+import { platformQueueIds } from "../testing/cases";
 import { connectTestDatabase } from "../testing/database";
 import { registerTestUser } from "../testing/identities";
 import { loanTestKit } from "../testing/loans";
@@ -395,14 +392,7 @@ describe("reports in an environment (PS-TRUST-013, PS-OBJ-017)", () => {
     });
 
     // Stewards handle it, only with stronger authentication (OD-0010).
-    expect(
-      (
-        await executeQuery(tick(), listPlatformCaseQueue, {
-          actor: handler,
-          input: {},
-        })
-      ).items.map((item) => item.id),
-    ).toContain(escalated.caseId);
+    expect(await platformQueueIds(tick(), handler)).toContain(escalated.caseId);
     await expect(
       run(claimCase, weak, { caseId: escalated.caseId }),
     ).rejects.toMatchObject(strongerAuthentication);
