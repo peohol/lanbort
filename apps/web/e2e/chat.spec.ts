@@ -96,6 +96,11 @@ test("two friends chat end to end, and a new device is linked with its code", as
   await bo.page.getByRole("button", { name: "Send" }).click();
   await expectMessage(anna.page, "Ja, den står i boden.");
 
+  // «Skriv til» on a friend's page opens the conversation they have.
+  await bo.page.goto(`/personer/${anna.id}`);
+  await bo.page.getByRole("link", { name: "Skriv til Anna Berg" }).click();
+  await expect(bo.page).toHaveURL(conversation);
+
   expect(await axeViolations(anna.page)).toEqual([]);
 
   // Both see the same security code, under «Om samtalen».

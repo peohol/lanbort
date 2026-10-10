@@ -34,6 +34,7 @@ import {
   revokeChatDevicePolicy,
   sendChatMessagePolicy,
   startChatConversationPolicy,
+  readChatContactPolicy,
   startLoanLogisticsChatPolicy,
   submitChatCommitPolicy,
 } from "./policies";
@@ -247,6 +248,7 @@ export const chatMatrices = [
       "unauthenticated",
     ],
   ]),
+  accountAction(readChatContactPolicy, true),
   cases<LoanLogisticsChatResource>(startLoanLogisticsChatPolicy, [
     [
       "a party of an open channel",
