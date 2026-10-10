@@ -1,0 +1,57 @@
+/* A thing as a borrower sees it (Tomat kjerneflyt 1): the week ahead and
+   the terms in the status card, before «Be om å låne». */
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-1);
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+  text-align: center;
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+.week > li {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+}
+
+.day {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  max-width: 2.5rem;
+  aspect-ratio: 1;
+  font-weight: 700;
+  text-decoration: line-through;
+  background: var(--color-sunken);
+  border-radius: var(--radius-s);
+}
+
+.week > li[data-free] .day {
+  color: var(--color-positive);
+  text-decoration: none;
+  background: var(--color-positive-soft);
+}
+
+.terms {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.terms h3 {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-s);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.terms p {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text);
+}

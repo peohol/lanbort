@@ -5,7 +5,7 @@ import type {
   ShownOwner,
 } from "@lanbort/contracts";
 import type { Tone } from "@/components/tag";
-import { formatDay } from "./dates";
+import { addDays, formatDay } from "./dates";
 
 /** What every view of a thing knows about whether it can be borrowed. */
 interface Availability {
@@ -71,6 +71,70 @@ export function categoryLabel(
 /** Whether `interval` holds on `day`. */
 const holdsOn = ({ start, end }: AvailabilityInterval, day: string) =>
   start <= day && (end === null || day <= end);
+
+/** One day in a thing's week ahead, and whether it is free for a loan. */
+export interface FreeDay {
+  readonly date: string;
+  readonly free: boolean;
+}
+
+/**
+ * The days from `today` on, each free for a new loan or not: the week strip
+ * on a thing's page (Tomat kjerneflyt 1). Nothing is free while the thing
+ * takes no new loans, and nothing says why (UX-PRIV-004).
+ */
+export function freeDays(
+  object: Availability,
+  today: string,
+  count = 7,
+): FreeDay[] {
+  return Array.from({ length: count }, (_, index) => {
+    const date = addDays(today, index);
+
+    return {
+      date,
+      free:
+        object.availableForNewLoans &&
+        object.effectiveAvailability.some((interval) =>
+          holdsOn(interval, date),
+        ),
+    };
+  });
+}
+
+/**
+ * The last day of the free stretch that the first free day begins, or null
+ * when no day is free or the stretch has no end.
+ */
+export function freeThrough(
+  object: Availability,
+  days: readonly FreeDay[],
+): string | null {
+  const first = days.find(({ free }) => free);
+
+  return (
+    (first &&
+      object.effectiveAvailability.find((interval) =>
+        holdsOn(interval, first.date),
+      )?.end) ??
+    null
+  );
+}
+
+/**
+ * Why the reader sees a thing that is not theirs, in one line (UX-IA-015):
+ * through an environment, or because its owner shows it to friends
+ * (PS-OBJ-020).
+ */
+export function seenBecause(
+  environment: { readonly name: string; readonly member: boolean } | null,
+): string {
+  if (!environment) return "Du ser tingen fordi eieren viser den for venner.";
+
+  return environment.member
+    ? `Du ser tingen fordi du er medlem i ${environment.name}.`
+    : `Du ser tingen fordi den er publisert i ${environment.name}.`;
+}
 
 /**
  * One of the user's own things in a list, in a word or two (WP-81): lent

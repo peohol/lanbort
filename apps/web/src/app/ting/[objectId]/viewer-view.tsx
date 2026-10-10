@@ -16,7 +16,6 @@ import { OwnerNames } from "@/components/owner-names";
 import { ObjectGallery } from "@/components/object-gallery";
 import { PageHeader } from "@/components/page-header";
 import { StatusCard } from "@/components/status-card";
-import { ContextTag } from "@/components/tag";
 import { findHref } from "@/navigation/areas";
 import { newCaseHref } from "@/navigation/cases";
 import {
@@ -32,14 +31,20 @@ import {
 } from "@/navigation/routes";
 import { loanRequestStatusLabels } from "@/presentation/loans";
 import { environmentImageHref } from "@/presentation/object-images";
+import { formatDay } from "@/presentation/dates";
 import {
+  availabilityLine,
+  availabilityStatus,
   categoryLabel,
-  describeAvailability,
-  formatInterval,
-  ownersLabel,
+  freeDays,
+  freeThrough,
+  seenBecause,
 } from "@/presentation/objects";
 import { pageQuery } from "@/server/session";
+import { OriginTag } from "@/app/lan/_parts/origin-tag";
 import { Questions, questionsId } from "./questions";
+import styles from "./viewer-view.module.css";
+import { WeekStrip } from "./week-strip";
 
 /** The caller's own open request for the thing, if they have one. */
 async function openRequestFor(objectId: string) {
@@ -93,19 +98,27 @@ export async function ViewerView({
       : null,
   ]);
 
+  const status = availabilityStatus(object, today);
+  const days = freeDays(object, today);
+  const through = freeThrough(object, days);
+  const [onlyOwner] = object.owners.length === 1 ? object.owners : [];
+
   return (
     <main>
       <PageHeader
         title={object.title}
+        kind="Ting"
         back={{ href: findHref, label: "Finn" }}
         context={
           <>
-            <ContextTag label="Sett gjennom">
-              {environment ? environment.name : "Venner"}
-            </ContextTag>
-            <ContextTag label="Kategori">
-              {categoryLabel(categories, object.categoryId)}
-            </ContextTag>
+            {object.owners.length > 0 && <OwnerNames owners={object.owners} />}
+            <OriginTag
+              origin={
+                environment
+                  ? { kind: "environment", environment }
+                  : { kind: "direct" }
+              }
+            />
           </>
         }
       />
@@ -119,8 +132,8 @@ export async function ViewerView({
         />
       )}
       <StatusCard
-        status={describeAvailability(object, today)}
-        tone={object.availableForNewLoans ? "positive" : "neutral"}
+        status={status.label}
+        tone={status.tone}
         who={
           openRequest && (
             <>
@@ -132,61 +145,81 @@ export async function ViewerView({
           )
         }
         actions={
-          <>
-            {object.availableForNewLoans && (
-              <Link
-                className="button button-primary"
-                href={requestObjectHref(object.objectId, origin)}
-              >
-                Be om å låne
-              </Link>
-            )}
-            {environment && (
-              <ActionButton
-                label={object.following ? "Slutt å følge" : "Følg tingen"}
-                path={
-                  object.following
-                    ? "/api/object-subscriptions/cancel"
-                    : "/api/object-subscriptions"
-                }
-                body={{ objectId: object.objectId }}
-                idempotent={false}
-              />
-            )}
-          </>
+          object.availableForNewLoans && (
+            <Link
+              className="button button-primary"
+              href={requestObjectHref(object.objectId, origin)}
+            >
+              Be om å låne
+            </Link>
+          )
         }
       >
-        {environment && (
-          <p className="help">
-            {object.following
-              ? "Du følger tingen og får beskjed når den blir ledig igjen eller endres."
-              : "Følg tingen for å få beskjed når den blir ledig igjen eller endres."}
-          </p>
+        {days.some(({ free }) => free) && (
+          <>
+            <WeekStrip days={days} />
+            <p>
+              Fylte dager er ledige.
+              {through && ` Ledig til og med ${formatDay(through)}.`}
+            </p>
+          </>
         )}
+        <div className={styles.terms}>
+          <h3>{onlyOwner ? `Vilkår fra ${onlyOwner.realName}` : "Vilkår"}</h3>
+          <p className="message-text">
+            {object.loanTerms ?? "Ingen egne vilkår"}
+          </p>
+        </div>
       </StatusCard>
+      <p className="help">
+        {seenBecause(
+          environment && {
+            name: environment.name,
+            member: environment.membership?.state === "active",
+          },
+        )}
+      </p>
+      {environment && (
+        <div className="actions">
+          <ActionButton
+            label={object.following ? "Slutt å følge" : "Følg tingen"}
+            path={
+              object.following
+                ? "/api/object-subscriptions/cancel"
+                : "/api/object-subscriptions"
+            }
+            body={{ objectId: object.objectId }}
+            idempotent={false}
+          />
+          {questions && (
+            <Link className="button" href={`#${questionsId}`}>
+              {questions.nextCursor === null
+                ? `Spørsmål (${questions.items.length})`
+                : "Spørsmål og svar"}
+            </Link>
+          )}
+        </div>
+      )}
+      {environment && (
+        <p className="help">
+          {object.following
+            ? "Du følger tingen og får beskjed når den blir ledig igjen eller endres."
+            : "Følg tingen for å få beskjed når den blir ledig igjen eller endres."}
+        </p>
+      )}
       <section aria-labelledby="om-tingen">
         <h2 id="om-tingen">Om tingen</h2>
         <dl className="facts">
-          {object.owners.length > 0 && (
-            <>
-              <dt>{ownersLabel(object.owners)}</dt>
-              <dd>
-                <OwnerNames owners={object.owners} />
-              </dd>
-            </>
-          )}
-          <dt>Beskrivelse</dt>
-          <dd className="message-text">{object.description}</dd>
-          <dt>Vilkår</dt>
-          <dd className="message-text">
-            {object.loanTerms ?? "Ingen egne vilkår"}
-          </dd>
           <dt>Ledig</dt>
           <dd>
-            {object.effectiveAvailability.length === 0
-              ? "Ikke ledig for nye lån nå"
-              : object.effectiveAvailability.map(formatInterval).join(", ")}
+            {object.availableForNewLoans
+              ? availabilityLine(object.effectiveAvailability, today)
+              : status.label}
           </dd>
+          <dt>Kategori</dt>
+          <dd>{categoryLabel(categories, object.categoryId)}</dd>
+          <dt>Beskrivelse</dt>
+          <dd className="message-text">{object.description}</dd>
         </dl>
       </section>
       {environment && questions && (
