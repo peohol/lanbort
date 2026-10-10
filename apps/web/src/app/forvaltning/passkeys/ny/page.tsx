@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { AddPasskeyForm } from "@/components/passkey-actions";
 import { StatusCard } from "@/components/status-card";
@@ -20,8 +19,6 @@ export const metadata: Metadata = { title: "Legg til en passkey – Lånbort" };
 export default async function NewPasskeyPage() {
   await requirePageAccount();
   const steward = await requireStewardship();
-
-  if (!steward.enabled) notFound();
 
   const count = steward.passkeys.length;
   const fresh = steward.freshUntil !== null;

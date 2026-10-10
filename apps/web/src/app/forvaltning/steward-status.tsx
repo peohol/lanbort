@@ -3,7 +3,7 @@ import { PasskeyConfirm } from "@/components/passkey-actions";
 import { StatusCard } from "@/components/status-card";
 import { newPasskeyHref } from "@/navigation/stewardship";
 import { formatClock } from "@/presentation/dates";
-import { stewardStanding, stewardsOffReason } from "@/presentation/stewardship";
+import { stewardStanding } from "@/presentation/stewardship";
 import type { Stewardship } from "@/server/stewardship";
 
 /** What the steward's standing allows now, and the one step that opens it. */
@@ -15,12 +15,6 @@ export function StewardStatus({
   unassigned: number | null;
 }) {
   switch (stewardStanding(steward)) {
-    case "off":
-      return (
-        <StatusCard label="Slått av" status="Forvaltningen er av i produksjon">
-          <p>{stewardsOffReason}</p>
-        </StatusCard>
-      );
     case "setup":
       return (
         <StatusCard

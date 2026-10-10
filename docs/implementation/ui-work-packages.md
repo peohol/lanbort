@@ -214,7 +214,7 @@ Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) og na
 - **Miljøets kø** for administratorer, lenket fra miljøadministrasjonen (WP-85) og Hjem.
 - **Rapporter og kontakt:** rapporter et objekt eller en person i et miljø eller til plattformen, og kontakt miljøets administratorer.
 - **Privat melding som dokumentasjon** (WP-46): velg meldinger i samtalen og send en lesbar kopi med innlegget.
-- Plattformforvalternes kø vises ikke før WebAuthn er bygget (OD-0023), fordi handlingene avvises til da.
+- Plattformforvalternes flater (Forvaltning, plattformkøen, passkeys og «For Lånbort» på Hjem) finnes bare mens forvaltningen er slått på (`PLATFORM_STEWARDS_ENABLED`). Ellers ser forvalteren appen som alle andre, og sidene svarer «finnes ikke».
 
 **Avhenger av:** WP-80.
 

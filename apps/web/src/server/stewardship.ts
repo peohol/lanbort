@@ -17,14 +17,12 @@ import { platformStewardsEnabled } from "./env";
 import { pageQueryIfAllowed, pageQueryOrNotFound } from "./session";
 
 /**
- * Where the signed-in platform steward stands (ADR-0011, OD-0023): whether
- * the role works in this deployment at all, their passkeys, and until when
- * this session's confirmation counts. It only decides what pages show;
- * every steward action is authorized again by its own policy.
+ * Where the signed-in platform steward stands (ADR-0011, OD-0023): their
+ * passkeys, and until when this session's confirmation counts. It only
+ * decides what pages show; every steward action is authorized again by its
+ * own policy.
  */
 export interface Stewardship extends StewardPasskeys {
-  /** PLATFORM_STEWARDS_ENABLED: off in production until verified there. */
-  readonly enabled: boolean;
   readonly maximum: number;
   /**
    * When this session's passkey confirmation stops counting, while it
@@ -47,9 +45,13 @@ async function ownPasskeys() {
 
 /**
  * The steward's standing, or null for anyone who does not hold the role or
- * whose account is not active.
+ * whose account is not active, and for everyone while stewards are off in
+ * this deployment (`PLATFORM_STEWARDS_ENABLED`, off in production until
+ * verified there): a steward then sees the app as anyone else does.
  */
 export const getStewardship = cache(async (): Promise<Stewardship | null> => {
+  if (!platformStewardsEnabled()) return null;
+
   const passkeys = await ownPasskeys();
 
   if (!passkeys) return null;
@@ -60,7 +62,6 @@ export const getStewardship = cache(async (): Promise<Stewardship | null> => {
 
   return {
     ...passkeys,
-    enabled: platformStewardsEnabled(),
     maximum: maximumStewardPasskeys,
     freshUntil:
       until && until > Date.now() ? new Date(until).toISOString() : null,
@@ -79,7 +80,7 @@ export async function requireStewardship(): Promise<Stewardship> {
 export const getOpenPlatformCases = cache(async () => {
   const steward = await getStewardship();
 
-  if (!steward?.enabled || !steward.strong) return null;
+  if (!steward?.strong) return null;
 
   const items: CaseSummary[] = [];
   let cursor: string | null = null;
@@ -104,8 +105,9 @@ export const getOpenPlatformCases = cache(async () => {
 /**
  * A page's query that a steward may first have to confirm with a passkey
  * for (a platform case): `confirm` when the session's confirmation is not
- * fresh, or steward access is off here; otherwise as `pageQueryOrNotFound`.
- * Only someone who holds the role is ever asked to confirm.
+ * fresh; otherwise as `pageQueryOrNotFound`. Only someone who holds the
+ * role is ever asked to confirm, and nobody while stewards are off here,
+ * since nothing could confirm it: the page is then «not found».
  */
 export async function stewardPageQuery<I, R, C, O>(
   query: QueryDefinition<I, R, C, O>,
@@ -118,7 +120,7 @@ export async function stewardPageQuery<I, R, C, O>(
       isDomainError(error) &&
       error.code === "stronger_authentication_required"
     ) {
-      return "confirm";
+      return platformStewardsEnabled() ? "confirm" : notFound();
     }
 
     throw error;

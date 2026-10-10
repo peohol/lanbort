@@ -40,7 +40,6 @@ const summary = (overrides: Partial<CaseSummary>): CaseSummary => ({
 const steward = (
   overrides: Partial<Parameters<typeof stewardStanding>[0]> = {},
 ) => ({
-  enabled: true,
   passkeys: [{}, {}],
   minimum: 2,
   strong: true,
@@ -48,13 +47,6 @@ const steward = (
 });
 
 describe("stewardship", () => {
-  it("keeps the role off before anything else while the deployment does", () => {
-    expect(stewardStanding(steward({ enabled: false }))).toBe("off");
-    expect(stewardStanding(steward({ enabled: false, passkeys: [] }))).toBe(
-      "off",
-    );
-  });
-
   it("opens steward actions only with two passkeys and a fresh confirmation", () => {
     expect(stewardStanding(steward({ passkeys: [] }))).toBe("setup");
     expect(stewardStanding(steward({ passkeys: [{}] }))).toBe("closed");
@@ -89,16 +81,15 @@ describe("stewardship", () => {
   });
 
   it("gives Home the one step that opens the role, or the queue", () => {
-    expect(stewardHomeTask("off", null)).toBeNull();
-    expect(stewardHomeTask("setup", null)?.href).toBe(newPasskeyHref);
-    expect(stewardHomeTask("closed", null)?.href).toBe(newPasskeyHref);
-    expect(stewardHomeTask("unconfirmed", null)?.href).toBe(stewardshipHref);
+    expect(stewardHomeTask("setup", null).href).toBe(newPasskeyHref);
+    expect(stewardHomeTask("closed", null).href).toBe(newPasskeyHref);
+    expect(stewardHomeTask("unconfirmed", null).href).toBe(stewardshipHref);
     expect(stewardHomeTask("confirmed", 3)).toEqual({
       text: "Behandle 3 plattformsaker",
       detail: "Ingen har tatt dem ennå",
       href: platformQueueHref(),
     });
-    expect(stewardHomeTask("confirmed", 0)?.href).toBe(stewardshipHref);
+    expect(stewardHomeTask("confirmed", 0).href).toBe(stewardshipHref);
   });
 
   it("round-trips the queue's filters through its address", () => {

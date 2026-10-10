@@ -28,7 +28,6 @@ import { findEnvironmentsHref } from "@/presentation/search";
 import {
   type StewardStanding,
   stewardHomeTask,
-  stewardsOffText,
 } from "@/presentation/stewardship";
 import { EmptyState } from "./empty-state";
 import { Icon, type IconName } from "./icon";
@@ -361,20 +360,16 @@ function Stewardship({ steward }: { steward: StewardHome }) {
             Du er plattformforvalter
           </Tag>
         </p>
-        {task ? (
-          <ul className={styles.tasks}>
-            <li>
-              <Entry href={task.href} className={styles.task}>
-                <span className={styles.rowText}>
-                  <strong>{task.text}</strong>
-                  {task.detail && <span>{task.detail}</span>}
-                </span>
-              </Entry>
-            </li>
-          </ul>
-        ) : (
-          <p className={styles.hint}>{stewardsOffText}</p>
-        )}
+        <ul className={styles.tasks}>
+          <li>
+            <Entry href={task.href} className={styles.task}>
+              <span className={styles.rowText}>
+                <strong>{task.text}</strong>
+                {task.detail && <span>{task.detail}</span>}
+              </span>
+            </Entry>
+          </li>
+        </ul>
       </div>
     </section>
   );
