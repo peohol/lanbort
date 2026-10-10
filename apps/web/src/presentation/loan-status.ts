@@ -38,10 +38,19 @@ export const sentence = (text: string) =>
  * lender, «Stige fra Kari» for the borrower.
  */
 export function loanTitle(loan: Loan): string {
-  return loan.role === "lender"
-    ? `${loan.agreement.title} til ${personName(loan.parties.borrower)}`
-    : `${loan.agreement.title} fra ${personName(loan.parties.lender)}`;
+  return partyTitle(
+    loan.role,
+    loan.agreement.title,
+    personName(loan.parties[otherSide(loan.role)]),
+  );
 }
+
+/** A loan's title for one of its sides, given the other one's name. */
+export const partyTitle = (
+  role: LoanRequestRole,
+  title: string,
+  other: string,
+) => `${title} ${role === "lender" ? "til" : "fra"} ${other}`;
 
 /** Whether what the parties disagree about is the return, not the handover. */
 const aboutReturn = (loan: Loan) =>
@@ -808,4 +817,18 @@ export function proposalDefaults(
         end: addDays(today, daysBetween(period.start, period.end)),
       }
     : period;
+}
+
+/**
+ * PS-LOAN-010: the return day that follows a new handover day, so the loan
+ * keeps its length and the period stays whole (end not before start).
+ * Nothing moves while the new day is not a date.
+ */
+export function followingEnd(
+  period: { start: string; end: string },
+  start: string,
+): string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(start)
+    ? addDays(start, daysBetween(period.start, period.end))
+    : period.end;
 }

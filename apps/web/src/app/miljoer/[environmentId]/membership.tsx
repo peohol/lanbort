@@ -23,6 +23,7 @@ import {
   type MembershipStep,
   typeChangeAnswer,
 } from "@/presentation/environments";
+import { findEnvironmentsHref } from "@/presentation/search";
 
 const leavePath = "/api/environments/membership/leave";
 
@@ -123,13 +124,20 @@ function StepActions({
   step: MembershipStep;
 }) {
   const command = answerCommand(environment, step);
+  // After a rejection the way on is elsewhere first (Tomat kjerneflyt 3).
+  const rejected = step.kind === "apply" && step.rejected;
 
   return (
     <>
+      {rejected && (
+        <Link className="button button-secondary" href={findEnvironmentsHref}>
+          Finn andre miljøer
+        </Link>
+      )}
       {command &&
         (environment.requirements.length > 0 ? (
           <Link
-            className="button button-primary"
+            className={`button ${rejected ? "button-secondary" : "button-primary"}`}
             href={environmentJoinHref(environment.id)}
           >
             {command.opens}
@@ -139,7 +147,7 @@ function StepActions({
             label={command.label}
             path={command.path}
             body={{ environmentId: environment.id, answers: [] }}
-            primary
+            primary={!rejected}
             {...(command.joins
               ? { next: environmentWelcomeHref(environment.id) }
               : {})}

@@ -125,6 +125,7 @@ describe("asking and answering (PS-OBJ-015)", () => {
       {
         id: questionId,
         publicationId,
+        environmentId,
         objectId,
         askedByUserId: borrower.userId,
         createdAt: expect.any(String),

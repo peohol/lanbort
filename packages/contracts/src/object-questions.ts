@@ -49,6 +49,8 @@ export const objectQuestionPostSchema = z.strictObject({
 export const objectQuestionSchema = z.strictObject({
   id: objectQuestionIdSchema,
   publicationId: publicationIdSchema,
+  /** The environment it is asked in, where it is read and answered. */
+  environmentId: z.uuid(),
   objectId: objectIdSchema,
   /** Null once the asker's account is deleted (PS-ADM-006). */
   askedByUserId: z.uuid().nullable(),

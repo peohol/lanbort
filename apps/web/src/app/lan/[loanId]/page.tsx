@@ -3,7 +3,6 @@ import {
   type LoanConditionReports,
   type LoanLogisticsChannel,
   type LoanLogisticsCloseReason,
-  type LoanReview,
   type LoanReviews,
   loanIdSchema,
 } from "@lanbort/contracts";
@@ -19,7 +18,6 @@ import {
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Fragment, type ReactNode } from "react";
 import { StartLoanLogistics } from "@/chat/start-loan-logistics";
 import { CommandForm } from "@/components/command-form";
 import { ConfirmAction } from "@/components/confirm-action";
@@ -48,25 +46,25 @@ import {
   proposalDefaults,
 } from "@/presentation/loan-status";
 import { loanImageHref } from "@/presentation/object-images";
-import { basisNote, hiddenUntil, scoreLines } from "@/presentation/reviews";
+import { hiddenUntil } from "@/presentation/reviews";
+import { chatContactLink } from "@/server/chat-contact";
 import { chatEnabled } from "@/server/env";
 import {
   pageQuery,
   pageQueryIfAllowed,
-  pageQueryOrNotFound,
   requirePageAccount,
 } from "@/server/session";
 import styles from "../_parts/loan.module.css";
 import { ConditionReports, ReportCondition } from "../_parts/condition";
 import { OriginTag } from "../_parts/origin-tag";
+import { PeriodFields } from "../_parts/period-fields";
 import { Party } from "../_parts/party";
-import { writeHref } from "../_parts/write-href";
 import { Progress } from "../_parts/progress";
 import { Steps } from "../_parts/steps";
 import { ThingPicture } from "../_parts/thing-picture";
 import { Timeline } from "../_parts/timeline";
 import { CoOwnerLoan } from "./co-owner-loan";
-import { ReviewForm } from "./review-form";
+import { Reviews, ReviewsOnly } from "./reviews";
 
 export const metadata: Metadata = { title: "Lån – Lånbort" };
 
@@ -97,7 +95,6 @@ function ProposeAmendment({ loan }: { loan: Loan }) {
 
   const today = calendarDay();
   const help = `Ingenting endres før ${otherParty(loan)} godtar forslaget.`;
-  const endMin = mode === "period" ? today : addDays(today, 1);
   const shown = proposalDefaults(loan.period, mode, today);
 
   return (
@@ -124,29 +121,26 @@ function ProposeAmendment({ loan }: { loan: Loan }) {
       >
         <p className="help">{help}</p>
         {mode === "period" ? (
-          <Field id="ny-start" label="Overlevering">
-            <input
-              id="ny-start"
-              name="period.start"
-              type="date"
-              required
-              min={today}
-              defaultValue={shown.start}
-            />
-          </Field>
+          <PeriodFields defaults={shown} min={today} />
         ) : (
-          <input type="hidden" name="period.start" value={loan.period.start} />
+          <>
+            <input
+              type="hidden"
+              name="period.start"
+              value={loan.period.start}
+            />
+            <Field id="ny-slutt" label="Leveres tilbake">
+              <input
+                id="ny-slutt"
+                name="period.end"
+                type="date"
+                required
+                min={addDays(today, 1)}
+                defaultValue={shown.end}
+              />
+            </Field>
+          </>
         )}
-        <Field id="ny-slutt" label="Leveres tilbake">
-          <input
-            id="ny-slutt"
-            name="period.end"
-            type="date"
-            required
-            min={endMin}
-            defaultValue={shown.end}
-          />
-        </Field>
       </CommandForm>
     </details>
   );
@@ -329,10 +323,12 @@ function LoanStatus({
         <>
           <p>
             <a className="button button-secondary" href="#anmeldelser">
-              Anmeld {otherParty(loan)}
+              Anmeld {personName(review.counterpart)}
             </a>
           </p>
-          <p className="help">{hiddenUntil(review, otherParty(loan))}</p>
+          <p className="help">
+            {hiddenUntil(review, personName(review.counterpart))}
+          </p>
         </>
       )}
     </StatusCard>
@@ -444,142 +440,6 @@ function Agreement({ loan }: { loan: Loan }) {
   );
 }
 
-/** A review as its parties see it, with its one response (PS-TRUST-005). */
-function Review({
-  review,
-  heading,
-  children,
-}: {
-  review: LoanReview;
-  heading: string;
-  children?: ReactNode;
-}) {
-  return (
-    <article className={styles.review} aria-label={heading}>
-      <h3>{heading}</h3>
-      {review.status === "removed" ? (
-        <p>Anmeldelsen er fjernet av moderering.</p>
-      ) : (
-        <>
-          <dl className="facts">
-            {scoreLines(review).map(({ dimension, label, text }) => (
-              <Fragment key={dimension}>
-                <dt>{label}</dt>
-                <dd>{text}</dd>
-              </Fragment>
-            ))}
-          </dl>
-          {review.text && (
-            <p className={`message-text ${styles.quote}`}>{review.text}</p>
-          )}
-          {review.moderated.textRemoved && (
-            <p className="help">Teksten er fjernet av moderering.</p>
-          )}
-          {review.loanReopenedAt && (
-            <p className="help">
-              Lånet ble åpnet igjen etter at anmeldelsen ble publisert.
-            </p>
-          )}
-        </>
-      )}
-      {review.response && (
-        <div className={styles.quote}>
-          <h4>Tilsvar</h4>
-          <p className="message-text">
-            {review.response.text ?? "Tilsvaret er fjernet av moderering."}
-          </p>
-        </div>
-      )}
-      {children}
-    </article>
-  );
-}
-
-/**
- * PS-TRUST-001–005, UX-JRN-010: after the loan ended, each party reviews
- * the other on what could actually be assessed. Their own review stays
- * hidden, and can be revised, until both have reviewed or the deadline;
- * the review of them appears then, and they may respond to it once.
- */
-function Reviews({ loan, reviews }: { loan: Loan; reviews: LoanReviews }) {
-  const { window, own, received } = reviews;
-
-  if (!window) {
-    return null;
-  }
-
-  const other = otherParty(loan);
-  const open = window.status === "open";
-  const note = basisNote(window.basis);
-  const respondHelp =
-    "Du kan svare én gang. Tilsvaret vises sammen med anmeldelsen og endrer ikke vurderingen.";
-
-  return (
-    <section id="anmeldelser" aria-labelledby="anmeldelser-tittel">
-      <h2 id="anmeldelser-tittel">Anmeldelser</h2>
-      {window.status === "paused" && (
-        <p>
-          Lånet er åpnet igjen. Anmeldelsene venter til det er avsluttet på
-          nytt.
-        </p>
-      )}
-      {open && <p>{hiddenUntil(reviews, other)}</p>}
-      {open && note && <p className="help">{note}</p>}
-      {own ? (
-        <Review review={own} heading={`Din anmeldelse av ${other}`}>
-          {own.status === "hidden" && open && (
-            <details>
-              <summary>Endre anmeldelsen</summary>
-              <ReviewForm
-                loanId={loan.id}
-                dimensions={window.dimensions}
-                own={own}
-              />
-            </details>
-          )}
-        </Review>
-      ) : open ? (
-        <div className={styles.review}>
-          <h3>Anmeld {other}</h3>
-          <ReviewForm
-            loanId={loan.id}
-            dimensions={window.dimensions}
-            own={null}
-          />
-        </div>
-      ) : null}
-      {received && (
-        <Review review={received} heading={`${other} sin anmeldelse av deg`}>
-          {!received.response && received.status === "published" && (
-            <details>
-              <summary>Gi et tilsvar</summary>
-              <CommandForm
-                path={`${loanApi(loan.id)}/reviews/response`}
-                fixed={{ loanId: loan.id }}
-                submitLabel="Send tilsvaret"
-                secondary
-              >
-                <Field id="tilsvar" label="Tilsvar" help={respondHelp}>
-                  <textarea
-                    id="tilsvar"
-                    name="text"
-                    required
-                    maxLength={2000}
-                    {...describedBy("tilsvar", respondHelp)}
-                  />
-                </Field>
-              </CommandForm>
-            </details>
-          )}
-        </Review>
-      )}
-      {window.status === "closed" && !own && !received && (
-        <p>Ingen av dere ga en anmeldelse.</p>
-      )}
-    </section>
-  );
-}
-
 /**
  * One loan for one of its parties (WP-64, WP-87, KF7): the loan's steps,
  * the status and every step the loan offers, the agreement and the other
@@ -605,15 +465,20 @@ export default async function LoanPage({
   const loan = await pageQueryIfAllowed(readLoan, { loanId });
 
   // Not a party: a co-owner who may see it gets the restricted view
-  // (UX-PRIV-013); to anyone else it does not exist.
+  // (UX-PRIV-013), and a former party of its reviews, such as the lender
+  // before a change, keeps those reviews; to anyone else it does not exist.
   if (!loan) {
-    return (
-      <CoOwnerLoan
-        view={await pageQueryOrNotFound(readLoanAsCoOwner, { loanId })}
-      />
-    );
+    const [view, reviews] = await Promise.all([
+      pageQueryIfAllowed(readLoanAsCoOwner, { loanId }),
+      pageQueryIfAllowed(readLoanReviews, { loanId }),
+    ]);
+    const shown = reviews && <Reviews reviews={reviews} />;
+
+    if (view) return <CoOwnerLoan view={view}>{shown}</CoOwnerLoan>;
+    if (reviews) return <ReviewsOnly reviews={reviews}>{shown}</ReviewsOnly>;
+    notFound();
   }
-  const [history, logistics, reviews, condition] = await Promise.all([
+  const [history, logistics, reviews, condition, contact] = await Promise.all([
     collectPages(
       (cursor) => pageQuery(readLoanHistory, { loanId, cursor }),
       ({ entries }) => entries,
@@ -628,6 +493,12 @@ export default async function LoanPage({
     // The reviews are their reviewers': after a change of lender, the former.
     pageQueryIfAllowed(readLoanReviews, { loanId }),
     pageQueryIfAllowed(readLoanConditionReports, { loanId }),
+    // The server decides: a block closes it, and the logistics channel
+    // (WP-44) is the way left then.
+    chatContactLink(
+      loan.role === "lender" ? loan.borrowerUserId : loan.responsibleLenderId,
+      { kind: "loan_request", requestId: loan.requestId },
+    ),
   ]);
   const other = loan.role === "lender" ? "borrower" : "lender";
 
@@ -658,19 +529,9 @@ export default async function LoanPage({
           )}
           {logistics && <Logistics channel={logistics} />}
           <Agreement loan={loan} />
-          <Party
-            person={loan.parties[other]}
-            role={other}
-            writeHref={
-              // An open logistics channel means a block has closed
-              // ordinary chat between them (WP-44).
-              logistics?.closedAt === null
-                ? null
-                : writeHref(loan.role, loan.borrowerUserId, loan.requestId)
-            }
-          />
+          <Party person={loan.parties[other]} role={other} contact={contact} />
           <LoanMoreActions loan={loan} condition={condition} />
-          {reviews && <Reviews loan={loan} reviews={reviews} />}
+          {reviews && <Reviews reviews={reviews} />}
         </div>
         <div className={styles.column}>
           <Timeline

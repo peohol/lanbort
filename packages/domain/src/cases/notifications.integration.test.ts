@@ -19,8 +19,8 @@ import { ConsumerRegistry } from "../outbox/consumer";
 import { grantPlatformRole } from "../platform/commands";
 import { platformRoleOpsProcess } from "../platform/policies";
 import { connectTestDatabase } from "../testing/database";
-import { registerTestUser } from "../testing/identities";
 import { deliverAll } from "../testing/outbox";
+import { registerTestUser } from "../testing/identities";
 import { loanTestKit } from "../testing/loans";
 import {
   claimCase,
@@ -61,7 +61,9 @@ const {
 
 const oneDay = 24 * 60 * 60 * 1000;
 
-const deliver = () => deliverAll(db, consumers);
+async function deliver() {
+  await deliverAll(db, consumers);
+}
 
 /**
  * What the actor was told since the last call, in the order it happened.

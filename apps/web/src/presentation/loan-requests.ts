@@ -52,6 +52,19 @@ const endedBecause: Record<
     "Forespørselen gjelder ikke lenger, fordi tiden ble avtalt med et annet lån",
 };
 
+/**
+ * The request's title from the reader's side, as the loan's (KF7): the
+ * lender sees who asks; the borrower is not told the owners before an
+ * answer.
+ */
+export function loanRequestTitle(request: LoanRequest): string {
+  if (!request.object) return "Tingen finnes ikke lenger";
+
+  return request.role === "lender"
+    ? `${request.object.title} til ${personName(request.borrower)}`
+    : request.object.title;
+}
+
 export interface LoanRequestStatusText {
   /** «Venter på deg», «Avtalt»: who or what it waits on, in a word or two. */
   readonly label: string;

@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   loanEndReasonSchema,
   loanIdSchema,
+  loanPersonSchema,
   loanRequestRoleSchema,
 } from "./loans";
 import { multilineText } from "./objects";
@@ -161,6 +162,13 @@ export const loanReviewSchema = z.strictObject({
 export const loanReviewsSchema = z.strictObject({
   loanId: loanIdSchema,
   role: loanRequestRoleSchema,
+  /**
+   * The thing's name in the loan's agreement and the other party of the
+   * reviews, by name: all a party of the reviews sees of the loan when they
+   * are no longer its party, such as a former responsible lender.
+   */
+  title: z.string(),
+  counterpart: loanPersonSchema,
   /** Null until the loan has ended. */
   window: loanReviewWindowSchema.nullable(),
   own: loanReviewSchema.nullable(),

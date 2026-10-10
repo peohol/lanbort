@@ -25,3 +25,12 @@ export const coOwnerLoanPicture = ({
   images,
 }: CoOwnerLoan): ThingPicture | null =>
   images[0] ? { through: "owner", objectId, imageId: images[0].id } : null;
+
+/** The invited user's view of the thing, only while they are asked. */
+export const coOwnerInvitationPicture = (
+  invitationId: string,
+  images: readonly { readonly id: string }[],
+): ThingPicture | null =>
+  images[0]
+    ? { through: "object_invitation", invitationId, imageId: images[0].id }
+    : null;

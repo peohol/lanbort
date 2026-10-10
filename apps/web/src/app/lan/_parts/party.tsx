@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PersonName } from "@/components/person-name";
 import type { PersonRole } from "@/navigation/routes";
+import type { ChatContactLink } from "@/server/chat-contact";
 import { personName } from "@/presentation/people";
 import styles from "./loan.module.css";
 
@@ -11,13 +12,14 @@ const roleLabels: Record<PersonRole, string> = {
 
 /**
  * The other party of the loan (KF7): who they are in it, and the way to
- * write to them where there is one. Their name leads to their page while
- * the reader may open it (UX-PRIV-007).
+ * their private conversation where the server gives one (KF5 F2–F3): the
+ * one they have, or the offer to start it. Their name leads to their page
+ * while the reader may open it (UX-PRIV-007).
  */
 export function Party({
   person,
   role,
-  writeHref,
+  contact,
 }: {
   person: {
     readonly realName: string | null;
@@ -25,8 +27,8 @@ export function Party({
     readonly pictureId?: string | null;
   };
   role: PersonRole;
-  /** Where «Skriv til» leads; none when there is no way to write. */
-  writeHref: string | null;
+  /** The way to write to them; none when there is no way to write. */
+  contact: ChatContactLink | null;
 }) {
   return (
     <section
@@ -39,9 +41,11 @@ export function Party({
         </strong>
         <span className={styles.role}>{roleLabels[role]}</span>
       </span>
-      {writeHref && (
-        <Link className="button button-secondary" href={writeHref}>
-          Skriv til {personName(person)}
+      {contact && (
+        <Link className="button button-secondary" href={contact.href}>
+          {contact.existing
+            ? `Gå til samtalen med ${personName(person)}`
+            : `Skriv til ${personName(person)}`}
         </Link>
       )}
     </section>

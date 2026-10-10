@@ -541,6 +541,10 @@ const probes: Record<string, (ids: WorldIds) => object> = {
   "object_invitation.decline": (ids) => ({
     invitationId: ids.coOwnerInvitationId,
   }),
+  "object_invitation.read_image": (ids) => ({
+    invitationId: ids.coOwnerInvitationId,
+    imageId: ids.imageId,
+  }),
   "object.leave": (ids) => ({ objectId: ids.objectId }),
   "object.set_restriction": (ids) => ({
     objectId: ids.objectId,

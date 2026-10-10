@@ -325,6 +325,25 @@ button .icon,
   stroke-width: 2;
 }
 
+/* A button at work (`BusyButton`): the words for the wait stand where the
+   label was, on one line, and the label keeps the button's width. */
+.busy-content {
+  display: inline-grid;
+}
+
+.busy-label,
+.busy-note {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.busy-content[data-busy] > .busy-label {
+  opacity: 0;
+}
+
 button[type="submit"],
 .button-primary {
   min-height: var(--control-primary);
@@ -1109,6 +1128,20 @@ body:has(> .layer) .app-shell .layer {
     width: calc(100% - 2 * var(--space-5));
   }
 
+  /* Reached from outside, the layer is the page: the panel's column in the
+     middle, with no screen to lie over (`Layer`). */
+  .layer[data-page] {
+    left: 0;
+    width: auto;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .layer[data-page] > * {
+    width: min(34rem, 100%);
+    margin-inline: auto;
+  }
+
   /* In a layer, the way back is one step on every screen. */
   .place-bar .back-link.layer-back {
     display: inline-flex;
@@ -1133,6 +1166,7 @@ body:has(> .layer) .app-shell .layer {
 .menu-row {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: var(--space-3);
   width: 100%;
   min-height: 3.5rem;
@@ -1147,8 +1181,35 @@ body:has(> .layer) .app-shell .layer {
   box-shadow: none;
 }
 
-.menu-row:hover {
+:is(a, button).menu-row:hover {
   background: var(--color-sunken);
+}
+
+/* A row with its own steps: at the end of the row, or under it. */
+.menu li:has(> .menu-actions) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.menu li:has(> .menu-actions) > .menu-row {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.menu-actions {
+  display: flex;
+  gap: var(--space-2);
+  padding: 0 var(--space-3) 0 0;
+}
+
+.menu .menu-item-below > .menu-actions {
+  flex: 1 1 100%;
+  padding: 0 var(--space-3) var(--space-3);
+}
+
+.menu-item-below > .menu-actions > * {
+  flex: 1;
 }
 
 .menu-row > .icon:first-child {
@@ -1193,6 +1254,12 @@ body:has(> .layer) .app-shell .layer {
   border-radius: var(--radius-s);
 }
 
+/* A person's picture or initials keep their own round shape. */
+.menu-lead:has(> .profile-picture) {
+  background: none;
+  border-radius: 50%;
+}
+
 .menu-chevron {
   width: 1.25rem;
   height: 1.25rem;
@@ -1231,15 +1298,18 @@ body:has(> .layer) .app-shell .layer {
   flex: none;
 }
 
-/* The user's own picture and name at the top of Konto. */
-.profile-card {
-  grid-template-columns: auto minmax(0, 1fr);
+/* The user's own picture and name at the top of Konto (KF6 screen 18):
+   the row leads to the picture, and «Se din egen side» under it. */
+.profile-card-row {
+  display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
+  color: var(--color-text);
+  text-decoration: none;
 }
 
-.profile-card p {
-  margin: 0;
+.profile-card > .button-quiet {
+  justify-self: start;
 }
 
 .profile-name {

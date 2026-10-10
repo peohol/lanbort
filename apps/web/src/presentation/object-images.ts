@@ -4,7 +4,8 @@ import type { ThingPicture } from "@lanbort/contracts";
  * Where a thing's photos are read, each through the policy of the place the
  * reader sees the thing in (PS-OBJ-002): as one of its owners, through an
  * environment it is published in, as a friend of an owner (PS-OBJ-020), or
- * as a party of a loan or a request for it (PS-OBJ-021).
+ * as a party of a loan or a request for it, or as invited to co-own it
+ * (PS-OBJ-021).
  */
 export const ownImageHref = (objectId: string, imageId: string) =>
   `/api/objects/${objectId}/images/${imageId}`;
@@ -25,6 +26,11 @@ export const loanImageHref = (loanId: string, imageId: string) =>
 export const loanRequestImageHref = (requestId: string, imageId: string) =>
   `/api/loan-requests/${requestId}/images/${imageId}`;
 
+export const coOwnerInvitationImageHref = (
+  invitationId: string,
+  imageId: string,
+) => `/api/object-invitations/${invitationId}/images/${imageId}`;
+
 /** The first photo of a thing, if it has one, for a card in a list. */
 export const firstImageHref = (
   images: readonly { readonly id: string }[],
@@ -40,6 +46,8 @@ export function thingPictureHref(picture: ThingPicture | null): string | null {
       return loanRequestImageHref(picture.requestId, picture.imageId);
     case "owner":
       return ownImageHref(picture.objectId, picture.imageId);
+    case "object_invitation":
+      return coOwnerInvitationImageHref(picture.invitationId, picture.imageId);
     case undefined:
       return null;
   }
