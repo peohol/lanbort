@@ -265,23 +265,46 @@ export function answerCommand(
 
 /**
  * What the user has given to a pending membership, as it was sent (Tomat
- * kjerneflyt 3): each answer under its question, and the rules once, as
- * accepted. Only the user's own answers, on their own page (UX-PRIV-009).
+ * kjerneflyt 3): each answer under its question, an answer to a question
+ * the administrators have changed since, and the rules once all of them
+ * are accepted. Only the user's own answers, on their own page
+ * (UX-PRIV-009).
  */
 export function givenAnswers(
   environment: Environment,
 ): { term: string; value: string }[] {
-  const given = new Map(
-    environment.membership?.answers.map((a) => [a.requirementId, a.answer]),
+  const current = new Map(
+    environment.requirements.map((requirement, index) => [
+      requirement.id,
+      { ...requirement, index },
+    ]),
   );
-  const answered = environment.requirements.filter(({ id }) => given.has(id));
-  const rules = answered.filter(({ kind }) => kind === "acceptance");
+  const order = (id: string) => current.get(id)?.index ?? Infinity;
+  const answers = [...(environment.membership?.answers ?? [])].sort(
+    (a, b) => order(a.requirementId) - order(b.requirementId),
+  );
+  const accepted = new Set(
+    answers.filter((a) => a.answer === null).map((a) => a.requirementId),
+  );
+  const rules = environment.requirements.filter(
+    ({ kind }) => kind === "acceptance",
+  );
 
   return [
-    ...answered
-      .filter(({ kind }) => kind === "information")
-      .map(({ id, text }) => ({ term: text, value: given.get(id) ?? "" })),
-    ...(rules.length > 0 ? [{ term: "Regler", value: "Godtatt" }] : []),
+    ...answers.flatMap(({ requirementId, answer }) =>
+      answer === null
+        ? []
+        : [
+            {
+              term:
+                current.get(requirementId)?.text ?? "Et spørsmål som er endret",
+              value: answer,
+            },
+          ],
+    ),
+    ...(rules.length > 0 && rules.every(({ id }) => accepted.has(id))
+      ? [{ term: "Regler", value: "Godtatt" }]
+      : []),
   ];
 }
 

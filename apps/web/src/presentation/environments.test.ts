@@ -198,7 +198,7 @@ describe("givenAnswers", () => {
     ]);
   });
 
-  it("leaves out what is not answered and answers to old requirements", () => {
+  it("keeps an answer to a changed question, and the rules only once all are accepted", () => {
     expect(
       givenAnswers(
         environment(
@@ -214,7 +214,7 @@ describe("givenAnswers", () => {
           },
         ),
       ),
-    ).toEqual([]);
+    ).toEqual([{ term: "Et spørsmål som er endret", value: "Gammelt svar" }]);
     expect(givenAnswers(environment())).toEqual([]);
   });
 });

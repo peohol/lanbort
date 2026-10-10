@@ -207,7 +207,8 @@ test("an invitation to a hidden environment is accepted on its page, and members
 
   // The first visit as a member welcomes; later visits do not.
   await expect(bo.page.getByText("Velkommen, Bo")).toBeVisible();
-  await bo.page.goto(`/miljoer/${environmentId}`);
+  await expect(bo.page).toHaveURL(`/miljoer/${environmentId}`);
+  await bo.page.reload();
   await expect(bo.page.getByText("Du er medlem.")).toBeVisible();
   await expect(bo.page.getByText("Velkommen, Bo")).toHaveCount(0);
   await bo.page.getByRole("link", { name: "Om miljøet og medlemmer" }).click();

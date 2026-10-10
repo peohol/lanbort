@@ -21,6 +21,7 @@ import {
 import { About, MembersOnly, Requirements } from "./about";
 import { environmentBack } from "./back";
 import { Things } from "./member-content";
+import { ForgetParam } from "./forget-param";
 import { Membership } from "./membership";
 
 export const metadata: Metadata = { title: "Miljøet – Lånbort" };
@@ -71,6 +72,7 @@ export default async function EnvironmentPage({
       >
         {environment.location}
       </PageHeader>
+      <ForgetParam name={welcomeParam} />
       <Membership
         environment={environment}
         step={step}

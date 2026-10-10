@@ -96,8 +96,8 @@ export function Membership({
           <section aria-labelledby="soknaden-din">
             <h3 id="soknaden-din">Søknaden din</h3>
             <dl className="facts">
-              {given.map(({ term, value }) => (
-                <Fragment key={term}>
+              {given.map(({ term, value }, index) => (
+                <Fragment key={index}>
                   <dt>{term}</dt>
                   <dd className="message-text">{value}</dd>
                 </Fragment>
