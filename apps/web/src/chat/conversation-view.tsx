@@ -336,6 +336,18 @@ function Conversation({
   const online = useOnline();
   const [info, setInfo] = useState<ChatConversation>();
   const [history, setHistory] = useState<HistoryEntry[]>();
+  const [linkedAt, setLinkedAt] = useState<string | null>(null);
+  useEffect(() => {
+    let current = true;
+    engine
+      .linkedAt()
+      .then((at) => current && setLinkedAt(at))
+      // Without it the note is left out; the conversation works as before.
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [engine]);
   const [divider, setDivider] = useState<string | null>(null);
   const [status, setStatus] = useState<{
     joined: boolean;
@@ -460,7 +472,6 @@ function Conversation({
   const loan = logistics ? loanOf(loans, info.loanId) : undefined;
   const between = !logistics && others[0] ? loans[others[0].userId] : undefined;
   const changed = others.filter((o) => engine.keyChanged(o.userId));
-  const { linkedAt } = engine;
   const linkedSince =
     linkedAt &&
     info &&
