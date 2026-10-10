@@ -7,7 +7,7 @@ import {
   type PlatformLookupResult,
 } from "@lanbort/contracts";
 import Link from "next/link";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useId, useRef, useState } from "react";
 import { postJson } from "@/components/api-client";
 import { BusyButton } from "@/components/busy-button";
 import { ConsequenceRows } from "@/components/consequence-rows";
@@ -61,6 +61,11 @@ export function InquiryFlow({ freshUntil }: { freshUntil: string | null }) {
     done: "Saksgrunnlaget er åpnet, og du har det.",
     after: ({ caseId }) => caseHref(caseId),
     replace: true,
+    // The confirmation ran out while the steward wrote; the next send asks
+    // for it again, and what they wrote stays.
+    onFailure: (code) => {
+      if (code === "stronger_authentication_required") setFresh(false);
+    },
   });
   // Read when the page is drawn; a stale confirmation is asked for again.
   const [fresh, setFresh] = useState(
@@ -74,16 +79,25 @@ export function InquiryFlow({ freshUntil }: { freshUntil: string | null }) {
     return confirmed;
   }
   const texts = inquiryKinds[kind];
+  // The latest lookup; an answer to an earlier one no longer stands.
+  const lookups = useRef(0);
+
+  /** What was found no longer stands, nor a lookup still on its way. */
+  function forget() {
+    lookups.current += 1;
+    setFound(null);
+    setLookupNote(null);
+    setLooking(false);
+  }
 
   function choose(next: InquiryKind) {
     setKind(next);
-    setFound(null);
-    setLookupNote(null);
+    forget();
   }
 
   async function lookUp(event: FormEvent) {
     event.preventDefault();
-    setFound(null);
+    forget();
     const lookup = lookupOf(kind, query);
 
     if (!lookup) {
@@ -91,8 +105,8 @@ export function InquiryFlow({ freshUntil }: { freshUntil: string | null }) {
       return;
     }
 
+    const current = lookups.current;
     setLooking(true);
-    setLookupNote(null);
     const send = () =>
       postJson<PlatformLookupResult>("/api/platform/lookups", lookup);
     let result = await send();
@@ -104,6 +118,7 @@ export function InquiryFlow({ freshUntil }: { freshUntil: string | null }) {
     ) {
       result = await send();
     }
+    if (current !== lookups.current) return;
     setLooking(false);
 
     if (!result.ok) {
@@ -169,8 +184,7 @@ export function InquiryFlow({ freshUntil }: { freshUntil: string | null }) {
                 value={query}
                 onChange={(event) => {
                   setQuery(event.target.value);
-                  setFound(null);
-                  setLookupNote(null);
+                  forget();
                 }}
                 {...describedBy(`${id}-finn`, true)}
               />
