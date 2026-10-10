@@ -223,7 +223,7 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 - **Ser / handler:** deltakerne. Ved første kontakt mellom ikke-venner er det bare mottakeren av den strukturerte henvendelsen som kan åpne fri samtale.
 - **Regler:** UX-IA-001, UX-EXC-004, PS-COM-001, PS-COM-004–007, PS-COM-009, PS-COM-017, PS-COM-018, PS-USR-005.
 - **Forløp:** begge.
-- **UI-pakke:** WP-80, med enhetene under [enheter for privat chat](#enheter-for-privat-chat); åpning av fri samtale fra strukturert kontakt, demping, arkivering og start fra personens side står under «Senere» i UI-planen.
+- **UI-pakke:** WP-80, med enhetene under [enheter for privat chat](#enheter-for-privat-chat); demping og fjerning fra egen liste («Om samtalen») gjelder også lånelogistikken (PS-COM-007); åpning av fri samtale fra strukturert kontakt står under «Senere» i UI-planen.
 
 #### Enheter for privat chat
 
@@ -611,7 +611,7 @@ Disse flatene følger av spesifikasjonen og UX-modellen, men ingen pakke i UI-pl
 - **Melding om mulig dødsfall** fra personens side eller et felles lån (PS-COM-015, UX-EXC-008).
 - **Plattformforvalterens inngrep** på kontoer og miljøer, fra en sak i plattformkøen (PS-ADM-015). Venter på OD-0023.
 - **Varsel før utlogging på en enhet med privat chat** (ADR-0010 punkt 7). Konto-sidens «Logg ut» har ikke dette varselet ennå; «Fjern denne enheten» i Mine enheter sier hva enheten mister.
-- Presentasjon og synlighet for andre profilfelt, og demping og arkivering av lånesamtalen, står allerede under «Senere» i UI-planen.
+- Presentasjon og synlighet for andre profilfelt står allerede under «Senere» i UI-planen.
 
 ### Åpne beslutninger som berører flatene
 

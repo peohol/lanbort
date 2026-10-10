@@ -387,8 +387,6 @@ const closedBecause: Record<LoanLogisticsCloseReason, string> = {
   loan_ended: "Samtalen om lånet er stengt fordi lånet er avsluttet.",
   parties_changed:
     "Samtalen om lånet er stengt fordi lånet har fått en annen utlåner.",
-  safety:
-    "Samtalen om lånet er stengt av sikkerhetshensyn. Bruk valgene for lånet over videre.",
 };
 
 /**

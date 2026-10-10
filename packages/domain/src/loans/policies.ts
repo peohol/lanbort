@@ -620,19 +620,6 @@ export const endLoanUnresolvedPolicy = definePolicy<LoanResource>({
 });
 
 /**
- * The process that closes a loan logistics channel early as a safety
- * measure (PS-COM-007). Who may take that measure is not decided (OD-0020),
- * so nothing in the product runs it yet: no route and no schedule. The
- * decision adds its caller here instead of a new mechanism.
- */
-export const logisticsSafetyProcess = "loan_logistics.safety_closures";
-
-export const closeLoanLogisticsPolicy = definePolicy<unknown>({
-  action: "loan_logistics.close_for_safety",
-  actor: [requireSystemProcess(logisticsSafetyProcess)],
-});
-
-/**
  * A loan whose object's owners may have to confirm having it back
  * (PS-LOAN-019): its parties, the object's current owners, and whether it
  * ended unresolved.
@@ -745,7 +732,6 @@ export const loanRequestPolicies = [
   readLoanImagePolicy,
   readLoanHistoryPolicy,
   readLoanLogisticsPolicy,
-  closeLoanLogisticsPolicy,
   cancelLoanPolicy,
   proposeLoanAmendmentPolicy,
   acceptLoanAmendmentPolicy,

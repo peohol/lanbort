@@ -1,9 +1,11 @@
 import { chatLimits, type ReturnOutcome } from "@lanbort/contracts";
 import { sql } from "kysely";
 import { afterAll, describe, expect, it } from "vitest";
-import { systemActor, type UserActor } from "../actor";
+import type { UserActor } from "../actor";
 import {
+  hideChatConversation,
   listChatConversations,
+  muteChatConversation,
   readChatConversation,
   sendChatMessage,
   startChatConversation,
@@ -26,12 +28,7 @@ import { loanTestKit } from "../testing/loans";
 import { approveLoanRequest } from "./approval";
 import { cancelLoan } from "./cancellation";
 import { reportHandover } from "./handover";
-import {
-  closeLoanLogisticsForSafety,
-  loanLogisticsGate,
-  readLoanLogistics,
-} from "./logistics";
-import { logisticsSafetyProcess } from "./policies";
+import { loanLogisticsGate, readLoanLogistics } from "./logistics";
 import {
   acceptResponsibilityTransfer,
   offerResponsibility,
@@ -41,7 +38,8 @@ import { reportReturn } from "./return";
 /**
  * WP-44 (PS-COM-007): a block between the parties of a loan in progress
  * opens a narrow logistics channel for them, which closes when the loan
- * ends, when its parties change, or early as a safety measure (OD-0020).
+ * ends or its parties change, and never earlier: each party may only mute
+ * or archive it for themselves (OD-0020).
  * The messages themselves are the private chat's (WP-43); these tests show
  * when the channel accepts them and for whom.
  */
@@ -60,13 +58,10 @@ const {
   ask,
   dated,
   published,
-  eventsFor,
 } = kit;
 
 const notFound = { code: "not_found" };
 const forbidden = { code: "forbidden" };
-const conflict = { code: "conflict" };
-const safety = systemActor(logisticsSafetyProcess);
 
 const block = (actor: UserActor, other: UserActor) =>
   run(blockUser, actor, { userId: other.userId });
@@ -87,9 +82,6 @@ const channelId = async (actor: UserActor, loanId: string) => {
   const [newest] = await logistics(actor, loanId);
   return newest!.id;
 };
-
-const closeForSafety = (channelId: string) =>
-  run(closeLoanLogisticsForSafety, safety, { channelId });
 
 const sayReturn = (actor: UserActor, loanId: string, outcome: ReturnOutcome) =>
   run(reportReturn, actor, {
@@ -292,62 +284,31 @@ describe("closing with the loan (PS-COM-007)", () => {
   });
 });
 
-describe("closing as a safety measure (PS-COM-007, OD-0020)", () => {
-  it("is only for its process until OD-0020 is decided", async () => {
-    const { owner, borrower, loanId } = await reservedLoan();
-    await block(borrower, owner);
-    const id = await channelId(owner, loanId);
-
-    for (const actor of [owner, borrower, await kit.steward()]) {
-      await expect(
-        run(closeLoanLogisticsForSafety, actor, { channelId: id }),
-      ).rejects.toMatchObject(forbidden);
-    }
-    expect(await loanLogisticsGate(db, id, owner.userId)).toBe("open");
-  });
-
-  it("closes the channel for good, also after a new block", async () => {
+describe("no early closing (PS-COM-007, OD-0020)", () => {
+  it("lets nothing close the channel while the loan is in progress", async () => {
     const { owner, borrower, loanId } = await activeLoan();
     await block(borrower, owner);
-    const [channel] = await logistics(owner, loanId);
-    const id = channel!.id;
-
-    const closed = await closeForSafety(id);
-    expect(closed).toEqual({
-      ...channel,
-      closedAt: kit.now().toISOString(),
-      closeReason: "safety",
-    });
-    expect(await logistics(borrower, loanId)).toEqual([closed]);
-    expect(await loanLogisticsGate(db, id, borrower.userId)).toBe("closed");
-    // Again: the same answer, and nothing more happens.
-    expect(await closeForSafety(id)).toEqual(closed);
-    expect(await eventsFor("loan_logistics_channel", id)).toEqual([
-      {
-        event_type: "loan_logistics.closed_for_safety",
-        payload: { loanId },
-      },
-    ]);
-
-    // Lifting and placing the block again opens nothing between them.
-    await unblock(borrower, owner);
-    await block(owner, borrower);
-    expect(await logistics(owner, loanId)).toEqual([closed]);
-
-    // The loan goes on with its structured actions.
-    expect((await sayReturn(owner, loanId, "received")).status).toBe("ended");
-  });
-
-  it("cannot close a channel that has closed already", async () => {
-    const { owner, borrower, loanId } = await reservedLoan();
-    await block(borrower, owner);
     const id = await channelId(owner, loanId);
-    await run(cancelLoan, borrower, { loanId });
 
-    await expect(closeForSafety(id)).rejects.toMatchObject(conflict);
-    await expect(closeForSafety(crypto.randomUUID())).rejects.toMatchObject(
-      notFound,
-    );
+    // Only the loan's end and a change of parties close it; the database
+    // knows no other reason, and holds the ones it knows to the facts.
+    for (const reason of ["safety", "loan_ended", "parties_changed"]) {
+      await expect(
+        sql`update app.loan_logistics_channels set closed_at = now(), close_reason = ${reason} where id = ${id}`.execute(
+          db,
+        ),
+      ).rejects.toThrow();
+    }
+    expect(await loanLogisticsGate(db, id, borrower.userId)).toBe("open");
+
+    // Nor can a closed channel be added beside it.
+    await expect(
+      sql`
+        insert into app.loan_logistics_channels
+          (loan_id, borrower_user_id, lender_user_id, opened_at, closed_at, close_reason)
+        values (${loanId}, ${borrower.userId}, ${owner.userId}, now(), now(), 'loan_ended')
+      `.execute(db),
+    ).rejects.toThrow();
   });
 });
 
@@ -497,14 +458,40 @@ describe("messages (ADR-0010, WP-43)", () => {
     expect(await startChat(borrower, channelId)).toEqual({ conversationId });
   });
 
-  it("takes nothing more after a safety closure", async () => {
-    const { borrower, channelId, conversationId } = await chattingLoan();
+  it("lets each party mute or archive it for themselves only", async () => {
+    const { owner, borrower, conversationId } = await chattingLoan();
+    const listed = async (actor: UserActor) =>
+      (
+        await executeQuery(tick(), listChatConversations, {
+          actor,
+          input: {},
+        })
+      ).conversations.map((c) => c.conversationId);
 
-    await closeForSafety(channelId);
+    await run(muteChatConversation, borrower, {
+      conversationId,
+      muted: true,
+    });
+    await run(hideChatConversation, borrower, { conversationId });
 
-    await expect(say(borrower, conversationId)).rejects.toMatchObject(
-      forbidden,
-    );
+    expect(await conversationOf(borrower, conversationId)).toMatchObject({
+      muted: true,
+      open: true,
+    });
+    expect(await listed(borrower)).not.toContain(conversationId);
+    // The other party notices nothing, and the channel stays open.
+    expect(await conversationOf(owner, conversationId)).toMatchObject({
+      muted: false,
+      open: true,
+    });
+    expect(await listed(owner)).toContain(conversationId);
+    await say(owner, conversationId);
+
+    // A new message brings it back to the archived list, still muted.
+    expect(await listed(borrower)).toContain(conversationId);
+    expect(await conversationOf(borrower, conversationId)).toMatchObject({
+      muted: true,
+    });
   });
 
   it("accepts nothing after the loan ends while a message is on its way", async () => {
@@ -565,8 +552,10 @@ describe("messages (ADR-0010, WP-43)", () => {
   });
 
   it("cannot be started once the channel has closed without one", async () => {
-    const { owner, channelId } = await blockedLoan(() => reservedLoan());
-    await closeForSafety(channelId);
+    const { owner, borrower, loanId, channelId } = await blockedLoan(() =>
+      reservedLoan(),
+    );
+    await run(cancelLoan, borrower, { loanId });
 
     await expect(startChat(owner, channelId)).rejects.toMatchObject(forbidden);
   });
