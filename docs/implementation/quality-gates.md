@@ -34,6 +34,8 @@ Må være oppfylt:
 - XSS/CSP/supply-chain-tiltak er testet
 - ingen administratorfunksjon har skjult «dekrypter alt»-vei
 
+Grunnlaget for den uavhengige gjennomgangen, med funnene fra den interne gjennomgangen, står i [e2ee-gjennomgangsgrunnlag.md](e2ee-gjennomgangsgrunnlag.md).
+
 ## Port D — Før lukket pilot med reelle brukere
 
 Må være oppfylt:

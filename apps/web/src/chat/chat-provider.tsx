@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 import type { ApiFailureCode } from "@/components/api-client";
-import { isChatPage } from "@/navigation/chat";
+import { isChatPage, loadedPath } from "@/navigation/chat";
 import { ChatApiError } from "./api";
 import { type ChatEngine, type ChatSetup, loadChat } from "./engine";
 
@@ -52,11 +52,7 @@ export function useChat(): ChatContextValue {
 const syncIntervalMs = 15_000;
 const lockWaitMs = 3_000;
 
-/** The path the page's document was loaded with, not navigated to since. */
-export function loadedPath(): string {
-  const entry = performance.getEntriesByType("navigation")[0];
-  return entry ? new URL(entry.name).pathname : location.pathname;
-}
+export { loadedPath } from "@/navigation/chat";
 
 const failure = (error: unknown): ChatState => ({
   status: "failed",

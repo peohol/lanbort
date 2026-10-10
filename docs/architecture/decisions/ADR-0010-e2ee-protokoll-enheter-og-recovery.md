@@ -200,7 +200,7 @@ Hvert private vedlegg krypteres på enheten med en tilfeldig nøkkel per fil (AE
 - at en deltaker tar skjermbilde eller videresender
 - metadata: serveren vet hvem som snakker med hvem, når, omtrent hvor mye og fra hvor mange enheter
 
-**Tiltak:** streng CSP uten `unsafe-inline` for skript på chatsidene (nonce- eller hash-basert), ingen tredjepartsskript, låste og kontrollerte avhengigheter, beskyttet deploy-prosess og egen sikkerhetsgjennomgang av nøkkelhåndteringen (Port C). Sterkere vern mot kompromittert webleveranse krever signert eller innebygd klient og vurderes særskilt hvis det blir et krav.
+**Tiltak:** streng CSP uten `unsafe-inline` for skript på chatsidene (nonce-basert, med `'strict-dynamic'`). Fordi nøklene ligger i lagringen til hele opprinnelsen (punkt 10), har også alle andre sider samme nonce-baserte skriptregel; ingen side tillater innebygde skript uten nonce. Chatsidene har i tillegg ingen eksterne kilder, og navigering inn i eller ut av chat laster siden på nytt, slik at hver side kjører under sine egne hoder. Ellers gjelder: ingen tredjepartsskript, låste og kontrollerte avhengigheter, beskyttet deploy-prosess og egen sikkerhetsgjennomgang av nøkkelhåndteringen (Port C). Sterkere vern mot kompromittert webleveranse krever signert eller innebygd klient og vurderes særskilt hvis det blir et krav.
 
 Produktteksten skal ikke love mer enn dette. Den kan si at meldingene er ende-til-ende-kryptert og at Lånbort ikke kan lese dem, og lenke til en forklaring av grensene.
 

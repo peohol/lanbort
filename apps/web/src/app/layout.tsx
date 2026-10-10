@@ -4,6 +4,7 @@ import { preload } from "react-dom";
 import { countUnreadNotifications } from "@lanbort/domain";
 import { Announcer } from "@/components/announcer";
 import { AppShell } from "@/components/app-shell";
+import { HeaderBoundary } from "@/components/header-boundary";
 import { NetworkStatus } from "@/components/network-status";
 import { restingNotice } from "@/presentation/account";
 import { getPageAccount, pageQuery } from "@/server/session";
@@ -45,6 +46,7 @@ export default async function RootLayout({
   return (
     <html lang="nb">
       <body>
+        <HeaderBoundary />
         <NetworkStatus />
         {signedIn ? (
           <AppShell
