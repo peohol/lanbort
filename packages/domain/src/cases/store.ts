@@ -6,10 +6,14 @@ import type {
   CaseParticipantRole,
   CaseQueueReturnReason,
   CaseStatus,
+  LoanStatus,
   ReportTargetKind,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
+import { presentedLoanStatus } from "../loans/model";
+import { findLoan } from "../loans/reservations";
+import { calendarDate } from "../objects/availability";
 import type {
   ActionRecord,
   CaseRecord,
@@ -616,6 +620,7 @@ export async function listCases(
     record: toCaseRecord(row),
     assigneeUserId: row.current_assignee,
     handlerAvailable: row.handler_available,
+    title: row.title,
   }));
 
   return {
@@ -629,7 +634,72 @@ function listQuery(db: Db, now: Date) {
   return caseQuery(db).select([
     currentAssignee(now).as("current_assignee"),
     hasHandler(now).as("handler_available"),
+    sql<string | null>`coalesce(
+      (select agreement.title from app.loan_agreements as agreement
+        where agreement.loan_id = c.loan_id
+        order by agreement.version desc limit 1),
+      (select object.title from app.objects as object where object.id = c.object_id)
+    )`.as("title"),
   ]);
+}
+
+/** The participants of each of the cases, in the order they joined. */
+export async function loadParticipantsOf(
+  db: Db,
+  caseIds: readonly string[],
+): Promise<Map<string, ParticipantRecord[]>> {
+  const byCase = new Map<string, ParticipantRecord[]>();
+
+  if (caseIds.length === 0) {
+    return byCase;
+  }
+
+  const rows = await db
+    .selectFrom("app.case_participants")
+    .select(["case_id", "user_id", "role", "may_write"])
+    .where("case_id", "in", caseIds)
+    .orderBy("joined_at")
+    .orderBy("user_id")
+    .execute();
+
+  for (const row of rows) {
+    byCase.set(row.case_id, [
+      ...(byCase.get(row.case_id) ?? []),
+      {
+        userId: row.user_id,
+        role: row.role as CaseParticipantRole,
+        mayWrite: row.may_write,
+      },
+    ]);
+  }
+
+  return byCase;
+}
+
+/**
+ * The mediated loans' status today, as their pages show it
+ * (`presentedLoanStatus`), while each loan exists.
+ */
+export async function loadLoanStatuses(
+  db: Db,
+  loanIds: readonly string[],
+  now: Date,
+): Promise<Map<string, LoanStatus>> {
+  const statuses = new Map<string, LoanStatus>();
+  const today = calendarDate(now);
+
+  for (const loanId of new Set(loanIds)) {
+    const loan = await findLoan(db, { loanId });
+
+    if (loan) {
+      statuses.set(
+        loanId,
+        presentedLoanStatus(loan.status, loan.agreement.period, today),
+      );
+    }
+  }
+
+  return statuses;
 }
 
 /** Only the cases `userId` may handle now. */

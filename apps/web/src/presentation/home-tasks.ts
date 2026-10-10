@@ -418,6 +418,10 @@ export function administrationText(item: HomeItem): string {
       return `Vurder ${count} ting`;
     case "environment.handle_cases":
       return `Svar på ${count} ${plural(count, "henvendelse", "henvendelser")}`;
+    case "environment.mediate_loans":
+      return `Mekle om ${count} lån`;
+    case "environment.review_reports":
+      return `Vurder ${count} ${plural(count, "rapport", "rapporter")}`;
     default:
       return "Ta over som eier";
   }

@@ -7,6 +7,7 @@ import type {
   CaseParticipantRole,
   CaseQueueReturnReason,
   CaseStatus,
+  LoanStatus,
   ReportTargetKind,
 } from "@lanbort/contracts";
 
@@ -179,3 +180,22 @@ export function handlingOf(
 
   return handlerAvailable ? "queued" : "unavailable";
 }
+
+/**
+ * The statuses in which a loan's handover or return is still in question:
+ * contradicting statements, or a handover or return day that is over
+ * without the parties having settled it.
+ */
+const unclarifiedLoanStatuses: readonly LoanStatus[] = [
+  "disputed",
+  "awaiting_handover",
+  "awaiting_return",
+];
+
+/**
+ * PS-COM-022: whether the parties have clarified the mediated loan
+ * themselves, by its status today. The mediation stays open even so; its
+ * handler closes it.
+ */
+export const loanClarified = (status: LoanStatus): boolean =>
+  !unclarifiedLoanStatuses.includes(status);

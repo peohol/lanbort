@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { loanIdSchema } from "./loans";
+import { loanIdSchema, loanStatusSchema } from "./loans";
 import { multilineText } from "./objects";
 
 /**
@@ -248,6 +248,16 @@ export const caseParticipantSchema = z.strictObject({
 });
 
 /**
+ * The mediated loan as the case shows it (PS-COM-022): its status today,
+ * and whether the parties have clarified it themselves. A mediation stays
+ * open until a handler closes it, also when they have.
+ */
+export const caseLoanSchema = z.strictObject({
+  status: loanStatusSchema,
+  clarified: z.boolean(),
+});
+
+/**
  * A case as the caller sees it: as a participant (`party`), only what was
  * written for them and whether it is handled; as a handler, all of it with
  * its history. The user a report is about never sees it.
@@ -284,6 +294,8 @@ export const caseSchema = z.strictObject({
   loanTitle: z.string().nullable(),
   /** The reported object's title, while the object exists. */
   objectTitle: z.string().nullable(),
+  /** The mediated loan, for a mediation while the loan exists. */
+  loan: caseLoanSchema.nullable(),
   /**
    * The others who may handle the open case now, for its handler to hand it
    * to; empty for a participant.
@@ -304,6 +316,19 @@ export const caseSummarySchema = z.strictObject({
   handling: caseHandlingSchema,
   /** The responsible handler; in the handlers' queue only. */
   assigneeUserId: z.uuid().nullable(),
+  /** What a report is about, as on the case. */
+  reportTarget: reportTargetKindSchema.nullable(),
+  subjectUserId: z.uuid().nullable(),
+  /** The loan's or the reported object's title, while it exists. */
+  title: z.string().nullable(),
+  /** Who takes part in it; in the handlers' queue only. */
+  participantUserIds: z.array(z.uuid()),
+  /** It is the caller's turn to write (PS-COM-012); participants only. */
+  yourTurn: z.boolean(),
+  /** For a mediation: the parties have clarified the loan (PS-COM-022). */
+  loanClarified: z.boolean().nullable(),
+  /** The name of everyone this summary names by id. */
+  people: z.array(casePersonSchema),
 });
 
 export const casePageSize = 50;
@@ -354,4 +379,5 @@ export type CaseEntry = z.infer<typeof caseEntrySchema>;
 export type CasePerson = z.infer<typeof casePersonSchema>;
 export type Case = z.infer<typeof caseSchema>;
 export type CaseSummary = z.infer<typeof caseSummarySchema>;
+export type CaseLoan = z.infer<typeof caseLoanSchema>;
 export type CaseList = z.infer<typeof caseListSchema>;

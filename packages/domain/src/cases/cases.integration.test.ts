@@ -605,6 +605,59 @@ describe("mediation of a loan through an environment (PS-COM-012, vision 05)", (
     ).toBe("disputed");
   });
 
+  it("says in the queue what it is about, whose turn it is, and when the parties have clarified the loan (PS-COM-022)", async () => {
+    const { loanId, owner, borrower, admin, environmentId } =
+      await disputedLoan();
+    const { caseId } = await run(requestLoanMediation, borrower, {
+      loanId,
+      body: "Jeg fikk aldri tilhengeren.",
+    });
+    const title = (
+      await executeQuery(tick(), readLoan, { actor: owner, input: { loanId } })
+    ).agreement.title;
+    const inQueue = async () =>
+      (await environmentQueue(admin, environmentId)).items.find(
+        (each) => each.id === caseId,
+      )!;
+    const own = async (actor: UserActor) =>
+      (
+        await executeQuery(tick(), listOwnCases, { actor, input: {} })
+      ).items.find((each) => each.id === caseId)!;
+
+    expect(await inQueue()).toMatchObject({
+      title,
+      loanClarified: false,
+      yourTurn: false,
+    });
+    expect((await inQueue()).participantUserIds.sort()).toEqual(
+      [owner.userId, borrower.userId].sort(),
+    );
+    expect((await read(admin, caseId)).loan).toEqual({
+      status: "disputed",
+      clarified: false,
+    });
+    // The owner has not written their statement yet; the borrower waits.
+    expect(await own(owner)).toMatchObject({ yourTurn: true, title });
+    expect(await own(borrower)).toMatchObject({
+      yourTurn: false,
+      participantUserIds: [],
+    });
+
+    // The borrower agrees after all: the loan is clarified, and the case
+    // stays open for the administrator to close.
+    await run(reportHandover, borrower, {
+      loanId,
+      agreementVersion: 1,
+      outcome: "handed_over",
+    });
+    expect(await inQueue()).toMatchObject({ loanClarified: true });
+    expect((await read(admin, caseId)).loan).toEqual({
+      status: "active",
+      clarified: true,
+    });
+    expect((await read(owner, caseId)).status).toBe("open");
+  });
+
   it("is never handled by an administrator with a stake in the loan", async () => {
     const { loanId, owner, borrower, admin, objectId } = await disputedLoan();
     const { caseId } = await run(requestLoanMediation, borrower, {

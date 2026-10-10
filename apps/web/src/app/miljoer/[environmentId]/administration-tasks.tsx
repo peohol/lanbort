@@ -9,7 +9,9 @@ import { administrationText } from "@/presentation/home-tasks";
 const icons: Partial<Record<HomeItemKind, IconName>> = {
   "environment.review_memberships": "people",
   "environment.review_publications": "things",
-  "environment.handle_cases": "flag",
+  "environment.handle_cases": "conversations",
+  "environment.mediate_loans": "loans",
+  "environment.review_reports": "flag",
 };
 
 /**

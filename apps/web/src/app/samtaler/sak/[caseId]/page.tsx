@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { CaseEvidence } from "@/chat/case-evidence";
-import { caseTitle } from "@/presentation/cases";
+import { aboutCase, caseTitle } from "@/presentation/cases";
 import { pageQueryOrNotFound } from "@/server/session";
 
 export const metadata: Metadata = { title: "Send inn meldinger – Lånbort" };
@@ -28,7 +28,7 @@ export default async function CaseEvidencePage({
 
   return (
     <main>
-      <CaseEvidence caseId={c.id} title={caseTitle(c)} />
+      <CaseEvidence caseId={c.id} title={caseTitle(aboutCase(c))} />
     </main>
   );
 }

@@ -57,6 +57,8 @@ export const homeItemKinds = {
   "environment.review_publications": "administration",
   "environment.claim_ownership": "administration",
   "environment.handle_cases": "administration",
+  "environment.mediate_loans": "administration",
+  "environment.review_reports": "administration",
 } as const satisfies Record<string, HomeSection>;
 
 export type HomeItemKind = keyof typeof homeItemKinds;
