@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { Notification } from "@lanbort/contracts";
 import { afterAll, describe, expect, it } from "vitest";
-import { systemActor, type UserActor } from "../actor";
+import { type Actor, systemActor, type UserActor } from "../actor";
+import type { CommandDefinition } from "../commands/command";
 import { executeQuery } from "../commands/query";
 import { updateRequirements } from "../environment/environment-commands";
 import {
@@ -93,7 +94,12 @@ const centre = (actor: UserActor, cursor?: string) =>
     input: cursor === undefined ? {} : { cursor },
   });
 
-/** What the actor was told, oldest first, without ids and times. */
+/**
+ * What the actor was told, in the order it was written, without ids and
+ * times. Test files share the outbox, and another file's worker may handle
+ * this file's events in another order than they happened, so a test that
+ * checks the order delivers after each step (`step`).
+ */
 async function told(actor: UserActor) {
   await deliver();
   const { notifications } = await centre(actor);
@@ -106,6 +112,24 @@ async function told(actor: UserActor) {
       detail,
       target,
     }));
+}
+
+/** `run`, then deliver, so its notifications are written before the next's. */
+async function step<I, R, C, O>(
+  command: CommandDefinition<I, R, C, O>,
+  actor: Actor,
+  input: object,
+): Promise<O> {
+  const output = await run(command, actor, input);
+  await deliver();
+  return output;
+}
+
+/** A reserved loan, its approval's notifications written. */
+async function deliveredLoan(from: number, to: number) {
+  const setup = await reservedLoan(from, to);
+  await deliver();
+  return setup;
 }
 
 const loan = (id: string) => ({ type: "loan", id });
@@ -174,10 +198,12 @@ describe("the notification centre (PS-COM-001)", () => {
     const bo = await user();
     const senders = [await user(), await user(), await user()];
 
+    // One at a time, so each is written before the next: the centre pages
+    // in the order notifications were written.
     for (const sender of senders) {
       await run(sendFriendRequest, sender, { userId: bo.userId });
+      await deliver();
     }
-    await deliver();
 
     const { notifications, unreadCount, nextCursor } = await centre(bo);
     expect(notifications.map((item) => item.target.id)).toEqual(
@@ -454,15 +480,15 @@ describe("loan requests", () => {
 
 describe("loans", () => {
   it("tell the other party of agreement changes and of a cancellation", async () => {
-    const { owner, borrower, loanId } = await reservedLoan(2, 4);
+    const { owner, borrower, loanId } = await deliveredLoan(2, 4);
 
-    const { amendmentId } = await run(proposeLoanAmendment, borrower, {
+    const { amendmentId } = await step(proposeLoanAmendment, borrower, {
       loanId,
       agreementVersion: 1,
       period: { start: day(2), end: day(5) },
     });
-    await run(acceptLoanAmendment, owner, { loanId, amendmentId });
-    await run(cancelLoan, borrower, { loanId });
+    await step(acceptLoanAmendment, owner, { loanId, amendmentId });
+    await step(cancelLoan, borrower, { loanId });
 
     expect(
       (await told(owner)).filter((item) => item.target.type === "loan"),
@@ -544,13 +570,13 @@ describe("loans", () => {
   });
 
   it("tell the lender what the borrower said about the return", async () => {
-    const { owner, borrower, loanId } = await reservedLoan(0, 2);
-    await run(reportHandover, owner, {
+    const { owner, borrower, loanId } = await deliveredLoan(0, 2);
+    await step(reportHandover, owner, {
       loanId,
       agreementVersion: 1,
       outcome: "handed_over",
     });
-    await run(reportReturn, borrower, {
+    await step(reportReturn, borrower, {
       loanId,
       agreementVersion: 1,
       outcome: "returned",
