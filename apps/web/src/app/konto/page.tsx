@@ -39,7 +39,8 @@ const pictureReach = ({ pictureId, visibility }: OwnProfilePicture) =>
  * The account (UX-IA-003, UX-IA-020): opened from the user's picture as a
  * layer of its own, with the profile, the people the user has relations
  * with, and the rest of the account's own pages. An account that is not
- * active has no new relations (PS-ADM-002).
+ * active has no new relations, and no page of its own for others to see
+ * (PS-ADM-002).
  */
 export default async function AccountPage() {
   const account = await requirePageAccount();
@@ -64,9 +65,14 @@ export default async function AccountPage() {
           </span>
           <Icon name="chevron" className="icon menu-chevron" />
         </Link>
-        <Link href={personHref(account.userId)} className="button button-quiet">
-          Se din egen side
-        </Link>
+        {active && (
+          <Link
+            href={personHref(account.userId)}
+            className="button button-quiet"
+          >
+            Se din egen side
+          </Link>
+        )}
       </section>
 
       {social && (
