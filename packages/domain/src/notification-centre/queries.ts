@@ -12,6 +12,7 @@ import { defineQuery } from "../commands/query";
 import { canSeeEnvironment } from "../environment/policies";
 import { loadEnvironmentAccess } from "../environment/store";
 import { homeReader, type HomeReader } from "../home/source";
+import { loanPicture, loanRequestPicture } from "../loans/pictures";
 import { readLoan, readLoanRequest } from "../loans/queries";
 import { listNotifications } from "../notifications/queries";
 import { listNotificationsPolicy } from "../notifications/policies";
@@ -37,7 +38,7 @@ interface Described {
 }
 
 const nobody: Described = {
-  about: { thing: null, person: null, place: null },
+  about: { thing: null, picture: null, person: null, place: null },
 };
 
 interface Reading {
@@ -65,6 +66,7 @@ async function loanAbout({ reader, userId }: Reading, loanId: string) {
   return {
     about: {
       thing: loan.agreement.title,
+      picture: loanPicture(loan),
       person: other.realName,
       place:
         loan.origin.kind === "environment"
@@ -82,6 +84,7 @@ async function requestAbout({ reader }: Reading, requestId: string) {
   return {
     about: {
       thing: request.object?.title ?? null,
+      picture: loanRequestPicture(request),
       person: request.role === "lender" ? request.borrower.realName : null,
       place:
         request.origin.kind === "environment"
@@ -99,6 +102,7 @@ async function personAbout({ db, userId, now }: Reading, personId: string) {
   return {
     about: {
       thing: null,
+      picture: null,
       person: person && personVisible(person) ? person.realName : null,
       place: null,
     },
@@ -140,6 +144,7 @@ async function environmentAbout(
   return {
     about: {
       thing: null,
+      picture: null,
       person: null,
       place: visible ? access.environment.name : null,
     },
@@ -182,6 +187,7 @@ async function invitationAbout(
         invitation?.status === "pending" || invitation?.status === "accepted"
           ? invitation.title
           : null,
+      picture: null,
       person: null,
       place: null,
     },

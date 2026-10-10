@@ -3,6 +3,7 @@ import { ActionButton } from "@/components/action-button";
 import { Icon } from "@/components/icon";
 import { NotificationLink } from "@/components/notification-link";
 import { Tag } from "@/components/tag";
+import { ThingThumbnail } from "@/components/thing-thumbnail";
 import { hrefFor } from "@/navigation/targets";
 import {
   arrangeNotifications,
@@ -34,9 +35,14 @@ function NotificationRow({
   const href = hrefFor(notification.target);
   const content = (
     <>
-      <span className={styles.icon}>
-        <Icon name={context.icon} />
-      </span>
+      <ThingThumbnail
+        picture={notification.about.picture}
+        fallback={
+          <span className={styles.icon}>
+            <Icon name={context.icon} />
+          </span>
+        }
+      />
       <span className={styles.text}>
         <span className={styles.meta}>
           <span>

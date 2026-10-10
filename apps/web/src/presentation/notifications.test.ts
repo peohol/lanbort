@@ -31,7 +31,12 @@ describe("what a notification says", () => {
   });
 
   it("names who wrote and how many new messages, never what (PS-COM-018)", () => {
-    const about = { thing: null, person: "Aisha Rahman", place: null };
+    const about = {
+      thing: null,
+      picture: null,
+      person: "Aisha Rahman",
+      place: null,
+    };
 
     expect(
       notificationWords({
@@ -78,10 +83,11 @@ describe("what a notification says", () => {
 describe("what it is about, and what became of it", () => {
   const about = {
     thing: "stigen",
+    picture: null,
     person: "Per Lien",
     place: "Borettslaget Lia",
   };
-  const nobody = { thing: null, person: null, place: null };
+  const nobody = { thing: null, picture: null, person: null, place: null };
 
   it("names what the reader may see", () => {
     expect(

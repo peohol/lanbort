@@ -3,6 +3,7 @@ import type {
   NotificationKind,
 } from "@lanbort/contracts";
 import { afterAll, describe, expect, it } from "vitest";
+import { randomUUID } from "node:crypto";
 import type { UserActor } from "../actor";
 import { executeQuery } from "../commands/query";
 import {
@@ -17,6 +18,7 @@ import {
 import { approveLoanRequest } from "../loans/approval";
 import { declineLoanRequest, withdrawLoanRequest } from "../loans/commands";
 import { inviteCoOwner, withdrawCoOwnerInvitation } from "../objects/co-owners";
+import { attachObjectImage } from "../objects/images";
 import { notificationGenerator } from "../notifications/generator";
 import { ConsumerRegistry } from "../outbox/consumer";
 import {
@@ -103,6 +105,34 @@ describe("a loan request", () => {
     });
   });
 
+  it("shows the thing's picture through the request and the loan (PS-OBJ-021)", async () => {
+    const { owner, borrower, objectId, environmentId } = await published();
+    const imageId = randomUUID();
+    await run(attachObjectImage, owner, {
+      objectId,
+      imageId,
+      byteSize: 1,
+      width: 4,
+      height: 3,
+    });
+
+    const { requestId } = await ask(
+      borrower,
+      objectId,
+      environmentOrigin(environmentId),
+    );
+    expect(
+      (await latest(owner, "loan_request.received")).about.picture,
+    ).toEqual({ through: "loan_request", requestId, imageId });
+
+    const { loanId } = await run(approveLoanRequest, owner, { requestId });
+    expect((await latest(borrower, "loan.approved")).about.picture).toEqual({
+      through: "loan",
+      loanId,
+      imageId,
+    });
+  });
+
   it("says when it was declined, and when it no longer applies", async () => {
     const { owner, borrower, objectId, environmentId } = await published();
     const origin = environmentOrigin(environmentId);
@@ -175,7 +205,7 @@ describe("invitations", () => {
     });
     expect(await latest(invited, "environment.membership_invited")).toEqual(
       expect.objectContaining({
-        about: { thing: null, person: null, place: null },
+        about: { thing: null, picture: null, person: null, place: null },
         standing: "lapsed",
       }),
     );
