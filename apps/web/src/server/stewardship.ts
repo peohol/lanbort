@@ -1,4 +1,8 @@
-import type { StewardPasskeys } from "@lanbort/contracts";
+import type {
+  CaseList,
+  CaseSummary,
+  StewardPasskeys,
+} from "@lanbort/contracts";
 import {
   listOwnPasskeys,
   listPlatformCaseQueue,
@@ -53,7 +57,7 @@ export async function requireStewardship(): Promise<Stewardship> {
 }
 
 /**
- * The first page of open platform cases, for the counts on Home and
+ * Every open platform case, page by page, for the counts on Home and
  * «Forvaltning»; null unless steward actions are open in this session.
  */
 export const getOpenPlatformCases = cache(async () => {
@@ -61,5 +65,22 @@ export const getOpenPlatformCases = cache(async () => {
 
   if (!steward?.enabled || !steward.strong) return null;
 
-  return pageQueryIfAllowed(listPlatformCaseQueue, { status: "open" });
+  const items: CaseSummary[] = [];
+  let cursor: string | null = null;
+
+  do {
+    const page: CaseList | null = await pageQueryIfAllowed(
+      listPlatformCaseQueue,
+      {
+        status: "open",
+        ...(cursor ? { cursor } : {}),
+      },
+    );
+
+    if (!page) return null;
+    items.push(...page.items);
+    cursor = page.nextCursor;
+  } while (cursor);
+
+  return { items };
 });
