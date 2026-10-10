@@ -23,7 +23,9 @@ language sql
 immutable
 set search_path = ''
 as $$
-  select kind in ('loan_mediation', 'environment_report', 'platform_report');
+  select kind in (
+    'loan_mediation', 'unavailability_report', 'environment_report', 'platform_report'
+  );
 $$;
 
 revoke execute on function app.case_closes_with_message(text) from public;

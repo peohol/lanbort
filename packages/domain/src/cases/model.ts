@@ -124,7 +124,7 @@ export const caseKinds: Record<
     turns: true,
     separateStatements: false,
     platform: true,
-    closingMessage: false,
+    closingMessage: true,
     openerEnds: "withdraw",
   },
   environment_report: {

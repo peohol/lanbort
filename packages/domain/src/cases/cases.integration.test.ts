@@ -894,6 +894,12 @@ describe("a report that a user may have died or be permanently unavailable (PS-C
     });
     await run(openCaseRound, handler, { caseId });
     await write(reporter, caseId, "Jeg har en dødsannonse.");
+    // Closed, like every report, with a message to the reporter (PS-COM-020).
+    await expect(run(closeCase, handler, { caseId })).rejects.toMatchObject({
+      code: "invalid_input",
+      fields: ["body"],
+    });
+    await run(closeCase, handler, { caseId, body: "Saken er avsluttet." });
 
     const status = await db
       .selectFrom("app.users")

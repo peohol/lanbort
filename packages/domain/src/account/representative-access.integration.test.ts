@@ -137,7 +137,7 @@ describe("representative access while OD-0003 is open (PS-ADM-007–008)", () =>
       caseId,
       body: "Jeg har en dødsannonse, og jeg er arvingen hennes.",
     });
-    await run(closeCase, steward, { caseId });
+    await run(closeCase, steward, { caseId, body: "Saken er avsluttet." });
 
     // Her account and the loan are as they were, and nothing says otherwise.
     expect(await standing(owner.userId, loanId)).toEqual(before);
