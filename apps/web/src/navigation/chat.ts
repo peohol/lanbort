@@ -18,6 +18,8 @@ export const chatRecoveryKeyHref = `${chatDevicesHref}/gjenopprettingsnokkel`;
 export const chatRestoreHref = `${chatHref}/gjenopprett`;
 /** When no device with chat is left: start chat anew (ADR-0010 §8). */
 export const chatResetHref = `${chatHref}/tilbakestill`;
+/** «Logg ut» on a device with chat: what it loses, first (ADR-0010 §7). */
+export const chatSignOutHref = `${chatHref}/logg-ut`;
 export const chatConversationHref = (conversationId: string) =>
   `${chatHref}/${conversationId}`;
 /**

@@ -1,5 +1,9 @@
 import type { OwnProfilePicture } from "@lanbort/contracts";
-import { getSocialOverview, takesNewActivity } from "@lanbort/domain";
+import {
+  getSocialOverview,
+  readOwnChatDevices,
+  takesNewActivity,
+} from "@lanbort/domain";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Icon } from "@/components/icon";
@@ -8,6 +12,7 @@ import { PageHeader } from "@/components/page-header";
 import { ProfilePicture } from "@/components/profile-picture";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Tag } from "@/components/tag";
+import { chatSignOutHref } from "@/navigation/chat";
 import {
   accountStateHref,
   privacyHref,
@@ -19,7 +24,12 @@ import {
   profilePictureHref,
 } from "@/navigation/routes";
 import { accountStatusLabel } from "@/presentation/account";
-import { pageQuery, requirePageAccount } from "@/server/session";
+import { chatEnabled } from "@/server/env";
+import {
+  pageQuery,
+  pageQueryIfAllowed,
+  requirePageAccount,
+} from "@/server/session";
 
 export const metadata: Metadata = { title: "Konto – Lånbort" };
 
@@ -37,6 +47,41 @@ const pictureReach = ({ pictureId, visibility }: OwnProfilePicture) =>
     : "Legg til et profilbilde";
 
 /**
+ * Whether this sign-in has a device with private chat, which is told what
+ * it loses before it signs out (ADR-0010 §7).
+ */
+const hasChatDevice = async () =>
+  chatEnabled() &&
+  // An account that may not use chat has no device to lose.
+  ((await pageQueryIfAllowed(readOwnChatDevices, {}))?.currentDeviceId ??
+    null) !== null;
+
+/** «Logg ut», in Konto's menu. */
+function SignOutRow({ chat }: { chat: boolean }) {
+  const content = (
+    <>
+      <Icon name="signOut" />
+      <span className="menu-text">
+        <span className="menu-label">Logg ut</span>
+      </span>
+    </>
+  );
+
+  return (
+    <li>
+      {chat ? (
+        // A full page load: the chat pages have their own security headers.
+        <a href={chatSignOutHref} className="menu-row">
+          {content}
+        </a>
+      ) : (
+        <SignOutButton className="menu-row">{content}</SignOutButton>
+      )}
+    </li>
+  );
+}
+
+/**
  * The account (UX-IA-003, UX-IA-020): opened from the user's picture as a
  * layer of its own, with the profile, the people the user has relations
  * with, and the rest of the account's own pages. An account that is not
@@ -46,7 +91,10 @@ const pictureReach = ({ pictureId, visibility }: OwnProfilePicture) =>
 export default async function AccountPage() {
   const account = await requirePageAccount();
   const active = takesNewActivity(account.status);
-  const social = active ? await pageQuery(getSocialOverview, {}) : null;
+  const [social, chat] = await Promise.all([
+    active ? pageQuery(getSocialOverview, {}) : null,
+    hasChatDevice(),
+  ]);
   const waiting = social?.incomingRequests.length ?? 0;
 
   return (
@@ -117,14 +165,7 @@ export default async function AccountPage() {
             icon="lock"
             label="Personvern og sikkerhet"
           />
-          <li>
-            <SignOutButton className="menu-row">
-              <Icon name="signOut" />
-              <span className="menu-text">
-                <span className="menu-label">Logg ut</span>
-              </span>
-            </SignOutButton>
-          </li>
+          <SignOutRow chat={chat} />
         </MenuList>
       </section>
     </main>

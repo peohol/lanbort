@@ -14,7 +14,8 @@ const meta = "meta";
 const keyName = "key";
 
 /** One browser can hold the chat of more than one account, one each. */
-const databaseName = (userId: string) => `lanbort-chat-${userId}`;
+const databasePrefix = "lanbort-chat-";
+const databaseName = (userId: string) => `${databasePrefix}${userId}`;
 
 interface SealedRecord {
   iv: Uint8Array<ArrayBuffer>;
@@ -111,6 +112,23 @@ export async function hasChatStore(userId: string): Promise<boolean> {
 
 export async function deleteChatStore(userId: string): Promise<void> {
   await request(indexedDB.deleteDatabase(databaseName(userId)));
+}
+
+/**
+ * Deletes the chat of every account this browser holds, at sign-out
+ * (ADR-0010 §7): no account is signed in afterwards, and a device's chat
+ * only ever works in the sign-in it was made in. Where the browser cannot
+ * list its databases, there is nothing to find them by.
+ */
+export async function deleteAllChatStores(): Promise<void> {
+  if (typeof indexedDB === "undefined") return;
+  if (typeof indexedDB.databases !== "function") return;
+  const names = (await indexedDB.databases()).flatMap(({ name }) =>
+    name?.startsWith(databasePrefix) ? [name] : [],
+  );
+  await Promise.all(
+    names.map((name) => request(indexedDB.deleteDatabase(name))),
+  );
 }
 
 export async function openChatStore(userId: string): Promise<ChatStore> {
