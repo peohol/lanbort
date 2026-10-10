@@ -62,7 +62,7 @@ SQL-filene i `supabase/migrations/` er den autoritative skjemahistorikken. Den l
 
 Produksjon er Vercel-prosjektet bak <https://www.lånbort.no> (`www.xn--lnbort-iua.no`, som er `APP_URL`; sidene på andre adresser, som lanbort.vercel.app, sender videre dit, mens API-ene og de planlagte jobbene svarer overalt) og Supabase-prosjektet som står som `project_id` under `[remotes.production]` i `supabase/config.toml`. Skjema og Auth-innstillinger endres bare med Supabase CLI gjennom GitHub-arbeidsflyten **Supabase production** (`.github/workflows/supabase-production.yml`), som startes manuelt fra `main` og trenger repo-hemmeligheten `SUPABASE_ACCESS_TOKEN`:
 
-- `migrate-dry-run`, deretter `migrate`: kjører nye migrasjoner og viser historikken etterpå.
+- `migrate-dry-run`, deretter `migrate`: kjører nye migrasjoner og viser historikken etterpå. En migrasjon som er eldre enn den nyeste i produksjon (merget etter at en senere ble kjørt), krever `include_all`; se først at den ikke bygger på noe den senere endret.
 - `config-diff`, deretter `config-push`: setter Auth-innstillinger og e-postmaler fra `supabase/config.toml`.
 - `status`: viser migrasjonshistorikken lokalt mot hostet.
 - `repair`: bare for å rette en historikk som ikke stemmer med det som faktisk er i databasen, etter at det er kontrollert.

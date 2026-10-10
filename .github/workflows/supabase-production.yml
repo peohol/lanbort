@@ -20,6 +20,10 @@ on:
           - config-diff
           - config-push
           - backups
+      include_all:
+        description: "migrate only: also apply migrations older than the newest in production, merged after it was deployed"
+        type: boolean
+        default: false
       repair_status:
         description: "repair only: mark the versions as applied or reverted"
         type: choice
@@ -75,14 +79,17 @@ jobs:
       - name: Run ${{ inputs.action }}
         env:
           ACTION: ${{ inputs.action }}
+          INCLUDE_ALL: ${{ inputs.include_all }}
           REPAIR_STATUS: ${{ inputs.repair_status }}
           REPAIR_VERSIONS: ${{ inputs.repair_versions }}
         run: |
+          include_all=()
+          [[ "$INCLUDE_ALL" == "true" ]] && include_all=(--include-all)
           case "$ACTION" in
             status) pnpm exec supabase migration list --linked ;;
-            migrate-dry-run) pnpm exec supabase db push --linked --dry-run ;;
+            migrate-dry-run) pnpm exec supabase db push --linked --dry-run "${include_all[@]}" ;;
             migrate)
-              pnpm exec supabase db push --linked --yes
+              pnpm exec supabase db push --linked --yes "${include_all[@]}"
               pnpm exec supabase migration list --linked
               ;;
             repair)
