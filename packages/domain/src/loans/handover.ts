@@ -30,6 +30,8 @@ import {
   handoverRefusal,
   handoverVerdict,
   presentedLoanStatus,
+  type ReturnVerdict,
+  returnVerdict,
   type StoredLoanStatus,
   statusAfterHandover,
 } from "./model";
@@ -41,6 +43,7 @@ import {
 import { loadLockedLoan } from "./resources";
 import { endLoan, findLoan, type LoanRecord } from "./reservations";
 import { settleDueReturns } from "./return";
+import { loadReturnStatements } from "./return-store";
 
 /**
  * The handover and the active loan (WP-33, PS-LOAN-012–013). The parties say
@@ -58,6 +61,8 @@ function conflict(message: string, fields: readonly string[] = []): never {
  * transaction, with the object and the loan locked:
  * - `active`: handed over; an open proposal lapses (database), since changes
  *   during the loan are the return's (WP-34);
+ * - `awaiting_return` or `late`: handed over after all, once the return was
+ *   under way, so the return statements (`returned`) count again;
  * - `disputed`: the object is blocked for new colliding loans
  *   (`loanPossessionBlocks`), while loans already approved stay as they are;
  *   their ids go with the event so their parties can be told (scenario 61);
@@ -70,12 +75,13 @@ async function settleHandover(
     readonly loan: LoanRecord;
     readonly objectId: string;
     readonly verdict: HandoverVerdict;
+    readonly returned: ReturnVerdict;
     readonly now: Date;
   },
   events: EventRecorder,
 ): Promise<StoredLoanStatus> {
   const { loan, objectId, verdict, now } = input;
-  const status = statusAfterHandover(verdict);
+  const status = statusAfterHandover(verdict, input.returned);
 
   if (status === loan.status) {
     return status;
@@ -99,6 +105,8 @@ async function settleHandover(
       });
       break;
     case "active":
+    case "awaiting_return":
+    case "late":
       await setLoanStatus(db, {
         loanId: loan.id,
         from: loan.status,
@@ -126,7 +134,8 @@ async function settleHandover(
       });
       break;
     case "reserved":
-      throw new Error(`A ${loan.status} loan does not go back to reserved`);
+    case "return_disputed":
+      throw new Error(`A handover does not make a loan ${status}`);
   }
 
   return status;
@@ -153,11 +162,13 @@ const handoverResult = (
  * 3. the caller may say it now ({@link handoverRefusal}): «handed over»
  *    from the handover day on, «not handed over» once that day is over, and
  *    once the loan is active only the side that has not spoken may still
- *    contradict it; once the return is under way (WP-34), it is settled;
+ *    contradict it, also once the return is under way if it has said
+ *    nothing about the return either (PS-LOAN-022);
  * 4. the statement is recorded (append-only), and the loan moves to what
  *    the statements of both sides now say ({@link statusAfterHandover}):
  *    one side's «handed over» makes it active, contradicting statements
- *    make it disputed, both saying «not handed over» ends it as not
+ *    make it disputed (and agreeing again puts it back where the return
+ *    statements say), both saying «not handed over» ends it as not
  *    completed, and one side's «not handed over» gives the other
  *    {@link handoverAnswerHours} hours to answer.
  * Saying again what one said last returns the loan as it is. Nothing else is
@@ -191,10 +202,16 @@ export const reportHandover = defineCommand({
       return handoverResult(loan, loan.status, now);
     }
 
+    const returns = await loadReturnStatements(
+      tx,
+      loan.id,
+      loan.agreement.version,
+    );
     const refusal = handoverRefusal(
       loan.status,
       loan.agreement.period,
       reading,
+      returns,
       role,
       input.outcome,
       calendarDate(now),
@@ -232,6 +249,7 @@ export const reportHandover = defineCommand({
         loan,
         objectId: loan.objectId,
         verdict: handoverVerdict({ ...reading, [role]: statement }, now),
+        returned: returnVerdict(returns),
         now,
       },
       events,
@@ -275,7 +293,8 @@ export const concludeHandovers = defineCommand({
 
       await settleHandover(
         tx,
-        { loan, objectId: due.objectId, verdict, now },
+        // A reserved loan has no return statements.
+        { loan, objectId: due.objectId, verdict, returned: "none", now },
         events,
       );
       notCompleted += 1;

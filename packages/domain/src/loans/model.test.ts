@@ -438,12 +438,18 @@ describe("the handover (PS-LOAN-012–013)", () => {
   });
 
   it("leads to the stored status", () => {
-    expect(statusAfterHandover("none")).toBe("reserved");
-    expect(statusAfterHandover("awaiting_answer")).toBe("reserved");
-    expect(statusAfterHandover("handed_over")).toBe("active");
-    expect(statusAfterHandover("disputed")).toBe("disputed");
-    expect(statusAfterHandover("not_handed_over")).toBe("ended");
-    expect(statusAfterHandover("unanswered")).toBe("ended");
+    expect(statusAfterHandover("none", "none")).toBe("reserved");
+    expect(statusAfterHandover("awaiting_answer", "none")).toBe("reserved");
+    expect(statusAfterHandover("handed_over", "none")).toBe("active");
+    expect(statusAfterHandover("disputed", "none")).toBe("disputed");
+    expect(statusAfterHandover("not_handed_over", "none")).toBe("ended");
+    expect(statusAfterHandover("unanswered", "none")).toBe("ended");
+    // Handed over after all, once the return was under way (PS-LOAN-022).
+    expect(statusAfterHandover("handed_over", "returned")).toBe(
+      "awaiting_return",
+    );
+    expect(statusAfterHandover("handed_over", "late")).toBe("late");
+    expect(statusAfterHandover("disputed", "returned")).toBe("disputed");
   });
 
   it("shows a reserved loan as awaiting handover once its handover day is over", () => {
@@ -463,6 +469,7 @@ describe("the handover (PS-LOAN-012–013)", () => {
         "reserved",
         period,
         noHandoverStatements,
+        [],
         "borrower",
         outcome,
         day,
@@ -484,6 +491,7 @@ describe("the handover (PS-LOAN-012–013)", () => {
         "active",
         period,
         active,
+        [],
         "lender",
         "not_handed_over",
         today,
@@ -494,6 +502,7 @@ describe("the handover (PS-LOAN-012–013)", () => {
         "active",
         period,
         active,
+        [],
         "borrower",
         "not_handed_over",
         today,
@@ -504,6 +513,7 @@ describe("the handover (PS-LOAN-012–013)", () => {
         "disputed",
         period,
         disputed,
+        [],
         "borrower",
         "not_handed_over",
         today,
@@ -514,6 +524,7 @@ describe("the handover (PS-LOAN-012–013)", () => {
         "disputed",
         period,
         disputed,
+        [],
         "lender",
         "handed_over",
         today,
@@ -524,10 +535,53 @@ describe("the handover (PS-LOAN-012–013)", () => {
         "ended",
         period,
         noHandoverStatements,
+        [],
         "lender",
         "handed_over",
         today,
       ),
+    ).not.toBeNull();
+  });
+  it("lets the side that said nothing about the handover or the return say it was not handed over (PS-LOAN-022)", () => {
+    const today = "2026-10-12";
+    const refusal = (
+      status: "awaiting_return" | "late" | "return_disputed",
+      returns: { role: "borrower" | "lender" }[],
+      role: "borrower" | "lender",
+      outcome: "handed_over" | "not_handed_over" = "not_handed_over",
+    ) =>
+      handoverRefusal(
+        status,
+        period,
+        reading(handedOver, null),
+        returns,
+        role,
+        outcome,
+        today,
+      );
+
+    expect(
+      refusal("awaiting_return", [{ role: "borrower" }], "lender"),
+    ).toBeNull();
+    expect(refusal("late", [{ role: "borrower" }], "lender")).toBeNull();
+    // Saying it was handed over adds nothing once the return is under way.
+    expect(
+      refusal(
+        "awaiting_return",
+        [{ role: "borrower" }],
+        "lender",
+        "handed_over",
+      ),
+    ).not.toBeNull();
+    // The side that spoke about the handover, or the return, has spoken.
+    expect(
+      refusal("awaiting_return", [{ role: "borrower" }], "borrower"),
+    ).not.toBeNull();
+    expect(
+      refusal("awaiting_return", [{ role: "lender" }], "lender"),
+    ).not.toBeNull();
+    expect(
+      refusal("return_disputed", [{ role: "borrower" }], "lender"),
     ).not.toBeNull();
   });
 });

@@ -52,9 +52,23 @@ export const partyTitle = (
   other: string,
 ) => `${title} ${role === "lender" ? "til" : "fra"} ${other}`;
 
-/** Whether what the parties disagree about is the return, not the handover. */
-const aboutReturn = (loan: Loan) =>
-  loan.return.borrower !== null || loan.return.lender !== null;
+/**
+ * Whether what the parties disagree about is the return, not the handover:
+ * something was said about the return, and the handover is not contradicted
+ * (which it may be also once the return is under way, PS-LOAN-022).
+ */
+const aboutReturn = (loan: Loan) => {
+  const handover = [loan.handover.borrower, loan.handover.lender].map(
+    (statement) => statement?.outcome,
+  );
+
+  return (
+    !(
+      handover.includes("handed_over") && handover.includes("not_handed_over")
+    ) &&
+    (loan.return.borrower !== null || loan.return.lender !== null)
+  );
+};
 
 /**
  * The open proposal changes only the return day (an extension, or an

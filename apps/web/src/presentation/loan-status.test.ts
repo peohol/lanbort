@@ -267,6 +267,31 @@ describe("the loan's situation (UX-INT-004, KF7)", () => {
     });
   });
 
+  it("says the handover is in question when it is contradicted after the return began (PS-LOAN-022)", () => {
+    const disputed = situation({
+      status: "disputed",
+      handover: {
+        borrower: { outcome: "handed_over", reportedAt: at },
+        lender: { outcome: "not_handed_over", reportedAt: at },
+        answerDueAt: null,
+      },
+      return: {
+        borrower: { outcome: "returned", reportedAt: at, reportedAs: "party" },
+        lender: null,
+        pending: null,
+      },
+    });
+
+    expect(disputed.headline).toBe(
+      "Dere har sagt ulike ting om overleveringen",
+    );
+    expect(disputed.body).toEqual([
+      "Du sa at Tilhenger ble overlevert.",
+      "Kari sa at overleveringen ikke skjedde.",
+      "Lånbort tar ikke stilling til hvem som har rett.",
+    ]);
+  });
+
   it("never names a deleted account (UX-PRIV-010)", () => {
     expect(personName({ realName: null })).toBe("Tidligere bruker");
     expect(
@@ -395,6 +420,18 @@ describe("the steps offered (UX-INT-001, UX-INT-003)", () => {
       expect.objectContaining({ label: "Meld returnert", primary: true }),
     ]);
     expect(active.secondary.map(({ label }) => label)).toEqual([
+      "Overleveringen skjedde ikke",
+    ]);
+
+    // Also once the return is under way (PS-LOAN-022).
+    const awaiting = loanSteps(
+      loan({
+        status: "awaiting_return",
+        actions: { ...noActions, handover: ["not_handed_over"] },
+      }),
+    );
+    expect(awaiting.primary).toEqual([]);
+    expect(awaiting.secondary.map(({ label }) => label)).toEqual([
       "Overleveringen skjedde ikke",
     ]);
 
