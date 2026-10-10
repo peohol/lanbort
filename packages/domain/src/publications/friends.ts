@@ -13,7 +13,7 @@ import { defineCommand } from "../commands/command";
 import { defineQuery } from "../commands/query";
 import { DomainError } from "../errors";
 import { loadFreezes } from "../objects/co-owner-blocks";
-import { objectImageKey } from "../objects/images";
+import { findImageFile } from "../objects/images";
 import { actingUserId, inSnapshot, loadObjectState } from "../objects/state";
 import { loadPair } from "../social/pair";
 import { vetoedByAnotherOwner } from "./commands";
@@ -272,25 +272,19 @@ export const friendObjectImageFile = defineQuery({
   policy: readFriendObjectImagePolicy,
   load: ({ db, actor, input }) =>
     inSnapshot(db, async (tx) => {
-      const image =
+      const file =
         actor.kind === "user"
-          ? await tx
-              .selectFrom("app.object_images")
-              .select(["id", "content_type"])
-              .where("id", "=", input.imageId)
-              .where("object_id", "=", input.objectId)
-              .executeTakeFirst()
-          : undefined;
+          ? await findImageFile(tx, input.objectId, input.imageId)
+          : null;
 
-      if (actor.kind !== "user" || !image) {
+      if (actor.kind !== "user" || !file) {
         return null;
       }
 
       return {
         resource: {
           findable: await findsThroughFriends(tx, input.objectId, actor.userId),
-          key: objectImageKey(input.objectId, image.id),
-          contentType: image.content_type,
+          ...file,
         },
         context: undefined,
       };

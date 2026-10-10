@@ -47,6 +47,7 @@ import {
   personName,
   proposalDefaults,
 } from "@/presentation/loan-status";
+import { loanImageHref } from "@/presentation/object-images";
 import { basisNote, hiddenUntil, scoreLines } from "@/presentation/reviews";
 import { chatEnabled } from "@/server/env";
 import {
@@ -62,6 +63,7 @@ import { Party } from "../_parts/party";
 import { writeHref } from "../_parts/write-href";
 import { Progress } from "../_parts/progress";
 import { Steps } from "../_parts/steps";
+import { ThingPicture } from "../_parts/thing-picture";
 import { Timeline } from "../_parts/timeline";
 import { CoOwnerLoan } from "./co-owner-loan";
 import { ReviewForm } from "./review-form";
@@ -633,6 +635,12 @@ export default async function LoanPage({
     <main className="main-wide">
       <PageHeader
         kind="Lån"
+        picture={
+          <ThingPicture
+            images={loan.images}
+            href={(imageId) => loanImageHref(loan.id, imageId)}
+          />
+        }
         title={loanTitle(loan)}
         back={{ href: loansHref, label: "Lån" }}
         context={<OriginTag origin={loan.origin} />}

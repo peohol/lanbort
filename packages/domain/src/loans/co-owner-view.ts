@@ -6,7 +6,7 @@ import { realNames } from "../account/store";
 import type { Actor } from "../actor";
 import { defineQuery } from "../commands/query";
 import { calendarDate } from "../objects/availability";
-import { inSnapshot } from "../objects/state";
+import { currentImages, inSnapshot } from "../objects/state";
 import { linkIn, personLinks } from "../people/queries";
 import { presentedLoanStatus, toApiPeriod } from "./model";
 import { readLoanAsCoOwnerPolicy } from "./policies";
@@ -115,6 +115,7 @@ async function loadView(db: Db, actor: Actor, loanId: string, now: Date) {
     seesAsCoOwner: true,
     view: {
       loan,
+      images: await currentImages(db, loan.objectId),
       offer,
       awaitingControl,
       parties: {
@@ -132,7 +133,7 @@ type LoadedView = NonNullable<
 /** The view as of `now`, with only the caller's own steps. */
 function presentView(
   actor: Actor,
-  { loan, offer, awaitingControl, parties }: LoadedView,
+  { loan, images, offer, awaitingControl, parties }: LoadedView,
   now: Date,
 ): CoOwnerLoanView {
   if (loan.objectId === null || actor.kind !== "user") {
@@ -160,6 +161,7 @@ function presentView(
     title: loan.agreement.title,
     categoryId: loan.agreement.categoryId,
     loanTerms: loan.agreement.loanTerms,
+    images,
     parties,
     responsibilityTransfer: offer && presentTransfer(offer),
     actions: {
@@ -178,10 +180,11 @@ function presentView(
  * who owned the object when the loan was approved and still owns it, or
  * who is asked to become its responsible lender. A notification about the
  * offered role or the return leads here, never to the parties' full view.
- * It has the status, the period, the object as agreed, the agreed terms
- * and the parties' names, and only the steps the caller may take: answering
- * the offer of the role, and confirming having the object back after the
- * loan ended unresolved (PS-LOAN-019). Taking the role over waits for
+ * It has the status, the period, the object as agreed with its pictures as
+ * they are now (PS-OBJ-021), the agreed terms and the parties' names, and
+ * only the steps the caller may take: answering the offer of the role, and
+ * confirming having the object back after the loan ended unresolved
+ * (PS-LOAN-019). Taking the role over waits for
  * OD-0016 and is not offered. The request's message, the private chat, the
  * parties' statements and explanations, the timeline and the reviews are
  * never part of it (`loan.read_history` and `loan_review.read` stay with

@@ -33,6 +33,7 @@ function loan(changes: Partial<Loan> = {}): Loan {
     requestId: id,
     origin: { kind: "direct" },
     objectId: id,
+    images: [],
     role: "borrower",
     borrowerUserId: id,
     responsibleLenderId: id,

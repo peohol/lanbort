@@ -208,6 +208,11 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Status:** Avklart (produkteier, 10. oktober 2026)
 - **Beslutning:** Se [PS-ENV-016](product-spec/02-miljoer.md). Rundet tall: «under 10 medlemmer» for små miljøer, ellers nærmeste ti.
 
+### OD-0049 — Tingens bilder på lånets side
+- **Lag:** Produktspesifikasjon
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Beslutning:** Se [PS-OBJ-021](product-spec/03-utlansobjekter.md#ps-obj-021--den-som-ser-tingens-navn-ser-også-bildene).
+
 ### OD-0038 — Hva den som rapporterte, får vite når saken lukkes
 - **Lag:** Produktspesifikasjon / UX
 - **Status:** Avklart (produkteier, 9. oktober 2026)

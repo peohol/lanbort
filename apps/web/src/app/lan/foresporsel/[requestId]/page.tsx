@@ -22,11 +22,13 @@ import {
 } from "@/presentation/loan-requests";
 import { personName } from "@/presentation/loan-status";
 import { formatDesiredPeriod } from "@/presentation/loans";
+import { loanRequestImageHref } from "@/presentation/object-images";
 import { pageQueryOrNotFound, requirePageAccount } from "@/server/session";
 import styles from "../../_parts/loan.module.css";
 import { OriginTag } from "../../_parts/origin-tag";
 import { Party } from "../../_parts/party";
 import { Progress } from "../../_parts/progress";
+import { ThingPicture } from "../../_parts/thing-picture";
 import { writeHref } from "../../_parts/write-href";
 
 export const metadata: Metadata = { title: "Forespørsel – Lånbort" };
@@ -203,6 +205,12 @@ export default async function LoanRequestPage({
     <main>
       <PageHeader
         kind="Forespørsel"
+        picture={
+          <ThingPicture
+            images={request.images}
+            href={(imageId) => loanRequestImageHref(request.id, imageId)}
+          />
+        }
         title={
           lender && request.object
             ? `${title} til ${personName(request.borrower)}`
