@@ -6,9 +6,12 @@ import {
   categoryLabel,
   describeAvailability,
   formatInterval,
+  freeDays,
+  freeThrough,
   listSeparator,
   ownersLabel,
   ownThingStatus,
+  seenBecause,
 } from "./objects";
 
 const found = (details: {
@@ -165,5 +168,61 @@ describe("availabilityLine", () => {
       ),
     ).toBe("mandag 12. oktober – onsdag 14. oktober, Fra søndag 1. november");
     expect(availabilityLine([], "2026-10-09")).toBe("");
+  });
+});
+
+describe("the week strip on a thing's page", () => {
+  const object = found({
+    effectiveAvailability: [
+      { start: "2026-10-08", end: "2026-10-12" },
+      { start: "2026-10-14", end: null },
+    ],
+  });
+
+  it("marks the days ahead that are free", () => {
+    const days = freeDays(object, "2026-10-08");
+
+    expect(days.map(({ date }) => date.slice(8))).toEqual([
+      "08",
+      "09",
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+    ]);
+    expect(days.map(({ free }) => free)).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+    ]);
+    expect(freeThrough(object, days)).toBe("2026-10-12");
+  });
+
+  it("frees nothing while the thing takes no new loans, and says no end", () => {
+    const closed = { ...object, availableForNewLoans: false };
+    const days = freeDays(closed, "2026-10-08");
+
+    expect(days.some(({ free }) => free)).toBe(false);
+    expect(freeThrough(closed, days)).toBeNull();
+    expect(freeThrough(object, freeDays(object, "2026-10-14"))).toBeNull();
+  });
+});
+
+describe("why the reader sees a thing", () => {
+  it("names the environment, or the owner's friends", () => {
+    expect(seenBecause({ name: "Lia", member: true })).toBe(
+      "Du ser tingen fordi du er medlem i Lia.",
+    );
+    expect(seenBecause({ name: "Lia", member: false })).toBe(
+      "Du ser tingen fordi den er publisert i Lia.",
+    );
+    expect(seenBecause(null)).toBe(
+      "Du ser tingen fordi eieren viser den for venner.",
+    );
   });
 });

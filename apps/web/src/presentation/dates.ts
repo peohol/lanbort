@@ -37,6 +37,16 @@ const shortTimeFormat = new Intl.DateTimeFormat("nb-NO", {
   timeZone: productTimeZone,
 });
 
+const weekdayFormat = new Intl.DateTimeFormat("nb-NO", {
+  weekday: "short",
+  timeZone: "UTC",
+});
+
+/** A calendar date's weekday in two letters, as in a calendar: «lø». */
+export function formatWeekday(date: string): string {
+  return weekdayFormat.format(new Date(`${date}T00:00:00Z`)).slice(0, 2);
+}
+
 /** A moment in few words, for a timeline: «lør. 10. okt., 10:14». */
 export function formatShortTime(at: string): string {
   return shortTimeFormat.format(new Date(at));

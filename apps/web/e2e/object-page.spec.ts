@@ -77,7 +77,20 @@ test("a thing has one page, seen by its owner or through an environment", async 
   );
   await member.getByRole("link", { name: `Stige ${word}` }).click();
   await expect(member).toHaveURL(new RegExp(`/ting/${objectId}\\?miljo=`));
-  await expect(member.getByText(`Gården ${word}`)).toBeVisible();
+  // Where it is seen and why, the week ahead and the terms before the
+  // request (UX-IA-015, Tomat kjerneflyt 1).
+  await expect(member.getByText(`Via Gården ${word}`)).toBeVisible();
+  await expect(
+    member.getByText(`Du ser tingen fordi du er medlem i Gården ${word}.`),
+  ).toBeVisible();
+  const week = member.getByRole("list", { name: "De neste dagene" });
+  await expect(week.getByRole("listitem")).toHaveCount(7);
+  await expect(week.getByRole("listitem").first()).toContainText(": ledig");
+  await expect(member.getByText("Fylte dager er ledige.")).toBeVisible();
+  await expect(
+    member.getByRole("heading", { name: "Vilkår fra Anna Berg" }),
+  ).toBeVisible();
+  await expect(member.getByText("Ingen egne vilkår")).toBeVisible();
   await expect(member.getByText("Aluminiumsstige, 4 meter.")).toBeVisible();
   await member.getByRole("link", { name: "Anna Berg" }).click();
   await expect(member.getByRole("heading", { level: 1 })).toHaveText(

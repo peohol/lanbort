@@ -6,11 +6,14 @@ import {
   formatPeriod,
   formatShortPeriod,
   formatTime,
+  formatWeekday,
 } from "./dates";
 
 describe("dates as people say them", () => {
   it("keeps a calendar date's day whatever the server's time zone", () => {
     expect(formatDay("2026-10-03")).toBe("lørdag 3. oktober");
+    expect(formatWeekday("2026-10-03")).toBe("lø");
+    expect(formatWeekday("2026-10-05")).toBe("ma");
   });
 
   it("shows moments in Norwegian time", () => {
