@@ -1,0 +1,26 @@
+# Temporary: removed before merge.
+name: TLS probe
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - run: npm install --global --allow-scripts=pnpm pnpm@12.8.1
+      - run: pnpm install --frozen-lockfile
+      - name: OpenSSL view of the pooler certificate
+        run: |
+          host=aws-0-eu-north-1.pooler.supabase.com
+          openssl s_client -starttls postgres -connect $host:6543 -servername $host -verify_hostname $host \
+            -CAfile packages/database/src/supabase-ca.pem -verify_return_error </dev/null 2>&1 | grep -E "subject=|issuer=|Verify return code" || true
+      - run: pnpm --filter @lanbort/database exec vitest run src/tls-probe.test.ts
+        env:
+          TLS_PROBE: "1"

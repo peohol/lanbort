@@ -1,6 +1,7 @@
 import { Kysely, PostgresDialect } from "kysely";
 import { Pool } from "pg";
 import type { DB } from "./generated/database";
+import { connectionTls } from "./tls";
 
 /**
  * Types for the private `app` schema, generated from the migrated database
@@ -18,6 +19,7 @@ export function createDatabase(options: DatabaseOptions): Kysely<Database> {
     connectionString: options.connectionString,
     max: options.maxConnections ?? 5,
     application_name: "lanbort",
+    ssl: connectionTls(options.connectionString),
   });
 
   return new Kysely<Database>({
