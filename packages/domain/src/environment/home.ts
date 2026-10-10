@@ -142,6 +142,41 @@ async function pendingPublications(
 }
 
 /**
+ * An administrator's counted tasks in one environment (UX-JRN-012), read
+ * through the administrators' own lists. Their own things are looked up
+ * only when something waits, once per caller (`ownObjectIds`).
+ */
+export async function environmentAdministrationItems(
+  reader: HomeReader,
+  environment: Environment,
+  ownObjectIds: () => Promise<ReadonlySet<string>>,
+): Promise<HomeItem[]> {
+  const { actor, ifAllowed } = reader;
+  const pending = await pendingPublications(reader, environment.id);
+
+  return administrationHomeItems(environment, {
+    userId: actor.kind === "user" ? actor.userId : "",
+    memberships: await ifAllowed(listMemberships, {
+      environmentId: environment.id,
+    }),
+    pendingPublications: pending,
+    ownObjectIds: pending.length === 0 ? new Set() : await ownObjectIds(),
+  });
+}
+
+/** The caller's own things, read once however many times it is asked. */
+export function ownObjectIdsOnce(
+  reader: HomeReader,
+): () => Promise<ReadonlySet<string>> {
+  let ids: Promise<ReadonlySet<string>> | undefined;
+
+  return () =>
+    (ids ??= reader
+      .query(listOwnObjects, {})
+      .then(({ objects }) => new Set(objects.map((object) => object.id))));
+}
+
+/**
  * The caller's environments, each read through `environment.read` and,
  * where they administer it, the administrators' own lists. An environment
  * they lose access to meanwhile simply drops out.
@@ -149,9 +184,9 @@ async function pendingPublications(
 export const environmentHomeSource: HomeSource = {
   name: "environments",
   async items(reader) {
-    const { actor, query, ifAllowed } = reader;
+    const { query, ifAllowed } = reader;
     const summaries = await query(listOwnEnvironments, {});
-    let ownObjectIds: Promise<ReadonlySet<string>> | undefined;
+    const ownObjectIds = ownObjectIdsOnce(reader);
     const items: HomeItem[] = [];
 
     for (const summary of summaries) {
@@ -165,22 +200,12 @@ export const environmentHomeSource: HomeSource = {
 
       if (!environment.roles.includes("administrator")) continue;
 
-      const pending = await pendingPublications(reader, environment.id);
-      ownObjectIds ??=
-        pending.length === 0
-          ? undefined
-          : query(listOwnObjects, {}).then(
-              ({ objects }) => new Set(objects.map((object) => object.id)),
-            );
       items.push(
-        ...administrationHomeItems(environment, {
-          userId: actor.kind === "user" ? actor.userId : "",
-          memberships: await ifAllowed(listMemberships, {
-            environmentId: environment.id,
-          }),
-          pendingPublications: pending,
-          ownObjectIds: (await ownObjectIds) ?? new Set(),
-        }),
+        ...(await environmentAdministrationItems(
+          reader,
+          environment,
+          ownObjectIds,
+        )),
       );
     }
 

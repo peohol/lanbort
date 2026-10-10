@@ -7,7 +7,6 @@ import { StatusCard } from "@/components/status-card";
 import type { Tone } from "@/components/tag";
 import { newCaseHref } from "@/navigation/cases";
 import {
-  environmentAdminHref,
   environmentHref,
   environmentJoinHref,
   environmentWelcomeHref,
@@ -44,10 +43,9 @@ const stepTones: Record<MembershipStep["kind"], Tone> = {
  * The user's relation to the environment and the next step (UX-INT-001):
  * the way to joining, applying, accepting an invitation or meeting new
  * requirements (PS-ENV-004–006), a bounded task of its own; what a pending
- * application holds; answering a proposed weaker type (UX-PRIV-008); taking
- * on a role; and for administrators the way to their tasks. Right after
- * joining, the card welcomes the new member. Contact and leaving are on
- * «Om miljøet» (`YourMembership`).
+ * application holds; answering a proposed weaker type (UX-PRIV-008); and
+ * taking on a role. Right after joining, the card welcomes the new member.
+ * Contact and leaving are on «Om miljøet» (`YourMembership`).
  */
 export function Membership({
   environment,
@@ -114,9 +112,8 @@ export function Membership({
 
 /**
  * Steps taken from the card: the way to the step that sends answers (or the
- * step itself, when there is nothing to answer), withdrawing or declining,
- * and for an administrator the way to administration whatever their own
- * next step is (new requirements do not take the role away).
+ * step itself, when there is nothing to answer), and withdrawing or
+ * declining. Administrators find their tasks under the card.
  */
 function StepActions({
   environment,
@@ -149,16 +146,6 @@ function StepActions({
           />
         ))}
       <StepAction environment={environment} step={step} />
-      {environment.roles.includes("administrator") && (
-        // WP-85's page, built alongside this one: not fetched ahead.
-        <Link
-          className="button"
-          href={environmentAdminHref(environment.id)}
-          prefetch={false}
-        >
-          Administrer miljøet
-        </Link>
-      )}
     </>
   );
 }

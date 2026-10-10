@@ -106,6 +106,18 @@ test("an environment is created, applied to, used and left in the browser", asyn
   await expect(sent.getByText("H0201")).toBeVisible();
   await expect(sent.getByText("Godtatt")).toBeVisible();
 
+  // Anna administers it, and finds the application among her tasks there.
+  await page.reload();
+  const administration = page.getByRole("region", {
+    name: "Som administrator",
+  });
+  await expect(
+    administration.getByRole("link", { name: "Behandle 1 innmelding" }),
+  ).toHaveAttribute("href", `/miljoer/${environmentId}/administrer`);
+  await expect(
+    administration.getByRole("link", { name: "Administrer miljøet" }),
+  ).toBeVisible();
+
   const { memberships } = await (
     await page.request.get(
       `/api/environments/memberships?environmentId=${environmentId}`,
@@ -134,6 +146,9 @@ test("an environment is created, applied to, used and left in the browser", asyn
   await expect(
     bo.page.getByRole("link", { name: "Registrer en ting her" }),
   ).toHaveAttribute("href", `/ting/ny?miljo=${environmentId}`);
+  await expect(
+    bo.page.getByRole("region", { name: "Som administrator" }),
+  ).toHaveCount(0);
 
   // About the environment and its members, a page away.
   await bo.page.getByRole("link", { name: "Om miljøet og medlemmer" }).click();
