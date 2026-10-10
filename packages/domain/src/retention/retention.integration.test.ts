@@ -44,7 +44,7 @@ async function notification(
     .insertInto("app.notifications")
     .values({
       recipient_id: recipientId,
-      kind: "object.question_answered",
+      kind: "object.question_replied",
       level: "information",
       target_type: target.type,
       target_id: target.id,
@@ -66,6 +66,8 @@ async function delivery(notificationId: string, finishedAt: Date | null) {
       channel: "email",
       status: finishedAt ? "sent" : "pending",
       finished_at: finishedAt,
+      // Out of reach of the e-mail job other test files run meanwhile.
+      available_at: new Date(Date.now() + day),
     })
     .execute();
 }
