@@ -14,7 +14,8 @@ export const usage = `Lets a platform steward add passkeys (ADR-0011, OD-0023).
   pnpm ops:steward-passkeys enroll --email <address> --reason "<why>"
   pnpm ops:steward-passkeys reset  --email <address> --reason "<why>"
 
-enroll  Issues a one-time enrollment code for the steward's first passkey.
+enroll  Issues a one-time enrollment code for the steward's first passkey;
+        refused (conflict) while they have any, so use reset if all are lost.
 reset   For a steward who has lost every passkey: removes them all, then
         issues a new code.
 

@@ -130,6 +130,18 @@ async function insertChallenge(
   return { id, challenge };
 }
 
+/**
+ * OD-0023: a code vouches only for a steward's first passkey. Any later one
+ * comes from a session confirmed with a passkey, and a steward who has lost
+ * them all is reset, so lost passkeys never count again.
+ */
+function onlyTheFirstPasskey() {
+  return new DomainError(
+    "conflict",
+    "The steward has passkeys; add one from a confirmed session, or reset",
+  );
+}
+
 async function countActive(tx: Tx, userId: string) {
   return (await activePasskeys(tx, userId).execute()).length;
 }
@@ -184,6 +196,10 @@ export function stewardPasskeyCommands(ceremonies: PasskeyCeremonies) {
 
       if (existing.length >= maximumStewardPasskeys) {
         throw new DomainError("conflict", "No more passkeys");
+      }
+
+      if (codeId && existing.length > 0) {
+        throw onlyTheFirstPasskey();
       }
 
       const email = await tx
@@ -265,8 +281,14 @@ export function stewardPasskeyCommands(ceremonies: PasskeyCeremonies) {
         invalid("response", "The passkey could not be verified");
       }
 
-      if ((await countActive(tx, user.userId)) >= maximumStewardPasskeys) {
+      const active = await countActive(tx, user.userId);
+
+      if (active >= maximumStewardPasskeys) {
         throw new DomainError("conflict", "No more passkeys");
+      }
+
+      if (challenge.enrollment_code_id && active > 0) {
+        throw onlyTheFirstPasskey();
       }
 
       const taken = await tx
@@ -576,6 +598,10 @@ async function issueCode(
 ) {
   let removedPasskeys = 0;
 
+  if (!removeAll && (await countActive(tx, steward.userId)) > 0) {
+    throw onlyTheFirstPasskey();
+  }
+
   if (removeAll) {
     const removed = await tx
       .updateTable("app.steward_passkeys")
@@ -635,8 +661,8 @@ function processOf(actor: Actor): string {
 }
 
 /**
- * OD-0023: the code for a steward's first passkey, or for adding one when
- * they cannot confirm with another. Not idempotent on purpose: the output
+ * OD-0023: the code for a steward's first passkey, refused while they have
+ * any. Not idempotent on purpose: the output
  * holds the code, which is never stored, and a retry simply voids the first
  * code and issues a new one.
  */

@@ -397,6 +397,15 @@ describe("steward passkeys (ADR-0011, OD-0023)", () => {
     await steward.confirm();
     expect(mayAct(await steward.signIn())).toBe("allow");
 
+    // A code is only for the first passkey: while lost ones still count,
+    // the operator must reset, not enroll.
+    await expect(
+      executeCommand(domain, issueStewardEnrollmentCode, {
+        actor: opsActors.passkeys,
+        input: { email: steward.email, reason: "Mistet begge nøklene" },
+      }),
+    ).rejects.toMatchObject({ code: "conflict" });
+
     const { output } = await executeCommand(domain, resetStewardPasskeys, {
       actor: opsActors.passkeys,
       input: { email: steward.email, reason: "Mistet begge nøklene" },
