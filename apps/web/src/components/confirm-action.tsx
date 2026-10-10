@@ -71,6 +71,7 @@ export function ConfirmAction({
   messages,
   next,
   children,
+  replace = false,
 }: {
   /** The button that opens the dialog. */
   label: string;
@@ -93,6 +94,8 @@ export function ConfirmAction({
   next?: string | undefined;
   /** Fields that go with the command, such as an optional message. */
   children?: ReactNode;
+  /** The page is done with once confirmed: `next` takes its place. */
+  replace?: boolean | undefined;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -103,6 +106,7 @@ export function ConfirmAction({
     idempotent,
     messages: messages ?? {},
     after: next ? (data) => fillHref(next, data) : "refresh",
+    replace,
   });
 
   async function confirm(event: FormEvent<HTMLFormElement>) {

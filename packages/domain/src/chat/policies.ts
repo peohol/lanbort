@@ -141,6 +141,89 @@ export const approveChatLinkPolicy = definePolicy<OwnChatResource, void>({
 });
 
 /**
+ * History archives (ADR-0010 §5): the approving device stores its history
+ * for the new one; only the account's own devices see an archive.
+ */
+export const createChatArchivePolicy = definePolicy<ChatSessionResource, void>({
+  action: "chat.create_archive",
+  actor: [requireActiveAccount],
+  resource: [sessionDevice],
+});
+
+const archivePolicy = (action: string) =>
+  definePolicy<OwnChatResource, void>({
+    action,
+    actor: [requireActiveAccount],
+    resource: [sessionDevice, ownResource],
+  });
+
+export const putChatArchivePartPolicy = archivePolicy("chat.put_archive_part");
+export const readChatArchivePartPolicy = archivePolicy(
+  "chat.read_archive_part",
+);
+
+/** Giving up an archive is kept for an account no longer active. */
+export const deleteChatArchivePolicy = definePolicy<OwnChatResource, void>({
+  action: "chat.delete_archive",
+  actor: [requireMinimumAccess],
+  resource: [sessionDevice, ownResource],
+});
+
+/**
+ * The recovery key (ADR-0010 §8, PS-COM-019). A device makes it and keeps
+ * the backup up to date; a session without chat reads the backup and
+ * restores with it. Only the key opens the backup, and only the account
+ * key in it can sign the restore, so the server holds nothing to guess.
+ */
+export const createChatRecoveryKeyPolicy = definePolicy<
+  ChatSessionResource,
+  void
+>({
+  action: "chat.create_recovery_key",
+  actor: [requireActiveAccount],
+  resource: [sessionDevice],
+});
+
+export const backUpChatHistoryPolicy = definePolicy<OwnChatResource, void>({
+  action: "chat.back_up_history",
+  actor: [requireActiveAccount],
+  resource: [sessionDevice, ownResource],
+});
+
+/** The account's recovery key, if it has one. */
+export interface ChatRecoveryResource {
+  readonly exists: boolean;
+}
+
+const recoveryKeyExists: ResourceRule<ChatRecoveryResource, void> = ({
+  resource,
+}) => (resource.exists ? allow : deny("not_found"));
+
+export const readChatRecoveryBackupPolicy = definePolicy<
+  ChatRecoveryResource,
+  void
+>({
+  action: "chat.read_recovery_backup",
+  actor: [requireActiveAccount],
+  resource: [recoveryKeyExists],
+});
+
+export const restoreChatAccountPolicy = definePolicy<
+  ChatRecoveryResource,
+  void
+>({
+  action: "chat.restore_account",
+  actor: [requireActiveAccount],
+  resource: [recoveryKeyExists],
+});
+
+/** «Ikke nå» and the one reminder: about the caller's own account. */
+export const answerChatRecoveryPromptPolicy = definePolicy<void, void>({
+  action: "chat.answer_recovery_prompt",
+  actor: [requireActiveAccount],
+});
+
+/**
  * Revoking one of the account's devices, also this one at sign-out. Kept
  * for an account that is no longer active, so a lost device can always be
  * shut out (PS-ADM-002).
@@ -283,6 +366,15 @@ export const chatPolicies = [
   finishChatLinkPolicy,
   listChatLinkRequestsPolicy,
   approveChatLinkPolicy,
+  createChatArchivePolicy,
+  putChatArchivePartPolicy,
+  readChatArchivePartPolicy,
+  deleteChatArchivePolicy,
+  createChatRecoveryKeyPolicy,
+  backUpChatHistoryPolicy,
+  readChatRecoveryBackupPolicy,
+  restoreChatAccountPolicy,
+  answerChatRecoveryPromptPolicy,
   revokeChatDevicePolicy,
   readOwnChatDevicesPolicy,
   publishChatKeyPackagesPolicy,

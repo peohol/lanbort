@@ -1,8 +1,13 @@
+import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { systemActor, type UserActor } from "../actor";
 import { resolveUserActor } from "../account/identity";
 import { claimCase, closeCase } from "../cases/commands";
-import { listPlatformCaseQueue, readCase } from "../cases/queries";
+import {
+  caseImageFile,
+  listPlatformCaseQueue,
+  readCase,
+} from "../cases/queries";
 import { executeQuery } from "../commands/query";
 import {
   acceptRoleInvitation,
@@ -12,6 +17,7 @@ import { approveLoanRequest } from "../loans/approval";
 import { reportHandover } from "../loans/handover";
 import { reportReturn } from "../loans/return";
 import { grantPlatformRole } from "../platform/commands";
+import { type ImageStore, uploadObjectImage } from "../objects/images";
 import { platformRoleOpsProcess } from "../platform/policies";
 import { publishObject } from "../publications/commands";
 import { listEnvironmentObjects } from "../publications/queries";
@@ -135,6 +141,66 @@ async function administrator(
   return actor;
 }
 
+describe("the picture of the thing a case names (PS-OBJ-021)", () => {
+  it("is seen by whoever reads the case, never by whom the report is about", async () => {
+    const { admin, environmentId, owner, borrower, objectId } =
+      await published();
+    const stranger = await user();
+    const files = new Map<string, Uint8Array>();
+    const store: ImageStore = {
+      put: async (key, bytes) => {
+        files.set(key, bytes);
+      },
+      get: async (key) => files.get(key) ?? null,
+      remove: async (key) => {
+        files.delete(key);
+      },
+    };
+    const { imageId } = (
+      await uploadObjectImage(
+        tick(),
+        {
+          store,
+          process: async (bytes) => ({
+            bytes,
+            contentType: "image/webp",
+            width: 10,
+            height: 10,
+          }),
+        },
+        {
+          actor: owner,
+          objectId,
+          bytes: new TextEncoder().encode(randomUUID()),
+          idempotencyKey: randomUUID(),
+        },
+      )
+    ).output;
+    const { caseId } = await run(reportInEnvironment, borrower, {
+      environmentId,
+      target: { kind: "object", objectId },
+      body: "Den ser farlig ut.",
+    });
+    const image = (actor: UserActor, id = imageId) =>
+      executeQuery(tick(), caseImageFile, {
+        actor,
+        input: { caseId, imageId: id },
+      });
+
+    for (const reader of [admin, borrower]) {
+      expect((await read(reader, caseId)).images).toEqual([
+        { id: imageId, width: 10, height: 10 },
+      ]);
+      expect(await image(reader)).toMatchObject({ contentType: "image/webp" });
+    }
+    for (const outsider of [owner, stranger]) {
+      await expect(image(outsider)).rejects.toMatchObject(notFound);
+    }
+    // Only a picture of the thing the case names.
+    await expect(image(admin, randomUUID())).rejects.toMatchObject(notFound);
+  });
+});
+
 describe("reports in an environment (PS-TRUST-013, PS-OBJ-017)", () => {
   it("are handled by its administrators and moderated locally, with basis and reason", async () => {
     const { admin, environmentId, owner, borrower, objectId, publicationId } =
@@ -227,7 +293,10 @@ describe("reports in an environment (PS-TRUST-013, PS-OBJ-017)", () => {
     ]);
 
     // A closed report takes no more measures.
-    await run(closeCase, admin, { caseId: opened.caseId });
+    await run(closeCase, admin, {
+      caseId: opened.caseId,
+      body: "Saken er avsluttet.",
+    });
     await expect(
       measure(admin, opened.caseId, "publication_rejected"),
     ).rejects.toMatchObject(conflict);

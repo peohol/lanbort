@@ -40,6 +40,12 @@ import {
   submitChatCommit,
 } from "./conversations";
 import {
+  createChatArchive,
+  deleteChatArchive,
+  putChatArchivePart,
+  readChatArchivePart,
+} from "./archives";
+import {
   approveChatLink,
   finishChatLink,
   listChatLinkRequests,
@@ -56,6 +62,13 @@ import {
   purgeExpiredChat,
   restartChatGroups,
 } from "./maintenance";
+import {
+  answerChatRecoveryPrompt,
+  backUpChatHistory,
+  createChatRecoveryKey,
+  readChatRecoveryBackup,
+  restoreChatAccount,
+} from "./recovery";
 import { groupIdOf } from "./model";
 import { chatRetentionProcess } from "./policies";
 
@@ -258,6 +271,8 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
           revocation: null,
         }),
       ],
+      recovery: null,
+      recoveryReminder: false,
     });
 
     const again = testChatDevice(alice.account);
@@ -419,6 +434,208 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
         linkKey,
       }),
     ).rejects.toMatchObject(conflict);
+  });
+
+  it("moves the history to a new device through an archive only it can fetch", async () => {
+    const alice = await chatUser();
+    const laptop = newSession(alice.actor);
+    const deviceId = randomUUID();
+    const deviceKey = testChatDevice(alice.account).deviceKey;
+    const part = (byte: number) => Buffer.alloc(32, byte).toString("base64");
+    const readPart = (actor: UserActor, archiveId: string, index: number) =>
+      executeQuery(tick(), readChatArchivePart, {
+        actor,
+        input: { archiveId, part: index },
+      });
+
+    const forLink = (linkRequestId: string, partCount: number) => ({
+      purpose: "link" as const,
+      linkRequestId,
+      partCount,
+    });
+
+    // An archive is only for a device that waits to be linked.
+    await expect(
+      run(createChatArchive, alice.actor, forLink(randomUUID(), 2)),
+    ).rejects.toMatchObject(conflict);
+    const { linkRequestId } = await run(requestChatLink, laptop, {
+      deviceId,
+      deviceKey,
+      linkKey: deviceKey,
+    });
+    await expect(
+      run(createChatArchive, laptop, forLink(linkRequestId, 2)),
+    ).rejects.toMatchObject(forbidden);
+    const { archiveId: replaced } = await run(
+      createChatArchive,
+      alice.actor,
+      forLink(linkRequestId, 1),
+    );
+    const { archiveId } = await run(
+      createChatArchive,
+      alice.actor,
+      forLink(linkRequestId, 2),
+    );
+    await expect(
+      run(putChatArchivePart, alice.actor, {
+        archiveId: replaced,
+        part: 0,
+        data: part(1),
+      }),
+    ).rejects.toMatchObject(notFound);
+
+    // Someone else neither writes, reads nor removes it, nor makes one
+    // for this account's link request.
+    const bob = await chatUser();
+    await expect(
+      run(createChatArchive, bob.actor, forLink(linkRequestId, 1)),
+    ).rejects.toMatchObject(conflict);
+    await expect(
+      run(putChatArchivePart, bob.actor, { archiveId, part: 0, data: part(9) }),
+    ).rejects.toMatchObject(notFound);
+    await expect(
+      run(deleteChatArchive, bob.actor, { archiveId }),
+    ).rejects.toMatchObject(notFound);
+
+    await expect(
+      run(putChatArchivePart, alice.actor, {
+        archiveId,
+        part: 0,
+        data: part(1),
+      }),
+    ).resolves.toEqual({ complete: false });
+    await expect(
+      run(putChatArchivePart, alice.actor, {
+        archiveId,
+        part: 0,
+        data: part(2),
+      }),
+    ).rejects.toMatchObject(conflict);
+    await expect(
+      run(putChatArchivePart, alice.actor, {
+        archiveId,
+        part: 2,
+        data: part(2),
+      }),
+    ).rejects.toMatchObject(notFound);
+    // Nothing can be read before every part is in.
+    await expect(readPart(alice.actor, archiveId, 0)).rejects.toMatchObject(
+      notFound,
+    );
+    await expect(
+      run(putChatArchivePart, alice.actor, {
+        archiveId,
+        part: 1,
+        data: part(2),
+      }),
+    ).resolves.toEqual({ complete: true });
+    await expect(
+      run(putChatArchivePart, alice.actor, {
+        archiveId,
+        part: 1,
+        data: part(3),
+      }),
+    ).rejects.toMatchObject(notFound);
+
+    await run(approveChatLink, alice.actor, {
+      linkRequestId,
+      certificate: alice.account.certify(deviceId, deviceKey),
+      package: "c2VhbGVk",
+    });
+    await expect(readPart(bob.actor, archiveId, 0)).rejects.toMatchObject(
+      notFound,
+    );
+    await expect(readPart(laptop, archiveId, 0)).resolves.toEqual({
+      data: part(1),
+    });
+    await expect(readPart(laptop, archiveId, 1)).resolves.toEqual({
+      data: part(2),
+    });
+    await run(deleteChatArchive, laptop, { archiveId });
+    await expect(readPart(laptop, archiveId, 0)).rejects.toMatchObject(
+      notFound,
+    );
+  });
+
+  it("keeps each device's archive when two are linked at the same time", async () => {
+    const alice = await chatUser();
+    const linking = await Promise.all(
+      [newSession(alice.actor), newSession(alice.actor)].map(async (actor) => {
+        const deviceId = randomUUID();
+        const deviceKey = testChatDevice(alice.account).deviceKey;
+        const { linkRequestId } = await run(requestChatLink, actor, {
+          deviceId,
+          deviceKey,
+          linkKey: deviceKey,
+        });
+        return { actor, deviceId, deviceKey, linkRequestId };
+      }),
+    );
+
+    // The first is approved with its archive before the second gets one.
+    const archives: string[] = [];
+    for (const [index, link] of linking.entries()) {
+      const { archiveId } = await run(createChatArchive, alice.actor, {
+        purpose: "link",
+        linkRequestId: link.linkRequestId,
+        partCount: 1,
+      });
+      await run(putChatArchivePart, alice.actor, {
+        archiveId,
+        part: 0,
+        data: Buffer.alloc(16, index).toString("base64"),
+      });
+      await run(approveChatLink, alice.actor, {
+        linkRequestId: link.linkRequestId,
+        certificate: alice.account.certify(link.deviceId, link.deviceKey),
+        package: "c2VhbGVk",
+      });
+      archives.push(archiveId);
+    }
+
+    for (const [index, link] of linking.entries()) {
+      await expect(
+        executeQuery(tick(), readChatArchivePart, {
+          actor: link.actor,
+          input: { archiveId: archives[index]!, part: 0 },
+        }),
+      ).resolves.toEqual({ data: Buffer.alloc(16, index).toString("base64") });
+    }
+  });
+
+  it("lets a history archive expire with the retention job", async () => {
+    const alice = await chatUser();
+    const laptop = newSession(alice.actor);
+    const deviceKey = testChatDevice(alice.account).deviceKey;
+    const { linkRequestId } = await run(requestChatLink, laptop, {
+      deviceId: randomUUID(),
+      deviceKey,
+      linkKey: deviceKey,
+    });
+    const { archiveId } = await run(createChatArchive, alice.actor, {
+      purpose: "link",
+      linkRequestId,
+      partCount: 1,
+    });
+
+    kit.advanceDays(1);
+    await expect(
+      run(putChatArchivePart, alice.actor, {
+        archiveId,
+        part: 0,
+        data: Buffer.alloc(16).toString("base64"),
+      }),
+    ).rejects.toMatchObject(notFound);
+    await executeCommand(tick(), purgeExpiredChat, {
+      actor: systemActor(chatRetentionProcess),
+      input: {},
+    });
+    const left = await db
+      .selectFrom("app.chat_archives")
+      .select("id")
+      .where("id", "=", archiveId)
+      .execute();
+    expect(left).toEqual([]);
   });
 
   it("keeps only key packages the device made for itself", async () => {
@@ -866,6 +1083,324 @@ describe("revoking and resetting (ADR-0010 §7–8)", () => {
     await expect(
       commit(bob2, conversationId, { generation: 2, epoch: 0 }),
     ).resolves.toEqual({ generation: 2, epoch: 1 });
+  });
+});
+
+describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
+  const bytes = (length: number, byte: number) =>
+    Buffer.alloc(length, byte).toString("base64");
+  const keyA = bytes(16, 1);
+  const keyB = bytes(16, 2);
+  const backup = (byte: number) => bytes(64, byte);
+  const purge = () =>
+    executeCommand(tick(), purgeExpiredChat, {
+      actor: systemActor(chatRetentionProcess),
+      input: {},
+    });
+  const archiveExists = async (archiveId: string) =>
+    (await db
+      .selectFrom("app.chat_archives")
+      .select("id")
+      .where("id", "=", archiveId)
+      .executeTakeFirst()) !== undefined;
+  const readBackup = (actor: UserActor) =>
+    executeQuery(tick(), readChatRecoveryBackup, { actor, input: {} });
+  const devices = (actor: UserActor) =>
+    executeQuery(tick(), readOwnChatDevices, { actor, input: {} });
+
+  /** A complete backup archive of one part, from the user's device. */
+  async function backupArchive(who: ChatUser) {
+    const { archiveId } = await run(createChatArchive, who.actor, {
+      partCount: 1,
+      purpose: "backup",
+    });
+    await run(putChatArchivePart, who.actor, {
+      archiveId,
+      part: 0,
+      data: bytes(32, 7),
+    });
+    return archiveId;
+  }
+
+  it("is made on a device and its backup kept up to date by the key's devices", async () => {
+    const alice = await chatUser();
+    await expect(
+      run(createChatRecoveryKey, newSession(alice.actor), {
+        keyId: keyA,
+        backup: backup(1),
+      }),
+    ).rejects.toMatchObject(forbidden);
+    // A backup archive is only for an account with a key.
+    await expect(
+      run(createChatArchive, alice.actor, { partCount: 1, purpose: "backup" }),
+    ).rejects.toMatchObject(conflict);
+    expect((await devices(alice.actor)).recovery).toBeNull();
+
+    await run(createChatRecoveryKey, alice.actor, {
+      keyId: keyA,
+      backup: backup(1),
+    });
+    expect((await devices(alice.actor)).recovery).toMatchObject({
+      createdAt: expect.any(String),
+    });
+    await expect(readBackup(alice.actor)).resolves.toEqual({
+      keyId: keyA,
+      backup: backup(1),
+      archive: null,
+    });
+
+    // Only a complete backup archive of the account's own, under the key.
+    const { archiveId: unfinished } = await run(
+      createChatArchive,
+      alice.actor,
+      {
+        partCount: 2,
+        purpose: "backup",
+      },
+    );
+    await expect(
+      run(backUpChatHistory, alice.actor, {
+        keyId: keyA,
+        backup: backup(2),
+        archiveId: unfinished,
+      }),
+    ).rejects.toMatchObject(notFound);
+    const archiveId = await backupArchive(alice);
+    const bob = await chatUser();
+    await expect(
+      run(backUpChatHistory, bob.actor, {
+        keyId: keyA,
+        backup: backup(2),
+        archiveId,
+      }),
+    ).rejects.toMatchObject(notFound);
+    await expect(
+      run(backUpChatHistory, alice.actor, {
+        keyId: keyB,
+        backup: backup(2),
+        archiveId,
+      }),
+    ).rejects.toMatchObject(conflict);
+    await run(backUpChatHistory, alice.actor, {
+      keyId: keyA,
+      backup: backup(2),
+      archiveId,
+    });
+    await expect(readBackup(alice.actor)).resolves.toEqual({
+      keyId: keyA,
+      backup: backup(2),
+      archive: { archiveId, parts: 1 },
+    });
+    // The unfinished one was replaced; the attached one outlives its expiry.
+    expect(await archiveExists(unfinished)).toBe(false);
+    kit.advanceDays(1);
+    await purge();
+    await run(deleteChatArchive, alice.actor, { archiveId });
+    expect(await archiveExists(archiveId)).toBe(true);
+    await expect(
+      executeQuery(tick(), readChatArchivePart, {
+        actor: alice.actor,
+        input: { archiveId, part: 0 },
+      }),
+    ).resolves.toEqual({ data: bytes(32, 7) });
+
+    // A newer backup replaces the older archive.
+    const newer = await backupArchive(alice);
+    await run(backUpChatHistory, alice.actor, {
+      keyId: keyA,
+      backup: backup(3),
+      archiveId: newer,
+    });
+    expect(await archiveExists(archiveId)).toBe(false);
+
+    // A new key replaces the old one, and its backup: the old key's
+    // devices can no longer overwrite it.
+    await run(createChatRecoveryKey, alice.actor, {
+      keyId: keyB,
+      backup: backup(4),
+    });
+    expect(await archiveExists(newer)).toBe(false);
+    const stale = await backupArchive(alice);
+    await expect(
+      run(backUpChatHistory, alice.actor, {
+        keyId: keyA,
+        backup: backup(5),
+        archiveId: stale,
+      }),
+    ).rejects.toMatchObject(conflict);
+    await expect(readBackup(alice.actor)).resolves.toMatchObject({
+      keyId: keyB,
+      backup: backup(4),
+    });
+  });
+
+  it("restores chat on a new session under the same key, shutting out every other device", async () => {
+    const phone = await providerSession(await user());
+    const alice = await chatUser(phone);
+    const laptop = await providerSession(phone);
+    const laptopDevice = testChatDevice(alice.account);
+    const { linkRequestId } = await run(requestChatLink, laptop, {
+      deviceId: laptopDevice.deviceId,
+      deviceKey: laptopDevice.deviceKey,
+      linkKey: laptopDevice.deviceKey,
+    });
+    await run(approveChatLink, phone, {
+      linkRequestId,
+      certificate: laptopDevice.certificate,
+      package: "c2VhbGVk",
+    });
+    await run(createChatRecoveryKey, phone, { keyId: keyA, backup: backup(1) });
+    const archiveId = await backupArchive(alice);
+    await run(backUpChatHistory, phone, {
+      keyId: keyA,
+      backup: backup(2),
+      archiveId,
+    });
+
+    // Someone without a key has no backup to read.
+    const bob = await chatUser();
+    await expect(readBackup(bob.actor)).rejects.toMatchObject(notFound);
+    await expect(
+      run(restoreChatAccount, bob.actor, {
+        certificate: bob.device.certificate,
+        revocations: [],
+      }),
+    ).rejects.toMatchObject(notFound);
+
+    const fresh = await providerSession(phone);
+    await expect(readBackup(fresh)).resolves.toMatchObject({
+      archive: { archiveId, parts: 1 },
+    });
+    const restored = testChatDevice(alice.account);
+    const everyRevocation = [
+      alice.account.revoke(alice.device.deviceId),
+      alice.account.revoke(laptopDevice.deviceId),
+    ];
+    // Every other device must be shut out, with the account key's signature.
+    await expect(
+      run(restoreChatAccount, fresh, {
+        certificate: restored.certificate,
+        revocations: everyRevocation.slice(0, 1),
+      }),
+    ).rejects.toMatchObject(invalid);
+    const other = testChatAccount(phone.userId);
+    await expect(
+      run(restoreChatAccount, fresh, {
+        certificate: restored.certificate,
+        revocations: [
+          other.revoke(alice.device.deviceId),
+          other.revoke(laptopDevice.deviceId),
+        ],
+      }),
+    ).rejects.toMatchObject(invalid);
+    await expect(
+      run(restoreChatAccount, fresh, {
+        certificate: testChatDevice(other).certificate,
+        revocations: everyRevocation,
+      }),
+    ).rejects.toMatchObject(invalid);
+    // A session that already has chat links instead.
+    await expect(
+      run(restoreChatAccount, laptop, {
+        certificate: restored.certificate,
+        revocations: everyRevocation,
+      }),
+    ).rejects.toMatchObject(conflict);
+
+    await expect(
+      run(restoreChatAccount, fresh, {
+        certificate: restored.certificate,
+        revocations: everyRevocation,
+      }),
+    ).resolves.toEqual({ deviceId: restored.deviceId });
+    const after = await devices(fresh);
+    expect(after.currentDeviceId).toBe(restored.deviceId);
+    expect(after.accountKey).toBe(alice.account.accountKey);
+    expect(
+      after.devices
+        .filter(({ revokedAt }) => revokedAt === null)
+        .map(({ deviceId }) => deviceId),
+    ).toEqual([restored.deviceId]);
+    await deliverAll(db, consumers);
+    expect(await sessionLives(phone)).toBe(false);
+    expect(await sessionLives(laptop)).toBe(false);
+    expect(await sessionLives(fresh)).toBe(true);
+    const told = await db
+      .selectFrom("app.notifications")
+      .select("kind")
+      .where("recipient_id", "=", phone.userId)
+      .where("target_id", "=", restored.deviceId)
+      .execute();
+    expect(told).toEqual([{ kind: "chat.device_linked" }]);
+
+    // The restored device fetches the backed-up history.
+    await expect(
+      executeQuery(tick(), readChatArchivePart, {
+        actor: fresh,
+        input: { archiveId, part: 0 },
+      }),
+    ).resolves.toEqual({ data: bytes(32, 7) });
+    await expect(
+      run(restoreChatAccount, fresh, {
+        certificate: testChatDevice(alice.account).certificate,
+        revocations: [],
+      }),
+    ).rejects.toMatchObject(conflict);
+  });
+
+  it("goes with a reset and with the account", async () => {
+    const alice = await chatUser();
+    await run(createChatRecoveryKey, alice.actor, {
+      keyId: keyA,
+      backup: backup(1),
+    });
+    const account = testChatAccount(alice.actor.userId);
+    await run(resetChatAccount, alice.actor, {
+      accountKey: account.accountKey,
+      certificate: testChatDevice(account).certificate,
+    });
+    await expect(readBackup(alice.actor)).rejects.toMatchObject(notFound);
+
+    const bob = await chatUser();
+    await run(createChatRecoveryKey, bob.actor, {
+      keyId: keyA,
+      backup: backup(1),
+    });
+    await run(answerChatRecoveryPrompt, bob.actor, { prompt: "offer" });
+    await run(deleteOwnAccount, bob.actor, {});
+    for (const table of [
+      "app.chat_recovery_keys",
+      "app.chat_recovery_prompts",
+    ] as const) {
+      const left = await db
+        .selectFrom(table)
+        .select("user_id")
+        .where("user_id", "=", bob.actor.userId)
+        .execute();
+      expect(left).toEqual([]);
+    }
+  });
+
+  it("is offered once and recalled once, only to someone who said «Ikke nå»", async () => {
+    const alice = await chatUser();
+    const reminder = async () => (await devices(alice.actor)).recoveryReminder;
+    expect(await reminder()).toBe(false);
+
+    await run(answerChatRecoveryPrompt, alice.actor, { prompt: "offer" });
+    expect(await reminder()).toBe(true);
+    await run(answerChatRecoveryPrompt, alice.actor, { prompt: "reminder" });
+    expect(await reminder()).toBe(false);
+    // Answering the offer again does not bring the reminder back.
+    await run(answerChatRecoveryPrompt, alice.actor, { prompt: "offer" });
+    expect(await reminder()).toBe(false);
+
+    const bob = await chatUser();
+    await run(answerChatRecoveryPrompt, bob.actor, { prompt: "offer" });
+    await run(createChatRecoveryKey, bob.actor, {
+      keyId: keyA,
+      backup: backup(1),
+    });
+    expect((await devices(bob.actor)).recoveryReminder).toBe(false);
   });
 });
 

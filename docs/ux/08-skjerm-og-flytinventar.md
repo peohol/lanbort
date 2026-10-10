@@ -254,7 +254,7 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 - **Ser / handler:** brukeren selv, på en godkjent enhet. Kameraet brukes bare på denne siden.
 - **Regler:** PS-COM-005, ADR-0010 punkt 5, UX-INT-003.
 - **Forløp:** normal.
-- **UI-pakke:** WP-80 (finnes fra WP-43). Overføring av gammel historikk ved kobling er ikke bygget (se [hull](#hull-flater-uten-ui-pakke)).
+- **UI-pakke:** WP-80 (finnes fra WP-43). Overføring av tidligere meldinger ved kobling er bygget (ADR-0010 punkt 5).
 
 ##### Mine enheter
 
@@ -400,7 +400,7 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 - **Ser / handler:** brukeren selv, fra en enhet som ikke er koblet eller har mistet nøklene, og fra Mine enheter. Kontaktene godtar den nye sikkerhetskoden i samtalen.
 - **Regler:** UX-INT-003, UX-INT-007, PS-COM-005, PS-NFR-007, ADR-0010 punkt 3, 7 og 8.
 - **Forløp:** avvik.
-- **UI-pakke:** WP-80 (finnes fra WP-43). Gjenoppretting med gjenopprettingsnøkkel uten å miste historikken er ikke bygget (se [hull](#hull-flater-uten-ui-pakke)), så tilbakestilling er i dag eneste vei når alle enheter er borte.
+- **UI-pakke:** WP-80 (finnes fra WP-43). Har brukeren en gjenopprettingsnøkkel, hentes privat chat og de sikkerhetskopierte meldingene tilbake med den (`/samtaler/gjenopprett`, PS-COM-019); tilbakestilling er veien når nøkkelen også mangler.
 
 ## Miljøadministrator
 
@@ -612,7 +612,6 @@ Disse flatene følger av spesifikasjonen og UX-modellen, men ingen pakke i UI-pl
 - **Å avslutte et aktivt medlemskap** fra Medlemmer og utestengelse (PS-ENV-021). Vedtatt, men ikke bygget; resten av flaten er bygget i WP-85.
 - **Plattformforvalterens inngrep** på kontoer og miljøer, fra en sak i plattformkøen (PS-ADM-015). Venter på OD-0023.
 - **Varsel før utlogging på en enhet med privat chat** (ADR-0010 punkt 7). Konto-sidens «Logg ut» har ikke dette varselet ennå; «Fjern denne enheten» i Mine enheter sier hva enheten mister.
-- **Gjenopprettingsnøkkel og overføring av gammel historikk** for privat chat (ADR-0010 punkt 5 og 8, PS-COM-019). Begge er vedtatt som valgfrie for brukeren, men ikke bygget; til da er kobling fra en annen enhet eller tilbakestilling de eneste veiene.
 - Presentasjon og synlighet for andre profilfelt, og demping og arkivering av lånesamtalen, står allerede under «Senere» i UI-planen.
 
 ### Åpne beslutninger som berører flatene

@@ -117,6 +117,10 @@ export interface AppCaseEntries {
   body: string;
   capacity: string;
   case_id: string;
+  /**
+   * The closing message to the parties of a report or mediation (PS-COM-020); one per case, written as it is closed.
+   */
+  closing: Generated<boolean>;
   corrects_entry_id: string | null;
   created_at: Timestamp;
   id: Generated<string>;
@@ -163,6 +167,23 @@ export interface AppChatAccountKeys {
   id: Generated<string>;
   public_key: Buffer;
   replaced_at: Timestamp | null;
+  user_id: string;
+}
+
+export interface AppChatArchiveParts {
+  archive_id: string;
+  data: Buffer;
+  part: number;
+}
+
+export interface AppChatArchives {
+  completed_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  id: Generated<string>;
+  link_request_id: string | null;
+  part_count: number;
+  purpose: string;
   user_id: string;
 }
 
@@ -244,6 +265,22 @@ export interface AppChatParticipants {
    * When the participant muted notifications of new messages here (PS-COM-018); null when not muted.
    */
   muted_at: Timestamp | null;
+  user_id: string;
+}
+
+export interface AppChatRecoveryKeys {
+  account_key_id: string;
+  archive_id: string | null;
+  backed_up_at: Generated<Timestamp>;
+  backup: Buffer;
+  created_at: Generated<Timestamp>;
+  key_id: Buffer;
+  user_id: string;
+}
+
+export interface AppChatRecoveryPrompts {
+  declined_at: Timestamp | null;
+  reminded_at: Timestamp | null;
   user_id: string;
 }
 
@@ -985,6 +1022,8 @@ export interface DB {
   "app.case_participants": AppCaseParticipants;
   "app.cases": AppCases;
   "app.chat_account_keys": AppChatAccountKeys;
+  "app.chat_archive_parts": AppChatArchiveParts;
+  "app.chat_archives": AppChatArchives;
   "app.chat_conversations": AppChatConversations;
   "app.chat_deliveries": AppChatDeliveries;
   "app.chat_devices": AppChatDevices;
@@ -993,6 +1032,8 @@ export interface DB {
   "app.chat_link_requests": AppChatLinkRequests;
   "app.chat_messages": AppChatMessages;
   "app.chat_participants": AppChatParticipants;
+  "app.chat_recovery_keys": AppChatRecoveryKeys;
+  "app.chat_recovery_prompts": AppChatRecoveryPrompts;
   "app.environment_access_restrictions": AppEnvironmentAccessRestrictions;
   "app.environment_membership_answers": AppEnvironmentMembershipAnswers;
   "app.environment_memberships": AppEnvironmentMemberships;

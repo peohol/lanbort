@@ -6,7 +6,15 @@ import { restoreProcess } from "../restore/policies";
 import { testUserActor } from "../testing/actors";
 import {
   acknowledgeChatInboxPolicy,
+  answerChatRecoveryPromptPolicy,
   approveChatLinkPolicy,
+  backUpChatHistoryPolicy,
+  createChatRecoveryKeyPolicy,
+  type ChatRecoveryResource,
+  readChatRecoveryBackupPolicy,
+  restoreChatAccountPolicy,
+  createChatArchivePolicy,
+  deleteChatArchivePolicy,
   type ChatConversationResource,
   type ChatSessionResource,
   type ChatStartResource,
@@ -21,7 +29,9 @@ import {
   listChatLinkRequestsPolicy,
   type OwnChatResource,
   publishChatKeyPackagesPolicy,
+  putChatArchivePartPolicy,
   purgeChatDeliveryPolicy,
+  readChatArchivePartPolicy,
   readChatConversationPolicy,
   readChatDirectoryPolicy,
   readChatInboxPolicy,
@@ -145,6 +155,20 @@ const sessionAction = (
     ["anonymous caller", anonymousActor, session(true), "unauthenticated"],
   ]);
 
+/** With the recovery key, from any session of the account. */
+const recoveryAction = (policy: Policy<ChatRecoveryResource, void>) =>
+  cases(policy, [
+    ["an account with a recovery key", user, { exists: true }, "allow"],
+    ["an account without one", user, { exists: false }, "not_found"],
+    [
+      "a deactivated account",
+      deactivated,
+      { exists: true },
+      "account_inactive",
+    ],
+    ["anonymous caller", anonymousActor, { exists: true }, "unauthenticated"],
+  ]);
+
 /** The rules look only at the conversation fields, whatever else is loaded. */
 const readConversation = <R extends ChatConversationResource>(
   policy: Policy<R, void>,
@@ -217,6 +241,15 @@ export const chatMatrices = [
   ownAction(finishChatLinkPolicy, false),
   sessionAction(listChatLinkRequestsPolicy, false),
   ownAction(approveChatLinkPolicy, true),
+  sessionAction(createChatArchivePolicy, false),
+  ownAction(putChatArchivePartPolicy, true),
+  ownAction(readChatArchivePartPolicy, true),
+  ownAction(deleteChatArchivePolicy, true, true),
+  sessionAction(createChatRecoveryKeyPolicy, false),
+  ownAction(backUpChatHistoryPolicy, true),
+  recoveryAction(readChatRecoveryBackupPolicy),
+  recoveryAction(restoreChatAccountPolicy),
+  accountAction(answerChatRecoveryPromptPolicy, false),
   ownAction(revokeChatDevicePolicy, true, true),
   accountAction(readOwnChatDevicesPolicy, true),
   sessionAction(publishChatKeyPackagesPolicy, false),

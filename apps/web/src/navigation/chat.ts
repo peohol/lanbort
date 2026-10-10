@@ -12,6 +12,10 @@ export const chatApproveLinkHref = `${chatDevicesHref}/koble`;
 export const chatApproveByCodeHref = `${chatApproveLinkHref}?kode`;
 /** On a new device: show the code and wait for approval. */
 export const chatLinkHref = `${chatHref}/koble`;
+/** Make the recovery key, or a new one (PS-COM-019). */
+export const chatRecoveryKeyHref = `${chatDevicesHref}/gjenopprettingsnokkel`;
+/** When no device with chat is left: restore it with the recovery key (R3). */
+export const chatRestoreHref = `${chatHref}/gjenopprett`;
 /** When no device with chat is left: start chat anew (ADR-0010 §8). */
 export const chatResetHref = `${chatHref}/tilbakestill`;
 export const chatConversationHref = (conversationId: string) =>

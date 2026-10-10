@@ -116,3 +116,10 @@ export function parseCaseStart(params: SearchParams): CaseStart | null {
  * one of them (ADR-0010 §13).
  */
 export const caseEvidenceHref = (caseId: string) => `${chatHref}/sak/${caseId}`;
+
+/**
+ * The notice to whoever a measure hits (PS-TRUST-018): what was done, where
+ * and why, and where to ask for a new assessment.
+ */
+export const measureNoticeHref = (measureId: string) =>
+  `${casesHref}/tiltak/${measureId}`;

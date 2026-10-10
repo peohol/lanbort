@@ -35,10 +35,12 @@ export interface Place extends StackEntry {
 
 /**
  * How the user came to a page: following something in the app (`push`),
- * the browser's back and forward or a reload (`history`), or from outside
- * the stack (`direct`: a notification, an e-mail, a shared link, a new tab).
+ * a step that is done with the page it was taken on and leads on in its
+ * place (`replace`, as from an approved request to the loan), the
+ * browser's back and forward or a reload (`history`), or from outside the
+ * stack (`direct`: a notification, an e-mail, a shared link, a new tab).
  */
-export type Arrival = "push" | "history" | "direct";
+export type Arrival = "push" | "replace" | "history" | "direct";
 
 /** Two addresses are the same place when their paths are. */
 export const samePlace = (a: string, b: string) =>
@@ -89,7 +91,8 @@ interface Steps {
  * The steps once the user has arrived at `entry`. Something already in them
  * is gone back to rather than opened again (UX-IA-009), and the browser's
  * back and forward move within them; following a link adds to them and
- * ends the way forward. None when history leads outside them.
+ * ends the way forward, and a step that replaces the current page takes
+ * its place. None when history leads outside them.
  */
 function step(previous: Steps, entry: StackEntry, how: Arrival): Steps | null {
   const at = (entries: readonly StackEntry[]) =>
@@ -104,6 +107,10 @@ function step(previous: Steps, entry: StackEntry, how: Arrival): Steps | null {
           ? [...previous.entries.slice(index + 1), ...previous.forward]
           : [],
     };
+  }
+
+  if (how === "replace") {
+    return { entries: [...previous.entries.slice(0, -1), entry], forward: [] };
   }
 
   if (how === "push") {
@@ -135,6 +142,10 @@ export function arrive(
   via: DirectEntry | null = null,
 ): Stack {
   if (how === "direct" || previous === null) return ruleStack(place, via);
+  // The page replaced was a direct entry; so is the one in its place.
+  if (how === "replace" && previous.via !== null) {
+    return ruleStack(place, previous.via);
+  }
 
   const moved = step(previous, { href: place.href, label: place.label }, how);
   if (moved === null) return ruleStack(place, null);

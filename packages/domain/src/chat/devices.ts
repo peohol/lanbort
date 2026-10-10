@@ -7,6 +7,7 @@ import {
   chatLinkRequestTargetSchema,
   chatLinkStatusSchema,
   type DeviceCertificateWire,
+  type DeviceRevocationWire,
   ownChatDevicesSchema,
   publishChatKeyPackagesSchema,
   registerChatAccountSchema,
@@ -61,7 +62,7 @@ import {
 
 type Tx = Transaction<Database>;
 
-const sessionOf = (actor: Actor) =>
+export const sessionOf = (actor: Actor) =>
   (actor as UserActor).authentication.sessionId;
 
 function conflict(message: string): never {
@@ -77,7 +78,7 @@ function invalid(field: string): never {
  * (ADR-0010 §3). The server checks it as defence in depth; every client
  * checks it again against the key it has pinned.
  */
-function checkCertificate(
+export function checkCertificate(
   certificate: DeviceCertificateWire,
   expected: {
     userId: string;
@@ -99,7 +100,10 @@ function checkCertificate(
   }
 }
 
-async function deviceIdTaken(tx: Tx, deviceId: string): Promise<boolean> {
+export async function deviceIdTaken(
+  tx: Tx,
+  deviceId: string,
+): Promise<boolean> {
   const [device, request] = await Promise.all([
     tx
       .selectFrom("app.chat_devices")
@@ -116,7 +120,7 @@ async function deviceIdTaken(tx: Tx, deviceId: string): Promise<boolean> {
   return device !== undefined || request !== undefined;
 }
 
-async function insertDevice(
+export async function insertDevice(
   tx: Tx,
   certificate: DeviceCertificateWire,
   accountKeyId: string,
@@ -186,11 +190,15 @@ async function registerAccount(
       .execute();
   }
 
-  // A new identity starts with no pending link to an old one.
-  await tx
-    .deleteFrom("app.chat_link_requests")
-    .where("user_id", "=", userId)
-    .execute();
+  // A new identity starts with no pending link to an old one, and no
+  // backup of it: the recovery key held the old account key.
+  for (const table of [
+    "app.chat_link_requests",
+    "app.chat_recovery_keys",
+    "app.chat_archives",
+  ] as const) {
+    await tx.deleteFrom(table).where("user_id", "=", userId).execute();
+  }
 
   const { id: accountKeyId } = await tx
     .insertInto("app.chat_account_keys")
@@ -512,6 +520,16 @@ export const approveChatLink = defineCommand({
   },
 });
 
+/** A revocation of `target` its own account key signed. */
+export const revokes = (
+  revocation: DeviceRevocationWire,
+  target: { id: string; userId: string; accountKey: Uint8Array },
+) =>
+  revocation.deviceId === target.id &&
+  revocation.accountId === target.userId &&
+  revocation.accountKey === toBase64(target.accountKey) &&
+  revocationIsSigned(revocation);
+
 /**
  * Shuts one of the account's devices out with a revocation its account key
  * signed (ADR-0010 §7): the lost device, or this one at sign-out. The server
@@ -546,11 +564,7 @@ export const revokeChatDevice = defineCommand({
     const target = resource.target!;
     const { revocation } = input;
 
-    if (
-      revocation.accountId !== target.userId ||
-      revocation.accountKey !== toBase64(target.accountKey) ||
-      !revocationIsSigned(revocation)
-    ) {
+    if (!revokes(revocation, target)) {
       invalid("revocation");
     }
 
@@ -561,31 +575,53 @@ export const revokeChatDevice = defineCommand({
   },
 });
 
-/** «Mine enheter»: the account key, its devices and this session's device. */
+/**
+ * «Mine enheter»: the account key, its devices, this session's device and
+ * the recovery key, if there is one.
+ */
 export const readOwnChatDevices = defineQuery({
   name: "chat.read_own_devices",
   input: z.strictObject({}),
   policy: readOwnChatDevicesPolicy,
   load: async ({ db, actor }) => {
     const userId = actingUserId(actor);
-    const [accountKey, devices, current] = await Promise.all([
+    const [accountKey, devices, current, recovery, prompt] = await Promise.all([
       currentAccountKey(db, userId),
       devicesOf(db, [userId]),
       sessionDevice(db, actor),
+      db
+        .selectFrom("app.chat_recovery_keys")
+        .select(["created_at", "backed_up_at"])
+        .where("user_id", "=", userId)
+        .executeTakeFirst(),
+      db
+        .selectFrom("app.chat_recovery_prompts")
+        .select(["declined_at", "reminded_at"])
+        .where("user_id", "=", userId)
+        .executeTakeFirst(),
     ]);
 
     return {
-      resource: { accountKey, devices, current },
+      resource: { accountKey, devices, current, recovery, prompt },
       context: undefined,
     };
   },
-  present: ({ resource }) =>
+  present: ({ resource: { recovery, prompt, ...resource } }) =>
     ownChatDevicesSchema.parse({
       accountKey: resource.accountKey
         ? toBase64(resource.accountKey.publicKey)
         : null,
       currentDeviceId: resource.current?.id ?? null,
       devices: resource.devices.map(presentDevice),
+      recovery: recovery
+        ? {
+            createdAt: recovery.created_at.toISOString(),
+            backedUpAt: recovery.backed_up_at.toISOString(),
+          }
+        : null,
+      // PS-COM-019: one reminder, only for someone who said «Ikke nå».
+      recoveryReminder:
+        !recovery && prompt?.declined_at != null && prompt.reminded_at === null,
     }),
 });
 

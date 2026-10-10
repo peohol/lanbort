@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { caseEntryBodySchema, caseIdSchema, partyStatement } from "./cases";
+import { loanIdSchema } from "./loans";
 import { objectIdSchema } from "./objects";
 import { loanReviewIdSchema, reviewDimensionSchema } from "./reviews";
 
@@ -118,6 +119,31 @@ export const moderationMeasureSchema = z.strictObject({
   removedScore: z.int().nullable(),
 });
 
+/** The notice to whoever a measure hits (PS-TRUST-018). */
+export const measureNoticeQuerySchema = z.strictObject({
+  measureId: moderationMeasureIdSchema,
+});
+
+/**
+ * A measure as the owner or author it hits sees it: what was done, where it
+ * applies and why, with the thing or the loan it concerns. Never that there
+ * was a report, who sent it, who decided, or anything else from the case.
+ */
+export const measureNoticeSchema = z.strictObject({
+  id: moderationMeasureIdSchema,
+  kind: moderationMeasureKindSchema,
+  scope: moderationScopeSchema,
+  environmentId: z.uuid().nullable(),
+  objectId: objectIdSchema.nullable(),
+  /** The thing's title, while it exists. */
+  objectTitle: z.string().nullable(),
+  /** The loan a reviewed measure concerns. */
+  loanId: loanIdSchema.nullable(),
+  dimension: reviewDimensionSchema.nullable(),
+  reason: z.string(),
+  decidedAt: z.iso.datetime(),
+});
+
 export type ReportInEnvironment = z.infer<typeof reportInEnvironmentSchema>;
 export type ReportToPlatform = z.infer<typeof reportToPlatformSchema>;
 /** The measures taken on one report, oldest first; for its handlers. */
@@ -136,3 +162,4 @@ export type ModerationMeasureResult = z.infer<
 >;
 export type ModerationMeasure = z.infer<typeof moderationMeasureSchema>;
 export type CaseMeasures = z.infer<typeof caseMeasuresSchema>;
+export type MeasureNotice = z.infer<typeof measureNoticeSchema>;

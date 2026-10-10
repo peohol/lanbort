@@ -1,5 +1,6 @@
 import {
   type DescribedNotification,
+  type ModerationMeasureKind,
   type Notification,
   type NotificationKind,
   type NotificationLevel,
@@ -12,6 +13,7 @@ import type { IconName } from "@/components/icon";
 import { environmentWelcomeHref } from "@/navigation/routes";
 import { hrefFor } from "@/navigation/targets";
 import { calendarDay } from "./dates";
+import { measureNoticeTitles } from "./measure-notice";
 
 /** What a notification says: one line, and more where there is more. */
 export interface NotificationWords {
@@ -50,6 +52,9 @@ const named: Partial<
 > = {
   "loan_request.received": ({ thing, person }) =>
     thing && `${person ?? "Noen"} vil låne ${thing}`,
+  // What was done, never that there was a report (PS-TRUST-018).
+  "moderation.measure_taken": (_about, detail) =>
+    measureNoticeTitles[detail as ModerationMeasureKind] ?? null,
   // The name and how many, never what was written (PS-COM-018).
   "chat.new_messages": ({ person }, detail) =>
     person && `${newMessages(detail)} fra ${person}`,
@@ -275,6 +280,7 @@ const contexts: Record<
   case: { label: "Sak", icon: "flag" },
   chat_device: { label: "Konto", icon: "lock" },
   chat_conversation: { label: "Samtaler", icon: "conversations" },
+  moderation_measure: { label: "Tiltak", icon: "block" },
 };
 
 /** The context a notification belongs to: an environment by its name. */

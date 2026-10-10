@@ -63,6 +63,8 @@ export interface EntryRecord {
   /** By time sent; only a participant's entry has any. */
   readonly privateMessages: readonly PrivateMessageCopyRecord[];
   readonly correctsEntryId: string | null;
+  /** The closing message (PS-COM-020). */
+  readonly closing: boolean;
   readonly createdAt: Date;
   readonly position: bigint;
 }
@@ -91,25 +93,54 @@ export const caseKinds: Record<
     readonly separateStatements: boolean;
     /** Handled by the platform stewards, not an environment's administrators. */
     readonly platform: boolean;
+    /**
+     * Closed with a closing message to the parties (PS-COM-020,
+     * `app.case_closes_with_message`).
+     */
+    readonly closingMessage: boolean;
+    /**
+     * What the one who opened it may do to end it (PS-COM-021): close a
+     * contact, or withdraw a report, which stays open for its assessment.
+     * Nobody who takes part closes a mediation.
+     */
+    readonly openerEnds: "close" | "withdraw" | null;
   }
 > = {
   environment_contact: {
     turns: false,
     separateStatements: false,
     platform: false,
+    closingMessage: false,
+    openerEnds: "close",
   },
-  loan_mediation: { turns: true, separateStatements: true, platform: false },
+  loan_mediation: {
+    turns: true,
+    separateStatements: true,
+    platform: false,
+    closingMessage: true,
+    openerEnds: null,
+  },
   unavailability_report: {
     turns: true,
     separateStatements: false,
     platform: true,
+    closingMessage: true,
+    openerEnds: "withdraw",
   },
   environment_report: {
     turns: true,
     separateStatements: false,
     platform: false,
+    closingMessage: true,
+    openerEnds: "withdraw",
   },
-  platform_report: { turns: true, separateStatements: false, platform: true },
+  platform_report: {
+    turns: true,
+    separateStatements: false,
+    platform: true,
+    closingMessage: true,
+    openerEnds: "withdraw",
+  },
 };
 
 /** The kinds the platform stewards handle (`app.case_platform_kind`). */

@@ -200,7 +200,7 @@ describe("bindings (PS-ADM-004)", () => {
     });
     await expect(remove(borrower)).rejects.toMatchObject({ code: "conflict" });
 
-    await run(closeCase, admin, { caseId });
+    await run(closeCase, admin, { caseId, body: "Saken er avsluttet." });
     expect(await check(borrower)).toEqual({ bindings: [] });
     await remove(borrower);
     expect(await statusOf(borrower.userId)).toBe("deleted");

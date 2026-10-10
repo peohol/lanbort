@@ -17,6 +17,11 @@ import { notificationCaseQueueProcess } from "../notifications/policies";
 import { listNotifications } from "../notifications/queries";
 import { ConsumerRegistry } from "../outbox/consumer";
 import { grantPlatformRole } from "../platform/commands";
+import {
+  reportInEnvironment,
+  takeModerationMeasure,
+} from "../moderation/commands";
+import { readMeasureNotice } from "../moderation/notice";
 import { platformRoleOpsProcess } from "../platform/policies";
 import { connectTestDatabase } from "../testing/database";
 import { deliverAll } from "../testing/outbox";
@@ -25,14 +30,17 @@ import { loanTestKit } from "../testing/loans";
 import {
   claimCase,
   closeCase,
+  endContact,
   openCaseRound,
   openEnvironmentContact,
   reportUnavailability,
   requestLoanMediation,
   shareCaseStatements,
   transferCase,
+  withdrawReport,
   writeCaseEntry,
 } from "./commands";
+import { readCase } from "./queries";
 
 /**
  * WP-45 with WP-40: notifications from administrative cases. They lead to
@@ -295,5 +303,177 @@ describe("notifications from administrative cases", () => {
       expect(await told(actor)).toEqual(ended);
     }
     expect(await told(admin)).toEqual([]);
+  });
+});
+
+describe("ending a case by the one who opened it (PS-COM-021)", () => {
+  const forbidden = { code: "forbidden" };
+  const conflict = { code: "conflict" };
+  const read = (actor: UserActor, caseId: string) =>
+    executeQuery(tick(), readCase, { actor, input: { caseId } });
+
+  it("closes a member's own contact, and tells whoever has it", async () => {
+    const { environmentId, admin, second, requester } =
+      await environmentWithAdministrators();
+    const { caseId } = await run(openEnvironmentContact, requester, {
+      environmentId,
+      body: "Hvem har nøkkelen til boden?",
+    });
+    await run(claimCase, second, { caseId });
+    for (const actor of [admin, second, requester]) {
+      await told(actor);
+    }
+
+    await expect(run(endContact, second, { caseId })).rejects.toMatchObject(
+      forbidden,
+    );
+    // The member is not told who has it.
+    expect(await run(endContact, requester, { caseId })).toEqual({
+      caseId,
+      status: "closed",
+      assigneeUserId: null,
+    });
+    expect(await told(second)).toEqual(onCase(caseId, "case.contact_ended"));
+    expect(await told(admin)).toEqual([]);
+    expect(await told(requester)).toEqual([]);
+
+    const asHandler = await read(second, caseId);
+    expect(asHandler.history.at(-1)).toMatchObject({
+      kind: "closed",
+      actorUserId: requester.userId,
+    });
+    expect(asHandler.entries).toHaveLength(1);
+    await expect(
+      run(writeCaseEntry, requester, { caseId, body: "En ting til" }),
+    ).rejects.toMatchObject(conflict);
+    await expect(run(endContact, requester, { caseId })).rejects.toMatchObject(
+      conflict,
+    );
+  });
+
+  it("records a withdrawn report, keeps what was sent and leaves the assessment open", async () => {
+    const {
+      environmentId,
+      admin,
+      second,
+      requester: reporter,
+      objectId,
+    } = await environmentWithAdministrators();
+    const { caseId } = await run(reportInEnvironment, reporter, {
+      environmentId,
+      target: { kind: "object", objectId },
+      body: "Annonsen ser ut som svindel.",
+    });
+    for (const actor of [admin, second, reporter]) {
+      await told(actor);
+    }
+
+    await expect(run(withdrawReport, admin, { caseId })).rejects.toMatchObject(
+      forbidden,
+    );
+    expect(await run(withdrawReport, reporter, { caseId })).toEqual({
+      caseId,
+      status: "open",
+      assigneeUserId: null,
+    });
+    // Nobody has taken it, so those who may take it are told.
+    expect(await told(admin)).toEqual(onCase(caseId, "case.report_withdrawn"));
+    expect(await told(second)).toEqual(onCase(caseId, "case.report_withdrawn"));
+    await expect(
+      run(withdrawReport, reporter, { caseId }),
+    ).rejects.toMatchObject(conflict);
+
+    const asReporter = await read(reporter, caseId);
+    expect(asReporter).toMatchObject({
+      status: "open",
+      withdrawnAt: expect.any(String),
+    });
+    expect(asReporter.entries.map(({ body }) => body)).toEqual([
+      "Annonsen ser ut som svindel.",
+    ]);
+
+    // A handler still finishes the assessment and closes it.
+    await run(claimCase, admin, { caseId });
+    await run(closeCase, admin, {
+      caseId,
+      body: "Vi har vurdert rapporten, og saken er avsluttet.",
+    });
+    expect(await told(reporter)).toEqual(
+      onCase(caseId, "case.assigned", "case.closed"),
+    );
+  });
+
+  it("never lets a party close a mediation", async () => {
+    const { loanId, owner, borrower, admin } = await disputedLoan();
+    const { caseId } = await run(requestLoanMediation, borrower, {
+      loanId,
+      body: "Jeg fikk aldri tilhengeren.",
+    });
+
+    for (const party of [borrower, owner]) {
+      await expect(
+        run(closeCase, party, { caseId, body: "Vi er enige." }),
+      ).rejects.toMatchObject(forbidden);
+      await expect(run(endContact, party, { caseId })).rejects.toMatchObject(
+        conflict,
+      );
+      await expect(
+        run(withdrawReport, party, { caseId }),
+      ).rejects.toMatchObject(conflict);
+    }
+    expect((await read(admin, caseId)).status).toBe("open");
+  });
+});
+
+describe("the notice to whoever a measure hits (PS-TRUST-018)", () => {
+  it("tells the owner what was done, where and why, and nothing of the report", async () => {
+    const { environmentId, admin, owner, objectId, requester } =
+      await environmentWithAdministrators();
+    const { caseId } = await run(reportInEnvironment, requester, {
+      environmentId,
+      target: { kind: "object", objectId },
+      body: "Flasken er fylt med propan.",
+    });
+    await run(claimCase, admin, { caseId });
+    await told(owner);
+    await told(requester);
+
+    const { measureId } = await run(takeModerationMeasure, admin, {
+      caseId,
+      measure: "publication_blocked",
+      reason: "Fylt gassflaske står på listen over det som ikke lånes ut.",
+    });
+
+    expect(await told(owner)).toEqual([
+      {
+        kind: "moderation.measure_taken",
+        detail: "publication_blocked",
+        target: { type: "moderation_measure", id: measureId },
+      },
+    ]);
+    // The reporter is not told which measure was taken (PS-COM-020).
+    expect(await told(requester)).toEqual([]);
+
+    const notice = (actor: UserActor) =>
+      executeQuery(tick(), readMeasureNotice, {
+        actor,
+        input: { measureId },
+      });
+    expect(await notice(owner)).toEqual({
+      id: measureId,
+      kind: "publication_blocked",
+      scope: "environment",
+      environmentId,
+      objectId,
+      objectTitle: expect.any(String),
+      loanId: null,
+      dimension: null,
+      reason: "Fylt gassflaske står på listen over det som ikke lånes ut.",
+      decidedAt: expect.any(String),
+    });
+    // Nobody else learns that it exists.
+    for (const other of [requester, admin]) {
+      await expect(notice(other)).rejects.toMatchObject({ code: "not_found" });
+    }
   });
 });

@@ -47,6 +47,8 @@ export const rateLimits = {
   chatKeys: rule("chat_keys", 120, hours),
   /** Replacing the account key, which shuts out every device (ADR-0010 §8). */
   chatResets: rule("chat_resets", 3, 24 * hours),
+  /** History archives moved to a new device, part by part (ADR-0010 §5). */
+  chatArchives: rule("chat_archives", 200, hours),
   /** Place names from the external place search. */
   placeSearch: rule("place_search", 30, 5 * minutes),
   /** E-mail codes sent to one address, for sign-in and re-authentication. */

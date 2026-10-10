@@ -12,6 +12,8 @@ const paths = {
   device: "M8 3h8v18H8zM11 18h2",
   scan: "M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5",
   signOut: "M10 5H5v14h5M14 8l4 4-4 4M18 12H9",
+  key: "M8 10a4 4 0 1 0 0 .01M11.5 12H21v3M17 12v3",
+  copy: "M9 9h11v11H9zM5 15V4h11",
 } as const;
 
 export type ChatIconName = keyof typeof paths;

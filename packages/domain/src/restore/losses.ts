@@ -11,6 +11,7 @@ import * as caseEvents from "../cases/events";
 import {
   chatAccountKeyCreated,
   chatConversationStarted,
+  chatAccountRestored,
   chatDeviceLinked,
 } from "../chat/events";
 import {
@@ -183,6 +184,7 @@ export const restoreLosses: readonly EventDefinition<unknown>[] = [
   // backup: every group starts anew after a restore (ADR-0010 §9), so a
   // lost device or conversation is set up again by the people themselves.
   chatAccountKeyCreated,
+  chatAccountRestored,
   chatDeviceLinked,
   chatConversationStarted,
 ];

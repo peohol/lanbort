@@ -1,5 +1,6 @@
 import {
   type Case,
+  caseImageQuerySchema,
   type CaseList,
   caseListQuerySchema,
   casePageSize,
@@ -13,7 +14,8 @@ import type { Kysely } from "kysely";
 import { realNames } from "../account/store";
 import { defineQuery } from "../commands/query";
 import { loadEnvironmentAccess } from "../environment/store";
-import { actingUserId, inSnapshot } from "../objects/state";
+import { findImageFile } from "../objects/images";
+import { actingUserId, currentImages, inSnapshot } from "../objects/state";
 import { loadCase } from "./commands";
 import {
   type ActionRecord,
@@ -31,6 +33,7 @@ import {
   listEnvironmentCaseQueuePolicy,
   listOwnCasesPolicy,
   listPlatformCaseQueuePolicy,
+  readCaseImagePolicy,
   readCasePolicy,
 } from "./policies";
 import {
@@ -38,6 +41,7 @@ import {
   handledBy,
   listCases,
   loadActions,
+  caseObjectId,
   loadCaseTitles,
   loadEntries,
   loadHandlingState,
@@ -55,6 +59,7 @@ const nothingRead = {
   entries: [] as EntryRecord[],
   actions: [] as ActionRecord[],
   titles: { loanTitle: null, objectTitle: null },
+  images: [] as { id: string; width: number; height: number }[],
   loanStatus: null,
   loanClarified: false,
   handlers: [] as string[],
@@ -140,6 +145,7 @@ export const readCase = defineQuery({
           actions,
           handling,
           titles: await loadCaseTitles(tx, c),
+          images: await currentImages(tx, await caseObjectId(tx, c)),
           loanStatus:
             c.kind === "loan_mediation" && c.loanId !== null
               ? ((await loadLoanStatuses(tx, [c.loanId], now)).get(c.loanId) ??
@@ -183,6 +189,10 @@ export const readCase = defineQuery({
       escalatedFromCaseId: c.escalatedFromCaseId,
       openedAt: c.openedAt.toISOString(),
       closedAt: c.closedAt?.toISOString() ?? null,
+      withdrawnAt:
+        resource.actions
+          .find(({ kind }) => kind === "withdrawn")
+          ?.at.toISOString() ?? null,
       handling: handlingOf(assigneeUserId, handlerAvailable),
       assigneeUserId: asParty ? null : assigneeUserId,
       mayWrite: asParty
@@ -212,6 +222,7 @@ export const readCase = defineQuery({
             sentAt: copy.sentAt.toISOString(),
           })),
           correctsEntryId: entry.correctsEntryId,
+          closing: entry.closing,
           createdAt: entry.createdAt.toISOString(),
         })),
       history: asParty
@@ -225,6 +236,7 @@ export const readCase = defineQuery({
           })),
       loanTitle: resource.titles.loanTitle,
       objectTitle: resource.titles.objectTitle,
+      images: resource.images,
       loan:
         resource.loanStatus === null
           ? null
@@ -239,6 +251,32 @@ export const readCase = defineQuery({
 
     return { ...shown, people: peopleNamedIn(shown, resource.names) };
   },
+});
+
+/**
+ * PS-OBJ-021: whoever reads the case sees the pictures of the thing it
+ * names, as they are now: its participants and its handlers, with the same
+ * access as to the case.
+ */
+export const caseImageFile = defineQuery({
+  name: "case.read_image",
+  input: caseImageQuerySchema,
+  policy: readCaseImagePolicy,
+  load: ({ db, actor, input, now }) =>
+    inSnapshot(db, async (tx) => {
+      const loaded = await loadCase(tx, actor, input.caseId, now);
+      const objectId = loaded && (await caseObjectId(tx, loaded.resource.case));
+      const file =
+        objectId && (await findImageFile(tx, objectId, input.imageId));
+
+      return loaded && file
+        ? { resource: { ...loaded.resource, ...file }, context: undefined }
+        : null;
+    }),
+  present: ({ resource }) => ({
+    key: resource.key,
+    contentType: resource.contentType,
+  }),
 });
 
 /** The name of each user the view names, and of nobody else. */

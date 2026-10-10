@@ -14,9 +14,11 @@ import {
   type DeviceCertificate,
   type DeviceRevocation,
   type KeyPackageBundle,
+  type LinkedArchive,
   type MemoryTrustStore,
   type PendingCommit,
   type PendingLink,
+  type RecoveryKey,
   type TrustSnapshot,
   Conversation,
   KEY_PACKAGE_LIFETIME_SECONDS,
@@ -27,6 +29,7 @@ import {
   createDevice,
   createKeyPackage,
   createMemoryTrustStore,
+  createRecoveryKey,
   currentlyTrusted,
   decodeCertificate,
   decodeRevocation,
@@ -35,12 +38,19 @@ import {
   exportAccountKey,
   exportDevice,
   exportKeyPackage,
+  exportLinkedArchive,
+  exportRecoveryKey,
   importAccountKey,
   importDevice,
   importKeyPackage,
+  importLinkedArchive,
+  importRecoveryKey,
   matchLinkRequest,
   observeAccountKey,
+  openRecoveryBackup,
+  readRecoveryKey,
   revokeDevice,
+  sealRecoveryBackup,
   SHORT_MESSAGE_BYTES,
   securityCode,
   startLink,
@@ -48,6 +58,15 @@ import {
 } from "@lanbort/e2ee";
 import { ChatApiError, chatApi } from "./api";
 import { fromBase64, fromUtf8, toBase64, utf8 } from "./bytes";
+import {
+  type ConversationHistory,
+  historyLost,
+  mergeHistory,
+  packHistory,
+  receiveHistory,
+  sendHistory,
+  unpackHistory,
+} from "./history-transfer";
 import { type ChatStore, deleteChatStore, openChatStore } from "./store";
 
 /** How the device keeps its chat going, set once here (ADR-0010 §6). */
@@ -62,6 +81,13 @@ export const chatTuning = {
   maxTextLength: 4000,
   /** Tries when another device's commit wins the epoch first. */
   conflictRetries: 3,
+  /**
+   * The recovery key's backup is brought up to date at most this often,
+   * once the history has changed (ADR-0010 §8).
+   */
+  backupEveryMs: 10 * 60 * 1000,
+  /** Fetching history again after a lost connection waits this long. */
+  historyRetryMs: 30 * 1000,
 } as const;
 
 /** The MLS group id of a conversation's generation (server: `groupIdOf`). */
@@ -91,6 +117,22 @@ export interface HistoryEntry {
   unsent?: boolean;
 }
 
+/**
+ * Where fetching history to this device stands: the other device's, moved
+ * when it was linked (KF5 screen 13), or the backup's, restored with the
+ * recovery key (R3).
+ */
+export interface HistoryTransfer {
+  state: "running" | "done" | "failed";
+  from: "device" | "backup";
+}
+
+/** When the history last changed, and when the backup last caught up. */
+interface BackupState {
+  changedAt: number;
+  backedUpAt: number;
+}
+
 /** Why a conversation does not work on this device. */
 export type ConversationProblem = "no_key_package" | "out_of_sync";
 
@@ -110,6 +152,10 @@ interface StoredKeyPackage {
 const records = {
   account: "account",
   device: "device",
+  recovery: "recovery",
+  backup: "backup",
+  /** An archive's key, kept until its history is here. */
+  transfer: (from: HistoryTransfer["from"] | "") => `transfer:${from}`,
   trust: "trust",
   keyPackages: "key-packages",
   group: (id: string) => `group:${id}`,
@@ -183,23 +229,27 @@ async function putSecret(
  * the browser holds. Anything left from another session or an older
  * account key is deleted.
  */
-export async function loadChat(
-  userId: string,
-): Promise<
+export async function loadChat(userId: string): Promise<
   | { setup: "ready"; engine: ChatEngine }
-  | { setup: Exclude<ChatSetup, "ready"> }
+  | {
+      setup: Exclude<ChatSetup, "ready">;
+      /** The account has a recovery key to restore chat with (R3). */
+      recovery: boolean;
+    }
 > {
   const devices = await chatApi.devices();
   const store = await openChatStore(userId);
-  const [account, device] = await Promise.all([
+  const [account, device, recovery] = await Promise.all([
     store.get(records.account),
     store.get(records.device),
+    store.get(records.recovery),
   ]);
 
   if (account && device) {
     const accountKey = importAccountKey(account);
     const ownDevice = importDevice(device);
-    wipe(account, device);
+    const recoveryKey = recovery ? importRecoveryKey(recovery) : null;
+    wipe(account, device, ...(recovery ? [recovery] : []));
 
     if (
       devices.currentDeviceId === ownDevice.certificate.deviceId &&
@@ -208,17 +258,28 @@ export async function loadChat(
       const trust = createMemoryTrustStore(
         await store.getJson<TrustSnapshot>(records.trust),
       );
-      return {
-        setup: "ready",
-        engine: new ChatEngine(userId, store, accountKey, ownDevice, trust),
-      };
+      const engine = new ChatEngine(
+        userId,
+        store,
+        accountKey,
+        ownDevice,
+        trust,
+        recoveryKey,
+      );
+      // History a reload or a lost connection interrupted.
+      void engine.resumeHistory();
+      return { setup: "ready", engine };
     }
   }
 
   await store.destroy();
 
-  if (devices.currentDeviceId) return { setup: "lost" };
-  return { setup: devices.accountKey ? "link" : "new" };
+  const setup = devices.currentDeviceId
+    ? "lost"
+    : devices.accountKey
+      ? "link"
+      : "new";
+  return { setup, recovery: devices.recovery !== null };
 }
 
 /**
@@ -256,15 +317,77 @@ export async function requestDeviceLink(): Promise<{
   return { link, status };
 }
 
-/** On the new device, once an existing device has approved. */
+/**
+ * On the new device, once an existing device has approved. History the
+ * other device moved here is fetched after, while chat already works; its
+ * key is stored first, since the link package goes.
+ */
 export async function completeDeviceLink(
   userId: string,
   link: PendingLink,
   status: ChatLinkStatus & { package: string },
 ): Promise<ChatEngine> {
-  const { account, device } = await link.open(fromBase64(status.package));
-  const engine = await ChatEngine.begin(userId, account, device);
+  const { account, device, archive, recovery } = await link.open(
+    fromBase64(status.package),
+  );
+  const engine = await ChatEngine.begin(userId, account, device, recovery);
+  if (archive) await engine.holdHistory(archive, "device");
   await chatApi.finishLink(status.linkRequestId);
+  void engine.resumeHistory();
+  return engine;
+}
+
+/**
+ * Restores chat on this device with the recovery key (R3, ADR-0010 §8):
+ * the account key from the backup, a new device under it, and every other
+ * device revoked. The contacts see no change of key. The backed-up history
+ * is fetched after, while chat already works. `wrong_key` when the typed
+ * key does not open the backup.
+ */
+export async function restoreChat(
+  userId: string,
+  typed: string,
+): Promise<ChatEngine | "wrong_key"> {
+  const key = await readRecoveryKey(typed);
+  if (!key) return "wrong_key";
+  const [backup, devices] = await Promise.all([
+    chatApi.recoveryBackup(),
+    chatApi.devices(),
+  ]);
+  if (toBase64(key.id) !== backup.keyId) return "wrong_key";
+
+  let opened;
+  try {
+    opened = await openRecoveryBackup(key, userId, fromBase64(backup.backup));
+  } catch {
+    return "wrong_key";
+  }
+  const { account, archive } = opened;
+  // The server refuses a backup of an older key; this says so sooner.
+  if (devices.accountKey !== toBase64(account.publicKey)) {
+    throw new ChatApiError("conflict");
+  }
+
+  const device = await createDevice(account);
+  const revocations = await Promise.all(
+    devices.devices
+      .filter((other) => other.revokedAt === null)
+      .map((other) => revokeDevice(account, other.deviceId)),
+  );
+  await chatApi.restore({
+    certificate: certificateWire(device.certificate),
+    revocations: revocations.map(revocationWire),
+  });
+  await deleteChatStore(userId);
+  const engine = await ChatEngine.begin(userId, account, device, key);
+
+  // Only the archive the server still keeps for the backup.
+  if (archive && archive.archiveId === backup.archive?.archiveId) {
+    await engine.holdHistory(archive, "backup");
+    void engine.resumeHistory();
+  } else if (archive) {
+    wipe(archive.key.reveal());
+  }
   return engine;
 }
 
@@ -289,6 +412,12 @@ export class ChatEngine {
   >();
   readonly #listeners = new Set<() => void>();
   #queue: Promise<unknown> = Promise.resolve();
+  #historyTransfer: HistoryTransfer | null = null;
+  #receivingHistory: Promise<void> | null = null;
+  #historyRetryAt = 0;
+  #recovery: RecoveryKey | null;
+  #backup: BackupState | undefined;
+  #backingUp: Promise<void> | null = null;
 
   constructor(
     readonly userId: string,
@@ -296,21 +425,39 @@ export class ChatEngine {
     private readonly account: AccountKey,
     private readonly device: Device,
     private readonly trust: MemoryTrustStore,
-  ) {}
+    /** The recovery key's backup key, if this device has it (ADR-0010 §8). */
+    recovery: RecoveryKey | null = null,
+  ) {
+    this.#recovery = recovery;
+  }
 
-  /** A device with fresh keys: stores them and publishes key packages. */
+  /**
+   * A device with fresh keys: stores them, with the recovery key's backup
+   * key if it got one, and publishes key packages.
+   */
   static async begin(
     userId: string,
     account: AccountKey,
     device: Device,
+    recovery?: RecoveryKey,
   ): Promise<ChatEngine> {
     const store = await openChatStore(userId);
     const trust = createMemoryTrustStore();
     trust.setAccountKey(userId, account.publicKey);
     await putSecret(store, records.account, exportAccountKey(account));
     await putSecret(store, records.device, exportDevice(device));
+    if (recovery) {
+      await putSecret(store, records.recovery, exportRecoveryKey(recovery));
+    }
     await store.putJson(records.trust, trust.snapshot());
-    const engine = new ChatEngine(userId, store, account, device, trust);
+    const engine = new ChatEngine(
+      userId,
+      store,
+      account,
+      device,
+      trust,
+      recovery ?? null,
+    );
     await engine.replenishKeyPackages();
     return engine;
   }
@@ -409,13 +556,34 @@ export class ChatEngine {
     return (await matchLinkRequest(keyed, shown))?.request;
   }
 
-  /** Certifies the new device and seals the account key to it. */
-  async approveLink(request: ChatLinkRequest): Promise<void> {
-    const { certificate, sealed } = await approveLink(this.account, {
-      deviceId: request.deviceId,
-      deviceKey: fromBase64(request.deviceKey),
-      linkKey: fromBase64(request.linkKey),
-    });
+  /**
+   * Certifies the new device and seals the account key to it, with the
+   * recovery key's backup key if this device has it, and with
+   * `moveHistory` the key of this device's history, stored encrypted.
+   */
+  async approveLink(
+    request: ChatLinkRequest,
+    moveHistory = false,
+  ): Promise<void> {
+    const archive = moveHistory
+      ? await sendHistory(
+          packHistory(await this.#exclusive(() => this.#ownHistory())),
+          { purpose: "link", linkRequestId: request.linkRequestId },
+        )
+      : undefined;
+    const { certificate, sealed } = await approveLink(
+      {
+        deviceId: request.deviceId,
+        deviceKey: fromBase64(request.deviceKey),
+        linkKey: fromBase64(request.linkKey),
+      },
+      {
+        account: this.account,
+        archive,
+        recovery: this.#recovery ?? undefined,
+      },
+    );
+    if (archive) wipe(archive.key.reveal());
     await chatApi.approveLink(request.linkRequestId, {
       certificate: certificateWire(certificate),
       package: toBase64(sealed),
@@ -437,6 +605,112 @@ export class ChatEngine {
         await this.store.destroy();
       }
     });
+  }
+
+  // The recovery key (ADR-0010 §8, PS-COM-019)
+
+  /** This device keeps the recovery key's backup up to date. */
+  get hasRecoveryKey(): boolean {
+    return this.#recovery !== null;
+  }
+
+  /**
+   * Makes a new recovery key, which replaces the account's earlier one,
+   * and backs up the history under it. The code is for the user to write
+   * down, once; this device keeps only what it needs for the backup.
+   */
+  async createRecoveryKey(): Promise<string> {
+    const { code, key } = await createRecoveryKey();
+    await chatApi.createRecoveryKey({
+      keyId: toBase64(key.id),
+      backup: toBase64(
+        await sealRecoveryBackup(key, { account: this.account }),
+      ),
+    });
+    await putSecret(this.store, records.recovery, exportRecoveryKey(key));
+    this.#recovery = key;
+    this.#changed();
+    void this.backUp().catch(() => undefined);
+    return code;
+  }
+
+  /**
+   * Stores the history encrypted, and a new backup that holds its key. One
+   * at a time. If another device has made a newer key since, this one
+   * stops: only that key's devices keep the backup.
+   */
+  backUp(): Promise<void> {
+    this.#backingUp ??= this.#backUpNow().finally(() => {
+      this.#backingUp = null;
+    });
+    return this.#backingUp;
+  }
+
+  async #backUpNow(): Promise<void> {
+    const recovery = this.#recovery;
+    // Until history on its way here is in, a backup would leave it out.
+    if (!recovery || (await this.#heldHistory()).length > 0) return;
+    const startedAt = Date.now();
+    const history = await this.#exclusive(() => this.#ownHistory());
+    const archive = await sendHistory(packHistory(history), {
+      purpose: "backup",
+    });
+    try {
+      await chatApi.backUp({
+        keyId: toBase64(recovery.id),
+        backup: toBase64(
+          await sealRecoveryBackup(recovery, {
+            account: this.account,
+            archive,
+          }),
+        ),
+        archiveId: archive.archiveId,
+      });
+    } catch (error) {
+      if (isConflict(error) && this.#recovery === recovery) {
+        await this.store.delete(records.recovery);
+        this.#recovery = null;
+        this.#changed();
+      }
+      throw error;
+    } finally {
+      wipe(archive.key.reveal());
+    }
+    const state = await this.#backupState();
+    state.backedUpAt = startedAt;
+    await this.store.putJson(records.backup, state);
+  }
+
+  /** Backs up when the history has changed and the last backup is old. */
+  async #backUpIfDue() {
+    if (!this.#recovery) return;
+    const { changedAt, backedUpAt } = await this.#backupState();
+    if (
+      changedAt > backedUpAt &&
+      Date.now() - backedUpAt >= chatTuning.backupEveryMs
+    ) {
+      await this.backUp();
+    }
+  }
+
+  async #backupState(): Promise<BackupState> {
+    this.#backup ??= (await this.store.getJson<BackupState>(
+      records.backup,
+    )) ?? { changedAt: 0, backedUpAt: 0 };
+    return this.#backup;
+  }
+
+  /**
+   * Whether this device holds a conversation where both have written: the
+   * one reminder of the recovery key waits for that (PS-COM-019).
+   */
+  async hasExchangedMessages(): Promise<boolean> {
+    for (const { history } of await this.#ownHistory()) {
+      const sent = (own: boolean) =>
+        history.some((entry) => entry.own === own && entry.sentAt !== null);
+      if (sent(true) && sent(false)) return true;
+    }
+    return false;
   }
 
   // Trust
@@ -578,6 +852,118 @@ export class ChatEngine {
     };
   }
 
+  /** Moving the other device's history here, if it is or was under way. */
+  get historyTransfer(): HistoryTransfer | null {
+    return this.#historyTransfer;
+  }
+
+  /**
+   * Keeps the key of the history the approving device moved here, or the
+   * backup's, in the device's encrypted store until the history is in.
+   */
+  async holdHistory(
+    archive: LinkedArchive,
+    from: HistoryTransfer["from"],
+  ): Promise<void> {
+    try {
+      await putSecret(
+        this.store,
+        records.transfer(from),
+        exportLinkedArchive(archive),
+      );
+    } finally {
+      wipe(archive.key.reveal());
+    }
+  }
+
+  /**
+   * Fetches the history held for this device and adds it. After a lost
+   * connection it is tried again on a later sync or load; it is given up
+   * only when the archive is gone or does not open. One at a time.
+   */
+  resumeHistory(): Promise<void> {
+    if (Date.now() < this.#historyRetryAt) return Promise.resolve();
+    this.#receivingHistory ??= this.#receiveHeldHistory()
+      .catch(() => undefined)
+      .finally(() => {
+        this.#receivingHistory = null;
+      });
+    return this.#receivingHistory;
+  }
+
+  async #heldHistory(): Promise<HistoryTransfer["from"][]> {
+    const prefix = records.transfer("");
+    return (await this.store.names(prefix)).map(
+      (name) => name.slice(prefix.length) as HistoryTransfer["from"],
+    );
+  }
+
+  async #receiveHeldHistory(): Promise<void> {
+    for (const from of await this.#heldHistory()) {
+      const stored = await this.store.get(records.transfer(from));
+      if (!stored) continue;
+      let archive: LinkedArchive;
+      try {
+        archive = importLinkedArchive(stored);
+      } catch {
+        await this.store.delete(records.transfer(from));
+        continue;
+      } finally {
+        wipe(stored);
+      }
+      this.#historyTransfer = { state: "running", from };
+      this.#changed();
+      try {
+        const moved = unpackHistory(await receiveHistory(archive));
+        await this.#exclusive(async () => {
+          for (const { id, history, seen } of moved) {
+            await this.#updateHistory(id, (own) => mergeHistory(own, history));
+            if (seen !== null && (await this.seen(id)) === null) {
+              await this.store.putJson(records.seen(id), seen);
+            }
+          }
+        });
+        await this.#releaseHistory(from, archive);
+        this.#historyTransfer = { state: "done", from };
+      } catch (error) {
+        if (historyLost(error)) {
+          await this.#releaseHistory(from, archive);
+          this.#historyTransfer = { state: "failed", from };
+        } else {
+          this.#historyRetryAt = Date.now() + chatTuning.historyRetryMs;
+        }
+      } finally {
+        wipe(archive.key.reveal());
+        this.#changed();
+      }
+    }
+  }
+
+  /**
+   * Done with held history: its key goes, and a link's archive leaves the
+   * server. The backup's stays there, for the backup still points to it.
+   */
+  async #releaseHistory(from: HistoryTransfer["from"], archive: LinkedArchive) {
+    await this.store.delete(records.transfer(from));
+    if (from === "device") {
+      await chatApi.deleteArchive(archive.archiveId).catch(() => undefined);
+    }
+  }
+
+  async #ownHistory(): Promise<ConversationHistory[]> {
+    const prefix = records.history("");
+    return Promise.all(
+      (await this.store.names(prefix)).map(async (name) => {
+        const id = name.slice(prefix.length);
+        return {
+          id,
+          history: await this.history(id),
+          seen: await this.seen(id),
+        };
+      }),
+    );
+  }
+
   async history(id: string): Promise<HistoryEntry[]> {
     return (
       (await this.store.getJson<HistoryEntry[]>(records.history(id))) ?? []
@@ -607,6 +993,11 @@ export class ChatEngine {
       records.history(id),
       change(await this.history(id)),
     );
+    if (this.#recovery) {
+      const state = await this.#backupState();
+      state.changedAt = Date.now();
+      await this.store.putJson(records.backup, state);
+    }
   }
 
   /** Adds a message, once: another try of the same message is the same. */
@@ -631,6 +1022,9 @@ export class ChatEngine {
     return this.#exclusive(async () => {
       await this.#receive();
       await this.#resendUnsent();
+      // Not awaited: they wait for this operation to end.
+      void this.resumeHistory();
+      void this.#backUpIfDue().catch(() => undefined);
     });
   }
 

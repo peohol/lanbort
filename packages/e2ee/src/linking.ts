@@ -1,13 +1,17 @@
 import { z } from "zod";
 import {
-  type AccountKey,
   type Device,
   type DeviceCertificate,
   type DeviceKey,
   certifyDevice,
   createDeviceKey,
 } from "./identity";
-import { exportAccountKey, importAccountKey } from "./persist";
+import {
+  type AccountPackage,
+  readAccountPackage,
+  writeAccountPackage,
+} from "./account-package";
+import { encodeBase32, normalizeBase32 } from "./base32";
 import { Secret, wipe } from "./secret";
 import { bytesEqual, fromBase64, loadSuite, toBase64, utf8 } from "./suite";
 
@@ -35,10 +39,13 @@ export interface PendingLink {
   /** The QR code's content. */
   qr: string;
   /** Opens the package the existing device sealed, once it is there. */
-  open(sealed: Uint8Array): Promise<{ account: AccountKey; device: Device }>;
+  open(sealed: Uint8Array): Promise<OpenedLink>;
 }
 
-const crockford = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+export interface OpenedLink extends AccountPackage {
+  device: Device;
+}
+
 const codeLength = 26;
 const qrPrefix = "LANBORT-LINK:1:";
 const packageInfo = utf8("Lanbort link package v1");
@@ -56,24 +63,12 @@ export async function linkCode(keys: LinkRequestKeys): Promise<string> {
   const digest = new Uint8Array(
     await crypto.subtle.digest("SHA-256", material),
   ).subarray(0, 16);
-  let bits = 0n;
-  for (const byte of digest) bits = (bits << 8n) | BigInt(byte);
   // 26 characters of 5 bits carry 130 bits; the top two are zero.
-  let code = "";
-  for (let i = codeLength - 1; i >= 0; i--) {
-    code += crockford[Number((bits >> BigInt(i * 5)) & 31n)];
-  }
-  return code;
+  return encodeBase32(digest, codeLength);
 }
 
 /** A typed code as the user may enter it: any case, spaces, dashes, O for 0. */
-export function normalizeLinkCode(typed: string): string {
-  return typed
-    .toUpperCase()
-    .replace(/[\s-]/g, "")
-    .replace(/O/g, "0")
-    .replace(/[IL]/g, "1");
-}
+export const normalizeLinkCode = normalizeBase32;
 
 const toBase64Url = (bytes: Uint8Array) =>
   toBase64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -148,9 +143,10 @@ export async function startLink(
         utf8(deviceId),
       );
       try {
-        const account = importAccountKey(plain);
+        const opened = readAccountPackage(plain);
+        const { account } = opened;
         return {
-          account,
+          ...opened,
           // Ed25519 signatures are deterministic: this is the very
           // certificate the approving device signed.
           device: {
@@ -174,19 +170,21 @@ const sealedSchema = z.strictObject({ enc: bytes, ct: bytes });
 
 /**
  * Run on an existing device once the user has compared the code: certifies
- * the new device and seals the account key to it.
+ * the new device and seals the account key to it, with the key of the
+ * history archive when the user chose to move the history, and the
+ * recovery key's backup key when there is one.
  */
 export async function approveLink(
-  account: AccountKey,
   request: LinkRequestKeys,
+  contents: AccountPackage,
 ): Promise<{ certificate: DeviceCertificate; sealed: Uint8Array }> {
   const { hpke } = await loadSuite();
   const certificate = await certifyDevice(
-    account,
+    contents.account,
     request.deviceId,
     request.deviceKey,
   );
-  const plain = exportAccountKey(account).reveal();
+  const plain = writeAccountPackage(contents);
   try {
     const { enc, ct } = await hpke.seal(
       await hpke.importPublicKey(request.linkKey),

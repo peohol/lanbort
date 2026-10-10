@@ -14,15 +14,19 @@ import { isChatPage } from "@/navigation/chat";
 import { ChatApiError } from "./api";
 import { type ChatEngine, type ChatSetup, loadChat } from "./engine";
 
-/** How the device just got chat, to say so once (07, 13, 18). */
-export type ChatStart = "started" | "linked" | "reset";
+/** How the device just got chat, to say so once (07, 13, 18, R3). */
+export type ChatStart = "started" | "linked" | "reset" | "restored";
 
 export type ChatState =
   | { status: "loading" }
   /** Another tab in this browser already runs this device's chat. */
   | { status: "elsewhere" }
   | { status: "failed"; code: ApiFailureCode }
-  | { status: Exclude<ChatSetup, "ready"> }
+  | {
+      status: Exclude<ChatSetup, "ready">;
+      /** The account has a recovery key to restore chat with (R3). */
+      recovery: boolean;
+    }
   | { status: "ready"; engine: ChatEngine; since?: ChatStart | undefined };
 
 interface ChatContextValue {
@@ -102,7 +106,7 @@ export function ChatProvider({
               setState(
                 loaded.setup === "ready"
                   ? { status: "ready", engine: loaded.engine }
-                  : { status: loaded.setup },
+                  : { status: loaded.setup, recovery: loaded.recovery },
               );
             }
           } catch (error) {

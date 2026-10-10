@@ -1,3 +1,4 @@
+import type { Actor } from "../actor";
 import { testUserActor } from "../testing/actors";
 import { policyMatrix } from "../authorization/policy-matrix";
 import {
@@ -12,12 +13,21 @@ import {
   escalateReportPolicy,
   listCaseMeasuresPolicy,
   type PlatformReportTarget,
+  readMeasureNoticePolicy,
   reportInEnvironmentPolicy,
   reportToPlatformPolicy,
   takeModerationMeasurePolicy,
 } from "./policies";
 
 const member = testUserActor();
+const owner = testUserActor();
+const deactivated = (actor: Actor): Actor =>
+  actor.kind === "user" ? { ...actor, accountStatus: "deactivated" } : actor;
+const hitting = (...actors: Actor[]) => ({
+  affected: actors.flatMap((actor) =>
+    actor.kind === "user" ? [actor.userId] : [],
+  ),
+});
 const reachable = (value: boolean): PlatformReportTarget => ({
   reachable: value,
 });
@@ -59,5 +69,19 @@ export const moderationMatrices = [
       "not_found",
     ),
     ...callerCases(reachable(true)),
+  ]),
+  // PS-TRUST-018: the notice is for whoever the measure hits, and nobody
+  // else learns that it exists.
+  policyMatrix(readMeasureNoticePolicy, [
+    expectCase("an owner it hits", owner, hitting(owner), "allow"),
+    expectCase(
+      "an owner it hits, with minimum access",
+      deactivated(owner),
+      hitting(owner),
+      "allow",
+    ),
+    expectCase("anyone else", member, hitting(owner), "not_found"),
+    expectCase("a measure that hits nobody", owner, hitting(), "not_found"),
+    ...callerCases(hitting(owner)),
   ]),
 ];

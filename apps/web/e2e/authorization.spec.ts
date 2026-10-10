@@ -56,19 +56,25 @@ interface Ids {
   questionId: string;
   conversationId: string;
   linkRequestId: string;
+  archiveId: string;
   pictureId: string;
   invitationId: string;
   userId: string;
 }
 
+/** Path segments that are no id, the same in every probe. */
+const fixedSegments: Record<string, string> = { part: "0" };
+
 /** The query each read route that names a resource gets, from the ids. */
 const probes: Record<string, (ids: Ids) => Record<string, string>> = {
   "cases/[caseId]": () => ({}),
+  "cases/[caseId]/images/[imageId]": () => ({}),
   "cases/[caseId]/measures": () => ({}),
   "cases/queue/environment": (ids) => ({ environmentId: ids.environmentId }),
   "chat/conversations/[conversationId]": () => ({}),
   "chat/conversations/[conversationId]/directory": () => ({}),
   "chat/links/[linkRequestId]": () => ({}),
+  "chat/archives/[archiveId]/parts/[part]": () => ({}),
   "environments/details": (ids) => ({ environmentId: ids.environmentId }),
   "environments/memberships": (ids) => ({ environmentId: ids.environmentId }),
   "environments/members": (ids) => ({ environmentId: ids.environmentId }),
@@ -128,6 +134,7 @@ const namesNoResource = new Set([
   "chat/devices",
   "chat/inbox",
   "chat/links",
+  "chat/recovery",
   "environments",
   "health",
   "home",
@@ -311,6 +318,17 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
       linkKey: linking.deviceKey,
     })
   ).json();
+  // The history the lender's phone moves to that device.
+  const { archiveId } = await (
+    await postCommand(lender.context, "/api/chat/archives", {
+      purpose: "link",
+      linkRequestId,
+      partCount: 1,
+    })
+  ).json();
+  await postCommand(lender.context, `/api/chat/archives/${archiveId}/parts/0`, {
+    data: Buffer.alloc(16).toString("base64"),
+  });
 
   const real: Ids = {
     environmentId,
@@ -322,6 +340,7 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
     questionId,
     conversationId,
     linkRequestId,
+    archiveId,
     pictureId,
     invitationId,
     userId: lender.userId,
@@ -337,7 +356,8 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
   const ask = (route: string, ids: Ids) => {
     const path = route.replace(
       /\[(\w+)\]/g,
-      (_, segment: keyof Ids) => ids[segment],
+      (_, segment: string) =>
+        fixedSegments[segment] ?? ids[segment as keyof Ids],
     );
     const query = new URLSearchParams(probes[route]!(ids));
     const sent = [...Object.values(ids)];

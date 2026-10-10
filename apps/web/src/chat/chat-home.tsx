@@ -1,9 +1,13 @@
 "use client";
 
-import type { ChatContext, ChatConversation } from "@lanbort/contracts";
+import type {
+  ChatContext,
+  ChatConversation,
+  OwnChatDevices,
+} from "@lanbort/contracts";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { BusyButton } from "@/components/busy-button";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorText } from "@/components/error-text";
@@ -16,15 +20,17 @@ import styles from "./chat.module.css";
 import { ChatIcon } from "./chat-icon";
 import { type ChatStart, useChat } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";
-import type { ChatEngine } from "./engine";
+import type { ChatEngine, HistoryTransfer } from "./engine";
 import { type ChatLoans, loansLine } from "./loans";
 import { chatErrorMessage } from "./messages";
 import { Notice } from "./notice";
+import { RecoveryReminder } from "./recovery-key";
 import { listTime } from "./time";
 import {
   type ConversationSummary,
   useConversations,
 } from "./use-conversations";
+import { useOwnDevices } from "./use-own-devices";
 
 export interface ChatPerson {
   userId: string;
@@ -176,17 +182,12 @@ function StartButton({
 }
 
 /** «Mine enheter», with how many devices can read the conversations. */
-export function DevicesLink() {
-  const [count, setCount] = useState<number>();
-
-  useEffect(() => {
-    chatApi
-      .devices()
-      .then(({ devices }) =>
-        setCount(devices.filter((d) => d.revokedAt === null).length),
-      )
-      .catch(() => undefined);
-  }, []);
+export function DevicesLink({
+  devices,
+}: {
+  devices: OwnChatDevices | undefined;
+}) {
+  const count = devices?.devices.filter((d) => d.revokedAt === null).length;
 
   return (
     <Link href={chatDevicesHref} className={styles.linkCard}>
@@ -238,20 +239,73 @@ const startNotes: Record<ChatStart, { tag: string; text: string }> = {
     tag: "Tilbakestilt",
     text: "Privat chat er startet på nytt på denne enheten. Meldinger fra før kan ikke leses her.",
   },
+  restored: {
+    tag: "Hentet tilbake",
+    text: "Privat chat er hentet tilbake på denne enheten.",
+  },
 };
 
-/** Says once how the device just got chat (07, 13, 18). */
-function StartNote() {
+/**
+ * History fetched to the device: the other device's when it was linked
+ * (13, ADR-0010 §5), or the backup's when restored with the key (R3).
+ */
+const historyNotes: Record<
+  HistoryTransfer["from"],
+  Record<HistoryTransfer["state"], string>
+> = {
+  device: {
+    running: "Henter tidligere meldinger …",
+    done: "Du kan lese og skrive her. Meldingene fra den andre enheten er hentet hit.",
+    failed:
+      "Du kan lese og skrive her. Tidligere meldinger kunne ikke hentes hit, men de ligger fortsatt på den andre enheten.",
+  },
+  backup: {
+    running: "Henter sikkerhetskopierte meldinger …",
+    done: "Privat chat er hentet tilbake på denne enheten, med meldingene som var sikkerhetskopiert.",
+    failed:
+      "Privat chat er hentet tilbake på denne enheten, men de sikkerhetskopierte meldingene kunne ikke hentes.",
+  },
+};
+
+/** How the device got history that was still on its way after a reload. */
+const startOfHistory: Record<HistoryTransfer["from"], ChatStart> = {
+  device: "linked",
+  backup: "restored",
+};
+
+/**
+ * Says once how the device just got chat (07, 13, 18, R3), and how
+ * fetching history ended, also when a reload interrupted it.
+ */
+function StartNote({ engine }: { engine: ChatEngine }) {
   const { state, settle } = useChat();
   const [since] = useState(state.status === "ready" ? state.since : undefined);
+  const transfer = useSyncExternalStore(
+    (listener) => engine.subscribe(listener),
+    () => engine.historyTransfer,
+    () => null,
+  );
   useEffect(() => {
     if (since) settle();
   }, [since, settle]);
 
-  if (!since) return null;
-  const { tag, text } = startNotes[since];
+  if (transfer?.state === "running") {
+    return <p role="status">{historyNotes[transfer.from].running}</p>;
+  }
+  const start = since ?? (transfer && startOfHistory[transfer.from]);
+  if (!start) return null;
+  const { tag } = startNotes[start];
+  const text = transfer
+    ? historyNotes[transfer.from][transfer.state]
+    : start === "started" && engine.hasRecoveryKey
+      ? `${startNotes.started.text} Gjenopprettingsnøkkelen er laget.`
+      : startNotes[start].text;
   return (
-    <Notice tag={tag} tone="positive" role="status">
+    <Notice
+      tag={tag}
+      tone={transfer?.state === "failed" ? "warning" : "positive"}
+      role="status"
+    >
       <p>{text}</p>
     </Notice>
   );
@@ -269,6 +323,7 @@ function ConversationList({
   invitation?: ChatInvitation;
 }) {
   const { conversations, summaries, error, retry } = useConversations(engine);
+  const { devices } = useOwnDevices();
 
   // One private conversation per person (PS-COM-017): those already in
   // the list are not offered again.
@@ -300,7 +355,8 @@ function ConversationList({
 
   return (
     <>
-      <StartNote />
+      <StartNote engine={engine} />
+      <RecoveryReminder engine={engine} devices={devices} />
       {invited && conversations && !talkingTo.has(invited.userId) && (
         <section
           aria-labelledby="ny-samtale"
@@ -377,7 +433,7 @@ function ConversationList({
         </section>
       )}
 
-      <DevicesLink />
+      <DevicesLink devices={devices} />
     </>
   );
 }

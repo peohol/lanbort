@@ -279,7 +279,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0044 — Når gjenopprettingsnøkkelen for privat chat tilbys
 - **Lag:** UX
 - **Status:** Avklart (produkteier, 9. oktober 2026)
-- **Beslutning:** Se [PS-COM-019](product-spec/05-kommunikasjon-varsler-og-saker.md). Én gang etter at privat chat er slått på, varig i Mine enheter, og én diskret påminnelse etter at brukeren har begynt å utveksle meldinger. Ikke bygget ennå.
+- **Beslutning:** Se [PS-COM-019](product-spec/05-kommunikasjon-varsler-og-saker.md). Én gang etter at privat chat er slått på, varig i Mine enheter, og én diskret påminnelse etter at brukeren har begynt å utveksle meldinger. Bygget 10. oktober 2026.
 
 ### OD-0027 — Formen profilbildet vises i
 - **Lag:** UX

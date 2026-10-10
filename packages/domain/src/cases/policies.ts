@@ -77,6 +77,15 @@ export const asHandler: ResourceRule<CaseResource, void> = (input) => {
   return allow;
 };
 
+/**
+ * Only a participant: a handler is told they may not, and anyone else does
+ * not see the case.
+ */
+const asParticipant: ResourceRule<CaseResource, void> = ({ resource }) =>
+  resource.participant
+    ? allow
+    : deny(resource.standing.holdsRole ? "forbidden" : "not_found");
+
 /** A participant acts as one; anyone else only as a handler. */
 const asParticipantOrHandler: ResourceRule<CaseResource, void> = (input) =>
   input.resource.participant ? allow : asHandler(input);
@@ -100,6 +109,12 @@ export function casePolicy(
 /** A participant sees what was written for them, a handler all of it. */
 export const readCasePolicy = casePolicy("case.read", asParticipantOrHandler);
 
+/** PS-OBJ-021: the pictures of the thing a case names, as the case. */
+export const readCaseImagePolicy = casePolicy(
+  "case.read_image",
+  asParticipantOrHandler,
+);
+
 /** A participant writes when it is their turn; a handler while acting. */
 export const writeCaseEntryPolicy = casePolicy(
   "case.write",
@@ -116,6 +131,17 @@ export const shareCaseStatementsPolicy = casePolicy(
 );
 export const recuseFromCasePolicy = casePolicy("case.recuse", asHandler);
 export const closeCasePolicy = casePolicy("case.close", asHandler);
+
+/**
+ * PS-COM-021: the member who contacted the administrators closes the
+ * contact, and a reporter withdraws their report, also while their account
+ * keeps only its minimum access (PS-ADM-002).
+ */
+export const endContactPolicy = casePolicy("case.end_contact", asParticipant);
+export const withdrawReportPolicy = casePolicy(
+  "case.withdraw_report",
+  asParticipant,
+);
 
 /**
  * PS-COM-010: an active member contacts the environment's administrators.
@@ -174,6 +200,7 @@ export const listPlatformCaseQueuePolicy = definePolicy<unknown, void>({
 
 export const casePolicies = [
   readCasePolicy,
+  readCaseImagePolicy,
   writeCaseEntryPolicy,
   claimCasePolicy,
   releaseCasePolicy,
@@ -182,6 +209,8 @@ export const casePolicies = [
   shareCaseStatementsPolicy,
   recuseFromCasePolicy,
   closeCasePolicy,
+  endContactPolicy,
+  withdrawReportPolicy,
   openEnvironmentContactPolicy,
   reportUnavailabilityPolicy,
   listOwnCasesPolicy,

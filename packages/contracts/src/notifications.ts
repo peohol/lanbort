@@ -78,6 +78,9 @@ export const notificationKinds = {
   "case.entry_added": "action",
   "case.statements_shared": "information",
   "case.closed": "information",
+  "case.contact_ended": "information",
+  "case.report_withdrawn": "information",
+  "moderation.measure_taken": "required",
   "object.question_asked": "action",
   "object.question_replied": "information",
   "object.available": "information",
@@ -139,6 +142,7 @@ export const notificationTargetTypes = [
   "chat_device",
   "chat_conversation",
   "loan_reviews",
+  "moderation_measure",
 ] as const;
 export const notificationTargetTypeSchema = z.enum(notificationTargetTypes);
 

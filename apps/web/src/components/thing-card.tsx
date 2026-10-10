@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Icon } from "./icon";
 import styles from "./thing-card.module.css";
+import { ThingThumbnail } from "./thing-thumbnail";
 
 /**
  * One thing in a list (Tomat, kjerneflyt 2 and 3): its first photo, its
@@ -33,13 +34,7 @@ export function ThingCard({
 
   return (
     <li className={styles.card} id={id} tabIndex={id ? -1 : undefined}>
-      {image ? (
-        // A private file behind the API's policy, not a static asset.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img className={styles.image} src={image} alt="" loading="lazy" />
-      ) : (
-        <span className={`${styles.image} image-placeholder`} />
-      )}
+      <ThingThumbnail src={image} size="card" placeholder />
       <div className={styles.body}>
         <Link className={styles.title} href={href}>
           {title}
