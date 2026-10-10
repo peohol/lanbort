@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { AuthProviderError, createAuthGateway } from "./index";
+import { AuthProviderError, createAuthGateway, newAccountsOpen } from "./index";
 import { MemoryCookieStore } from "./testing";
 
 const config = {
@@ -63,5 +63,65 @@ describe("currentIdentity", () => {
     await expect(
       createAuthGateway(config, signedInCookies()).currentIdentity(),
     ).rejects.toEqual(new AuthProviderError("unavailable"));
+  });
+});
+
+describe("requestEmailCode", () => {
+  function providerAnswers(status: number, code: string) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json(
+          { code: status, error_code: code, msg: "no" },
+          { status },
+        ),
+      ),
+    );
+  }
+
+  it("answers as if a code was sent when new accounts are closed", async () => {
+    for (const code of ["signup_disabled", "otp_disabled"]) {
+      providerAnswers(422, code);
+
+      await expect(
+        createAuthGateway(config, new MemoryCookieStore()).requestEmailCode(
+          "ny@example.com",
+        ),
+      ).resolves.toBeUndefined();
+    }
+  });
+
+  it("still reports other refusals", async () => {
+    providerAnswers(422, "validation_failed");
+
+    await expect(
+      createAuthGateway(config, new MemoryCookieStore()).requestEmailCode(
+        "ny@example.com",
+      ),
+    ).rejects.toEqual(new AuthProviderError("unavailable"));
+  });
+});
+
+describe("newAccountsOpen", () => {
+  it("reads the provider's own setting", async () => {
+    for (const disabled of [true, false]) {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => Response.json({ disable_signup: disabled })),
+      );
+
+      expect(await newAccountsOpen(config)).toBe(!disabled);
+    }
+  });
+
+  it("reports an unreachable provider", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(null, { status: 503 })),
+    );
+
+    await expect(newAccountsOpen(config)).rejects.toEqual(
+      new AuthProviderError("unavailable"),
+    );
   });
 });
