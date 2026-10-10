@@ -31,7 +31,7 @@ Auth ser bare serveren, så grensene per klient og per e-postadresse ligger i se
 
 ## Henvendelser om sikkerhet og personvern
 
-Siden **Personvern og sikkerhet** under Konto (`/konto/personvern`) sier hvem som driver Lånbort og er ansvarlig for opplysningene, hva som lagres og hvor lenge ([oppbevaring](retention.md)), hvilke leverandører som behandler dem, og hvor man melder fra om noe alvorlig eller ber om innsyn, retting og sletting. Navnet og adressen er `OPERATOR_NAME` og `CONTACT_EMAIL` i Vercel, ikke i repoet, som er offentlig. Produkteier leser adressen og tar kontakt med Claude når noe må gjøres.
+Siden **Personvern og sikkerhet** under Konto (`/konto/personvern`) sier at innlogging skjer med engangskode på e-post og at Lånbort ikke bruker passord, hvem som driver Lånbort og er ansvarlig for opplysningene, hva som lagres og hvor lenge ([oppbevaring](retention.md)), hvilke leverandører som behandler dem, og hvor man melder fra om noe alvorlig eller ber om innsyn, retting og sletting. Navnet og adressen er `OPERATOR_NAME` og `CONTACT_EMAIL` i Vercel, ikke i repoet, som er offentlig. Produkteier leser adressen og tar kontakt med Claude når noe må gjøres.
 
 Sikkerhetsfeil fra andre enn deltakerne meldes privat gjennom GitHubs «Report a vulnerability» på repoet ([SECURITY.md](../../SECURITY.md)), som `/.well-known/security.txt` peker til. Filen har en utløpsdato (`Expires`) som må flyttes fram før den passeres. Når plattformkøen åpnes (`PLATFORM_STEWARDS_ENABLED` og minst én forvalter med to nøkler), kan deltakerne også bruke «Rapporter til Lånbort» i appen.
 
