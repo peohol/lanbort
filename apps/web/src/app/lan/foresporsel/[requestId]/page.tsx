@@ -128,6 +128,7 @@ function Steps({ request }: { request: LoanRequestDetail }) {
           path={`${path}/approve`}
           body={{}}
           next={loanHref("{loanId}")}
+          primary
         />
       )}
       <ConfirmAction
