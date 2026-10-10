@@ -4,6 +4,7 @@ import type {
   StewardPasskeys,
 } from "@lanbort/contracts";
 import {
+  isDomainError,
   listOwnPasskeys,
   listPlatformCaseQueue,
   maximumStewardPasskeys,
@@ -32,9 +33,23 @@ export interface Stewardship extends StewardPasskeys {
   readonly freshUntil: string | null;
 }
 
-/** The steward's standing, or null for anyone who does not hold the role. */
+/** The own passkeys, or null for anyone the role does not work for now. */
+async function ownPasskeys() {
+  try {
+    return await pageQueryIfAllowed(listOwnPasskeys, {});
+  } catch (error) {
+    // A steward whose account is not active cannot act as one (PS-ADM-001).
+    if (isDomainError(error) && error.code === "account_inactive") return null;
+    throw error;
+  }
+}
+
+/**
+ * The steward's standing, or null for anyone who does not hold the role or
+ * whose account is not active.
+ */
 export const getStewardship = cache(async (): Promise<Stewardship | null> => {
-  const passkeys = await pageQueryIfAllowed(listOwnPasskeys, {});
+  const passkeys = await ownPasskeys();
 
   if (!passkeys) return null;
 

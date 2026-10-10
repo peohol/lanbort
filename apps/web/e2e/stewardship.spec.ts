@@ -154,7 +154,10 @@ test("a platform steward sets up passkeys, confirms a session and removes one", 
   await expect(status(page)).toContainText("Bekreftet");
   expect(await axeViolations(page)).toEqual([]);
   await page.getByRole("link", { name: /Plattformkøen/ }).click();
-  await expect(page.getByText("Ingen saker venter nå.")).toBeVisible();
+  // Other tests' platform cases may be there too, so only the queue itself.
+  await expect(
+    page.getByRole("navigation", { name: "Åpne eller lukkede" }),
+  ).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
   expect(problems).toEqual([]);
 
