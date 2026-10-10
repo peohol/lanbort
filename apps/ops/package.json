@@ -10,11 +10,13 @@
     "test": "vitest run --exclude \"**/*.integration.test.ts\"",
     "test:integration": "vitest run .integration.test.ts",
     "platform-role": "tsx src/platform-role.ts",
-    "restore": "tsx src/restore.ts"
+    "restore": "tsx src/restore.ts",
+    "storage": "tsx src/storage-snapshot.ts"
   },
   "dependencies": {
     "@lanbort/database": "workspace:*",
     "@lanbort/domain": "workspace:*",
+    "@lanbort/storage": "workspace:*",
     "kysely": "0.29.6"
   },
   "devDependencies": {

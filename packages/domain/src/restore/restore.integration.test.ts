@@ -20,8 +20,6 @@ import {
 import { membershipRejected } from "../environment/events";
 import { approveLoanRequest } from "../loans/approval";
 import { createLoanRequest } from "../loans/commands";
-import { closeLoanLogisticsForSafety } from "../loans/logistics";
-import { logisticsSafetyProcess } from "../loans/policies";
 import { addDays, calendarDate } from "../objects/availability";
 import { acceptCoOwnerInvitation, inviteCoOwner } from "../objects/co-owners";
 import { archiveObject, createObject } from "../objects/commands";
@@ -330,29 +328,14 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
     await run(live, blockUser, people.blocker, {
       userId: people.blocked.userId,
     });
-    // Blocks open the loans' logistics channels, and they are closed as a
-    // safety measure (PS-COM-007); the second block is lifted again.
-    const closeForSafety = async (loan: string) => {
-      const { id: channelId } = await live.db
-        .selectFrom("app.loan_logistics_channels")
-        .select("id")
-        .where("loan_id", "=", loan)
-        .executeTakeFirstOrThrow();
-      await run(
-        live,
-        closeLoanLogisticsForSafety,
-        systemActor(logisticsSafetyProcess),
-        { channelId },
-      );
-    };
+    // Blocks open the loans' logistics channels (PS-COM-007); the second
+    // block is lifted again.
     await run(live, blockUser, people.borrower, {
       userId: people.lender.userId,
     });
-    await closeForSafety(loanId);
     await run(live, blockUser, people.secondBorrower, {
       userId: people.lender.userId,
     });
-    await closeForSafety(secondLoanId);
     await run(live, liftUserBlock, people.secondBorrower, {
       userId: people.lender.userId,
     });
@@ -451,8 +434,6 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
         "platform_role.revoked",
         "user_block.created",
         "user_block.created",
-        "loan_logistics.closed_for_safety",
-        "loan_logistics.closed_for_safety",
       ].sort(),
     );
   });
@@ -537,25 +518,18 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
     expect(roles).toEqual([{ revoked_by_process: "ops.restore" }]);
   });
 
-  it("keeps logistics channels closed for safety closed", async () => {
-    const closures = (loan: string) =>
+  it("opens the logistics channel of a block made after the backup", async () => {
+    const channels = (loan: string) =>
       restored.db
         .selectFrom("app.loan_logistics_channels")
         .select("close_reason")
         .where("loan_id", "=", loan)
         .execute();
 
-    // The first block came after the backup, so its replay opened the
-    // channel again and the closure's replay closed it. The second was
-    // lifted again, so nothing opened; the closure is kept on its own.
-    expect(await closures(loanId)).toEqual([{ close_reason: "safety" }]);
-    expect(await closures(secondLoanId)).toEqual([{ close_reason: "safety" }]);
-
-    // A new block between them opens nothing.
-    await run(restored, blockUser, people.secondBorrower, {
-      userId: people.lender.userId,
-    });
-    expect(await closures(secondLoanId)).toEqual([{ close_reason: "safety" }]);
+    // The block's replay opened it again. The second block was lifted
+    // again before the restore, so it is not brought back, nor its channel.
+    expect(await channels(loanId)).toEqual([{ close_reason: null }]);
+    expect(await channels(secondLoanId)).toEqual([]);
   });
 
   it("keeps a co-owner's veto, but not one withdrawn again", async () => {

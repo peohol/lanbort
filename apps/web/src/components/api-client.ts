@@ -21,6 +21,15 @@ export interface SendOptions {
   readonly method?: "POST" | "PATCH" | "DELETE";
 }
 
+/**
+ * How long an answer may take before the call counts as unanswered, so a
+ * dead connection does not leave a button waiting for as long as the
+ * browser would. Enough for a chat archive part, and longer for a file,
+ * on a slow mobile connection.
+ */
+const answerWithinMs = 60_000;
+const fileAnswerWithinMs = 120_000;
+
 const keyHeader = (options: SendOptions) =>
   options.idempotencyKey
     ? { [idempotencyKeyHeader]: options.idempotencyKey }
@@ -55,6 +64,7 @@ export async function postFile<T = unknown>(
       ...keyHeader(options),
     },
     body: file,
+    signal: AbortSignal.timeout(fileAnswerWithinMs),
   });
 }
 
@@ -70,15 +80,26 @@ async function request<T>(
   let response: Response;
 
   try {
-    response = await fetch(path, init);
+    response = await fetch(path, {
+      signal: AbortSignal.timeout(answerWithinMs),
+      ...init,
+    });
   } catch {
+    return { ok: false, code: "network" };
+  }
+
+  let text: string;
+
+  try {
+    text = await response.text();
+  } catch {
+    // The connection broke, or the time ran out, while the answer came.
     return { ok: false, code: "network" };
   }
 
   let json: unknown;
 
   try {
-    const text = await response.text();
     json = text ? JSON.parse(text) : null;
   } catch {
     // Not our API's JSON, e.g. an error page from a proxy or the platform.

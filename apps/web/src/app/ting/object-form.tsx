@@ -19,11 +19,11 @@ import {
 } from "@/components/api-client";
 import { BusyButton } from "@/components/busy-button";
 import { announceDataChanged } from "@/components/data-changed";
-import { errorMessage } from "@/components/error-messages";
+import { type ErrorMessages, errorMessage } from "@/components/error-messages";
 import { ErrorText } from "@/components/error-text";
 import { Icon } from "@/components/icon";
 import { PageHeader } from "@/components/page-header";
-import type { AreaId } from "@/navigation/areas";
+import { type AreaId, thingsHref } from "@/navigation/areas";
 import { objectHref } from "@/navigation/routes";
 import {
   type AvailabilityMode,
@@ -100,8 +100,21 @@ const savedImages = (object: OwnObject): FormImage[] =>
  * The commands of one save, each with its own idempotency key, so a retry
  * after a network error cannot do anything twice (UX-INT-006). A step that
  * succeeded is not sent again; a step the API refused gets a new key, since
- * the user may change what it sends.
+ * the user may change what it sends. A step whose lost answer the API says
+ * was done, with what was sent then, keeps its key, so it is never done
+ * twice.
  */
+/** A registration whose lost answer the API says was done. */
+const createMessages: ErrorMessages = {
+  idempotency_key_reused:
+    "Tingen ble registrert før forbindelsen brøt, med det du hadde fylt ut da. Du finner den i Mine ting, og kan rette den der.",
+};
+
+const keepsKey: ReadonlySet<ApiFailureCode> = new Set([
+  "network",
+  "idempotency_key_reused",
+]);
+
 function useSteps() {
   const keys = useRef(new Map<string, string>());
   const done = useRef(new Map<string, unknown>());
@@ -120,12 +133,14 @@ function useSteps() {
       const result = await send(key);
 
       if (result.ok) done.current.set(step, result.data);
-      if (result.ok || result.code !== "network") keys.current.delete(step);
+      if (result.ok || !keepsKey.has(result.code)) keys.current.delete(step);
 
       return result;
     },
+    /** The step may be sent again, as a new command. */
     forget(step: string) {
       done.current.delete(step);
+      keys.current.delete(step);
     },
   };
 }
@@ -390,10 +405,15 @@ export function ObjectForm(props: ObjectFormProps) {
           { method: "PATCH", idempotencyKey },
         ),
       );
-      steps.forget("edit");
+      // An edit carries the version it was made on, so sending it again as
+      // a new command is safe; only a retry after no answer keeps the key.
+      if (result.ok || result.code !== "network") steps.forget("edit");
 
       if (!result.ok) {
-        return result.code === "conflict"
+        // A lost answer's edit was saved: the saved version is shown, and
+        // the user's changes are kept on top of it if they choose.
+        return result.code === "conflict" ||
+          result.code === "idempotency_key_reused"
           ? showNewer(object.id, result.code)
           : fail(result.code);
       }
@@ -702,13 +722,20 @@ export function ObjectForm(props: ObjectFormProps) {
                   Gå til tingen
                 </Link>
               )}
+              {!editing &&
+                !createdId &&
+                failure === "idempotency_key_reused" && (
+                  <Link className="button" href={thingsHref}>
+                    Gå til Mine ting
+                  </Link>
+                )}
             </div>
           )}
           <ErrorText>
             {failure &&
               (createdId
                 ? `Tingen er registrert, men ikke alt ble fullført. ${errorMessage(failure)}`
-                : errorMessage(failure))}
+                : errorMessage(failure, editing ? {} : createMessages))}
           </ErrorText>
           {discardDialog}
         </div>

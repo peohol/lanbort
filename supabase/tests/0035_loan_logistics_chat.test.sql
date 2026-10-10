@@ -90,12 +90,15 @@ select pg_temp.approve('00000000-0000-4000-8000-000000000302',
 
 -- WP-44 on WP-43's delivery service: a logistics channel's conversation.
 -- Bo blocks Anna, which opens loan 301's channel; Cia blocks Anna, and
--- loan 302's channel is closed as a safety measure.
+-- loan 302's channel closes when Cia cancels the loan.
 insert into app.user_blocks (blocker_id, blocked_id) values
   ('00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-0000000000a1'),
   ('00000000-0000-4000-8000-0000000000c1', '00000000-0000-4000-8000-0000000000a1');
-update app.loan_logistics_channels set closed_at = now(), close_reason = 'safety'
-where loan_id = '00000000-0000-4000-8000-000000000302';
+update app.loans set status = 'ended', status_changed_at = now(),
+  end_reason = 'cancelled', ended_at = now(),
+  ended_by_user_id = '00000000-0000-4000-8000-0000000000c1'
+where id = '00000000-0000-4000-8000-000000000302';
+delete from app.loan_reservations where loan_id = '00000000-0000-4000-8000-000000000302';
 
 create function pg_temp.channel(loan uuid)
 returns uuid

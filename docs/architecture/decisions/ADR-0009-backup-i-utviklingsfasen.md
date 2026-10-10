@@ -1,6 +1,7 @@
 # ADR-0009 — Backup i utviklingsfasen: Supabase Free, gjenoppbygging og manuelle dumps
 
 **Status:** Vedtatt (produkteier, 4. oktober 2026). Bekreftet 6. oktober 2026 i forbindelse med WP-72: backupnivået utsettes, Supabase Free beholdes foreløpig, og backupstrategien avgjøres før appen åpnes for et eksternt testpanel (OD-0022).
+**Oppdatert 10. oktober 2026:** Produksjonsprosjektet ligger i en Supabase-organisasjon på Pro-planen og har derfor Supabases daglige backup. Backupnivået for piloten står i OD-0022 og [backup og gjenoppretting](../../implementation/backup-restore.md#strategi-for-piloten).
 **Forankring:** PS-NFR-014, ADR-0007, [datalivssyklus, backup og gjenoppretting](../09-datalivssyklus-backup-og-gjenoppretting.md)
 
 ## Beslutning

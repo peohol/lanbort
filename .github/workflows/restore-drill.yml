@@ -1,0 +1,29 @@
+name: Restore drill
+
+# Every month and on demand: backs up the hosted production project and
+# restores the backup into an isolated, temporary Supabase stack on the
+# runner, as a restore into a new project would go, then checks it
+# (WP-72, OD-0022, docs/implementation/backup-restore.md). Production is only
+# read. Nothing is stored or uploaded, and the log holds no data.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 1 * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-production
+  cancel-in-progress: false
+
+jobs:
+  drill:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/backup.yml
+    with:
+      keep-days: 0
+      drill: true
+    secrets:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

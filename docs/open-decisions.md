@@ -162,9 +162,11 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 
 ### OD-0022 — Backupnivå for piloten
 - **Lag:** Arkitektur
-- **Status:** Åpen
+- **Status:** Åpen, anbefaling klar (10. oktober 2026); venter produkteiers bekreftelse (Port D)
 - **Berører:** PS-NFR-014, [ADR-0009](architecture/decisions/ADR-0009-backup-i-utviklingsfasen.md), WP-72
-- **Spørsmål:** Hvilket backupnivå skal piloten ha: betalt Supabase-plan med daglig backup (eventuelt Point-in-Time Recovery), planlagte krypterte dumps på gratisplanen, eller lengre RPO for en liten pilot? Inntil dette er besluttet, beholdes Supabase Free med gjenoppbygging og manuelle dumps (produkteier, 6. oktober 2026).
+- **Spørsmål:** Hvilket backupnivå skal piloten ha, innenfor føringen «sikker løsning uten nye løpende kostnader» (produkteier, 10. oktober 2026)?
+- **Fakta:** Supabase-organisasjonen som har produksjonsprosjektet, er allerede på Pro-planen. Prosjektet får derfor Supabases daglige backup med 7 dagers historikk uten ekstra kostnad. Den har ikke filene i Storage, og den forsvinner med prosjektet.
+- **Anbefaling:** Supabases daglige backup, pluss en egen daglig backup av databasen og alle filene i et privat GitHub-repo med 7 dagers historikk, og en månedlig gjenopprettingsøvelse til et isolert miljø. RPO ≤ 24 timer, RTO ≤ 8 timer. Point-in-Time Recovery og gjenoppretting til et nytt Supabase-prosjekt koster ekstra og velges bort. Se [backup og gjenoppretting](implementation/backup-restore.md#strategi-for-piloten).
 - **Avklares før:** appen åpnes for et eksternt testpanel (Port D).
 
 ### OD-0023 — Registrering og recovery for plattformforvalteres WebAuthn
@@ -354,4 +356,4 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0020 — Hvem kan stenge lånelogistikk-kanalen tidlig
 - **Lag:** Produktspesifikasjon
 - **Status:** Avklart (produkteier, 6. oktober 2026)
-- **Beslutning:** Se [PS-COM-007](product-spec/05-kommunikasjon-varsler-og-saker.md). Ingen part kan stenge samtalen mens lånet pågår; partene kan dempe eller arkivere den. Demping og arkivering er ikke bygget ennå (WP-44).
+- **Beslutning:** Se [PS-COM-007](product-spec/05-kommunikasjon-varsler-og-saker.md). Ingen part kan stenge samtalen mens lånet pågår; partene kan dempe eller arkivere den. Bygget: demping og arkivering virker for lånelogistikk som for andre samtaler, og databasen tillater ingen tidlig stenging (WP-44).

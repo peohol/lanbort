@@ -495,7 +495,8 @@ test("the areas need a signed-in user", async ({ page, request }) => {
     "/konto",
   ]) {
     await page.goto(path);
-    await expect(page).toHaveURL(/\/logg-inn$/);
+    // And back to the area once signed in.
+    await expect(page).toHaveURL(`/logg-inn?neste=${encodeURIComponent(path)}`);
   }
 
   for (const path of [

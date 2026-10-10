@@ -511,23 +511,42 @@ export async function countPrivateMessages(
 }
 
 /** Whether every one of the users has an account. */
-export async function usersExist(
+/**
+ * Whether every copy can come from where it claims (PS-COM-013): a private
+ * conversation the submitter takes part in, sent by one of its participants.
+ * The server cannot read the conversation, but it knows who is in it, so a
+ * copy can never name someone outside it as the sender.
+ */
+export async function copiesFromOwnConversations(
   db: Db,
-  userIds: readonly string[],
+  submitterId: string,
+  copies: readonly { conversationId: string; senderUserId: string }[],
 ): Promise<boolean> {
-  const unique = [...new Set(userIds)];
+  // UUIDs are accepted in any case; the database returns them in lower case.
+  const key = (conversationId: string, userId: string) =>
+    `${conversationId}:${userId}`.toLowerCase();
+  const conversationIds = [
+    ...new Set(copies.map((c) => c.conversationId.toLowerCase())),
+  ];
 
-  if (unique.length === 0) {
+  if (conversationIds.length === 0) {
     return true;
   }
 
-  const { count } = await db
-    .selectFrom("app.users")
-    .select((eb) => eb.fn.countAll<string>().as("count"))
-    .where("id", "in", unique)
-    .executeTakeFirstOrThrow();
+  const participants = await db
+    .selectFrom("app.chat_participants")
+    .select(["conversation_id", "user_id"])
+    .where("conversation_id", "in", conversationIds)
+    .execute();
+  const inConversation = new Set(
+    participants.map((p) => key(p.conversation_id, p.user_id)),
+  );
 
-  return Number(count) === unique.length;
+  return copies.every(
+    (copy) =>
+      inConversation.has(key(copy.conversationId, submitterId)) &&
+      inConversation.has(key(copy.conversationId, copy.senderUserId)),
+  );
 }
 
 export async function findEntry(

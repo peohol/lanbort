@@ -85,7 +85,7 @@ import {
   related,
   setMayWrite,
   settleAssignment,
-  usersExist,
+  copiesFromOwnConversations,
 } from "./store";
 import { rateLimits } from "../abuse/rate-limits";
 
@@ -205,7 +205,8 @@ async function requireCorrectable(
  * PS-COM-013 (WP-46): the private messages a participant chose to submit,
  * in the order they were sent. They come from the participant's own device,
  * where they were decrypted; the server has no way into the conversation
- * and checks only that the copy can be what it claims to be.
+ * and checks only that the copy can be what it claims to be: from a
+ * conversation the caller is in, sent by one of its participants.
  */
 async function privateMessageCopies(
   db: Db,
@@ -222,13 +223,11 @@ async function privateMessageCopies(
     invalid("privateMessages", "A message cannot be sent after now");
   }
 
-  if (
-    !(await usersExist(
-      db,
-      records.map((copy) => copy.senderUserId),
-    ))
-  ) {
-    invalid("privateMessages", "Every sender has an account");
+  if (!(await copiesFromOwnConversations(db, userId, records))) {
+    invalid(
+      "privateMessages",
+      "Every copy is from the caller's own conversation and one of its participants",
+    );
   }
 
   if (

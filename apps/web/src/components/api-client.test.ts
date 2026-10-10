@@ -46,6 +46,48 @@ describe("postJson", () => {
   });
 });
 
+describe("an answer that does not come", () => {
+  it("is a network error once the time runs out, not a wait for ever", async () => {
+    const clock = new AbortController();
+    const timeout = vi
+      .spyOn(AbortSignal, "timeout")
+      .mockReturnValue(clock.signal);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_path: string, init: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            init.signal?.addEventListener("abort", () =>
+              reject(init.signal?.reason),
+            );
+          }),
+      ),
+    );
+
+    const result = postJson("/api/x", {});
+    clock.abort(new DOMException("timed out", "TimeoutError"));
+
+    expect(await result).toEqual({ ok: false, code: "network" });
+    expect(timeout).toHaveBeenCalledWith(60_000);
+    timeout.mockRestore();
+  });
+
+  it("is a network error when the connection breaks during the answer", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        text: async () => {
+          throw new TypeError("network error");
+        },
+      })),
+    );
+
+    expect(await getJson("/api/x")).toEqual({ ok: false, code: "network" });
+  });
+});
+
 describe("getJson", () => {
   it("returns the API's data", async () => {
     respond(JSON.stringify({ unreadCount: 2 }), 200);
@@ -69,6 +111,7 @@ describe("postFile", () => {
       method: "POST",
       headers: { "content-type": "image/png", "Idempotency-Key": "key" },
       body: file,
+      signal: expect.any(AbortSignal),
     });
   });
 });
