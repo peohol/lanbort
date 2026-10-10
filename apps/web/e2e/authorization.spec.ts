@@ -130,6 +130,7 @@ const probes: Record<string, (ids: Ids) => Record<string, string>> = {
 const namesNoResource = new Set([
   "account",
   "account/deletion",
+  "account/passkeys",
   "cases",
   "cases/queue/platform",
   "chat/conversations",
