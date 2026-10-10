@@ -27,7 +27,9 @@ export function RegistrationForm({ next = "/" }: { next?: string }) {
       { idempotencyKey },
     );
 
-    if (!result.ok) {
+    // `idempotency_key_reused`: the lost answer's registration was done, with
+    // what was filled in then, so the account is registered.
+    if (!result.ok && result.code !== "idempotency_key_reused") {
       setPending(false);
       setError(result.code);
       return;

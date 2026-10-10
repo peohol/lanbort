@@ -7,9 +7,11 @@ import {
   resolveUserActor,
   type UserActor,
 } from "@lanbort/domain";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
+import { registrationHref, signInHref } from "@/navigation/routes";
+import { pagePathHeader } from "./page-path";
 import { runtime } from "./runtime";
 
 /**
@@ -29,6 +31,16 @@ const getPageActor = cache(async (): Promise<UserActor | null> => {
 
   return identity ? resolveUserActor(runtime.domain(), identity) : null;
 });
+
+/** The address of the page being shown, to come back to after signing in. */
+async function pagePath(): Promise<string | undefined> {
+  return (await headers()).get(pagePathHeader) ?? undefined;
+}
+
+/** To sign in, and then back to this page. */
+async function toSignIn(): Promise<never> {
+  redirect(signInHref(await pagePath()));
+}
 
 /**
  * A query for a page as the signed-in user, through the same policy as the
@@ -56,7 +68,7 @@ export async function pageQueryOrNotFound<I, R, C, O>(
     const output = await pageQuery(query, input);
 
     if (output === null) {
-      redirect("/logg-inn");
+      return await toSignIn();
     }
 
     return output;
@@ -110,11 +122,11 @@ export async function requirePageAccount(): Promise<OwnAccount> {
   const account = await getPageAccount();
 
   if (!account) {
-    redirect("/logg-inn");
+    return toSignIn();
   }
 
   if (account.status === "pending_registration") {
-    redirect("/registrering");
+    redirect(registrationHref(await pagePath()));
   }
 
   return account;

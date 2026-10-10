@@ -12,7 +12,9 @@ import { useCommand } from "./use-command";
  * A sensitive command (docs/architecture/04): like `ConfirmAction`, the
  * button opens the consequence view (UX-INT-007), and the user then proves
  * their identity again with a new e-mail code before the command is sent.
- * The code goes only to the account's own address.
+ * The code goes only to the account's own address. A code is used once:
+ * once it is accepted, trying the command again does not send it again,
+ * and if the proof has grown too old, the user is asked for a new code.
  */
 export function ReauthenticatedAction({
   label,
@@ -37,11 +39,23 @@ export function ReauthenticatedAction({
   const titleId = useId();
   const codeId = useId();
   const errorId = useId();
-  const command = useCommand({ path, done: confirmLabel });
   const [codeSent, setCodeSent] = useState(false);
   const [code, setCode] = useState("");
+  const [proven, setProven] = useState(false);
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<ApiFailureCode | null>(null);
+  const command = useCommand({
+    path,
+    done: confirmLabel,
+    // The proof has grown too old: start again with a new code.
+    onFailure: (failed) => {
+      if (failed === "reauthentication_required") {
+        setProven(false);
+        setCodeSent(false);
+        setCode("");
+      }
+    },
+  });
 
   useEffect(() => {
     if (codeSent) codeInput.current?.focus();
@@ -51,6 +65,7 @@ export function ReauthenticatedAction({
     dialog.current?.close();
     setCodeSent(false);
     setCode("");
+    setProven(false);
     setFailure(null);
   }
 
@@ -65,19 +80,28 @@ export function ReauthenticatedAction({
       return;
     }
 
+    setCode("");
+    setProven(false);
     setCodeSent(true);
   }
 
   async function confirm(event: FormEvent) {
     event.preventDefault();
-    setPending(true);
-    setFailure(null);
-    const proven = await postJson("/api/auth/reauthenticate/verify", { code });
-    setPending(false);
 
-    if (!proven.ok) {
-      setFailure(proven.code);
-      return;
+    if (!proven) {
+      setPending(true);
+      setFailure(null);
+      const verified = await postJson("/api/auth/reauthenticate/verify", {
+        code,
+      });
+      setPending(false);
+
+      if (!verified.ok) {
+        setFailure(verified.code);
+        return;
+      }
+
+      setProven(true);
     }
 
     if (await command.run(body)) close();
@@ -121,6 +145,15 @@ export function ReauthenticatedAction({
               value={code}
               onChange={(event) => setCode(event.target.value.trim())}
             />
+            <div className="secondary-actions">
+              <BusyButton
+                type="button"
+                busy={busy}
+                onClick={() => void sendCode()}
+              >
+                Send ny kode
+              </BusyButton>
+            </div>
             <div className="dialog-actions">
               <button type="button" onClick={close}>
                 Avbryt
