@@ -53,6 +53,7 @@ import {
   sealRecoveryBackup,
   SHORT_MESSAGE_BYTES,
   securityCode,
+  settleParticipants,
   startLink,
   wipe,
 } from "@lanbort/e2ee";
@@ -66,6 +67,7 @@ import {
   receiveHistory,
   sendHistory,
   unpackHistory,
+  withReceived,
 } from "./history-transfer";
 import { type ChatStore, deleteChatStore, openChatStore } from "./store";
 
@@ -764,8 +766,26 @@ export class ChatEngine {
     await this.store.putJson(records.trust, this.trust.snapshot());
   }
 
-  /** Pins first-seen account keys, records revocations and key changes. */
+  /**
+   * Pins first-seen account keys, records revocations and key changes. A
+   * directory that does not name the conversation's two accounts, the same
+   * as before, is not used: the conversation is out of step instead.
+   */
   async #applyDirectory(conversationId: string, directory: ChatDirectory) {
+    const record = await this.#record(conversationId);
+    const participants = settleParticipants(
+      this.userId,
+      record.participants,
+      directory.accounts.map(({ userId }) => userId),
+    );
+    if (!participants) {
+      if (record.problem !== "out_of_sync") {
+        record.problem = "out_of_sync";
+        await this.store.putJson(records.conversation(conversationId), record);
+      }
+      return;
+    }
+
     for (const account of directory.accounts) {
       if (account.accountKey) {
         const key = fromBase64(account.accountKey);
@@ -783,9 +803,7 @@ export class ChatEngine {
     }
     await this.#saveTrust();
 
-    const record = await this.#record(conversationId);
-    const participants = directory.accounts.map(({ userId }) => userId);
-    if (participants.join() !== record.participants.join()) {
+    if (record.participants.length === 0) {
       // In place: the groups' policies hold this very list.
       record.participants.splice(0, Infinity, ...participants);
       await this.store.putJson(records.conversation(conversationId), record);
@@ -1045,7 +1063,12 @@ export class ChatEngine {
     }
   }
 
-  /** Adds a message, once: another try of the same message is the same. */
+  /** Adds a received message, never in place of one (`withReceived`). */
+  async #rememberReceived(id: string, entry: HistoryEntry) {
+    await this.#updateHistory(id, (entries) => withReceived(entries, entry));
+  }
+
+  /** Adds an own message, once: another try of the same message is the same. */
   async #remember(id: string, entry: HistoryEntry) {
     await this.#updateHistory(id, (entries) => {
       const index = entries.findIndex((known) => known.id === entry.id);
@@ -1160,7 +1183,7 @@ export class ChatEngine {
         // Kept as a message that could not be read.
       }
     }
-    await this.#remember(id, entry);
+    await this.#rememberReceived(id, entry);
   }
 
   async #join(id: string, generation: number, welcome: Uint8Array) {

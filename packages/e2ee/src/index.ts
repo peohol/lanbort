@@ -14,6 +14,7 @@ export {
   conversationAuthenticator,
   createKeyPackage,
   currentlyTrusted,
+  settleParticipants,
 } from "./conversation";
 export {
   type AccountKey,

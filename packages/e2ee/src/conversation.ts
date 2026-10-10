@@ -127,6 +127,26 @@ export const currentlyTrusted = (
   );
 };
 
+/**
+ * Who a conversation is between, as this device lets the server's directory
+ * say it. Every Lånbort conversation is between exactly two accounts, one of
+ * them this device's own, and stays between the same two (ADR-0010 §4). A
+ * server that adds a third account or swaps the other one gets undefined:
+ * the devices of an account it slipped in are never trusted.
+ */
+export function settleParticipants(
+  self: string,
+  pinned: readonly string[],
+  offered: readonly string[],
+): string[] | undefined {
+  const accounts = [...new Set(offered)].sort();
+  const same = (a: readonly string[], b: readonly string[]) =>
+    [...a].sort().join("\n") === [...b].sort().join("\n");
+  if (accounts.length !== 2 || !accounts.includes(self)) return undefined;
+  if (pinned.length > 0 && !same(pinned, accounts)) return undefined;
+  return accounts;
+}
+
 const clientConfig = (policy: ConversationPolicy): ClientConfig => ({
   keyRetentionConfig: defaultKeyRetentionConfig,
   // Lifetimes are checked when this device adds a key package. Checking them
@@ -245,14 +265,20 @@ function decode<W extends MLSMessage["wireformat"]>(
   return message as Extract<MLSMessage, { wireformat: W }>;
 }
 
-function refOf(state: ClientState, leafIndex: number): DeviceRef {
+function memberCertificate(
+  state: ClientState,
+  leafIndex: number,
+): DeviceCertificate {
   const node = state.ratchetTree[leafIndex * 2];
   const certificate =
-    node?.nodeType === "leaf" && node.leaf.credential.credentialType === "basic"
-      ? decodeCertificate(node.leaf.credential.identity)
-      : undefined;
+    node?.nodeType === "leaf" ? certificateOf(node.leaf.credential) : undefined;
   if (!certificate) throw new Error("unknown sender");
-  return { accountId: certificate.accountId, deviceId: certificate.deviceId };
+  return certificate;
+}
+
+function refOf(state: ClientState, leafIndex: number): DeviceRef {
+  const { accountId, deviceId } = memberCertificate(state, leafIndex);
+  return { accountId, deviceId };
 }
 
 /**
@@ -476,6 +502,13 @@ export class Conversation {
       privateMessage.contentType === "application"
         ? await this.#senderOf(privateMessage)
         : undefined;
+    // A device this one no longer trusts (revoked, under a replaced account
+    // key, or no longer a participant) may still be in the group until a
+    // commit removes it. What it sends meanwhile is not shown (§7). The
+    // state is left as it was, so nothing it still holds is wiped.
+    if (sender && !currentlyTrusted(this.#policy, sender.certificate)) {
+      throw new Error("sender no longer trusted");
+    }
     const result = await processPrivateMessage(
       this.#state,
       privateMessage,
@@ -483,20 +516,23 @@ export class Conversation {
       cs,
       acceptableChanges(this.#state, this.#policy),
     );
-    wipe(...result.consumed, ...(sender?.consumed ?? []));
     if (result.kind === "applicationMessage") {
       if (!sender) throw new Error("unexpected application message");
       this.#state = result.newState;
+      wipe(...result.consumed, ...sender.consumed);
+      const { accountId, deviceId } = sender.certificate;
       return {
         kind: "message",
-        sender: sender.ref,
+        sender: { accountId, deviceId },
         plaintext: result.message,
       };
     }
+    // The state stays as it was, and with it the keys it holds.
     if (result.actionTaken === "reject") {
       throw new Error("rejected membership change");
     }
     this.#state = result.newState;
+    wipe(...result.consumed);
     return { kind: "commit", epoch: this.epoch };
   }
 
@@ -562,7 +598,7 @@ export class Conversation {
     const { sender } = content.content;
     if (sender.senderType !== "member") throw new Error("not a member");
     return {
-      ref: refOf(
+      certificate: memberCertificate(
         { ...state, ratchetTree: epoch.ratchetTree },
         sender.leafIndex,
       ),

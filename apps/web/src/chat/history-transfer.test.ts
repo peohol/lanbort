@@ -7,6 +7,7 @@ import {
   missesEarlier,
   packHistory,
   unpackHistory,
+  withReceived,
 } from "./history-transfer";
 import { ChatApiError } from "./api";
 import { firstUnseen } from "./unread";
@@ -159,5 +160,23 @@ describe("the note on when a device was linked (13)", () => {
     expect(
       missesEarlier(linkedAt, before, [entry("a", 10, { sentAt: null })]),
     ).toBe(true);
+  });
+});
+
+describe("receiving a message", () => {
+  it("never lets a sender replace a message already in the history", () => {
+    const mine = entry("a", 1, { own: true, senderUserId: "me", text: "Ja" });
+    const theirs = entry("b", 2, { text: "Jeg leverer tirsdag" });
+    const history = [mine, theirs];
+
+    for (const reused of ["a", "b"]) {
+      expect(
+        withReceived(history, entry(reused, 3, { text: "Noe annet" })),
+      ).toEqual(history);
+    }
+    expect(withReceived(history, entry("c", 3))).toEqual([
+      ...history,
+      entry("c", 3),
+    ]);
   });
 });
