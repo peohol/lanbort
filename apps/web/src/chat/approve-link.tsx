@@ -129,9 +129,11 @@ function Confirm({
           Godkjenn enheten
         </BusyButton>
         <DeclineLink
-          linkRequestIds={[request.linkRequestId]}
+          request={request}
           label="Ikke godkjenn"
-          onDeclined={() => router.push(chatDevicesDeclinedHref)}
+          onDeclined={() =>
+            router.push(chatDevicesDeclinedHref(request.deviceId))
+          }
         />
       </div>
     </>

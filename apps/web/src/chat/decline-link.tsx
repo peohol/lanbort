@@ -1,39 +1,34 @@
 "use client";
 
+import type { ChatLinkRequest } from "@lanbort/contracts";
 import { ChatApiError, chatApi } from "./api";
+import { deviceName } from "./device-names";
 import { ConfirmSheet } from "./sheet";
 
 /**
- * «Avvis enheten» (ADR-0010 §5): a device that waits to be linked is told
- * no at once, instead of waiting until its code expires. With more than one
- * waiting, all of them are declined. The last point follows from signing in
- * with a code by e-mail: whoever asked has been inside the account.
+ * «Avvis» (ADR-0010 §5): one device that waits to be linked is told no at
+ * once, instead of waiting until its code expires. Each request is answered
+ * on its own, so a device the user wants is never declined with another.
+ * The last point follows from signing in with a code by e-mail: whoever
+ * asked has been inside the account.
  */
 export function DeclineLink({
-  linkRequestIds,
-  label,
+  request,
+  label = "Avvis",
   onDeclined,
 }: {
-  linkRequestIds: readonly string[];
+  request: Pick<ChatLinkRequest, "linkRequestId" | "deviceId">;
   /** The button that opens the sheet, such as «Ikke godkjenn». */
   label?: string;
   onDeclined: () => void;
 }) {
-  const many = linkRequestIds.length > 1;
-  const confirmLabel = many ? "Avvis enhetene" : "Avvis enheten";
-
   return (
     <ConfirmSheet
-      label={label ?? confirmLabel}
-      title={many ? "Avvise enhetene?" : "Avvise enheten?"}
+      label={label}
+      title={`Avvise ${deviceName(request)}?`}
       icon={null}
       points={[
-        {
-          icon: "lock",
-          text: many
-            ? "Enhetene får ikke tilgang til privat chat."
-            : "Enheten får ikke tilgang til privat chat.",
-        },
+        { icon: "lock", text: "Enheten får ikke tilgang til privat chat." },
         {
           icon: "device",
           text: "Den som ba om tilgang, får vite at den ble avvist, og kan be på nytt.",
@@ -43,23 +38,18 @@ export function DeclineLink({
           text: "Ba ikke du om dette? Da har noen logget inn på kontoen din med en kode fra e-posten din. Sørg for at ingen andre kommer inn på e-posten din.",
         },
       ]}
-      confirmLabel={confirmLabel}
+      confirmLabel="Avvis enheten"
       confirm={async () => {
-        // A request that expired or was answered meanwhile waits no more,
-        // and one declined already is declined again: trying once more
-        // after a failure ends where every request is answered.
-        await Promise.all(
-          linkRequestIds.map((id) =>
-            chatApi.declineLink(id).catch((problem: unknown) => {
-              if (
-                !(problem instanceof ChatApiError) ||
-                problem.code !== "not_found"
-              ) {
-                throw problem;
-              }
-            }),
-          ),
-        );
+        // A request that expired or was answered meanwhile waits no more:
+        // either way it leaves the list.
+        await chatApi.declineLink(request.linkRequestId).catch((problem) => {
+          if (
+            !(problem instanceof ChatApiError) ||
+            problem.code !== "not_found"
+          ) {
+            throw problem;
+          }
+        });
         onDeclined();
       }}
     />

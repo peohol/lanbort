@@ -30,6 +30,7 @@ import { RecoveryKeyRow } from "./recovery-key";
 import { hasScanner } from "./scanner";
 import { ConfirmSheet } from "./sheet";
 import { currentDevicePoints, securesFirst } from "./sign-out";
+import { messageTime } from "./time";
 
 const header = (
   <PageHeader
@@ -41,14 +42,14 @@ const header = (
 /**
  * A new device waits to be linked (10): the task comes first, and only
  * while one does. The camera page is loaded anew, since only it may use
- * the camera.
+ * the camera. Each waiting device has its own row, to be declined alone.
  */
 function Waiting({
   requests,
   onDeclined,
 }: {
   requests: readonly ChatLinkRequest[];
-  onDeclined: () => void;
+  onDeclined: (request: ChatLinkRequest) => void;
 }) {
   const scan = hasScanner();
   const count = requests.length;
@@ -80,10 +81,31 @@ function Waiting({
           Skriv inn koden
         </a>
       )}
-      <DeclineLink
-        linkRequestIds={requests.map((request) => request.linkRequestId)}
-        onDeclined={onDeclined}
-      />
+      <ul className={styles.list}>
+        {requests.map((request) => (
+          <li key={request.linkRequestId} className={styles.deviceRow}>
+            <span className={styles.iconBubble}>
+              <ChatIcon name="device" />
+            </span>
+            <span
+              className={styles.linkText}
+              id={`venter-${request.linkRequestId}`}
+            >
+              <strong>{deviceName(request)}</strong>
+              <small>Ba om tilgang kl. {messageTime(request.createdAt)}</small>
+            </span>
+            <div
+              role="group"
+              aria-labelledby={`venter-${request.linkRequestId}`}
+            >
+              <DeclineLink
+                request={request}
+                onDeclined={() => onDeclined(request)}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -94,9 +116,10 @@ function Devices({ engine }: { engine: ChatEngine }) {
   const [devices, setDevices] = useState<OwnChatDevices>();
   const [requests, setRequests] = useState<ChatLinkRequest[]>([]);
   const [removed, setRemoved] = useState<string>();
-  // Declined here, or on the approval page, which comes back with `?avvist`.
+  // The device declined here, or on the approval page, which comes back
+  // with its id in `?avvist`.
   const search = useSearchParams();
-  const [declined, setDeclined] = useState(() => search.has("avvist"));
+  const [declined, setDeclined] = useState(() => search.get("avvist"));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -130,16 +153,21 @@ function Devices({ engine }: { engine: ChatEngine }) {
       )}
       {declined && (
         <Notice tag="Avvist" tone="positive" role="status">
-          <p>Enheten fikk ikke tilgang til privat chat.</p>
+          <p>
+            {deviceName({ deviceId: declined })} fikk ikke tilgang til privat
+            chat.
+          </p>
         </Notice>
       )}
       <ErrorText>{error}</ErrorText>
       {requests.length > 0 && (
         <Waiting
           requests={requests}
-          onDeclined={() => {
-            setRequests([]);
-            setDeclined(true);
+          onDeclined={(answered) => {
+            setRequests((now) =>
+              now.filter((r) => r.linkRequestId !== answered.linkRequestId),
+            );
+            setDeclined(answered.deviceId);
           }}
         />
       )}
