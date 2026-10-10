@@ -4,10 +4,10 @@ import { Icon } from "@/components/icon";
 import { NotificationLink } from "@/components/notification-link";
 import { Tag } from "@/components/tag";
 import { ThingThumbnail } from "@/components/thing-thumbnail";
-import { hrefFor } from "@/navigation/targets";
 import {
   arrangeNotifications,
   notificationContext,
+  notificationHref,
   type NotificationEntry,
   notificationLevelLabels,
   notificationWhen,
@@ -32,7 +32,7 @@ function NotificationRow({
   const context = notificationContext(notification);
   const { title, detail } = notificationWords(notification);
   const more = olderText({ notification, older });
-  const href = hrefFor(notification.target);
+  const href = notificationHref(notification);
   const content = (
     <>
       <ThingThumbnail

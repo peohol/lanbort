@@ -136,9 +136,10 @@ export function describeMembership(
     case "accept_invitation":
       return "Du er invitert til miljøet. Les reglene og godta invitasjonen for å bli med.";
     case "awaiting_review":
+      // PS-ENV-017: the outcome comes as a notification either way.
       return step.reactivation
-        ? "Du har bedt om å bli aktiv igjen. Venter på svar fra administratorene."
-        : "Søknaden din venter på svar fra administratorene.";
+        ? "Du har bedt om å bli aktiv igjen. Venter på svar fra administratorene. Du får varsel når de har svart."
+        : "Søknaden din venter på svar fra administratorene. Du får varsel når de har svart.";
     case "information_requested":
       return "Administratorene ber om mer informasjon før de svarer. Se over svarene dine og send dem på nytt.";
     case "confirm":

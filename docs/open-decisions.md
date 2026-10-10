@@ -192,16 +192,12 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Avklares før:** plattformforvalterens flater designes og vises (etter OD-0023). Til da finnes ingen slik flate i appen.
 - **Anbefaling:** Start alle inngrep fra en sak i plattformkøen, slik at begrunnelse, habilitet og historikk følger saken (PS-TRUST-016, PS-ADM-014), og vis ingen forvalterhandlinger på ordinære person- og miljøsider.
 
+## Avklart
+
 ### OD-0050 — Varsel til søkeren når en søknad er avgjort
 - **Lag:** Produktspesifikasjon
-- **Status:** Åpen
-- **Berører:** PS-ENV-004, PS-COM (varseltyper), «Innmelding og invitasjon» i [skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md), kjerneflyt 3 i Tomat-designet
-- **Spørsmål:** Designet for kjerneflyt 3 sier «Du får varsel når de har svart» og viser første besøk som medlem åpnet fra et varsel, men spesifikasjonen har ingen varseltype for en godkjent eller avslått søknad, og appen sender ingen. Skal søkeren varsles når søknaden godkjennes, og når den avslås? Inntil dette er besluttet, lover søknadssiden ikke noe varsel, og «Velkommen» vises bare rett etter at man selv har blitt med.
-- **Avhenger av:** Ingen.
-- **Avklares før:** søknadssiden skal love et varsel, eller «Velkommen» skal vises ved første besøk etter en godkjent søknad.
-- **Anbefaling:** Varsle i appen både ved godkjenning og avslag. Godkjenningen lenker til miljøet med «Velkommen». Avslaget sier nøytralt at søknaden ikke ble godkjent, uten begrunnelse.
-
-## Avklart
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Beslutning:** Se [PS-ENV-017](product-spec/02-miljoer.md). Varsel i appen både ved godkjenning og avslag; godkjenningen leder til miljøet med velkomsten, avslaget er nøytralt uten begrunnelse eller hvem som avgjorde.
 
 ### OD-0054 — Eiernavn når en ting er delt direkte med venner
 - **Lag:** Produktspesifikasjon
@@ -266,7 +262,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 ### OD-0045 — Én privat samtale per person eller per lån
 - **Lag:** Produktspesifikasjon / UX
 - **Status:** Avklart (produkteier, 9. oktober 2026)
-- **Beslutning:** Se [PS-COM-017](product-spec/05-kommunikasjon-varsler-og-saker.md). Én privat samtale per personpar, med lenker til og fra lånene; logistikk-kanalen ved blokkering er egen per lån. Én samtale per par er bygget (WP-43); lenkene er ikke bygget ennå.
+- **Beslutning:** Se [PS-COM-017](product-spec/05-kommunikasjon-varsler-og-saker.md). Én privat samtale per personpar, med lenker til og fra lånene; logistikk-kanalen ved blokkering er egen per lån. Én samtale per par er bygget (WP-43). Lenkene er delvis bygget: «Skriv til» fra en venns side og utlånerens «Skriv til» fra forespørselen og lånet; «Gå til samtalen med …» fra forespørselen og lånet, låntakerens lenke og lenken fra et spørsmål om en ting gjenstår.
 
 ### OD-0043 — Varsler om nye meldinger i privat chat
 - **Lag:** Produktspesifikasjon / UX

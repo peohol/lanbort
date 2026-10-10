@@ -19,6 +19,7 @@ import {
 } from "@/navigation/list-pages";
 import { personHref } from "@/navigation/routes";
 import { describeRelation, whyVisible } from "@/presentation/people";
+import { chatContactLink } from "@/server/chat-contact";
 import {
   pageQuery,
   pageQueryOrNotFound,
@@ -105,12 +106,13 @@ export default async function PersonPage({
   await requirePageAccount();
   const [{ userId }, query] = await Promise.all([params, searchParams]);
   const person = await pageQueryOrNotFound(readPerson, { userId });
-  const [loans, trust, things] = await Promise.all([
+  const [loans, trust, things, contact] = await Promise.all([
     person.relation
       ? pageQuery(listLoans, { state: "current", counterpartId: userId })
       : null,
     person.trustProfile ? pageQuery(readTrustProfile, { userId }) : null,
     friendThingsOf(person, query),
+    chatContactLink(userId),
   ]);
   const why = whyVisible(person);
   const { picture, context } = header(person);
@@ -130,7 +132,7 @@ export default async function PersonPage({
           <span>{why}</span>
         </p>
       )}
-      <RelationCard person={person} />
+      <RelationCard person={person} writeHref={contact?.href ?? null} />
       {loans && <Between loans={loans} />}
       <div className={styles.aside}>
         {trust ? (
