@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { basisSchema } from "./account";
+import {
+  accountBindingSchema,
+  accountStatusSchema,
+  basisSchema,
+} from "./account";
 import { caseEntryIdSchema, caseIdSchema, casePersonSchema } from "./cases";
 import { objectIdSchema } from "./objects";
 
@@ -79,11 +83,31 @@ export const caseInterventionsQuerySchema = z.strictObject({
 });
 
 /**
+ * The account a platform case is about, as its handlers decide what to do
+ * with it: its status, the roles it holds in environments (PS-ADM-015) and
+ * what still binds it before a closure can be completed (PS-ADM-004).
+ */
+export const caseSubjectAccountSchema = z.strictObject({
+  userId: z.uuid(),
+  status: accountStatusSchema,
+  roles: z.array(
+    z.strictObject({
+      environmentId: z.uuid(),
+      name: z.string(),
+      owner: z.boolean(),
+    }),
+  ),
+  bindings: z.array(accountBindingSchema),
+});
+
+/**
  * The interventions on a case, with the names they need to be read: the
- * people (none once an account is deleted), environments and things.
+ * people (none once an account is deleted), environments and things. For a
+ * case about an account, the account as it stands now; null otherwise.
  */
 export const caseInterventionsSchema = z.strictObject({
   caseId: caseIdSchema,
+  account: caseSubjectAccountSchema.nullable(),
   items: z.array(platformInterventionSchema),
   people: z.array(casePersonSchema),
   environments: z.array(z.strictObject({ id: z.uuid(), name: z.string() })),
@@ -97,3 +121,4 @@ export type PlatformInterventionKind = z.infer<
 >;
 export type PlatformIntervention = z.infer<typeof platformInterventionSchema>;
 export type CaseInterventions = z.infer<typeof caseInterventionsSchema>;
+export type CaseSubjectAccount = z.infer<typeof caseSubjectAccountSchema>;

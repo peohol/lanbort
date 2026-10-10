@@ -1,5 +1,7 @@
 import type { CaseKind } from "@lanbort/contracts";
+import type { InterventionFlowKey } from "@/presentation/interventions";
 import type { SearchParams } from "./list-pages";
+import { caseHref } from "./routes";
 
 /**
  * The platform stewards' pages (PS-ADM-015, ADR-0011, «Plattformforvaltning
@@ -66,3 +68,25 @@ export function parsePlatformQueue(params: SearchParams): {
         : undefined,
   };
 }
+
+/**
+ * A steward's intervention from a case (PS-ADM-015): the choices, or one
+ * intervention's steps, by the word in its address.
+ */
+export const interventionSlugs = {
+  suspend: "suspender",
+  reinstate: "gjeninnsett",
+  "start-closure": "avslutt",
+  "complete-closure": "fullfor-avslutning",
+  "false-identity": "falsk-identitet",
+  "end-roles": "avslutt-roller",
+} as const satisfies Record<InterventionFlowKey, string>;
+
+export const interventionHref = (caseId: string, key?: InterventionFlowKey) =>
+  `${caseHref(caseId)}/inngrep${key ? `/${interventionSlugs[key]}` : ""}`;
+
+/** The intervention an address names, or null. */
+export const interventionBySlug = (slug: string) =>
+  (Object.entries(interventionSlugs) as [InterventionFlowKey, string][]).find(
+    ([, each]) => each === slug,
+  )?.[0] ?? null;
