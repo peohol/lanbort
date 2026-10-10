@@ -1,0 +1,10 @@
+/* A thing's picture at the start of a row, the size of the row's icon. */
+.thumbnail {
+  display: block;
+  flex: none;
+  width: 2.375rem;
+  height: 2.375rem;
+  object-fit: cover;
+  background: var(--color-sunken);
+  border-radius: var(--radius-s);
+}

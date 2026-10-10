@@ -142,6 +142,7 @@ describe("Home's administration tasks", () => {
     role: null,
     person: null,
     via: null,
+    picture: null,
     period: null,
     day: null,
     dueAt: null,

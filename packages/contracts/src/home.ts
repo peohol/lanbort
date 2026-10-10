@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { environmentSummarySchema } from "./environment";
-import { loanPeriodSchema, loanRequestRoleSchema } from "./loans";
+import {
+  loanPeriodSchema,
+  loanRequestRoleSchema,
+  thingPictureSchema,
+} from "./loans";
 import { notificationTargetSchema } from "./notifications";
 import { calendarDateSchema } from "./objects";
 
@@ -87,6 +91,8 @@ export const homeItemSchema = z.strictObject({
    * (UX-PRIV-003), while the user may see it; null for a direct one.
    */
   via: z.string().nullable(),
+  /** The thing's first picture, where the item names a thing (PS-OBJ-021). */
+  picture: thingPictureSchema.nullable(),
   /** The days a loan or request is about, when both are known. */
   period: loanPeriodSchema.nullable(),
   /** The handover or return day the item is about. */

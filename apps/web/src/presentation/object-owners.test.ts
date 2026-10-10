@@ -242,6 +242,7 @@ describe("the owners' view of a thing", () => {
       status: "awaiting_return",
       agreementVersion: 2,
       title: "Stige",
+      images: [],
       period: { start: "2026-10-01", end: "2026-10-03" },
       transfer: null,
       mayTakeOver: false,
