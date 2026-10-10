@@ -64,6 +64,17 @@ export function formatShortTime(at: string): string {
   return shortTimeFormat.format(new Date(at));
 }
 
+const clockFormat = new Intl.DateTimeFormat("nb-NO", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: productTimeZone,
+});
+
+/** The time of day of a moment the same day: «09:12». */
+export function formatClock(at: string): string {
+  return clockFormat.format(new Date(at));
+}
+
 /** A moment in the product's time zone: «fredag 10. oktober kl. 14:00». */
 export function formatTime(at: string): string {
   return timeFormat.format(new Date(at));

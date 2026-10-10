@@ -3,6 +3,7 @@ import type {
   NotificationTargetType,
 } from "@lanbort/contracts";
 import { measureNoticeHref } from "./cases";
+import { passkeysHref } from "./stewardship";
 import { chatConversationHref, chatDevicesHref } from "./chat";
 import {
   caseHref,
@@ -58,8 +59,10 @@ const targetPages: Record<NotificationTargetType, Place | null> = {
     href: measureNoticeHref,
     anchor: (id) => `tiltak-${id}`,
   },
-  // The stewards' own pages come with their design (PS-ADM-015).
-  steward_access: null,
+  steward_access: {
+    href: () => passkeysHref,
+    anchor: (id) => `forvalter-${id}`,
+  },
 };
 
 export function hrefFor(target: NotificationTarget): string | null {

@@ -5,7 +5,7 @@ import type {
   HomeSection,
 } from "@lanbort/contracts";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { environmentHref, newEnvironmentHref } from "@/navigation/routes";
 import { calendarDay } from "@/presentation/dates";
 import { administrationHref } from "@/presentation/environment-admin";
@@ -25,6 +25,11 @@ import {
   upcomingText,
 } from "@/presentation/home-tasks";
 import { findEnvironmentsHref } from "@/presentation/search";
+import {
+  type StewardStanding,
+  stewardHomeTask,
+  stewardsOffText,
+} from "@/presentation/stewardship";
 import { EmptyState } from "./empty-state";
 import { Icon, type IconName } from "./icon";
 import { ContextTag, Tag } from "./tag";
@@ -325,6 +330,56 @@ function Environments({
   );
 }
 
+/** A platform steward's standing, as Home shows it. */
+export interface StewardHome {
+  readonly standing: StewardStanding;
+  /** Open platform cases nobody has taken; null until confirmed. */
+  readonly unassigned: number | null;
+}
+
+/**
+ * «For Lånbort» (Tomat «Plattformforvaltning v1»): the steward's role in a
+ * section of its own, as an administrator's is, with the one task it has.
+ */
+function Stewardship({ steward }: { steward: StewardHome }) {
+  const task = stewardHomeTask(steward.standing, steward.unassigned);
+
+  return (
+    <section aria-labelledby="hjem-lanbort">
+      <h2 id="hjem-lanbort" className={styles.heading}>
+        <Icon name="shield" />
+        For Lånbort
+      </h2>
+      <div
+        className={`card ${styles.administration}`}
+        role="group"
+        aria-label="Forvaltning"
+      >
+        <p className={styles.administrationHead}>
+          <strong>Forvaltning</strong>
+          <Tag tone="attention" icon={null}>
+            Du er plattformforvalter
+          </Tag>
+        </p>
+        {task ? (
+          <ul className={styles.tasks}>
+            <li>
+              <Entry href={task.href} className={styles.task}>
+                <span className={styles.rowText}>
+                  <strong>{task.text}</strong>
+                  {task.detail && <span>{task.detail}</span>}
+                </span>
+              </Entry>
+            </li>
+          </ul>
+        ) : (
+          <p className={styles.hint}>{stewardsOffText}</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 const sectionIcons: Partial<Record<HomeSection, IconName>> = {
   administration: "shield",
 };
@@ -336,7 +391,13 @@ const sectionIcons: Partial<Record<HomeSection, IconName>> = {
  * sections are left out, so a quiet day shows a quiet Home. Every entry
  * opens the place where the work is done; nothing here is binding.
  */
-export function HomeView({ home }: { home: HomeOverview }) {
+export function HomeView({
+  home,
+  steward = null,
+}: {
+  home: HomeOverview;
+  steward?: StewardHome | null;
+}) {
   const today = calendarDay();
   const sections = home.sections.filter(({ items }) => items.length > 0);
   const counted = (section: HomeSection, items: HomeItem[]) =>
@@ -369,28 +430,40 @@ export function HomeView({ home }: { home: HomeOverview }) {
       <div className={styles.sections}>
         {sections.map(({ section, items }) => {
           const icon = sectionIcons[section];
+          // The steward's role comes right after what waits on the user.
+          const stewardFirst =
+            steward &&
+            section ===
+              sections.find((each) => each.section !== "awaiting_you")?.section;
 
           return (
-            <section key={section} aria-labelledby={`hjem-${section}`}>
-              <h2 id={`hjem-${section}`} className={styles.heading}>
-                {icon && <Icon name={icon} />}
-                {homeSectionHeadings[section](counted(section, items))}
-              </h2>
-              {section === "awaiting_you" ? (
-                <Awaiting items={items} today={today} />
-              ) : section === "upcoming" ? (
-                <Upcoming items={items} today={today} />
-              ) : section === "unresolved" ? (
-                <Unresolved items={items} />
-              ) : (
-                <Administration
-                  items={items}
-                  environments={home.environments}
-                />
-              )}
-            </section>
+            <Fragment key={section}>
+              {stewardFirst && <Stewardship steward={steward} />}
+              <section aria-labelledby={`hjem-${section}`}>
+                <h2 id={`hjem-${section}`} className={styles.heading}>
+                  {icon && <Icon name={icon} />}
+                  {homeSectionHeadings[section](counted(section, items))}
+                </h2>
+                {section === "awaiting_you" ? (
+                  <Awaiting items={items} today={today} />
+                ) : section === "upcoming" ? (
+                  <Upcoming items={items} today={today} />
+                ) : section === "unresolved" ? (
+                  <Unresolved items={items} />
+                ) : (
+                  <Administration
+                    items={items}
+                    environments={home.environments}
+                  />
+                )}
+              </section>
+            </Fragment>
           );
         })}
+        {steward &&
+          sections.every(({ section }) => section === "awaiting_you") && (
+            <Stewardship steward={steward} />
+          )}
         {home.environments.length > 0 && (
           <section aria-labelledby="hjem-miljoer">
             <h2 id="hjem-miljoer" className={styles.heading}>
