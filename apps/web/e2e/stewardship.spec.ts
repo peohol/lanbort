@@ -172,10 +172,11 @@ test("a platform steward sets up passkeys, confirms a session and removes one", 
   // A report to Lånbort about Tor: the steward takes it and suspends the
   // account from the case, with the basis, then reinstates it
   // (PS-ADM-014–015).
+  const torEmail = newEmail();
   const [ida, tor] = await Promise.all(
     [
       ["Ida Melder", newEmail()],
-      ["Tor Rapportert", newEmail()],
+      ["Tor Rapportert", torEmail],
     ].map(([name, address]) => signedIn(browser, address!, true, name)),
   );
   await befriend(ida!.request, tor!.request);
@@ -234,6 +235,49 @@ test("a platform steward sets up passkeys, confirms a session and removes one", 
   await page.getByRole("button", { name: "Gjeninnsett kontoen" }).click();
   await expect(page.getByText("Tor Rapportert · konto aktiv")).toBeVisible();
   await expect(recorded).toContainText("Gjeninnsatt konto");
+
+  // Without a report, the steward opens an inquiry of their own, finding
+  // the account by its full address and never by name (OD-0055).
+  await page.goto("/forvaltning");
+  await page.getByRole("link", { name: /Åpne saksgrunnlag/ }).click();
+  expect(await axeViolations(page)).toEqual([]);
+  const lookup = page.getByLabel("Lenke eller e-postadresse");
+  const next = page.getByRole("button", { name: "Neste: grunnlag" });
+  await lookup.fill("Tor Rapportert");
+  await page.getByRole("button", { name: "Finn" }).click();
+  await expect(
+    page.getByText(
+      "Skriv hele e-postadressen, eller lim inn lenken til personens side.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await lookup.fill(email);
+  await page.getByRole("button", { name: "Finn" }).click();
+  await expect(
+    page.getByText("Du kan ikke åpne saksgrunnlag om din egen konto."),
+  ).toBeVisible();
+  await expect(next).toBeDisabled();
+  await lookup.fill(torEmail.toUpperCase());
+  await page.getByRole("button", { name: "Finn" }).click();
+  await expect(page.getByText("Konto aktiv")).toBeVisible();
+  await next.click();
+  await page
+    .getByLabel("Hvorfor åpner du saken?")
+    .fill("Flere har fortalt om trusler i samtaler.");
+  await page.getByRole("button", { name: "Neste: se over" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Åpne saksgrunnlag om Tor Rapportert?" }),
+  ).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+  await page.getByRole("button", { name: "Åpne saksgrunnlaget" }).click();
+  await expect(page).toHaveURL(/\/saker\/[0-9a-f-]+$/);
+  await expect(page.getByText("Tor Rapportert · konto aktiv")).toBeVisible();
+  await expect(
+    page.getByText("Flere har fortalt om trusler i samtaler."),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Gjør et inngrep" }),
+  ).toBeVisible();
   await Promise.all([ida!.close(), tor!.close()]);
 
   // A new session must be confirmed first, here on the phone.

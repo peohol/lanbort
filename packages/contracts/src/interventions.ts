@@ -155,6 +155,7 @@ export const caseInterventionsSchema = z.strictObject({
 });
 
 export type OpenPlatformInquiry = z.infer<typeof openPlatformInquirySchema>;
+export type PlatformInquiryOpened = z.infer<typeof platformInquiryOpenedSchema>;
 export type PlatformLookup = z.infer<typeof platformLookupSchema>;
 export type PlatformLookupResult = z.infer<typeof platformLookupResultSchema>;
 export type EndEnvironmentRoles = z.infer<typeof endEnvironmentRolesSchema>;
