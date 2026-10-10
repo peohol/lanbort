@@ -32,7 +32,10 @@ dump() {
   date -u +%Y-%m-%dT%H:%M:%SZ > "$dir/taken-at"
   supabase db dump "${source[@]}" -f "$dir/roles.sql" --role-only
   supabase db dump "${source[@]}" -f "$dir/schema.sql"
-  supabase db dump "${source[@]}" -f "$dir/data.sql" --use-copy --data-only
+  # Storage's vector tables do not exist in every new project (Supabase's
+  # own restore guide leaves them out too).
+  supabase db dump "${source[@]}" -f "$dir/data.sql" --use-copy --data-only \
+    -x storage.buckets_vectors -x storage.vector_indexes
   supabase db dump "${source[@]}" -f "$dir/history_schema.sql" --schema supabase_migrations
   supabase db dump "${source[@]}" -f "$dir/history_data.sql" --use-copy --data-only --schema supabase_migrations
 }
