@@ -126,6 +126,10 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
     name: "Ny sak",
     path: ({ environmentId }) => `/saker/ny?kontakt=${environmentId}`,
   },
+  {
+    name: "Si fra om mulig dødsfall",
+    path: ({ friendId }) => `/saker/mulig-dodsfall/${friendId}`,
+  },
   { name: "Person", path: ({ friendId }) => `/personer/${friendId}` },
   {
     name: "Person som låntaker",

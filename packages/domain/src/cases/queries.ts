@@ -8,15 +8,17 @@ import {
   type CaseSummary,
   environmentCaseQueueQuerySchema,
   platformCaseQueueQuerySchema,
+  socialTargetSchema,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
+import { rateLimits } from "../abuse/rate-limits";
 import { realNames } from "../account/store";
 import { defineQuery } from "../commands/query";
 import { loadEnvironmentAccess } from "../environment/store";
 import { findImageFile } from "../objects/images";
 import { actingUserId, currentImages, inSnapshot } from "../objects/state";
-import { loadCase } from "./commands";
+import { loadCase, loadUnavailabilityTarget } from "./commands";
 import {
   type ActionRecord,
   type CaseRecord,
@@ -35,6 +37,7 @@ import {
   listPlatformCaseQueuePolicy,
   readCaseImagePolicy,
   readCasePolicy,
+  reportUnavailabilityPolicy,
 } from "./policies";
 import {
   caseHandlers,
@@ -484,4 +487,22 @@ export const listPlatformCaseQueue = defineQuery({
       };
     }),
   present: ({ resource }) => resource,
+});
+
+/**
+ * Whether the caller may tell Lånbort that someone may have died
+ * (PS-COM-015), by the very rule that takes the report, so a page offers it
+ * only where it can be sent: not about oneself, someone unrelated, or across
+ * a block. Anyone else is `not_found` or `forbidden`, as the report would be.
+ */
+export const readUnavailabilityTarget = defineQuery({
+  name: "case.read_unavailability_target",
+  input: socialTargetSchema,
+  policy: reportUnavailabilityPolicy,
+  rateLimit: rateLimits.lookups,
+  load: ({ db, actor, input }) =>
+    actor.kind === "user"
+      ? loadUnavailabilityTarget(db, actor.userId, input.userId)
+      : Promise.resolve(null),
+  present: ({ input }) => ({ userId: input.userId }),
 });

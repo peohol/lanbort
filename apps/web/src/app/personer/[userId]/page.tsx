@@ -21,6 +21,7 @@ import {
 import { personHref } from "@/navigation/routes";
 import { describeRelation, whyVisible } from "@/presentation/people";
 import { chatContactLink } from "@/server/chat-contact";
+import { unavailabilityReportLink } from "@/server/unavailability-report";
 import {
   pageQuery,
   pageQueryOrNotFound,
@@ -109,17 +110,19 @@ export default async function PersonPage({
   await requirePageAccount();
   const [{ userId }, query] = await Promise.all([params, searchParams]);
   const person = await pageQueryOrNotFound(readPerson, { userId });
-  const [loans, trust, things, contact, invitable] = await Promise.all([
-    person.relation
-      ? pageQuery(listLoans, { state: "current", counterpartId: userId })
-      : null,
-    person.trustProfile ? pageQuery(readTrustProfile, { userId }) : null,
-    friendThingsOf(person, query),
-    chatContactLink(userId),
-    person.relation && !person.relation.blockedByMe
-      ? pageQuery(listInvitableEnvironments, { userId })
-      : null,
-  ]);
+  const [loans, trust, things, contact, invitable, unavailabilityReport] =
+    await Promise.all([
+      person.relation
+        ? pageQuery(listLoans, { state: "current", counterpartId: userId })
+        : null,
+      person.trustProfile ? pageQuery(readTrustProfile, { userId }) : null,
+      friendThingsOf(person, query),
+      chatContactLink(userId),
+      person.relation && !person.relation.blockedByMe
+        ? pageQuery(listInvitableEnvironments, { userId })
+        : null,
+      unavailabilityReportLink(userId),
+    ]);
   const why = whyVisible(person);
   const { picture, context } = header(person);
 
@@ -176,7 +179,10 @@ export default async function PersonPage({
           }
         />
       )}
-      <PersonMoreActions person={person} />
+      <PersonMoreActions
+        person={person}
+        unavailabilityReport={unavailabilityReport}
+      />
     </main>
   );
 }

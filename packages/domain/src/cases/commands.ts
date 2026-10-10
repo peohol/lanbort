@@ -666,6 +666,26 @@ export const requestLoanMediation = defineCommand({
 });
 
 /**
+ * Whom a report of a possible death would be about, as
+ * `reportUnavailabilityPolicy` judges it: someone the caller has a concrete
+ * relation to and no block between them (PS-COM-015).
+ */
+export async function loadUnavailabilityTarget(
+  db: Db,
+  actorId: string,
+  userId: string,
+) {
+  const pair = await loadPair(db, actorId, userId);
+
+  return (
+    pair && {
+      resource: { ...pair, related: await related(db, actorId, userId) },
+      context: undefined,
+    }
+  );
+}
+
+/**
  * PS-COM-015: a confidential report that a user may have died or be
  * permanently unavailable. It only starts a verification by the platform
  * stewards: no account, loan or access changes, and the reporter gets no
@@ -688,17 +708,7 @@ export const reportUnavailability = defineCommand({
 
     await lockPair(tx, actor.userId, input.userId);
 
-    const pair = await loadPair(tx, actor.userId, input.userId);
-
-    return (
-      pair && {
-        resource: {
-          ...pair,
-          related: await related(tx, actor.userId, input.userId),
-        },
-        context: undefined,
-      }
-    );
+    return loadUnavailabilityTarget(tx, actor.userId, input.userId);
   },
   execute: async ({ tx, actor, input, events, now }) => {
     const userId = actingUserId(actor);

@@ -111,6 +111,13 @@ export function parseCaseStart(params: SearchParams): CaseStart | null {
 }
 
 /**
+ * Where a user tells Lånbort that someone may have died or be permanently
+ * unavailable (PS-COM-015). Shown only where platform cases are.
+ */
+export const unavailabilityReportHref = (userId: string) =>
+  `${casesHref}/mulig-dodsfall/${userId}`;
+
+/**
  * The chat page where a participant chooses private messages to submit to
  * the case (WP-46). Chat pages read the device's own history, so this is
  * one of them (ADR-0010 §13).
