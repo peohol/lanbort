@@ -203,6 +203,11 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 
 ## Avklart
 
+### OD-0054 — Eiernavn når en ting er delt direkte med venner
+- **Lag:** Produktspesifikasjon
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Beslutning:** Se [PS-OBJ-022](product-spec/03-utlansobjekter.md). Navnet vises bare for eiere betrakteren selv er venn med, også ved medeierskap, og håndheves på serveren.
+
 ### OD-0048 — Omtrentlig medlemstall før medlemskap
 - **Lag:** Produktspesifikasjon
 - **Status:** Avklart (produkteier, 10. oktober 2026)

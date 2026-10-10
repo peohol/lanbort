@@ -206,7 +206,8 @@ export const loanRequestPreviewSchema = z.strictObject({
   following: z.boolean(),
   /**
    * Through an environment, the owners who are active members of it
-   * (PS-ENV-015); empty for a direct request.
+   * (PS-ENV-015); for a direct request, the owners the caller is a friend
+   * of (PS-OBJ-022).
    */
   owners: z.array(shownOwnerSchema),
 });

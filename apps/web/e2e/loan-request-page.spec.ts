@@ -149,7 +149,7 @@ test("a friend asks directly, and both accept the declaration first", async ({
   await dan.getByLabel("Antall dager").fill("1");
   await dan.getByRole("button", { name: "Videre" }).click();
   await dan
-    .getByLabel("Melding til eieren (valgfri)")
+    .getByLabel("Melding til Cleo Eng (valgfri)")
     .fill("Trenger den til flytting.");
   // The declaration must be accepted before the request is sent.
   const send = dan.getByRole("button", { name: /^Send forespørsel / });
