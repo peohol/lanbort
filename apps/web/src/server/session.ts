@@ -86,7 +86,8 @@ export async function pageQueryOrNotFound<I, R, C, O>(
 
 /**
  * A page's query for a part it shows only to those who may see it: null
- * when the caller may not, rather than the whole page failing.
+ * when the caller may not, or not in this session (a steward whose passkey
+ * confirmation has run out), rather than the whole page failing.
  */
 export async function pageQueryIfAllowed<I, R, C, O>(
   query: QueryDefinition<I, R, C, O>,
@@ -97,7 +98,9 @@ export async function pageQueryIfAllowed<I, R, C, O>(
   } catch (error) {
     if (
       isDomainError(error) &&
-      ["not_found", "forbidden"].includes(error.code)
+      ["not_found", "forbidden", "stronger_authentication_required"].includes(
+        error.code,
+      )
     ) {
       return null;
     }

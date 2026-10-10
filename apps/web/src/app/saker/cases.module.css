@@ -268,3 +268,8 @@
 .factLine {
   display: block;
 }
+
+/* What the role's standing is now, at the end of the role strip. */
+.roleEnd {
+  margin-left: auto;
+}

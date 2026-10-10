@@ -11,7 +11,9 @@ import {
   signInHref,
 } from "@/navigation/routes";
 import { notificationHref } from "@/presentation/notifications";
+import { queueCounts, stewardStanding } from "@/presentation/stewardship";
 import { getPageAccount, pageQuery } from "@/server/session";
+import { getOpenPlatformCases, getStewardship } from "@/server/stewardship";
 
 /**
  * The notification an e-mail's link names, if it is the caller's own; any
@@ -72,7 +74,23 @@ export default async function HomePage({
     );
   }
 
-  const home = await pageQuery(readHome, {});
+  const [home, steward, platformCases] = await Promise.all([
+    pageQuery(readHome, {}),
+    getStewardship(),
+    getOpenPlatformCases(),
+  ]);
 
-  return <HomeView home={home!} />;
+  return (
+    <HomeView
+      home={home!}
+      steward={
+        steward && {
+          standing: stewardStanding(steward),
+          unassigned: platformCases
+            ? queueCounts(platformCases.items, account.userId).unassigned
+            : null,
+        }
+      }
+    />
+  );
 }
