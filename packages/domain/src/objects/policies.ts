@@ -182,9 +182,19 @@ export const declineCoOwnerInvitationPolicy = invitedUserPolicy(
   requireMinimumAccess,
 );
 
+/**
+ * PS-OBJ-021: the invited user sees the thing's pictures while asked; an
+ * account that is not active may, as it may see the invitation.
+ */
+export const readCoOwnerInvitationImagePolicy = invitedUserPolicy(
+  "object_invitation.read_image",
+  requireMinimumAccess,
+);
+
 export const invitedUserPolicies = [
   acceptCoOwnerInvitationPolicy,
   declineCoOwnerInvitationPolicy,
+  readCoOwnerInvitationImagePolicy,
 ];
 
 /** The invitations the signed-in user has received. */

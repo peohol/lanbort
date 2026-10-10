@@ -7,6 +7,7 @@ import {
   type ObjectSearchQuery,
   objectSearchQuerySchema,
 } from "@lanbort/contracts";
+import type { IconName } from "@/components/icon";
 import type { ObjectOrigin } from "@/navigation/routes";
 import {
   environmentImageHref,
@@ -185,16 +186,24 @@ export const joiningExplained = [
 /**
  * Where the user finds it (UX-IA-015): through their own environments, by
  * name, or from a friend who has made it visible to friends (PS-OBJ-020).
+ * Each with the icon the thing's page uses for the same context.
  */
-export function describeFoundIn(object: FoundObject): string {
+export function describeFoundIn(
+  object: FoundObject,
+): { icon: IconName; text: string }[] {
   return [
-    object.foundIn.length > 0
-      ? `Via ${object.foundIn.map((place) => place.environmentName).join(", ")}`
-      : null,
-    object.foundThroughFriends ? "Hos en venn" : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+    ...(object.foundIn.length > 0
+      ? [
+          {
+            icon: "environment" as const,
+            text: `Via ${object.foundIn.map((place) => place.environmentName).join(", ")}`,
+          },
+        ]
+      : []),
+    ...(object.foundThroughFriends
+      ? [{ icon: "people" as const, text: "Hos en venn" }]
+      : []),
+  ];
 }
 
 /** The first photo of a thing they found, read the way `foundOrigin` sees it. */

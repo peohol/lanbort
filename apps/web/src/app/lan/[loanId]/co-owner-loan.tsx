@@ -1,4 +1,5 @@
 import type { CoOwnerLoanView } from "@lanbort/contracts";
+import type { ReactNode } from "react";
 import { PageHeader } from "@/components/page-header";
 import { StatusCard } from "@/components/status-card";
 import { loansHref } from "@/navigation/areas";
@@ -20,9 +21,16 @@ import { ThingPicture } from "../_parts/thing-picture";
  * A loan for a co-owner who is not its party (UX-PRIV-013, KF7 screen 13):
  * the status, the period, the terms, the borrower and the responsible
  * lender, and only the co-owner's own steps. Never the timeline, the
- * request's message, the chat, the parties' statements or the reviews.
+ * request's message, the chat, the parties' statements or the reviews,
+ * except the co-owner's own as a former lender (`children`).
  */
-export function CoOwnerLoan({ view }: { view: CoOwnerLoanView }) {
+export function CoOwnerLoan({
+  view,
+  children,
+}: {
+  view: CoOwnerLoanView;
+  children?: ReactNode;
+}) {
   const situation = describeCoOwnerLoan(view, calendarDay());
   const steps = coOwnerSteps(view);
 
@@ -71,6 +79,7 @@ export function CoOwnerLoan({ view }: { view: CoOwnerLoanView }) {
             <dd>{personName(view.parties.lender)}</dd>
           </dl>
         </section>
+        {children}
       </div>
     </main>
   );

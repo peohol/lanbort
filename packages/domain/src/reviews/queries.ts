@@ -9,8 +9,10 @@ import { sql } from "kysely";
 import { z } from "zod";
 import type { Loaded } from "../commands/command";
 import { defineQuery } from "../commands/query";
+import { realNames } from "../account/store";
 import { findLoan } from "../loans/reservations";
 import { actingUserId, inSnapshot } from "../objects/state";
+import { linkIn, personLinks } from "../people/queries";
 import { reviewParties } from "./commands";
 import {
   otherSide,
@@ -42,6 +44,8 @@ interface ReadReview extends ReviewRecord {
 /** What a party reads: null before the loan has ended, or for others. */
 interface ReviewsResource extends ReviewPartiesResource {
   readonly role: LoanRequestRole | null;
+  readonly title: string;
+  readonly counterpart: LoanReviews["counterpart"];
   readonly detail: {
     readonly window: ReviewWindowRecord;
     readonly reviews: readonly ReadReview[];
@@ -110,6 +114,24 @@ function present(
   };
 }
 
+const unnamed = {
+  title: "",
+  counterpart: { realName: null, profileId: null, pictureId: null },
+};
+
+/** The other party by name, linked only where the reader may see them. */
+async function personOf(
+  db: Parameters<typeof realNames>[0],
+  viewerId: string,
+  userId: string,
+  now: Date,
+): Promise<LoanReviews["counterpart"]> {
+  const names = await realNames(db, [userId]);
+  const links = await personLinks(db, viewerId, [userId], now);
+
+  return { realName: names.get(userId) ?? null, ...linkIn(links, userId) };
+}
+
 /**
  * The loan's reviews as one of its parties sees them (PS-TRUST-003/005): the
  * window and the dimensions they score, their own review whether hidden or
@@ -138,9 +160,26 @@ export const readLoanReviews = defineQuery({
         const role = reviewRoleOf(actor, parties);
 
         // Nothing more is read for callers the policy will turn away.
-        if (!role || !window) {
+        if (!role) {
           return {
-            resource: { ...parties, role, detail: null },
+            resource: { ...parties, role, ...unnamed, detail: null },
+            context: undefined,
+          };
+        }
+
+        const about = {
+          title: loan.agreement.title,
+          counterpart: await personOf(
+            tx,
+            actingUserId(actor),
+            role === "borrower" ? parties.lenderUserId : parties.borrowerUserId,
+            now,
+          ),
+        };
+
+        if (!window) {
+          return {
+            resource: { ...parties, role, ...about, detail: null },
             context: undefined,
           };
         }
@@ -166,6 +205,7 @@ export const readLoanReviews = defineQuery({
           resource: {
             ...parties,
             role,
+            ...about,
             detail: { window, reviews, dimensions },
           },
           context: undefined,
@@ -173,7 +213,7 @@ export const readLoanReviews = defineQuery({
       },
     ),
   present: ({ input, resource, now }): LoanReviews => {
-    const { role, detail } = resource;
+    const { role, title, counterpart, detail } = resource;
 
     if (!role) {
       throw new Error("The policy allows only a party of the loan's reviews");
@@ -183,6 +223,8 @@ export const readLoanReviews = defineQuery({
       return {
         loanId: input.loanId,
         role,
+        title,
+        counterpart,
         window: null,
         own: null,
         received: null,
@@ -200,6 +242,8 @@ export const readLoanReviews = defineQuery({
     return {
       loanId: input.loanId,
       role,
+      title,
+      counterpart,
       window: {
         status: presentedWindowStatus(window, now),
         basis: window.basis,

@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { type Browser, expect, type Page, test } from "@playwright/test";
+import sharp from "sharp";
 import {
   accountId,
   agreeLoan,
@@ -70,6 +72,31 @@ test("two friends chat end to end, and a new device is linked with its code", as
   await postCommand(bo.context.request, "/api/social/friend-requests/accept", {
     userId: anna.id,
   });
+  // Bo lends Anna his ladder, which has a picture.
+  const loanId = await agreeLoan(
+    bo.context.request,
+    anna.context.request,
+    "Stige",
+  );
+  const { objectId } = await (
+    await bo.context.request.get(`/api/loans/${loanId}`)
+  ).json();
+  const upload = await bo.context.request.post(
+    `/api/objects/${objectId}/images`,
+    {
+      data: await sharp({
+        create: { width: 40, height: 30, channels: 3, background: "#4a7" },
+      })
+        .jpeg()
+        .toBuffer(),
+      headers: {
+        "content-type": "image/jpeg",
+        "Idempotency-Key": randomUUID(),
+      },
+    },
+  );
+  expect(upload.ok(), await upload.text()).toBe(true);
+  const { imageId } = await upload.json();
 
   await turnOnChat(anna.page);
   await turnOnChat(bo.page);
@@ -81,6 +108,11 @@ test("two friends chat end to end, and a new device is linked with its code", as
     anna.page.getByRole("heading", { level: 1, name: "Bo Dahl" }),
   ).toBeVisible();
   const conversation = anna.page.url();
+  // The loan between them shows its thing's picture (PS-OBJ-021).
+  const between = anna.page.getByRole("region", { name: /Lån mellom dere/ });
+  await expect(
+    between.getByRole("link", { name: /Stige/ }).locator("img"),
+  ).toHaveAttribute("src", `/api/loans/${loanId}/images/${imageId}`);
   await anna.page.getByLabel("Ny melding").fill("Hei Bo, kan jeg låne stigen?");
   await anna.page.getByRole("button", { name: "Send" }).click();
   await expect(
@@ -253,6 +285,54 @@ test("a message waits until the friend has turned chat on", async ({
   await bo.page.getByRole("link", { name: "Dag Fjeld" }).click();
   await expect(bo.page).toHaveURL(/\/samtaler\/[0-9a-f-]+$/);
   await expectMessage(bo.page, "Er du der?");
+
+  for (const someone of [anna, bo]) {
+    expect(someone.problems).toEqual([]);
+    await someone.context.close();
+  }
+});
+
+test("a loan's page leads to the parties' conversation, or offers to start it (KF5 F2–F3)", async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const anna = await person(browser, "Gro Hauge");
+  const bo = await person(browser, "Ivar Lund");
+  await postCommand(anna.context.request, "/api/social/friend-requests", {
+    userId: bo.id,
+  });
+  await postCommand(bo.context.request, "/api/social/friend-requests/accept", {
+    userId: anna.id,
+  });
+  const loanId = await agreeLoan(
+    anna.context.request,
+    bo.context.request,
+    "Sag",
+  );
+  await turnOnChat(anna.page);
+  await turnOnChat(bo.page);
+
+  await bo.page.goto(`/lan/${loanId}`);
+  const lender = bo.page.getByRole("region", { name: "Ansvarlig utlåner" });
+  await lender.getByRole("link", { name: "Skriv til Gro Hauge" }).click();
+  await bo.page
+    .getByRole("button", { name: "Start samtalen", exact: true })
+    .click();
+  await expect(bo.page).toHaveURL(/\/samtaler\/[0-9a-f-]+$/);
+  const conversation = bo.page.url();
+
+  // Once it exists, both parties' pages of the loan lead to it.
+  await bo.page.goto(`/lan/${loanId}`);
+  await lender
+    .getByRole("link", { name: "Gå til samtalen med Gro Hauge" })
+    .click();
+  await expect(bo.page).toHaveURL(conversation);
+  await anna.page.goto(`/lan/${loanId}`);
+  await expect(
+    anna.page
+      .getByRole("region", { name: "Låntaker" })
+      .getByRole("link", { name: "Gå til samtalen med Ivar Lund" }),
+  ).toBeVisible();
 
   for (const someone of [anna, bo]) {
     expect(someone.problems).toEqual([]);

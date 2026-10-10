@@ -82,9 +82,9 @@ test("an environment is created, applied to, used and left in the browser", asyn
   ).toBeVisible();
   // About how many, never the exact number (PS-ENV-016).
   await expect(bo.page.getByText("under 10 medlemmer")).toBeVisible();
-  await expect(bo.page.getByRole("heading", { name: /Medlemmer/ })).toHaveCount(
-    0,
-  );
+  await expect(
+    bo.page.getByRole("heading", { name: /Andre medlemmer/ }),
+  ).toHaveCount(0);
   const asks = bo.page.getByRole("region", { name: "For å bli med" });
   await expect(asks.getByText("Hvilken leilighet bor du i?")).toBeVisible();
   await expect(asks.getByText("Jeg godtar husreglene")).toBeVisible();
@@ -206,7 +206,7 @@ test("an environment is created, applied to, used and left in the browser", asyn
   );
   await expect(
     bo.page
-      .getByRole("region", { name: /Medlemmer/ })
+      .getByRole("region", { name: /Andre medlemmer/ })
       .getByRole("link", { name: "Anna Berg" }),
   ).toHaveAttribute("href", `/personer/${annaId}`);
   await expect(
@@ -232,6 +232,51 @@ test("an environment is created, applied to, used and left in the browser", asyn
 
   await bo.context.close();
   expect(problems).toEqual([]);
+});
+
+test("a rejected application is said neutrally on the environment's page (PS-ENV-017)", async ({
+  browser,
+  page,
+  baseURL,
+}) => {
+  await registerThroughApi(page.request, undefined, "Anna Berg");
+  const { environmentId } = await (
+    await postCommand(page.request, "/api/environments", {
+      name: `Gården ${uniqueWord()}`,
+      type: "closed",
+    })
+  ).json();
+  const bo = await person(browser, baseURL!, "Bo Lien");
+  const { membershipId } = await (
+    await postCommand(bo.context.request, "/api/environments/membership/join", {
+      environmentId,
+      answers: [],
+    })
+  ).json();
+  await postCommand(page.request, "/api/environments/memberships/reject", {
+    environmentId,
+    membershipId,
+  });
+
+  await bo.page.goto(`/miljoer/${environmentId}`);
+  const status = bo.page.getByRole("region", { name: "Status" });
+  await expect(
+    status.getByText("Ikke godkjent", { exact: true }),
+  ).toBeVisible();
+  await expect(status.getByText("Søknaden ble ikke godkjent.")).toBeVisible();
+  // Never why, who decided or whether it may be tried again.
+  await expect(status).not.toContainText(/Anna|administrator/i);
+  await expect(
+    status.getByRole("link", { name: "Finn andre miljøer" }),
+  ).toHaveAttribute("href", "/finn?vis=miljoer");
+  expect(await axeViolations(bo.page)).toEqual([]);
+
+  // Applying again is as before; then the page says it waits.
+  await status.getByRole("button", { name: "Send søknaden" }).click();
+  await expect(
+    bo.page.getByText("Søknaden din venter på svar fra administratorene."),
+  ).toBeVisible();
+  await bo.context.close();
 });
 
 test("an invitation to a hidden environment is accepted on its page, and members answer a weaker type there", async ({

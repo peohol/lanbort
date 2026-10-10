@@ -1,4 +1,10 @@
-import { collectPages, listLoanRequests, listLoans } from "@lanbort/domain";
+import {
+  collectPages,
+  listLoanRequests,
+  listLoans,
+  loanPicture,
+  loanRequestPicture,
+} from "@lanbort/domain";
 import type { ChatLoan, ChatLoans } from "@/chat/loans";
 import { loanHref, loanRequestHref } from "@/navigation/routes";
 import { loanStatusLabels } from "@/presentation/loans";
@@ -36,6 +42,7 @@ export async function loansBetween(): Promise<ChatLoans> {
         href: loanHref(loan.id),
         title: loan.agreement.title,
         status: loanStatusLabels[loan.status],
+        picture: loanPicture(loan),
       },
     );
   }
@@ -46,6 +53,7 @@ export async function loansBetween(): Promise<ChatLoans> {
       href: loanRequestHref(request.id),
       title: request.object?.title ?? "Forespørsel",
       status: "Forespørsel",
+      picture: loanRequestPicture(request),
     });
   }
 

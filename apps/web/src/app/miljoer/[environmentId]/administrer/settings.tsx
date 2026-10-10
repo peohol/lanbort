@@ -1,9 +1,9 @@
 import type { Environment } from "@lanbort/contracts";
 import { AreaField } from "@/components/area-field";
-import { AreaMap } from "@/components/area-map";
 import { CommandForm } from "@/components/command-form";
 import { describedBy, Field } from "@/components/field";
 import { requirementsChangeNote } from "@/presentation/environment-admin";
+import { EnvironmentArea } from "../about";
 import { RequirementsEditor } from "./requirements-editor";
 
 const textFields = [
@@ -35,12 +35,7 @@ export function Settings({ environment }: { environment: Environment }) {
             ? `Miljøet vises i Finn for søk innen ${area.radiusKm} km fra området.`
             : "Miljøet har ikke noe område, så det finnes ikke ved søk nær et sted."}
         </p>
-        {area && (
-          <AreaMap
-            areas={[{ id: environment.id, name: environment.name, area }]}
-            searched={null}
-          />
-        )}
+        <EnvironmentArea environment={environment} />
         <CommandForm
           key={environment.version}
           path="/api/environments/details"

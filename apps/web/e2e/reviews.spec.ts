@@ -76,6 +76,8 @@ test("the parties of a cancelled loan review each other double-blind", async ({
   expect(await (await bo.get(reviewsPath)).json()).toEqual({
     loanId,
     role: "borrower",
+    title: "Stige",
+    counterpart: expect.objectContaining({ realName: expect.any(String) }),
     window: null,
     own: null,
     received: null,

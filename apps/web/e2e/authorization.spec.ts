@@ -57,6 +57,7 @@ interface Ids {
   conversationId: string;
   linkRequestId: string;
   pictureId: string;
+  invitationId: string;
   userId: string;
 }
 
@@ -97,6 +98,7 @@ const probes: Record<string, (ids: Ids) => Record<string, string>> = {
     objectId: ids.objectId,
   }),
   "object-questions/thread": (ids) => ({ questionId: ids.questionId }),
+  "object-invitations/[invitationId]/images/[imageId]": () => ({}),
   "objects/[objectId]": () => ({}),
   "objects/[objectId]/history": () => ({}),
   "objects/[objectId]/images/[imageId]": () => ({}),
@@ -201,7 +203,8 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
   };
 
   // An administrator, a lender, a borrower and a member of a hidden
-  // environment, with a loan through it, a question and a case.
+  // environment, with a loan through it, a question, a case and an
+  // invitation to co-own the thing.
   await registerThroughApi(request);
   const { environmentId } = await (
     await postCommand(request, "/api/environments", {
@@ -271,6 +274,13 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
       body: "Passer den til en liten bil?",
     })
   ).json();
+  const { invitationId } = await (
+    await postCommand(
+      lender.context,
+      `/api/objects/${objectId}/co-owners/invitations`,
+      { userId: member.userId },
+    )
+  ).json();
   const { caseId } = await (
     await postCommand(member.context, "/api/environments/contact", {
       environmentId,
@@ -313,6 +323,7 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
     conversationId,
     linkRequestId,
     pictureId,
+    invitationId,
     userId: lender.userId,
   };
   const nowhere: Ids = {

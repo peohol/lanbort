@@ -1,33 +1,10 @@
-import type { LoanRequest } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import {
   describeLoanRequest,
   originLabel,
   requestProgress,
 } from "./loan-requests";
-
-const request = (changes: Partial<LoanRequest> = {}): LoanRequest => ({
-  id: "00000000-0000-4000-8000-000000000001",
-  objectId: "00000000-0000-4000-8000-000000000002",
-  role: "borrower",
-  borrowerUserId: "00000000-0000-4000-8000-000000000003",
-  borrower: { realName: "Ola Hansen", profileId: null, pictureId: null },
-  origin: { kind: "direct" },
-  start: { kind: "asap" },
-  end: { kind: "duration", days: 2 },
-  message: null,
-  status: "requested",
-  endReason: null,
-  object: { title: "Stige", categoryId: "annet" },
-  images: [],
-  confirmedTerms: { version: 1, loanTerms: null },
-  pendingTerms: null,
-  responsibility: null,
-  loanId: null,
-  createdAt: "2026-10-08T18:43:00.000Z",
-  statusChangedAt: "2026-10-08T18:43:00.000Z",
-  ...changes,
-});
+import { loanRequestFixture as request } from "./loan-fixtures";
 
 describe("describeLoanRequest", () => {
   it("says whom it waits on, to each side", () => {

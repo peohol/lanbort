@@ -100,17 +100,20 @@ describe("found things in the user's words", () => {
       environmentName,
       publicationId: id,
     });
+    const via = (text: string) => ({ icon: "environment", text });
+    const friend = { icon: "people", text: "Hos en venn" };
+
     expect(
       describeFoundIn(found({ foundIn: [place("Gata"), place("Hytta")] })),
-    ).toBe("Via Gata, Hytta");
+    ).toEqual([via("Via Gata, Hytta")]);
     expect(
       describeFoundIn(
         found({ foundIn: [place("Gata")], foundThroughFriends: true }),
       ),
-    ).toBe("Via Gata · Hos en venn");
-    expect(describeFoundIn(found({ foundThroughFriends: true }))).toBe(
-      "Hos en venn",
-    );
+    ).toEqual([via("Via Gata"), friend]);
+    expect(describeFoundIn(found({ foundThroughFriends: true }))).toEqual([
+      friend,
+    ]);
   });
 
   it("opens a thing through where it was found (PS-OBJ-020)", () => {

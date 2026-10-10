@@ -258,6 +258,12 @@ export const environmentSchema = z.strictObject({
   members: approximateMembersSchema.nullable(),
   /** The caller's own relation to the environment. */
   membership: ownMembershipSchema.nullable(),
+  /**
+   * PS-ENV-017: the caller's last application here was not approved, and
+   * they have not applied again since. Never why, who decided, or whether a
+   * new application is barred (PS-ENV-004).
+   */
+  applicationRejected: z.boolean(),
   roles: z.array(environmentRoleSchema),
   /** Null without a current membership. */
   continuity: environmentContinuitySchema.nullable(),

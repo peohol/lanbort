@@ -12,12 +12,17 @@ import { defineQuery } from "../commands/query";
 import { canSeeEnvironment } from "../environment/policies";
 import { loadEnvironmentAccess } from "../environment/store";
 import { homeReader, type HomeReader } from "../home/source";
-import { loanPicture, loanRequestPicture } from "../loans/pictures";
+import {
+  coOwnerInvitationPicture,
+  loanPicture,
+  loanRequestPicture,
+} from "../loans/pictures";
 import { readLoan, readLoanRequest } from "../loans/queries";
 import { listNotifications } from "../notifications/queries";
 import { listNotificationsPolicy } from "../notifications/policies";
-import { actingUserId } from "../objects/state";
+import { actingUserId, loadImages } from "../objects/state";
 import { personVisible } from "../people/policies";
+import { readLoanReviews } from "../reviews/queries";
 import { loadPeople } from "../people/store";
 import {
   friendRequestStanding,
@@ -72,6 +77,27 @@ async function loanAbout({ reader, userId }: Reading, loanId: string) {
         loan.origin.kind === "environment"
           ? (loan.origin.environment?.name ?? null)
           : null,
+    },
+  };
+}
+
+/**
+ * The reviews after a loan, named by their thing and the other party of the
+ * reviews: also to a former party, such as the lender before a change, who
+ * keeps their reviews but sees nothing more of the loan.
+ */
+async function reviewsAbout(reading: Reading, loanId: string) {
+  const reviews = await reading.reader.ifAllowed(readLoanReviews, { loanId });
+
+  if (!reviews) return nobody;
+
+  const { about } = await loanAbout(reading, loanId);
+
+  return {
+    about: {
+      ...about,
+      thing: reviews.title,
+      person: reviews.counterpart.realName,
     },
   };
 }
@@ -174,20 +200,25 @@ async function invitationAbout(
   const invitation = await db
     .selectFrom("app.object_co_owner_invitations as invitation")
     .innerJoin("app.objects as object", "object.id", "invitation.object_id")
-    .select(["invitation.status", "object.title"])
+    .select(["invitation.status", "object.id as objectId", "object.title"])
     .where("invitation.id", "=", invitationId)
     .where("invitation.invited_user_id", "=", userId)
     .executeTakeFirst();
+  // Its pictures only while asked (`object_invitation.read_image`); a
+  // co-owner reads them as an owner, through what the notification leads to.
+  const pending = invitation?.status === "pending";
+  const images = pending
+    ? ((await loadImages(db, [invitation.objectId])).get(invitation.objectId) ??
+      [])
+    : [];
 
   return {
     about: {
       // The object is shown to the invitee only while they are asked, or
       // once they co-own it.
       thing:
-        invitation?.status === "pending" || invitation?.status === "accepted"
-          ? invitation.title
-          : null,
-      picture: null,
+        pending || invitation?.status === "accepted" ? invitation.title : null,
+      picture: coOwnerInvitationPicture(invitationId, images),
       person: null,
       place: null,
     },
@@ -227,7 +258,7 @@ const describers: Partial<
   >
 > = {
   loan: loanAbout,
-  loan_reviews: loanAbout,
+  loan_reviews: reviewsAbout,
   loan_request: requestAbout,
   user: personAbout,
   environment: environmentAbout,

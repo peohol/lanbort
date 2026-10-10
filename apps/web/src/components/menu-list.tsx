@@ -29,8 +29,12 @@ export function MenuRow({
   label,
   detail,
   end,
+  actions,
+  actionsBelow = false,
 }: {
-  href: string;
+  /** Where the row leads; without it the row is only shown, as a person
+   * without a page (UX-PRIV-010). */
+  href?: string | undefined;
   /** A quiet icon at the start of the row. */
   icon?: IconName;
   /** In place of the icon: a picture, or a soft square for a thing. */
@@ -41,22 +45,41 @@ export function MenuRow({
   detail?: ReactNode;
   /** What asks for attention at the end of the row, such as a `Tag`. */
   end?: ReactNode;
+  /** Steps about what the row names, beside the link and named by it:
+   * «Trekk» at the end, or «Godta» and «Avslå» under it (`actionsBelow`). */
+  actions?: ReactNode;
+  actionsBelow?: boolean | undefined;
 }) {
+  const content = (
+    <>
+      {lead ? (
+        <span className="menu-lead">{lead}</span>
+      ) : (
+        icon && <Icon name={icon} />
+      )}
+      <div className="menu-text">
+        <span className="menu-label">{label}</span>
+        {detail && <div className="menu-detail">{detail}</div>}
+      </div>
+      {end}
+      {href && <Icon name="chevron" className="icon menu-chevron" />}
+    </>
+  );
+
   return (
-    <li>
-      <Link href={href} className="menu-row">
-        {lead ? (
-          <span className="menu-lead">{lead}</span>
-        ) : (
-          icon && <Icon name={icon} />
-        )}
-        <div className="menu-text">
-          <span className="menu-label">{label}</span>
-          {detail && <div className="menu-detail">{detail}</div>}
+    <li className={actionsBelow ? "menu-item-below" : undefined}>
+      {href ? (
+        <Link href={href} className="menu-row">
+          {content}
+        </Link>
+      ) : (
+        <div className="menu-row">{content}</div>
+      )}
+      {actions && (
+        <div className="menu-actions" role="group" aria-label={label}>
+          {actions}
         </div>
-        {end}
-        <Icon name="chevron" className="icon menu-chevron" />
-      </Link>
+      )}
     </li>
   );
 }

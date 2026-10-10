@@ -10,6 +10,7 @@ import {
 } from "../loans/responsibility";
 import { reportReturn } from "../loans/return";
 import { approveLoanRequest } from "../loans/approval";
+import { readLoan } from "../loans/queries";
 import { blockUser } from "../social/commands";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
@@ -150,6 +151,8 @@ describe("review rights follow how the loan ended (PS-TRUST-001)", () => {
     expect(await reviewsOf(borrower, loanId)).toEqual({
       loanId,
       role: "borrower",
+      title: expect.any(String),
+      counterpart: expect.objectContaining({ realName: expect.any(String) }),
       window: {
         status: "open",
         basis: "returned",
@@ -211,6 +214,8 @@ describe("review rights follow how the loan ended (PS-TRUST-001)", () => {
     expect(await reviewsOf(owner, loanId)).toEqual({
       loanId,
       role: "lender",
+      title: expect.any(String),
+      counterpart: expect.objectContaining({ realName: expect.any(String) }),
       window: null,
       own: null,
       received: null,
@@ -762,6 +767,50 @@ describe("a loan that reopens (PS-TRUST-008)", () => {
       payload: { loanId, authorRole: "borrower", basis: "deadline" },
     });
     expect((await reviewsOf(owner, loanId)).received).toMatchObject(published);
+  });
+
+  it("keeps a former lender's reviews theirs, naming only the thing and the other party", async () => {
+    const setup = await published();
+    const coOwner = await user();
+    await addCoOwner(setup.owner, setup.objectId, coOwner);
+    const { requestId } = await ask(
+      setup.borrower,
+      setup.objectId,
+      environmentOrigin(setup.environmentId),
+      dated(0, 2),
+    );
+    const { loanId } = await run(approveLoanRequest, setup.owner, {
+      requestId,
+    });
+    await handOver(setup.owner, loanId);
+    await sayNow(setup.owner, loanId, "received");
+    await submit(setup.owner, loanId, scoring(lenderDimensions));
+
+    // Reopened, the lender's role moves; the reviews are still the
+    // window's parties' until the loan ends again.
+    await sayNow(setup.borrower, loanId, "still_has");
+    const { transferId } = await run(offerResponsibility, setup.owner, {
+      loanId,
+      toUserId: coOwner.userId,
+    });
+    await run(acceptResponsibilityTransfer, coOwner, { loanId, transferId });
+
+    await expect(
+      executeQuery(tick(), readLoan, {
+        actor: setup.owner,
+        input: { loanId },
+      }),
+    ).rejects.toMatchObject(notFound);
+    const reviews = await reviewsOf(setup.owner, loanId);
+    expect(reviews).toMatchObject({
+      role: "lender",
+      title: expect.any(String),
+      counterpart: { realName: expect.any(String) },
+      window: { status: "paused" },
+      own: { status: "hidden" },
+    });
+    expect(reviews.title.length).toBeGreaterThan(0);
+    await expect(reviewsOf(coOwner, loanId)).rejects.toMatchObject(notFound);
   });
 
   it("lapses a hidden review when the lender's role moved while it was reopened", async () => {

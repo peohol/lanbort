@@ -51,7 +51,7 @@ Når spørsmålet er avgjort:
 
 ## Status før UI-arbeidet
 
-Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. Gjennomgangen av kjerneflyt 5 (samtaler og enheter) samme dag avdekket [OD-0043](#od-0043--varsler-om-nye-meldinger-i-privat-chat), [OD-0044](#od-0044--når-gjenopprettingsnøkkelen-for-privat-chat-tilbys) og [OD-0045](#od-0045--én-privat-samtale-per-person-eller-per-lån), som ble avgjort samme dag. Designet for lånets side og anmeldelser avdekket [OD-0033](#od-0033--hvordan-skade-mangel-eller-tap-registreres-på-et-lån)–[OD-0036](#od-0036--varsel-når-anmeldelsene-blir-synlige), som ble avgjort samme dag. Designet for rapportering, saker og konfliktløsning avdekket OD-0038–OD-0042, som også ble avgjort samme dag. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
+Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som helhet. De to som gjorde det, [OD-0013](#od-0013--hvor-venner-finner-hverandres-objekter) og [OD-0015](#od-0015--meldingen-i-en-låneforespørsel-og-ende-til-ende-kryptering), ble avgjort samme dag. Planleggingen av brukerflaten avdekket [OD-0024](#od-0024--om-eieren-vises-på-tingene-i-et-miljø), som ble avgjort samme dag. [Skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md) avdekket to til, [OD-0025](#od-0025--fjerning-og-utestengelse-av-aktive-medlemmer-i-et-miljø) og [OD-0026](#od-0026--hvor-plattformforvalterens-inngrep-på-kontoer-og-miljøer-gjøres), som bare berører miljøadministrasjon og plattformforvalterens flater, og som ble avgjort 10. oktober 2026. Profilbildet avdekket [OD-0027](#od-0027--formen-profilbildet-vises-i), og designet for personer, venner og tillit avdekket OD-0028–OD-0032. Disse seks ble avgjort 9. oktober 2026. Gjennomgangen av kjerneflyt 5 (samtaler og enheter) samme dag avdekket [OD-0043](#od-0043--varsler-om-nye-meldinger-i-privat-chat), [OD-0044](#od-0044--når-gjenopprettingsnøkkelen-for-privat-chat-tilbys) og [OD-0045](#od-0045--én-privat-samtale-per-person-eller-per-lån), som ble avgjort samme dag. Designet for lånets side og anmeldelser avdekket [OD-0033](#od-0033--hvordan-skade-mangel-eller-tap-registreres-på-et-lån)–[OD-0036](#od-0036--varsel-når-anmeldelsene-blir-synlige), som ble avgjort samme dag. Designet for rapportering, saker og konfliktløsning avdekket OD-0038–OD-0042, som også ble avgjort samme dag. Designet for administrator- og forvalterflatene (fase 7) avdekket [OD-0051](#od-0051--hvem-administratorene-kan-invitere)–[OD-0053](#od-0053--hva-den-som-er-stengt-ute-fra-nye-forsøk-får-vite), som ble avgjort 10. oktober 2026 sammen med OD-0050. Ingen av dem er bygget ennå, unntatt OD-0050. De andre åpne spørsmålene gjelder drift, juridisk avklaring eller funksjoner som står avslått til de er avgjort; UI-et viser ikke slike funksjoner før beslutningen finnes. Feltet «Avklares før» sier til når hvert av dem må avgjøres.
 
 ## Åpne
 
@@ -174,30 +174,37 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Spørsmål:** Hvordan registrerer en plattformforvalter passkeys eller sikkerhetsnøkler, hvor mange må være registrert før rollen virker, og hvordan gjenopprettes tilgang når én eller alle går tapt? [Utredningen](architecture/utredninger/OD-0010-privilegert-autentisering.md#anbefalt-modell-i-detalj) anbefaler minst to autentikatorer, en engangs registreringskode som overleveres utenom e-post, og en revisjonslogget driftsvei ved tap av alle.
 - **Avklares før:** WebAuthn-mekanismen bygges (WP-12), og dermed før privilegerte plattformforvalterhandlinger tas i bruk (Port D). Til da er de avvist.
 
-### OD-0025 — Fjerning og utestengelse av aktive medlemmer i et miljø
-- **Lag:** Produktspesifikasjon
-- **Status:** Åpen
-- **Berører:** PS-ENV-004, PS-TRUST-013, PS-TRUST-016, PS-USR-009, [visjon 03](vision/03-miljoer.md) («Kontinuitet ved avvikling, utestengelse og manglende administrasjon»), [skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md#medlemmer-og-utestengelse)
-- **Spørsmål:** Visjonen forutsetter at et medlem kan bli utestengt etter at et lån er godkjent, og at administratorene modererer i eget miljø, men verken visjonen eller spesifikasjonen sier om lokal moderering kan avslutte et aktivt medlemskap eller stenge medlemmet ute fra nye forsøk. Hvis ja: kreves en rapport eller sak som grunnlag, hvilke kriterier og konsekvenser gjelder, er avslutning av medlemskap og sperre mot nytt forsøk to separate tiltak, og hva får medlemmet vite? Den etablerte rollemodellen sier allerede at alle administratorer har samme løpende myndighet i ordinær drift, mens eieren bare har særskilte organisatoriske fullmakter; dette detaljvalget åpner derfor ikke et nytt eier-vs.-administrator-skille. I dag kan noen bare stenges ute når en søknad avslås, og de lokale tiltakene i en rapport gjelder publiseringer, ikke medlemskap. Inntil dette er besluttet, har administratorene ingen handling for å fjerne et aktivt medlem.
-- **Avhenger av:** Produktvurdering av miljøadministratorens myndighet og habilitet.
-- **Avklares før:** miljøadministrasjonen skal kunne fjerne medlemmer. Til da vises ingen slik handling.
-- **Anbefaling:** La habile administratorer avslutte et aktivt medlemskap med begrunnelse, eventuelt også stenge for nye forsøk, som et sporbart modereringstiltak (PS-TRUST-016) med samme virkning på pågående lån som utmelding.
-
-### OD-0026 — Hvor plattformforvalterens inngrep på kontoer og miljøer gjøres
-- **Lag:** UX
-- **Status:** Åpen
-- **Berører:** UX-IA-007, UX-PRIV-006, PS-ADM-003, PS-ADM-009, PS-ADM-010, PS-ADM-014, PS-TRUST-016, [visjon 03](vision/03-miljoer.md) («Administrasjon»), OD-0023, [skjerm- og flytinventaret](ux/08-skjerm-og-flytinventar.md#inngrep-på-kontoer)
-- **Spørsmål:** UX-modellen sier at plattformforvalterens handlinger ligger «i relevant plattformkontekst» og at forvalterne får en arbeidskø, men ikke hvor inngrep som ikke hører til én bestemt rapport gjøres: suspensjon og gjeninnsetting, kontrollert kontoavslutning, duplikat og falsk identitet, og inngrep mot misbruk av en administrator- eller eierrolle i et miljø. Skal slike inngrep alltid startes fra en sak i plattformkøen, fra personens eller miljøets side for den som har rollen, eller fra en egen plattformflate?
-- **Avhenger av:** Fase 7 i [planen for UI-designfasen](planning/ui-design-plan.md) og OD-0023.
-- **Avklares før:** plattformforvalterens flater designes og vises (etter OD-0023). Til da finnes ingen slik flate i appen.
-- **Anbefaling:** Start alle inngrep fra en sak i plattformkøen, slik at begrunnelse, habilitet og historikk følger saken (PS-TRUST-016, PS-ADM-014), og vis ingen forvalterhandlinger på ordinære person- og miljøsider.
-
 ## Avklart
 
 ### OD-0050 — Varsel til søkeren når en søknad er avgjort
 - **Lag:** Produktspesifikasjon
 - **Status:** Avklart (produkteier, 10. oktober 2026)
 - **Beslutning:** Se [PS-ENV-017](product-spec/02-miljoer.md). Varsel i appen både ved godkjenning og avslag; godkjenningen leder til miljøet med velkomsten, avslaget er nøytralt uten begrunnelse eller hvem som avgjorde.
+
+### OD-0051 — Hvem administratorene kan invitere
+- **Lag:** Produktspesifikasjon
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Beslutning:** Se [PS-ENV-018](product-spec/02-miljoer.md). Venner og andre eksisterende brukere administratoren lovlig kan se, også fra personens side; ingen oppslag på e-post eller navn som røper konto eller skjulte miljøer. Ikke bygget; til da inviteres bare venner.
+
+### OD-0052 — Hva søkeren får når administratorene ber om mer informasjon
+- **Lag:** Produktspesifikasjon
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Beslutning:** Se [PS-ENV-019](product-spec/02-miljoer.md). Ett kort, valgfritt spørsmål på søknaden, vist ordrett og avsendt som «Administratorene i [miljøet]», og ett handlingsvarsel i appen. Uten tekst gjelder standardoppfordringen. Ingen privat chat eller kopi til profilen. Ikke bygget.
+
+### OD-0053 — Hva den som er stengt ute fra nye forsøk, får vite
+- **Lag:** Produktspesifikasjon
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Beslutning:** Se [PS-ENV-020](product-spec/02-miljoer.md). Nøytralt avslag som i PS-ENV-017; etterpå sier miljøsiden «Du kan ikke søke om å bli med nå», uten aktiv søknadsknapp, og skjulte miljøer røpes ikke. Ikke bygget.
+
+### OD-0025 — Fjerning og utestengelse av aktive medlemmer i et miljø
+- **Lag:** Produktspesifikasjon
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Beslutning:** Se [PS-ENV-021](product-spec/02-miljoer.md). En habil administrator kan avslutte et aktivt medlemskap med saklig, sporbar begrunnelse og velge separat om personen også stenges ute. Godkjente lån og nødvendig partsinnsyn består; den det gjelder får nøytral beskjed med vei til ny vurdering, uten å få vite hvem som rapporterte. Ikke bygget; til da vises ingen slik handling.
+
+### OD-0026 — Hvor plattformforvalterens inngrep på kontoer og miljøer gjøres
+- **Lag:** UX
+- **Status:** Avklart (produkteier, 10. oktober 2026)
+- **Beslutning:** Se [PS-ADM-015](product-spec/07-administrasjon-og-livssyklus.md). Alle inngrep starter fra en sak i plattformkøen med habilitet, begrunnelse og sporbarhet; uten rapport opprettes et autorisert saksgrunnlag først. Ingen inngrepsknapper på vanlige person- og miljøsider. Ikke bygget, og stengt til WebAuthn/OD-0023.
 
 ### OD-0054 — Eiernavn når en ting er delt direkte med venner
 - **Lag:** Produktspesifikasjon

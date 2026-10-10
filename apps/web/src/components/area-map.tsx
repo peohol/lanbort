@@ -35,7 +35,7 @@ const featureOf = (area: GeoArea, properties: object) => ({
 });
 
 /**
- * The approximate areas of found environments on a map (WP-62), and the
+ * The approximate areas of environments on a map (WP-62), and the
  * area searched as a dashed ring. Only areas, never points: they are as
  * coarse as stored (PS-NFR-008). The list beside it says everything the
  * map shows, so a browser that cannot draw maps simply shows no map.
@@ -43,9 +43,14 @@ const featureOf = (area: GeoArea, properties: object) => ({
 export function AreaMap({
   areas,
   searched,
+  caption = searched
+    ? "Omtrentlige områder for miljøene i treffene. Den stiplede ringen er området du søkte i."
+    : "Omtrentlige områder for miljøene i treffene.",
 }: {
   areas: readonly MappedArea[];
   searched: GeoArea | null;
+  /** What the map shows, when it is not the environments found in Finn. */
+  caption?: string;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
@@ -152,11 +157,7 @@ export function AreaMap({
   return (
     <figure className={styles.figure}>
       <div ref={container} className={styles.map} />
-      <figcaption className="quiet">
-        {searched
-          ? "Omtrentlige områder for miljøene i treffene. Den stiplede ringen er området du søkte i."
-          : "Omtrentlige områder for miljøene i treffene."}
-      </figcaption>
+      <figcaption className="quiet">{caption}</figcaption>
     </figure>
   );
 }
