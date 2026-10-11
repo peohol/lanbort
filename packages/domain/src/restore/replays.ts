@@ -76,6 +76,7 @@ import {
 } from "../people/events";
 import { changeVisibility, removePicture } from "../people/pictures";
 import { platformRoleRevoked, stewardPasskeyRemoved } from "../platform/events";
+import { endStewardPasskeys } from "../platform/passkeys";
 import {
   friendPublicationCreated,
   friendPublicationWithdrawn,
@@ -416,6 +417,16 @@ const platformRoleReplay: RestoreReplay = {
 
     if (revoked.numUpdatedRows === 0n) {
       return "unchanged";
+    }
+
+    // As the revocation did: an open code from before it is void again.
+    if (role === "platform_steward") {
+      await endStewardPasskeys(tx, {
+        userId: entry.resourceId,
+        by: { userId: null, process: restoreProcess },
+        events: args.events,
+        now,
+      });
     }
 
     recordAgain(platformRoleRevoked, args);

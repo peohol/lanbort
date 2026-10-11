@@ -3,6 +3,8 @@ import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
 import type { AuthenticationContext, AuthenticationMethod } from "../actor";
 import { recentAuthenticationMaxAgeMs } from "../authorization/rules";
+import type { EventRecorder } from "../events/recorder";
+import { stewardPasskeyRemoved } from "./events";
 
 /**
  * Passkeys for platform stewards (ADR-0011, OD-0023). Lånbort verifies
@@ -131,6 +133,51 @@ export function activePasskeys(db: Db, userId: string) {
     .where("user_id", "=", userId)
     .where("removed_at", "is", null)
     .orderBy("created_at");
+}
+
+/**
+ * OD-0023: a steward's passkeys and any open enrollment code end with the
+ * role, so a later grant starts again from a new code and no old passkey
+ * counts. Returns how many passkeys stopped counting.
+ */
+export async function endStewardPasskeys(
+  db: Db,
+  args: {
+    userId: string;
+    /** Who ends them, as stored on each passkey: a user or a process. */
+    by: { userId: string | null; process: string | null };
+    events: EventRecorder;
+    now: Date;
+  },
+) {
+  const removed = await db
+    .updateTable("app.steward_passkeys")
+    .set({
+      removed_at: args.now,
+      removed_by_user_id: args.by.userId,
+      removed_by_process: args.by.process,
+    })
+    .where("user_id", "=", args.userId)
+    .where("removed_at", "is", null)
+    .returning("id")
+    .execute();
+
+  for (const { id } of removed) {
+    args.events.record(stewardPasskeyRemoved, {
+      resourceId: args.userId,
+      payload: { passkeyId: id },
+    });
+  }
+
+  await db
+    .updateTable("app.steward_enrollment_codes")
+    .set({ voided_at: args.now })
+    .where("user_id", "=", args.userId)
+    .where("used_at", "is", null)
+    .where("voided_at", "is", null)
+    .execute();
+
+  return removed.length;
 }
 
 export function toStoredCredential(row: {

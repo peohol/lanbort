@@ -7,7 +7,7 @@ import {
   stewardPasskeysSchema,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 import type { Actor, AccountStatus, UserActor } from "../actor";
 import { rateLimits } from "../abuse/rate-limits";
@@ -25,6 +25,7 @@ import {
   activePasskeys,
   enrollmentCodeHash,
   enrollmentCodeTtlMs,
+  endStewardPasskeys,
   maximumStewardPasskeys,
   minimumStewardPasskeys,
   newChallenge,
@@ -140,6 +141,33 @@ function onlyTheFirstPasskey() {
     "conflict",
     "The steward has passkeys; add one from a confirmed session, or reset",
   );
+}
+
+/**
+ * Serializes adding passkeys for one steward until the transaction ends, so
+ * two registrations at once cannot both pass the count and the limit holds.
+ */
+async function lockStewardPasskeys(tx: Tx, userId: string) {
+  await sql`select pg_advisory_xact_lock(hashtextextended(${`steward_passkeys:${userId}`}, 0))`.execute(
+    tx,
+  );
+}
+
+/**
+ * Whether the user holds the steward role now, read in the transaction:
+ * the actor's roles were read before it, and a revocation may have
+ * committed since.
+ */
+async function holdsStewardRole(tx: Tx, userId: string) {
+  const grant = await tx
+    .selectFrom("app.platform_role_grants")
+    .select("id")
+    .where("user_id", "=", userId)
+    .where("role", "=", "platform_steward")
+    .where("revoked_at", "is", null)
+    .executeTakeFirst();
+
+  return grant !== undefined;
 }
 
 async function countActive(tx: Tx, userId: string) {
@@ -279,6 +307,14 @@ export function stewardPasskeyCommands(ceremonies: PasskeyCeremonies) {
 
       if (!credential) {
         invalid("response", "The passkey could not be verified");
+      }
+
+      await lockStewardPasskeys(tx, user.userId);
+
+      // A revocation that committed after the request began ended the
+      // passkeys; none is added after it (OD-0023).
+      if (!(await holdsStewardRole(tx, user.userId))) {
+        throw new DomainError("forbidden", "The steward role has ended");
       }
 
       const active = await countActive(tx, user.userId);
@@ -559,17 +595,10 @@ async function loadStewardTarget(tx: Tx, email: string) {
     return null;
   }
 
-  const grant = await tx
-    .selectFrom("app.platform_role_grants")
-    .select("id")
-    .where("user_id", "=", user.id)
-    .where("role", "=", "platform_steward")
-    .where("revoked_at", "is", null)
-    .executeTakeFirst();
   const resource: StewardTarget = {
     userId: user.id,
     status: user.status as AccountStatus,
-    holdsRole: grant !== undefined,
+    holdsRole: await holdsStewardRole(tx, user.id),
   };
 
   return { resource, context: undefined };
@@ -603,22 +632,12 @@ async function issueCode(
   }
 
   if (removeAll) {
-    const removed = await tx
-      .updateTable("app.steward_passkeys")
-      .set({ removed_at: now, removed_by_process: process })
-      .where("user_id", "=", steward.userId)
-      .where("removed_at", "is", null)
-      .returning("id")
-      .execute();
-
-    for (const { id } of removed) {
-      events.record(stewardPasskeyRemoved, {
-        resourceId: steward.userId,
-        payload: { passkeyId: id },
-      });
-    }
-
-    removedPasskeys = removed.length;
+    removedPasskeys = await endStewardPasskeys(tx, {
+      userId: steward.userId,
+      by: { userId: null, process },
+      events,
+      now,
+    });
   }
 
   await tx
