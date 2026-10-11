@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { objectImageMaxCount } from "@lanbort/contracts";
 import { afterAll, describe, expect, it, vi } from "vitest";
-import { anonymousActor, type UserActor } from "../actor";
+import {
+  consumeRateLimit,
+  RateLimitedError,
+  rateLimits,
+} from "../abuse/rate-limits";
+import { anonymousActor, type UserActor, userScope } from "../actor";
 import { type DomainContext, executeCommand } from "../commands/command";
 import { executeQuery } from "../commands/query";
 import { ConsumerRegistry } from "../outbox/consumer";
@@ -705,6 +710,48 @@ describe("images (PS-OBJ-002)", () => {
     expect((await read(owner, objectId)).images).toHaveLength(
       objectImageMaxCount,
     );
+  });
+
+  it("spends the uploads budget before processing, but replays a completed upload", async () => {
+    const owner = await user();
+    const { objectId } = await create(owner);
+    // Other test files remove budgets that are back by their own clocks, up
+    // to a few hundred years ahead (rate-limits.integration.test.ts), so this
+    // budget is spent far beyond them.
+    const later: DomainContext = {
+      ...domain,
+      clock: () => new Date(Date.UTC(new Date().getUTCFullYear() + 500, 0, 1)),
+    };
+    const uploadLater = (bytes: string, idempotencyKey = key()) =>
+      uploadObjectImage(later, images, {
+        actor: owner,
+        objectId,
+        bytes: new TextEncoder().encode(bytes),
+        idempotencyKey,
+      });
+    const idempotencyKey = key();
+    const first = await uploadLater("img-budget", idempotencyKey);
+
+    const spendAll = async () => {
+      for (let i = 0; i <= rateLimits.uploads.limit; i += 1) {
+        await consumeRateLimit(
+          later,
+          rateLimits.uploads,
+          userScope(owner.userId),
+        );
+      }
+    };
+    await expect(spendAll()).rejects.toBeInstanceOf(RateLimitedError);
+    process.mockClear();
+
+    await expect(uploadLater("img-over")).rejects.toMatchObject({
+      code: "rate_limited",
+    });
+    expect(process).not.toHaveBeenCalled();
+    expect(await uploadLater("img-budget", idempotencyKey)).toEqual({
+      output: first.output,
+      replayed: true,
+    });
   });
 
   it("deletes the file of an upload that crashed before it was registered", async () => {

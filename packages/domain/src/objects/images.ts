@@ -18,6 +18,7 @@ import {
   executeCommand,
   parseInput,
 } from "../commands/command";
+import { rateLimits } from "../abuse/rate-limits";
 import { idempotencyKeyPattern } from "../commands/idempotency";
 import {
   defineQuery,
@@ -162,17 +163,12 @@ const prepareObjectImage = defineCommand({
   output: z.strictObject({ completed: z.boolean() }),
   policy: addObjectImagePolicy,
   idempotency: "none",
+  rateLimit: rateLimits.uploads,
   load: ({ tx, input }) => loadImageSlot(tx, input.objectId),
   execute: async ({ tx, actor, input, resource, events }) => {
-    const completed = await tx
-      .selectFrom("app.idempotency_records")
-      .select("idempotency_key")
-      .where("scope", "=", actorScope(actor) as string)
-      .where("command", "=", attachObjectImage.name)
-      .where("idempotency_key", "=", input.uploadKey)
-      .executeTakeFirst();
-
-    if (completed) {
+    if (
+      await completedUpload(tx, actor, attachObjectImage.name, input.uploadKey)
+    ) {
       return { completed: true };
     }
 
@@ -265,18 +261,27 @@ export async function uploadObjectImage(
     uploadKey,
     request.bytes,
   );
-  const prepared = await executeCommand(domain, prepareObjectImage, {
-    actor: request.actor,
-    input: { objectId, imageId, uploadKey },
-    correlationId: request.correlationId,
-  });
+  const completed =
+    (await completedUpload(
+      domain.db,
+      request.actor,
+      attachObjectImage.name,
+      uploadKey,
+    )) ||
+    (
+      await executeCommand(domain, prepareObjectImage, {
+        actor: request.actor,
+        input: { objectId, imageId, uploadKey },
+        correlationId: request.correlationId,
+      })
+    ).output.completed;
   const image = await services.process(request.bytes);
 
   if (!image) {
     throw new DomainError("invalid_input", "Not an accepted image", ["image"]);
   }
 
-  if (!prepared.output.completed) {
+  if (!completed) {
     await services.store.put(
       objectImageKey(objectId, imageId),
       image.bytes,
@@ -296,6 +301,34 @@ export async function uploadObjectImage(
     idempotencyKey: uploadKey,
     correlationId: request.correlationId,
   });
+}
+
+/**
+ * Whether the actor already completed the upload with this key, so a retry
+ * replays the first result without storing again or spending the uploads
+ * budget (PS-NFR-005).
+ */
+export async function completedUpload(
+  db: Kysely<Database>,
+  actor: Actor,
+  command: string,
+  uploadKey: string,
+): Promise<boolean> {
+  const scope = actorScope(actor);
+
+  if (scope === undefined) {
+    return false;
+  }
+
+  const record = await db
+    .selectFrom("app.idempotency_records")
+    .select("idempotency_key")
+    .where("scope", "=", scope)
+    .where("command", "=", command)
+    .where("idempotency_key", "=", uploadKey)
+    .executeTakeFirst();
+
+  return record !== undefined;
 }
 
 /**
