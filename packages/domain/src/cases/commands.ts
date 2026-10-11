@@ -87,7 +87,7 @@ import {
   settleAssignment,
   copiesFromOwnConversations,
 } from "./store";
-import { rateLimits } from "../abuse/rate-limits";
+import { type RateLimit, rateLimits } from "../abuse/rate-limits";
 
 /**
  * Administrative cases (WP-45, PS-COM-010–015). Each command locks what it
@@ -758,12 +758,14 @@ export function handlerCommand<
   policy: Policy<CaseResource, undefined>,
   act: (action: HandlerAction<I>) => Promise<O | void>,
   output: z.ZodType<O> = caseActionResultSchema as unknown as z.ZodType<O>,
+  rateLimit?: RateLimit,
 ) {
   return defineCommand({
     name,
     input,
     output,
     policy,
+    ...(rateLimit ? { rateLimit } : {}),
     idempotency: "required",
     load: ({ tx, actor, input: parsed, now }) =>
       loadCase(tx, actor, parsed.caseId, now, { lock: true }),
