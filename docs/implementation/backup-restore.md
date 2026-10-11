@@ -27,7 +27,7 @@ Tilgang: Supabases backup kan bare hentes og gjenopprettes av medlemmer av Supab
 
 `.github/workflows/backup.yml` gjør jobben og kalles av to arbeidsflyter:
 
-- **«Restore drill»** i dette repoet, hver måned og ved behov: tar en backup av produksjon og gjenoppretter den til en isolert, midlertidig Supabase-stakk på GitHub-maskinen, slik en gjenoppretting til et nytt prosjekt går, med `finish`, filene og sjekkene. Ingenting lagres, og loggen har bare tider og antall. Produksjon blir bare lest.
+- **«Restore drill»** i dette repoet, hver måned og ved behov: tar en backup av produksjon og gjenoppretter den til en isolert, midlertidig Supabase-stakk på GitHub-maskinen, slik en gjenoppretting til et nytt prosjekt går, med `finish`, filene og sjekkene. Mangler produksjon en migrasjon som er slått sammen, legges den på kopien først og nevnes som en advarsel, så øvelsen fortsatt viser at backupen kan gjenopprettes. Ingenting lagres, og loggen har bare tider og antall. Produksjon blir bare lest.
 - **Det private backup-repoet**, hver natt: lagrer backupen som en release, laster den ned igjen, sjekker at den er lik, øver gjenopprettingen av den lagrede kopien og sletter releaser eldre enn 7 dager. Repoet trenger hemmeligheten `SUPABASE_ACCESS_TOKEN`, og har bare denne arbeidsflyten:
 
   ```yaml

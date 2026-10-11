@@ -5,7 +5,7 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "node scripts/copy-map-worker.mjs && next dev",
-    "build": "node scripts/copy-map-worker.mjs && next build",
+    "build": "node scripts/copy-map-worker.mjs && pnpm --filter @lanbort/ops --silent migrations && next build",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc6 --noEmit",
     "test": "vitest run",
