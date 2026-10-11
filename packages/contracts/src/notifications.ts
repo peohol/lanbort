@@ -89,6 +89,7 @@ export const notificationKinds = {
   "chat.device_linked": "required",
   "chat.new_messages": "information",
   "steward.passkeys_changed": "required",
+  "steward.access_ended": "required",
 } as const satisfies Record<string, NotificationLevel>;
 
 export type NotificationKind = keyof typeof notificationKinds;
@@ -103,7 +104,7 @@ export type NotificationKind = keyof typeof notificationKinds;
  * not a channel choice. Security events for
  * the account's private chat (a key reset or a newly linked device) go out
  * the same way, under PS-COM-016 and ADR-0010 §§5, 8, and so do changes to a
- * platform steward's passkeys (OD-0023). Other required kinds stay in the app
+ * platform steward's passkeys or the end of their role (OD-0023). Other required kinds stay in the app
  * only, until OD-0004 settles the channels per kind and level.
  */
 export const emailReserveKinds = [
@@ -118,6 +119,7 @@ export const emailReserveKinds = [
   "chat.account_key_reset",
   "chat.device_linked",
   "steward.passkeys_changed",
+  "steward.access_ended",
 ] as const satisfies readonly NotificationKind[];
 
 export const notificationKindSchema = z.enum(

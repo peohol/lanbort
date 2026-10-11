@@ -261,6 +261,13 @@ describe("an application's outcome (PS-ENV-017)", () => {
 
     expect(notificationHref(notice, true)).toBe(passkeysHref);
     expect(notificationHref(notice, false)).toBeNull();
+    // Once the role has ended, the passkeys are no longer theirs to open.
+    expect(
+      notificationHref(
+        { ...notice, kind: "steward.access_ended", detail: null },
+        true,
+      ),
+    ).toBeNull();
   });
 });
 

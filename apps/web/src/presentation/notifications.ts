@@ -27,8 +27,8 @@ type About = DescribedNotification["about"];
  * Where following a notification leads: its context, and the first time an
  * approved application is followed, the environment with its welcome
  * (PS-ENV-017). Null where the context has no page of its own, as a
- * steward's own access has none while `stewards` are off here: the notice
- * is then read in the centre.
+ * steward's own access has none while `stewards` are off here, nor once
+ * the role has ended: the notice is then read in the centre.
  */
 export function notificationHref(
   notification: Notification,
@@ -36,7 +36,11 @@ export function notificationHref(
 ): string | null {
   const { kind, detail, target, readAt } = notification;
 
-  if (target.type === "steward_access" && !stewards) return null;
+  if (
+    target.type === "steward_access" &&
+    (!stewards || kind === "steward.access_ended")
+  )
+    return null;
 
   return kind === "environment.membership_approved" &&
     detail === null &&
@@ -177,6 +181,11 @@ const refinements: Partial<
       notificationEmailSubjects["steward.passkeys_changed"],
     detail:
       "Var det ikke deg eller avtalt med deg, si fra til de andre plattformforvalterne med en gang.",
+  }),
+  "steward.access_ended": () => ({
+    title: notificationEmailSubjects["steward.access_ended"],
+    detail:
+      "Du har ikke lenger tilgang til plattformforvaltningen. Var det ikke avtalt med deg, si fra til de andre plattformforvalterne med en gang.",
   }),
   "loan.handover_reported": (detail) =>
     detail === "not_handed_over"

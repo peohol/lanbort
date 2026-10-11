@@ -1,4 +1,5 @@
 import {
+  platformRoleRevoked,
   stewardEnrollmentCodeIssued,
   stewardPasskeyAdded,
   stewardPasskeyRemoved,
@@ -12,8 +13,10 @@ const ownAccess = (userId: string) =>
  * Security notices about a platform steward's own passkeys (ADR-0011,
  * OD-0023), told also when the steward acted: whoever has taken over the
  * e-mail account cannot change the passkeys, but the steward must learn at
- * once if someone else did. A reset is told once, by its new code, not per
- * passkey it removed; deleting the account tells nobody.
+ * once if someone else did. A reset is told once, by its new code, and the
+ * end of the role once, by the revocation, not per passkey they removed;
+ * deleting the account tells nobody, as a deleted account is told nothing
+ * (`recordNotifications`).
  */
 export const stewardRules = [
   notifyOn(
@@ -47,5 +50,14 @@ export const stewardRules = [
       ownAccess(event.resourceId),
       payload.removedPasskeys > 0 ? "reset" : "enrollment_code",
     ),
+  ),
+  notifyOn(platformRoleRevoked, ({ event, payload }) =>
+    payload.role === "platform_steward"
+      ? tell(
+          [event.resourceId],
+          "steward.access_ended",
+          ownAccess(event.resourceId),
+        )
+      : [],
   ),
 ];
