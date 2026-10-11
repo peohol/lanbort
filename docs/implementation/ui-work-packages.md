@@ -226,7 +226,7 @@ Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) og na
 - **Mekling når lånet er avklart (PS-COM-022).** Saken viser «Lånet er avklart av partene», «Lukk saken» er neste steg, og saken legges sist i køen (#123).
 - **Ingen aktiv rapport til Lånbort (UX-EXC-011).** Rapport til Lånbort vises som ikke tilgjengelig ennå, med miljøets administratorer som vei videre (#123), til forvaltningen er slått på (`PLATFORM_STEWARDS_ENABLED`); da er valget, rapporten uten felles miljø og «Send videre til Lånbort» aktive. Før piloten åpnes, må sikkerhetskritiske meldinger ha en reell, betjent kanal.
 
-Gjenstår: plattformforvalternes kø og inngrep, som venter på OD-0023.
+Plattformforvalternes kø og inngrep er bygget etter at OD-0023 ble avklart (#174–#185, se «Senere»), og finnes bare mens forvaltningen er slått på.
 
 ## WP-89 — Eiere på tingene i et miljø
 

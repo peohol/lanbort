@@ -69,6 +69,7 @@ Port D krever at kjente mangler er dokumentert og vurdert. Dette er det som bevi
 | Mangel | Følge | Vurdering for lukket pilot |
 | --- | --- | --- |
 | Privat chat er av i produksjon (`CHAT_ENABLED` er ikke satt) | Deltakerne kan ikke skrive private meldinger til hverandre i appen | Krever Port C, med uavhengig kryptografisk gjennomgang ([grunnlaget](e2ee-gjennomgangsgrunnlag.md)) |
+| Lånelogistikk ved blokkering (WP-44) går gjennom privat chat og er derfor også av | Parter i et pågående lån som har blokkert hverandre, kan ikke skrive til hverandre i appen | Lånet fullføres med stegene på lånets side som før; uenighet blir en avklaring eller, i et miljølån, en sak hos miljøets administratorer |
 | Plattformforvaltning er av (`PLATFORM_STEWARDS_ENABLED` er ikke satt) | Ingen plattformkø og ingen inngrep fra Lånbort; saker håndteres i miljøene. En konto som misbrukes, stenges i Supabase ([alvorlige hendelser](#alvorlige-hendelser)) | Privilegerte handlinger avvises til passkeys er tatt i bruk (ADR-0011) |
 | Representanttilgang ved død eller varig utilgjengelighet er av (OD-0003 åpen) | Ingen kan handle på vegne av en avdød deltaker | Testet utilgjengelig (pgTAP 0030); saker løses manuelt |
 | Ingen Point-in-Time Recovery (OD-0022) | Inntil 24 timers endringer kan gå tapt; gjenoppretting tar inntil 8 timer | Valgt av produkteier. Den egne backupen øves hver natt og hver måned; gjenoppretting av Supabases backup er ikke øvd ([backup](backup-restore.md#øvelsen)) |

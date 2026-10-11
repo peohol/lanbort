@@ -1,6 +1,6 @@
 # Kvalitetsporter
 
-> **Status:** Obligatoriske porter før de angitte milepælene.
+> **Status:** Obligatoriske porter før de angitte milepælene. Hvor hver port står, er samlet i [status 11. oktober 2026](#status-11-oktober-2026).
 
 ## Port A — Før domeneutvidelse etter fase 1
 
@@ -65,3 +65,65 @@ I tillegg til pilotport:
 - særskilt E2EE-review dersom chat er aktiv
 - tilgjengelighetsgjennomgang mot gjeldende krav
 - driftsberedskap, restore og hendelseshåndtering er dokumentert
+
+## Status 11. oktober 2026
+
+Hver rad sier hva slags sjekk påstanden hviler på:
+
+- **Test:** databasetester (pgTAP), integrasjonstester og nettlesertester, som kjører i CI på hver endring.
+- **Produksjon:** lest fra eller kjørt mot det hostede oppsettet (Supabase, Vercel og www.lånbort.no).
+- **Uavhengig:** gjort av noen utenfor prosjektet. Ingen slik gjennomgang er gjort ennå. Alt under er bygget og sjekket av Claude.
+
+### Port A og B
+
+Oppfylt. Port A er beskrevet under Fase 1 i [implementeringsplanen](README.md). Port B dekkes av domenetestene for WP-31–35 og WP-45, også PS-LOAN-018–019 og PS-LOAN-022 (pgTAP 0054). Sjekk: test.
+
+### Port C: ikke oppfylt, og privat chat er av
+
+Privat chat er bygget, men av i produksjon. `CHAT_ENABLED` finnes ikke i Vercel, og chatrutene svarer «finnes ikke». Begge deler er sjekket i produksjon 11. oktober 2026.
+
+| Krav | Status | Sjekk |
+| --- | --- | --- |
+| OD-0005 avgjort | Ja ([ADR-0010](../architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md)) | – |
+| CSP uten `unsafe-inline` for skript, ingen tredjepartsskript | Ja, på alle sider, ikke bare chatsidene (#172) | Test; produksjon (CSP-hodet på www.lånbort.no) |
+| Uavhengig kryptografisk designreview | Gjenstår. Grunnlaget er klart ([e2ee-gjennomgangsgrunnlag](e2ee-gjennomgangsgrunnlag.md)) | Uavhengig |
+| Serveren kan ikke lese klartekst | Bygget slik og prøvd internt | Test; bekreftes av den uavhengige gjennomgangen |
+| Nøkkel- og enhetstap har definert UX | Bygget: fjerne og avvise enheter, gjenopprettingsnøkkel, tilbakestilling, og utlogging som fjerner enheten der chatten kjører. Der chatten ikke kan åpnes, slettes den lokalt, men enheten må fjernes fra en annen enhet | Test |
+| XSS, CSP og supply chain er testet | Internt: CSP-tester, `pnpm audit` og Gitleaks i CI | Test; bekreftes etter gjennomgangen |
+| Ingen «dekrypter alt»-vei | Ingen finnes. Saksdokumentasjon (WP-46) er en kopi brukeren selv velger og sender | Intern gjennomgang; bekreftes av den uavhengige |
+
+### Port D: oppfylt etter de interne sjekkene
+
+Piloten åpnes først når produkteier legger inn de første deltakerne ([drift av piloten](pilot-operations.md#slik-legger-produkteier-til-en-deltaker)).
+
+| Krav | Status | Sjekk |
+| --- | --- | --- |
+| Fase 1–3-kritiske flyter er ende-til-ende-testet | Ja. Hele nettleserpakken var grønn på desktop 10. oktober 2026 (302 tester). Hovedflytene var grønne på mobil (Pixel 7, 97 tester): lån, retur, uenighet, anmeldelser, blokkering, moderering, kontolivssyklus, saker og vanskelige tilstander | Test |
+| WP-70 er grønn | Ja | Test |
+| WP-71 er grønn | Ja | Test |
+| Backup/restore med gjenoppretting mot et hostet miljø | Ja. En ekte backup av produksjon er gjenopprettet til et isolert miljø 10. og 11. oktober 2026. Gjenoppretting av Supabases egen backup er ikke øvd | Produksjon |
+| Backupnivå besluttet, satt opp og verifisert | Ja, «To lag» (OD-0022). Det er verifisert med gjenoppretting 11. oktober 2026 | Produksjon |
+| Fartsgrenser og misbruksvern | Ja (WP-73). Bildeopplastinger har egen grense (#187) | Test |
+| Betjent kanal for sikkerhetshenvendelser | Ja. `CONTACT_EMAIL` (sikkerhet@lånbort.no) videresendes til produkteier, og GitHubs private sårbarhetsmeldinger er på | Produksjon |
+| Produksjonshemmeligheter skilt fra utvikling | Ja. De ligger bare i Vercel og GitHub | Produksjon |
+| OD-0002 har en pilotpolicy | Ja ([oppbevaring](retention.md)) | Test; jobben kjører i produksjon |
+| OD-0006 avgjort | Ja | – |
+| WebAuthn før privilegerte forvalterhandlinger | Bygget (ADR-0011), men av i produksjon. `PLATFORM_STEWARDS_ENABLED` finnes ikke i Vercel, og forvalterrutene svarer «finnes ikke». Uten bryteren får ingen sesjon `aal2`, så alle privilegerte handlinger avvises | Test; produksjon 11. oktober 2026 |
+| Pilotpolicy for risikofylte objekter | Ja (PS-OBJ-019) | Test |
+| Representanttilgang er av og testet utilgjengelig | Ja (pgTAP 0030) | Test |
+| Kjente mangler er dokumentert og vurdert | Ja ([kjente mangler](pilot-operations.md#kjente-mangler)) | – |
+
+I tillegg er trusselmodellen revidert før piloten ([sikkerhet og trusselmodell](../architecture/08-sikkerhet-og-threat-model.md)). Alle migrasjonene på main er kjørt i produksjon, og det er sjekket 11. oktober 2026.
+
+### Port E: gjenstår
+
+| Krav | Status |
+| --- | --- |
+| OD-0001 ferdig juridisk og sikkerhetsmessig | Åpen. Pilotgrensen gjelder til da |
+| OD-0002 endelige oppbevaringsregler | Åpen. Pilotpolicyen gjelder |
+| OD-0007 juridisk lanseringsgjennomgang | Åpen |
+| OD-0008, dersom behovet finnes | Åpen |
+| Uavhengig sikkerhetsgjennomgang eller penetrasjonstest | Ikke gjort |
+| Særskilt E2EE-review dersom chat er aktiv | Ikke gjort. Den er den samme som i Port C |
+| Tilgjengelighetsgjennomgang mot gjeldende krav | Automatisk sjekk (axe) på mobil og desktop i CI. Manuell gjennomgang med skjermleser og det endelige WCAG-målet (PS-NFR-010) gjenstår |
+| Driftsberedskap, restore og hendelseshåndtering dokumentert | Dokumentert for piloten ([drift](pilot-operations.md), [backup](backup-restore.md)). Punktene under «Gjenstår før bred lansering» i [trusselmodellen](../architecture/08-sikkerhet-og-threat-model.md#gjenstår-før-bred-lansering) står igjen |

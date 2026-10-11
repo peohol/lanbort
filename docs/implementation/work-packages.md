@@ -80,7 +80,7 @@ Invitasjon/aksept, restriksjoner, blokkfrys, uttreden, sporbar redigering og opt
 **Krav:** PS-OBJ-020, PS-USR-004  
 Publiseringsvalget «Venner» per objekt (av som standard), vennens visning av eierens synlige objekter, filteret «Venner» i Finn og at direkte forespørsler krever valget.
 
-**Status:** Serverdelen er ferdig (OD-0013 avklart 6. oktober 2026). Gjenstår: UI-delen, som venter på WP-81, WP-83 og WP-86.
+**Status:** Ferdig (OD-0013 avklart 6. oktober 2026). UI-delen er bygget sammen med WP-81, WP-83 og WP-86 ([UI-arbeidspakkene](ui-work-packages.md)).
 
 ## Fase 3
 
@@ -146,7 +146,7 @@ Sakstyper, partstilgang, tildeling, habilitet og separate forklaringsrunder.
 **Krav:** PS-COM-013  
 Lokal dekryptering og eksplisitt innsendt kopi uten bakdør til privat chat.
 
-**Status:** Serversiden er ferdig: en deltaker kan sende inn en lesbar kopi av valgte private meldinger sammen med det hen skriver i en sak, og kopien blir saksdata (se [servergrensen](server-boundary.md)). Selve valget i samtalen, der meldingene dekrypteres på enheten, bygges når saker får en egen side; chatvisningen fra WP-43 har historikken det trenger. Vedlegg kan ikke sendes inn ennå, fordi verken privat chat eller saker har vedlegg.
+**Status:** Serversiden er ferdig: en deltaker kan sende inn en lesbar kopi av valgte private meldinger sammen med det hen skriver i en sak, og kopien blir saksdata (se [servergrensen](server-boundary.md)). Valget av meldinger, der meldingene dekrypteres på enheten, er en chatside (`/samtaler/sak/[caseId]`) og er derfor av sammen med privat chat til Port C. Vedlegg kan ikke sendes inn ennå, fordi verken privat chat eller saker har vedlegg.
 
 ## Fase 5
 
@@ -203,7 +203,7 @@ Systematisk gjennomgang av alle kjerneflyter på mobil, desktop, tastatur og hje
 ## Fase 7
 
 ### WP-70 — Autorisasjons- og personvernsikkerhetstest
-Prøv eksplisitt skjulte miljøer, historisk tilgang, medeiergrenser, inhabilitet og representanttilgang. Så lenge OD-0003 er åpen, er det pilotmodellen som testes: representanttilgang skal ikke kunne oppnås. Privilegerte plattformforvalterhandlinger skal være avvist uansett hva innloggingstjenesten rapporterer, så lenge WebAuthn-mekanismen fra ADR-0011 ikke er bygget. Privat chat (WP-43) er med: samtaler og ventende enhetskoblinger finnes i den skjulte verdenen, og bare samtalens deltakere når dem. Responstid som sidekanal testes ikke automatisk, fordi slike målinger blir ustabile i delt CI; den hører til den uavhengige sikkerhetsgjennomgangen i Port E.
+Prøv eksplisitt skjulte miljøer, historisk tilgang, medeiergrenser, inhabilitet og representanttilgang. Så lenge OD-0003 er åpen, er det pilotmodellen som testes: representanttilgang skal ikke kunne oppnås. Privilegerte plattformforvalterhandlinger skal være avvist uansett hva innloggingstjenesten rapporterer; bare forvalterens egen passkey-bekreftelse (ADR-0011) gir sterkere autentisering, og bare mens `PLATFORM_STEWARDS_ENABLED` er på. Privat chat (WP-43) er med: samtaler og ventende enhetskoblinger finnes i den skjulte verdenen, og bare samtalens deltakere når dem. Responstid som sidekanal testes ikke automatisk, fordi slike målinger blir ustabile i delt CI; den hører til den uavhengige sikkerhetsgjennomgangen i Port E.
 
 ### WP-71 — Samtidighets- og idempotensstresstest
 Parallelle godkjenninger, retry, dobbelttrykk, avtaleendring og gjenåpnet retur.
@@ -219,10 +219,12 @@ Kontaktspam, scraping, invitasjoner, rapportering og auth-angrep.
 ### WP-74 — Pilotinnhold og policy
 Avklar OD-0006 og en konservativ pilotgrense for OD-0001 før reelle objekter åpnes for deling.
 
-**Status:** Kategoriene (PS-OBJ-018) og pilotgrensen (PS-OBJ-019) er besluttet og bygget. Plattformforvalteres sperre av et objekt overalt er stengt til WebAuthn-mekanismen fra ADR-0011 er bygget; til da kan bare miljøets administratorer stoppe et objekt, og bare i sitt miljø.
+**Status:** Kategoriene (PS-OBJ-018) og pilotgrensen (PS-OBJ-019) er besluttet og bygget. Plattformforvalteres sperre av et objekt overalt er bygget med WebAuthn (ADR-0011), men står av i produksjon sammen med resten av plattformforvaltningen; til den slås på, kan bare miljøets administratorer stoppe et objekt, og bare i sitt miljø.
 
 ### WP-75 — Pilot release gate
 Kjør [kvalitetsportene](quality-gates.md), dokumenter kjente begrensninger og åpne kun for definert pilotgruppe.
+
+**Status:** Portene er kjørt ([status 11. oktober 2026](quality-gates.md#status-11-oktober-2026)), og de kjente begrensningene står i [drift av piloten](pilot-operations.md#kjente-mangler). Produksjon slipper bare inn adresser produkteier har lagt inn. Piloten åpnes når produkteier legger inn de første deltakerne.
 
 ## Fase 8
 
