@@ -147,11 +147,11 @@ function requireFreeSlot(imageCount: number): void {
 }
 
 /**
- * Runs before an upload is processed or stored: authorizes, checks for a free
- * slot (the attach command checks again under lock) and durably records the
- * intent, so {@link objectImageFileCleanup} deletes the file should it never
- * be registered. An upload whose attach already completed is a retry: it
- * skips the slot check, since its stored result is replayed.
+ * Runs before an upload is processed or stored: authorizes, spends the
+ * uploads budget, checks for a free slot (the attach command checks again
+ * under lock) and durably records the intent, so
+ * {@link objectImageFileCleanup} deletes the file should it never be
+ * registered. An upload that completed meanwhile is replayed instead.
  */
 const prepareObjectImage = defineCommand({
   name: "object.prepare_image",
@@ -160,16 +160,20 @@ const prepareObjectImage = defineCommand({
     imageId: objectImageIdSchema,
     uploadKey: z.string().regex(idempotencyKeyPattern),
   }),
-  output: z.strictObject({ completed: z.boolean() }),
+  output: z.strictObject({ replay: objectImageAddedSchema.nullable() }),
   policy: addObjectImagePolicy,
   idempotency: "none",
   rateLimit: rateLimits.uploads,
   load: ({ tx, input }) => loadImageSlot(tx, input.objectId),
   execute: async ({ tx, actor, input, resource, events }) => {
-    if (
-      await completedUpload(tx, actor, attachObjectImage.name, input.uploadKey)
-    ) {
-      return { completed: true };
+    const replay = await completedUpload(tx, actor, {
+      command: attachObjectImage,
+      key: input.uploadKey,
+      same: sameObjectImage(input.objectId, input.imageId),
+    });
+
+    if (replay) {
+      return { replay };
     }
 
     requireFreeSlot(resource.imageCount);
@@ -178,9 +182,15 @@ const prepareObjectImage = defineCommand({
       payload: { imageId: input.imageId },
     });
 
-    return { completed: false };
+    return { replay: null };
   },
 });
+
+/** Whether a stored result is of the upload of `imageId` to `objectId`. */
+function sameObjectImage(objectId: string, imageId: string) {
+  return (output: ObjectImageAdded) =>
+    output.objectId === objectId && output.imageId === imageId;
+}
 
 /**
  * Registers an image whose file is already stored. Only called by
@@ -243,7 +253,8 @@ export interface UploadObjectImageRequest {
  * re-encode without metadata, store the file, then register it in one
  * command. A stored file that never gets registered is deleted from the
  * outbox. Retry-safe with the same idempotency key: a retry of a completed
- * upload stores nothing and replays the first result.
+ * upload processes and stores nothing and replays the first result, and
+ * other bytes or another object under that key are refused.
  */
 export async function uploadObjectImage(
   domain: DomainContext,
@@ -261,35 +272,34 @@ export async function uploadObjectImage(
     uploadKey,
     request.bytes,
   );
-  const completed =
-    (await completedUpload(
-      domain.db,
-      request.actor,
-      attachObjectImage.name,
-      uploadKey,
-    )) ||
+  const replay =
+    (await completedUpload(domain.db, request.actor, {
+      command: attachObjectImage,
+      key: uploadKey,
+      same: sameObjectImage(objectId, imageId),
+    })) ??
     (
       await executeCommand(domain, prepareObjectImage, {
         actor: request.actor,
         input: { objectId, imageId, uploadKey },
         correlationId: request.correlationId,
       })
-    ).output.completed;
+    ).output.replay;
+
+  if (replay) {
+    return { output: replay, replayed: true };
+  }
+
   const image = await services.process(request.bytes);
 
   if (!image) {
     throw new DomainError("invalid_input", "Not an accepted image", ["image"]);
   }
 
-  if (!completed) {
-    await services.store.put(
-      objectImageKey(objectId, imageId),
-      image.bytes,
-      image.contentType,
-    );
-  }
+  const file = objectImageKey(objectId, imageId);
+  await services.store.put(file, image.bytes, image.contentType);
 
-  return executeCommand(domain, attachObjectImage, {
+  const result = await executeCommand(domain, attachObjectImage, {
     actor: request.actor,
     input: {
       objectId,
@@ -301,34 +311,64 @@ export async function uploadObjectImage(
     idempotencyKey: uploadKey,
     correlationId: request.correlationId,
   });
+
+  // A concurrent identical upload registered first, and the image may have
+  // been removed (with its file) before this one stored the file again.
+  if (result.replayed && !(await findImageFile(domain.db, objectId, imageId))) {
+    await services.store.remove(file);
+  }
+
+  return result;
+}
+
+/** A completed upload's registering command and key, for {@link completedUpload}. */
+export interface UploadClaim<O> {
+  readonly command: { readonly name: string; readonly output: z.ZodType<O> };
+  readonly key: string;
+  /** Whether the stored result is of this very upload: same bytes and target. */
+  readonly same: (output: O) => boolean;
 }
 
 /**
- * Whether the actor already completed the upload with this key, so a retry
- * replays the first result without storing again or spending the uploads
- * budget (PS-NFR-005).
+ * The first result of the actor's completed upload with this key, so a retry
+ * replays it without processing, storing or spending the uploads budget
+ * (PS-NFR-005). Another upload under a used key (other bytes or another
+ * target) is refused before anything is processed, so a used key never
+ * opens a way past the budget.
  */
-export async function completedUpload(
+export async function completedUpload<O>(
   db: Kysely<Database>,
   actor: Actor,
-  command: string,
-  uploadKey: string,
-): Promise<boolean> {
+  { command, key, same }: UploadClaim<O>,
+): Promise<O | null> {
   const scope = actorScope(actor);
 
-  if (scope === undefined) {
-    return false;
+  if (scope === null) {
+    return null;
   }
 
   const record = await db
     .selectFrom("app.idempotency_records")
-    .select("idempotency_key")
+    .select("response")
     .where("scope", "=", scope)
-    .where("command", "=", command)
-    .where("idempotency_key", "=", uploadKey)
+    .where("command", "=", command.name)
+    .where("idempotency_key", "=", key)
     .executeTakeFirst();
 
-  return record !== undefined;
+  if (!record) {
+    return null;
+  }
+
+  const output = command.output.parse(record.response);
+
+  if (!same(output)) {
+    throw new DomainError(
+      "idempotency_key_reused",
+      `Idempotency key reused with different input for ${command.name}`,
+    );
+  }
+
+  return output;
 }
 
 /**
@@ -550,13 +590,7 @@ export function objectImageFileCleanup({
         const { imageId } = objectImageUploadStarted.payload.parse(
           event.payload,
         );
-        const registered = await db()
-          .selectFrom("app.object_images")
-          .select("id")
-          .where("id", "=", imageId)
-          .executeTakeFirst();
-
-        if (registered) {
+        if (await findImageFile(db(), event.resourceId, imageId)) {
           // Its file is deleted when the image is removed.
           return;
         }

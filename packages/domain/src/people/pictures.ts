@@ -113,10 +113,10 @@ const ownPicture = (resource: OwnPicture): OwnProfilePicture => ({
 });
 
 /**
- * Runs before an upload is processed or stored: authorizes and durably
- * records the intent, so {@link profilePictureFileCleanup} deletes the file
- * should it never be registered. An upload whose registration already
- * completed is a retry, whose stored result is replayed.
+ * Runs before an upload is processed or stored: authorizes, spends the
+ * uploads budget and durably records the intent, so
+ * {@link profilePictureFileCleanup} deletes the file should it never be
+ * registered. An upload that completed meanwhile is replayed instead.
  */
 const preparePicture = defineCommand({
   name: "profile_picture.prepare",
@@ -124,29 +124,38 @@ const preparePicture = defineCommand({
     pictureId: z.uuid(),
     uploadKey: z.string().regex(idempotencyKeyPattern),
   }),
-  output: z.strictObject({ completed: z.boolean() }),
+  output: z.strictObject({ replay: ownProfilePictureSchema.nullable() }),
   policy: changeProfilePicturePolicy,
   idempotency: "none",
   rateLimit: rateLimits.uploads,
   load: ({ tx, actor }) => loadOwnPicture(tx, actor),
   execute: async ({ tx, actor, input, resource, events }) => {
-    const completed = await completedUpload(
-      tx,
-      actor,
-      setProfilePicture.name,
-      input.uploadKey,
-    );
+    const replay = await completedUpload(tx, actor, {
+      command: setProfilePicture,
+      key: input.uploadKey,
+      same: samePicture(input.pictureId),
+    });
 
-    if (!completed) {
-      events.record(profilePictureUploadStarted, {
-        resourceId: resource.userId,
-        payload: { pictureId: input.pictureId },
-      });
+    if (replay) {
+      return { replay };
     }
 
-    return { completed };
+    events.record(profilePictureUploadStarted, {
+      resourceId: resource.userId,
+      payload: { pictureId: input.pictureId },
+    });
+
+    return { replay: null };
   },
 });
+
+/**
+ * Whether a stored result is of the upload of `pictureId`, whose id comes
+ * from the uploader, the key and the bytes.
+ */
+function samePicture(pictureId: string) {
+  return (output: OwnProfilePicture) => output.pictureId === pictureId;
+}
 
 /**
  * Registers a picture whose file is already stored, in place of the
@@ -211,7 +220,8 @@ export interface UploadProfilePictureRequest {
  * intent, re-encode without metadata, store the file, then register it in
  * one command. A stored file that never gets registered, and the picture it
  * replaces, are deleted from the outbox. Retry-safe with the same
- * idempotency key: a retry stores nothing and replays the first result.
+ * idempotency key: a retry processes and stores nothing and replays the
+ * first result, and other bytes under that key are refused.
  */
 export async function uploadProfilePicture(
   domain: DomainContext,
@@ -226,35 +236,34 @@ export async function uploadProfilePicture(
     uploadKey,
     request.bytes,
   );
-  const completed =
-    (await completedUpload(
-      domain.db,
-      request.actor,
-      setProfilePicture.name,
-      uploadKey,
-    )) ||
+  const replay =
+    (await completedUpload(domain.db, request.actor, {
+      command: setProfilePicture,
+      key: uploadKey,
+      same: samePicture(pictureId),
+    })) ??
     (
       await executeCommand(domain, preparePicture, {
         actor: request.actor,
         input: { pictureId, uploadKey },
         correlationId: request.correlationId,
       })
-    ).output.completed;
+    ).output.replay;
+
+  if (replay) {
+    return { output: replay, replayed: true };
+  }
+
   const image = await services.process(request.bytes);
 
   if (!image) {
     throw new DomainError("invalid_input", "Not an accepted image", ["image"]);
   }
 
-  if (!completed) {
-    await services.store.put(
-      profilePictureKey(actingUserId(request.actor), pictureId),
-      image.bytes,
-      image.contentType,
-    );
-  }
+  const file = profilePictureKey(actingUserId(request.actor), pictureId);
+  await services.store.put(file, image.bytes, image.contentType);
 
-  return executeCommand(domain, setProfilePicture, {
+  const result = await executeCommand(domain, setProfilePicture, {
     actor: request.actor,
     input: {
       pictureId,
@@ -265,6 +274,25 @@ export async function uploadProfilePicture(
     idempotencyKey: uploadKey,
     correlationId: request.correlationId,
   });
+
+  // A concurrent identical upload registered first, and the picture may have
+  // been replaced (with its file) before this one stored the file again.
+  if (result.replayed && !(await pictureRegistered(domain.db, pictureId))) {
+    await services.store.remove(file);
+  }
+
+  return result;
+}
+
+/** Whether `pictureId` is a profile's current picture. */
+async function pictureRegistered(db: Db, pictureId: string): Promise<boolean> {
+  const picture = await db
+    .selectFrom("app.profile_pictures")
+    .select("id")
+    .where("id", "=", pictureId)
+    .executeTakeFirst();
+
+  return picture !== undefined;
 }
 
 /**
@@ -446,13 +474,7 @@ export function profilePictureFileCleanup({
           const { pictureId } = profilePictureUploadStarted.payload.parse(
             event.payload,
           );
-          const registered = await db()
-            .selectFrom("app.profile_pictures")
-            .select("id")
-            .where("id", "=", pictureId)
-            .executeTakeFirst();
-
-          if (registered) {
+          if (await pictureRegistered(db(), pictureId)) {
             // Its file is deleted when the picture is replaced or removed.
             return;
           }

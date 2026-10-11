@@ -131,9 +131,81 @@ describe("setting a profile picture", () => {
     const bytes = `img-${randomUUID()}`;
     const first = await upload(me, bytes, key);
     files.clear();
+    process.mockClear();
 
     expect(await upload(me, bytes, key)).toEqual(first);
     expect(filesOf(me)).toEqual([]);
+    expect(process).not.toHaveBeenCalled();
+  });
+
+  it("refuses a used upload key for other bytes before processing", async () => {
+    const me = await user();
+    const key = randomUUID();
+    const first = await upload(me, "img-first", key);
+    process.mockClear();
+
+    await expect(upload(me, "img-changed", key)).rejects.toMatchObject({
+      code: "idempotency_key_reused",
+    });
+    expect(process).not.toHaveBeenCalled();
+    expect(await seenBy(me, me)).toBe(first.pictureId);
+    expect(filesOf(me)).toEqual([
+      profilePictureKey(me.userId, first.pictureId!),
+    ]);
+  });
+
+  it("deletes the file a concurrent retry stores again after the picture was replaced", async () => {
+    const me = await user();
+    const key = randomUUID();
+    // Both uploads are past their preparation before either is registered;
+    // the second is held until the first is done and its picture replaced.
+    let arrived = 0;
+    let bothArrived!: () => void;
+    let releaseSecond!: () => void;
+    const both = new Promise<void>((resolve) => (bothArrived = resolve));
+    const second = new Promise<void>((resolve) => (releaseSecond = resolve));
+    const held: ImageProcessor = async (bytes) => {
+      arrived += 1;
+      const turn = arrived;
+
+      if (turn === 2) {
+        bothArrived();
+      }
+
+      await both;
+
+      if (turn === 2) {
+        await second;
+      }
+
+      return process(bytes);
+    };
+    const uploadHeld = () =>
+      uploadProfilePicture(
+        tick(),
+        { store, process: held },
+        {
+          actor: me,
+          bytes: new TextEncoder().encode("img-twice"),
+          idempotencyKey: key,
+        },
+      );
+    const uploads = [uploadHeld(), uploadHeld()];
+
+    const { pictureId } = (await Promise.race(uploads)).output;
+    const replacement = await upload(me);
+    await deliver();
+    expect(filesOf(me)).toEqual([
+      profilePictureKey(me.userId, replacement.pictureId!),
+    ]);
+    releaseSecond();
+
+    const results = await Promise.all(uploads);
+    expect(results.map((r) => r.replayed).sort()).toEqual([false, true]);
+    expect(results.every((r) => r.output.pictureId === pictureId)).toBe(true);
+    expect(filesOf(me)).toEqual([
+      profilePictureKey(me.userId, replacement.pictureId!),
+    ]);
   });
 
   it("spends the uploads budget before processing, but replays a completed upload", async () => {
@@ -164,11 +236,15 @@ describe("setting a profile picture", () => {
     await expect(uploadLater("img-over")).rejects.toMatchObject({
       code: "rate_limited",
     });
-    expect(process).not.toHaveBeenCalled();
+    // A used key is no way past the budget: other bytes under it are refused.
+    await expect(uploadLater("img-other", key)).rejects.toMatchObject({
+      code: "idempotency_key_reused",
+    });
     expect(await uploadLater("img-budget", key)).toEqual({
       output: first.output,
       replayed: true,
     });
+    expect(process).not.toHaveBeenCalled();
   });
 
   it("refuses what is not an image, and deletes nothing it stored", async () => {
