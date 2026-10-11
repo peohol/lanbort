@@ -18,6 +18,7 @@ import {
   executeCommand,
   parseInput,
 } from "../commands/command";
+import { rateLimits } from "../abuse/rate-limits";
 import { idempotencyKeyPattern } from "../commands/idempotency";
 import {
   defineQuery,
@@ -152,7 +153,7 @@ function requireFreeSlot(imageCount: number): void {
  * be registered. An upload whose attach already completed is a retry: it
  * skips the slot check, since its stored result is replayed.
  */
-const prepareObjectImage = defineCommand({
+export const prepareObjectImage = defineCommand({
   name: "object.prepare_image",
   input: z.strictObject({
     objectId: objectIdSchema,
@@ -162,6 +163,7 @@ const prepareObjectImage = defineCommand({
   output: z.strictObject({ completed: z.boolean() }),
   policy: addObjectImagePolicy,
   idempotency: "none",
+  rateLimit: rateLimits.uploads,
   load: ({ tx, input }) => loadImageSlot(tx, input.objectId),
   execute: async ({ tx, actor, input, resource, events }) => {
     const completed = await tx

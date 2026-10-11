@@ -290,6 +290,7 @@ Route Handler (route.user / route.public / route.scheduler)
   - `case_entries`: å skrive i en sak og å be om mekling, der en deltaker kan sende inn kopier av private meldinger (WP-46).
   - `lookups`: søk etter ting og miljøer, miljødetaljer og miljøets objektliste, tillitsprofil, sosial relasjon og forhåndsvisning av låneforespørsel.
   - `place_search`: oppslag i stedsnavntjenesten fra Finn (`placeSearchFor`).
+  - `uploads`: bilder av ting og profilbilder, som serveren koder om før de lagres. Grensen brukes før bildet behandles.
 - Engangskoder for innlogging og ny innlogging begrenses per e-postadresse og per klientadresse før Supabase Auth spørres (`withCodeLimits`, lagt rundt `AuthGateway` i rutegrensen), siden Auth bare ser serveren. Klientadressen er første verdi i `x-forwarded-for`, som Vercel overskriver (`clientAddress`). Uten adresse, eller med loopback (lokalt og i tester), telles bare per e-postadresse.
 - En avvist bruk endrer ingenting og gir `rate_limited` (429) med `Retry-After` i sekunder. Finn viser det som en vanlig feilmelding.
 - Tellerne ligger i `app.rate_limits` (`app.consume_rate_limit`), delt av alle serverinstanser. Hvem det gjelder, lagres bare som en nøklet hash med en nøkkel som aldri forlater databasen, og en rad slettes når hele budsjettet er tilbake. Avslag logges som `security.rate_limited` med bare regelens navn.

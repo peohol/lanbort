@@ -16,6 +16,7 @@ import {
   defineCommand,
   executeCommand,
 } from "../commands/command";
+import { rateLimits } from "../abuse/rate-limits";
 import { idempotencyKeyPattern } from "../commands/idempotency";
 import { defineQuery } from "../commands/query";
 import { DomainError } from "../errors";
@@ -116,7 +117,7 @@ const ownPicture = (resource: OwnPicture): OwnProfilePicture => ({
  * should it never be registered. An upload whose registration already
  * completed is a retry, whose stored result is replayed.
  */
-const preparePicture = defineCommand({
+export const preparePicture = defineCommand({
   name: "profile_picture.prepare",
   input: z.strictObject({
     pictureId: z.uuid(),
@@ -125,6 +126,7 @@ const preparePicture = defineCommand({
   output: z.strictObject({ completed: z.boolean() }),
   policy: changeProfilePicturePolicy,
   idempotency: "none",
+  rateLimit: rateLimits.uploads,
   load: ({ tx, actor }) => loadOwnPicture(tx, actor),
   execute: async ({ tx, actor, input, resource, events }) => {
     const completed = await tx
