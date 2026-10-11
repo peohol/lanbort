@@ -832,9 +832,9 @@ describe("images (PS-OBJ-002)", () => {
     expect(filesOf(objectId)).toEqual([]);
     releaseSecond();
 
-    const results = await Promise.all(uploads);
-    expect(results.map((r) => r.replayed).sort()).toEqual([false, true]);
-    expect(results[0].output).toEqual(results[1].output);
+    const [a, b] = await Promise.all(uploads);
+    expect([a?.replayed, b?.replayed].sort()).toEqual([false, true]);
+    expect(a?.output).toEqual(b?.output);
     expect(filesOf(objectId)).toEqual([]);
     expect((await read(owner, objectId)).images).toEqual([]);
   });
