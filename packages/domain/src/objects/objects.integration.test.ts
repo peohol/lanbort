@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { objectImageMaxCount } from "@lanbort/contracts";
 import { afterAll, describe, expect, it, vi } from "vitest";
-import { anonymousActor, type UserActor } from "../actor";
+import {
+  consumeRateLimit,
+  RateLimitedError,
+  rateLimits,
+} from "../abuse/rate-limits";
+import { anonymousActor, type UserActor, userScope } from "../actor";
 import { type DomainContext, executeCommand } from "../commands/command";
 import { executeQuery } from "../commands/query";
 import { ConsumerRegistry } from "../outbox/consumer";
@@ -704,6 +709,33 @@ describe("images (PS-OBJ-002)", () => {
     expect(retried).toEqual({ output: last.output, replayed: true });
     expect((await read(owner, objectId)).images).toHaveLength(
       objectImageMaxCount,
+    );
+  });
+
+  it("spends the uploads budget before processing, but replays a completed upload", async () => {
+    const owner = await user();
+    const { objectId } = await create(owner);
+    const idempotencyKey = key();
+    const first = await upload(owner, objectId, "img-budget", idempotencyKey);
+
+    const spendAll = async () => {
+      for (let i = 0; i <= rateLimits.uploads.limit; i += 1) {
+        await consumeRateLimit(
+          domain,
+          rateLimits.uploads,
+          userScope(owner.userId),
+        );
+      }
+    };
+    await expect(spendAll()).rejects.toBeInstanceOf(RateLimitedError);
+    process.mockClear();
+
+    await expect(upload(owner, objectId)).rejects.toMatchObject({
+      code: "rate_limited",
+    });
+    expect(process).not.toHaveBeenCalled();
+    expect(await upload(owner, objectId, "img-budget", idempotencyKey)).toEqual(
+      { output: first.output, replayed: true },
     );
   });
 

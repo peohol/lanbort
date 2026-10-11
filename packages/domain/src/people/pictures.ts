@@ -22,6 +22,7 @@ import { defineQuery } from "../commands/query";
 import { DomainError } from "../errors";
 import type { EventRecorder } from "../events/recorder";
 import {
+  completedUpload,
   type ImageServices,
   type ImageStore,
   readImageFile,
@@ -129,13 +130,12 @@ export const preparePicture = defineCommand({
   rateLimit: rateLimits.uploads,
   load: ({ tx, actor }) => loadOwnPicture(tx, actor),
   execute: async ({ tx, actor, input, resource, events }) => {
-    const completed = await tx
-      .selectFrom("app.idempotency_records")
-      .select("idempotency_key")
-      .where("scope", "=", actorScope(actor) as string)
-      .where("command", "=", setProfilePicture.name)
-      .where("idempotency_key", "=", input.uploadKey)
-      .executeTakeFirst();
+    const completed = await completedUpload(
+      tx,
+      actor,
+      setProfilePicture.name,
+      input.uploadKey,
+    );
 
     if (!completed) {
       events.record(profilePictureUploadStarted, {
@@ -144,7 +144,7 @@ export const preparePicture = defineCommand({
       });
     }
 
-    return { completed: completed !== undefined };
+    return { completed };
   },
 });
 
@@ -226,18 +226,27 @@ export async function uploadProfilePicture(
     uploadKey,
     request.bytes,
   );
-  const prepared = await executeCommand(domain, preparePicture, {
-    actor: request.actor,
-    input: { pictureId, uploadKey },
-    correlationId: request.correlationId,
-  });
+  const completed =
+    (await completedUpload(
+      domain.db,
+      request.actor,
+      setProfilePicture.name,
+      uploadKey,
+    )) ||
+    (
+      await executeCommand(domain, preparePicture, {
+        actor: request.actor,
+        input: { pictureId, uploadKey },
+        correlationId: request.correlationId,
+      })
+    ).output.completed;
   const image = await services.process(request.bytes);
 
   if (!image) {
     throw new DomainError("invalid_input", "Not an accepted image", ["image"]);
   }
 
-  if (!prepared.output.completed) {
+  if (!completed) {
     await services.store.put(
       profilePictureKey(actingUserId(request.actor), pictureId),
       image.bytes,
