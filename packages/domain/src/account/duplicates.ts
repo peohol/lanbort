@@ -78,6 +78,29 @@ function actingStewardId(actor: Actor): string {
 }
 
 /**
+ * PS-ADM-009: the account is under a closure started while it was
+ * suspended, so it is no duplicate to retire or move things from.
+ */
+async function closingFromSuspension(
+  db: Db,
+  account: AccountResource,
+): Promise<boolean> {
+  if (account.status !== "closing") {
+    return false;
+  }
+
+  const closure = await db
+    .selectFrom("app.account_status_changes")
+    .select("from_status")
+    .where("user_id", "=", account.userId)
+    .where("to_status", "=", "closing")
+    .orderBy("position", "desc")
+    .executeTakeFirst();
+
+  return closure?.from_status === "suspended";
+}
+
+/**
  * The retired account locked for its change of state and the continuing one
  * for share, in id order so two retirements of the same pair in opposite
  * directions wait for each other instead of deadlocking; with how a closure
@@ -113,22 +136,11 @@ async function loadDuplicatePair(
     return null;
   }
 
-  const closure =
-    retired.status === "closing"
-      ? await tx
-          .selectFrom("app.account_status_changes")
-          .select("from_status")
-          .where("user_id", "=", retiredId)
-          .where("to_status", "=", "closing")
-          .orderBy("position", "desc")
-          .executeTakeFirst()
-      : undefined;
-
   return {
     resource: {
       retired,
       continued,
-      closingFromSuspension: closure?.from_status === "suspended",
+      closingFromSuspension: await closingFromSuspension(tx, retired),
       rolesAtStake:
         actor.kind === "user" &&
         (await hasStakeInRoles(tx, actor.userId, { userId: retiredId })),
@@ -149,7 +161,8 @@ async function loadDuplicatePair(
  * friendships, memberships, roles, reviews or trust. Its own objects can be
  * moved afterwards ({@link moveDuplicateObject}). Retiring it again into the
  * same account starts a closure that was ended meanwhile; into another
- * account, or into one retired as a duplicate itself, it is refused.
+ * account, or into one retired as a duplicate itself, it is refused, and so
+ * is retiring an account another one was retired into.
  */
 export const retireDuplicateAccount = defineCommand({
   name: "account.retire_duplicate",
@@ -209,6 +222,19 @@ async function retire({
     conflict("The continuing account is retired as a duplicate itself", [
       "continuedUserId",
     ]);
+  }
+
+  // Nor is an account retired that others continue as: their things would
+  // be left with nowhere to move.
+  const continuedByOthers = await tx
+    .selectFrom("app.account_links")
+    .select("id")
+    .where("kind", "=", "duplicate")
+    .where("linked_user_id", "=", retired.userId)
+    .executeTakeFirst();
+
+  if (continuedByOthers) {
+    conflict("Another account was retired into this one", ["userId"]);
   }
 
   const result =
@@ -533,27 +559,36 @@ async function loadDuplicateObject(
     return null;
   }
 
-  const retired = candidate && statuses.get(candidate.user_id);
-  const continued = candidate && statuses.get(candidate.linked_user_id);
+  const retiredStatus = candidate && statuses.get(candidate.user_id);
+  const continuedStatus = candidate && statuses.get(candidate.linked_user_id);
+
+  if (
+    !candidate ||
+    !retiredStatus ||
+    !continuedStatus ||
+    !object.ownerIds.includes(candidate.user_id)
+  ) {
+    return {
+      resource: { objectId, ownerIds: object.ownerIds, link: null },
+      context: undefined,
+    };
+  }
+
+  const retired = { userId: candidate.user_id, status: retiredStatus };
 
   return {
     resource: {
       objectId,
       ownerIds: object.ownerIds,
-      link:
-        candidate &&
-        retired &&
-        continued &&
-        object.ownerIds.includes(candidate.user_id)
-          ? {
-              id: candidate.id,
-              retired: { userId: candidate.user_id, status: retired },
-              continued: {
-                userId: candidate.linked_user_id,
-                status: continued,
-              },
-            }
-          : null,
+      link: {
+        id: candidate.id,
+        retired,
+        continued: {
+          userId: candidate.linked_user_id,
+          status: continuedStatus,
+        },
+        closingFromSuspension: await closingFromSuspension(tx, retired),
+      },
     },
     context: undefined,
   };

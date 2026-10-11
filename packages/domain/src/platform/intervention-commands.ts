@@ -176,9 +176,11 @@ export const endEnvironmentRoles = defineCommand({
             resource: {
               environmentId: environment.id,
               userId: input.userId,
-              rolesAtStake: await hasStakeInRoles(tx, actingUserId(actor), {
-                environmentId: environment.id,
-              }),
+              rolesAtStake:
+                actor.kind === "user" &&
+                (await hasStakeInRoles(tx, actor.userId, {
+                  environmentId: environment.id,
+                })),
             },
             context: undefined,
           }

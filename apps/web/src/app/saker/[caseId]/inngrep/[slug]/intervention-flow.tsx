@@ -255,7 +255,7 @@ export function InterventionFlow({
             <dt>Fra saken</dt>
             <dd>{caseTitle}</dd>
             <dt>Begrunnelse</dt>
-            <dd>{basis.trim()}</dd>
+            <dd className="lines">{basis.trim()}</dd>
           </dl>
           {fresh ? (
             <p className="help">

@@ -206,7 +206,7 @@ export function InquiryFlow({ freshUntil }: { freshUntil: string | null }) {
             <dt>Gjelder</dt>
             <dd>{shown.name}</dd>
             <dt>Grunnlaget</dt>
-            <dd>{basis.trim()}</dd>
+            <dd className="lines">{basis.trim()}</dd>
           </dl>
           {!fresh && (
             <p className="help" role="status">

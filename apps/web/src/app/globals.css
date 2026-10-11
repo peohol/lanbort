@@ -1691,6 +1691,11 @@ body:has(> .layer) .app-shell .layer {
   overflow-wrap: anywhere;
 }
 
+/* Text written on several lines, such as an intervention's basis. */
+.facts dd.lines {
+  white-space: pre-wrap;
+}
+
 /* What opens on request reads as a quiet way on, with a mark that turns. */
 details > summary {
   display: flex;

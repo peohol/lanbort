@@ -392,27 +392,69 @@ const environmentsWithRolesOf = (userId: string) => sql<{
 `;
 
 /**
- * PS-USR-009: `candidateId` holds a role, or an open claim to the
- * ownership, in an environment where the roles would be released: one
- * environment, or wherever a user's roles are. Releasing them there could
- * pass authority to the candidate.
+ * Locks the environments where releasing a user's roles changes anything,
+ * in id order, so concurrent calls cannot deadlock.
+ */
+async function lockEnvironmentsWithRolesOf(
+  tx: Kysely<Database>,
+  userId: string,
+): Promise<{ id: string; state: string }[]> {
+  const { rows } = await sql<{ environment_id: string }>`
+    ${environmentsWithRolesOf(userId)}
+    order by environment_id
+  `.execute(tx);
+  const locked: { id: string; state: string }[] = [];
+
+  for (const { environment_id: environmentId } of rows) {
+    locked.push(
+      await tx
+        .selectFrom("app.environments")
+        .select(["id", "state"])
+        .where("id", "=", environmentId)
+        .forUpdate()
+        .executeTakeFirstOrThrow(),
+    );
+  }
+
+  return locked;
+}
+
+/**
+ * PS-USR-009: `candidateId` holds a role, an invitation to one or an open
+ * claim to the ownership in an environment where the roles would be
+ * released: one environment the caller has locked, or wherever a user's
+ * roles are, locked here as releasing them would lock them. Releasing them
+ * there could pass authority to the candidate, and nothing the candidate
+ * does there meanwhile can slip past the check.
  */
 export async function hasStakeInRoles(
-  db: Kysely<Database>,
+  tx: Kysely<Database>,
   candidateId: string,
   released: { readonly environmentId: string } | { readonly userId: string },
 ): Promise<boolean> {
-  const environments =
+  const environmentIds =
     "environmentId" in released
-      ? sql`select ${released.environmentId}::uuid as environment_id`
-      : environmentsWithRolesOf(released.userId);
+      ? [released.environmentId]
+      : (await lockEnvironmentsWithRolesOf(tx, released.userId)).map(
+          ({ id }) => id,
+        );
+
+  if (environmentIds.length === 0) {
+    return false;
+  }
+
   const { rows } = await sql<{ stake: boolean }>`
     select exists (
-      select 1 from (${environments}) as released
+      select 1 from unnest(${environmentIds}::uuid[]) as released(environment_id)
       where exists (
           select 1 from app.environment_role_grants
             where environment_id = released.environment_id
               and user_id = ${candidateId} and revoked_at is null
+        )
+        or exists (
+          select 1 from app.environment_role_invitations
+            where environment_id = released.environment_id
+              and user_id = ${candidateId} and closed_at is null
         )
         or exists (
           select 1 from app.environment_ownership_claims claim
@@ -422,7 +464,7 @@ export async function hasStakeInRoles(
               and vacancy.closed_at is null
         )
     ) as stake
-  `.execute(db);
+  `.execute(tx);
 
   return rows[0]?.stake === true;
 }
@@ -430,8 +472,6 @@ export async function hasStakeInRoles(
 /**
  * Ends every environment role of a user whose account has gone away, for
  * account lifecycle to call inside its own transaction (`releaseRolesIn`).
- *
- * Environments are locked in id order, so concurrent calls cannot deadlock.
  */
 export async function releaseEnvironmentRoles(
   tx: Kysely<Database>,
@@ -439,18 +479,9 @@ export async function releaseEnvironmentRoles(
   now: Date,
   events: EventRecorder,
 ): Promise<number> {
-  const { rows } = await sql<{ environment_id: string }>`
-    ${environmentsWithRolesOf(userId)}
-    order by environment_id
-  `.execute(tx);
+  const environments = await lockEnvironmentsWithRolesOf(tx, userId);
 
-  for (const { environment_id: environmentId } of rows) {
-    const environment = await tx
-      .selectFrom("app.environments")
-      .select(["id", "state"])
-      .where("id", "=", environmentId)
-      .forUpdate()
-      .executeTakeFirstOrThrow();
+  for (const environment of environments) {
     await releaseRolesIn(
       tx,
       environment,
@@ -462,7 +493,7 @@ export async function releaseEnvironmentRoles(
     );
   }
 
-  return rows.length;
+  return environments.length;
 }
 
 /**

@@ -315,13 +315,16 @@ export interface DuplicateObjectResource {
     readonly id: string;
     readonly retired: AccountResource;
     readonly continued: AccountResource;
+    /** The duplicate's closure started while it was suspended. */
+    readonly closingFromSuspension: boolean;
   } | null;
 }
 
 /**
  * PS-ADM-009: a steward moves an object of a duplicate under closure to the
- * account that continues. Only one the duplicate owns alone (or with the
- * continuing account): other owners decide themselves who joins them.
+ * account that continues, never from a closure started from a suspension.
+ * Only one the duplicate owns alone (or with the continuing account): other
+ * owners decide themselves who joins them.
  */
 export const moveDuplicateObjectPolicy = definePolicy<
   DuplicateObjectResource & FromCase,
@@ -338,6 +341,7 @@ export const moveDuplicateObjectPolicy = definePolicy<
     ({ resource: { link, ownerIds } }) =>
       link !== null &&
       link.retired.status === "closing" &&
+      !link.closingFromSuspension &&
       takesNewActivity(link.continued.status) &&
       ownerIds.every(
         (id) => id === link.retired.userId || id === link.continued.userId,

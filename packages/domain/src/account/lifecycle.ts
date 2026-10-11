@@ -231,7 +231,9 @@ export const makeAccountDormant = defineCommand({
 
 /**
  * The account an intervention is toward, with the case it is taken from
- * and whether the steward has a stake in the roles it would release.
+ * and whether the steward has a stake in the roles it would release. The
+ * account, its environments and the case are locked in that order, so the
+ * stake cannot change before the roles are released.
  */
 export async function loadAccountFromCase(
   tx: Db,

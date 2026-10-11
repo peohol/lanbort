@@ -301,6 +301,35 @@ describe("retiring a duplicate (PS-ADM-009)", () => {
     ).toEqual([]);
   });
 
+  it("never chains duplicates, in either order", async () => {
+    const platform = await steward();
+    const [first, second, third] = await Promise.all([user(), user(), user()]);
+
+    // Retired into the second, the first leaves its things to it, so the
+    // second is not retired in turn.
+    await retire(platform, first, second);
+    await expect(retire(platform, second, third)).rejects.toMatchObject({
+      code: "conflict",
+      fields: ["userId"],
+    });
+    expect(await statusOf(second.userId)).toBe("active");
+
+    // Nor is anything retired into an account retired itself, even once
+    // it is reinstated.
+    const [fourth, fifth] = await Promise.all([user(), user()]);
+    await retire(platform, fourth, fifth);
+    await run(reinstateAccount, platform, {
+      caseId: await about(platform, fourth.userId),
+      userId: fourth.userId,
+      basis,
+    });
+    await expect(retire(platform, third, fourth)).rejects.toMatchObject({
+      code: "conflict",
+      fields: ["continuedUserId"],
+    });
+    expect(await statusOf(third.userId)).toBe("active");
+  });
+
   it("is closed to every real session until stronger authentication is decided (OD-0010)", async () => {
     const platform = await steward();
     const [retired, continued] = await Promise.all([user(), user()]);
@@ -563,6 +592,29 @@ describe("moving a duplicate's objects (PS-ADM-009)", () => {
       code: "forbidden",
     });
     expect(await ownersOf(shared)).toEqual([retired.userId, coOwner.userId]);
+  });
+
+  it("never moves an object once the duplicate's closure started from a suspension", async () => {
+    const platform = await steward();
+    const [retired, continued] = await Promise.all([user(), user()]);
+    const objectId = await create(retired);
+    await retire(platform, retired, continued);
+    const caseId = await about(platform, retired.userId);
+
+    // Reinstated, then suspended and closed from the suspension.
+    for (const command of [reinstateAccount, suspendAccount]) {
+      await run(command, platform, { caseId, userId: retired.userId, basis });
+    }
+    await run(startAccountClosure, platform, {
+      caseId,
+      userId: retired.userId,
+      basis,
+    });
+
+    await expect(move(platform, objectId)).rejects.toMatchObject({
+      code: "forbidden",
+    });
+    expect(await ownersOf(objectId)).toEqual([retired.userId]);
   });
 
   it("never moves an object before the duplicate is under closure, or once it is reinstated", async () => {

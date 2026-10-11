@@ -252,6 +252,7 @@ const duplicateObject = (
   retiredStatus: AccountStatus,
   continuedStatus: AccountStatus,
   extraOwners: readonly string[] = [],
+  closingFromSuspension = false,
 ) => {
   const retired = account(retiredStatus);
 
@@ -262,6 +263,7 @@ const duplicateObject = (
       id: testUserActor().userId,
       retired,
       continued: account(continuedStatus),
+      closingFromSuspension,
     },
   };
 };
@@ -728,6 +730,13 @@ export const accountMatrices = [
       name: "not to an account that is no longer active",
       actor: steward,
       resource: onCase(duplicateObject("closing", "deactivated")),
+      context: undefined,
+      expected: "forbidden",
+    },
+    {
+      name: "not from a closure that started from a suspension",
+      actor: steward,
+      resource: onCase(duplicateObject("closing", "active", [], true)),
       context: undefined,
       expected: "forbidden",
     },

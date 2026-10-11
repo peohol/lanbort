@@ -73,7 +73,11 @@ export function Interventions({
                 ).map(([label, value]) => (
                   <Fragment key={label}>
                     <dt>{label}</dt>
-                    <dd>{value}</dd>
+                    <dd
+                      className={label === "Begrunnelse" ? "lines" : undefined}
+                    >
+                      {value}
+                    </dd>
                   </Fragment>
                 ))}
               </dl>
