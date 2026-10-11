@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { multilineText } from "./objects";
 import { ownProfilePictureSchema } from "./profile";
 
 /**
@@ -93,13 +94,16 @@ export const accountDeletionCheckSchema = z.strictObject({
   bindings: z.array(accountBindingSchema),
 });
 
-/** Why the platform intervened, as the steward wrote it (PS-ADM-014). */
+/**
+ * Why the platform intervened, as the steward wrote it (PS-ADM-014), on
+ * as many lines as it takes.
+ */
 export const basisSchema = z
   .string()
   .trim()
   .min(1)
   .max(2000)
-  .regex(/^[^\p{Cc}]*$/u);
+  .regex(multilineText);
 
 /**
  * PS-ADM-015: every intervention is taken from the platform case it rests
