@@ -28,7 +28,11 @@ import {
   removeStewardPasskey,
   resetStewardPasskeys,
 } from "./passkey-commands";
-import { enrollmentCodeTtlMs, passkeyConfirmationMaxAgeMs } from "./passkeys";
+import {
+  enrollmentCodeTtlMs,
+  maximumStewardPasskeys,
+  passkeyConfirmationMaxAgeMs,
+} from "./passkeys";
 import { platformStewardAccess } from "./policies";
 
 const db = connectTestDatabase();
@@ -454,6 +458,91 @@ describe("steward passkeys (ADR-0011, OD-0023)", () => {
           "removedPasskeys",
         ]).toContain(key);
       }
+    }
+  });
+
+  it("never lets more than the maximum be added, even at once", async () => {
+    const steward = await testSteward(domain);
+    let actor = await steward.confirm();
+    for (let i = 2; i < maximumStewardPasskeys - 1; i++) {
+      await registerPasskey(domain, actor, new TestPasskey(testSite));
+      actor = await steward.signIn();
+    }
+
+    // Two ceremonies started with one place left, finished together.
+    const started = await Promise.all(
+      [0, 1].map(() => begin(actor).then(({ output }) => output)),
+    );
+    const results = await Promise.allSettled(
+      started.map((output) =>
+        executeCommand(domain, testPasskeyCommands.finishRegistration, {
+          actor,
+          input: {
+            challengeId: output.challengeId,
+            name: "Samtidig nøkkel",
+            response: new TestPasskey(testSite).register(output.options),
+          },
+        }),
+      ),
+    );
+
+    expect(results.map((result) => result.status).sort()).toEqual([
+      "fulfilled",
+      "rejected",
+    ]);
+    expect(results.find((result) => result.status === "rejected")).toEqual({
+      status: "rejected",
+      reason: expect.objectContaining({ code: "conflict" }),
+    });
+    const listed = await executeQuery(domain, listOwnPasskeys, {
+      actor: await steward.signIn(),
+      input: {},
+    });
+    expect(listed.passkeys).toHaveLength(maximumStewardPasskeys);
+  });
+
+  it("ends the passkeys and an open code with the role, so a new grant starts over", async () => {
+    const steward = await testSteward(domain);
+    const pending = await newSteward();
+    const { output: code } = await pending.issue();
+    const role = (email: string, command: typeof grantPlatformRole) =>
+      executeCommand(domain, command, {
+        actor: opsActors.roles,
+        input: { email, role: "platform_steward", reason: "Test" },
+        idempotencyKey: randomUUID(),
+      });
+
+    for (const email of [steward.email, pending.identity.email!]) {
+      await role(email, revokePlatformRole);
+      await role(email, grantPlatformRole);
+    }
+
+    // The old passkeys count for nothing, so they confirm nothing.
+    expect(mayAct(await steward.signIn())).toBe(
+      "stronger_authentication_required",
+    );
+    await expect(steward.confirm()).rejects.toMatchObject({
+      code: "forbidden",
+    });
+    expect(
+      (await auditOf((await steward.signIn()).userId)).filter(
+        (event) => event.event_type === "steward_passkey.removed",
+      ),
+    ).toHaveLength(2);
+
+    // The code issued before the revoke is void.
+    await expect(
+      begin(await pending.signIn(), { enrollmentCode: code.code }),
+    ).rejects.toMatchObject({ code: "invalid_input" });
+
+    // Both start again from a new code.
+    for (const email of [steward.email, pending.identity.email!]) {
+      await expect(
+        executeCommand(domain, issueStewardEnrollmentCode, {
+          actor: opsActors.passkeys,
+          input: { email, reason: "Ny rolle" },
+        }),
+      ).resolves.toMatchObject({ output: { removedPasskeys: 0 } });
     }
   });
 

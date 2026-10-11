@@ -8,12 +8,11 @@ const pageQueryIfAllowed = vi.fn(async () => ({
   confirmedAt: null,
 }));
 
-vi.mock("./session", () => ({
-  pageQueryIfAllowed,
-  pageQueryOrNotFound: vi.fn(async () => {
-    throw new DomainError("stronger_authentication_required", "confirm");
-  }),
-}));
+const pageQueryOrNotFound = vi.fn(async (): Promise<unknown> => {
+  throw new DomainError("stronger_authentication_required", "confirm");
+});
+
+vi.mock("./session", () => ({ pageQueryIfAllowed, pageQueryOrNotFound }));
 
 const { getStewardship, stewardPageQuery } = await import("./stewardship");
 
@@ -46,5 +45,16 @@ describe("a steward's standing on pages", () => {
     await expect(page()).rejects.toMatchObject({
       digest: expect.stringContaining("404"),
     });
+  });
+
+  it("is not found for a case the steward may not handle, as for anyone else", async () => {
+    vi.stubEnv("PLATFORM_STEWARDS_ENABLED", "true");
+
+    for (const code of ["conflict_of_interest", "account_inactive"] as const) {
+      pageQueryOrNotFound.mockRejectedValueOnce(new DomainError(code, code));
+      await expect(stewardPageQuery(listOwnPasskeys, {})).rejects.toMatchObject(
+        { digest: expect.stringContaining("404") },
+      );
+    }
   });
 });

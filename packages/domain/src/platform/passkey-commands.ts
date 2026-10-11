@@ -7,7 +7,7 @@ import {
   stewardPasskeysSchema,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 import type { Actor, AccountStatus, UserActor } from "../actor";
 import { rateLimits } from "../abuse/rate-limits";
@@ -25,6 +25,7 @@ import {
   activePasskeys,
   enrollmentCodeHash,
   enrollmentCodeTtlMs,
+  endStewardPasskeys,
   maximumStewardPasskeys,
   minimumStewardPasskeys,
   newChallenge,
@@ -139,6 +140,16 @@ function onlyTheFirstPasskey() {
   return new DomainError(
     "conflict",
     "The steward has passkeys; add one from a confirmed session, or reset",
+  );
+}
+
+/**
+ * Serializes adding passkeys for one steward until the transaction ends, so
+ * two registrations at once cannot both pass the count and the limit holds.
+ */
+async function lockStewardPasskeys(tx: Tx, userId: string) {
+  await sql`select pg_advisory_xact_lock(hashtextextended(${`steward_passkeys:${userId}`}, 0))`.execute(
+    tx,
   );
 }
 
@@ -281,6 +292,7 @@ export function stewardPasskeyCommands(ceremonies: PasskeyCeremonies) {
         invalid("response", "The passkey could not be verified");
       }
 
+      await lockStewardPasskeys(tx, user.userId);
       const active = await countActive(tx, user.userId);
 
       if (active >= maximumStewardPasskeys) {
@@ -603,22 +615,12 @@ async function issueCode(
   }
 
   if (removeAll) {
-    const removed = await tx
-      .updateTable("app.steward_passkeys")
-      .set({ removed_at: now, removed_by_process: process })
-      .where("user_id", "=", steward.userId)
-      .where("removed_at", "is", null)
-      .returning("id")
-      .execute();
-
-    for (const { id } of removed) {
-      events.record(stewardPasskeyRemoved, {
-        resourceId: steward.userId,
-        payload: { passkeyId: id },
-      });
-    }
-
-    removedPasskeys = removed.length;
+    removedPasskeys = await endStewardPasskeys(tx, {
+      userId: steward.userId,
+      by: { userId: null, process },
+      events,
+      now,
+    });
   }
 
   await tx

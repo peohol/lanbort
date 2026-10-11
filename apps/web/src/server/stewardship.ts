@@ -107,7 +107,9 @@ export const getOpenPlatformCases = cache(async () => {
  * for (a platform case): `confirm` when the session's confirmation is not
  * fresh; otherwise as `pageQueryOrNotFound`. Only someone who holds the
  * role is ever asked to confirm, and nobody while stewards are off here,
- * since nothing could confirm it: the page is then «not found».
+ * since nothing could confirm it: the page is then «not found». So is a
+ * case a steward may not handle (involved or recused) or that an inactive
+ * account cannot, as for anyone else who may not see it (PS-NFR-002).
  */
 export async function stewardPageQuery<I, R, C, O>(
   query: QueryDefinition<I, R, C, O>,
@@ -121,6 +123,13 @@ export async function stewardPageQuery<I, R, C, O>(
       error.code === "stronger_authentication_required"
     ) {
       return platformStewardsEnabled() ? "confirm" : notFound();
+    }
+
+    if (
+      isDomainError(error) &&
+      ["conflict_of_interest", "account_inactive"].includes(error.code)
+    ) {
+      notFound();
     }
 
     throw error;

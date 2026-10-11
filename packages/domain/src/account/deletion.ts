@@ -33,7 +33,8 @@ import { deleteObject } from "../objects/deletion";
 import { loadObjectState } from "../objects/state";
 import { defineConsumer, OutboxDeliveryError } from "../outbox/consumer";
 import { profilePictureDeletionStep } from "../people/pictures";
-import { platformRoleRevoked, stewardPasskeyRemoved } from "../platform/events";
+import { platformRoleRevoked } from "../platform/events";
+import { endStewardPasskeys } from "../platform/passkeys";
 import { intervene } from "../platform/interventions";
 import { chatAccountDeletionStep } from "../chat/maintenance";
 import { reviewRightsStep } from "../reviews/account-deletion";
@@ -238,29 +239,12 @@ const platformRolesStep: AccountDeletionStep = {
       });
     }
 
-    // A steward's passkeys and any open code end with the role (OD-0023).
-    const removed = await db
-      .updateTable("app.steward_passkeys")
-      .set({ removed_at: now, removed_by_process: accountLifecycleProcess })
-      .where("user_id", "=", userId)
-      .where("removed_at", "is", null)
-      .returning("id")
-      .execute();
-
-    for (const { id } of removed) {
-      events.record(stewardPasskeyRemoved, {
-        resourceId: userId,
-        payload: { passkeyId: id },
-      });
-    }
-
-    await db
-      .updateTable("app.steward_enrollment_codes")
-      .set({ voided_at: now })
-      .where("user_id", "=", userId)
-      .where("used_at", "is", null)
-      .where("voided_at", "is", null)
-      .execute();
+    await endStewardPasskeys(db, {
+      userId,
+      by: { userId: null, process: accountLifecycleProcess },
+      events,
+      now,
+    });
   },
 };
 

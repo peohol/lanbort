@@ -6,6 +6,7 @@ import type { AccountStatus, Actor } from "../actor";
 import { defineCommand } from "../commands/command";
 import { DomainError } from "../errors";
 import { platformRoleGranted, platformRoleRevoked } from "./events";
+import { endStewardPasskeys } from "./passkeys";
 import {
   grantPlatformRolePolicy,
   type PlatformRoleTarget,
@@ -127,6 +128,16 @@ export const revokePlatformRole = defineCommand({
       })
       .where("id", "=", grantId)
       .execute();
+
+    if (input.role === "platform_steward") {
+      // A later grant starts again from a new code (OD-0023).
+      await endStewardPasskeys(tx, {
+        userId: resource.userId,
+        by,
+        events,
+        now,
+      });
+    }
 
     events.record(platformRoleRevoked, {
       resourceId: resource.userId,
