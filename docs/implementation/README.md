@@ -144,7 +144,7 @@ Leveranser:
 - responsive desktop-varianter uten ny mental modell
 - tilgjengelighetsgjennomgang av alle kjerneflyter
 
-**Status:** Levert, med brukerflaten fra Fase 8. Den manuelle tilgjengelighetsgjennomgangen hører til Port E.
+**Status:** Levert med brukerflaten fra Fase 8, unntatt den siste leveransen: den automatiske tilgjengelighetssjekken av kjerneflytene er gjort (WP-65), men den manuelle gjennomgangen med skjermleser og den endelige WCAG-vurderingen gjenstår og hører til Port E.
 
 ### Fase 7 — Pilot-hardening
 Mål: lukket pilot med reelle brukere kan kjøres kontrollert.

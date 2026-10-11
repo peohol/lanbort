@@ -74,7 +74,7 @@ Alle kjøres i CI på hver endring. Lokalt: se [lokal utvikling](local-developme
 | En deltaker kunne få serveren til å slutte å levere til den andres levende enhet | Rettet (#168) |
 | Ingen øvre grense på antall enheter, så en gjenoppretting kunne mislykkes | Rettet (#168): høyst 100 |
 | Sider utenfor chat hadde `unsafe-inline` for skript, men deler opprinnelse og IndexedDB med chatsidene; COOP og CORP manglet | Rettet (#172) |
-| Utlogging sletter ikke enhetens chattilstand og tilbakekaller ikke enheten, slik ADR-0010 punkt 7 sier | Rettet (#161) |
+| Utlogging sletter ikke enhetens chattilstand og tilbakekaller ikke enheten, slik ADR-0010 punkt 7 sier | Delvis rettet (#161): utlogging sletter alltid chatten i nettleseren, og en enhet der chatten kjører, tilbakekaller seg selv. Se kjente begrensninger for enheter der chatten ikke kan åpnes |
 | En lesbar kopi av chatmeldinger sendt inn til en sak (WP-46) kunne oppgi en vilkårlig person som avsender og vise personens ekte navn | Rettet (#155): kopien må komme fra en samtale innsenderen selv er med i |
 
 ## Kjente begrensninger og spørsmål til gjennomgangen
@@ -88,6 +88,7 @@ Alle kjøres i CI på hver endring. Lokalt: se [lokal utvikling](local-developme
 - **Gjenoppretting krever ikke ny e-postkode.** Den krever gjenopprettingsnøkkelen, som bare brukeren har; tilbakestilling krever begge deler. Vurder om dette er riktig avveining.
 - **Interne funksjoner i ts-mls:** `unprotectPrivateMessage` brukes for å lese avsender før tilstanden endres (ADR-0010 punkt 2), og brukte nøkler nullstilles først etter at tilstanden er byttet, fordi listen deler referanser med den gamle tilstanden.
 - **Serveren kan holde tilbake en tilbakekalling fra en kontakt** (ADR-0010 punkt 7, akseptert restrisiko).
+- **Utlogging fra en enhet der chatten ikke kan åpnes** (nøklene mangler, eller tilstanden er ødelagt) sletter det nettleseren har, men tilbakekaller ikke enheten. En tilbakekalling må signeres med kontonøkkelen, og den har ikke enheten da. Enheten står derfor som aktiv på kontoen, og teller mot grensen på 100, til den fjernes under «Mine enheter» på en annen enhet eller kontoen tilbakestilles. Vurder om dette er godt nok.
 - **Vedlegg** (ADR-0010 punkt 11) er ikke bygget.
 
 ## Hva som gjenstår før Port C
