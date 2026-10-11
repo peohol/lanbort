@@ -98,7 +98,7 @@ Piloten åpnes først når produkteier legger inn de første deltakerne ([drift 
 
 | Krav | Status | Sjekk |
 | --- | --- | --- |
-| Fase 1–3-kritiske flyter er ende-til-ende-testet | Ja. Hele nettleserpakken var grønn på desktop 10. oktober 2026 (302 tester). Hovedflytene var grønne på mobil (Pixel 7, 97 tester): lån, retur, uenighet, anmeldelser, blokkering, moderering, kontolivssyklus, saker og vanskelige tilstander | Test |
+| Fase 1–3-kritiske flyter er ende-til-ende-testet | Ja. Hele nettleserpakken var grønn på desktop 10. oktober 2026 (302 tester). Hovedflytene var grønne på mobil (Pixel 7, 97 tester): lån, retur, uenighet, anmeldelser, blokkering, moderering, kontolivssyklus, saker og vanskelige tilstander. 11. oktober 2026 ble hele pakken kjørt mot produksjonsbygget med privat chat og plattformforvaltning av, som i produksjon: 293 tester var grønne, blant dem registrering, venner, miljøer, utlån, retur, rapportering og varsler. De 20 som feilet eller ikke kjørte, krever chat eller forvaltning slått på. Rapport til administratorene, tilbaketrekking og lukking ble i tillegg kjørt til ende uten forvaltning, og Lånbort vises da som ikke tilgjengelig | Test |
 | WP-70 er grønn | Ja | Test |
 | WP-71 er grønn | Ja | Test |
 | Backup/restore med gjenoppretting mot et hostet miljø | Ja. En ekte backup av produksjon er gjenopprettet til et isolert miljø 10. og 11. oktober 2026. Gjenoppretting av Supabases egen backup er ikke øvd | Produksjon |
@@ -108,7 +108,7 @@ Piloten åpnes først når produkteier legger inn de første deltakerne ([drift 
 | Produksjonshemmeligheter skilt fra utvikling | Ja. De ligger bare i Vercel og GitHub | Produksjon |
 | OD-0002 har en pilotpolicy | Ja ([oppbevaring](retention.md)) | Test; jobben kjører i produksjon |
 | OD-0006 avgjort | Ja | – |
-| WebAuthn før privilegerte forvalterhandlinger | Bygget (ADR-0011), men av i produksjon. `PLATFORM_STEWARDS_ENABLED` finnes ikke i Vercel, og forvalterrutene svarer «finnes ikke». Uten bryteren får ingen sesjon `aal2`, så alle privilegerte handlinger avvises | Test; produksjon 11. oktober 2026 |
+| WebAuthn før privilegerte forvalterhandlinger | Bygget (ADR-0011), men av i produksjon. `PLATFORM_STEWARDS_ENABLED` finnes ikke i Vercel, og forvalterrutene svarer «finnes ikke». Uten bryteren får ingen sesjon `aal2`, så alle privilegerte handlinger avvises. Forvalteren får sikkerhetsvarsel, også på e-post, når passkeys endres og når rollen trekkes tilbake (#197) | Test; produksjon 11. oktober 2026 |
 | Pilotpolicy for risikofylte objekter | Ja (PS-OBJ-019) | Test |
 | Representanttilgang er av og testet utilgjengelig | Ja (pgTAP 0030) | Test |
 | Kjente mangler er dokumentert og vurdert | Ja ([kjente mangler](pilot-operations.md#kjente-mangler)) | – |
