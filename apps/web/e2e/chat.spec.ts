@@ -506,6 +506,38 @@ test("signing out on a device with chat says what it loses, then revokes it and 
   await anna.context.close();
 });
 
+test("signing out where the chat cannot open still shuts the device out (ADR-0010 §7)", async ({
+  browser,
+}) => {
+  const anna = await person(browser, "Eli Moe");
+  await turnOnChat(anna.page);
+  // The device's keys are gone from this browser; the server still has it.
+  await anna.page.goto("/konto");
+  await anna.page.evaluate(async () => {
+    for (const { name } of await indexedDB.databases()) {
+      if (name?.startsWith("lanbort-chat-")) indexedDB.deleteDatabase(name);
+    }
+  });
+
+  await anna.page.goto("/samtaler/logg-ut");
+  await expect(
+    anna.page.getByText(
+      "Privat chat og samtalene som er lagret på denne enheten, slettes.",
+    ),
+  ).toBeVisible();
+  await anna.page.getByRole("button", { name: "Logg ut" }).click();
+  await expect(anna.page).toHaveURL(/\/$/);
+
+  await signInThroughApi(anna.context.request, anna.email);
+  const own = await (
+    await anna.context.request.get("/api/chat/devices")
+  ).json();
+  expect(
+    own.devices.map((d: { revokedAt: string | null }) => d.revokedAt),
+  ).toEqual([expect.any(String)]);
+  await anna.context.close();
+});
+
 test("a device that waits to be linked can be declined, and ask again", async ({
   browser,
 }) => {

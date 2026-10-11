@@ -875,3 +875,40 @@ export async function renewChatSession(
     await sql`select app.end_auth_sessions(${[from]}::text[])`.execute(tx);
   });
 }
+
+/**
+ * Signing out ends the session's chat device with it (ADR-0010 §7). A device
+ * whose chat runs revokes itself first, with a signature; this is for the one
+ * that cannot, its keys gone or its state broken, whose browser has deleted
+ * what it held. The server stops delivering to it and accepting from it, and
+ * it no longer counts towards the account's devices. Without a signature the
+ * contacts' devices leave it in their groups, where nothing reaches it any
+ * more. The session's pending link request goes as well.
+ */
+export async function endChatSession(
+  db: Kysely<Database>,
+  userId: string,
+  sessionId: string,
+  now = new Date(),
+): Promise<void> {
+  await db.transaction().execute(async (tx) => {
+    await lockChatAccount(tx, userId);
+    const devices = await tx
+      .selectFrom("app.chat_devices")
+      .select("id")
+      .where("user_id", "=", userId)
+      .where("session_id", "=", sessionId)
+      .where("revoked_at", "is", null)
+      .execute();
+    await shutOut(
+      tx,
+      devices.map((device) => device.id),
+      now,
+    );
+    await tx
+      .deleteFrom("app.chat_link_requests")
+      .where("user_id", "=", userId)
+      .where("session_id", "=", sessionId)
+      .execute();
+  });
+}
