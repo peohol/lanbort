@@ -1,6 +1,6 @@
 # Implementeringsplan
 
-> **Status:** Første implementeringsplan basert på validert produktspesifikasjon v0.1, UX-modell v0.1 og systemarkitektur v0.1. Fase 0 (implementeringsgrunnlag) og Fase 1 (identitet, autorisasjon og hendelsesgrunnmur) er levert.
+> **Status (11. oktober 2026):** Første implementeringsplan basert på validert produktspesifikasjon v0.1, UX-modell v0.1 og systemarkitektur v0.1. Fase 0–7 er levert, sammen med brukerflaten (Fase 8 i [arbeidspakkene](work-packages.md#fase-8)). Privat chat og plattformforvaltning er bygget, men står av i produksjon til sine porter. Hvor hver kvalitetsport står, står i [kvalitetsportene](quality-gates.md#status-11-oktober-2026).
 
 ## Prinsipp
 
@@ -37,7 +37,7 @@ Leveranser:
 | WP-02 | Supabase-migrasjoner, privat `app`-skjema, pgTAP-tester, isolert CI-database, reset-rutine og genererte databasetyper kontrollert mot skjema | Ferdig |
 | WP-03 | Lint/typecheck/test, Playwright-røyktest, dependency-audit, Gitleaks med selvtest, CSP/sikkerhetshoder og logging med felt-tillatelsesliste | Ferdig |
 
-Kjente begrensninger som bevisst er utsatt: CSP med `'unsafe-inline'` for skript utenfor chatsidene, og hostet staging (produksjon er etablert, se [hostet produksjon](local-development.md#hostet-produksjon)).
+Kjent begrensning som bevisst er utsatt: hostet staging (produksjon er etablert, se [hostet produksjon](local-development.md#hostet-produksjon)). Skript har nonce-basert CSP uten `'unsafe-inline'` på alle sider fra 10. oktober 2026.
 
 ### Fase 1 — Identitet, autorisasjon og hendelsesgrunnmur
 Mål: systemet kan vite hvem brukeren er, hva vedkommende får gjøre, og registrere kritiske endringer korrekt.
@@ -72,7 +72,7 @@ Leveranser:
 Bevisst utsatt:
 - ekte outbox-consumers (e-post/push) kommer i Fase 4, og Vercel Cron kjører de planlagte jobbene i produksjon etter tidsplanen i `apps/web/vercel.json`
 - hvem som kan utnevne plattformforvaltere i appen er ikke bestemt, så det skjer foreløpig bare via driftskommandoen
-- WebAuthn som sterkere autentisering for plattformforvaltere (ADR-0011) er besluttet, men må bygges før slike handlinger tas i reell bruk (Port D); til da avvises de
+- WebAuthn som sterkere autentisering for plattformforvaltere (ADR-0011) er bygget, men står av i produksjon (`PLATFORM_STEWARDS_ENABLED`); til den slås på, avvises privilegerte handlinger
 - endring av e-postadresse og synlighet per profilfelt (Fase 2)
 - appens egen databaserolle med minste privilegium (`lanbort_app`, [local-development](local-development.md)) og Auths grenser i produksjon ([pilot-operations](pilot-operations.md#grenser-for-innlogging)) kom før pilot (Port D)
 
@@ -87,6 +87,8 @@ Leveranser:
 - miljøpublisering og forhåndsgodkjenning
 - medeierskap, restriksjoner og endringskonflikter
 - enkel målrettet Finn-flate
+
+**Status:** Levert.
 
 ### Fase 3 — Lånekjernen
 Mål: første komplette, transaksjonelt sikre ende-til-ende-lån.
@@ -103,6 +105,8 @@ Leveranser:
 
 **Milepæl:** et lån skal kunne gjennomføres uten chat eller anmeldelse, men med korrekt historikk og alle kritiske invariants.
 
+**Status:** Levert, og Port B er oppfylt. PS-LOAN-022 (uenighet om overleveringen også etter at returen er i gang) er bygget 10. oktober 2026.
+
 ### Fase 4 — Varsler, privat kommunikasjon og saker
 Mål: brukerne får nødvendig kommunikasjon uten å blande privat chat med system-/saksdata.
 
@@ -113,6 +117,8 @@ Leveranser:
 - smal lånelogistikk ved blokkering
 - administrative samtaler og saksmodell
 - eksplisitt innsending av privat meldingsinnhold som saksdokumentasjon
+
+**Status:** Levert. Privat chat er av i produksjon til Port C er oppfylt. Meldingene i lånelogistikken ved blokkering går gjennom privat chat og er derfor også av.
 
 ### Fase 5 — Tillit, moderering og livssyklus
 Mål: et gjennomført eller avvikende lån kan etterbehandles uten å gjøre plattformen til domstol.
@@ -125,6 +131,8 @@ Leveranser:
 - suspensjon/deaktivering/kontrollert sletting
 - representantmodell og særskilt kontoavslutning når OD-0003 er avklart (utsatt; ikke en del av piloten, og deaktivert inntil da)
 
+**Status:** Levert, unntatt representantmodellen, som er av og testet utilgjengelig. Plattformforvalternes inngrep (suspensjon, kontrollert avslutning, duplikat og falsk identitet) er bygget, men står av i produksjon.
+
 ### Fase 6 — Oppdagelse, finpuss og full UX-integrasjon
 Mål: alle kjernefunksjoner presenteres gjennom den vedtatte informasjonsarkitekturen.
 
@@ -135,6 +143,8 @@ Leveranser:
 - historikktidslinjer
 - responsive desktop-varianter uten ny mental modell
 - tilgjengelighetsgjennomgang av alle kjerneflyter
+
+**Status:** Levert, med brukerflaten fra Fase 8. Den manuelle tilgjengelighetsgjennomgangen hører til Port E.
 
 ### Fase 7 — Pilot-hardening
 Mål: lukket pilot med reelle brukere kan kjøres kontrollert.
@@ -147,6 +157,8 @@ Leveranser:
 - pilotens kategoritaksonomi og risikobegrensning
 - observability og driftsprosedyrer
 - dokumentert liste over kjente begrensninger
+
+**Status:** Levert, og Port D er oppfylt ([kvalitetsportene](quality-gates.md#port-d-oppfylt-etter-de-interne-sjekkene)). De kjente begrensningene står i [drift av piloten](pilot-operations.md#kjente-mangler).
 
 ## Ikke mål for første pilot
 
