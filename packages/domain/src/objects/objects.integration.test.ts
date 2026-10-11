@@ -747,11 +747,96 @@ describe("images (PS-OBJ-002)", () => {
     await expect(uploadLater("img-over")).rejects.toMatchObject({
       code: "rate_limited",
     });
-    expect(process).not.toHaveBeenCalled();
+    // A used key is no way past the budget: other bytes under it are refused.
+    await expect(
+      uploadLater("img-other", idempotencyKey),
+    ).rejects.toMatchObject({ code: "idempotency_key_reused" });
     expect(await uploadLater("img-budget", idempotencyKey)).toEqual({
       output: first.output,
       replayed: true,
     });
+    expect(process).not.toHaveBeenCalled();
+  });
+
+  it("refuses a used upload key for other bytes or another object before processing", async () => {
+    const owner = await user();
+    const { objectId } = await create(owner);
+    const other = await create(owner);
+    const idempotencyKey = key();
+    const first = await upload(owner, objectId, "img-first", idempotencyKey);
+    process.mockClear();
+
+    await expect(
+      upload(owner, objectId, "img-changed", idempotencyKey),
+    ).rejects.toMatchObject({ code: "idempotency_key_reused" });
+    await expect(
+      upload(owner, other.objectId, "img-first", idempotencyKey),
+    ).rejects.toMatchObject({ code: "idempotency_key_reused" });
+    expect(await upload(owner, objectId, "img-first", idempotencyKey)).toEqual({
+      output: first.output,
+      replayed: true,
+    });
+    expect(process).not.toHaveBeenCalled();
+    expect((await read(owner, objectId)).images).toHaveLength(1);
+    expect((await read(owner, other.objectId)).images).toEqual([]);
+    expect(filesOf(other.objectId)).toEqual([]);
+  });
+
+  it("deletes the file a concurrent retry stores again after the image was removed", async () => {
+    const owner = await user();
+    const { objectId } = await create(owner);
+    const idempotencyKey = key();
+    // Both uploads are past their preparation before either is registered;
+    // the second is held until the first is done and its image removed.
+    let arrived = 0;
+    let bothArrived!: () => void;
+    let releaseSecond!: () => void;
+    const both = new Promise<void>((resolve) => (bothArrived = resolve));
+    const second = new Promise<void>((resolve) => (releaseSecond = resolve));
+    const held: ImageProcessor = async (bytes) => {
+      arrived += 1;
+      const turn = arrived;
+
+      if (turn === 2) {
+        bothArrived();
+      }
+
+      await both;
+
+      if (turn === 2) {
+        await second;
+      }
+
+      return process(bytes);
+    };
+    const uploadHeld = () =>
+      uploadObjectImage(
+        domain,
+        { store, process: held },
+        {
+          actor: owner,
+          objectId,
+          bytes: new TextEncoder().encode("img-twice"),
+          idempotencyKey,
+        },
+      );
+    const uploads = [uploadHeld(), uploadHeld()];
+
+    const { imageId } = (await Promise.race(uploads)).output;
+    await executeCommand(domain, removeObjectImage, {
+      actor: owner,
+      input: { objectId, imageId },
+      idempotencyKey: key(),
+    });
+    await processOutboxBatch(db, consumers, { batchSize: 100 });
+    expect(filesOf(objectId)).toEqual([]);
+    releaseSecond();
+
+    const [a, b] = await Promise.all(uploads);
+    expect([a?.replayed, b?.replayed].sort()).toEqual([false, true]);
+    expect(a?.output).toEqual(b?.output);
+    expect(filesOf(objectId)).toEqual([]);
+    expect((await read(owner, objectId)).images).toEqual([]);
   });
 
   it("deletes the file of an upload that crashed before it was registered", async () => {
