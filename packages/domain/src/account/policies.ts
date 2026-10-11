@@ -18,7 +18,9 @@ import {
 import {
   type FromCase,
   fromItsCase,
+  noStakeInRoles,
   platformStewardAccess,
+  type RolesAtStake,
 } from "../platform/policies";
 import { statesBefore, takesNewActivity } from "./model";
 
@@ -158,15 +160,17 @@ export const releaseAccountIdentityPolicy = definePolicy<AccountResource, void>(
  * PS-ADM-003, PS-ADM-014, PS-ADM-015: a platform steward's intervention on
  * someone else's account, from the platform case it rests on and recorded
  * with its basis. Only with a fresh passkey confirmation
- * (`platformStewardAccess`, ADR-0011).
+ * (`platformStewardAccess`, ADR-0011), and never by a steward who holds a
+ * role where the account's roles would be released.
  */
 function interventionPolicy(action: string, to: AccountStatus) {
-  return definePolicy<AccountResource & FromCase, void>({
+  return definePolicy<AccountResource & FromCase & RolesAtStake, void>({
     action,
     actor: [...platformStewardAccess],
     resource: [
       fromItsCase,
       requireNotInvolved(({ resource }) => [resource.userId]),
+      noStakeInRoles,
       canMove(to, "platform"),
     ],
   });
@@ -201,13 +205,16 @@ export const completeAccountClosurePolicy = interventionPolicy(
 export interface DuplicateRetirementResource {
   readonly retired: AccountResource;
   readonly continued: AccountResource;
+  /** The retired account is under a closure started while it was suspended. */
+  readonly closingFromSuspension: boolean;
 }
 
 /**
  * The states a duplicate is retired from: those a controlled closure starts
- * from, and a closure already under way. Never a suspension: a second
- * account beside a suspended one is a way around the suspension, not a
- * duplicate (vision 08, «Duplikatkonto med historikk på begge kontoer»).
+ * from, and a closure already under way. Never a suspension, nor a closure
+ * started from one: a second account beside a suspended one is a way around
+ * the suspension, not a duplicate (vision 08, «Duplikatkonto med historikk
+ * på begge kontoer»).
  */
 const retirableStates: readonly AccountStatus[] = [
   ...statesBefore("closing", "platform").filter(
@@ -222,7 +229,7 @@ const retirableStates: readonly AccountStatus[] = [
  * active, continues. From a case, like every intervention (PS-ADM-015).
  */
 export const retireDuplicateAccountPolicy = definePolicy<
-  DuplicateRetirementResource & FromCase,
+  DuplicateRetirementResource & FromCase & RolesAtStake,
   void
 >({
   action: "account.retire_duplicate",
@@ -233,8 +240,10 @@ export const retireDuplicateAccountPolicy = definePolicy<
       resource.retired.userId,
       resource.continued.userId,
     ]),
+    noStakeInRoles,
     ({ resource }) =>
       retirableStates.includes(resource.retired.status) &&
+      !resource.closingFromSuspension &&
       takesNewActivity(resource.continued.status)
         ? allow
         : deny("forbidden"),

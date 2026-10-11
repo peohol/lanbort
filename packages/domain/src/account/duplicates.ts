@@ -17,7 +17,9 @@ import { z } from "zod";
 import type { AccountStatus, Actor } from "../actor";
 import { defineCommand } from "../commands/command";
 import { defineQuery } from "../commands/query";
+import { hasStakeInRoles } from "../environment/continuity-commands";
 import { DomainError } from "../errors";
+import type { EventRecorder } from "../events/recorder";
 import { removeOwner } from "../objects/co-owners";
 import {
   loadCommitments,
@@ -30,6 +32,7 @@ import {
   intervene,
   withInterventionCase,
 } from "../platform/interventions";
+import { publicationEnded } from "../publications/events";
 import { blockedWithAny, lockPairsWith } from "../social/pair";
 import {
   accountFalseIdentityRecorded,
@@ -77,10 +80,13 @@ function actingStewardId(actor: Actor): string {
 /**
  * The retired account locked for its change of state and the continuing one
  * for share, in id order so two retirements of the same pair in opposite
- * directions wait for each other instead of deadlocking.
+ * directions wait for each other instead of deadlocking; with how a closure
+ * of the retired account began, and whether the steward has a stake in the
+ * roles it would release.
  */
 async function loadDuplicatePair(
   tx: Transaction<Database>,
+  actor: Actor,
   retiredId: string,
   continuedId: string,
 ) {
@@ -103,9 +109,32 @@ async function loadDuplicatePair(
   const retired = locked.get(retiredId);
   const continued = locked.get(continuedId);
 
-  return retired && continued
-    ? { resource: { retired, continued }, context: undefined }
-    : null;
+  if (!retired || !continued) {
+    return null;
+  }
+
+  const closure =
+    retired.status === "closing"
+      ? await tx
+          .selectFrom("app.account_status_changes")
+          .select("from_status")
+          .where("user_id", "=", retiredId)
+          .where("to_status", "=", "closing")
+          .orderBy("position", "desc")
+          .executeTakeFirst()
+      : undefined;
+
+  return {
+    resource: {
+      retired,
+      continued,
+      closingFromSuspension: closure?.from_status === "suspended",
+      rolesAtStake:
+        actor.kind === "user" &&
+        (await hasStakeInRoles(tx, actor.userId, { userId: retiredId })),
+    },
+    context: undefined,
+  };
 }
 
 /**
@@ -120,7 +149,7 @@ async function loadDuplicatePair(
  * friendships, memberships, roles, reviews or trust. Its own objects can be
  * moved afterwards ({@link moveDuplicateObject}). Retiring it again into the
  * same account starts a closure that was ended meanwhile; into another
- * account, it is refused.
+ * account, or into one retired as a duplicate itself, it is refused.
  */
 export const retireDuplicateAccount = defineCommand({
   name: "account.retire_duplicate",
@@ -134,7 +163,7 @@ export const retireDuplicateAccount = defineCommand({
       actor,
       input.caseId,
       now,
-      await loadDuplicatePair(tx, input.userId, input.continuedUserId),
+      await loadDuplicatePair(tx, actor, input.userId, input.continuedUserId),
       // Only the account that is closed is acted on, so only a case about
       // it may retire it; one about the continuing account may not.
       ({ retired }) => ({ userIds: [retired.userId] }),
@@ -163,6 +192,21 @@ async function retire({
 
   if (existing && existing.linked_user_id !== continued.userId) {
     conflict("Already retired as a duplicate of another account", [
+      "continuedUserId",
+    ]);
+  }
+
+  // The links are never undone, so an account retired as a duplicate, even
+  // one reinstated since, does not continue another.
+  const continuedRetired = await tx
+    .selectFrom("app.account_links")
+    .select("id")
+    .where("kind", "=", "duplicate")
+    .where("user_id", "=", continued.userId)
+    .executeTakeFirst();
+
+  if (continuedRetired) {
+    conflict("The continuing account is retired as a duplicate itself", [
       "continuedUserId",
     ]);
   }
@@ -524,8 +568,9 @@ async function endPublicationsBeyond(
   objectId: string,
   userId: string,
   now: Date,
+  events: EventRecorder,
 ): Promise<void> {
-  await tx
+  const ended = await tx
     .updateTable("app.environment_publications as publication")
     .set({
       status: "unpublished",
@@ -550,7 +595,19 @@ async function endPublicationsBeyond(
         ),
       ),
     )
+    .returning(["publication.id", "publication.environment_id"])
     .execute();
+
+  for (const row of ended) {
+    events.record(publicationEnded, {
+      resourceId: row.id,
+      payload: {
+        objectId,
+        environmentId: row.environment_id,
+        reason: "access_lost",
+      },
+    });
+  }
 }
 
 /**
@@ -639,7 +696,7 @@ export function defineMoveDuplicateObject(
           .where("object_id", "=", objectId)
           .where("status", "=", "pending")
           .execute();
-        await endPublicationsBeyond(tx, objectId, continuedId, now);
+        await endPublicationsBeyond(tx, objectId, continuedId, now, events);
 
         const commitments = await loadCommitments(tx, objectId, sources);
         const formerOwnerLeft = !commitments.some(

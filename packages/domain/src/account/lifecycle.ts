@@ -11,12 +11,15 @@ import { z } from "zod";
 import type { AccountStatus, Actor } from "../actor";
 import type { Policy } from "../authorization/policy";
 import { defineCommand } from "../commands/command";
-import { releaseEnvironmentRoles } from "../environment/continuity-commands";
+import {
+  hasStakeInRoles,
+  releaseEnvironmentRoles,
+} from "../environment/continuity-commands";
 import { DomainError } from "../errors";
 import type { EventRecorder } from "../events/recorder";
 import { stopReservedLoansOf } from "../loans/account-lifecycle";
 import { intervene, withInterventionCase } from "../platform/interventions";
-import type { FromCase } from "../platform/policies";
+import type { FromCase, RolesAtStake } from "../platform/policies";
 import {
   accountClosureStarted,
   accountDeactivated,
@@ -226,19 +229,32 @@ export const makeAccountDormant = defineCommand({
     ),
 });
 
-/** The account an intervention is toward, with the case it is taken from. */
+/**
+ * The account an intervention is toward, with the case it is taken from
+ * and whether the steward has a stake in the roles it would release.
+ */
 export async function loadAccountFromCase(
   tx: Db,
   actor: Actor,
   input: { readonly caseId: string; readonly userId: string },
   now: Date,
 ) {
+  const loaded = await loadAccountForChange(tx, input.userId);
+
   return withInterventionCase(
     tx,
     actor,
     input.caseId,
     now,
-    await loadAccountForChange(tx, input.userId),
+    loaded && {
+      resource: {
+        ...loaded.resource,
+        rolesAtStake:
+          actor.kind === "user" &&
+          (await hasStakeInRoles(tx, actor.userId, { userId: input.userId })),
+      },
+      context: undefined,
+    },
     (account) => ({ userIds: [account.userId] }),
   );
 }
@@ -249,7 +265,7 @@ export async function loadAccountFromCase(
  */
 function intervention(
   name: string,
-  policy: Policy<AccountResource & FromCase, void>,
+  policy: Policy<AccountResource & FromCase & RolesAtStake, void>,
   to: AccountStatusChange["to"],
   kind: PlatformInterventionKind,
 ) {

@@ -374,6 +374,59 @@ export async function releaseRolesIn(
   return ended;
 }
 
+/** The environments where releasing a user's roles changes anything. */
+const environmentsWithRolesOf = (userId: string) => sql<{
+  environment_id: string;
+}>`
+    select environment_id from app.environment_role_grants
+      where user_id = ${userId} and revoked_at is null
+    union
+    select environment_id from app.environment_role_invitations
+      where (user_id = ${userId} or (invited_by_user_id = ${userId} and role = 'owner'))
+        and closed_at is null
+    union
+    select vacancy.environment_id from app.environment_ownership_claims claim
+      join app.environment_ownership_vacancies vacancy on vacancy.id = claim.vacancy_id
+      where claim.user_id = ${userId} and claim.withdrawn_at is null
+        and vacancy.closed_at is null
+`;
+
+/**
+ * PS-USR-009: `candidateId` holds a role, or an open claim to the
+ * ownership, in an environment where the roles would be released: one
+ * environment, or wherever a user's roles are. Releasing them there could
+ * pass authority to the candidate.
+ */
+export async function hasStakeInRoles(
+  db: Kysely<Database>,
+  candidateId: string,
+  released: { readonly environmentId: string } | { readonly userId: string },
+): Promise<boolean> {
+  const environments =
+    "environmentId" in released
+      ? sql`select ${released.environmentId}::uuid as environment_id`
+      : environmentsWithRolesOf(released.userId);
+  const { rows } = await sql<{ stake: boolean }>`
+    select exists (
+      select 1 from (${environments}) as released
+      where exists (
+          select 1 from app.environment_role_grants
+            where environment_id = released.environment_id
+              and user_id = ${candidateId} and revoked_at is null
+        )
+        or exists (
+          select 1 from app.environment_ownership_claims claim
+            join app.environment_ownership_vacancies vacancy on vacancy.id = claim.vacancy_id
+            where vacancy.environment_id = released.environment_id
+              and claim.user_id = ${candidateId} and claim.withdrawn_at is null
+              and vacancy.closed_at is null
+        )
+    ) as stake
+  `.execute(db);
+
+  return rows[0]?.stake === true;
+}
+
 /**
  * Ends every environment role of a user whose account has gone away, for
  * account lifecycle to call inside its own transaction (`releaseRolesIn`).
@@ -387,17 +440,7 @@ export async function releaseEnvironmentRoles(
   events: EventRecorder,
 ): Promise<number> {
   const { rows } = await sql<{ environment_id: string }>`
-    select environment_id from app.environment_role_grants
-      where user_id = ${userId} and revoked_at is null
-    union
-    select environment_id from app.environment_role_invitations
-      where (user_id = ${userId} or (invited_by_user_id = ${userId} and role = 'owner'))
-        and closed_at is null
-    union
-    select vacancy.environment_id from app.environment_ownership_claims claim
-      join app.environment_ownership_vacancies vacancy on vacancy.id = claim.vacancy_id
-      where claim.user_id = ${userId} and claim.withdrawn_at is null
-        and vacancy.closed_at is null
+    ${environmentsWithRolesOf(userId)}
     order by environment_id
   `.execute(tx);
 

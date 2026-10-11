@@ -20,7 +20,11 @@ import {
   recordFalseIdentity,
   retireDuplicateAccount,
 } from "./duplicates";
-import { reinstateAccount, suspendAccount } from "./lifecycle";
+import {
+  reinstateAccount,
+  startAccountClosure,
+  suspendAccount,
+} from "./lifecycle";
 
 /**
  * WP-55 (PS-ADM-009–010): a duplicate is retired and closed, never merged;
@@ -210,6 +214,23 @@ describe("retiring a duplicate (PS-ADM-009)", () => {
       code: "forbidden",
     });
     expect(await statusOf(other.userId)).toBe("active");
+
+    // Nor once a closure has started from the suspension.
+    await run(startAccountClosure, platform, {
+      caseId: await about(platform, suspended.userId),
+      userId: suspended.userId,
+      basis,
+    });
+    await expect(retire(platform, suspended, other)).rejects.toMatchObject({
+      code: "forbidden",
+    });
+    expect(
+      await db
+        .selectFrom("app.account_links")
+        .select("id")
+        .where("user_id", "=", suspended.userId)
+        .execute(),
+    ).toEqual([]);
   });
 
   it("retires an account only from a case about it, not one about the account that continues", async () => {
@@ -258,6 +279,26 @@ describe("retiring a duplicate (PS-ADM-009)", () => {
         .where("user_id", "=", retired.userId)
         .execute(),
     ).toEqual([{ linked_user_id: continued.userId }]);
+
+    // The link is never undone: even reinstated, the duplicate does not
+    // continue the account it was retired into.
+    await run(reinstateAccount, platform, {
+      caseId: await about(platform, retired.userId),
+      userId: retired.userId,
+      basis,
+    });
+    await expect(retire(platform, continued, retired)).rejects.toMatchObject({
+      code: "conflict",
+      fields: ["continuedUserId"],
+    });
+    expect(await statusOf(continued.userId)).toBe("active");
+    expect(
+      await db
+        .selectFrom("app.account_links")
+        .select("id")
+        .where("user_id", "=", continued.userId)
+        .execute(),
+    ).toEqual([]);
   });
 
   it("is closed to every real session until stronger authentication is decided (OD-0010)", async () => {
@@ -392,6 +433,20 @@ describe("moving a duplicate's objects (PS-ADM-009)", () => {
       ]),
     );
     expect(await basisInEvents("object", objectId)).toBe(false);
+    // Search learns that the publication ended (PS-OBJ-006).
+    expect(await eventsFor("environment_publication", publicationId)).toEqual(
+      expect.arrayContaining([
+        {
+          event_type: "environment_publication.ended",
+          payload: { objectId, environmentId, reason: "access_lost" },
+        },
+      ]),
+    );
+    expect(
+      (await eventsFor("environment_publication", sharedPublication)).map(
+        (e) => e.event_type,
+      ),
+    ).not.toContain("environment_publication.ended");
 
     // The memberships themselves stay where they were.
     expect(

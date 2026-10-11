@@ -383,6 +383,7 @@ function interventionMatrices() {
   const roles = (standing: Partial<InterventionCase> = {}) => ({
     environmentId: "00000000-0000-4000-8000-000000000005",
     userId: someone,
+    rolesAtStake: false,
     fromCase: {
       id: "00000000-0000-4000-8000-000000000006",
       kind: "platform_report" as const,
@@ -512,6 +513,13 @@ function interventionMatrices() {
         name: "never the steward's own roles",
         actor: steward,
         resource: { ...roles(), userId: steward.userId },
+        context: undefined,
+        expected: "conflict_of_interest",
+      },
+      {
+        name: "never where the steward holds a role or claims the ownership",
+        actor: steward,
+        resource: { ...roles(), rolesAtStake: true },
         context: undefined,
         expected: "conflict_of_interest",
       },

@@ -20,7 +20,10 @@ import { loadCase } from "../cases/commands";
 import { caseAssigned, caseEntryAdded, caseOpened } from "../cases/events";
 import { readCaseInterventionsPolicy } from "../cases/policies";
 import { insertCase, insertEntry, recordAction } from "../cases/store";
-import { releaseRolesIn } from "../environment/continuity-commands";
+import {
+  hasStakeInRoles,
+  releaseRolesIn,
+} from "../environment/continuity-commands";
 import { actingUserId, inSnapshot, loadObjectState } from "../objects/state";
 import { intervene, withInterventionCase } from "./interventions";
 import {
@@ -145,7 +148,9 @@ export const openPlatformInquiry = defineCommand({
  * environment, from the case about them. Nobody else gains authority: an
  * owner's place goes through the continuity model (PS-ENV-013), where the
  * remaining administrators may take it on, or the environment winds down.
- * The members see only the result, as with any role that ends.
+ * A steward who holds a role there or claims the ownership ends no one's
+ * roles there (PS-USR-009). The members see only the result, as with any
+ * role that ends.
  */
 export const endEnvironmentRoles = defineCommand({
   name: "environment_role.end_by_platform",
@@ -168,7 +173,13 @@ export const endEnvironmentRoles = defineCommand({
       now,
       environment
         ? {
-            resource: { environmentId: environment.id, userId: input.userId },
+            resource: {
+              environmentId: environment.id,
+              userId: input.userId,
+              rolesAtStake: await hasStakeInRoles(tx, actingUserId(actor), {
+                environmentId: environment.id,
+              }),
+            },
             context: undefined,
           }
         : null,
@@ -183,15 +194,26 @@ export const endEnvironmentRoles = defineCommand({
         .select(["id", "state"])
         .where("id", "=", resource.environmentId)
         .executeTakeFirstOrThrow();
-      const ended = await releaseRolesIn(
-        tx,
-        environment,
-        resource.userId,
-        "platform_intervention",
-        { userId: actingUserId(actor) },
-        now,
-        events,
-      );
+      const holdsRole = await tx
+        .selectFrom("app.environment_role_grants")
+        .select("id")
+        .where("environment_id", "=", environment.id)
+        .where("user_id", "=", resource.userId)
+        .where("revoked_at", "is", null)
+        .executeTakeFirst();
+      // Without a role there is nothing to end, and nothing else of theirs
+      // in the environment (an invitation, say) ends unrecorded.
+      const ended = holdsRole
+        ? await releaseRolesIn(
+            tx,
+            environment,
+            resource.userId,
+            "platform_intervention",
+            { userId: actingUserId(actor) },
+            now,
+            events,
+          )
+        : [];
 
       return {
         result: {
