@@ -153,7 +153,7 @@ function requireFreeSlot(imageCount: number): void {
  * be registered. An upload whose attach already completed is a retry: it
  * skips the slot check, since its stored result is replayed.
  */
-export const prepareObjectImage = defineCommand({
+const prepareObjectImage = defineCommand({
   name: "object.prepare_image",
   input: z.strictObject({
     objectId: objectIdSchema,

@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it, vi } from "vitest";
-import type { AccountStatus, UserActor } from "../actor";
+import {
+  consumeRateLimit,
+  RateLimitedError,
+  rateLimits,
+} from "../abuse/rate-limits";
+import { type AccountStatus, type UserActor, userScope } from "../actor";
 import { getOwnAccount } from "../account/queries";
 import { deleteOwnAccount } from "../account/deletion";
 import { deactivateAccount } from "../account/lifecycle";
@@ -129,6 +134,41 @@ describe("setting a profile picture", () => {
 
     expect(await upload(me, bytes, key)).toEqual(first);
     expect(filesOf(me)).toEqual([]);
+  });
+
+  it("spends the uploads budget before processing, but replays a completed upload", async () => {
+    const me = await user();
+    // Far beyond the clocks of other test files, which remove budgets that
+    // are back by their own clocks (rate-limits.integration.test.ts).
+    const later = {
+      ...tick(),
+      clock: () => new Date(Date.UTC(new Date().getUTCFullYear() + 500, 0, 1)),
+    };
+    const uploadLater = async (bytes: string, idempotencyKey = randomUUID()) =>
+      uploadProfilePicture(
+        later,
+        { store, process },
+        { actor: me, bytes: new TextEncoder().encode(bytes), idempotencyKey },
+      );
+    const key = randomUUID();
+    const first = await uploadLater("img-budget", key);
+
+    const spendAll = async () => {
+      for (let i = 0; i <= rateLimits.uploads.limit; i += 1) {
+        await consumeRateLimit(later, rateLimits.uploads, userScope(me.userId));
+      }
+    };
+    await expect(spendAll()).rejects.toBeInstanceOf(RateLimitedError);
+    process.mockClear();
+
+    await expect(uploadLater("img-over")).rejects.toMatchObject({
+      code: "rate_limited",
+    });
+    expect(process).not.toHaveBeenCalled();
+    expect(await uploadLater("img-budget", key)).toEqual({
+      output: first.output,
+      replayed: true,
+    });
   });
 
   it("refuses what is not an image, and deletes nothing it stored", async () => {

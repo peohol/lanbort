@@ -118,7 +118,7 @@ const ownPicture = (resource: OwnPicture): OwnProfilePicture => ({
  * should it never be registered. An upload whose registration already
  * completed is a retry, whose stored result is replayed.
  */
-export const preparePicture = defineCommand({
+const preparePicture = defineCommand({
   name: "profile_picture.prepare",
   input: z.strictObject({
     pictureId: z.uuid(),

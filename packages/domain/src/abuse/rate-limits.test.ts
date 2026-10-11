@@ -30,8 +30,6 @@ import {
 } from "../environment/role-commands";
 import { reportInEnvironment, reportToPlatform } from "../moderation/commands";
 import { inviteCoOwner } from "../objects/co-owners";
-import { prepareObjectImage } from "../objects/images";
-import { preparePicture } from "../people/pictures";
 import { listEnvironmentObjects } from "../publications/queries";
 import {
   askObjectQuestion,
@@ -88,7 +86,6 @@ const limited = {
     claimChatKeyPackages,
   ],
   chatResets: [resetChatAccount],
-  uploads: [prepareObjectImage, preparePicture],
   passkeys: [...Object.values(testPasskeyCommands), removeStewardPasskey],
 } as const;
 

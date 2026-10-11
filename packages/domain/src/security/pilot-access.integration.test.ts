@@ -526,10 +526,6 @@ const probes: Record<string, (ids: WorldIds) => object> = {
   "object.read": (ids) => ({ objectId: ids.objectId }),
   "object.read_history": (ids) => ({ objectId: ids.objectId }),
   "profile_picture.read": (ids) => ({ pictureId: ids.pictureId }),
-  "profile_picture.prepare": (ids) => ({
-    pictureId: ids.pictureId,
-    uploadKey: "probe-upload-key-0001",
-  }),
   "object.read_image": (ids) => ({
     objectId: ids.objectId,
     imageId: ids.imageId,
@@ -552,11 +548,6 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     byteSize: 1000,
     width: 100,
     height: 100,
-  }),
-  "object.prepare_image": (ids) => ({
-    objectId: ids.objectId,
-    imageId: ids.imageId,
-    uploadKey: "probe-upload-key-0001",
   }),
   "object.remove_image": (ids) => ({
     objectId: ids.objectId,
