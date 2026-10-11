@@ -546,6 +546,41 @@ describe("steward passkeys (ADR-0011, OD-0023)", () => {
     }
   });
 
+  it("adds no passkey after the role ended during the ceremony", async () => {
+    const steward = await testSteward(domain);
+    // Signed in, with the role, before the revoke commits.
+    const actor = await steward.confirm();
+    const { output } = await begin(actor);
+    await executeCommand(domain, revokePlatformRole, {
+      actor: opsActors.roles,
+      input: {
+        email: steward.email,
+        role: "platform_steward",
+        reason: "Test",
+      },
+      idempotencyKey: randomUUID(),
+    });
+
+    await expect(
+      executeCommand(domain, testPasskeyCommands.finishRegistration, {
+        actor,
+        input: {
+          challengeId: output.challengeId,
+          name: "Sen nøkkel",
+          response: new TestPasskey(testSite).register(output.options),
+        },
+      }),
+    ).rejects.toMatchObject({ code: "forbidden" });
+    expect(
+      await db
+        .selectFrom("app.steward_passkeys")
+        .select("id")
+        .where("user_id", "=", actor.userId)
+        .where("removed_at", "is", null)
+        .execute(),
+    ).toEqual([]);
+  });
+
   it("is only for stewards, and only the operational command issues codes", async () => {
     const { identity, actor } = await registerTestUser(domain);
 

@@ -153,6 +153,23 @@ async function lockStewardPasskeys(tx: Tx, userId: string) {
   );
 }
 
+/**
+ * Whether the user holds the steward role now, read in the transaction:
+ * the actor's roles were read before it, and a revocation may have
+ * committed since.
+ */
+async function holdsStewardRole(tx: Tx, userId: string) {
+  const grant = await tx
+    .selectFrom("app.platform_role_grants")
+    .select("id")
+    .where("user_id", "=", userId)
+    .where("role", "=", "platform_steward")
+    .where("revoked_at", "is", null)
+    .executeTakeFirst();
+
+  return grant !== undefined;
+}
+
 async function countActive(tx: Tx, userId: string) {
   return (await activePasskeys(tx, userId).execute()).length;
 }
@@ -293,6 +310,13 @@ export function stewardPasskeyCommands(ceremonies: PasskeyCeremonies) {
       }
 
       await lockStewardPasskeys(tx, user.userId);
+
+      // A revocation that committed after the request began ended the
+      // passkeys; none is added after it (OD-0023).
+      if (!(await holdsStewardRole(tx, user.userId))) {
+        throw new DomainError("forbidden", "The steward role has ended");
+      }
+
       const active = await countActive(tx, user.userId);
 
       if (active >= maximumStewardPasskeys) {
@@ -571,17 +595,10 @@ async function loadStewardTarget(tx: Tx, email: string) {
     return null;
   }
 
-  const grant = await tx
-    .selectFrom("app.platform_role_grants")
-    .select("id")
-    .where("user_id", "=", user.id)
-    .where("role", "=", "platform_steward")
-    .where("revoked_at", "is", null)
-    .executeTakeFirst();
   const resource: StewardTarget = {
     userId: user.id,
     status: user.status as AccountStatus,
-    holdsRole: grant !== undefined,
+    holdsRole: await holdsStewardRole(tx, user.id),
   };
 
   return { resource, context: undefined };

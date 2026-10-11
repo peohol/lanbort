@@ -311,6 +311,18 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
       systemActor(platformRoleOpsProcess),
       roleChange,
     );
+    // A code for the steward's first passkey, still open at the backup.
+    await live.db
+      .insertInto("app.steward_enrollment_codes")
+      .values({
+        user_id: steward.userId,
+        code_hash: randomBytes(32),
+        issued_at: new Date(),
+        issued_by_process: "ops.passkeys",
+        reason: "Øvelse",
+        expires_at: new Date(Date.now() + 60 * 60 * 1000),
+      })
+      .execute();
     await reconcile(live);
     // The copy starts from the shared test database, whose fixtures need
     // not hold every invariant; the restore must add no finding to them.
@@ -516,6 +528,13 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
       .where("user_id", "=", people.steward.userId)
       .execute();
     expect(roles).toEqual([{ revoked_by_process: "ops.restore" }]);
+    // The revocation voided the steward's open code; so does its replay.
+    const codes = await db
+      .selectFrom("app.steward_enrollment_codes")
+      .select("voided_at")
+      .where("user_id", "=", people.steward.userId)
+      .execute();
+    expect(codes).toEqual([{ voided_at: expect.any(Date) }]);
   });
 
   it("opens the logistics channel of a block made after the backup", async () => {
