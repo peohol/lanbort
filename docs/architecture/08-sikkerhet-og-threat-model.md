@@ -120,7 +120,7 @@
 ### E2EE-misbruk
 Serveren kan ikke moderere klartekst i privat chat proaktivt. Produktkontroller må derfor være blokkering, rate limits, lokal rapport-/innsendingsfunksjon og metadata-minimerte sikkerhetssignaler. E2EE skal ikke svekkes for å gi generell administratorinnsyn.
 
-**I piloten:** privat chat er på for inviterte deltakere (`CHAT_ENABLED=pilot`, OD-0056) med blokkering, fartsgrenser og innsending av kopier av private meldinger i en sak (WP-46). Hver deltaker bekrefter før første gangs bruk at krypteringen ikke er uavhengig gjennomgått (PS-COM-023).
+**I piloten:** privat chat slås på for inviterte deltakere (`CHAT_ENABLED=pilot`, OD-0056) med blokkering, fartsgrenser og innsending av kopier av private meldinger i en sak (WP-46). Hver deltaker bekrefter før første gangs bruk at krypteringen ikke er uavhengig gjennomgått (PS-COM-023).
 
 ## Hemmeligheter
 
