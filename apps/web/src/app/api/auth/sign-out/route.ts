@@ -8,27 +8,27 @@ import { route } from "@/server/http/route";
  * sign-out still goes ahead, so the browser deletes its chat as well, and
  * the device can be removed from another one.
  */
-export const POST = route.public(
-  async ({ auth, domain, requestId, resolveActor }) => {
-    try {
-      const actor = await resolveActor();
-      if (actor.kind === "user") {
-        await endChatSession(
-          domain.db,
-          actor.userId,
-          actor.authentication.sessionId,
-          domain.clock?.(),
-        );
-      }
-    } catch (error) {
-      writeLog("error", "chat.end_session_failed", {
-        requestId,
-        errorType: errorTypeOf(error),
-      });
+export const POST = route.public(async (context) => {
+  try {
+    const actor = await context.resolveActor();
+    if (actor.kind === "user") {
+      // Reached only here, so a domain that fails to start stops nothing.
+      const { db, clock } = context.domain;
+      await endChatSession(
+        db,
+        actor.userId,
+        actor.authentication.sessionId,
+        clock?.(),
+      );
     }
+  } catch (error) {
+    writeLog("error", "chat.end_session_failed", {
+      requestId: context.requestId,
+      errorType: errorTypeOf(error),
+    });
+  }
 
-    await auth.signOut();
+  await context.auth.signOut();
 
-    return new Response(null, { status: 204 });
-  },
-);
+  return new Response(null, { status: 204 });
+});
