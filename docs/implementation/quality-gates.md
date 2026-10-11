@@ -88,7 +88,7 @@ Privat chat er bygget, men av i produksjon. `CHAT_ENABLED` finnes ikke i Vercel,
 | CSP uten `unsafe-inline` for skript, ingen tredjepartsskript | Ja, på alle sider, ikke bare chatsidene (#172) | Test; produksjon (CSP-hodet på www.lånbort.no) |
 | Uavhengig kryptografisk designreview | Gjenstår. Grunnlaget er klart ([e2ee-gjennomgangsgrunnlag](e2ee-gjennomgangsgrunnlag.md)) | Uavhengig |
 | Serveren kan ikke lese klartekst | Bygget slik og prøvd internt | Test; bekreftes av den uavhengige gjennomgangen |
-| Nøkkel- og enhetstap har definert UX | Bygget: fjerne og avvise enheter, gjenopprettingsnøkkel, tilbakestilling, og utlogging som fjerner enheten der chatten kjører. Der chatten ikke kan åpnes, slettes den lokalt, men enheten må fjernes fra en annen enhet | Test |
+| Nøkkel- og enhetstap har definert UX | Bygget: fjerne og avvise enheter, gjenopprettingsnøkkel, tilbakestilling, og utlogging som fjerner enheten der chatten kjører. Der chatten ikke kan åpnes, slettes den lokalt, og serveren stenger enheten ute | Test |
 | XSS, CSP og supply chain er testet | Internt: CSP-tester, `pnpm audit` og Gitleaks i CI | Test; bekreftes etter gjennomgangen |
 | Ingen «dekrypter alt»-vei | Ingen finnes. Saksdokumentasjon (WP-46) er en kopi brukeren selv velger og sender | Intern gjennomgang; bekreftes av den uavhengige |
 

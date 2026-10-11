@@ -280,7 +280,10 @@ export const chatDeviceSchema = z.strictObject({
   certificate: deviceCertificateSchema,
   createdAt: z.iso.datetime(),
   revokedAt: z.iso.datetime().nullable(),
-  /** Absent when the device went with a replaced account key. */
+  /**
+   * Absent when the device went with a replaced account key, or was shut
+   * out at a sign-out it could not sign a revocation for.
+   */
   revocation: deviceRevocationSchema.nullable(),
 });
 

@@ -128,6 +128,8 @@ Serveren kan holde en tilbakekalling tilbake fra en kontakt. Det gir ikke den ta
 
 **Utlogging** av en enhet som har chat, sletter enhetens chatttilstand og lokale historikk og tilbakekaller enheten. Brukeren varsles om dette før utlogging.
 
+Er chatten på enheten ikke til å åpne (nøklene mangler, eller tilstanden er ødelagt), kan den ikke signere en tilbakekalling. Da stenger serveren den ute når sesjonen avsluttes: den slutter å levere til den og å godta meldinger fra den, og den teller ikke lenger blant kontoens enheter. Uten signatur har kontaktene ingen tilbakekalling å verifisere, så enheten blir stående i gruppene deres, men den får ingenting levert, og nettleseren har slettet nøklene. Det gir serveren ingen ny makt: den kan allerede slutte å levere til en enhet.
+
 ## 8. Recovery og historikk
 
 **Historikk lagres på enheten.** På grunn av forward secrecy kan ciphertext på serveren ikke dekrypteres senere. Leste meldinger lagres derfor dekryptert i enhetens lokale lager (kryptert i ro, punkt 10). Serveren sletter ciphertext når alle mottakerenheter har hentet den, eller etter en øvre frist som settes ett sted i WP-43 og følger pilotpolicyen for oppbevaring (OD-0002).

@@ -57,6 +57,7 @@ import {
   publishChatKeyPackages,
   readChatLinkStatus,
   readOwnChatDevices,
+  endChatSession,
   renewChatSession,
   registerChatAccount,
   requestChatLink,
@@ -353,6 +354,81 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
       randomUUID(),
     );
     expect(await current(bob.actor)).not.toBeNull();
+  });
+
+  it("shuts out a signed-out session's device and drops its link request", async () => {
+    const alice = await chatUser();
+    const laptop = newSession(alice.actor);
+    const { linkRequestId } = await run(requestChatLink, laptop, {
+      deviceId: randomUUID(),
+      deviceKey: testChatDevice(alice.account).deviceKey,
+      linkKey: testChatDevice(alice.account).deviceKey,
+      commitment: linkCommitment,
+    });
+    const devices = () =>
+      executeQuery(tick(), readOwnChatDevices, {
+        actor: newSession(alice.actor),
+        input: {},
+      }).then(({ devices }) => devices);
+    const linkStatus = () =>
+      executeQuery(tick(), readChatLinkStatus, {
+        actor: laptop,
+        input: { linkRequestId },
+      });
+
+    await endChatSession(
+      db,
+      alice.actor.userId,
+      alice.actor.authentication.sessionId,
+      now(),
+    );
+
+    // No signature: nothing to hand the contacts, only the server stops.
+    expect(await devices()).toEqual([
+      expect.objectContaining({
+        deviceId: alice.device.deviceId,
+        revokedAt: expect.any(String),
+        revocation: null,
+      }),
+    ]);
+    await expect(publish(alice)).rejects.toMatchObject(forbidden);
+    // Another session's request waits on.
+    await expect(linkStatus()).resolves.toBeDefined();
+
+    await endChatSession(
+      db,
+      alice.actor.userId,
+      laptop.authentication.sessionId,
+      now(),
+    );
+    await expect(linkStatus()).rejects.toMatchObject(notFound);
+  });
+
+  it("leaves a device revoked with a signature, and other accounts, as they are at sign-out", async () => {
+    const alice = await chatUser();
+    const bob = await chatUser();
+    const revocation = alice.account.revoke(alice.device.deviceId);
+    await run(revokeChatDevice, alice.actor, { revocation });
+
+    await endChatSession(
+      db,
+      alice.actor.userId,
+      alice.actor.authentication.sessionId,
+      now(),
+    );
+    await endChatSession(
+      db,
+      alice.actor.userId,
+      bob.actor.authentication.sessionId,
+      now(),
+    );
+
+    const { devices } = await executeQuery(tick(), readOwnChatDevices, {
+      actor: newSession(alice.actor),
+      input: {},
+    });
+    expect(devices[0]?.revocation).toEqual(revocation);
+    await expect(publish(bob)).resolves.toBeDefined();
   });
 
   it("links a new session's device through an existing one", async () => {

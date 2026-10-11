@@ -56,7 +56,7 @@ Alle kjøres i CI på hver endring. Lokalt: se [lokal utvikling](local-developme
 | --- | --- | --- |
 | Kryptografi | `packages/e2ee/src/*.test.ts` (`pnpm --filter @lanbort/e2ee test`) | At begge kontoers enheter leser og serveren aldri ser klartekst; korte meldinger polstres; endrede meldinger avvises; ny enhet leser ikke det som ble sendt før den kom med; tilbakekalt og fjernet enhet stenges ute; bare én av to samtidige commits gjelder; spøkelsesenheter, enheter fra kontoer utenfor samtalen og en tredje konto avvises; en deltaker kan ikke fjerne en annens enhet uten tilbakekalling; endret kontonøkkel godtas ikke uten kvittering; kobling avviser byttede nøkler og pakker fra noen som ikke så koden; sikkerhetskopien åpnes bare med nøkkelen; nøkkelmateriale kan ikke skrives ut |
 | Klientmotoren | `apps/web/src/chat/*.test.ts` | Historikkoverføring, og at en avsender ikke kan erstatte en melding som allerede står i historikken |
-| Serveren | `packages/domain/src/chat/chat.integration.test.ts` (`pnpm test:integration`) | Hvem som når hvilke enheter, samtaler og arkiver; commit-rekkefølge; tilbakekalling og tilbakestilling; gjenoppretting; at en commit bare tar ut enheter serveren allerede har stengt ute; grensen på 100 enheter |
+| Serveren | `packages/domain/src/chat/chat.integration.test.ts` (`pnpm test:integration`) | Hvem som når hvilke enheter, samtaler og arkiver; commit-rekkefølge; tilbakekalling og tilbakestilling; gjenoppretting; at en commit bare tar ut enheter serveren allerede har stengt ute; at utlogging stenger ute sesjonens enhet; grensen på 100 enheter |
 | Tilgang | `packages/domain/src/security/pilot-access.integration.test.ts`, `apps/web/e2e/authorization.spec.ts` | At fremmede får samme svar som for ID-er som ikke finnes, også for chatrutene |
 | Databasen | `supabase/tests/0033`, `0035`, `0043`, `0046`, `0047`, `0052` (`pnpm db:test`) | Grenser og regler i tabellene, også at en enhet bare kan flyttes til ny sesjon og ellers bare tilbakekalles én gang |
 | Nettleser | `apps/web/e2e/chat.spec.ts`, `smoke.spec.ts` | To venner chatter, kobling med kode, gjenoppretting med nøkkel, lånelogistikk ved blokkering; streng CSP med nonce på alle sider og kamera bare på godkjenningssiden |
@@ -74,7 +74,7 @@ Alle kjøres i CI på hver endring. Lokalt: se [lokal utvikling](local-developme
 | En deltaker kunne få serveren til å slutte å levere til den andres levende enhet | Rettet (#168) |
 | Ingen øvre grense på antall enheter, så en gjenoppretting kunne mislykkes | Rettet (#168): høyst 100 |
 | Sider utenfor chat hadde `unsafe-inline` for skript, men deler opprinnelse og IndexedDB med chatsidene; COOP og CORP manglet | Rettet (#172) |
-| Utlogging sletter ikke enhetens chattilstand og tilbakekaller ikke enheten, slik ADR-0010 punkt 7 sier | Delvis rettet (#161): utlogging sletter alltid chatten i nettleseren, og en enhet der chatten kjører, tilbakekaller seg selv. Se kjente begrensninger for enheter der chatten ikke kan åpnes |
+| Utlogging sletter ikke enhetens chattilstand og tilbakekaller ikke enheten, slik ADR-0010 punkt 7 sier | Rettet (#161, #189): utlogging sletter alltid chatten i nettleseren, og en enhet der chatten kjører, tilbakekaller seg selv. Der chatten ikke kan åpnes, stenger serveren enheten ute når sesjonen avsluttes; se kjente begrensninger |
 | En lesbar kopi av chatmeldinger sendt inn til en sak (WP-46) kunne oppgi en vilkårlig person som avsender og vise personens ekte navn | Rettet (#155): kopien må komme fra en samtale innsenderen selv er med i |
 
 ## Kjente begrensninger og spørsmål til gjennomgangen
@@ -88,7 +88,7 @@ Alle kjøres i CI på hver endring. Lokalt: se [lokal utvikling](local-developme
 - **Gjenoppretting krever ikke ny e-postkode.** Den krever gjenopprettingsnøkkelen, som bare brukeren har; tilbakestilling krever begge deler. Vurder om dette er riktig avveining.
 - **Interne funksjoner i ts-mls:** `unprotectPrivateMessage` brukes for å lese avsender før tilstanden endres (ADR-0010 punkt 2), og brukte nøkler nullstilles først etter at tilstanden er byttet, fordi listen deler referanser med den gamle tilstanden.
 - **Serveren kan holde tilbake en tilbakekalling fra en kontakt** (ADR-0010 punkt 7, akseptert restrisiko).
-- **Utlogging fra en enhet der chatten ikke kan åpnes** (nøklene mangler, eller tilstanden er ødelagt) sletter det nettleseren har, men tilbakekaller ikke enheten. En tilbakekalling må signeres med kontonøkkelen, og den har ikke enheten da. Enheten står derfor som aktiv på kontoen, og teller mot grensen på 100, til den fjernes under «Mine enheter» på en annen enhet eller kontoen tilbakestilles. Vurder om dette er godt nok.
+- **Utlogging fra en enhet der chatten ikke kan åpnes** (nøklene mangler, eller tilstanden er ødelagt) kan ikke signere en tilbakekalling, for kontonøkkelen er borte. Serveren stenger enheten ute når sesjonen avsluttes (ADR-0010 punkt 7), og nettleseren sletter det den har. Kontaktene får ingen tilbakekalling, så enheten blir stående i MLS-gruppene deres uten at noe leveres til den, til kontoen eventuelt tilbakestilles. Vurder om dette er godt nok.
 - **Vedlegg** (ADR-0010 punkt 11) er ikke bygget.
 
 ## Hva som gjenstår før Port C
