@@ -65,7 +65,7 @@
 
 **Tiltak:** streng CSP, ingen vilkårlig tredjepartsskript på sensitive flater, escaping/sanitization, sikre dependencies, begrenset token-/nøkkeltilgang og separat vurdering av eventuell analytics.
 
-**I piloten:** CSP med nonce og `strict-dynamic` for skript, `frame-ancestors 'none'`, HSTS og `nosniff` (sjekket i produksjon). Ingen tredjepartsskript og ingen analyse. React escaper alt, og koden bruker aldri `dangerouslySetInnerHTML`. Sesjonen ligger i HttpOnly-cookies, så skript når ikke tokenet. Privat chat, der nøklene finnes, er av til Port C.
+**I piloten:** CSP med nonce og `strict-dynamic` for skript, `frame-ancestors 'none'`, HSTS og `nosniff` (sjekket i produksjon). Ingen tredjepartsskript og ingen analyse. React escaper alt, og koden bruker aldri `dangerouslySetInnerHTML`. Sesjonen ligger i HttpOnly-cookies, så skript når ikke tokenet. Privat chat, der nøklene finnes, er på bare i den lukkede piloten (OD-0056).
 
 **Gjenstår:** stiler tillater `'unsafe-inline'`, og ingen lint-regel forbyr `dangerouslySetInnerHTML`.
 
@@ -113,14 +113,14 @@
 
 **I piloten:** låst `pnpm-lock.yaml`, alle GitHub Actions festet til commit, `pnpm audit` og hemmelighetsskanning (Gitleaks, hele historikken) i CI, og CI med bare lesetilgang. Bare produkteier og Claude kan skrive til repoet.
 
-**Gjenstår:** ingen automatiske varsler om sårbare avhengigheter mellom endringene (som Dependabot), ingen kodeanalyse (som CodeQL), og nøkkelhåndteringen i chat er ikke gjennomgått uavhengig (Port C).
+**Gjenstår:** ingen automatiske varsler om sårbare avhengigheter mellom endringene (som Dependabot), ingen kodeanalyse (som CodeQL), og nøkkelhåndteringen i chat er ikke gjennomgått uavhengig (Port C; i piloten med et bevisst unntak, [risikovurderingen](../implementation/chat-pilot-risikovurdering.md)).
 
 **Tiltak:** streng CSP, minimal tredjepartskode, dependency-/supply-chain-kontroll, sikre deploy-prosesser og eksplisitt sikkerhetsreview av nøkkelhåndtering. Produktet skal ikke beskrive nettleser-E2EE som beskyttelse mot en kompromittert klient; hva den beskytter mot og ikke, står i [ADR-0010](decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md). Dersom det senere kreves sterkere beskyttelse mot kompromittert webdistribusjon, må signert/native klient eller tilsvarende vurderes særskilt.
 
 ### E2EE-misbruk
 Serveren kan ikke moderere klartekst i privat chat proaktivt. Produktkontroller må derfor være blokkering, rate limits, lokal rapport-/innsendingsfunksjon og metadata-minimerte sikkerhetssignaler. E2EE skal ikke svekkes for å gi generell administratorinnsyn.
 
-**I piloten:** privat chat er av til Port C (`CHAT_ENABLED` ikke satt). Når den slås på, finnes blokkering, fartsgrenser og innsending av kopier av private meldinger i en sak (WP-46).
+**I piloten:** privat chat slås på for inviterte deltakere (`CHAT_ENABLED=pilot`, OD-0056) med blokkering, fartsgrenser og innsending av kopier av private meldinger i en sak (WP-46). Hver deltaker bekrefter før første gangs bruk at krypteringen ikke er uavhengig gjennomgått (PS-COM-023).
 
 ## Hemmeligheter
 

@@ -331,6 +331,18 @@ export const restoreChatAccountSchema = z.strictObject({
     .max(chatLimits.devicesPerAccount),
 });
 
+/**
+ * The notice someone confirms before turning private chat on (PS-COM-023):
+ * the encryption is tested internally, not reviewed independently. A new
+ * wording is a new value.
+ */
+export const chatNotices = ["unaudited_pilot_v1"] as const;
+export const currentChatNotice = chatNotices[chatNotices.length - 1]!;
+
+export const acknowledgeChatNoticeSchema = z.strictObject({
+  notice: z.enum(chatNotices),
+});
+
 /** «Ikke nå» to the offer, or an answer to the one reminder. */
 export const answerChatRecoveryPromptSchema = z.strictObject({
   prompt: z.enum(["offer", "reminder"]),

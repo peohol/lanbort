@@ -50,7 +50,7 @@ import { ThingThumbnail } from "@/components/thing-thumbnail";
 import { hiddenUntil } from "@/presentation/reviews";
 import { chatContactLink } from "@/server/chat-contact";
 import { unavailabilityReportLink } from "@/server/unavailability-report";
-import { chatEnabled } from "@/server/env";
+import { chatEnabled } from "@/server/chat-enabled";
 import {
   pageQuery,
   pageQueryIfAllowed,
@@ -502,11 +502,13 @@ export default async function LoanPage({
       pagesShown(query, historyKey),
     ),
     // Newest first, and at most one open: the one that matters now.
-    chatEnabled()
-      ? pageQuery(readLoanLogistics, { loanId }).then(
-          (result) => result?.channels[0],
-        )
-      : undefined,
+    chatEnabled().then((on) =>
+      on
+        ? pageQuery(readLoanLogistics, { loanId }).then(
+            (result) => result?.channels[0],
+          )
+        : undefined,
+    ),
     // The reviews are their reviewers': after a change of lender, the former.
     pageQueryIfAllowed(readLoanReviews, { loanId }),
     pageQueryIfAllowed(readLoanConditionReports, { loanId }),

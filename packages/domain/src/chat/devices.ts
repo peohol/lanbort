@@ -33,6 +33,7 @@ import {
   chatDeviceRevoked,
 } from "./events";
 import { readKeyPackage } from "./mls";
+import { chatNoticeAcknowledged } from "./notice";
 import { chatRetention, keyPackagesPerDevice } from "./model";
 import {
   approveChatLinkPolicy,
@@ -226,7 +227,10 @@ async function registerAccount(
   return { deviceId: input.certificate.deviceId };
 }
 
-/** The account's first chat device, in this session (ADR-0010 §3). */
+/**
+ * The account's first chat device, in this session (ADR-0010 §3), once the
+ * notice is confirmed (PS-COM-023).
+ */
 export const registerChatAccount = defineCommand({
   name: "chat.register_account",
   input: registerChatAccountSchema,
@@ -234,7 +238,12 @@ export const registerChatAccount = defineCommand({
   policy: registerChatAccountPolicy,
   rateLimit: rateLimits.chatKeys,
   idempotency: "required",
-  load: async () => ({ resource: undefined, context: undefined }),
+  load: async ({ tx, actor }) => ({
+    resource: {
+      acknowledged: await chatNoticeAcknowledged(tx, actingUserId(actor)),
+    },
+    context: undefined,
+  }),
   execute: (args) => registerAccount(args, "first"),
 });
 

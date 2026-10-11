@@ -99,6 +99,11 @@ Nye meldinger i en samtale gir ett samlet informasjonsvarsel i appens varslingss
 
 Gjenopprettingsnøkkelen for privat chat tilbys én gang rett etter at privat chat er slått på, med «Ikke nå», og kan alltid lages fra «Mine enheter». Den som takket nei, får én diskret påminnelse i Samtaler som ikke hindrer bruk, etter at hen faktisk har begynt å utveksle meldinger, og bare så lenge ingen gjenopprettingsnøkkel finnes. Det gis ingen gjentatte dialoger eller regelmessige påminnelser. Tekster om gjenoppretting lover bare at sikkerhetskopierte meldinger kan hentes tilbake. (Produkteier, 9. oktober 2026, OD-0044.)
 
+### PS-COM-023 — Privat chat i piloten tas i bruk med åpne øyne
+**Forankring:** PS-COM-005, PS-NFR-015; OD-0056; [risikovurderingen](../implementation/chat-pilot-risikovurdering.md)
+
+Så lenge privat chat er på uten den uavhengige kryptografiske gjennomgangen Port C krever, får hver bruker, før første gangs bruk, en kort og forståelig forklaring: krypteringen er laget og testet internt, men ikke gjennomgått av uavhengige, så det kan finnes uoppdagede svakheter; sensitive opplysninger bør ikke skrives; og chat kan bli slått av på kort varsel. Brukeren bekrefter aktivt å ha lest og forstått dette før chat slås på for kontoen, og serveren tar ikke imot en chatnøkkel uten bekreftelsen. Chat er frivillig: resten av Lånbort virker uten. Chat er bare tilgjengelig mens Lånbort er en lukket pilot for inviterte. (Produkteier, 11. oktober 2026, OD-0056.)
+
 ### PS-COM-020 — En rapport eller mekling lukkes med en kort avslutningsmelding
 **Forankring:** VP-15, VP-16; PS-COM-011, PS-TRUST-013; OD-0038
 

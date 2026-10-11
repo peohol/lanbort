@@ -118,7 +118,7 @@ Leveranser:
 - administrative samtaler og saksmodell
 - eksplisitt innsending av privat meldingsinnhold som saksdokumentasjon
 
-**Status:** Levert. Privat chat er av i produksjon til Port C er oppfylt. Meldingene i lånelogistikken ved blokkering går gjennom privat chat og er derfor også av.
+**Status:** Levert. Privat chat er på i den lukkede piloten med et bevisst unntak fra Port C (OD-0056, [risikovurderingen](chat-pilot-risikovurdering.md)); den uavhengige gjennomgangen står igjen før bred lansering.
 
 ### Fase 5 — Tillit, moderering og livssyklus
 Mål: et gjennomført eller avvikende lån kan etterbehandles uten å gjøre plattformen til domstol.

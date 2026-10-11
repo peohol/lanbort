@@ -1,6 +1,6 @@
 # Grunnlag for den uavhengige kryptografiske gjennomgangen av privat chat
 
-> **Status:** Intern gjennomgang gjort 10. oktober 2026. **Den erstatter ikke** den uavhengige kryptografiske gjennomgangen av protokollbruken som [Port C](quality-gates.md#port-c--før-privat-chat-aktiveres) krever. Privat chat er av for ekte brukere til Port C er oppfylt (`CHAT_ENABLED`, se [servergrensen](server-boundary.md#privat-chat-wp-43)).
+> **Status:** Intern gjennomgang gjort 10. oktober 2026. **Den erstatter ikke** den uavhengige kryptografiske gjennomgangen av protokollbruken som [Port C](quality-gates.md#port-c--før-privat-chat-aktiveres) krever. I den lukkede piloten er privat chat likevel på for inviterte deltakere, etter et bevisst unntak med [egen risikovurdering](chat-pilot-risikovurdering.md) (OD-0056); den uavhengige gjennomgangen står som krav før bred lansering.
 
 Dokumentet er skrevet for den som skal gjøre den uavhengige gjennomgangen. Designet står i [ADR-0010](../architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md); her står hva som skal vurderes, hvor koden er, hvilke tester som viser hva, hva den interne gjennomgangen fant, og hva vi vet er svakt.
 
@@ -91,7 +91,7 @@ Alle kjøres i CI på hver endring. Lokalt: se [lokal utvikling](local-developme
 - **Utlogging fra en enhet der chatten ikke kan åpnes** (nøklene mangler, eller tilstanden er ødelagt) kan ikke signere en tilbakekalling, for kontonøkkelen er borte. Serveren stenger enheten ute når sesjonen avsluttes (ADR-0010 punkt 7), og nettleseren sletter det den har. Kontaktene får ingen tilbakekalling, så enheten blir stående i MLS-gruppene deres uten at noe leveres til den, til kontoen eventuelt tilbakestilles. Vurder om dette er godt nok.
 - **Vedlegg** (ADR-0010 punkt 11) er ikke bygget.
 
-## Hva som gjenstår før Port C
+## Hva som gjenstår før Port C er oppfylt uten unntak
 
 - Den uavhengige kryptografiske gjennomgangen, med rettelser av det den finner.
 - At Port C-punktene om XSS/CSP/supply chain, UX for nøkkel- og enhetstap og ingen «dekrypter alt»-vei bekreftes av produkteier etter gjennomgangen.

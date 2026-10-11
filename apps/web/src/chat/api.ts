@@ -15,6 +15,7 @@ import type {
   DeviceRevocationWire,
   OwnChatDevices,
 } from "@lanbort/contracts";
+import { currentChatNotice } from "@lanbort/contracts";
 import {
   type ApiFailureCode,
   type ApiResult,
@@ -104,6 +105,10 @@ export const chatApi = {
   archivePart: (id: string, part: number) =>
     get<{ data: string }>(`${archive(id)}/parts/${part}`),
   deleteArchive: (id: string) => post(`${archive(id)}/delete`, {}),
+
+  /** The notice confirmed before chat is turned on (PS-COM-023). */
+  acknowledgeNotice: () =>
+    post("/api/chat/notice", { notice: currentChatNotice }),
 
   /** The recovery key's backup (ADR-0010 §8, PS-COM-019). */
   createRecoveryKey: (body: { keyId: string; backup: string }) =>

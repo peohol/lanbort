@@ -12,6 +12,8 @@ Produksjon lager ikke kontoer for nye e-postadresser (`enable_signup = false` un
 
 Lokalt og i testene er nyregistrering åpen.
 
+Privat chat følger den samme sperren: `CHAT_ENABLED=pilot` holder chat på bare så lenge nye adresser ikke får konto ([risikovurderingen](chat-pilot-risikovurdering.md)). Åpnes Lånbort, lukkes chat av seg selv til Port C er oppfylt.
+
 ### Slik legger produkteier til en deltaker
 
 1. Gå til <https://supabase.com/dashboard> og åpne Lånbort-prosjektet.
@@ -53,6 +55,7 @@ Med alvorlig hendelse menes at personopplysninger kan ha kommet på avveie, blit
    - Angrep med mange forespørsler: slå på Vercels «Attack Challenge Mode» for prosjektet.
    - En lekket nøkkel: lag en ny og slett den gamle (Supabase-nøkler og databasepassord, `RESEND_API_KEY`, `SUPABASE_AUTH_SMTP_PASSWORD`, `SUPABASE_ACCESS_TOKEN`), og deploy på nytt der den brukes.
    - Feil i appen som viser eller endrer data den ikke skal: rull tilbake til forrige deploy i Vercel, eller sett prosjektet på pause til feilen er rettet.
+   - En sikkerhetsfeil i privat chat: fjern `CHAT_ENABLED` fra prosjektets miljøvariabler i Vercel og publiser på nytt («Redeploy» på siste produksjonsdeploy). Da svarer alle chatruter «finnes ikke», og Samtaler sier at chat ikke er tilgjengelig; meldingene står igjen kryptert på deltakernes enheter. Slå på igjen med `pilot` når feilen er rettet.
    - En deltaker som misbruker Lånbort: utestengelse i miljøet. Til plattformforvaltere kan sperre kontoer (de trenger sterkere innlogging først, ADR-0011), stenges innloggingen i Supabase ved å utestenge brukeren der («ban»). Brukeren slettes ikke.
 2. **Sikre sporene med en gang.** Leverandørenes logger forsvinner av seg selv ([oppbevaring](retention.md#logger-hos-leverandørene)): Vercel etter 1 dag, Supabase og ImprovMX etter 7 og Resend etter 30. Ta ut det som gjelder hendelsen før det, og lagre det privat, aldri i dette repoet, som er offentlig.
 3. **Vurder hvem og hva det gjelder**: hvilke opplysninger, hvor mange, og hvor alvorlig det kan bli for dem.
@@ -68,8 +71,7 @@ Port D krever at kjente mangler er dokumentert og vurdert. Dette er det som bevi
 
 | Mangel | Følge | Vurdering for lukket pilot |
 | --- | --- | --- |
-| Privat chat er av i produksjon (`CHAT_ENABLED` er ikke satt) | Deltakerne kan ikke skrive private meldinger til hverandre i appen | Krever Port C, med uavhengig kryptografisk gjennomgang ([grunnlaget](e2ee-gjennomgangsgrunnlag.md)) |
-| Lånelogistikk ved blokkering (WP-44) går gjennom privat chat og er derfor også av | Parter i et pågående lån som har blokkert hverandre, kan ikke skrive til hverandre i appen | Lånet fullføres med stegene på lånets side som før; uenighet blir en avklaring eller, i et miljølån, en sak hos miljøets administratorer |
+| Privat chat slås på uten uavhengig kryptografisk gjennomgang (`CHAT_ENABLED=pilot`, OD-0056) | Det kan finnes svakheter i krypteringen som den interne gjennomgangen ikke fant | Et bevisst, midlertidig unntak fra Port C for den lukkede piloten, med [egen risikovurdering](chat-pilot-risikovurdering.md): ingen kjente alvorlige svakheter står uadressert, hver deltaker bekrefter merknaden før første gangs bruk (PS-COM-023), chat er bare for inviterte, og den kan slås av raskt (under). Den uavhengige gjennomgangen ([grunnlaget](e2ee-gjennomgangsgrunnlag.md)) kreves før bred lansering |
 | Plattformforvaltning er av (`PLATFORM_STEWARDS_ENABLED` er ikke satt) | Ingen plattformkø og ingen inngrep fra Lånbort; saker håndteres i miljøene. En konto som misbrukes, stenges i Supabase ([alvorlige hendelser](#alvorlige-hendelser)) | Privilegerte handlinger avvises til passkeys er tatt i bruk (ADR-0011) |
 | Representanttilgang ved død eller varig utilgjengelighet er av (OD-0003 åpen) | Ingen kan handle på vegne av en avdød deltaker | Testet utilgjengelig (pgTAP 0030); saker løses manuelt |
 | Ingen Point-in-Time Recovery (OD-0022) | Inntil 24 timers endringer kan gå tapt; gjenoppretting tar inntil 8 timer | Valgt av produkteier. Den egne backupen øves hver natt og hver måned; gjenoppretting av Supabases backup er ikke øvd ([backup](backup-restore.md#øvelsen)) |

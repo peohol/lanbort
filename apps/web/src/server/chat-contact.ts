@@ -1,7 +1,7 @@
 import type { ChatContext } from "@lanbort/contracts";
 import { readChatContact } from "@lanbort/domain";
 import { chatConversationHref, chatWithHref } from "@/navigation/chat";
-import { chatEnabled } from "./env";
+import { chatEnabled } from "./chat-enabled";
 import { pageQuery } from "./session";
 
 /** Where a page lets the reader write to someone, and whether it exists. */
@@ -21,7 +21,7 @@ export async function chatContactLink(
   userId: string,
   context?: ChatContext,
 ): Promise<ChatContactLink | null> {
-  if (!chatEnabled()) {
+  if (!(await chatEnabled())) {
     return null;
   }
 

@@ -1,6 +1,7 @@
 export * from "./events";
 export * from "./policies";
 export * from "./devices";
+export { acknowledgeChatNotice } from "./notice";
 export * from "./archives";
 export * from "./recovery";
 export * from "./conversations";
