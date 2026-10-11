@@ -6,6 +6,7 @@ import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
 import { Icon } from "@/components/icon";
 import { SignOutButton } from "@/components/sign-out-button";
+import { loansHref } from "@/navigation/areas";
 import {
   chatLinkHref,
   chatResetHref,
@@ -24,11 +25,37 @@ import { Points } from "./points";
 import { RecoveryKeyFlow, waitingNote } from "./recovery-key";
 
 /**
- * Slå på privat chat (05): one explanation, one button. Then, once, the
- * offer of a recovery key (R1, PS-COM-019) before the conversations.
+ * What someone confirms before chat is on for their account (PS-COM-023):
+ * the encryption has not been reviewed independently. Chat is optional; the
+ * rest of Lånbort works without it.
+ */
+const pilotNotice = [
+  {
+    icon: "shield",
+    text: "Krypteringen er laget og testet av Lånbort, men den er ikke gjennomgått av uavhengige sikkerhetseksperter ennå. Det kan derfor finnes svakheter vi ikke har oppdaget.",
+  },
+  {
+    icon: "warning",
+    text: "Ikke skriv sensitive opplysninger, som helse, passord, kontonummer eller fødselsnummer.",
+  },
+  {
+    icon: "info",
+    text: "Privat chat kan bli slått av på kort varsel hvis vi finner en sikkerhetsfeil.",
+  },
+  {
+    icon: "loans",
+    text: "Du kan være med i resten av piloten uten privat chat. Det du trenger for et lån, finner du under Lån.",
+  },
+] as const;
+
+/**
+ * Slå på privat chat (05): one explanation, the notice to confirm
+ * (PS-COM-023), one button. Then, once, the offer of a recovery key (R1,
+ * PS-COM-019) before the conversations.
  */
 function StartChat() {
   const { userId, started } = useChat();
+  const [understood, setUnderstood] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [engine, setEngine] = useState<ChatEngine>();
@@ -37,6 +64,7 @@ function StartChat() {
     setBusy(true);
     setError(null);
     try {
+      await chatApi.acknowledgeNotice();
       setEngine(await createChat(userId, false));
     } catch (problem) {
       setBusy(false);
@@ -82,15 +110,31 @@ function StartChat() {
           },
         ]}
       />
+      <Points heading="Før du slår på" points={pilotNotice} />
+      <div className="checkbox">
+        <input
+          id="chat-notice-understood"
+          type="checkbox"
+          checked={understood}
+          onChange={(event) => setUnderstood(event.target.checked)}
+        />
+        <label htmlFor="chat-notice-understood">
+          Jeg har lest og forstått dette
+        </label>
+      </div>
       <BusyButton
         type="button"
         className="button-primary"
         busy={busy}
+        disabled={!understood}
         onClick={() => void start()}
       >
         Slå på privat chat
       </BusyButton>
       <ErrorText>{error}</ErrorText>
+      <Link href={loansHref} className={styles.centered}>
+        Ikke nå
+      </Link>
       <div className={styles.centered}>
         <EncryptionSheet />
       </div>

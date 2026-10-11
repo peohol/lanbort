@@ -1,4 +1,8 @@
-import { chatLimits, type ReturnOutcome } from "@lanbort/contracts";
+import {
+  chatLimits,
+  currentChatNotice,
+  type ReturnOutcome,
+} from "@lanbort/contracts";
 import { sql } from "kysely";
 import { afterAll, describe, expect, it } from "vitest";
 import type { UserActor } from "../actor";
@@ -12,6 +16,7 @@ import {
   submitChatCommit,
 } from "../chat/conversations";
 import { registerChatAccount } from "../chat/devices";
+import { acknowledgeChatNotice } from "../chat/notice";
 import { startLoanLogisticsChat } from "../chat/loan-logistics";
 import { groupIdOf } from "../chat/model";
 import { executeQuery } from "../commands/query";
@@ -321,6 +326,7 @@ describe("messages (ADR-0010, WP-43)", () => {
   async function chatDevice(actor: UserActor) {
     const account = testChatAccount(actor.userId);
     const device = testChatDevice(account);
+    await run(acknowledgeChatNotice, actor, { notice: currentChatNotice });
     await run(registerChatAccount, actor, {
       accountKey: account.accountKey,
       certificate: device.certificate,

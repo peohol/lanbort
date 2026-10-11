@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { chatLimits } from "@lanbort/contracts";
+import { chatLimits, currentChatNotice } from "@lanbort/contracts";
 import { sql } from "kysely";
 import { afterAll, describe, expect, it } from "vitest";
 import { deleteOwnAccount } from "../account/deletion";
@@ -49,6 +49,7 @@ import {
   putChatArchivePart,
   readChatArchivePart,
 } from "./archives";
+import { acknowledgeChatNotice, chatNoticeAcknowledged } from "./notice";
 import {
   approveChatLink,
   declineChatLink,
@@ -143,10 +144,15 @@ const sessionLives = async (actor: UserActor) =>
     )
   ).rows.length === 1;
 
+/** The notice confirmed, as before turning chat on (PS-COM-023). */
+const confirmNotice = (actor: UserActor) =>
+  run(acknowledgeChatNotice, actor, { notice: currentChatNotice });
+
 async function chatUser(actor?: UserActor): Promise<ChatUser> {
   const me = actor ?? (await user());
   const account = testChatAccount(me.userId);
   const device = testChatDevice(account);
+  await confirmNotice(me);
   await run(registerChatAccount, me, {
     accountKey: account.accountKey,
     certificate: device.certificate,
@@ -298,8 +304,44 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
     ).rejects.toMatchObject(conflict);
   });
 
+  it("turns chat on only after the notice is confirmed, and keeps the first confirmation (PS-COM-023)", async () => {
+    const actor = await user();
+    const account = testChatAccount(actor.userId);
+    const device = testChatDevice(account);
+    const register = () =>
+      run(registerChatAccount, actor, {
+        accountKey: account.accountKey,
+        certificate: device.certificate,
+      });
+
+    await expect(register()).rejects.toMatchObject(forbidden);
+    expect(await chatNoticeAcknowledged(db, actor.userId)).toBe(false);
+
+    await confirmNotice(actor);
+    const first = await db
+      .selectFrom("app.chat_notice_acknowledgements")
+      .selectAll()
+      .where("user_id", "=", actor.userId)
+      .executeTakeFirstOrThrow();
+    expect(first.notice).toBe(currentChatNotice);
+
+    await confirmNotice(actor);
+    expect(
+      await db
+        .selectFrom("app.chat_notice_acknowledgements")
+        .select("acknowledged_at")
+        .where("user_id", "=", actor.userId)
+        .executeTakeFirstOrThrow(),
+    ).toEqual({ acknowledged_at: first.acknowledged_at });
+
+    await expect(register()).resolves.toEqual({
+      deviceId: device.deviceId,
+    });
+  });
+
   it("refuses a certificate not signed by the key it names, or for someone else", async () => {
     const actor = await user();
+    await confirmNotice(actor);
     const account = testChatAccount(actor.userId);
     const stranger = testChatAccount(actor.userId);
     const forged = {
@@ -1669,6 +1711,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
     for (const table of [
       "app.chat_recovery_keys",
       "app.chat_recovery_prompts",
+      "app.chat_notice_acknowledgements",
     ] as const) {
       const left = await db
         .selectFrom(table)

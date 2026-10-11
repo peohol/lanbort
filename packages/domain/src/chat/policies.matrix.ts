@@ -39,6 +39,7 @@ import {
   readChatLinkStatusPolicy,
   readOwnChatDevicesPolicy,
   registerChatAccountPolicy,
+  acknowledgeChatNoticePolicy,
   requestChatLinkPolicy,
   resetChatAccountPolicy,
   restartChatGroupsPolicy,
@@ -225,7 +226,34 @@ const systemOnly = (policy: Policy<void, void>, process: string) =>
   ]);
 
 export const chatMatrices = [
-  accountAction(registerChatAccountPolicy, false),
+  accountAction(acknowledgeChatNoticePolicy, false),
+  cases(registerChatAccountPolicy, [
+    ["after confirming the notice", user, { acknowledged: true }, "allow"],
+    [
+      "before confirming the notice",
+      user,
+      { acknowledged: false },
+      "forbidden",
+    ],
+    [
+      "a deactivated account",
+      deactivated,
+      { acknowledged: true },
+      "account_inactive",
+    ],
+    [
+      "an unfinished registration",
+      pending,
+      { acknowledged: true },
+      "registration_required",
+    ],
+    [
+      "anonymous caller",
+      anonymousActor,
+      { acknowledged: true },
+      "unauthenticated",
+    ],
+  ]),
   cases(resetChatAccountPolicy, [
     ["right after signing in", user, undefined, "allow"],
     [

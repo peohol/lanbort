@@ -105,8 +105,9 @@ export const restartChatGroups = defineCommand({
 
 /**
  * PS-ADM-006: a deleted account's chat identity goes with it: its account
- * keys, devices, key packages, recovery backup and what waited for them. The conversations
- * stay for the other participants, closed, without who the account was.
+ * keys, devices, key packages, recovery backup, confirmed notice and what
+ * waited for them. The conversations stay for the other participants,
+ * closed, without who the account was.
  */
 export const chatAccountDeletionStep: AccountDeletionStep = {
   name: "chat",
@@ -128,6 +129,7 @@ export const chatAccountDeletionStep: AccountDeletionStep = {
     for (const table of [
       "app.chat_recovery_keys",
       "app.chat_recovery_prompts",
+      "app.chat_notice_acknowledgements",
       "app.chat_archives",
     ] as const) {
       await db.deleteFrom(table).where("user_id", "=", userId).execute();

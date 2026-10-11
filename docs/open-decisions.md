@@ -163,6 +163,12 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 
 ## Avklart
 
+### OD-0056 — Privat chat i den lukkede piloten før den uavhengige gjennomgangen
+- **Lag:** Tverrgående
+- **Status:** Avklart (produkteier, 11. oktober 2026)
+- **Berører:** Port C, PS-COM-005, PS-NFR-015, ADR-0010
+- **Beslutning:** Et bevisst, midlertidig unntak fra Port C for den lukkede piloten, ikke en generell sikkerhetsgodkjenning: privat chat slås på for inviterte deltakere etter [risikovurderingen](implementation/chat-pilot-risikovurdering.md), med aktiv bekreftelse fra hver bruker før første gangs bruk ([PS-COM-023](product-spec/05-kommunikasjon-varsler-og-saker.md#ps-com-023--privat-chat-i-piloten-tas-i-bruk-med-åpne-øyne)) og rask avslåing. Den uavhengige kryptografiske gjennomgangen står som krav før bred lansering (Port E). Bygget.
+
 ### OD-0022 — Backupnivå for piloten
 - **Lag:** Arkitektur
 - **Status:** Avklart (produkteier, 10. oktober 2026)

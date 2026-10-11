@@ -241,6 +241,7 @@ Klienten sender ingen «lest»- eller «skriver»-signaler (PS-COM-004). Enheten
 - OD-0005 er avklart. Port C har fortsatt krav om uavhengig kryptografisk gjennomgang, testet XSS/CSP/supply chain, definert UX for nøkkel- og enhetstap og ingen skjult «dekrypter alt»-vei.
 - Pakken `@lanbort/e2ee` finnes med tester som viser kravene i praksis: to kontoer med flere enheter, at serveren aldri ser klartekst, at en ny enhet ikke kan lese eldre meldinger, at en tilbakekalt og fjernet enhet ikke kan lese nye, at spøkelsesenheter og enheter fra kontoer utenfor samtalen avvises, at en deltaker ikke kan fjerne en annens enhet uten gyldig tilbakekalling, at endret kontonøkkel ikke godtas uten brukerens kvittering, at bare én av to samtidige commits vinner, og at nøkkelmateriale ikke kan skrives ut.
 - Privat chat er fortsatt ikke tilgjengelig i appen før WP-43 er bygget og Port C er oppfylt.
+- **Unntak (OD-0056, 11. oktober 2026):** i den lukkede piloten er privat chat på for inviterte deltakere før den uavhengige gjennomgangen, etter en [egen risikovurdering](../../implementation/chat-pilot-risikovurdering.md) og med aktiv bekreftelse fra hver bruker (PS-COM-023). Unntaket gjelder bare piloten; kravet om uavhengig gjennomgang før bred lansering står.
 
 ## Når beslutningen må vurderes på nytt
 

@@ -90,9 +90,31 @@ const legitimateContact: ResourceRule<ChatStartResource, void> = ({
 }) =>
   resource.friends || resource.invitedByContext ? allow : deny("forbidden");
 
-/** Registering the account's first device: a new account key. */
-export const registerChatAccountPolicy = definePolicy<void, void>({
-  action: "chat.register_account",
+/** Whether the account's owner confirmed the notice about chat (PS-COM-023). */
+export interface ChatNoticeResource {
+  readonly acknowledged: boolean;
+}
+
+const noticeAcknowledged: ResourceRule<ChatNoticeResource, void> = ({
+  resource,
+}) => (resource.acknowledged ? allow : deny("forbidden"));
+
+/**
+ * Registering the account's first device: a new account key, only after the
+ * notice is confirmed (PS-COM-023). Every other way to a device builds on an
+ * account key that was registered so.
+ */
+export const registerChatAccountPolicy = definePolicy<ChatNoticeResource, void>(
+  {
+    action: "chat.register_account",
+    actor: [requireActiveAccount],
+    resource: [noticeAcknowledged],
+  },
+);
+
+/** Confirming the notice about chat: about the caller's own account. */
+export const acknowledgeChatNoticePolicy = definePolicy<void, void>({
+  action: "chat.acknowledge_notice",
   actor: [requireActiveAccount],
 });
 
@@ -365,6 +387,7 @@ export const restartChatGroupsPolicy = definePolicy<void, void>({
 });
 
 export const chatPolicies = [
+  acknowledgeChatNoticePolicy,
   registerChatAccountPolicy,
   resetChatAccountPolicy,
   requestChatLinkPolicy,

@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
+import { currentChatNotice } from "@lanbort/contracts";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { UserActor } from "../actor";
 import {
+  acknowledgeChatNotice,
   acceptRoleInvitation,
   approveLoanRequest,
   askObjectQuestion,
@@ -220,6 +222,7 @@ async function hiddenWorld() {
 
   const chatAccount = testChatAccount(lender.userId);
   const chatDevice = testChatDevice(chatAccount);
+  await run(acknowledgeChatNotice, lender, { notice: currentChatNotice });
   await run(registerChatAccount, lender, {
     accountKey: chatAccount.accountKey,
     certificate: chatDevice.certificate,

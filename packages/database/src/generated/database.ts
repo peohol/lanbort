@@ -265,6 +265,12 @@ export interface AppChatMessages {
   id: Generated<Int8>;
 }
 
+export interface AppChatNoticeAcknowledgements {
+  acknowledged_at: Generated<Timestamp>;
+  notice: string;
+  user_id: string;
+}
+
 export interface AppChatParticipants {
   conversation_id: string;
   hidden_at: Timestamp | null;
@@ -1094,6 +1100,7 @@ export interface DB {
   "app.chat_key_packages": AppChatKeyPackages;
   "app.chat_link_requests": AppChatLinkRequests;
   "app.chat_messages": AppChatMessages;
+  "app.chat_notice_acknowledgements": AppChatNoticeAcknowledgements;
   "app.chat_participants": AppChatParticipants;
   "app.chat_recovery_keys": AppChatRecoveryKeys;
   "app.chat_recovery_prompts": AppChatRecoveryPrompts;

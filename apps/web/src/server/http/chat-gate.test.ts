@@ -6,6 +6,12 @@ vi.mock("next/headers", () => ({
   cookies: async () => ({ getAll: () => [], set: () => {} }),
 }));
 
+/** Whether the auth provider makes accounts for new addresses. */
+let newAccounts = true;
+vi.mock("../new-accounts", () => ({
+  newAccountsAreOpen: async () => newAccounts,
+}));
+
 const { createRouteFactory, boundaryOf } = await import("./route");
 const { chatOnly, stewardsOnly } = await import("./chat-gate");
 
@@ -50,5 +56,32 @@ describe.each([
     vi.stubEnv(flag, "true");
     expect(await (await call()).json()).toEqual({ reached: true });
     expect(boundaryOf(handler)).toEqual({ access: "public" });
+  });
+});
+
+describe("private chat in the closed pilot (PS-NFR-015, PS-COM-023)", () => {
+  const handler = chatOnly(
+    route.public(async () => Response.json({ reached: true })),
+  );
+  const call = () =>
+    handler(new NextRequest("http://localhost/api/gated"), {
+      params: Promise.resolve({}),
+    });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    newAccounts = true;
+  });
+
+  it("is on only while new addresses get no account", async () => {
+    vi.stubEnv("CHAT_ENABLED", "pilot");
+
+    newAccounts = false;
+    expect(await (await call()).json()).toEqual({ reached: true });
+
+    newAccounts = true;
+    const response = await call();
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: { code: "not_found" } });
   });
 });

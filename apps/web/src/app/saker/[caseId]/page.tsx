@@ -34,7 +34,7 @@ import { formatShortTime } from "@/presentation/dates";
 import { accountStatusLabels } from "@/presentation/interventions";
 import { loanStatusLabels } from "@/presentation/loans";
 import { firstImageHref } from "@/presentation/object-images";
-import { chatEnabled } from "@/server/env";
+import { chatEnabled } from "@/server/chat-enabled";
 import { pageQuery, requirePageAccount } from "@/server/session";
 import {
   getStewardship,
@@ -295,6 +295,8 @@ export default async function CasePage({
   const holding = asHandler && open && c.assigneeUserId === account.userId;
   const writes = asHandler ? holding : c.mayWrite;
   const withdrawal = withdrawalText(c, { asHandler, environment });
+  // WP-46: a party copies private messages in from a chat page.
+  const evidence = !asHandler && (await chatEnabled());
   const step =
     asHandler && open
       ? handlerStep(c, account.userId, measures.length > 0)
@@ -434,9 +436,7 @@ export default async function CasePage({
               ? "Skriv hva som skjedde, så konkret du kan. Den andre parten ser det ikke før administratoren deler forklaringene."
               : "Skriv bare det som trengs for saken."
           }
-          evidenceHref={
-            !asHandler && chatEnabled() ? caseEvidenceHref(c.id) : null
-          }
+          evidenceHref={evidence ? caseEvidenceHref(c.id) : null}
         />
       )}
       {holding && (

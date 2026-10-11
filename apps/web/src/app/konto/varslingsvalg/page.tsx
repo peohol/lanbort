@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
 import { PreferenceSwitch } from "@/components/preference-switch";
 import { notificationLevelLabels } from "@/presentation/notifications";
-import { chatEnabled } from "@/server/env";
+import { chatEnabled } from "@/server/chat-enabled";
 import { pageQuery, requirePageAccount } from "@/server/session";
 
 export const metadata: Metadata = { title: "Varslingsvalg – Lånbort" };
@@ -54,7 +54,10 @@ function ChatMessageChoices({
 /** Which notifications come where, per level (PS-COM-002, PS-COM-003). */
 export default async function NotificationChoicesPage() {
   await requirePageAccount();
-  const preferences = await pageQuery(readNotificationPreferences, {});
+  const [preferences, chat] = await Promise.all([
+    pageQuery(readNotificationPreferences, {}),
+    chatEnabled(),
+  ]);
 
   return (
     <main>
@@ -81,9 +84,7 @@ export default async function NotificationChoicesPage() {
           )}
         </fieldset>
       ))}
-      {chatEnabled() && preferences && (
-        <ChatMessageChoices preferences={preferences} />
-      )}
+      {chat && preferences && <ChatMessageChoices preferences={preferences} />}
     </main>
   );
 }

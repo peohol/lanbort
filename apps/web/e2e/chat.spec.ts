@@ -39,10 +39,16 @@ async function person(browser: Browser, name: string) {
   return { ...opened, email, id: await accountId(opened.context.request) };
 }
 
-/** Turns chat on, and says «Ikke nå» to the recovery key (R1). */
+/**
+ * Turns chat on after confirming the notice (PS-COM-023), and says «Ikke
+ * nå» to the recovery key (R1).
+ */
 async function turnOnChat(page: Page) {
   await page.goto("/samtaler");
-  await page.getByRole("button", { name: "Slå på privat chat" }).click();
+  const turnOn = page.getByRole("button", { name: "Slå på privat chat" });
+  await expect(turnOn).toBeDisabled();
+  await page.getByLabel("Jeg har lest og forstått dette").check();
+  await turnOn.click();
   await expect(
     page.getByRole("heading", { name: "Lag en gjenopprettingsnøkkel" }),
   ).toBeVisible();

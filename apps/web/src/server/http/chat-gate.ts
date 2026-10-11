@@ -1,4 +1,5 @@
-import { chatEnabled, platformStewardsEnabled } from "../env";
+import { chatEnabled } from "../chat-enabled";
+import { platformStewardsEnabled } from "../env";
 import { errorResponse } from "./errors";
 import { boundaryOf, type RouteHandler, routeBoundary } from "./route";
 
@@ -8,7 +9,7 @@ import { boundaryOf, type RouteHandler, routeBoundary } from "./route";
  * route it wraps.
  */
 function onlyWhile(
-  enabled: () => boolean,
+  enabled: () => boolean | Promise<boolean>,
   handler: RouteHandler,
 ): RouteHandler {
   const boundary = boundaryOf(handler);
@@ -18,15 +19,13 @@ function onlyWhile(
   }
 
   return Object.assign(
-    (...args: Parameters<RouteHandler>) =>
-      enabled()
-        ? handler(...args)
-        : Promise.resolve(errorResponse("not_found")),
+    async (...args: Parameters<RouteHandler>) =>
+      (await enabled()) ? handler(...args) : errorResponse("not_found"),
     { [routeBoundary]: boundary },
   );
 }
 
-/** Private chat stays off until Port C (ADR-0010 §2). */
+/** Private chat is off unless turned on here (`chatEnabled`, ADR-0010 §2). */
 export const chatOnly = (handler: RouteHandler) =>
   onlyWhile(chatEnabled, handler);
 

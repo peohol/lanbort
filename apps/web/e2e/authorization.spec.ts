@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { currentChatNotice } from "@lanbort/contracts";
 import {
   type APIRequestContext,
   type APIResponse,
@@ -302,6 +303,9 @@ test("a hidden environment answers a stranger as if nothing in it existed", asyn
   // The lender's chat with the borrower, and a device of the lender's that
   // waits to be linked from a second sign-in.
   const chat = chatAccount(lender.userId);
+  await postCommand(lender.context, "/api/chat/notice", {
+    notice: currentChatNotice,
+  });
   await postCommand(lender.context, "/api/chat/account", {
     accountKey: chat.accountKey,
     certificate: chat.certify(),

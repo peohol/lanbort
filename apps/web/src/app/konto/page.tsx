@@ -24,7 +24,7 @@ import {
   profilePictureHref,
 } from "@/navigation/routes";
 import { accountStatusLabel } from "@/presentation/account";
-import { chatEnabled } from "@/server/env";
+import { chatEnabled } from "@/server/chat-enabled";
 import {
   pageQuery,
   pageQueryIfAllowed,
@@ -51,7 +51,7 @@ const pictureReach = ({ pictureId, visibility }: OwnProfilePicture) =>
  * it loses before it signs out (ADR-0010 §7).
  */
 const hasChatDevice = async () =>
-  chatEnabled() &&
+  (await chatEnabled()) &&
   // An account that may not use chat has no device to lose.
   ((await pageQueryIfAllowed(readOwnChatDevices, {}))?.currentDeviceId ??
     null) !== null;
