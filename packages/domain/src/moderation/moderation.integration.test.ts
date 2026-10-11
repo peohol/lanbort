@@ -401,6 +401,84 @@ describe("reports in an environment (PS-TRUST-013, PS-OBJ-017)", () => {
       (await eventsFor("case", local.caseId)).map((event) => event.event_type),
     ).toContain("moderation.report_escalated");
   });
+
+  /**
+   * An object published in two environments the same administrator runs,
+   * reported in each.
+   */
+  async function reportedTwice() {
+    const { admin, environmentId, owner, borrower, objectId } =
+      await published();
+    const elsewhere = await environment(admin);
+    await kit.join(elsewhere, admin, owner);
+    await run(publishObject, owner, { objectId, environmentId: elsewhere });
+    const target = { kind: "object", objectId } as const;
+    const first = await run(reportInEnvironment, borrower, {
+      environmentId,
+      target,
+      body: "Ulovlig våpen.",
+    });
+    const second = await run(
+      reportInEnvironment,
+      await member(elsewhere, admin),
+      { environmentId: elsewhere, target, body: "Våpen til utlån." },
+    );
+
+    return { admin, objectId, target, first, second };
+  }
+
+  /** Escalates the report, expecting a platform report of its own. */
+  async function escalatesOnItsOwn(
+    admin: UserActor,
+    objectId: string,
+    localCaseId: string,
+  ) {
+    const escalated = await run(escalateReport, admin, {
+      caseId: localCaseId,
+      body: "Hører hjemme hos plattformen.",
+    });
+    expect(escalated).toMatchObject({ created: true });
+    expect(await read(admin, escalated.caseId)).toMatchObject({
+      kind: "platform_report",
+      objectId,
+      escalatedFromCaseId: localCaseId,
+    });
+    expect(
+      (await eventsFor("case", localCaseId)).map((event) => event.event_type),
+    ).toContain("moderation.report_escalated");
+
+    return escalated.caseId;
+  }
+
+  it("takes each environment report to the platform on its own", async () => {
+    const { admin, objectId, first, second } = await reportedTwice();
+
+    const escalated = await escalatesOnItsOwn(admin, objectId, first.caseId);
+    expect(await escalatesOnItsOwn(admin, objectId, second.caseId)).not.toBe(
+      escalated,
+    );
+
+    // Taking the same report on again writes into its escalation, which
+    // waits for the stewards.
+    await expect(
+      run(escalateReport, admin, { caseId: first.caseId, body: "Igjen." }),
+    ).rejects.toMatchObject(conflict);
+  });
+
+  it("escalates apart from the administrator's own report about the same", async () => {
+    const { admin, objectId, target, first } = await reportedTwice();
+    const own = await run(reportToPlatform, admin, {
+      target,
+      body: "Dette er et ulovlig våpen.",
+    });
+
+    expect(await escalatesOnItsOwn(admin, objectId, first.caseId)).not.toBe(
+      own.caseId,
+    );
+    expect(await read(admin, own.caseId)).toMatchObject({
+      escalatedFromCaseId: null,
+    });
+  });
 });
 
 describe("platform measures on an object (PS-OBJ-017, PS-TRUST-013)", () => {

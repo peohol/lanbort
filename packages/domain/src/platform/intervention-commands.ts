@@ -10,6 +10,7 @@ import {
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import type { Kysely } from "kysely";
+import { rateLimits } from "../abuse/rate-limits";
 import type { AccountStatus } from "../actor";
 import { accountBindingSources, loadBindings } from "../account/bindings";
 import { realNames } from "../account/store";
@@ -42,6 +43,7 @@ export const openPlatformInquiry = defineCommand({
   input: openPlatformInquirySchema,
   output: platformInquiryOpenedSchema,
   policy: openPlatformInquiryPolicy,
+  rateLimit: rateLimits.reports,
   idempotency: "required",
   load: async ({ tx, input: { target } }) => {
     if (target.kind === "user") {

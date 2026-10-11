@@ -111,6 +111,8 @@ export type OpenCaseKey =
       readonly subjectUserId: string | null;
       readonly objectId: string | null;
       readonly reviewId: string | null;
+      /** An escalation is its own report, one per environment report. */
+      readonly escalatedFromCaseId: string | null;
     };
 
 /** The open case of the key, locked, if there is one. */
@@ -141,9 +143,10 @@ export async function findOpenCase(
         .where("c.opened_by_user_id", "=", key.userId)
         .where("c.report_target", "=", key.target)
         .where(
-          sql<boolean>`(c.environment_id, c.subject_user_id, c.object_id, c.review_id)
+          sql<boolean>`(c.environment_id, c.subject_user_id, c.object_id, c.review_id,
+              c.escalated_from_case_id)
             is not distinct from (${key.environmentId}::uuid, ${key.subjectUserId}::uuid,
-              ${key.objectId}::uuid, ${key.reviewId}::uuid)`,
+              ${key.objectId}::uuid, ${key.reviewId}::uuid, ${key.escalatedFromCaseId}::uuid)`,
         );
       break;
   }

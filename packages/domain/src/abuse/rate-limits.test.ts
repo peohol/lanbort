@@ -28,7 +28,11 @@ import {
   inviteAdministrator,
   offerOwnership,
 } from "../environment/role-commands";
-import { reportInEnvironment, reportToPlatform } from "../moderation/commands";
+import {
+  escalateReport,
+  reportInEnvironment,
+  reportToPlatform,
+} from "../moderation/commands";
 import { inviteCoOwner } from "../objects/co-owners";
 import { listEnvironmentObjects } from "../publications/queries";
 import {
@@ -39,6 +43,7 @@ import { searchEnvironments, searchObjects } from "../search/queries";
 import { sendFriendRequest } from "../social/commands";
 import { getSocialRelation } from "../social/queries";
 import { readTrustProfile } from "../trust/queries";
+import { openPlatformInquiry } from "../platform/intervention-commands";
 import { lookUpPlatformSubject } from "../platform/lookup";
 import { removeStewardPasskey } from "../platform/passkey-commands";
 import { testPasskeyCommands } from "../testing/stewards";
@@ -64,7 +69,13 @@ const limited = {
     offerOwnership,
     inviteCoOwner,
   ],
-  reports: [reportInEnvironment, reportToPlatform, reportUnavailability],
+  reports: [
+    reportInEnvironment,
+    reportToPlatform,
+    reportUnavailability,
+    escalateReport,
+    openPlatformInquiry,
+  ],
   caseEntries: [writeCaseEntry, requestLoanMediation],
   lookups: [
     searchObjects,

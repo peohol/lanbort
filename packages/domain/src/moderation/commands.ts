@@ -123,6 +123,7 @@ function openReport(
       userId,
       environmentId: report.environmentId,
       ...subject,
+      escalatedFromCaseId: report.escalatedFromCaseId,
     },
     environmentId: report.environmentId,
     loanId: null,
@@ -374,7 +375,9 @@ function subjectOf(c: CaseRecord): ReportSubject {
  * PS-TRUST-016, PS-OBJ-017: the acting administrator takes an environment
  * report to the platform, as a separate report about the same target with
  * what they add. The local report goes on as it is. The administrator is
- * the new report's reporter, so they never handle it as a steward.
+ * the new report's reporter, so they never handle it as a steward. Each
+ * environment report goes as its own, apart from the administrator's own
+ * report about the same target.
  */
 export const escalateReport = handlerCommand(
   "case.escalate",
@@ -416,6 +419,7 @@ export const escalateReport = handlerCommand(
     return opened;
   },
   caseOpenedResultSchema,
+  rateLimits.reports,
 );
 
 /** What a measure records, and the effect it then makes. */
