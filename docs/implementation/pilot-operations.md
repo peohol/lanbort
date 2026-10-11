@@ -61,3 +61,19 @@ Med alvorlig hendelse menes at personopplysninger kan ha kommet på avveie, blit
    - Til dem det gjelder, uten unødig opphold, når hendelsen kan gi høy risiko for dem (artikkel 34). E-posten sier hva som skjedde, hva det betyr for dem, hva Lånbort har gjort, og hva de selv bør gjøre.
 5. **Gjenopprett** om data er ødelagt eller borte, etter [backup og gjenoppretting](backup-restore.md).
 6. **Skriv det ned.** Alle hendelser, også de som ikke meldes, føres i en privat avvikslogg (artikkel 33 nr. 5): hva skjedde, når det ble kjent, hva det gjaldt, hva som ble gjort og hvorfor det ble eller ikke ble meldt. Rett feilen og oppdater denne siden om den manglet noe.
+
+## Kjente mangler
+
+Port D krever at kjente mangler er dokumentert og vurdert. Dette er det som bevisst står igjen i den lukkede piloten, og hvorfor det er forsvarlig der:
+
+| Mangel | Følge | Vurdering for lukket pilot |
+| --- | --- | --- |
+| Privat chat er av i produksjon (`CHAT_ENABLED` er ikke satt) | Deltakerne kan ikke skrive private meldinger til hverandre i appen | Krever Port C, med uavhengig kryptografisk gjennomgang ([grunnlaget](e2ee-gjennomgangsgrunnlag.md)) |
+| Plattformforvaltning er av (`PLATFORM_STEWARDS_ENABLED` er ikke satt) | Ingen plattformkø og ingen inngrep fra Lånbort; saker håndteres i miljøene. En konto som misbrukes, stenges i Supabase ([alvorlige hendelser](#alvorlige-hendelser)) | Privilegerte handlinger avvises til passkeys er tatt i bruk (ADR-0011) |
+| Representanttilgang ved død eller varig utilgjengelighet er av (OD-0003 åpen) | Ingen kan handle på vegne av en avdød deltaker | Testet utilgjengelig (pgTAP 0030); saker løses manuelt |
+| Ingen Point-in-Time Recovery (OD-0022) | Inntil 24 timers endringer kan gå tapt; gjenoppretting tar inntil 8 timer | Valgt av produkteier; to lag backup øves hver natt og hver måned ([backup](backup-restore.md)) |
+| Resend på gratisplan | E-post stopper når dagens eller månedens tak er nådd, til neste periode | Holder for en liten pilot; følg med i Resend ved flere deltakere |
+| Kontaktadressen videresendes av ImprovMX (USA), gratisplan | E-post til `CONTACT_EMAIL` passerer et selskap i USA | Står på personvernsiden; bare videresending, loggene slettes etter 7 dager |
+| Ingen uavhengig sikkerhetsgjennomgang av hele appen | Funn som de automatiske testene ikke dekker, kan finnes | Krav før bred lansering (Port E); intern sikkerhetstest (WP-70) er grønn |
+| `security.txt` utløper 1. oktober 2027 | Etter det regnes kanalen som utdatert | Flytt `Expires` fram før datoen |
+| Migrasjoner må kjøres i produksjon rett etter at de er slått sammen | Mangler en migrasjon, kan nye funksjoner feile, og nattens gjenopprettingsøvelse stopper | Øvelsen stopper med «Migrations: … not applied», og GitHub sender e-post; kjør `migrate` i «Supabase production» |
