@@ -9,6 +9,7 @@
     "typecheck": "tsc6 --noEmit",
     "test": "vitest run --exclude \"**/*.integration.test.ts\"",
     "test:integration": "vitest run .integration.test.ts",
+    "migrations": "tsx src/migrations.ts",
     "platform-role": "tsx src/platform-role.ts",
     "restore": "tsx src/restore.ts",
     "storage": "tsx src/storage-snapshot.ts",

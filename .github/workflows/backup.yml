@@ -118,6 +118,21 @@ jobs:
           echo "::add-mask::$(sed -n 's/^SUPABASE_SECRET_KEY=//p' "$RUNNER_TEMP/stack.env")"
           cat "$RUNNER_TEMP/stack.env" >> "$GITHUB_ENV"
 
+      - name: Apply migrations production does not have yet
+        if: inputs.drill
+        run: |
+          # A migration merged but not yet run in production (a deploy waits
+          # for it, ops:migrations) is applied to the restored copy, so the
+          # drill still shows the backup restores, and tries the migration on
+          # real data. A real restore brings production in line first.
+          pending="$(pnpm --silent exec supabase migration list --db-url "$DATABASE_URL" --output-format json |
+            jq -r '[.migrations[] | select(.remote == "") | .local] | join(" ")')"
+          if [[ -n "$pending" ]]; then
+            echo "::warning title=Production lacks migrations::Not applied in production: $pending. Run the migrate action of the Supabase production workflow."
+            echo "Not applied in production, applied to the restored copy: $pending" >> "$GITHUB_STEP_SUMMARY"
+            pnpm --silent exec supabase db push --db-url "$DATABASE_URL" --include-all --yes > /dev/null
+          fi
+
       - name: Finish the restore
         if: inputs.drill
         run: |
