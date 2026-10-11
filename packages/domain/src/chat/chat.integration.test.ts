@@ -337,6 +337,24 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
     await expect(register()).resolves.toEqual({
       deviceId: device.deviceId,
     });
+
+    // A confirmation of an older wording does not count for the current
+    // one, and the current one replaces it (PS-COM-023).
+    const stale = await user();
+    await db
+      .insertInto("app.chat_notice_acknowledgements")
+      .values({ user_id: stale.userId, notice: "superseded_v0" })
+      .execute();
+    expect(await chatNoticeAcknowledged(db, stale.userId)).toBe(false);
+    await confirmNotice(stale);
+    expect(await chatNoticeAcknowledged(db, stale.userId)).toBe(true);
+    expect(
+      await db
+        .selectFrom("app.chat_notice_acknowledgements")
+        .select("notice")
+        .where("user_id", "=", stale.userId)
+        .executeTakeFirstOrThrow(),
+    ).toEqual({ notice: currentChatNotice });
   });
 
   it("refuses a certificate not signed by the key it names, or for someone else", async () => {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { SignInForm } from "@/components/sign-in-form";
 import { registrationHref, returnParam, returnPath } from "@/navigation/routes";
-import { newAccountsAreOpen } from "@/server/new-accounts";
+import { newAccountsAreOpen, signInPageMaxAgeMs } from "@/server/new-accounts";
 import { getPageAccount } from "@/server/session";
 
 export const metadata: Metadata = { title: "Logg inn – Lånbort" };
@@ -23,7 +23,7 @@ export default async function SignInPage({
     );
   }
 
-  const newAccounts = await newAccountsAreOpen();
+  const newAccounts = await newAccountsAreOpen(signInPageMaxAgeMs);
 
   return (
     <main>
