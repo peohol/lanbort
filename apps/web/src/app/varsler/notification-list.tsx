@@ -20,7 +20,8 @@ import styles from "./notifications.module.css";
 /**
  * One notification: what it is about and when, whether it is required, and
  * what happened. The whole row leads to its context (UX-A11Y-006), and an
- * unread one is read once followed.
+ * unread one is read once followed. One with no context to open has its own
+ * button for that, so it never waits for «Marker alle som lest».
  */
 function NotificationRow({
   entry: { notification, older },
@@ -56,6 +57,16 @@ function NotificationRow({
         <strong className={styles.title}>{title}</strong>
         {detail && <span className={styles.detail}>{detail}</span>}
         {more && <span className={styles.detail}>{more}</span>}
+        {!href && unread && (
+          <span className={styles.read}>
+            <ActionButton
+              label="Marker som lest"
+              path="/api/notifications/read"
+              body={{ notificationIds: [notification.id] }}
+              idempotent={false}
+            />
+          </span>
+        )}
       </span>
     </>
   );

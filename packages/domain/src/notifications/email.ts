@@ -81,6 +81,8 @@ export const notificationEmailSubjects = {
   "chat.new_messages": "Du har en ny melding i Lånbort",
   "steward.passkeys_changed":
     "Passkeys for plattformforvaltningen din er endret",
+  "steward.access_ended":
+    "Plattformforvaltningen din er avsluttet, og passkeyene er fjernet",
 } as const satisfies Record<NotificationKind, string>;
 
 /** Why the recipient gets the e-mail at all (PS-COM-003). */
@@ -93,14 +95,15 @@ const reasons = {
     "Du får denne e-posten fordi du har valgt e-post for informasjonsvarsler. Du kan slå det av i varslingsvalgene i Lånbort.",
 } as const satisfies Record<NotificationLevel, string>;
 
+const securityReason =
+  "Du får denne e-posten fordi sikkerhetsvarsler om kontoen din alltid sendes på e-post.";
+
 /** Kinds that always go out by e-mail for another reason than a loan. */
 const kindReasons: Partial<Record<NotificationKind, string>> = {
-  "chat.account_key_reset":
-    "Du får denne e-posten fordi sikkerhetsvarsler om kontoen din alltid sendes på e-post.",
-  "chat.device_linked":
-    "Du får denne e-posten fordi sikkerhetsvarsler om kontoen din alltid sendes på e-post.",
-  "steward.passkeys_changed":
-    "Du får denne e-posten fordi sikkerhetsvarsler om kontoen din alltid sendes på e-post.",
+  "chat.account_key_reset": securityReason,
+  "chat.device_linked": securityReason,
+  "steward.passkeys_changed": securityReason,
+  "steward.access_ended": securityReason,
   "chat.new_messages":
     "Du får denne e-posten fordi du har valgt e-post om nye meldinger i privat chat. Du kan slå det av i varslingsvalgene i Lånbort.",
 };

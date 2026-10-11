@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { TestPasskey } from "@lanbort/auth/passkey-testing";
 import { afterAll, describe, expect, it } from "vitest";
 import type { UserActor } from "../actor";
+import { deleteOwnAccount } from "../account/deletion";
 import { resolveUserActor } from "../account/identity";
 import { authorizeActor, definePolicy } from "../authorization/policy";
 import { type DomainContext, executeCommand } from "../commands/command";
@@ -98,6 +99,27 @@ async function toldAbout(steward: Awaited<ReturnType<typeof testSteward>>) {
       expect(target).toEqual({ type: "steward_access", id: actor.userId });
       return detail;
     });
+}
+
+/**
+ * Every notice about steward access the account was given, with whether it
+ * also went out by e-mail, read from the database so a deleted account can
+ * be asked too.
+ */
+async function stewardNoticesOf(userId: string) {
+  await deliverAll(db, consumers);
+  return db
+    .selectFrom("app.notifications as notification")
+    .leftJoin(
+      "app.notification_deliveries as delivery",
+      "delivery.notification_id",
+      "notification.id",
+    )
+    .select(["notification.kind", "notification.detail", "delivery.channel"])
+    .where("notification.recipient_id", "=", userId)
+    .where("notification.kind", "like", "steward.%")
+    .orderBy("notification.created_at")
+    .execute();
 }
 
 const begin = (actor: UserActor, input: object = {}) =>
@@ -512,10 +534,24 @@ describe("steward passkeys (ADR-0011, OD-0023)", () => {
         idempotencyKey: randomUUID(),
       });
 
+    const stewardId = (await steward.signIn()).userId;
+    const before = (await stewardNoticesOf(stewardId)).length;
+
     for (const email of [steward.email, pending.identity.email!]) {
       await role(email, revokePlatformRole);
       await role(email, grantPlatformRole);
     }
+
+    // ADR-0011: each is told once, also by e-mail, that the role ended with
+    // its passkeys, never once per passkey it removed.
+    expect((await stewardNoticesOf(stewardId)).slice(before)).toEqual([
+      { kind: "steward.access_ended", detail: null, channel: "email" },
+    ]);
+    expect(
+      (await stewardNoticesOf((await pending.signIn()).userId)).filter(
+        ({ kind }) => kind === "steward.access_ended",
+      ),
+    ).toHaveLength(1);
 
     // The old passkeys count for nothing, so they confirm nothing.
     expect(mayAct(await steward.signIn())).toBe(
@@ -544,6 +580,31 @@ describe("steward passkeys (ADR-0011, OD-0023)", () => {
         }),
       ).resolves.toMatchObject({ output: { removedPasskeys: 0 } });
     }
+  });
+
+  it("tells nobody when the role and passkeys end with the deleted account", async () => {
+    const steward = await testSteward(domain);
+    const actor = await steward.signIn();
+    const before = await stewardNoticesOf(actor.userId);
+
+    await executeCommand(domain, deleteOwnAccount, {
+      actor: {
+        ...actor,
+        authentication: {
+          ...actor.authentication,
+          methods: [{ method: "otp", at: now }],
+        },
+      },
+      input: {},
+    });
+
+    expect(
+      (await auditOf(actor.userId)).filter(
+        (event) => event.event_type === "steward_passkey.removed",
+      ),
+    ).toHaveLength(2);
+    expect(before.length).toBeGreaterThan(0);
+    expect(await stewardNoticesOf(actor.userId)).toEqual([]);
   });
 
   it("adds no passkey after the role ended during the ceremony", async () => {

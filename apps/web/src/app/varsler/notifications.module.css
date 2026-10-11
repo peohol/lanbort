@@ -77,6 +77,10 @@ a.notification:hover .title {
   box-shadow: var(--shadow-low);
 }
 
+.read {
+  margin-top: var(--space-2);
+}
+
 .earlier .notification {
   border-radius: 0;
 }
