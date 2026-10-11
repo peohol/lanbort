@@ -1,3 +1,4 @@
+import { X509Certificate } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { SUPABASE_ROOT_CA } from "./supabase-root-ca";
 import { connectionTls } from "./tls";
@@ -26,5 +27,41 @@ describe("connectionTls", () => {
       connectionTls("postgresql://u:p@db.example.org/postgres")
         ?.rejectUnauthorized,
     ).toBe(true);
+  });
+
+  it.each([
+    "postgresql://u:p@db.example.org/postgres?sslmode=disable",
+    "postgresql://u:p@db.example.org/postgres?sslmode=no-verify",
+    "postgresql://u:p@db.example.org/postgres?ssl=0",
+    "postgresql://u:p@db.example.org/postgres?sslmode=require&uselibpqcompat=true",
+    "postgresql://u:p@db.example.org/postgres?sslrootcert=/tmp/ca.pem",
+    "postgresql://u:p@db.example.org/postgres?hostaddr=203.0.113.7",
+  ])("refuses a hosted database with TLS of its own (%s)", (url) => {
+    expect(() => connectionTls(url)).toThrow("leave TLS to the app");
+  });
+
+  it.each([
+    // pg would connect to the host parameter, or to PGHOST, without TLS.
+    "postgresql://u:p@localhost/postgres?host=db.example.org",
+    "postgresql:///postgres",
+  ])("refuses a connection string whose host is elsewhere (%s)", (url) => {
+    expect(() => connectionTls(url)).toThrow("must name its host");
+  });
+
+  it("lets a local database ask for TLS itself", () => {
+    expect(
+      connectionTls(
+        "postgresql://u:p@127.0.0.1:54322/postgres?sslmode=disable",
+      ),
+    ).toBeUndefined();
+  });
+
+  it("trusts a Supabase CA that is valid for at least another year", () => {
+    // Supabase announces a new CA well ahead; add it beside this one.
+    const validTo = new Date(new X509Certificate(SUPABASE_ROOT_CA).validTo);
+    const inAYear = new Date();
+    inAYear.setFullYear(inAYear.getFullYear() + 1);
+
+    expect(validTo.getTime()).toBeGreaterThan(inAYear.getTime());
   });
 });
