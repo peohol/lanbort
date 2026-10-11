@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import type { UserActor } from "../actor";
-import { suspendAccount } from "../account/lifecycle";
+import { startAccountClosure, suspendAccount } from "../account/lifecycle";
 import { claimCase, closeCase, writeCaseEntry } from "../cases/commands";
 import { readCase } from "../cases/queries";
 import { executeQuery } from "../commands/query";
@@ -13,6 +13,7 @@ import { reportInEnvironment, reportToPlatform } from "../moderation/commands";
 import { acquaint } from "../testing/acquaintance";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
+import { commitWhileRacing } from "../testing/races";
 import {
   endEnvironmentRoles,
   listCaseInterventions,
@@ -29,8 +30,17 @@ const db = connectTestDatabase();
 afterAll(() => db.destroy());
 
 const kit = loanTestKit(db);
-const { run, tick, user, steward, inquiry, environment, member, eventsFor } =
-  kit;
+const {
+  run,
+  tick,
+  user,
+  steward,
+  inquiry,
+  environment,
+  join,
+  member,
+  eventsFor,
+} = kit;
 
 const basis = "Gjentatte brudd på vilkårene, se vedlagte meldinger";
 
@@ -343,5 +353,146 @@ describe("ending roles in an environment (PS-ADM-015)", () => {
       revoke_reason: "platform_intervention",
       revoked_by_user_id: platform.userId,
     });
+  });
+
+  it("ends nothing of someone who holds no role there", async () => {
+    const platform = await steward();
+    const owner = await user();
+    const environmentId = await environment(owner);
+    const invited = await member(environmentId, owner);
+    const { invitationId } = await run(inviteAdministrator, owner, {
+      environmentId,
+      userId: invited.userId,
+    });
+    const caseId = await inquiry(platform, {
+      kind: "user",
+      userId: invited.userId,
+    });
+
+    expect(
+      await run(endEnvironmentRoles, platform, {
+        caseId,
+        environmentId,
+        userId: invited.userId,
+        basis,
+      }),
+    ).toEqual({ environmentId, userId: invited.userId, ended: [] });
+    // Their invitation stays theirs to answer, and nothing is recorded.
+    expect(
+      await db
+        .selectFrom("app.environment_role_invitations")
+        .select("closed_at")
+        .where("id", "=", invitationId)
+        .executeTakeFirstOrThrow(),
+    ).toEqual({ closed_at: null });
+    expect((await interventionsOf(platform, caseId)).items).toEqual([]);
+  });
+
+  it("is never taken by a steward who holds a role there, nor through the account (PS-USR-009)", async () => {
+    const platform = await steward();
+    const owner = await user();
+    const environmentId = await environment(owner);
+    await join(environmentId, owner, platform);
+    await administrator(environmentId, owner, platform);
+    const roles = await activeRoles(environmentId, owner.userId);
+    const caseId = await inquiry(platform, {
+      kind: "user",
+      userId: owner.userId,
+    });
+
+    // Ending the owner's roles would open the ownership to the steward.
+    await expect(
+      run(endEnvironmentRoles, platform, {
+        caseId,
+        environmentId,
+        userId: owner.userId,
+        basis,
+      }),
+    ).rejects.toMatchObject({ code: "conflict_of_interest" });
+    // So would suspending or closing the account, which releases them.
+    await expect(suspend(platform, caseId, owner.userId)).rejects.toMatchObject(
+      { code: "conflict_of_interest" },
+    );
+    await expect(
+      run(startAccountClosure, platform, {
+        caseId,
+        userId: owner.userId,
+        basis,
+      }),
+    ).rejects.toMatchObject({ code: "conflict_of_interest" });
+    expect(await activeRoles(environmentId, owner.userId)).toEqual(roles);
+    expect((await interventionsOf(platform, caseId)).items).toEqual([]);
+
+    // Nor while only invited to one: the invitation outlives the release.
+    const invitedSteward = await steward();
+    await join(environmentId, owner, invitedSteward);
+    await run(inviteAdministrator, owner, {
+      environmentId,
+      userId: invitedSteward.userId,
+    });
+    const invitedCase = await inquiry(invitedSteward, {
+      kind: "user",
+      userId: owner.userId,
+    });
+    await expect(
+      run(endEnvironmentRoles, invitedSteward, {
+        caseId: invitedCase,
+        environmentId,
+        userId: owner.userId,
+        basis,
+      }),
+    ).rejects.toMatchObject({ code: "conflict_of_interest" });
+    await expect(
+      suspend(invitedSteward, invitedCase, owner.userId),
+    ).rejects.toMatchObject({ code: "conflict_of_interest" });
+
+    // A steward with no role there may.
+    const other = await steward();
+    await suspend(
+      other,
+      await inquiry(other, { kind: "user", userId: owner.userId }),
+      owner.userId,
+    );
+    expect(await activeRoles(environmentId, owner.userId)).toEqual([]);
+  });
+});
+
+describe("races", () => {
+  it("sees a role the steward takes in the account's environment meanwhile", async () => {
+    const platform = await steward();
+    const owner = await user();
+    const environmentId = await environment(owner);
+    await join(environmentId, owner, platform);
+    const caseId = await inquiry(platform, {
+      kind: "user",
+      userId: owner.userId,
+    });
+
+    // The steward becomes administrator while the suspension is under way,
+    // as accepting an invitation would, holding the environment's lock.
+    await expect(
+      commitWhileRacing(
+        db,
+        async (tx) => {
+          await tx
+            .selectFrom("app.environments")
+            .select("id")
+            .where("id", "=", environmentId)
+            .forUpdate()
+            .execute();
+          await tx
+            .insertInto("app.environment_role_grants")
+            .values({
+              environment_id: environmentId,
+              user_id: platform.userId,
+              role: "administrator",
+              granted_by_user_id: owner.userId,
+            })
+            .execute();
+        },
+        () => suspend(platform, caseId, owner.userId),
+      ),
+    ).rejects.toMatchObject({ code: "conflict_of_interest" });
+    expect(await activeRoles(environmentId, owner.userId)).not.toEqual([]);
   });
 });

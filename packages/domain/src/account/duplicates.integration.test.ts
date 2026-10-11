@@ -20,7 +20,11 @@ import {
   recordFalseIdentity,
   retireDuplicateAccount,
 } from "./duplicates";
-import { reinstateAccount, suspendAccount } from "./lifecycle";
+import {
+  reinstateAccount,
+  startAccountClosure,
+  suspendAccount,
+} from "./lifecycle";
 
 /**
  * WP-55 (PS-ADM-009–010): a duplicate is retired and closed, never merged;
@@ -210,6 +214,23 @@ describe("retiring a duplicate (PS-ADM-009)", () => {
       code: "forbidden",
     });
     expect(await statusOf(other.userId)).toBe("active");
+
+    // Nor once a closure has started from the suspension.
+    await run(startAccountClosure, platform, {
+      caseId: await about(platform, suspended.userId),
+      userId: suspended.userId,
+      basis,
+    });
+    await expect(retire(platform, suspended, other)).rejects.toMatchObject({
+      code: "forbidden",
+    });
+    expect(
+      await db
+        .selectFrom("app.account_links")
+        .select("id")
+        .where("user_id", "=", suspended.userId)
+        .execute(),
+    ).toEqual([]);
   });
 
   it("retires an account only from a case about it, not one about the account that continues", async () => {
@@ -258,6 +279,55 @@ describe("retiring a duplicate (PS-ADM-009)", () => {
         .where("user_id", "=", retired.userId)
         .execute(),
     ).toEqual([{ linked_user_id: continued.userId }]);
+
+    // The link is never undone: even reinstated, the duplicate does not
+    // continue the account it was retired into.
+    await run(reinstateAccount, platform, {
+      caseId: await about(platform, retired.userId),
+      userId: retired.userId,
+      basis,
+    });
+    await expect(retire(platform, continued, retired)).rejects.toMatchObject({
+      code: "conflict",
+      fields: ["continuedUserId"],
+    });
+    expect(await statusOf(continued.userId)).toBe("active");
+    expect(
+      await db
+        .selectFrom("app.account_links")
+        .select("id")
+        .where("user_id", "=", continued.userId)
+        .execute(),
+    ).toEqual([]);
+  });
+
+  it("never chains duplicates, in either order", async () => {
+    const platform = await steward();
+    const [first, second, third] = await Promise.all([user(), user(), user()]);
+
+    // Retired into the second, the first leaves its things to it, so the
+    // second is not retired in turn.
+    await retire(platform, first, second);
+    await expect(retire(platform, second, third)).rejects.toMatchObject({
+      code: "conflict",
+      fields: ["userId"],
+    });
+    expect(await statusOf(second.userId)).toBe("active");
+
+    // Nor is anything retired into an account retired itself, even once
+    // it is reinstated.
+    const [fourth, fifth] = await Promise.all([user(), user()]);
+    await retire(platform, fourth, fifth);
+    await run(reinstateAccount, platform, {
+      caseId: await about(platform, fourth.userId),
+      userId: fourth.userId,
+      basis,
+    });
+    await expect(retire(platform, third, fourth)).rejects.toMatchObject({
+      code: "conflict",
+      fields: ["continuedUserId"],
+    });
+    expect(await statusOf(third.userId)).toBe("active");
   });
 
   it("is closed to every real session until stronger authentication is decided (OD-0010)", async () => {
@@ -392,6 +462,20 @@ describe("moving a duplicate's objects (PS-ADM-009)", () => {
       ]),
     );
     expect(await basisInEvents("object", objectId)).toBe(false);
+    // Search learns that the publication ended (PS-OBJ-006).
+    expect(await eventsFor("environment_publication", publicationId)).toEqual(
+      expect.arrayContaining([
+        {
+          event_type: "environment_publication.ended",
+          payload: { objectId, environmentId, reason: "access_lost" },
+        },
+      ]),
+    );
+    expect(
+      (await eventsFor("environment_publication", sharedPublication)).map(
+        (e) => e.event_type,
+      ),
+    ).not.toContain("environment_publication.ended");
 
     // The memberships themselves stay where they were.
     expect(
@@ -508,6 +592,29 @@ describe("moving a duplicate's objects (PS-ADM-009)", () => {
       code: "forbidden",
     });
     expect(await ownersOf(shared)).toEqual([retired.userId, coOwner.userId]);
+  });
+
+  it("never moves an object once the duplicate's closure started from a suspension", async () => {
+    const platform = await steward();
+    const [retired, continued] = await Promise.all([user(), user()]);
+    const objectId = await create(retired);
+    await retire(platform, retired, continued);
+    const caseId = await about(platform, retired.userId);
+
+    // Reinstated, then suspended and closed from the suspension.
+    for (const command of [reinstateAccount, suspendAccount]) {
+      await run(command, platform, { caseId, userId: retired.userId, basis });
+    }
+    await run(startAccountClosure, platform, {
+      caseId,
+      userId: retired.userId,
+      basis,
+    });
+
+    await expect(move(platform, objectId)).rejects.toMatchObject({
+      code: "forbidden",
+    });
+    expect(await ownersOf(objectId)).toEqual([retired.userId]);
   });
 
   it("never moves an object before the duplicate is under closure, or once it is reinstated", async () => {

@@ -128,40 +128,52 @@ function caseRules<R>(resource: R) {
 
 /** The cases every steward intervention shares, for a target in `from`. */
 function interventionCases(from: AccountStatus, refused: AccountStatus) {
+  const target = (status: AccountStatus, rolesAtStake = false) => ({
+    ...account(status),
+    rolesAtStake,
+  });
+
   return [
-    ...caseRules(account(from)),
+    ...caseRules(target(from)),
     {
       name: `steward intervenes on an account that is ${from}`,
       actor: steward,
-      resource: onCase(account(from)),
+      resource: onCase(target(from)),
       context: undefined,
       expected: "allow" as const,
     },
     {
       name: `not on an account that is ${refused}`,
       actor: steward,
-      resource: onCase(account(refused)),
+      resource: onCase(target(refused)),
       context: undefined,
       expected: "forbidden" as const,
     },
     {
       name: "never on the steward's own account",
       actor: steward,
-      resource: onCase(own(steward, from)),
+      resource: onCase({ ...own(steward, from), rolesAtStake: false }),
+      context: undefined,
+      expected: "conflict_of_interest" as const,
+    },
+    {
+      name: "never where ending its roles could pass one to the steward",
+      actor: steward,
+      resource: onCase(target(from, true)),
       context: undefined,
       expected: "conflict_of_interest" as const,
     },
     {
       name: "not without stronger authentication",
       actor: stewardWithoutStrongAuth,
-      resource: onCase(account(from)),
+      resource: onCase(target(from)),
       context: undefined,
       expected: "stronger_authentication_required" as const,
     },
     {
       name: "an ordinary user cannot intervene",
       actor: active,
-      resource: onCase(account(from)),
+      resource: onCase(target(from)),
       context: undefined,
       expected: "forbidden" as const,
     },
@@ -172,7 +184,7 @@ function interventionCases(from: AccountStatus, refused: AccountStatus) {
         userId: testUserActor().userId,
         accountStatus: "suspended",
       }),
-      resource: onCase(account(from)),
+      resource: onCase(target(from)),
       context: undefined,
       expected: "account_inactive" as const,
     },
@@ -216,9 +228,15 @@ function stewardCases<R>(
   ];
 }
 
-const pair = (retired: AccountStatus, continued: AccountStatus) => ({
+const pair = (
+  retired: AccountStatus,
+  continued: AccountStatus,
+  { closingFromSuspension = false, rolesAtStake = false } = {},
+) => ({
   retired: account(retired),
   continued: account(continued),
+  closingFromSuspension,
+  rolesAtStake,
 });
 
 const record = (status: AccountStatus = "active", ...others: string[]) => {
@@ -234,6 +252,7 @@ const duplicateObject = (
   retiredStatus: AccountStatus,
   continuedStatus: AccountStatus,
   extraOwners: readonly string[] = [],
+  closingFromSuspension = false,
 ) => {
   const retired = account(retiredStatus);
 
@@ -244,6 +263,7 @@ const duplicateObject = (
       id: testUserActor().userId,
       retired,
       continued: account(continuedStatus),
+      closingFromSuspension,
     },
   };
 };
@@ -581,6 +601,22 @@ export const accountMatrices = [
       expected: "forbidden",
     },
     {
+      name: "nor one whose closure started from a suspension",
+      actor: steward,
+      resource: onCase(
+        pair("closing", "active", { closingFromSuspension: true }),
+      ),
+      context: undefined,
+      expected: "forbidden",
+    },
+    {
+      name: "never where ending its roles could pass one to the steward",
+      actor: steward,
+      resource: onCase(pair("active", "active", { rolesAtStake: true })),
+      context: undefined,
+      expected: "conflict_of_interest",
+    },
+    {
       name: "the account that continues must be active",
       actor: steward,
       resource: onCase(pair("active", "suspended")),
@@ -598,7 +634,7 @@ export const accountMatrices = [
     ...stewardCases(
       onCase(pair("active", "active")),
       onCase({
-        retired: account("active"),
+        ...pair("active", "active"),
         continued: own(steward, "active"),
       }),
     ),
@@ -694,6 +730,13 @@ export const accountMatrices = [
       name: "not to an account that is no longer active",
       actor: steward,
       resource: onCase(duplicateObject("closing", "deactivated")),
+      context: undefined,
+      expected: "forbidden",
+    },
+    {
+      name: "not from a closure that started from a suspension",
+      actor: steward,
+      resource: onCase(duplicateObject("closing", "active", [], true)),
       context: undefined,
       expected: "forbidden",
     },

@@ -266,6 +266,22 @@ export const fromItsCase: ResourceRule<FromCase, void> = ({
   return fromCase.about ? allow : deny("forbidden");
 };
 
+/** PS-USR-009: the steward's own stake in the roles an intervention ends. */
+export interface RolesAtStake {
+  /**
+   * The steward holds a role, or an open claim to the ownership, in an
+   * environment where the intervention releases the target's roles
+   * (`environment/continuity-commands.ts`), so it could pass authority to
+   * the steward.
+   */
+  readonly rolesAtStake: boolean;
+}
+
+/** A conflict of interest of its own, beyond the case (vision 07). */
+export const noStakeInRoles: ResourceRule<RolesAtStake, void> = ({
+  resource,
+}) => (resource.rolesAtStake ? deny("conflict_of_interest") : allow);
+
 /** What a steward's own inquiry is about, as the command found it. */
 export type InquiryTarget =
   | {
@@ -323,10 +339,11 @@ export interface EnvironmentRolesTarget {
 
 /**
  * PS-ADM-015: a steward ends the administrator and owner roles someone
- * misuses in an environment, from the case about them.
+ * misuses in an environment, from the case about them. Never in an
+ * environment where the steward holds a role or claims the ownership.
  */
 export const endEnvironmentRolesPolicy = definePolicy<
-  EnvironmentRolesTarget & FromCase,
+  EnvironmentRolesTarget & FromCase & RolesAtStake,
   void
 >({
   action: "environment_role.end_by_platform",
@@ -334,6 +351,7 @@ export const endEnvironmentRolesPolicy = definePolicy<
   resource: [
     fromItsCase,
     requireNotInvolved(({ resource }) => [resource.userId]),
+    noStakeInRoles,
   ],
 });
 
