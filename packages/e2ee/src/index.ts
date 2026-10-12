@@ -39,6 +39,8 @@ export { openArchive, sealArchive } from "./archive";
 export {
   type AccountPackage,
   MAX_PINNED_ACCOUNTS,
+  MAX_REVOKED_DEVICES,
+  carriedTrust,
   exportLinkedArchive,
   importLinkedArchive,
   type LinkedArchive,
@@ -84,4 +86,5 @@ export {
   applyRevocation,
   createMemoryTrustStore,
   observeAccountKey,
+  revokedDeviceOf,
 } from "./trust";

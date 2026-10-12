@@ -17,7 +17,7 @@ import { personHref } from "@/navigation/routes";
 import { chatApi } from "./api";
 import styles from "./chat.module.css";
 import { loanOf, nameOf } from "./chat-home";
-import { useEngineVersion } from "./chat-provider";
+import { useSecurityCode } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";
 import type { ChatEngine } from "./engine";
 import { LinkRow } from "./link-row";
@@ -36,21 +36,22 @@ const dayFormat = new Intl.DateTimeFormat("nb-NO", {
 const whose = (name: string) =>
   /[sxz]$/i.test(name) ? `${name}'` : `${name}s`;
 
-/** The 60 digits both compare, as 12 groups of 5 (ADR-0010 §3). */
+/**
+ * The 60 digits both compare, as 12 groups of 5 (ADR-0010 §3). While the
+ * contact's changed key waits for the user, it is the new key's code: the
+ * one «Godta og fortsett» would accept.
+ */
 function SecurityCode({
   engine,
+  conversationId,
   person,
 }: {
   engine: ChatEngine;
+  conversationId: string;
   person: Person;
 }) {
-  const version = useEngineVersion(engine);
-  const [code, setCode] = useState<string[]>();
+  const code = useSecurityCode(engine, conversationId, person.userId);
   const name = person.realName ?? "Tidligere bruker";
-
-  useEffect(() => {
-    void engine.securityCode(person.userId).then(setCode);
-  }, [engine, person.userId, version]);
 
   return (
     <section className="card" aria-labelledby={`kode-${person.userId}`}>
@@ -59,12 +60,18 @@ function SecurityCode({
         Sammenlign med koden på {whose(name)} skjerm når dere møtes. Er de like,
         bruker samtalen {whose(name)} egne nøkler, ikke noen andres.
       </p>
+      {code?.pending && (
+        <p role="status">
+          Dette er den nye koden. Den er ikke godtatt ennå, og ingenting sendes
+          i samtalen før du har godtatt den.
+        </p>
+      )}
       {code && (
         <p
           className={`security-code ${styles.code}`}
-          aria-label={code.join(" ")}
+          aria-label={code.code.join(" ")}
         >
-          {code.map((group, index) => (
+          {code.code.map((group, index) => (
             <span key={index}>{group}</span>
           ))}
         </p>
@@ -205,7 +212,12 @@ function About({
           </ul>
 
           {others.map((person) => (
-            <SecurityCode key={person.userId} engine={engine} person={person} />
+            <SecurityCode
+              key={person.userId}
+              engine={engine}
+              conversationId={id}
+              person={person}
+            />
           ))}
           {others.map((person) => (
             <TheirDevices

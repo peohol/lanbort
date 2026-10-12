@@ -11,7 +11,7 @@ const root = join(import.meta.dirname, "..", "..", "..");
  * package and app except this one, and in the web app every module except
  * client components (`"use client"`), since App Router pages, layouts, route
  * handlers and the proxy all run on the server. Helpers that only client
- * components use carry the directive too.
+ * components use carry the directive too. Tests never run on the server.
  */
 const serverSources = () => [
   ...readdirSync(join(root, "packages"))
@@ -30,7 +30,12 @@ function* sourceFiles(dir: string): Generator<string> {
   for (const entry of readdirSync(dir)) {
     const path = join(dir, entry);
     if (statSync(path).isDirectory()) yield* sourceFiles(path);
-    else if (/\.(ts|tsx|mts|js|mjs)$/.test(entry)) yield path;
+    else if (
+      /\.(ts|tsx|mts|js|mjs)$/.test(entry) &&
+      !/\.test\.tsx?$/.test(entry)
+    ) {
+      yield path;
+    }
   }
 }
 

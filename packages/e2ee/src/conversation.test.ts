@@ -555,3 +555,74 @@ describe("who a conversation is between", () => {
     ).toBeUndefined();
   });
 });
+
+describe("commits from a revoked device that is still in the group", () => {
+  /** Alice and Bob's two devices; Bob's second is revoked but not removed. */
+  async function revokedInGroup() {
+    const alice = await createAccountKey("account-a");
+    const bob = await createAccountKey("account-b");
+    const policy = () => {
+      const trust = createMemoryTrustStore();
+      observeAccountKey(trust, alice.accountId, alice.publicKey);
+      observeAccountKey(trust, bob.accountId, bob.publicKey);
+      return { participants: [alice.accountId, bob.accountId], trust };
+    };
+    const aliceDevice = await createDevice(alice);
+    const lostDevice = await createDevice(bob);
+    const alicePolicy = policy();
+    const group = await Conversation.create(aliceDevice, "group", alicePolicy);
+    const lostPackage = await createKeyPackage(lostDevice);
+    const added = await group.add([lostPackage.published]);
+    added.accept();
+    const lostPolicy = policy();
+    const lost = await Conversation.join(
+      added.welcome!,
+      lostPackage,
+      lostPolicy,
+    );
+    await applyRevocation(
+      alicePolicy.trust,
+      await revokeDevice(bob, lostDevice.certificate.deviceId),
+    );
+    return { bob, group, lost, alicePolicy, lostPolicy };
+  }
+
+  it("refuses one that replaces its own keys", async () => {
+    const { group, lost } = await revokedInGroup();
+    const rotation = await lost.rotateKeys();
+    expect(rotation.rotates).toBe(true);
+    rotation.accept();
+    await expect(group.receive(rotation.commit)).rejects.toThrow(
+      CREDENTIAL_REJECTED,
+    );
+  });
+
+  it("takes one that only adds a device this device trusts, and nothing else", async () => {
+    // Such a commit carries no new keys: the revoked device knew the old
+    // epoch and knows the new one either way, until it is removed. The
+    // engine sends nothing while it is in the group.
+    const { bob, group, lost, alicePolicy, lostPolicy } =
+      await revokedInGroup();
+    const phone = await createDevice(bob);
+    const adding = await lost.add([(await createKeyPackage(phone)).published]);
+    expect(adding.rotates).toBe(false);
+    adding.accept();
+    await expect(group.receive(adding.commit)).resolves.toMatchObject({
+      kind: "commit",
+    });
+    expect(group.untrustedMembers()).toHaveLength(1);
+    expect(currentlyTrusted(alicePolicy, phone.certificate)).toBe(true);
+
+    // A device under a key Alice's device never pinned for Bob.
+    const forgedAccount = await createAccountKey(bob.accountId);
+    lostPolicy.trust.setAccountKey(bob.accountId, forgedAccount.publicKey);
+    const forged = await createDevice(forgedAccount);
+    const smuggling = await lost.add([
+      (await createKeyPackage(forged)).published,
+    ]);
+    smuggling.accept();
+    await expect(group.receive(smuggling.commit)).rejects.toThrow(
+      CREDENTIAL_REJECTED,
+    );
+  });
+});

@@ -32,7 +32,7 @@ import {
   Picture,
 } from "./chat-home";
 import { ChatIcon } from "./chat-icon";
-import { useEngineVersion } from "./chat-provider";
+import { useEngineVersion, useSecurityCode } from "./chat-provider";
 import { addedAt } from "./device-names";
 import { ReadyChat } from "./chat-setup";
 import { EncryptionLine } from "./encryption";
@@ -120,6 +120,8 @@ function KeyChanged({
   person: ChatConversation["others"][number];
 }) {
   const name = person.realName ?? "Tidligere bruker";
+  // The key whose code «Sammenlign» shows is the one accepted, no other.
+  const code = useSecurityCode(engine, conversationId, person.userId);
   return (
     <Notice
       tag="Sikkerhetskode endret"
@@ -137,8 +139,11 @@ function KeyChanged({
       <BusyButton
         type="button"
         className="button-primary"
-        busy={false}
-        onClick={() => void engine.acceptKeyChange(person.userId)}
+        busy={!code?.pending}
+        busyNote="henter koden …"
+        onClick={() =>
+          code?.pending && void engine.acceptKeyChange(person.userId, code.key)
+        }
       >
         Godta og fortsett
       </BusyButton>

@@ -42,7 +42,7 @@ Utenfor det vi kan love: kompromittert webleveranse (byggekjede, hosting), XSS, 
 | Kontonøkkel og enhetsnøkler | Ed25519. Signaturer har formålsmerke: `Lanbort device-certificate v1`, `Lanbort device-revocation v1` |
 | Deltakere | Nøyaktig to kontoer per samtale, festet første gang klienten ser samtalen |
 | Kobling (v2) | 128-bit hemmelighet S vist som QR (`LANBORT-LINK:2:<kode>`) eller 26 tegn Crockford base32. Forpliktelse = HMAC-SHA256(HKDF(S, `Lanbort link commitment v2`), enhets-ID, enhetsnøkkel, koblingsnøkkel). Pakken: AES-256-GCM under HKDF(S, `Lanbort link package key v2`) innerst, HPKE (RFC 9180) til koblingsnøkkelen ytterst; `info` = `Lanbort link package v2`, begge lag bundet til forespørselens nøkler |
-| Kontopakke (v3) | Kontonøkkel, eventuell historikkarkivnøkkel og kontaktenes festede kontonøkler (høyst 1000) |
+| Kontopakke (v3) | Kontonøkkel, eventuell historikkarkivnøkkel og backupnøkkel (bare når historikken følger med), kontaktenes festede kontonøkler (høyst 1000, kontaktene brukeren skriver med først) og kjente tilbakekallinger (høyst 300) |
 | Gjenopprettingsnøkkel | 256 tilfeldige bit, 52 tegn. HKDF-SHA256 gir nøkkel-ID (`Lanbort recovery key id v1`, 128 bit) og sikkerhetskopinøkkel (`Lanbort recovery backup key v1`); AES-GCM med kontoens ID i tilleggsdata |
 | Historikkarkiv | Tilfeldig 256-bit nøkkel, AES-256-GCM i nummererte biter (`Lanbort history archive v1`) |
 | Lagring på enheten | IndexedDB, kryptert med en ikke-eksporterbar AES-GCM-nøkkel fra WebCrypto |

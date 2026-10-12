@@ -22,10 +22,10 @@ import {
   type TrustSnapshot,
   Conversation,
   KEY_PACKAGE_LIFETIME_SECONDS,
-  MAX_PINNED_ACCOUNTS,
   acceptChangedAccountKey,
   applyRevocation,
   approveLink,
+  carriedTrust,
   createAccountKey,
   createDevice,
   createKeyPackage,
@@ -51,6 +51,7 @@ import {
   openRecoveryBackup,
   readRecoveryKey,
   revokeDevice,
+  revokedDeviceOf,
   sealRecoveryBackup,
   SHORT_MESSAGE_BYTES,
   securityCode,
@@ -91,6 +92,8 @@ export const chatTuning = {
   backupEveryMs: 10 * 60 * 1000,
   /** Fetching history again after a lost connection waits this long. */
   historyRetryMs: 30 * 1000,
+  /** A rotation that could not be made is tried again after this long. */
+  rotateRetryMs: 60 * 60 * 1000,
 } as const;
 
 /** The MLS group id of a conversation's generation (server: `groupIdOf`). */
@@ -136,14 +139,48 @@ interface BackupState {
   backedUpAt: number;
 }
 
+/** A contact's security code, and the account key it is for. */
+export interface SecurityCode {
+  /** 12 groups of 5 digits. */
+  code: string[];
+  /** Passed back to `acceptKeyChange`, so it accepts this key and no other. */
+  key: string;
+  /** The contact's key changed to this one; the user has not accepted it. */
+  pending: boolean;
+}
+
 /** Why a conversation does not work on this device. */
 export type ConversationProblem = "no_key_package" | "out_of_sync";
 
 interface ConversationRecord {
   generation: number;
+  /**
+   * The newest epoch this device has had in that generation, kept when it
+   * leaves the group, so a welcome to an earlier one is refused.
+   */
+  epoch?: number;
   participants: string[];
+  /** When this device last replaced its own keys in the group; null: never. */
   lastCommitAt: number | null;
   problem: ConversationProblem | null;
+}
+
+/**
+ * A commit on its way to the server, stored before it is sent, so one the
+ * server accepted is not lost when the page closes before the answer
+ * comes. Sent again with the same key, it returns the first answer.
+ */
+interface StoredCommit {
+  idempotencyKey: string;
+  body: {
+    generation: number;
+    commit: string;
+    welcome: string | null;
+    addedDeviceIds: string[];
+    removedDeviceIds: string[];
+  };
+  /** It gives this device new keys of its own in the group. */
+  rotates: boolean;
 }
 
 interface StoredKeyPackage {
@@ -164,6 +201,9 @@ const records = {
   trust: "trust",
   keyPackages: "key-packages",
   group: (id: string) => `group:${id}`,
+  /** A commit waiting for the server's answer, and the group state after it. */
+  commit: (id: string) => `commit:${id}`,
+  commitState: (id: string) => `commit-state:${id}`,
   conversation: (id: string) => `conversation:${id}`,
   history: (id: string) => `history:${id}`,
   seen: (id: string) => `seen:${id}`,
@@ -350,13 +390,13 @@ export async function completeDeviceLink(
   link: PendingLink,
   status: ChatLinkStatus & { package: string },
 ): Promise<ChatEngine> {
-  const { account, device, archive, recovery, pinned } = await link.open(
-    fromBase64(status.package),
-  );
+  const { account, device, archive, recovery, pinned, revoked } =
+    await link.open(fromBase64(status.package));
   const engine = await ChatEngine.begin(userId, account, device, {
     recovery,
     linked: true,
     pinned,
+    revoked,
   });
   if (archive) await engine.holdHistory(archive, "device");
   await chatApi.finishLink(status.linkRequestId);
@@ -389,7 +429,7 @@ export async function restoreChat(
   } catch {
     return "wrong_key";
   }
-  const { account, archive, pinned } = opened;
+  const { account, archive, pinned, revoked } = opened;
   // The server refuses a backup of an older key; this says so sooner.
   if (devices.accountKey !== toBase64(account.publicKey)) {
     throw new ChatApiError("conflict");
@@ -409,6 +449,8 @@ export async function restoreChat(
   const engine = await ChatEngine.begin(userId, account, device, {
     recovery: key,
     pinned,
+    revoked,
+    revocations,
   });
 
   // Only the archive the server still keeps for the backup.
@@ -431,15 +473,13 @@ export class ChatEngine {
   readonly #records = new Map<string, ConversationRecord>();
   /** Contacts whose account key changed, until the user accepts it. */
   readonly #keyChanges = new Map<string, Uint8Array>();
-  /** Commits whose answer was lost; sent again with the same key. */
+  /** Commits whose answer was lost, while their group is in memory. */
   readonly #outstanding = new Map<
     string,
-    {
-      pending: PendingCommit;
-      group: Conversation;
-      send: () => Promise<{ generation: number }>;
-    }
+    { pending: PendingCommit; group: Conversation }
   >();
+  /** When a rotation was last tried, so one that fails waits. */
+  readonly #rotationTriedAt = new Map<string, number>();
   readonly #listeners = new Set<() => void>();
   #queue: Promise<unknown> = Promise.resolve();
   #historyTransfer: HistoryTransfer | null = null;
@@ -450,8 +490,8 @@ export class ChatEngine {
   #linkedAt: Promise<string | null> | null = null;
   #backup: BackupState | undefined;
   #backingUp: Promise<void> | null = null;
-  /** The pinned account keys as last saved: the backup carries them. */
-  #pinned: string;
+  /** The pinned keys and revocations as last saved: the backup carries them. */
+  #trusted: string;
 
   constructor(
     readonly userId: string,
@@ -475,7 +515,7 @@ export class ChatEngine {
     this.#recovery = recovery;
     this.#linked = linked;
     if (linked && addedAt) this.#linkedAt = Promise.resolve(addedAt);
-    this.#pinned = JSON.stringify(trust.snapshot().accountKeys);
+    this.#trusted = JSON.stringify(trust.snapshot());
   }
 
   /**
@@ -490,16 +530,25 @@ export class ChatEngine {
       recovery,
       linked = false,
       pinned = {},
+      revoked = [],
+      revocations = [],
     }: {
       recovery?: RecoveryKey | undefined;
       linked?: boolean;
       /** The contacts' keys the account's other device had pinned (§5, §8). */
       pinned?: Record<string, string> | undefined;
+      /** The devices the account's other device knew were revoked (§7). */
+      revoked?: string[] | undefined;
+      /** Revocations this device just signed (a restore, §8). */
+      revocations?: DeviceRevocation[];
     } = {},
   ): Promise<ChatEngine> {
     const store = await openChatStore(userId);
-    const trust = createMemoryTrustStore({ accountKeys: pinned, revoked: [] });
+    const trust = createMemoryTrustStore({ accountKeys: pinned, revoked });
     trust.setAccountKey(userId, account.publicKey);
+    for (const revocation of revocations) {
+      await applyRevocation(trust, revocation);
+    }
     await putSecret(store, records.account, exportAccountKey(account));
     await putSecret(store, records.device, exportDevice(device));
     if (recovery) {
@@ -613,17 +662,45 @@ export class ChatEngine {
   }
 
   /**
-   * The contacts' account keys this device has pinned, for a new or
-   * restored device of the account to start from (ADR-0010 §5, §8). None
-   * if there are more than a package holds: that device then pins them as
-   * it meets them.
+   * The contacts' account keys this device has pinned and the devices it
+   * knows were revoked, for a new or restored device of the account to
+   * start from (ADR-0010 §5, §7, §8). If there are more than a package
+   * holds, the contacts the user has written to come first, then those
+   * who wrote, then the rest: a server can make a device pin accounts, but
+   * not make its user write to them.
    */
-  #pinnedForPackage(): Record<string, string> | undefined {
-    const pinned = { ...this.trust.snapshot().accountKeys };
-    delete pinned[this.userId];
-    return Object.keys(pinned).length <= MAX_PINNED_ACCOUNTS
-      ? pinned
-      : undefined;
+  async #carriedTrust() {
+    const activity = new Map<string, [number, string]>();
+    const met = (userId: string, tier: number, at: string) => {
+      const [known, last] = activity.get(userId) ?? [3, ""];
+      if (tier < known || (tier === known && at > last)) {
+        activity.set(userId, [tier, at]);
+      }
+    };
+    const prefix = records.conversation("");
+    for (const name of await this.store.names(prefix)) {
+      const id = name.slice(prefix.length);
+      const others = (await this.#record(id)).participants.filter(
+        (userId) => userId !== this.userId,
+      );
+      const history = await this.history(id);
+      for (const userId of others) {
+        met(userId, 2, "");
+        for (const entry of history) {
+          if (entry.own && entry.sentAt) met(userId, 0, entry.sentAt);
+          if (entry.senderUserId === userId && entry.text !== null) {
+            met(userId, 1, entry.sentAt ?? "");
+          }
+        }
+      }
+    }
+    const ranked = [...activity]
+      .sort(
+        ([, [tierA, atA]], [, [tierB, atB]]) =>
+          tierA - tierB || atB.localeCompare(atA),
+      )
+      .map(([userId]) => userId);
+    return carriedTrust(this.trust.snapshot(), this.userId, ranked);
   }
 
   /** The account's pending link request the user's code points to. */
@@ -640,9 +717,11 @@ export class ChatEngine {
   }
 
   /**
-   * Certifies the new device and seals the account key to it, with the
-   * recovery key's backup key if this device has it, and with
-   * `moveHistory` the key of this device's history, stored encrypted.
+   * Certifies the new device and seals the account key to it, with what
+   * this device trusts. With `moveHistory`, also the key of this device's
+   * history, stored encrypted, and the recovery key's backup key if this
+   * device has it: that key opens the backup's history too, so a device
+   * the user gave only new messages never gets it (ADR-0010 §5).
    */
   async approveLink(
     request: MatchedLinkRequest,
@@ -660,8 +739,8 @@ export class ChatEngine {
       {
         account: this.account,
         archive,
-        recovery: this.#recovery ?? undefined,
-        pinned: this.#pinnedForPackage(),
+        recovery: (moveHistory && this.#recovery) || undefined,
+        ...(await this.#carriedTrust()),
       },
     );
     if (archive) wipe(archive.key.reveal());
@@ -707,7 +786,7 @@ export class ChatEngine {
       backup: toBase64(
         await sealRecoveryBackup(key, {
           account: this.account,
-          pinned: this.#pinnedForPackage(),
+          ...(await this.#carriedTrust()),
         }),
       ),
     });
@@ -735,6 +814,7 @@ export class ChatEngine {
     // Until history on its way here is in, a backup would leave it out.
     if (!recovery || (await this.#heldHistory()).length > 0) return;
     const startedAt = Date.now();
+    await this.#exclusive(() => this.#keepBackedUpRevocations(recovery));
     const history = await this.#exclusive(() => this.#ownHistory());
     const archive = await sendHistory(packHistory(history), {
       purpose: "backup",
@@ -746,7 +826,7 @@ export class ChatEngine {
           await sealRecoveryBackup(recovery, {
             account: this.account,
             archive,
-            pinned: this.#pinnedForPackage(),
+            ...(await this.#carriedTrust()),
           }),
         ),
         archiveId: archive.archiveId,
@@ -764,6 +844,35 @@ export class ChatEngine {
     const state = await this.#backupState();
     state.backedUpAt = startedAt;
     await this.store.putJson(records.backup, state);
+  }
+
+  /**
+   * Takes in the revocations the backup holds before replacing it, so a
+   * device that has not heard of a revocation yet does not drop one
+   * another device of the account backed up. Only revocations: they can
+   * only take trust away. The backup is the account's own, under the key.
+   */
+  async #keepBackedUpRevocations(recovery: RecoveryKey) {
+    let revoked: string[] | undefined;
+    try {
+      const backup = await chatApi.recoveryBackup();
+      if (backup.keyId !== toBase64(recovery.id)) return;
+      revoked = (
+        await openRecoveryBackup(
+          recovery,
+          this.userId,
+          fromBase64(backup.backup),
+        )
+      ).revoked;
+    } catch {
+      // No backup yet, or none this key opens: nothing to keep.
+      return;
+    }
+    for (const ref of revoked ?? []) {
+      const device = revokedDeviceOf(ref);
+      if (device) this.trust.addRevocation(device);
+    }
+    await this.#saveTrust();
   }
 
   /** Backs up when the history has changed and the last backup is old. */
@@ -811,9 +920,9 @@ export class ChatEngine {
   async #saveTrust() {
     const snapshot = this.trust.snapshot();
     await this.store.putJson(records.trust, snapshot);
-    const pinned = JSON.stringify(snapshot.accountKeys);
-    if (pinned !== this.#pinned) {
-      this.#pinned = pinned;
+    const trusted = JSON.stringify(snapshot);
+    if (trusted !== this.#trusted) {
+      this.#trusted = trusted;
       await this.#backupDue();
     }
   }
@@ -872,14 +981,16 @@ export class ChatEngine {
   }
 
   /**
-   * Only after the user has seen that the security code changed. The
-   * conversations with the contact are brought in line at once: their old
-   * devices out, the ones under the new key in.
+   * Only after the user has seen that the security code changed, and only
+   * the key that code was for (`SecurityCode.key`): if the server has shown
+   * another since, nothing is accepted. The conversations with the contact
+   * are brought in line at once: their old devices out, the ones under the
+   * new key in. Whether the key was accepted.
    */
-  acceptKeyChange(userId: string): Promise<void> {
+  acceptKeyChange(userId: string, shownKey: string): Promise<boolean> {
     return this.#exclusive(async () => {
       const key = this.#keyChanges.get(userId);
-      if (!key) return;
+      if (!key || toBase64(key) !== shownKey) return false;
       acceptChangedAccountKey(this.trust, userId, key);
       this.#keyChanges.delete(userId);
       await this.#saveTrust();
@@ -892,18 +1003,36 @@ export class ChatEngine {
           await this.#maintain(id).catch(() => undefined);
         }
       }
+      return true;
     });
   }
 
-  /** The 60 digits both contacts compare (ADR-0010 §3). */
-  async securityCode(userId: string): Promise<string[] | undefined> {
-    const theirs = this.trust.accountKey(userId);
-    return theirs
-      ? securityCode(
-          { accountId: this.userId, accountKey: this.account.publicKey },
-          { accountId: userId, accountKey: theirs },
-        )
-      : undefined;
+  /**
+   * The 60 digits both contacts compare (ADR-0010 §3), for the other
+   * participant of a conversation, as this device settled them. While the
+   * contact's key has changed and the user has not accepted it, the code
+   * is the new key's, the one accepting would trust; until then nothing
+   * is sent in the conversation.
+   */
+  async securityCode(
+    conversationId: string,
+    userId: string,
+  ): Promise<SecurityCode | undefined> {
+    const { participants } = await this.#record(conversationId);
+    if (userId === this.userId || !participants.includes(userId)) {
+      return undefined;
+    }
+    const proposed = this.#keyChanges.get(userId);
+    const key = proposed ?? this.trust.accountKey(userId);
+    if (!key) return undefined;
+    return {
+      code: await securityCode(
+        { accountId: this.userId, accountKey: this.account.publicKey },
+        { accountId: userId, accountKey: key },
+      ),
+      key: toBase64(key),
+      pending: proposed !== undefined,
+    };
   }
 
   // Conversations on this device
@@ -944,8 +1073,10 @@ export class ChatEngine {
 
   async #saveGroup(id: string, group: Conversation) {
     this.#groups.set(id, group);
+    const record = await this.#record(id);
+    record.epoch = Number(group.epoch);
     await putSecret(this.store, records.group(id), await group.export());
-    await this.store.putJson(records.conversation(id), await this.#record(id));
+    await this.store.putJson(records.conversation(id), record);
   }
 
   async #dropGroup(id: string) {
@@ -1142,6 +1273,7 @@ export class ChatEngine {
     return this.#exclusive(async () => {
       await this.#receive();
       await this.#resendUnsent();
+      await this.#rotateDue();
       // Not awaited: they wait for this operation to end.
       void this.resumeHistory();
       void this.#backUpIfDue().catch(() => undefined);
@@ -1240,17 +1372,28 @@ export class ChatEngine {
     await this.#rememberReceived(id, entry);
   }
 
+  /**
+   * Joins from a welcome, never to an earlier generation or epoch than this
+   * device has had: a welcome the server delivers again (the last-resort
+   * key package opens it as often as it comes) would otherwise take the
+   * group back to keys that others have moved on from, or that removed
+   * devices hold, and this device would use its keys there again.
+   */
   async #join(id: string, generation: number, welcome: Uint8Array) {
     const record = await this.#record(id);
+    if (generation < record.generation) return;
     const stored = await this.#storedKeyPackages();
     const bundles = stored.map((entry) => importKeyPackage(utf8(entry.data)));
     const bundle = await Conversation.keyPackageFor(welcome, bundles);
 
     if (!bundle) {
+      // Delivered again after its one-time package was used: nothing new.
+      if (generation === record.generation && (await this.#group(id))) return;
       record.problem = "no_key_package";
       await this.store.putJson(records.conversation(id), record);
       return;
     }
+    const used = stored[bundles.indexOf(bundle)];
 
     try {
       const group = await Conversation.join(
@@ -1261,9 +1404,15 @@ export class ChatEngine {
       if (group.groupId !== groupIdOf(id, generation)) {
         throw new Error("welcome for another group");
       }
+      const known =
+        generation === record.generation
+          ? (record.epoch ?? Number((await this.#group(id))?.epoch ?? -1))
+          : -1;
+      if (Number(group.epoch) <= known) return;
       Object.assign(record, {
         generation,
-        lastCommitAt: Date.now(),
+        // A last-resort package's keys may be in other groups too.
+        lastCommitAt: used?.lastResort ? null : Date.now(),
         problem: null,
       });
       await this.#saveGroup(id, group);
@@ -1273,7 +1422,6 @@ export class ChatEngine {
       return;
     }
 
-    const used = stored[bundles.indexOf(bundle)];
     if (used && !used.lastResort) {
       await this.store.putJson(
         records.keyPackages,
@@ -1437,57 +1585,108 @@ export class ChatEngine {
         : await group.rotateKeys();
     await this.#submit(id, group, generation, pending, {
       added: usable.map((claim) => claim.deviceId),
+      starting,
     });
     return true;
   }
 
+  /**
+   * Sends a commit and, once the server has accepted it, moves the group on.
+   * It is stored first with the state it leads to, so an answer lost to a
+   * closed page is fetched again later (`#settleOutstanding`) instead of
+   * leaving this device behind the group for good.
+   */
   async #submit(
     id: string,
     group: Conversation,
     generation: number,
     pending: PendingCommit,
-    { added = [], removed = [] }: { added?: string[]; removed?: string[] },
+    {
+      added = [],
+      removed = [],
+      starting = false,
+    }: { added?: string[]; removed?: string[]; starting?: boolean },
   ) {
-    const idempotencyKey = crypto.randomUUID();
-    const send = () =>
-      chatApi.commit(
-        id,
-        {
-          generation,
-          commit: toBase64(pending.commit),
-          welcome: pending.welcome ? toBase64(pending.welcome) : null,
-          addedDeviceIds: added,
-          removedDeviceIds: removed,
-        },
-        idempotencyKey,
-      );
-    this.#outstanding.set(id, { pending, group, send });
+    const stored: StoredCommit = {
+      idempotencyKey: crypto.randomUUID(),
+      body: {
+        generation,
+        commit: toBase64(pending.commit),
+        welcome: pending.welcome ? toBase64(pending.welcome) : null,
+        addedDeviceIds: added,
+        removedDeviceIds: removed,
+      },
+      // A new group's keys are all new.
+      rotates: pending.rotates || starting,
+    };
+    await putSecret(this.store, records.commitState(id), pending.state());
+    await this.store.putJson(records.commit(id), stored);
+    this.#outstanding.set(id, { pending, group });
+    await this.#settle(id, stored);
+  }
+
+  /** Sends a stored commit (again) and settles it with the server's answer. */
+  async #settle(id: string, stored: StoredCommit) {
+    let accepted: { generation: number };
     try {
-      await send();
+      accepted = await chatApi.commit(id, stored.body, stored.idempotencyKey);
     } catch (error) {
       if (!(error instanceof ChatApiError && error.code === "network")) {
-        this.#outstanding.delete(id);
-        pending.discard();
+        this.#outstanding.get(id)?.pending.discard();
+        await this.#forgetCommit(id);
       }
       throw error;
     }
-    this.#outstanding.delete(id);
-    await this.#accepted(id, group, generation, pending);
-  }
 
-  async #accepted(
-    id: string,
-    group: Conversation,
-    generation: number,
-    pending: PendingCommit,
-  ) {
-    pending.accept();
-    Object.assign(await this.#record(id), {
-      generation,
-      lastCommitAt: Date.now(),
+    const inMemory = this.#outstanding.get(id);
+    let group: Conversation;
+    if (inMemory) {
+      inMemory.pending.accept();
+      group = inMemory.group;
+    } else {
+      // The page was reloaded: the state the commit leads to was stored.
+      const state = await this.store.get(records.commitState(id));
+      const policy = this.#policy(await this.#record(id));
+      try {
+        if (!state) throw new Error("no state");
+        group = Conversation.restore(state, policy);
+      } catch {
+        // Accepted, but this device cannot follow: out of step.
+        await this.#forgetCommit(id);
+        await this.#outOfStep(id);
+        return;
+      } finally {
+        if (state) wipe(state);
+      }
+    }
+    const record = await this.#record(id);
+    Object.assign(record, {
+      generation: accepted.generation,
       problem: null,
+      ...(stored.rotates && { lastCommitAt: Date.now() }),
     });
     await this.#saveGroup(id, group);
+    await this.#forgetCommit(id);
+  }
+
+  async #outOfStep(id: string) {
+    const record = await this.#record(id);
+    record.problem = "out_of_sync";
+    await this.store.putJson(records.conversation(id), record);
+  }
+
+  async #forgetCommit(id: string) {
+    this.#outstanding.delete(id);
+    await this.store.delete(records.commit(id));
+    await this.store.delete(records.commitState(id));
+  }
+
+  /** Whether a commit of the conversation still waits for its answer. */
+  async #commitWaiting(id: string): Promise<boolean> {
+    return (
+      this.#outstanding.has(id) ||
+      (await this.store.getJson(records.commit(id))) !== undefined
+    );
   }
 
   /**
@@ -1496,16 +1695,17 @@ export class ChatEngine {
    * group can do nothing else.
    */
   async #settleOutstanding() {
-    for (const [id, { pending, group, send }] of this.#outstanding) {
+    const prefix = records.commit("");
+    for (const name of await this.store.names(prefix)) {
+      const id = name.slice(prefix.length);
+      const stored = await this.store.getJson<StoredCommit>(name);
+      if (!stored) continue;
       try {
-        const accepted = await send();
-        this.#outstanding.delete(id);
-        await this.#accepted(id, group, accepted.generation, pending);
+        await this.#settle(id, stored);
       } catch (error) {
-        if (error instanceof ChatApiError && error.code === "network")
+        if (error instanceof ChatApiError && error.code === "network") {
           throw error;
-        this.#outstanding.delete(id);
-        pending.discard();
+        }
       }
     }
   }
@@ -1516,12 +1716,10 @@ export class ChatEngine {
    * Encrypts and sends a message. The group's new state is stored before
    * the ciphertext leaves, so a key is never used twice. A message that did
    * not get through stays in the history as unsent and is tried again on
-   * the next sync; the receiver keeps one copy of it.
-   */
-  /**
-   * Whether the message left: it waits, unsent, while no one else's device
-   * is in the group (the other person has not turned chat on yet), since a
-   * device added later can never read it.
+   * the next sync; the receiver keeps one copy of it. Whether the message
+   * left: it waits, unsent, while no one else's device is in the group (the
+   * other person has not turned chat on yet), since a device added later
+   * can never read it, and while the group is not settled (`#mayEncrypt`).
    */
   async send(id: string, text: string): Promise<boolean> {
     const entry: HistoryEntry = {
@@ -1536,15 +1734,28 @@ export class ChatEngine {
     return this.#exclusive(() => this.#deliver(id, entry));
   }
 
-  async #deliver(id: string, entry: HistoryEntry): Promise<boolean> {
+  /**
+   * Every message is encrypted to a group brought in line with what the
+   * server says now (`#maintain`), so a revoked device is removed before,
+   * not after. `inLine` skips that for the next messages of one round.
+   */
+  async #deliver(
+    id: string,
+    entry: HistoryEntry,
+    inLine = false,
+  ): Promise<boolean> {
     for (let attempt = 1; ; attempt++) {
-      let group = await this.#group(id);
-      if (!group) {
+      if (!inLine) {
+        await this.#settleOutstanding();
         await this.#maintain(id);
-        group = await this.#group(id);
-        if (!group) throw new ChatApiError("conflict");
       }
-      if (!group.members().some((m) => m.accountId !== this.userId)) {
+      inLine = false;
+      const group = await this.#group(id);
+      if (!group) throw new ChatApiError("conflict");
+      if (
+        !(await this.#mayEncrypt(id, group)) ||
+        !group.members().some((m) => m.accountId !== this.userId)
+      ) {
         return false;
       }
       const ciphertext = await group.encrypt(
@@ -1566,9 +1777,26 @@ export class ChatEngine {
         }
         // The group moved on: catch up and encrypt again.
         await this.#receive();
-        await this.#maintain(id);
       }
     }
+  }
+
+  /**
+   * The one check before anything is encrypted in a conversation: the
+   * group is between the two accounts this device settled, every device in
+   * it is one this device trusts (none revoked, none under a replaced
+   * account key), no changed key waits for the user, no commit waits for
+   * its answer, and the group is not out of step (ADR-0010 §3, §7).
+   */
+  async #mayEncrypt(id: string, group: Conversation): Promise<boolean> {
+    const record = await this.#record(id);
+    return (
+      record.problem === null &&
+      record.participants.length === 2 &&
+      !record.participants.some((userId) => this.#keyChanges.has(userId)) &&
+      !(await this.#commitWaiting(id)) &&
+      group.untrustedMembers().length === 0
+    );
   }
 
   async #resendUnsent() {
@@ -1577,15 +1805,37 @@ export class ChatEngine {
       const waiting = (await this.history(id)).filter((entry) => entry.unsent);
       if (waiting.length === 0 || !(await this.#group(id))) continue;
 
-      // A contact may have enabled chat since the last poll. Refresh group
-      // membership before resending; otherwise unsent messages may remain
-      // stranded until the sender reloads the conversation page.
-      await this.#maintain(id).catch(() => undefined);
+      // The first brings the group in line (a contact may have enabled chat
+      // since the last poll); the rest follow in the same group.
+      let inLine = false;
       for (const entry of waiting) {
-        if (await this.#group(id)) {
-          await this.#deliver(id, entry).catch(() => undefined);
-        }
+        inLine = await this.#deliver(id, entry, inLine).catch(() => false);
+        if (!inLine) break;
       }
+    }
+  }
+
+  /**
+   * Replaces this device's keys in each group where it is due (ADR-0010
+   * §4), also where the user has not opened the conversation: what keeps a
+   * device's keys fresh is that it rotates them, whether or not it writes.
+   */
+  async #rotateDue() {
+    const now = Date.now();
+    const prefix = records.group("");
+    for (const name of await this.store.names(prefix)) {
+      const id = name.slice(prefix.length);
+      const { lastCommitAt, problem } = await this.#record(id);
+      if (
+        problem !== null ||
+        (lastCommitAt !== null &&
+          now - lastCommitAt <= chatTuning.rotateAfterMs) ||
+        now - (this.#rotationTriedAt.get(id) ?? 0) < chatTuning.rotateRetryMs
+      ) {
+        continue;
+      }
+      this.#rotationTriedAt.set(id, now);
+      await this.#maintain(id).catch(() => undefined);
     }
   }
 }
