@@ -89,7 +89,7 @@ Dette sjekkes av hver klient for hvert medlem som legges til, hver nøkkeloppdat
 - Bare forslagene `add`, `remove` og `update` godtas i en commit. Alt annet MLS tillater (reinit, eksterne forslag, PSK, endring av gruppeutvidelser) avvises av klienten.
 - En enhet kan bare fjernes når mottakerens egen enhet ikke lenger stoler på den: den er tilbakekalt med signatur fra sin kontonøkkel, kontoen har fått ny kontonøkkel, eller kontoen er ikke lenger deltaker. Hver mottaker sjekker dette selv og avviser ellers hele commiten, så én deltaker kan ikke kaste ut en annens enhet.
 - Korte meldinger fylles opp til 1024 byte før kryptering, så lengden ikke røper innholdet.
-- Hver samtale er mellom nøyaktig to kontoer, der den ene er enhetens egen, og det endres aldri. Klienten husker de to kontoene første gang den ser samtalen, og bruker ikke en katalog fra serveren som legger til en tredje konto eller bytter ut den andre. Serveren kan dermed ikke smugle inn en ekstra deltaker («spøkelsesbruker»).
+- Hver samtale er mellom nøyaktig to kontoer, der den ene er enhetens egen, og det endres aldri. Klienten husker de to kontoene første gang den ser samtalen, og bruker ikke en katalog fra serveren som legger til en tredje konto eller bytter ut den andre. Serveren kan dermed ikke smugle inn en ekstra deltaker («spøkelsesbruker»). Viser samtalesiden en annen person enn kontoen gruppen er med, sendes ingenting mer i samtalen, og det vises ingen sikkerhetskode for den personen.
 - Meldings-ID-en ligger inne i den krypterte meldingen og kommer fra avsenderen. En mottatt melding legges bare til hvis ID-en er ny, så en deltaker kan ikke erstatte eller endre en melding som allerede står i historikken.
 
 ## 5. Ny enhet (kobling)
@@ -139,7 +139,8 @@ Er chatten på enheten ikke til å åpne (nøklene mangler, eller tilstanden er 
 **Gjenopprettingsnøkkel (valgfri, tilbys brukeren):**
 
 - 256 tilfeldige bit laget på enheten, vist én gang som 52 tegn i grupper. Brukeren skriver den ned eller lagrer den i en passordbehandler. Når og hvor den tilbys, står i PS-COM-019.
-- Fra den utledes (HKDF-SHA256) en nøkkel som krypterer en sikkerhetskopi av kontonøkkelen, historikkarkivets nøkkel, kontaktenes festede kontonøkler og tilbakekallingene enheten kjenner. En enhet som tar en ny sikkerhetskopi, tar først med tilbakekallingene den forrige hadde. Sikkerhetskopien og arkivet lagres hos serveren som ciphertext.
+- Fra den utledes (HKDF-SHA256) en nøkkel som krypterer en sikkerhetskopi av kontonøkkelen, historikkarkivets nøkkel, kontaktenes festede kontonøkler og tilbakekallingene enheten kjenner. En enhet som tar en ny sikkerhetskopi, tar først med tilbakekallingene den forrige hadde. Serveren erstatter bare sikkerhetskopien enheten leste (den sender SHA-256 av den); har en annen enhet tatt en ny i mellomtiden, leser enheten den og prøver igjen. En sikkerhetskopi under enhetens nøkkel som ikke kan leses, erstattes ikke. Sikkerhetskopien og arkivet lagres hos serveren som ciphertext.
+- En ny gjenopprettingsnøkkel erstatter den gamle og sikkerhetskopien under den. Har den sikkerhetskopien historikk, og enheten ikke har den gamle nøkkelen, lages den nye først når brukeren uttrykkelig har bekreftet at historikken i sikkerhetskopien går tapt.
 - **Passord eller PIN brukes aldri** som grunnlag. En laventropi-hemmelighet kan knekkes av den som har ciphertexten, og uten maskinvarebasert forsøksbegrensning (HSM) har vi ingen måte å hindre det på.
 
 **Recovery-tilfellene:**

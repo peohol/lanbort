@@ -8,7 +8,7 @@ import type {
   DeviceRevocationWire,
 } from "@lanbort/contracts";
 import type { chatApi as realChatApi } from "./api";
-import { fromBase64 } from "./bytes";
+import { fromBase64, toBase64 } from "./bytes";
 import type { ChatStore } from "./store";
 
 /**
@@ -60,6 +60,11 @@ export const memoryStores = {
       put: async (record, value) => {
         own.set(record, new Uint8Array(value));
       },
+      putAll: async (entries) => {
+        for (const [record, value] of entries) {
+          own.set(record, new Uint8Array(value));
+        }
+      },
       getJson: async <T>(record: string) => {
         const value = own.get(record);
         return value && (JSON.parse(new TextDecoder().decode(value)) as T);
@@ -88,6 +93,19 @@ export const memoryStores = {
 /** A record of a device's store, for a test to look into. */
 export const storedRecord = (device: DeviceContext, record: string) =>
   stores.get(`${device.browser}:${device.userId}`)?.get(record);
+
+/** A record of a device's store as JSON, read or replaced by a test. */
+export const storedJson = {
+  get: <T>(device: DeviceContext, record: string) => {
+    const value = storedRecord(device, record);
+    return value && (JSON.parse(new TextDecoder().decode(value)) as T);
+  },
+  set: (device: DeviceContext, record: string, value: unknown) => {
+    stores
+      .get(`${device.browser}:${device.userId}`)!
+      .set(record, new TextEncoder().encode(JSON.stringify(value)));
+  },
+};
 
 /** The epoch of an MLS private message (RFC 9420 §6.3.1). */
 export function epochOf(message: Uint8Array): bigint {
@@ -182,6 +200,27 @@ export class FakeChatServer {
   loseNextCommitAnswer = false;
   /** Overrides what the directory says, after the server built it. */
   directoryFilter: ((directory: ChatDirectory) => ChatDirectory) | null = null;
+  /** Overrides what a conversation's page is told, likewise. */
+  conversationFilter:
+    ((conversation: ChatConversation) => ChatConversation) | null = null;
+
+  /** Runs once before the next backup is taken: another device's turn. */
+  beforeBackUp: (() => Promise<void>) | null = null;
+  /** The backup cannot be read, for this reason. */
+  failBackupRead: Failure | null = null;
+
+  /** Only the backup the caller read is replaced, as the real server does. */
+  async #checkReplaces(replaces: string | null) {
+    const recovery = this.recovery.get(current().userId);
+    const digest = recovery
+      ? toBase64(
+          new Uint8Array(
+            await crypto.subtle.digest("SHA-256", fromBase64(recovery.backup)),
+          ),
+        )
+      : null;
+    if (digest !== replaces) fail("conflict");
+  }
 
   #sessionDevice() {
     const { userId, session } = current();
@@ -438,19 +477,25 @@ export class FakeChatServer {
 
     acknowledgeNotice: async () => ({}),
 
-    createRecoveryKey: async ({ keyId, backup }) => {
+    createRecoveryKey: async ({ keyId, backup, replaces }) => {
       this.#device();
+      await this.#checkReplaces(replaces);
       this.recovery.set(current().userId, { keyId, backup, archiveId: null });
       return {};
     },
-    backUp: async ({ keyId, backup, archiveId }) => {
+    backUp: async ({ keyId, backup, archiveId, replaces }) => {
       this.#device();
+      const before = this.beforeBackUp;
+      this.beforeBackUp = null;
+      await before?.();
       const recovery = this.recovery.get(current().userId);
       if (!recovery || recovery.keyId !== keyId) fail("conflict");
+      await this.#checkReplaces(replaces);
       this.recovery.set(current().userId, { keyId, backup, archiveId });
       return {};
     },
     recoveryBackup: async () => {
+      if (this.failBackupRead) fail(this.failBackupRead);
       const recovery = this.recovery.get(current().userId) ?? fail("not_found");
       const archive =
         recovery.archiveId !== null
@@ -484,7 +529,7 @@ export class FakeChatServer {
     conversation: async (id): Promise<ChatConversation> => {
       const conversation = this.#conversation(id);
       const device = this.#sessionDevice();
-      return {
+      const shown: ChatConversation = {
         conversationId: id,
         kind: "private",
         generation: conversation.generation,
@@ -505,6 +550,7 @@ export class FakeChatServer {
         startedAt: conversation.startedAt,
         lastActivityAt: conversation.startedAt,
       };
+      return this.conversationFilter ? this.conversationFilter(shown) : shown;
     },
     directory: async (id) => {
       const conversation = this.#conversation(id);

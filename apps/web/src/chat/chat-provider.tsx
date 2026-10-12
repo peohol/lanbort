@@ -179,14 +179,15 @@ export function useEngineVersion(engine: ChatEngine | undefined): number {
 /**
  * A contact's security code in a conversation, as the engine has it now:
  * the code shown and the key a «Godta» accepts are always the same one.
+ * Null: the conversation is not with them (`ChatEngine.securityCode`).
  */
 export function useSecurityCode(
   engine: ChatEngine,
   conversationId: string,
   userId: string,
-): SecurityCode | undefined {
+): SecurityCode | null | undefined {
   const version = useEngineVersion(engine);
-  const [code, setCode] = useState<SecurityCode>();
+  const [code, setCode] = useState<SecurityCode | null>();
   useEffect(() => {
     let current = true;
     void engine.securityCode(conversationId, userId).then((found) => {

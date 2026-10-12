@@ -846,6 +846,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     archiveId: ids.archiveId,
     keyId: "AAAAAAAAAAAAAAAAAAAAAA==",
     backup: Buffer.alloc(32).toString("base64"),
+    replaces: Buffer.alloc(32).toString("base64"),
   }),
 
   // Notifications

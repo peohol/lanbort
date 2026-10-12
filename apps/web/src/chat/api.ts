@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+  BackUpChatHistory,
   ChatArchive,
   ChatClaimedKeyPackages,
   ChatConversation,
@@ -11,6 +12,7 @@ import type {
   ChatLinkStatus,
   ChatRecoveryBackup,
   CreateChatArchive,
+  CreateChatRecoveryKey,
   DeviceCertificateWire,
   DeviceRevocationWire,
   OwnChatDevices,
@@ -111,10 +113,9 @@ export const chatApi = {
     post("/api/chat/notice", { notice: currentChatNotice }),
 
   /** The recovery key's backup (ADR-0010 §8, PS-COM-019). */
-  createRecoveryKey: (body: { keyId: string; backup: string }) =>
+  createRecoveryKey: (body: CreateChatRecoveryKey) =>
     post("/api/chat/recovery", body),
-  backUp: (body: { keyId: string; backup: string; archiveId: string }) =>
-    post("/api/chat/recovery/backup", body),
+  backUp: (body: BackUpChatHistory) => post("/api/chat/recovery/backup", body),
   recoveryBackup: () => get<ChatRecoveryBackup>("/api/chat/recovery"),
   restore: (body: {
     certificate: DeviceCertificateWire;

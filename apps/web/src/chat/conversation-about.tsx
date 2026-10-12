@@ -60,6 +60,12 @@ function SecurityCode({
         Sammenlign med koden på {whose(name)} skjerm når dere møtes. Er de like,
         bruker samtalen {whose(name)} egne nøkler, ikke noen andres.
       </p>
+      {code === null && (
+        <p role="alert">
+          Samtalen er kryptert med en annen enn {name}. Det finnes ingen kode å
+          sammenligne, og ingenting sendes i samtalen.
+        </p>
+      )}
       {code?.pending && (
         <p role="status">
           Dette er den nye koden. Den er ikke godtatt ennå, og ingenting sendes

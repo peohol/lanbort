@@ -5,6 +5,7 @@ import type {
   ChatInboxItem,
   ChatLinkRequest,
   ChatLinkStatus,
+  ChatRecoveryBackup,
   DeviceCertificateWire,
   DeviceRevocationWire,
 } from "@lanbort/contracts";
@@ -121,6 +122,11 @@ export interface HistoryEntry {
   sentAt: string | null;
   /** An own message that has not reached the server yet. */
   unsent?: boolean;
+  /**
+   * For an unsent message: whom the page showed it was written to. It is
+   * encrypted only to a group with exactly them (`#mayEncrypt`).
+   */
+  to?: string[];
 }
 
 /**
@@ -150,7 +156,22 @@ export interface SecurityCode {
 }
 
 /** Why a conversation does not work on this device. */
-export type ConversationProblem = "no_key_package" | "out_of_sync";
+/**
+ * `other_person`: the page showed someone else than the account the
+ * conversation's group is with, so nothing is sent in it.
+ */
+export type ConversationProblem =
+  "no_key_package" | "out_of_sync" | "other_person";
+
+/** The account's backup as read from the server, before it is replaced. */
+interface CurrentBackup {
+  keyId: string;
+  sealed: Uint8Array;
+  /** What the server checks that the backup it replaces is (SHA-256). */
+  digest: string;
+  /** It points to a history archive. */
+  history: boolean;
+}
 
 interface ConversationRecord {
   generation: number;
@@ -778,23 +799,51 @@ export class ChatEngine {
    * Makes a new recovery key, which replaces the account's earlier one,
    * and backs up the history under it. The code is for the user to write
    * down, once; this device keeps only what it needs for the backup.
+   *
+   * The backup there is now goes with the old key. Its history too, unless
+   * this device holds that key (its own history is what it backs up): then
+   * nothing is made, and the answer is what the user must agree to lose
+   * first. Made again with that answer's `history`, the key replaces that
+   * backup and no other.
    */
-  async createRecoveryKey(): Promise<string> {
-    const { code, key } = await createRecoveryKey();
-    await chatApi.createRecoveryKey({
-      keyId: toBase64(key.id),
-      backup: toBase64(
-        await sealRecoveryBackup(key, {
-          account: this.account,
-          ...(await this.#carriedTrust()),
-        }),
-      ),
-    });
-    await putSecret(this.store, records.recovery, exportRecoveryKey(key));
-    this.#recovery = key;
-    this.#changed();
-    void this.backUp().catch(() => undefined);
-    return code;
+  async createRecoveryKey(
+    dropping: string | null = null,
+  ): Promise<{ code: string } | { dropsHistory: string }> {
+    for (let attempt = 1; ; attempt++) {
+      const recovery = this.#recovery;
+      const current = await this.#exclusive(() => this.#readBackup());
+      const ours = current !== null && this.#holdsKeyOf(current, recovery);
+      if (current?.history && !ours && current.digest !== dropping) {
+        return { dropsHistory: current.digest };
+      }
+      if (ours) {
+        await this.#exclusive(() =>
+          this.#keepBackedUpRevocations(current, recovery!),
+        );
+      }
+      const { code, key } = await createRecoveryKey();
+      try {
+        await chatApi.createRecoveryKey({
+          keyId: toBase64(key.id),
+          backup: toBase64(
+            await sealRecoveryBackup(key, {
+              account: this.account,
+              ...(await this.#carriedTrust()),
+            }),
+          ),
+          replaces: current?.digest ?? null,
+        });
+      } catch (error) {
+        // The backup changed since it was read: read it again.
+        if (isConflict(error) && attempt < chatTuning.conflictRetries) continue;
+        throw error;
+      }
+      await putSecret(this.store, records.recovery, exportRecoveryKey(key));
+      this.#recovery = key;
+      this.#changed();
+      void this.backUp().catch(() => undefined);
+      return { code };
+    }
   }
 
   /**
@@ -809,35 +858,55 @@ export class ChatEngine {
     return this.#backingUp;
   }
 
+  /**
+   * Replaces only the backup it read, after taking in what that one holds:
+   * if another device backed up in between, it reads and merges again. A
+   * backup it cannot read stops it, rather than lose what that one held.
+   */
   async #backUpNow(): Promise<void> {
     const recovery = this.#recovery;
     // Until history on its way here is in, a backup would leave it out.
     if (!recovery || (await this.#heldHistory()).length > 0) return;
     const startedAt = Date.now();
-    await this.#exclusive(() => this.#keepBackedUpRevocations(recovery));
     const history = await this.#exclusive(() => this.#ownHistory());
     const archive = await sendHistory(packHistory(history), {
       purpose: "backup",
     });
     try {
-      await chatApi.backUp({
-        keyId: toBase64(recovery.id),
-        backup: toBase64(
-          await sealRecoveryBackup(recovery, {
-            account: this.account,
-            archive,
-            ...(await this.#carriedTrust()),
-          }),
-        ),
-        archiveId: archive.archiveId,
-      });
-    } catch (error) {
-      if (isConflict(error) && this.#recovery === recovery) {
-        await this.store.delete(records.recovery);
-        this.#recovery = null;
-        this.#changed();
+      for (let attempt = 1; ; attempt++) {
+        const current = await this.#exclusive(() => this.#readBackup());
+        if (!current || !this.#holdsKeyOf(current, recovery)) {
+          // Another device has made a newer key.
+          if (this.#recovery === recovery) {
+            await this.store.delete(records.recovery);
+            this.#recovery = null;
+            this.#changed();
+          }
+          throw new ChatApiError("conflict");
+        }
+        await this.#exclusive(() =>
+          this.#keepBackedUpRevocations(current, recovery),
+        );
+        try {
+          await chatApi.backUp({
+            keyId: toBase64(recovery.id),
+            backup: toBase64(
+              await sealRecoveryBackup(recovery, {
+                account: this.account,
+                archive,
+                ...(await this.#carriedTrust()),
+              }),
+            ),
+            archiveId: archive.archiveId,
+            replaces: current.digest,
+          });
+          break;
+        } catch (error) {
+          if (!isConflict(error) || attempt >= chatTuning.conflictRetries) {
+            throw error;
+          }
+        }
       }
-      throw error;
     } finally {
       wipe(archive.key.reveal());
     }
@@ -846,29 +915,48 @@ export class ChatEngine {
     await this.store.putJson(records.backup, state);
   }
 
+  /** The account's backup as the server has it now; null: there is none. */
+  async #readBackup(): Promise<CurrentBackup | null> {
+    let backup: ChatRecoveryBackup;
+    try {
+      backup = await chatApi.recoveryBackup();
+    } catch (error) {
+      if (error instanceof ChatApiError && error.code === "not_found") {
+        return null;
+      }
+      throw error;
+    }
+    const sealed = fromBase64(backup.backup);
+    return {
+      keyId: backup.keyId,
+      sealed,
+      digest: toBase64(
+        new Uint8Array(await crypto.subtle.digest("SHA-256", sealed)),
+      ),
+      history: backup.archive !== null,
+    };
+  }
+
+  #holdsKeyOf(backup: CurrentBackup, recovery: RecoveryKey | null): boolean {
+    return recovery !== null && backup.keyId === toBase64(recovery.id);
+  }
+
   /**
    * Takes in the revocations the backup holds before replacing it, so a
    * device that has not heard of a revocation yet does not drop one
    * another device of the account backed up. Only revocations: they can
-   * only take trust away. The backup is the account's own, under the key.
+   * only take trust away. A backup under this device's key that does not
+   * open stops the backup: it is not replaced unread.
    */
-  async #keepBackedUpRevocations(recovery: RecoveryKey) {
-    let revoked: string[] | undefined;
-    try {
-      const backup = await chatApi.recoveryBackup();
-      if (backup.keyId !== toBase64(recovery.id)) return;
-      revoked = (
-        await openRecoveryBackup(
-          recovery,
-          this.userId,
-          fromBase64(backup.backup),
-        )
-      ).revoked;
-    } catch {
-      // No backup yet, or none this key opens: nothing to keep.
-      return;
-    }
-    for (const ref of revoked ?? []) {
+  async #keepBackedUpRevocations(backup: CurrentBackup, recovery: RecoveryKey) {
+    const opened = await openRecoveryBackup(
+      recovery,
+      this.userId,
+      backup.sealed,
+    );
+    wipe(opened.account.signingKey.reveal());
+    if (opened.archive) wipe(opened.archive.key.reveal());
+    for (const ref of opened.revoked ?? []) {
       const device = revokedDeviceOf(ref);
       if (device) this.trust.addRevocation(device);
     }
@@ -1009,7 +1097,9 @@ export class ChatEngine {
 
   /**
    * The 60 digits both contacts compare (ADR-0010 §3), for the other
-   * participant of a conversation, as this device settled them. While the
+   * participant of a conversation, as this device settled them; for anyone
+   * else null, and nothing more is sent in it (`#shows`); undefined until
+   * they are settled. While the
    * contact's key has changed and the user has not accepted it, the code
    * is the new key's, the one accepting would trust; until then nothing
    * is sent in the conversation.
@@ -1017,10 +1107,12 @@ export class ChatEngine {
   async securityCode(
     conversationId: string,
     userId: string,
-  ): Promise<SecurityCode | undefined> {
-    const { participants } = await this.#record(conversationId);
-    if (userId === this.userId || !participants.includes(userId)) {
-      return undefined;
+  ): Promise<SecurityCode | null | undefined> {
+    if (userId === this.userId) return undefined;
+    if (!(await this.#shows(conversationId, [userId]))) {
+      return (await this.#record(conversationId)).participants.length === 0
+        ? undefined
+        : null;
     }
     const proposed = this.#keyChanges.get(userId);
     const key = proposed ?? this.trust.accountKey(userId);
@@ -1036,6 +1128,32 @@ export class ChatEngine {
   }
 
   // Conversations on this device
+
+  /**
+   * Whether the accounts a page shows a conversation with are the ones its
+   * group is between (ADR-0010 §3): the server says both, and the group is
+   * what a message is encrypted to. Once this device has settled them, a
+   * page that shows anyone else marks the conversation, and nothing more
+   * is sent in it. Before that, nothing is decided.
+   */
+  async #shows(id: string, userIds: readonly string[]): Promise<boolean> {
+    const record = await this.#record(id);
+    if (record.participants.length === 0) return false;
+    const others = record.participants.filter((u) => u !== this.userId);
+    const shown = new Set(userIds);
+    if (
+      shown.size === others.length &&
+      others.every((userId) => shown.has(userId))
+    ) {
+      return true;
+    }
+    if (record.problem !== "other_person") {
+      record.problem = "other_person";
+      await this.store.putJson(records.conversation(id), record);
+      this.#changed();
+    }
+    return false;
+  }
 
   #policy(record: ConversationRecord) {
     return { participants: record.participants, trust: this.trust };
@@ -1071,12 +1189,23 @@ export class ChatEngine {
     return group;
   }
 
+  /**
+   * The group's state and the record that says how far it has come, in one
+   * write: an interruption never leaves a record behind its group.
+   */
   async #saveGroup(id: string, group: Conversation) {
     this.#groups.set(id, group);
     const record = await this.#record(id);
     record.epoch = Number(group.epoch);
-    await putSecret(this.store, records.group(id), await group.export());
-    await this.store.putJson(records.conversation(id), record);
+    const state = (await group.export()).reveal();
+    try {
+      await this.store.putAll([
+        [records.group(id), new Uint8Array(state)],
+        [records.conversation(id), utf8(JSON.stringify(record))],
+      ]);
+    } finally {
+      wipe(state);
+    }
   }
 
   async #dropGroup(id: string) {
@@ -1084,13 +1213,20 @@ export class ChatEngine {
     await this.store.delete(records.group(id));
   }
 
-  /** What this device knows of a conversation, for its page. */
-  async status(id: string): Promise<{
+  /**
+   * What this device knows of a conversation, for its page, which says
+   * whom it `shows` the conversation is with (`#shows`).
+   */
+  async status(
+    id: string,
+    shows: readonly string[],
+  ): Promise<{
     joined: boolean;
     /** No one else's device is in the group yet: nothing can reach them. */
     alone: boolean;
     problem: ConversationProblem | null;
   }> {
+    await this.#shows(id, shows);
     const record = await this.#record(id);
     const group = await this.#group(id);
     return {
@@ -1404,11 +1540,9 @@ export class ChatEngine {
       if (group.groupId !== groupIdOf(id, generation)) {
         throw new Error("welcome for another group");
       }
-      const known =
-        generation === record.generation
-          ? (record.epoch ?? Number((await this.#group(id))?.epoch ?? -1))
-          : -1;
-      if (Number(group.epoch) <= known) return;
+      if (Number(group.epoch) <= (await this.#knownEpoch(id, generation))) {
+        return;
+      }
       Object.assign(record, {
         generation,
         // A last-resort package's keys may be in other groups too.
@@ -1428,6 +1562,18 @@ export class ChatEngine {
         stored.filter((entry) => entry !== used),
       );
     }
+  }
+
+  /**
+   * The newest epoch this device has had in the generation: the record's,
+   * or the stored group's if that is newer (a record from before both were
+   * written together may lag behind). -1 for a generation it has not had.
+   */
+  async #knownEpoch(id: string, generation: number): Promise<number> {
+    const record = await this.#record(id);
+    if (generation !== record.generation) return -1;
+    const stored = Number((await this.#group(id))?.epoch ?? -1);
+    return Math.max(record.epoch ?? -1, stored);
   }
 
   // Changing the group
@@ -1468,8 +1614,11 @@ export class ChatEngine {
     if (!conversation.open) return;
     await this.#applyDirectory(id, directory);
     const record = await this.#record(id);
-    // A group this device fell out of step with cannot be repaired here.
-    if (record.problem === "out_of_sync") return;
+    // A group this device fell out of step with cannot be repaired here,
+    // and one with someone else than the page shows is left as it is.
+    if (record.problem === "out_of_sync" || record.problem === "other_person") {
+      return;
+    }
     let group = await this.#group(id);
 
     if (group && record.generation !== conversation.generation) {
@@ -1721,7 +1870,11 @@ export class ChatEngine {
    * other person has not turned chat on yet), since a device added later
    * can never read it, and while the group is not settled (`#mayEncrypt`).
    */
-  async send(id: string, text: string): Promise<boolean> {
+  async send(
+    id: string,
+    text: string,
+    to: readonly string[],
+  ): Promise<boolean> {
     const entry: HistoryEntry = {
       id: crypto.randomUUID(),
       senderUserId: this.userId,
@@ -1729,6 +1882,7 @@ export class ChatEngine {
       text,
       sentAt: null,
       unsent: true,
+      to: [...to],
     };
     await this.#exclusive(() => this.#remember(id, entry));
     return this.#exclusive(() => this.#deliver(id, entry));
@@ -1753,7 +1907,7 @@ export class ChatEngine {
       const group = await this.#group(id);
       if (!group) throw new ChatApiError("conflict");
       if (
-        !(await this.#mayEncrypt(id, group)) ||
+        !(await this.#mayEncrypt(id, group, entry)) ||
         !group.members().some((m) => m.accountId !== this.userId)
       ) {
         return false;
@@ -1783,14 +1937,21 @@ export class ChatEngine {
 
   /**
    * The one check before anything is encrypted in a conversation: the
-   * group is between the two accounts this device settled, every device in
+   * group is between the two accounts this device settled, the other one
+   * is whom the page showed the message was written to, every device in
    * it is one this device trusts (none revoked, none under a replaced
    * account key), no changed key waits for the user, no commit waits for
    * its answer, and the group is not out of step (ADR-0010 §3, §7).
    */
-  async #mayEncrypt(id: string, group: Conversation): Promise<boolean> {
+  async #mayEncrypt(
+    id: string,
+    group: Conversation,
+    entry: HistoryEntry,
+  ): Promise<boolean> {
     const record = await this.#record(id);
     return (
+      entry.to !== undefined &&
+      (await this.#shows(id, entry.to)) &&
       record.problem === null &&
       record.participants.length === 2 &&
       !record.participants.some((userId) => this.#keyChanges.has(userId)) &&

@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { chatLimits, currentChatNotice } from "@lanbort/contracts";
 import { sql } from "kysely";
 import { afterAll, describe, expect, it } from "vitest";
@@ -1449,6 +1449,11 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
   const keyA = bytes(16, 1);
   const keyB = bytes(16, 2);
   const backup = (byte: number) => bytes(64, byte);
+  /** What a device sends to replace the backup it read. */
+  const read = (byte: number) =>
+    createHash("sha256")
+      .update(Buffer.from(backup(byte), "base64"))
+      .digest("base64");
   const purge = () =>
     executeCommand(tick(), purgeExpiredChat, {
       actor: systemActor(chatRetentionProcess),
@@ -1485,6 +1490,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
       run(createChatRecoveryKey, newSession(alice.actor), {
         keyId: keyA,
         backup: backup(1),
+        replaces: null,
       }),
     ).rejects.toMatchObject(forbidden);
     // A backup archive is only for an account with a key.
@@ -1496,6 +1502,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
     await run(createChatRecoveryKey, alice.actor, {
       keyId: keyA,
       backup: backup(1),
+      replaces: null,
     });
     expect((await devices(alice.actor)).recovery).toMatchObject({
       createdAt: expect.any(String),
@@ -1519,6 +1526,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
       run(backUpChatHistory, alice.actor, {
         keyId: keyA,
         backup: backup(2),
+        replaces: read(1),
         archiveId: unfinished,
       }),
     ).rejects.toMatchObject(notFound);
@@ -1528,6 +1536,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
       run(backUpChatHistory, bob.actor, {
         keyId: keyA,
         backup: backup(2),
+        replaces: read(1),
         archiveId,
       }),
     ).rejects.toMatchObject(notFound);
@@ -1535,18 +1544,41 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
       run(backUpChatHistory, alice.actor, {
         keyId: keyB,
         backup: backup(2),
+        replaces: read(1),
         archiveId,
       }),
     ).rejects.toMatchObject(conflict);
     await run(backUpChatHistory, alice.actor, {
       keyId: keyA,
       backup: backup(2),
+      replaces: read(1),
       archiveId,
     });
     await expect(readBackup(alice.actor)).resolves.toEqual({
       keyId: keyA,
       backup: backup(2),
       archive: { archiveId, parts: 1 },
+    });
+    // Only the backup the device read is replaced: not one another device
+    // has backed up since, nor one it did not know was there.
+    await expect(
+      run(backUpChatHistory, alice.actor, {
+        keyId: keyA,
+        backup: backup(9),
+        archiveId,
+        replaces: read(1),
+      }),
+    ).rejects.toMatchObject(conflict);
+    await expect(
+      run(createChatRecoveryKey, alice.actor, {
+        keyId: keyB,
+        backup: backup(9),
+        replaces: null,
+      }),
+    ).rejects.toMatchObject(conflict);
+    await expect(readBackup(alice.actor)).resolves.toMatchObject({
+      keyId: keyA,
+      backup: backup(2),
     });
     // The unfinished one was replaced; the attached one outlives its expiry.
     expect(await archiveExists(unfinished)).toBe(false);
@@ -1566,6 +1598,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
     await run(backUpChatHistory, alice.actor, {
       keyId: keyA,
       backup: backup(3),
+      replaces: read(2),
       archiveId: newer,
     });
     expect(await archiveExists(archiveId)).toBe(false);
@@ -1575,6 +1608,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
     await run(createChatRecoveryKey, alice.actor, {
       keyId: keyB,
       backup: backup(4),
+      replaces: read(3),
     });
     expect(await archiveExists(newer)).toBe(false);
     const stale = await backupArchive(alice);
@@ -1582,6 +1616,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
       run(backUpChatHistory, alice.actor, {
         keyId: keyA,
         backup: backup(5),
+        replaces: read(4),
         archiveId: stale,
       }),
     ).rejects.toMatchObject(conflict);
@@ -1607,11 +1642,16 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
       certificate: laptopDevice.certificate,
       package: "c2VhbGVk",
     });
-    await run(createChatRecoveryKey, phone, { keyId: keyA, backup: backup(1) });
+    await run(createChatRecoveryKey, phone, {
+      keyId: keyA,
+      backup: backup(1),
+      replaces: null,
+    });
     const archiveId = await backupArchive(alice);
     await run(backUpChatHistory, phone, {
       keyId: keyA,
       backup: backup(2),
+      replaces: read(1),
       archiveId,
     });
 
@@ -1711,6 +1751,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
     await run(createChatRecoveryKey, alice.actor, {
       keyId: keyA,
       backup: backup(1),
+      replaces: null,
     });
     const account = testChatAccount(alice.actor.userId);
     await run(resetChatAccount, alice.actor, {
@@ -1723,6 +1764,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
     await run(createChatRecoveryKey, bob.actor, {
       keyId: keyA,
       backup: backup(1),
+      replaces: null,
     });
     await run(answerChatRecoveryPrompt, bob.actor, { prompt: "offer" });
     await run(deleteOwnAccount, bob.actor, {});
@@ -1758,6 +1800,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
     await run(createChatRecoveryKey, bob.actor, {
       keyId: keyA,
       backup: backup(1),
+      replaces: null,
     });
     expect((await devices(bob.actor)).recoveryReminder).toBe(false);
   });

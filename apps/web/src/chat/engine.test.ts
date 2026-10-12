@@ -11,6 +11,7 @@ import {
   FakeChatServer,
   fake,
   on,
+  storedJson,
   storedRecord,
 } from "./engine.fixtures";
 import {
@@ -95,8 +96,28 @@ async function link(from: TestDevice, moveHistory: boolean) {
 const maintain = (device: TestDevice, id: string) =>
   on(device, () => device.engine.maintain(id));
 const sync = (device: TestDevice) => on(device, () => device.engine.sync());
-const send = (device: TestDevice, id: string, text: string) =>
-  on(device, () => device.engine.send(id, text));
+/** Whom the conversation's page shows it is with, as the server says. */
+const shown = (device: TestDevice, id: string) =>
+  on(device, async () =>
+    (await server.api.conversation(id)).others.map((other) => other.userId),
+  );
+const send = async (device: TestDevice, id: string, text: string) => {
+  const to = await shown(device, id);
+  return on(device, () => device.engine.send(id, text, to));
+};
+/** The device's page is reloaded: the engine starts from its store. */
+async function reload(device: TestDevice): Promise<TestDevice> {
+  const loaded = await on(device, () => loadChat(device.userId));
+  if (loaded.setup !== "ready") throw new Error(loaded.setup);
+  return { ...device, engine: loaded.engine };
+}
+
+/** Makes a recovery key where no confirmation is needed; its code. */
+const createRecoveryKey = async (device: TestDevice) => {
+  const made = await on(device, () => device.engine.createRecoveryKey());
+  if (!("code" in made)) throw new Error("asked to drop backed-up history");
+  return made.code;
+};
 const texts = async (device: TestDevice, id: string) =>
   (await on(device, () => device.engine.history(id))).map((e) => e.text);
 
@@ -184,11 +205,56 @@ describe("the engine against a delivery service that may lie", () => {
       const withBob = await conversationBetween(alice, bob);
       await conversationBetween(alice, carol);
       expect(
-        await on(alice, () => alice.engine.securityCode(withBob, carol.userId)),
-      ).toBeUndefined();
-      expect(
         await on(alice, () => alice.engine.securityCode(withBob, bob.userId)),
       ).toMatchObject({ pending: false });
+      expect(
+        await on(alice, () => alice.engine.securityCode(withBob, carol.userId)),
+      ).toBeNull();
+    });
+  });
+
+  describe("whom the page shows the conversation is with", () => {
+    it("sends nothing when the page shows someone else than the group is with", async () => {
+      const alice = await startChat();
+      const bob = await startChat();
+      const carol = await startChat();
+      const id = await conversationBetween(alice, bob);
+      expect(await send(alice, id, "til Bob")).toBe(true);
+
+      // The server tells the page the conversation is with Carol; the
+      // group, and the directory, are still Bob's.
+      server.conversationFilter = (conversation) => ({
+        ...conversation,
+        others: conversation.others.map((other) => ({
+          ...other,
+          userId: carol.userId,
+        })),
+      });
+      const before = server.log.length;
+      expect(await send(alice, id, "til den som vises")).toBe(false);
+      await sync(alice);
+      expect(server.log.slice(before).map((e) => e.type)).not.toContain(
+        "application",
+      );
+
+      const status = await on(alice, async () =>
+        alice.engine.status(id, await shown(alice, id)),
+      );
+      expect(status.problem).toBe("other_person");
+      expect(
+        await on(alice, () => alice.engine.securityCode(id, carol.userId)),
+      ).toBeNull();
+
+      // Not even when the page shows Bob again: the conversation is marked,
+      // and its group is left as it is.
+      server.conversationFilter = null;
+      expect(await send(alice, id, "senere")).toBe(false);
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(Date.now() + chatTuning.rotateAfterMs + 60_000);
+      await maintain(alice, id);
+      await sync(alice);
+      vi.useRealTimers();
+      expect(server.log.slice(before)).toEqual([]);
     });
   });
 
@@ -199,7 +265,7 @@ describe("the engine against a delivery service that may lie", () => {
       const id = await conversationBetween(alice, bob);
       await send(alice, id, "før koblingen");
       await sync(bob);
-      await on(alice, () => alice.engine.createRecoveryKey());
+      await createRecoveryKey(alice);
       await on(alice, () => alice.engine.backUp());
       return { alice, bob, id };
     }
@@ -231,6 +297,35 @@ describe("the engine against a delivery service that may lie", () => {
       const linked = await link(alice, true);
       expect(linked.engine.hasRecoveryKey).toBe(true);
       expect(await texts(linked, id)).toEqual(["før koblingen"]);
+      // It holds the key, so a new key of its own asks nothing.
+      await createRecoveryKey(linked);
+    });
+
+    it("asks before a new key there ends the backed-up history", async () => {
+      const { alice, id } = await aliceWithBackup();
+      const linked = await link(alice, false);
+      const backup = () => on(alice, () => server.api.recoveryBackup());
+      const before = await backup();
+
+      const asked = await on(linked, () => linked.engine.createRecoveryKey());
+      if (!("dropsHistory" in asked)) throw new Error("not asked");
+      expect(await backup()).toEqual(before);
+      expect(alice.engine.hasRecoveryKey).toBe(true);
+
+      // The answer is for that backup: a newer one is asked about again.
+      await send(alice, id, "etter spørsmålet");
+      await on(alice, () => alice.engine.backUp());
+      const again = await on(linked, () =>
+        linked.engine.createRecoveryKey(asked.dropsHistory),
+      );
+      if (!("dropsHistory" in again)) throw new Error("not asked again");
+      expect(again.dropsHistory).not.toBe(asked.dropsHistory);
+
+      const made = await on(linked, () =>
+        linked.engine.createRecoveryKey(again.dropsHistory),
+      );
+      expect(made).toEqual({ code: expect.any(String) });
+      expect(linked.engine.hasRecoveryKey).toBe(true);
     });
   });
 
@@ -257,6 +352,43 @@ describe("the engine against a delivery service that may lie", () => {
       await send(alice, id, "etter gjentatt velkomst");
       await sync(bob);
       expect(await texts(bob, id)).toContain("etter gjentatt velkomst");
+    });
+  });
+
+  describe("a group state newer than its record", () => {
+    it("refuses a welcome to an epoch the stored group has passed", async () => {
+      const alice = await startChat();
+      const bob = await startChat();
+      server.lastResortOnly = true;
+      const id = await conversationBetween(alice, bob);
+      const [welcome] = server.welcomes.filter(
+        (w) => w.to === bob.engine.deviceId,
+      );
+      const name = `conversation:${id}`;
+
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(Date.now() + chatTuning.rotateAfterMs + 60_000);
+      await maintain(bob, id);
+      await sync(alice);
+      vi.useRealTimers();
+      await sync(bob);
+
+      // The record says less than the group, as if from before the welcome:
+      // a write of the one without the other, before they were written
+      // together, could leave that.
+      storedJson.set(bob, name, {
+        ...storedJson.get<object>(bob, name),
+        epoch: 0,
+      });
+      const reloaded = await reload(bob);
+
+      server.inject(bob.engine.deviceId, welcome!);
+      await sync(reloaded);
+      await send(alice, id, "etter avbrudd og gjentatt velkomst");
+      await sync(reloaded);
+      expect(await texts(reloaded, id)).toContain(
+        "etter avbrudd og gjentatt velkomst",
+      );
     });
   });
 
@@ -366,7 +498,7 @@ describe("the engine against a delivery service that may lie", () => {
       const alice1 = await startChat();
       const bob = await startChat();
       const id = await conversationBetween(alice1, bob);
-      const code = await on(alice1, () => alice1.engine.createRecoveryKey());
+      const code = await createRecoveryKey(alice1);
       await on(alice1, () => alice1.engine.backUp());
 
       // Restored elsewhere; the server keeps the old device in the group.
@@ -390,7 +522,7 @@ describe("the engine against a delivery service that may lie", () => {
       const bob2 = await link(bob1, false);
       const id = await conversationBetween(alice1, bob1);
       await sync(bob2);
-      await on(alice1, () => alice1.engine.createRecoveryKey());
+      await createRecoveryKey(alice1);
       const alice2 = await link(alice1, true);
 
       // Alice's first device learns that Bob's second was revoked and
@@ -409,6 +541,63 @@ describe("the engine against a delivery service that may lie", () => {
       expect(opened.revoked).toContain(
         JSON.stringify([bob1.userId, bob2.engine.deviceId]),
       );
+    });
+  });
+
+  describe("a backup that does not lose revocations", () => {
+    async function backedUp() {
+      const alice = await startChat();
+      await createRecoveryKey(alice);
+      await on(alice, () => alice.engine.backUp());
+      return alice;
+    }
+
+    it("does not replace a backup it cannot read", async () => {
+      const alice = await backedUp();
+      const before = server.recovery.get(alice.userId);
+
+      server.failBackupRead = "network";
+      await expect(on(alice, () => alice.engine.backUp())).rejects.toThrow();
+      server.failBackupRead = null;
+      expect(server.recovery.get(alice.userId)).toEqual(before);
+
+      // Nor one under its key that does not open (changed on the server).
+      const changed = {
+        ...before!,
+        backup: toBase64(crypto.getRandomValues(new Uint8Array(64))),
+      };
+      server.recovery.set(alice.userId, changed);
+      await expect(on(alice, () => alice.engine.backUp())).rejects.toThrow();
+      expect(server.recovery.get(alice.userId)).toEqual(changed);
+      expect(alice.engine.hasRecoveryKey).toBe(true);
+    });
+
+    it("keeps a revocation when another device backs up at the same time", async () => {
+      const alice1 = await startChat();
+      const bob1 = await startChat();
+      const bob2 = await link(bob1, false);
+      const id = await conversationBetween(alice1, bob1);
+      await sync(bob2);
+      await createRecoveryKey(alice1);
+      const alice2 = await link(alice1, true);
+
+      // Alice's first device learns that Bob's second was revoked, and
+      // backs up while her second, which has not heard of it, does too.
+      await on(bob1, () => bob1.engine.revokeDevice(bob2.engine.deviceId));
+      await maintain(alice1, id);
+      server.beforeBackUp = () => on(alice1, () => alice1.engine.backUp());
+      await on(alice2, () => alice2.engine.backUp());
+
+      const backup = await on(alice2, () => server.api.recoveryBackup());
+      const opened = await openRecoveryBackup(
+        importRecoveryKey(storedRecord(alice2, "recovery")!),
+        alice2.userId,
+        fromBase64(backup.backup),
+      );
+      expect(opened.revoked).toContain(
+        JSON.stringify([bob1.userId, bob2.engine.deviceId]),
+      );
+      expect(alice2.engine.hasRecoveryKey).toBe(true);
     });
   });
 

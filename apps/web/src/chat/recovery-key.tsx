@@ -111,6 +111,80 @@ function Offer({
   );
 }
 
+/**
+ * Before a key that ends a backup this device cannot open: its history
+ * goes with it, for good, so the user must say they know (ADR-0010 §8).
+ */
+function ConfirmDrop({
+  make,
+  cancel,
+}: {
+  make: () => Promise<void>;
+  cancel: () => void;
+}) {
+  const [understood, setUnderstood] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function run() {
+    setBusy(true);
+    setError(null);
+    try {
+      await make();
+    } catch (problem) {
+      setError(chatErrorMessage(problem));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className={`card ${styles.intro}`} aria-labelledby="gar-tapt">
+      <h2 id="gar-tapt">Meldingene i sikkerhetskopien går tapt</h2>
+      <p>
+        Sikkerhetskopien som finnes nå, ble laget på en annen enhet, og denne
+        enheten kan ikke åpne den. Lager du en ny nøkkel her, slettes den, med
+        meldingene i den. Meldinger denne enheten ikke har selv, er da borte for
+        godt.
+      </p>
+      <p className="quiet">
+        Vil du beholde dem, lag heller den nye nøkkelen på enheten der den gamle
+        ble laget, eller på en enhet som fikk med meldingene fra før da den ble
+        koblet til.
+      </p>
+      <div className="checkbox">
+        <input
+          id="recovery-drop"
+          type="checkbox"
+          checked={understood}
+          onChange={(event) => setUnderstood(event.target.checked)}
+        />
+        <label htmlFor="recovery-drop">
+          Jeg forstår at meldingene i sikkerhetskopien går tapt
+        </label>
+      </div>
+      <BusyButton
+        type="button"
+        className="button-primary"
+        busy={busy}
+        disabled={!understood}
+        onClick={() => void run()}
+      >
+        Lag ny nøkkel likevel
+      </BusyButton>
+      <button
+        type="button"
+        className="button-secondary"
+        disabled={busy}
+        onClick={cancel}
+      >
+        Avbryt
+      </button>
+      <ErrorText>{error}</ErrorText>
+    </section>
+  );
+}
+
 /** R2: the key, once, until the user says it is written down. */
 function ShowKey({ code, done }: { code: string; done: () => void }) {
   const [kept, setKept] = useState(false);
@@ -178,8 +252,9 @@ function ShowKey({ code, done }: { code: string; done: () => void }) {
 }
 
 /**
- * Makes the key and shows it once (R1–R2). `done` comes when the user has
- * written it down.
+ * Makes the key and shows it once (R1–R2), asking first if it would end
+ * backed-up history this device does not have. `done` comes when the user
+ * has written it down.
  */
 export function RecoveryKeyFlow({
   engine,
@@ -194,6 +269,17 @@ export function RecoveryKeyFlow({
   done: () => void;
 }) {
   const [code, setCode] = useState<string | null>(null);
+  const [dropping, setDropping] = useState<string | null>(null);
+
+  async function make(confirmed: string | null) {
+    const made = await engine.createRecoveryKey(confirmed);
+    if ("code" in made) {
+      setDropping(null);
+      setCode(made.code);
+    } else {
+      setDropping(made.dropsHistory);
+    }
+  }
 
   return code ? (
     <ShowKey
@@ -203,11 +289,13 @@ export function RecoveryKeyFlow({
         done();
       }}
     />
+  ) : dropping ? (
+    <ConfirmDrop make={() => make(dropping)} cancel={() => setDropping(null)} />
   ) : (
     <Offer
       replacing={replacing}
       alternative={alternative}
-      make={async () => setCode(await engine.createRecoveryKey())}
+      make={() => make(null)}
     />
   );
 }

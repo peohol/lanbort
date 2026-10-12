@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   answerChatRecoveryPromptSchema,
   backUpChatHistorySchema,
@@ -83,13 +84,33 @@ async function loadRecovery(
   return query.executeTakeFirst();
 }
 
+/**
+ * Refuses to replace a backup other than the one the device read, so a
+ * device never overwrites what another put in it since (revocations among
+ * it), nor a backup it did not know was there.
+ */
+function checkReplaces(
+  current: { backup: Uint8Array } | undefined,
+  replaces: string | null,
+) {
+  const read = current
+    ? replaces !== null &&
+      createHash("sha256")
+        .update(current.backup)
+        .digest()
+        .equals(fromBase64(replaces))
+    : replaces === null;
+  if (!read) conflict("The backup changed since it was read");
+}
+
 /** The backup archives no backup points to: an older one, or a stray. */
 const strayBackups = (db: Db, userId: string) =>
   unattachedArchives(db, userId).where("purpose", "=", "backup");
 
 /**
  * A new recovery key and its first backup, from one of the account's
- * devices. It replaces the earlier key, which stops working.
+ * devices. It replaces the earlier key, which stops working, and only the
+ * backup the device read (none, if there was none).
  */
 export const createChatRecoveryKey = defineCommand({
   name: "chat.create_recovery_key",
@@ -109,6 +130,10 @@ export const createChatRecoveryKey = defineCommand({
   },
   execute: async ({ tx, input, resource, now }) => {
     const device = resource.device!;
+    checkReplaces(
+      await loadRecovery(tx, device.userId, { lock: true }),
+      input.replaces,
+    );
     const row = {
       account_key_id: device.accountKeyId,
       key_id: fromBase64(input.keyId),
@@ -166,6 +191,7 @@ export const backUpChatHistory = defineCommand({
     ) {
       conflict("A newer recovery key replaced this one");
     }
+    checkReplaces(recovery, input.replaces);
 
     await tx
       .updateTable("app.chat_recovery_keys")
