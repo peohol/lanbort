@@ -538,7 +538,10 @@ describe("Finn: environments (WP-61, PS-ENV-001)", () => {
       expectedType: "closed",
       type: "hidden",
     });
-    await run(startEnvironmentWindDown, admin, { environmentId: windsDown });
+    await run(startEnvironmentWindDown, admin, {
+      environmentId: windsDown,
+      atOnce: true,
+    });
     expect(await environmentsFound(viewer, { q: name })).toEqual([]);
 
     await indexed();

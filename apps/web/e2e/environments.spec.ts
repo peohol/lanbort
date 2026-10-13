@@ -208,7 +208,12 @@ test("roles are taken on by accepting, and ownership is handed over (WP-22)", as
 
   // Another administrator cannot use the owner's powers.
   expect(
-    (await post(candidate.context, "/wind-down", { environmentId })).status(),
+    (
+      await post(candidate.context, "/wind-down", {
+        environmentId,
+        atOnce: false,
+      })
+    ).status(),
   ).toBe(403);
 
   // The owner signed in just now, which handing over requires.

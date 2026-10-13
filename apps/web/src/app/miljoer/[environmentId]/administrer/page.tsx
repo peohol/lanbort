@@ -63,6 +63,7 @@ export default async function EnvironmentAdministrationPage({
   }
 
   const environmentId = environment.id;
+  const windDownAtOnce = environment.continuity?.windDownAtOnce ?? false;
   const [tasks, memberships, roles, pending] = await Promise.all([
     pageQuery(listEnvironmentAdministrationTasks, { environmentId }),
     pageQueryOrNotFound(listMemberships, { environmentId }),
@@ -164,12 +165,11 @@ export default async function EnvironmentAdministrationPage({
             <ReauthenticatedAction
               label="Avvikle miljøet"
               title={`Avvikle ${environment.name}`}
-              consequences={windDownConsequences(
-                environment.continuity?.windDownAtOnce ?? false,
-              )}
+              consequences={windDownConsequences(windDownAtOnce)}
               confirmLabel={`Avvikle ${environment.name}`}
               path="/api/environments/wind-down"
-              body={{ environmentId }}
+              // What the owner confirms; the server refuses if it changed.
+              body={{ environmentId, atOnce: windDownAtOnce }}
               danger
             />
           </MoreActions>
