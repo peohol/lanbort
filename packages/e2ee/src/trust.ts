@@ -21,6 +21,21 @@ export interface TrustStore {
 const deviceKey = ({ accountId, deviceId }: DeviceRef) =>
   JSON.stringify([accountId, deviceId]);
 
+/** The device a snapshot's revocation names, or undefined if it names none. */
+export function revokedDeviceOf(ref: string): DeviceRef | undefined {
+  try {
+    const parsed: unknown = JSON.parse(ref);
+    return Array.isArray(parsed) &&
+      parsed.length === 2 &&
+      parsed.every((part) => typeof part === "string" && part.length > 0) &&
+      deviceKey({ accountId: parsed[0], deviceId: parsed[1] }) === ref
+      ? { accountId: parsed[0] as string, deviceId: parsed[1] as string }
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** What a memory trust store holds, for the device's storage. */
 export interface TrustSnapshot {
   accountKeys: Record<string, string>;

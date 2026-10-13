@@ -8,6 +8,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -32,7 +33,7 @@ import {
   Picture,
 } from "./chat-home";
 import { ChatIcon } from "./chat-icon";
-import { useEngineVersion } from "./chat-provider";
+import { useEngineVersion, useSecurityCode } from "./chat-provider";
 import { addedAt } from "./device-names";
 import { ReadyChat } from "./chat-setup";
 import { EncryptionLine } from "./encryption";
@@ -58,6 +59,8 @@ const problems: Record<ConversationProblem, string> = {
     "Denne enheten kunne ikke bli med i samtalen. Be den du skriver med om å åpne samtalen, så prøver vi igjen.",
   out_of_sync:
     "Denne enheten er kommet i utakt med samtalen og kan ikke lese nye meldinger her. Bruk en annen enhet, eller tilbakestill privat chat under Mine enheter.",
+  other_person:
+    "Samtalen er kryptert med en annen enn den som vises her. Ingenting sendes i den, og meldingene i den kan være fra en annen.",
 };
 
 const offlineText =
@@ -120,6 +123,8 @@ function KeyChanged({
   person: ChatConversation["others"][number];
 }) {
   const name = person.realName ?? "Tidligere bruker";
+  // The key whose code «Sammenlign» shows is the one accepted, no other.
+  const code = useSecurityCode(engine, conversationId, person.userId);
   return (
     <Notice
       tag="Sikkerhetskode endret"
@@ -137,8 +142,11 @@ function KeyChanged({
       <BusyButton
         type="button"
         className="button-primary"
-        busy={false}
-        onClick={() => void engine.acceptKeyChange(person.userId)}
+        busy={!code?.pending}
+        busyNote="henter koden …"
+        onClick={() =>
+          code?.pending && void engine.acceptKeyChange(person.userId, code.key)
+        }
       >
         Godta og fortsett
       </BusyButton>
@@ -393,11 +401,17 @@ function Conversation({
     });
   }, [engine, id]);
 
+  // Whom the page shows: the engine sends only if the group is with them.
+  const shows = useMemo(
+    () => info?.others.map((other) => other.userId),
+    [info],
+  );
+
   useEffect(() => {
     let current = true;
     void Promise.all([
       engine.history(id),
-      engine.status(id),
+      shows && engine.status(id, shows),
       engine.seen(id),
     ]).then(([entries, state, seen]) => {
       if (!current) return;
@@ -413,7 +427,7 @@ function Conversation({
     return () => {
       current = false;
     };
-  }, [engine, id, version]);
+  }, [engine, id, version, shows]);
 
   // Opens at the newest message; new ones keep the reader there if they
   // were already, or offer the way down instead of moving them.
@@ -450,7 +464,7 @@ function Conversation({
   async function send(message: string) {
     setError(null);
     try {
-      const sent = await engine.send(id, message);
+      const sent = await engine.send(id, message, shows ?? []);
       announce(
         sent
           ? "Meldingen er sendt."
@@ -479,7 +493,10 @@ function Conversation({
     missesEarlier(linkedAt, info.startedAt, history)
       ? linkedAt
       : null;
-  const canWrite = info?.open === true && status?.joined === true;
+  const canWrite =
+    info?.open === true &&
+    status?.joined === true &&
+    status.problem !== "other_person";
 
   return (
     <>

@@ -15,6 +15,7 @@ import { Intro } from "./intro";
 import type { ChatEngine } from "./engine";
 import { chatErrorMessage } from "./messages";
 import { Points } from "./points";
+import { Notice } from "./notice";
 
 /**
  * The recovery key (ADR-0010 §8, PS-COM-019): offered once right after
@@ -111,10 +112,102 @@ function Offer({
   );
 }
 
-/** R2: the key, once, until the user says it is written down. */
-function ShowKey({ code, done }: { code: string; done: () => void }) {
+/**
+ * Before a key that ends a backup this device cannot open: its history
+ * goes with it, for good, so the user must say they know (ADR-0010 §8).
+ * Each backup is confirmed on its own: the flow shows a fresh one when the
+ * backup changed after the user said they knew.
+ */
+function ConfirmDrop({
+  make,
+  cancel,
+  changed,
+}: {
+  make: () => Promise<void>;
+  cancel: () => void;
+  /** The backup changed after the user confirmed: they confirm again. */
+  changed: boolean;
+}) {
+  const [understood, setUnderstood] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function run() {
+    setBusy(true);
+    setError(null);
+    try {
+      await make();
+    } catch (problem) {
+      setError(chatErrorMessage(problem));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className={`card ${styles.intro}`} aria-labelledby="gar-tapt">
+      <h2 id="gar-tapt">Meldingene i sikkerhetskopien går tapt</h2>
+      {changed && (
+        <Notice tag="Endret" tone="warning" role="alert">
+          <p>
+            Sikkerhetskopien ble endret på en annen enhet mens du laget
+            nøkkelen. Les gjennom og bekreft på nytt.
+          </p>
+        </Notice>
+      )}
+      <p>
+        Sikkerhetskopien som finnes nå, ble laget på en annen enhet, og denne
+        enheten kan ikke åpne den. Lager du en ny nøkkel her, slettes den, med
+        meldingene i den. Meldinger denne enheten ikke har selv, er da borte for
+        godt.
+      </p>
+      <p className="quiet">
+        Vil du beholde dem, lag heller den nye nøkkelen på enheten der den gamle
+        ble laget, eller på en enhet som fikk med meldingene fra før da den ble
+        koblet til.
+      </p>
+      <div className="checkbox">
+        <input
+          id="recovery-drop"
+          type="checkbox"
+          checked={understood}
+          onChange={(event) => setUnderstood(event.target.checked)}
+        />
+        <label htmlFor="recovery-drop">
+          Jeg forstår at meldingene i sikkerhetskopien går tapt
+        </label>
+      </div>
+      <BusyButton
+        type="button"
+        className="button-primary"
+        busy={busy}
+        disabled={!understood}
+        onClick={() => void run()}
+      >
+        Lag ny nøkkel likevel
+      </BusyButton>
+      <button
+        type="button"
+        className="button-secondary"
+        disabled={busy}
+        onClick={cancel}
+      >
+        Avbryt
+      </button>
+      <ErrorText>{error}</ErrorText>
+    </section>
+  );
+}
+
+/**
+ * R2: the key, once, until the user says it is written down. Only then is
+ * it put to use, so a key in use is always one the user has kept.
+ */
+function ShowKey({ code, done }: { code: string; done: () => Promise<void> }) {
   const [kept, setKept] = useState(false);
   const [copied, setCopied] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const groups = groupRecoveryKey(code);
 
   async function copy() {
@@ -126,12 +219,26 @@ function ShowKey({ code, done }: { code: string; done: () => void }) {
     }
   }
 
+  async function finish() {
+    setBusy(true);
+    setError(null);
+    try {
+      await done();
+    } catch (problem) {
+      setError(
+        `${chatErrorMessage(problem)} Nøkkelen er kanskje ikke tatt i bruk ennå. Ta vare på den og prøv igjen.`,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <section className={`card ${styles.intro}`} aria-labelledby="ta-vare">
       <h2 id="ta-vare">Ta vare på nøkkelen</h2>
       <p className="quiet">
         Skriv den ned eller lagre den i en passordbehandler. Den vises ikke
-        igjen.
+        igjen, og den tas i bruk først når du har krysset av og trykket Ferdig.
       </p>
       <p
         className={styles.code}
@@ -165,21 +272,24 @@ function ShowKey({ code, done }: { code: string; done: () => void }) {
           Jeg har skrevet ned eller lagret nøkkelen
         </label>
       </div>
-      <button
+      <BusyButton
         type="button"
         className="button-primary"
+        busy={busy}
         disabled={!kept}
-        onClick={done}
+        onClick={() => void finish()}
       >
         Ferdig
-      </button>
+      </BusyButton>
+      <ErrorText>{error}</ErrorText>
     </section>
   );
 }
 
 /**
- * Makes the key and shows it once (R1–R2). `done` comes when the user has
- * written it down.
+ * Makes the key and shows it once (R1–R2), asking first if it would end
+ * backed-up history this device does not have. `done` comes once the key
+ * the user wrote down is in use.
  */
 export function RecoveryKeyFlow({
   engine,
@@ -193,21 +303,62 @@ export function RecoveryKeyFlow({
   alternative?: Alternative;
   done: () => void;
 }) {
-  const [code, setCode] = useState<string | null>(null);
+  /** The key made and its code, shown once; only it is put to use. */
+  const [shown, setShown] = useState<{ code: string; keyId: string } | null>(
+    null,
+  );
+  /** The backup the user agreed to end before the code was shown. */
+  const [agreed, setAgreed] = useState<string | null>(null);
+  const [dropping, setDropping] = useState<{
+    backup: string;
+    changed: boolean;
+  } | null>(null);
 
-  return code ? (
-    <ShowKey
-      code={code}
-      done={() => {
-        setCode(null);
-        done();
+  async function make(confirmed: string | null) {
+    const made = await engine.createRecoveryKey(confirmed);
+    if ("code" in made) {
+      setDropping(null);
+      setAgreed(confirmed);
+      setShown(made);
+    } else {
+      // A confirmation holds only for the backup it was given for.
+      setDropping({ backup: made.dropsHistory, changed: confirmed !== null });
+    }
+  }
+
+  /** The user has kept the code shown: its key is put to use. */
+  async function use(keyId: string, confirmed: string | null) {
+    const used = await engine.activateRecoveryKey(keyId, confirmed);
+    if ("active" in used) {
+      setDropping(null);
+      setShown(null);
+      done();
+    } else {
+      // The backup changed since the code was shown.
+      setAgreed(null);
+      setDropping({ backup: used.dropsHistory, changed: true });
+    }
+  }
+
+  return dropping ? (
+    <ConfirmDrop
+      key={dropping.backup}
+      changed={dropping.changed}
+      make={() =>
+        shown ? use(shown.keyId, dropping.backup) : make(dropping.backup)
+      }
+      cancel={() => {
+        setDropping(null);
+        setShown(null);
       }}
     />
+  ) : shown ? (
+    <ShowKey code={shown.code} done={() => use(shown.keyId, agreed)} />
   ) : (
     <Offer
       replacing={replacing}
       alternative={alternative}
-      make={async () => setCode(await engine.createRecoveryKey())}
+      make={() => make(null)}
     />
   );
 }

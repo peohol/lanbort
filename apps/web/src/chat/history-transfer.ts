@@ -141,6 +141,34 @@ export function mergeHistory(
 }
 
 /**
+ * Two copies of the conversations as one: each message once, as
+ * `mergeHistory` keeps it, and each read as far as `own` says, or else as
+ * far as `other` does.
+ */
+export function mergeConversations(
+  own: readonly ConversationHistory[],
+  other: readonly ConversationHistory[],
+): ConversationHistory[] {
+  const merged = new Map(
+    own.map((conversation) => [conversation.id, conversation]),
+  );
+  for (const conversation of other) {
+    const known = merged.get(conversation.id);
+    merged.set(
+      conversation.id,
+      known
+        ? {
+            id: known.id,
+            history: mergeHistory(known.history, conversation.history),
+            seen: known.seen ?? conversation.seen,
+          }
+        : conversation,
+    );
+  }
+  return [...merged.values()];
+}
+
+/**
  * The history with a received message added, unless one with its id is
  * already there. The id comes from the sender, who must not be able to
  * replace a message, theirs or anyone else's.
@@ -191,6 +219,10 @@ export async function receiveHistory(
   }
   return openArchive(archive.key.reveal(), parts);
 }
+
+/** The archive is no longer on the server: expired, or replaced. */
+export const archiveGone = (error: unknown) =>
+  error instanceof ChatApiError && error.code === "not_found";
 
 /**
  * Whether trying again cannot help: the archive is gone or expired, or it

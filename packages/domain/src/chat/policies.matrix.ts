@@ -275,7 +275,7 @@ export const chatMatrices = [
   ownAction(putChatArchivePartPolicy, true),
   ownAction(readChatArchivePartPolicy, true),
   ownAction(deleteChatArchivePolicy, true, true),
-  sessionAction(createChatRecoveryKeyPolicy, false),
+  ownAction(createChatRecoveryKeyPolicy, true),
   ownAction(backUpChatHistoryPolicy, true),
   recoveryAction(readChatRecoveryBackupPolicy),
   recoveryAction(restoreChatAccountPolicy),

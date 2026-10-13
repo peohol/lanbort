@@ -294,10 +294,25 @@ const recoveryKeyId = base64Bytes(16, 16);
 /** The account key and archive key under the key, with nonce and tag. */
 const recoveryBackup = base64Bytes(chatLimits.recoveryBackupBytes, 29);
 
-/** A new recovery key's first backup; the earlier key stops working. */
+/**
+ * The SHA-256 of the backup the device read before it replaced it: one
+ * that has changed since is not replaced, so what another device put in
+ * it is not lost.
+ */
+const replacedBackup = base64Bytes(32, 32);
+
+/**
+ * A new recovery key's first backup; the earlier key stops working. It
+ * points to a complete archive of the history the earlier backup and the
+ * device held, so none is lost while the key changes.
+ */
 export const createChatRecoveryKeySchema = z.strictObject({
   keyId: recoveryKeyId,
   backup: recoveryBackup,
+  /** Null: there is no history to keep yet. */
+  archiveId: z.uuid().nullable(),
+  /** Null: there was no backup. */
+  replaces: replacedBackup.nullable(),
 });
 
 /** A newer backup under the same key, pointing to a complete archive. */
@@ -305,7 +320,11 @@ export const backUpChatHistorySchema = z.strictObject({
   keyId: recoveryKeyId,
   backup: recoveryBackup,
   archiveId: z.uuid(),
+  replaces: replacedBackup,
 });
+
+export type CreateChatRecoveryKey = z.infer<typeof createChatRecoveryKeySchema>;
+export type BackUpChatHistory = z.infer<typeof backUpChatHistorySchema>;
 
 /** What a device without chat needs to restore it with the key. */
 export const chatRecoveryBackupSchema = z.strictObject({

@@ -2,9 +2,11 @@ import { chatLimits } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import {
   MAX_PINNED_ACCOUNTS,
+  MAX_REVOKED_DEVICES,
   RECOVERY_KEY_LENGTH,
   Secret,
   approveLink,
+  carriedTrust,
   createAccountKey,
   createRecoveryKey,
   exportRecoveryKey,
@@ -103,28 +105,50 @@ describe("recovery key", () => {
     expect(opened.recovery?.backupKey.reveal()).toEqual(key.backupKey.reveal());
   });
 
-  it("carries the pinned contact keys, at most a package's worth", async () => {
-    const alice = await createAccountKey("account-alice");
+  it("carries the pinned contact keys and revoked devices, at most a package's worth", async () => {
+    const alice = await createAccountKey(
+      "00000000-0000-4000-8000-a11ce0000000",
+    );
     const { key } = await createRecoveryKey();
+    const id = (i: number) =>
+      `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`;
     const pinned = Object.fromEntries(
       Array.from({ length: MAX_PINNED_ACCOUNTS }, (_, i) => [
-        `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
+        id(i),
         toBase64(new Uint8Array(32).fill(i % 256)),
       ]),
     );
+    const revoked = Array.from({ length: MAX_REVOKED_DEVICES }, (_, i) =>
+      JSON.stringify([id(i), id(100_000 + i)]),
+    );
 
-    const backup = await sealRecoveryBackup(key, { account: alice, pinned });
+    const backup = await sealRecoveryBackup(key, {
+      account: alice,
+      pinned,
+      revoked,
+    });
     expect(backup.length).toBeLessThanOrEqual(chatLimits.recoveryBackupBytes);
     const restored = await openRecoveryBackup(key, alice.accountId, backup);
     expect(restored.pinned).toEqual(pinned);
+    expect(restored.revoked).toEqual(revoked);
 
     const link = await startLink();
     const { sealed } = await approveLink(link.keys, link.code, {
       account: alice,
       pinned,
+      revoked,
     });
     expect(sealed.length).toBeLessThanOrEqual(chatLimits.linkPackageBytes);
-    expect((await link.open(sealed)).pinned).toEqual(pinned);
+    const opened = await link.open(sealed);
+    expect(opened.pinned).toEqual(pinned);
+    expect(opened.revoked).toEqual(revoked);
+
+    await expect(
+      sealRecoveryBackup(key, {
+        account: alice,
+        revoked: [...revoked, JSON.stringify([id(0), id(1)])],
+      }),
+    ).rejects.toThrow("Invalid revoked devices");
 
     await expect(
       sealRecoveryBackup(key, {
@@ -132,5 +156,35 @@ describe("recovery key", () => {
         pinned: { ...pinned, extra: toBase64(new Uint8Array(32)) },
       }),
     ).rejects.toThrow("Invalid pinned account keys");
+  });
+
+  it("carries the accounts the user writes with first when it has pinned too many", () => {
+    const self = "account-self";
+    const key = (i: number) => toBase64(new Uint8Array(32).fill(i % 256));
+    const accountKeys = Object.fromEntries(
+      Array.from({ length: MAX_PINNED_ACCOUNTS + 500 }, (_, i) => [
+        `account-${i}`,
+        key(i),
+      ]),
+    );
+    accountKeys[self] = key(7);
+    const friend = `account-${MAX_PINNED_ACCOUNTS + 499}`;
+    const revoked = [
+      ...Array.from({ length: MAX_REVOKED_DEVICES + 50 }, (_, i) =>
+        JSON.stringify([`account-${MAX_PINNED_ACCOUNTS + 1}`, `device-${i}`]),
+      ),
+      JSON.stringify([friend, "friend-phone"]),
+      JSON.stringify([self, "own-phone"]),
+    ];
+
+    const carried = carriedTrust({ accountKeys, revoked }, self, [friend]);
+    expect(Object.keys(carried.pinned)).toHaveLength(MAX_PINNED_ACCOUNTS);
+    expect(carried.pinned[friend]).toBe(accountKeys[friend]);
+    expect(carried.pinned[self]).toBeUndefined();
+    expect(carried.revoked.slice(0, 2)).toEqual([
+      JSON.stringify([self, "own-phone"]),
+      JSON.stringify([friend, "friend-phone"]),
+    ]);
+    expect(carried.revoked.length).toBeLessThanOrEqual(MAX_REVOKED_DEVICES);
   });
 });

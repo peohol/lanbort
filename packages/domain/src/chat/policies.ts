@@ -203,13 +203,10 @@ export const deleteChatArchivePolicy = definePolicy<OwnChatResource, void>({
  * restores with it. Only the key opens the backup, and only the account
  * key in it can sign the restore, so the server holds nothing to guess.
  */
-export const createChatRecoveryKeyPolicy = definePolicy<
-  ChatSessionResource,
-  void
->({
+export const createChatRecoveryKeyPolicy = definePolicy<OwnChatResource, void>({
   action: "chat.create_recovery_key",
   actor: [requireActiveAccount],
-  resource: [sessionDevice],
+  resource: [sessionDevice, ownResource],
 });
 
 export const backUpChatHistoryPolicy = definePolicy<OwnChatResource, void>({

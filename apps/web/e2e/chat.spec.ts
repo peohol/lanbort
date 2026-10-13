@@ -456,6 +456,152 @@ test("the recovery key brings chat and its backed-up messages back when every de
   }
 });
 
+test("a new key is used only once its code is kept, and asks again for each changed backup it ends (ADR-0010 §8)", async ({
+  browser,
+}) => {
+  test.setTimeout(240_000);
+  const phone = await person(browser, "Mona Lie");
+  await turnOnChat(phone.page);
+  const makeKey = async (page: Page) => {
+    await page.goto("/samtaler/enheter/gjenopprettingsnokkel");
+    await page
+      .getByRole("button", { name: "Lag gjenopprettingsnøkkel" })
+      .click();
+  };
+  /** The user says the shown key is kept: only then is it used. */
+  const keep = async (page: Page) => {
+    await expect(page.getByLabel(/^Gjenopprettingsnøkkel: /)).toBeVisible();
+    await page.getByLabel("Jeg har skrevet ned eller lagret nøkkelen").check();
+    await page.getByRole("button", { name: "Ferdig" }).click();
+    await expect(
+      page.getByText("Gjenopprettingsnøkkelen er laget."),
+    ).toBeVisible();
+  };
+  const backup = async () =>
+    (await phone.context.request.get("/api/chat/recovery")).json();
+  await makeKey(phone.page);
+  await keep(phone.page);
+  await expect(async () => {
+    expect((await backup()).archive).not.toBeNull();
+  }).toPass({ timeout: 20_000 });
+
+  // A laptop linked with new messages only cannot open that backup.
+  const laptop = await device(browser);
+  await signInThroughApi(laptop.context.request, phone.email);
+  await laptop.page.goto("/samtaler/koble");
+  const code = (await laptop.page.locator("p.link-code").textContent())!;
+  await phone.page.goto("/samtaler/enheter/koble?kode");
+  await phone.page.getByLabel("Kode fra den nye enheten").fill(code);
+  await phone.page.getByRole("button", { name: "Fortsett" }).click();
+  await phone.page.getByRole("button", { name: "Godkjenn enheten" }).click();
+  await expect(
+    laptop.page.getByRole("heading", { name: "Dine samtaler" }),
+  ).toBeVisible({ timeout: 20_000 });
+
+  // Making a key there asks first, and the user confirms.
+  await makeKey(laptop.page);
+  const confirmation = laptop.page.getByRole("region", {
+    name: "Meldingene i sikkerhetskopien går tapt",
+  });
+  const understood = confirmation.getByLabel(
+    "Jeg forstår at meldingene i sikkerhetskopien går tapt",
+  );
+  const anyway = confirmation.getByRole("button", {
+    name: "Lag ny nøkkel likevel",
+  });
+  await expect(anyway).toBeDisabled();
+  await understood.check();
+  await expect(anyway).toBeEnabled();
+  expect(await axeViolations(laptop.page)).toEqual([]);
+
+  // Meanwhile the phone makes a new key. The backup stays as it is while
+  // the code is shown, and changes once the user says it is kept.
+  const before = (await backup()).backup;
+  await makeKey(phone.page);
+  await expect(phone.page.getByLabel(/^Gjenopprettingsnøkkel: /)).toBeVisible();
+  expect((await backup()).backup).toBe(before);
+  await keep(phone.page);
+  expect((await backup()).backup).not.toBe(before);
+
+  // The earlier confirmation does not hold for it: asked again, unticked.
+  await anyway.click();
+  await expect(understood).not.toBeChecked();
+  await expect(anyway).toBeDisabled();
+  await expect(
+    confirmation.getByText(
+      "Sikkerhetskopien ble endret på en annen enhet mens du laget nøkkelen.",
+      { exact: false },
+    ),
+  ).toBeVisible();
+  expect(await axeViolations(laptop.page)).toEqual([]);
+  await understood.check();
+  await anyway.click();
+  await keep(laptop.page);
+
+  // The first key looks for a backup to replace and finds none.
+  expect(
+    unexpected(phone.problems).filter(
+      (problem) => !problem.includes("404 (Not Found)"),
+    ),
+  ).toEqual([]);
+  expect(unexpected(laptop.problems)).toEqual([]);
+  for (const someone of [phone, laptop]) await someone.context.close();
+});
+
+test("a first key the server took though its answer was lost is put to use after a reload (ADR-0010 §8)", async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const phone = await person(browser, "Siri Dahl");
+  await turnOnChat(phone.page);
+  const backup = async () =>
+    (await phone.context.request.get("/api/chat/recovery")).json();
+
+  // The server takes the key, but its answer never arrives.
+  await phone.page.route("**/api/chat/recovery", async (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
+    await route.fetch();
+    await route.abort("failed");
+  });
+  await phone.page.goto("/samtaler/enheter/gjenopprettingsnokkel");
+  await phone.page
+    .getByRole("button", { name: "Lag gjenopprettingsnøkkel" })
+    .click();
+  await expect(phone.page.getByLabel(/^Gjenopprettingsnøkkel: /)).toBeVisible();
+  await phone.page
+    .getByLabel("Jeg har skrevet ned eller lagret nøkkelen")
+    .check();
+  await phone.page.getByRole("button", { name: "Ferdig" }).click();
+  await expect(
+    phone.page.getByText("Nøkkelen er kanskje ikke tatt i bruk ennå.", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await phone.page.unrouteAll();
+  expect((await backup()).archive).toBeNull();
+
+  // Reloaded, the device finds its key in use and backs up under it,
+  // with nothing asked of the user.
+  await phone.page.goto("/samtaler");
+  await expect(async () => {
+    expect((await backup()).archive).not.toBeNull();
+  }).toPass({ timeout: 20_000 });
+  await phone.page.goto("/samtaler/enheter");
+  await expect(phone.page.getByText("Lag en ny nøkkel")).toBeVisible();
+  await expect(
+    phone.page.getByRole("heading", { name: "Ingen gjenopprettingsnøkkel" }),
+  ).toHaveCount(0);
+
+  // The lost answer and the first key's search for a backup to replace.
+  expect(
+    unexpected(phone.problems).filter(
+      (problem) =>
+        !/404 \(Not Found\)|ERR_FAILED|Failed to fetch/.test(problem),
+    ),
+  ).toEqual([]);
+  await phone.context.close();
+});
+
 test("signing out on a device with chat says what it loses, then revokes it and deletes its chat (ADR-0010 §7)", async ({
   browser,
 }) => {

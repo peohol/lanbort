@@ -246,6 +246,17 @@ export interface PendingCommit {
   commit: Uint8Array;
   /** For the added devices, sent only after the commit is accepted. */
   welcome?: Uint8Array;
+  /**
+   * The commit replaces this device's own keys in the group (an update
+   * path): a rotation or a removal does, a commit that only adds does not.
+   */
+  rotates: boolean;
+  /**
+   * The group state once the server has accepted the commit, for the
+   * device's encrypted storage, so an accepted commit outlives a reload
+   * (`Conversation.restore`).
+   */
+  state(): Secret<Uint8Array>;
   accept(): void;
   discard(): void;
 }
@@ -556,6 +567,11 @@ export class Conversation {
     };
     return {
       commit: encodeMlsMessage(result.commit),
+      // As ts-mls decides whether a commit needs an update path.
+      rotates:
+        proposals.length === 0 ||
+        proposals.some((p) => p.proposalType !== "add"),
+      state: () => new Secret(encodeGroupState(result.newState)),
       ...(result.welcome && {
         welcome: encodeMlsMessage({
           version: "mls10",

@@ -93,6 +93,10 @@ async function openDatabase(name: string): Promise<IDBDatabase> {
 export interface ChatStore {
   get(name: string): Promise<Uint8Array<ArrayBuffer> | undefined>;
   put(name: string, value: Uint8Array<ArrayBuffer>): Promise<void>;
+  /** Writes several records together: all of them, or none. */
+  putAll(
+    entries: [name: string, value: Uint8Array<ArrayBuffer>][],
+  ): Promise<void>;
   getJson<T>(name: string): Promise<T | undefined>;
   putJson(name: string, value: unknown): Promise<void>;
   delete(name: string): Promise<void>;
@@ -163,10 +167,18 @@ export async function openChatStore(userId: string): Promise<ChatStore> {
       )) as SealedRecord | undefined;
       return sealed && openRecord(storageKey, recordName, sealed);
     },
-    async put(recordName, value) {
-      const sealed = await sealRecord(storageKey, recordName, value);
+    put: (recordName, value) => store.putAll([[recordName, value]]),
+    async putAll(entries) {
+      // Sealed first: the transaction would end while waiting for them.
+      const sealed = await Promise.all(
+        entries.map(([recordName, value]) =>
+          sealRecord(storageKey, recordName, value),
+        ),
+      );
       const tx = db.transaction(records, "readwrite");
-      tx.objectStore(records).put(sealed, recordName);
+      entries.forEach(([recordName], index) =>
+        tx.objectStore(records).put(sealed[index], recordName),
+      );
       await finished(tx);
     },
     async getJson<T>(recordName: string) {
