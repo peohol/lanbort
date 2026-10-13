@@ -228,19 +228,33 @@ export const objectApprovalConsequences = (required: boolean): Consequences =>
 /** PS-ENV-006: what changed requirements mean for current members. */
 export const requirementsChangeNote = `Medlemmer som må svare på et nytt krav, har ${requirementTransitionDays} dager på seg. Den som ikke svarer innen fristen, blir passiv. Et krav du fjerner, gjelder ikke lenger for noen.`;
 
-export const windDownConsequences: Consequences = {
+/**
+ * PS-ENV-012: what winding down does. When the owner is the only member, it
+ * is final at once (`windDownAtOnce` from the domain); otherwise the owner
+ * may cancel it for a while.
+ */
+export const windDownConsequences = (atOnce: boolean): Consequences => ({
   gone: [
     "Miljøet tar ikke imot nye medlemmer, nye ting eller nye lån.",
-    `Når angrefristen på ${windDownCancellationDays} dager er ute, avsluttes publiseringer, søknader og invitasjoner.`,
+    ...(atOnce
+      ? [
+          "Publiseringer, søknader og invitasjoner avsluttes med en gang.",
+          "Avviklingen er endelig og kan ikke angres.",
+        ]
+      : [
+          `Når angrefristen på ${windDownCancellationDays} dager er ute, avsluttes publiseringer, søknader og invitasjoner.`,
+        ]),
   ],
   stays: [
     "Lån som allerede er avtalt, fortsetter.",
     "Historikk og saker bevares.",
   ],
   affects: [
-    `Alle medlemmene merker det med en gang. Du kan angre i ${windDownCancellationDays} dager.`,
+    atOnce
+      ? "Du er eneste medlem, så ingen andre merker noe."
+      : `Alle medlemmene merker det med en gang. Du kan angre i ${windDownCancellationDays} dager.`,
   ],
-};
+});
 
 /**
  * The administration's own pages (UX-JRN-012, UX-IA-020): «Administrer

@@ -128,6 +128,7 @@ describe("what an environment asks of its member", () => {
         continuity: {
           administrationAvailable: true,
           mayResign: false,
+          windDownAtOnce: false,
           ownershipVacancy: { claimDeadline: due, claimedByYou: false },
           windDown: null,
         },
@@ -149,6 +150,7 @@ describe("what an environment asks of its member", () => {
         continuity: {
           administrationAvailable: true,
           mayResign: false,
+          windDownAtOnce: false,
           ownershipVacancy: { claimDeadline: due, claimedByYou: true },
           windDown: null,
         },

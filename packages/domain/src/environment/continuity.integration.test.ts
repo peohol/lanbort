@@ -583,6 +583,7 @@ describe("winding down (PS-ENV-012)", () => {
   it("becomes final after 7 days and closes the processes that waited", async () => {
     const owner = await user();
     const environmentId = await environment(owner, { type: "closed" });
+    await member(environmentId, owner);
     const applicant = await user();
     const invited = await user();
     const outsider = await user();
@@ -651,6 +652,78 @@ describe("winding down (PS-ENV-012)", () => {
         "environment.wind_down_finalized",
       ]),
     );
+  });
+
+  it("is final at once when the owner is the only member", async () => {
+    const owner = await user();
+    const environmentId = await environment(owner, { type: "closed" });
+    const other = await member(environmentId, owner);
+    const applicant = await user();
+    await output(joinEnvironment, applicant, { environmentId, answers: [] });
+
+    // Another member, active or passive, keeps the cancellation period.
+    expect((await read(owner, environmentId)).continuity).toMatchObject({
+      windDownAtOnce: false,
+    });
+    const otherMembership = db
+      .updateTable("app.environment_memberships")
+      .where("environment_id", "=", environmentId)
+      .where("user_id", "=", other.userId);
+    await otherMembership
+      .set({
+        state: "passive",
+        passive_reason: "requirements_not_met",
+        passive_since: clock,
+      })
+      .execute();
+    expect((await read(owner, environmentId)).continuity).toMatchObject({
+      windDownAtOnce: false,
+    });
+
+    // Pending applicants are not members; nor is anyone who left.
+    await otherMembership
+      .set({ state: "active", passive_reason: null, passive_since: null })
+      .execute();
+    await output(leaveEnvironment, other, { environmentId });
+    expect((await read(owner, environmentId)).continuity).toMatchObject({
+      windDownAtOnce: true,
+    });
+    // Nobody else learns whether the owner is alone.
+    expect((await read(applicant, environmentId)).continuity).toMatchObject({
+      windDownAtOnce: false,
+    });
+
+    const { finalAt } = await output(startEnvironmentWindDown, owner, {
+      environmentId,
+    });
+    expect(finalAt).toBe(clock.toISOString());
+    expect(await read(owner, environmentId)).toMatchObject({
+      state: "winding_down",
+      membership: { state: "active" },
+      continuity: {
+        windDownAtOnce: false,
+        windDown: { reason: "voluntary", finalAt, cancellable: false },
+      },
+    });
+    await expect(
+      run(cancelEnvironmentWindDown, owner, { environmentId }),
+    ).rejects.toMatchObject({ code: "conflict" });
+    expect(
+      await db
+        .selectFrom("app.environment_memberships")
+        .select(["state", "end_reason"])
+        .where("environment_id", "=", environmentId)
+        .where("user_id", "=", applicant.userId)
+        .executeTakeFirstOrThrow(),
+    ).toEqual({ state: "ended", end_reason: "environment_wound_down" });
+    expect(
+      (await environmentEvents(environmentId)).filter((event) =>
+        event.startsWith("environment.wind_down"),
+      ),
+    ).toEqual([
+      "environment.wind_down_started",
+      "environment.wind_down_finalized",
+    ]);
   });
 
   it("is started once when a request is retried", async () => {

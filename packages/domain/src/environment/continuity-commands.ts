@@ -122,7 +122,8 @@ export const withdrawOwnershipClaim = defineCommand({
 /**
  * PS-ENV-012: the owner winds the environment down. From now on it takes no
  * new members and starts nothing new; existing loans and history continue.
- * The owner may cancel within 7 days, so nothing is ended before then.
+ * The owner may cancel within 7 days, so nothing is ended before then; an
+ * owner who is the only member winds it down for good at once.
  */
 export const startEnvironmentWindDown = defineCommand({
   name: "environment.start_wind_down",

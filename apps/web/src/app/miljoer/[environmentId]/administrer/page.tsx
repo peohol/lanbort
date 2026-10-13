@@ -164,7 +164,9 @@ export default async function EnvironmentAdministrationPage({
             <ReauthenticatedAction
               label="Avvikle miljøet"
               title={`Avvikle ${environment.name}`}
-              consequences={windDownConsequences}
+              consequences={windDownConsequences(
+                environment.continuity?.windDownAtOnce ?? false,
+              )}
               confirmLabel={`Avvikle ${environment.name}`}
               path="/api/environments/wind-down"
               body={{ environmentId }}
@@ -259,11 +261,11 @@ function Overview({
 
     return (
       <StatusCard
-        status={
+        status={`Miljøet ${windDown.cancellable ? "avvikles" : "er avviklet"}${
           windDown.reason === "ownerless"
-            ? "Miljøet avvikles fordi ingen overtok eierskapet"
-            : "Miljøet avvikles"
-        }
+            ? " fordi ingen overtok eierskapet"
+            : ""
+        }`}
         tone="warning"
         when={
           windDown.cancellable

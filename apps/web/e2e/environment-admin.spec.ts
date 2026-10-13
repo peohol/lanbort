@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { readEmailCode } from "@lanbort/auth/testing";
 import { expect, test } from "@playwright/test";
 import {
   accountId,
@@ -492,5 +493,51 @@ test("an administrator invites someone from a shared environment from that perso
   }
 
   await Promise.all([per.close(), stranger.close()]);
+  expect(problems).toEqual([]);
+});
+
+/**
+ * PS-ENV-012: an owner who is the only member winds the environment down
+ * for good at once. The consequence view says so before the code is asked
+ * for, and there is nothing to cancel afterwards.
+ */
+test("an owner who is the only member winds the environment down at once", async ({
+  page,
+}) => {
+  const problems = collectBrowserProblems(page);
+  const email = await registerThroughApi(page.request, undefined, "Eva Eier");
+  const name = `Hytta ${uniqueWord()}`;
+  const { environmentId } = await (
+    await postCommand(page.request, "/api/environments", {
+      name,
+      type: "closed",
+    })
+  ).json();
+
+  await page.goto(`/miljoer/${environmentId}/administrer`);
+  await page.getByText("Flere valg").click();
+  await page.getByRole("button", { name: "Avvikle miljøet" }).click();
+  const dialog = page.getByRole("dialog", { name: `Avvikle ${name}` });
+  await expect(
+    dialog.getByText("Avviklingen er endelig og kan ikke angres."),
+  ).toBeVisible();
+  await expect(
+    dialog.getByText("Du er eneste medlem, så ingen andre merker noe."),
+  ).toBeVisible();
+  await expect(dialog.getByText(/angrefrist/)).toHaveCount(0);
+
+  // Local Auth allows one code per address per second (max_frequency).
+  await page.waitForTimeout(1100);
+  const since = new Date();
+  await dialog.getByRole("button", { name: "Send kode" }).click();
+  await dialog
+    .getByLabel("Kode fra e-posten")
+    .fill(await readEmailCode(email, { since }));
+  await dialog.getByRole("button", { name: `Avvikle ${name}` }).click();
+
+  await expect(page.getByText("Miljøet er avviklet")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Fortsett miljøet" }),
+  ).toHaveCount(0);
   expect(problems).toEqual([]);
 });

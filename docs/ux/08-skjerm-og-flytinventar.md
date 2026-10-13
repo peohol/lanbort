@@ -481,7 +481,7 @@ Miljøadministrator omfatter miljøets eier, som også er administrator, og admi
 #### Avvikling
 
 - **Oppgave:** avslutte miljøet kontrollert.
-- **Tilstander:** konsekvensvisning; under avvikling med 7 dagers angrefrist; avbrutt; endelig.
+- **Tilstander:** konsekvensvisning; under avvikling med 7 dagers angrefrist; avbrutt; endelig; endelig med en gang når eieren er eneste medlem.
 - **Ser / handler:** bare eieren starter og avbryter; medlemmene ser at miljøet avvikles.
 - **Regler:** UX-INT-007, PS-ENV-012, PS-ENV-013.
 - **Forløp:** avvik.

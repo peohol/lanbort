@@ -77,6 +77,8 @@ Når forhåndsgodkjenning er aktiv, har miljøpublisering minst statusene **vent
 
 Miljøet får egen tilstand **under avvikling**. Nye medlemmer og nye miljøbaserte lån stanses, publiseringer opphører kontrollert, eksisterende lån fortsetter, og nødvendig historikk/saker bevares. Frivillig avvikling har **7 dagers angrefrist** før den blir endelig.
 
+Er eieren miljøets eneste medlem (ingen andre har aktivt eller passivt medlemskap), blir avviklingen endelig med en gang, uten angrefrist. Eieren ser dette i konsekvensvisningen før bekreftelsen. Ventende søknader og invitasjoner er ikke medlemskap og avsluttes nøytralt med en gang, som ved annen endelig avvikling. (Produkteier, 13. oktober 2026.)
+
 ### PS-ENV-013 — Midlertidig eierløshet skal løses eller ende i avvikling
 **Forankring:** [Midlertidig eierløst miljø](../vision/03-miljoer.md)
 
