@@ -41,9 +41,7 @@ describe("finished environments in current lists (PS-ENV-012)", () => {
     const activeId = await kit.environment(owner, { name: "Aktivt" });
     const otherMember = await kit.member(finishedId, owner);
 
-    expect(await ownEnvironmentIds(owner)).toEqual([activeId, finishedId].sort(
-      (a, b) => (a === activeId ? -1 : b === activeId ? 1 : 0),
-    ));
+    expect(await ownEnvironmentIds(owner)).toEqual([activeId, finishedId]);
     expect(await ownEnvironmentIds(otherMember)).toContain(finishedId);
 
     // Keep an environment in current lists for the full cancellation period.
