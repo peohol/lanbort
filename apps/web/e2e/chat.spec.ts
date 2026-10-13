@@ -548,6 +548,60 @@ test("a new key is used only once its code is kept, and asks again for each chan
   for (const someone of [phone, laptop]) await someone.context.close();
 });
 
+test("a first key the server took though its answer was lost is put to use after a reload (ADR-0010 §8)", async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const phone = await person(browser, "Siri Dahl");
+  await turnOnChat(phone.page);
+  const backup = async () =>
+    (await phone.context.request.get("/api/chat/recovery")).json();
+
+  // The server takes the key, but its answer never arrives.
+  await phone.page.route("**/api/chat/recovery", async (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
+    await route.fetch();
+    await route.abort("failed");
+  });
+  await phone.page.goto("/samtaler/enheter/gjenopprettingsnokkel");
+  await phone.page
+    .getByRole("button", { name: "Lag gjenopprettingsnøkkel" })
+    .click();
+  await expect(phone.page.getByLabel(/^Gjenopprettingsnøkkel: /)).toBeVisible();
+  await phone.page
+    .getByLabel("Jeg har skrevet ned eller lagret nøkkelen")
+    .check();
+  await phone.page.getByRole("button", { name: "Ferdig" }).click();
+  await expect(
+    phone.page.getByText("Nøkkelen er kanskje ikke tatt i bruk ennå.", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await phone.page.unrouteAll();
+  expect((await backup()).archive).toBeNull();
+
+  // Reloaded, the device finds its key in use and backs up under it,
+  // with nothing asked of the user.
+  await phone.page.goto("/samtaler");
+  await expect(async () => {
+    expect((await backup()).archive).not.toBeNull();
+  }).toPass({ timeout: 20_000 });
+  await phone.page.goto("/samtaler/enheter");
+  await expect(phone.page.getByText("Lag en ny nøkkel")).toBeVisible();
+  await expect(
+    phone.page.getByRole("heading", { name: "Ingen gjenopprettingsnøkkel" }),
+  ).toHaveCount(0);
+
+  // The lost answer and the first key's search for a backup to replace.
+  expect(
+    unexpected(phone.problems).filter(
+      (problem) =>
+        !/404 \(Not Found\)|ERR_FAILED|Failed to fetch/.test(problem),
+    ),
+  ).toEqual([]);
+  await phone.context.close();
+});
+
 test("signing out on a device with chat says what it loses, then revokes it and deletes its chat (ADR-0010 §7)", async ({
   browser,
 }) => {

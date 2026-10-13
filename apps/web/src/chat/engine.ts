@@ -529,8 +529,10 @@ export class ChatEngine {
   #backup: BackupState | undefined;
   #backingUp: Promise<void> | null = null;
   #backupQueue: Promise<unknown> = Promise.resolve();
-  /** A new recovery key whose code is shown, not yet in use. */
-  #prepared: RecoveryKey | null = null;
+  /** New recovery keys whose codes are shown, by key ID, none yet in use. */
+  readonly #prepared = new Map<string, RecoveryKey>();
+  /** When pending keys were last settled while this device had no key. */
+  #settledAt = 0;
   /** The pinned keys and revocations as last saved: the backup carries them. */
   #trusted: string;
 
@@ -818,8 +820,9 @@ export class ChatEngine {
   /**
    * Step one of a new recovery key, which replaces the account's earlier
    * one: the key is made and its code shown, for the user to keep, once.
-   * Nothing changes on the server until `activateRecoveryKey`, after the
-   * user says the code is kept: a key in use is always one the user has.
+   * Nothing changes on the server until `activateRecoveryKey` with the
+   * answer's `keyId`, after the user says that code is kept: a key in use
+   * is always the one whose code the user has.
    *
    * A backup this device cannot open ends with the new key, and nothing is
    * made until the user agrees: the answer is what they agree to. Made
@@ -828,7 +831,7 @@ export class ChatEngine {
    */
   createRecoveryKey(
     dropping: string | null = null,
-  ): Promise<{ code: string } | { dropsHistory: string }> {
+  ): Promise<{ code: string; keyId: string } | { dropsHistory: string }> {
     return this.#backupStep(async () => {
       const current = await this.#exclusive(() => this.#readBackup());
       const opener = await this.#settleRecovery(current);
@@ -836,13 +839,15 @@ export class ChatEngine {
         return { dropsHistory: current.digest };
       }
       const { code, key } = await createRecoveryKey();
-      this.#prepared = key;
-      return { code };
+      const keyId = toBase64(key.id);
+      this.#prepared.set(keyId, key);
+      return { code, keyId };
     });
   }
 
   /**
-   * Step two: the key whose code the user kept replaces the earlier one.
+   * Step two: the key step one made with `keyId`, whose code the user
+   * kept, replaces the earlier one; never another key made meanwhile.
    * The new backup keeps the history the one there now holds, with this
    * device's, in the same step: none of it is ever without a backup. If
    * the backup changed since step one into one this device cannot open,
@@ -853,21 +858,21 @@ export class ChatEngine {
    * backup it would replace can always be opened here.
    */
   activateRecoveryKey(
+    keyId: string,
     dropping: string | null = null,
   ): Promise<{ active: true } | { dropsHistory: string }> {
     return this.#backupStep(async () => {
-      const key = this.#prepared;
-      if (!key) throw new Error("No recovery key is waiting to be used");
-      const id = toBase64(key.id);
+      const key = this.#prepared.get(keyId);
+      if (!key) throw new Error("No such recovery key is waiting to be used");
       const sentFor =
-        (await this.#pendingKeys()).find((p) => toBase64(p.key.id) === id)
+        (await this.#pendingKeys()).find((p) => toBase64(p.key.id) === keyId)
           ?.sentFor ?? [];
       for (let attempt = 1; ; attempt++) {
         const current = await this.#exclusive(() => this.#readBackup());
         const opener = await this.#settleRecovery(current);
         // An earlier try was taken.
         if (this.#holdsKeyOf(current, key)) {
-          this.#prepared = null;
+          this.#prepared.clear();
           return { active: true };
         }
         if (current && !opener && current.digest !== dropping) {
@@ -880,7 +885,7 @@ export class ChatEngine {
           sentFor.push(current?.digest ?? "");
           await this.#keepPending({ key, sentFor });
           await chatApi.createRecoveryKey({
-            keyId: id,
+            keyId,
             backup: toBase64(
               await sealRecoveryBackup(key, {
                 account: this.account,
@@ -900,7 +905,8 @@ export class ChatEngine {
           if (archive) wipe(archive.key.reveal());
         }
         await this.#useRecoveryKey(key);
-        this.#prepared = null;
+        // The other codes shown were never put to use, and now never are.
+        this.#prepared.clear();
         if (archive) {
           await this.#backedUp(startedAt);
         } else {
@@ -935,7 +941,7 @@ export class ChatEngine {
       if (this.#holdsKeyOf(current, key)) {
         await this.#useRecoveryKey(key);
       } else if (
-        key !== this.#prepared &&
+        !this.#prepared.has(toBase64(key.id)) &&
         !sentFor.includes(current?.digest ?? "")
       ) {
         await this.store.delete(records.recoveryPending(toBase64(key.id)));
@@ -960,11 +966,7 @@ export class ChatEngine {
         wipe(exported);
         // The one in memory, so the step that made it knows it.
         found.push({
-          key:
-            this.#prepared &&
-            toBase64(this.#prepared.id) === toBase64(imported.id)
-              ? this.#prepared
-              : imported,
+          key: this.#prepared.get(toBase64(imported.id)) ?? imported,
           sentFor,
         });
       } catch {
@@ -1152,9 +1154,19 @@ export class ChatEngine {
     }
   }
 
-  /** Backs up when the history has changed and the last backup is old. */
+  /**
+   * Backs up when the history has changed and the last backup is old.
+   * Without a key, a key sent without an answer may since have been
+   * taken: a backup settles it, and backs up under it if it was.
+   */
   async #backUpIfDue() {
-    if (!this.#recovery) return;
+    if (!this.#recovery) {
+      if (Date.now() - this.#settledAt >= chatTuning.backupEveryMs) {
+        this.#settledAt = Date.now();
+        await this.backUp();
+      }
+      return;
+    }
     const { changedAt, backedUpAt } = await this.#backupState();
     if (
       changedAt > backedUpAt &&

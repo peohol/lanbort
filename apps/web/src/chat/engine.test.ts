@@ -119,14 +119,23 @@ async function reload(device: TestDevice): Promise<TestDevice> {
 /** Step one of a new recovery key: its code, or what it would end. */
 const prepare = (device: TestDevice, dropping: string | null = null) =>
   on(device, () => device.engine.createRecoveryKey(dropping));
-/** Step two, once the user has kept the code: the key is put to use. */
-const activate = (device: TestDevice, dropping: string | null = null) =>
-  on(device, () => device.engine.activateRecoveryKey(dropping));
+/** The key whose code step one showed. */
+const shownKey = (
+  made: Awaited<ReturnType<ChatEngine["createRecoveryKey"]>>,
+) => {
+  if (!("code" in made)) throw new Error("asked to drop backed-up history");
+  return made;
+};
+/** Step two, once the user has kept the code: that key is put to use. */
+const activate = (
+  device: TestDevice,
+  made: { keyId: string },
+  dropping: string | null = null,
+) => on(device, () => device.engine.activateRecoveryKey(made.keyId, dropping));
 /** Makes a recovery key where no confirmation is needed; its code. */
 const createRecoveryKey = async (device: TestDevice) => {
-  const made = await prepare(device);
-  if (!("code" in made)) throw new Error("asked to drop backed-up history");
-  const activated = await activate(device);
+  const made = shownKey(await prepare(device));
+  const activated = await activate(device, made);
   if (!("active" in activated)) {
     throw new Error("asked to drop backed-up history");
   }
@@ -370,9 +379,14 @@ describe("the engine against a delivery service that may lie", () => {
       const made = await on(linked, () =>
         linked.engine.createRecoveryKey(again.dropsHistory),
       );
-      expect(made).toEqual({ code: expect.any(String) });
+      expect(made).toEqual({
+        code: expect.any(String),
+        keyId: expect.any(String),
+      });
       expect(linked.engine.hasRecoveryKey).toBe(false);
-      await expect(activate(linked, again.dropsHistory)).resolves.toEqual({
+      await expect(
+        activate(linked, shownKey(made), again.dropsHistory),
+      ).resolves.toEqual({
         active: true,
       });
       expect(linked.engine.hasRecoveryKey).toBe(true);
@@ -714,19 +728,17 @@ describe("the engine against a delivery service that may lie", () => {
     it("puts a new key to use only once the user has kept its code", async () => {
       const { alice2 } = await laggingDevice();
       const before = backupOf(alice2).keyId;
-      const made = await prepare(alice2);
-      expect("code" in made).toBe(true);
+      const made = shownKey(await prepare(alice2));
       expect(backupOf(alice2).keyId).toBe(before);
-      await activate(alice2);
+      await activate(alice2, made);
       expect(backupOf(alice2).keyId).not.toBe(before);
     });
 
     it("restores with the kept code when the answer was lost and the device is gone", async () => {
       const { alice2, id } = await laggingDevice();
-      const made = await prepare(alice2);
-      if (!("code" in made)) throw new Error("asked to drop history");
+      const made = shownKey(await prepare(alice2));
       server.loseNextRecoveryAnswer = true;
-      await expect(activate(alice2)).rejects.toThrow();
+      await expect(activate(alice2, made)).rejects.toThrow();
       expect(await restored(alice2.userId, made.code, id)).toEqual([
         "før",
         "etter",
@@ -735,10 +747,9 @@ describe("the engine against a delivery service that may lie", () => {
 
     it("keeps backing up under a key the server took though the answer was lost", async () => {
       const { alice2, bob, id } = await laggingDevice();
-      const made = await prepare(alice2);
-      if (!("code" in made)) throw new Error("asked to drop history");
+      const made = shownKey(await prepare(alice2));
       server.loseNextRecoveryAnswer = true;
-      await expect(activate(alice2)).rejects.toThrow();
+      await expect(activate(alice2, made)).rejects.toThrow();
       const again = await reload(alice2);
       await send(bob, id, "senere");
       await sync(again);
@@ -747,6 +758,71 @@ describe("the engine against a delivery service that may lie", () => {
       expect(await restored(again.userId, made.code, id)).toEqual([
         "før",
         "etter",
+        "senere",
+      ]);
+    });
+
+    it("puts to use only the key whose code was shown when two are made at once", async () => {
+      const { alice2, id } = await laggingDevice();
+      const [first, second] = (
+        await Promise.all([prepare(alice2), prepare(alice2)])
+      ).map(shownKey);
+      await activate(alice2, first!);
+      expect(await restored(alice2.userId, first!.code, id)).toEqual([
+        "før",
+        "etter",
+      ]);
+      await expect(restored(alice2.userId, second!.code, id)).rejects.toThrow(
+        "wrong key",
+      );
+      // The other code is no longer one that can be put to use.
+      await expect(activate(alice2, second!)).rejects.toThrow();
+      expect(backupOf(alice2).keyId).toBe(first!.keyId);
+    });
+
+    it("puts to use no key whose code it did not show", async () => {
+      const { alice2 } = await laggingDevice();
+      const before = backupOf(alice2).keyId;
+      shownKey(await prepare(alice2));
+      await expect(
+        activate(alice2, { keyId: toBase64(new Uint8Array(16)) }),
+      ).rejects.toThrow();
+      expect(backupOf(alice2).keyId).toBe(before);
+    });
+
+    it("settles a first key the server took though the answer was lost, once reloaded", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      const alice = await startChat();
+      const bob = await startChat();
+      const id = await conversationBetween(alice, bob);
+      await send(alice, id, "før");
+      await sync(bob);
+      const made = shownKey(await prepare(alice));
+      server.loseNextRecoveryAnswer = true;
+      await expect(activate(alice, made)).rejects.toThrow();
+      // The server took it.
+      expect(backupOf(alice).keyId).toBe(made.keyId);
+      expect(backupOf(alice).archiveId).toBeNull();
+
+      // The page is reloaded; the user does nothing.
+      const again = await reload(alice);
+      await sync(again);
+      await vi.waitFor(() => {
+        expect(again.engine.hasRecoveryKey).toBe(true);
+        expect(backupOf(again).archiveId).not.toBeNull();
+      });
+      expect(storedNames(again, "recovery-pending:")).toEqual([]);
+
+      // Later history is backed up when due, under the kept code.
+      await send(bob, id, "senere");
+      vi.setSystemTime(Date.now() + chatTuning.backupEveryMs);
+      const backedUp = backupOf(again).archiveId;
+      await sync(again);
+      await vi.waitFor(() =>
+        expect(backupOf(again).archiveId).not.toBe(backedUp),
+      );
+      expect(await restored(again.userId, made.code, id)).toEqual([
+        "før",
         "senere",
       ]);
     });
@@ -765,13 +841,12 @@ describe("the engine against a delivery service that may lie", () => {
 
     it("finishes when an earlier try of the same key is taken late", async () => {
       const { alice2, id } = await laggingDevice();
-      const made = await prepare(alice2);
-      if (!("code" in made)) throw new Error("asked to drop history");
+      const made = shownKey(await prepare(alice2));
       server.holdNextRecoveryKey = true;
-      await expect(activate(alice2)).rejects.toThrow();
+      await expect(activate(alice2, made)).rejects.toThrow();
       // The user tries again; the first try is taken after the backup is read.
       server.afterBackupRead = () => server.heldRecoveryKey!();
-      await expect(activate(alice2)).resolves.toEqual({ active: true });
+      await expect(activate(alice2, made)).resolves.toEqual({ active: true });
       expect(await restored(alice2.userId, made.code, id)).toEqual([
         "før",
         "etter",
@@ -870,7 +945,7 @@ describe("the engine against a delivery service that may lie", () => {
         ).rejects.toThrow();
         const made = await prepare(alice2);
         if ("code" in made) {
-          await expect(activate(alice2)).rejects.toThrow();
+          await expect(activate(alice2, made)).rejects.toThrow();
         }
         expect(server.recovery.get(alice2.userId)!.backup).toBe(sealed);
       });

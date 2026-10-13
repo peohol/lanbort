@@ -303,7 +303,10 @@ export function RecoveryKeyFlow({
   alternative?: Alternative;
   done: () => void;
 }) {
-  const [code, setCode] = useState<string | null>(null);
+  /** The key made and its code, shown once; only it is put to use. */
+  const [shown, setShown] = useState<{ code: string; keyId: string } | null>(
+    null,
+  );
   /** The backup the user agreed to end before the code was shown. */
   const [agreed, setAgreed] = useState<string | null>(null);
   const [dropping, setDropping] = useState<{
@@ -316,19 +319,19 @@ export function RecoveryKeyFlow({
     if ("code" in made) {
       setDropping(null);
       setAgreed(confirmed);
-      setCode(made.code);
+      setShown(made);
     } else {
       // A confirmation holds only for the backup it was given for.
       setDropping({ backup: made.dropsHistory, changed: confirmed !== null });
     }
   }
 
-  /** The user has kept the code: the key is put to use. */
-  async function use(confirmed: string | null) {
-    const used = await engine.activateRecoveryKey(confirmed);
+  /** The user has kept the code shown: its key is put to use. */
+  async function use(keyId: string, confirmed: string | null) {
+    const used = await engine.activateRecoveryKey(keyId, confirmed);
     if ("active" in used) {
       setDropping(null);
-      setCode(null);
+      setShown(null);
       done();
     } else {
       // The backup changed since the code was shown.
@@ -341,14 +344,16 @@ export function RecoveryKeyFlow({
     <ConfirmDrop
       key={dropping.backup}
       changed={dropping.changed}
-      make={() => (code ? use(dropping.backup) : make(dropping.backup))}
+      make={() =>
+        shown ? use(shown.keyId, dropping.backup) : make(dropping.backup)
+      }
       cancel={() => {
         setDropping(null);
-        setCode(null);
+        setShown(null);
       }}
     />
-  ) : code ? (
-    <ShowKey code={code} done={() => use(agreed)} />
+  ) : shown ? (
+    <ShowKey code={shown.code} done={() => use(shown.keyId, agreed)} />
   ) : (
     <Offer
       replacing={replacing}
