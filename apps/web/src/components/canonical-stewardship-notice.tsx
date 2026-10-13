@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { PageHeader } from "@/components/page-header";
 import { StatusCard } from "@/components/status-card";
 
