@@ -8,7 +8,6 @@ import { HeaderBoundary } from "@/components/header-boundary";
 import { NetworkStatus } from "@/components/network-status";
 import { restingNotice } from "@/presentation/account";
 import { themeAttribute } from "@/presentation/theme";
-import { serverEnv } from "@/server/env";
 import { getPageAccount, pageQuery } from "@/server/session";
 import { readTheme } from "@/server/theme";
 import "./globals.css";
@@ -38,7 +37,6 @@ export default async function RootLayout({
   }
 
   const account = await getPageAccount();
-  const appUrl = serverEnv().APP_URL;
   // An account that is not active keeps the frame: it still has loans,
   // cases and notifications to see to (PS-ADM-002).
   const signedIn =
@@ -50,11 +48,7 @@ export default async function RootLayout({
 
   return (
     // The chosen theme is on the page from the start, so it never flashes.
-    <html
-      lang="nb"
-      data-theme={themeAttribute(theme)}
-      data-passkey-origin={appUrl ? new URL(appUrl).origin : undefined}
-    >
+    <html lang="nb" data-theme={themeAttribute(theme)}>
       <body>
         <HeaderBoundary />
         <NetworkStatus />
