@@ -17,9 +17,7 @@ describe("passkey origin", () => {
         "https://lanbort.vercel.app/saker/123?vis=inngrep#bekreft",
         "https://www.xn--lnbort-iua.no",
       ),
-    ).toBe(
-      "https://www.xn--lnbort-iua.no/saker/123?vis=inngrep#bekreft",
-    );
+    ).toBe("https://www.xn--lnbort-iua.no/saker/123?vis=inngrep#bekreft");
   });
 
   it("does nothing when passkeys are not configured for the deployment", () => {
