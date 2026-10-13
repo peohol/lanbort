@@ -409,7 +409,9 @@ describe("backup/restore drill (WP-72, PS-NFR-014)", () => {
     results = await replayRestoreJournal(restored, journal);
     await reconcile(restored);
     restoreMs = Date.now() - started;
-  });
+    // Copies the whole shared test database twice, which grows with every
+    // local run, alongside every other integration file.
+  }, 120_000);
 
   it("re-applies every erasure and restriction made after the backup", () => {
     expect(results.filter((r) => r.outcome === "needs_handling")).toEqual([]);

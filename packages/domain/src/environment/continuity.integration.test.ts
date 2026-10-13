@@ -847,8 +847,15 @@ describe("temporary ownerlessness (PS-ENV-013–014)", () => {
       code: "not_found",
     });
 
+    // settle() is global and the clock has moved, so other files' vacancies
+    // may wind down too; count this environment's own wind-down instead.
     passDays(ownershipClaimDays);
-    expect(await settle()).toMatchObject({ woundDown: 1 });
+    await settle();
+    expect(
+      (await environmentEvents(environmentId)).filter(
+        (event) => event === "environment.wind_down_started",
+      ),
+    ).toHaveLength(1);
 
     expect(await read(second, environmentId)).toMatchObject({
       type: "hidden",

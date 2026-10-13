@@ -392,8 +392,11 @@ describe("loan requests", () => {
         target: request(requestId),
       },
     ]);
-    // Nor about the invitation, accepted before it was delivered.
-    expect(await told(coOwner)).toEqual([]);
+    // Another file's worker may deliver the invitation before it is
+    // accepted, so only what the co-owner is told about the request counts.
+    expect(
+      (await told(coOwner)).filter((item) => item.target.id === requestId),
+    ).toEqual([]);
     expect(await told(setup.borrower)).toEqual([]);
 
     await run(declineLoanRequest, setup.owner, { requestId });
@@ -720,7 +723,8 @@ describe("loan deadlines", () => {
       "loan.return_due",
       "loan.return_day_passed",
     ]);
-  });
+    // The deadline job reads every loan in the shared test database.
+  }, 30_000);
 
   it("only runs as the deadline job", async () => {
     await expect(
