@@ -452,6 +452,7 @@ const probes: Record<string, (ids: WorldIds) => object> = {
   }),
   "environment.start_wind_down": (ids) => ({
     environmentId: ids.environmentId,
+    atOnce: false,
   }),
   "environment.cancel_wind_down": (ids) => ({
     environmentId: ids.environmentId,

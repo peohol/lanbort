@@ -74,7 +74,10 @@ describe("inviting someone the administrator may see (PS-ENV-018)", () => {
     expect(await invitable(admin, person.userId)).toEqual(["Lukket"]);
 
     // An environment winding down takes no one new.
-    await run(startEnvironmentWindDown, admin, { environmentId: closed });
+    await run(startEnvironmentWindDown, admin, {
+      environmentId: closed,
+      atOnce: true,
+    });
     expect(await invitable(admin, person.userId)).toEqual([]);
   });
 

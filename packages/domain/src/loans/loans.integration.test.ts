@@ -348,7 +348,10 @@ describe("a request through an environment (PS-LOAN-001/004)", () => {
     await run(approvePublication, admin, { environmentId, publicationId });
     expect((await read(borrower, requestId)).status).toBe("requested");
 
-    await run(startEnvironmentWindDown, admin, { environmentId });
+    await run(startEnvironmentWindDown, admin, {
+      environmentId,
+      atOnce: false,
+    });
     expect((await read(borrower, requestId)).status).toBe("on_hold");
     expect((await stored(requestId)).status).toBe("requested");
   });

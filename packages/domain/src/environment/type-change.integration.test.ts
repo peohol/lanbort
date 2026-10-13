@@ -1021,7 +1021,10 @@ describe("proposals", () => {
     const environmentId = await environment(owner, "hidden");
     const proposalId = await proposeVote(owner, environmentId);
     await respond(owner, environmentId, proposalId, true);
-    await output(startEnvironmentWindDown, owner, { environmentId });
+    await output(startEnvironmentWindDown, owner, {
+      environmentId,
+      atOnce: true,
+    });
 
     // A winding-down environment starts nothing new.
     await expect(

@@ -223,6 +223,12 @@ export const environmentContinuitySchema = z.strictObject({
    * another administrator remains (PS-ENV-003), active or not.
    */
   mayResign: z.boolean(),
+  /**
+   * PS-ENV-012: the caller, the owner, is the only member, so winding down
+   * would be final at once, without a cancellation period. False for
+   * everyone else.
+   */
+  windDownAtOnce: z.boolean(),
   /** PS-ENV-013: the owner is gone; administrators may claim ownership. */
   ownershipVacancy: z
     .strictObject({

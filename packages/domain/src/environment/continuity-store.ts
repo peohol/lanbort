@@ -465,9 +465,32 @@ export async function closeVacancy(
 }
 
 /**
+ * PS-ENV-012: the owner is the environment's only member, so winding it down
+ * affects nobody else. Anyone else with an active or passive membership
+ * keeps the cancellation period; pending applications and invitations are
+ * not memberships yet and end neutrally either way. The database refuses a
+ * wind-down that is final at once otherwise.
+ */
+export async function isSoleMember(
+  db: Db,
+  environmentId: string,
+  userId: string,
+): Promise<boolean> {
+  const other = await db
+    .selectFrom("app.environment_memberships")
+    .select("id")
+    .where("environment_id", "=", environmentId)
+    .where("user_id", "<>", userId)
+    .where("state", "in", ["active", "passive"])
+    .executeTakeFirst();
+
+  return other === undefined;
+}
+
+/**
  * PS-ENV-012: the environment stops taking anything new. A voluntary winding
- * down can be cancelled until `finalAt`; an ownerless one has nobody who
- * could, so it is final and settled at once.
+ * down can be cancelled until `finalAt`, unless the owner is its only member;
+ * an ownerless one has nobody who could. Those are final and settled at once.
  */
 export async function startWindDown(
   db: Db,
@@ -477,8 +500,10 @@ export async function startWindDown(
   now: Date,
   events: EventRecorder,
 ): Promise<void> {
-  const finalAt =
-    reason === "voluntary" ? daysAfter(now, windDownCancellationDays) : now;
+  const atOnce =
+    startedByUserId === null ||
+    (await isSoleMember(db, environmentId, startedByUserId));
+  const finalAt = atOnce ? now : daysAfter(now, windDownCancellationDays);
 
   const { id } = await db
     .insertInto("app.environment_wind_downs")
@@ -501,7 +526,7 @@ export async function startWindDown(
     payload: { reason, finalAt: finalAt.toISOString() },
   });
 
-  if (reason === "ownerless") {
+  if (atOnce) {
     await settleWindDown(db, environmentId, id, now, events);
   }
 }

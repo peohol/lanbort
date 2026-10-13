@@ -77,7 +77,9 @@ export function Membership({
           step.kind === "transition"
             ? `Frist ${formatTime(step.deadline)}`
             : continuity?.windDown
-              ? `Miljøet avvikles ${formatTime(continuity.windDown.finalAt)}`
+              ? continuity.windDown.cancellable
+                ? `Miljøet avvikles ${formatTime(continuity.windDown.finalAt)}`
+                : "Miljøet er avviklet"
               : undefined
         }
         who={

@@ -23,6 +23,7 @@ import {
   type AdministratorRecord,
   administrators,
   findContinuity,
+  isSoleMember,
   mayResignAdministration,
   pendingRoleInvitations,
 } from "./continuity-store";
@@ -116,6 +117,7 @@ function presentContinuity(
   continuity: ContinuityRecord,
   admins: readonly AdministratorRecord[],
   claimedByYou: boolean,
+  windDownAtOnce: boolean,
   userId: string,
   now: Date,
 ): EnvironmentContinuity {
@@ -124,6 +126,7 @@ function presentContinuity(
   return {
     administrationAvailable: admins.some((admin) => admin.canAct),
     mayResign: mayResignAdministration(admins, userId),
+    windDownAtOnce,
     ownershipVacancy: vacancy
       ? { claimDeadline: vacancy.claimDeadline.toISOString(), claimedByYou }
       : null,
@@ -191,6 +194,12 @@ export const getEnvironment = defineQuery({
             record: await findContinuity(db, input.environmentId),
             admins: await administrators(db, input.environmentId, now),
             claimed: await hasOpenClaim(db, input.environmentId, userId),
+            // Only the owner may wind down, and only the owner learns
+            // whether anyone else is a member (passive ones stay unseen).
+            windDownAtOnce:
+              access.viewer.roles.includes("owner") &&
+              acceptsNewActivity(access.environment) &&
+              (await isSoleMember(db, input.environmentId, userId)),
             invitations: await pendingRoleInvitations(db, input.environmentId, {
               userId,
             }),
@@ -260,6 +269,7 @@ export const getEnvironment = defineQuery({
             continuity.record,
             continuity.admins,
             continuity.claimed,
+            continuity.windDownAtOnce,
             continuity.userId,
             now,
           )

@@ -804,7 +804,10 @@ describe("winding down (PS-ENV-012)", () => {
     const later = await create(anna);
     await publish(anna, objectId, environmentId);
 
-    await run(startEnvironmentWindDown, admin, { environmentId });
+    await run(startEnvironmentWindDown, admin, {
+      environmentId,
+      atOnce: false,
+    });
     await expect(publish(anna, later, environmentId)).rejects.toMatchObject(
       conflict,
     );

@@ -549,10 +549,11 @@ describe("winding down (PS-ENV-012)", () => {
     const newcomer = await user();
 
     await expect(
-      run(startEnvironmentWindDown, admin, { environmentId }),
+      run(startEnvironmentWindDown, admin, { environmentId, atOnce: false }),
     ).rejects.toMatchObject({ code: "forbidden" });
     const { finalAt } = await output(startEnvironmentWindDown, owner, {
       environmentId,
+      atOnce: false,
     });
     expect(new Date(finalAt).getTime() - clock.getTime()).toBe(
       windDownCancellationDays * 86_400_000,
@@ -569,7 +570,7 @@ describe("winding down (PS-ENV-012)", () => {
       run(joinEnvironment, newcomer, { environmentId, answers: [] }),
     ).rejects.toMatchObject({ code: "conflict" });
     await expect(
-      run(startEnvironmentWindDown, owner, { environmentId }),
+      run(startEnvironmentWindDown, owner, { environmentId, atOnce: false }),
     ).rejects.toMatchObject({ code: "conflict" });
     await expect(
       run(cancelEnvironmentWindDown, admin, { environmentId }),
@@ -583,6 +584,7 @@ describe("winding down (PS-ENV-012)", () => {
   it("becomes final after 7 days and closes the processes that waited", async () => {
     const owner = await user();
     const environmentId = await environment(owner, { type: "closed" });
+    await member(environmentId, owner);
     const applicant = await user();
     const invited = await user();
     const outsider = await user();
@@ -597,7 +599,10 @@ describe("winding down (PS-ENV-012)", () => {
       userId: invited.userId,
     });
 
-    await output(startEnvironmentWindDown, owner, { environmentId });
+    await output(startEnvironmentWindDown, owner, {
+      environmentId,
+      atOnce: false,
+    });
 
     // The waiting processes are on hold, not ended, while it can be cancelled.
     await expect(
@@ -653,14 +658,109 @@ describe("winding down (PS-ENV-012)", () => {
     );
   });
 
+  it("is final at once when the owner is the only member", async () => {
+    const owner = await user();
+    const environmentId = await environment(owner, { type: "closed" });
+    const other = await member(environmentId, owner);
+    const applicant = await user();
+    await output(joinEnvironment, applicant, { environmentId, answers: [] });
+
+    // Another member, active or passive, keeps the cancellation period.
+    expect((await read(owner, environmentId)).continuity).toMatchObject({
+      windDownAtOnce: false,
+    });
+    const otherMembership = db
+      .updateTable("app.environment_memberships")
+      .where("environment_id", "=", environmentId)
+      .where("user_id", "=", other.userId);
+    await otherMembership
+      .set({
+        state: "passive",
+        passive_reason: "requirements_not_met",
+        passive_since: clock,
+      })
+      .execute();
+    expect((await read(owner, environmentId)).continuity).toMatchObject({
+      windDownAtOnce: false,
+    });
+
+    // The command does only what the owner confirmed: not at once while
+    // someone else is a member, ...
+    await expect(
+      run(startEnvironmentWindDown, owner, { environmentId, atOnce: true }),
+    ).rejects.toMatchObject({ code: "conflict" });
+
+    // Pending applicants are not members; nor is anyone who left.
+    await otherMembership
+      .set({ state: "active", passive_reason: null, passive_since: null })
+      .execute();
+    await output(leaveEnvironment, other, { environmentId });
+    expect((await read(owner, environmentId)).continuity).toMatchObject({
+      windDownAtOnce: true,
+    });
+    // Nobody else learns whether the owner is alone.
+    expect((await read(applicant, environmentId)).continuity).toMatchObject({
+      windDownAtOnce: false,
+    });
+
+    // ... and not at once when the owner was shown a cancellation period
+    // before the last other member left.
+    await expect(
+      run(startEnvironmentWindDown, owner, { environmentId, atOnce: false }),
+    ).rejects.toMatchObject({ code: "conflict" });
+    expect((await read(owner, environmentId)).state).toBe("active");
+    const { finalAt } = await output(startEnvironmentWindDown, owner, {
+      environmentId,
+      atOnce: true,
+    });
+    expect(finalAt).toBe(clock.toISOString());
+    expect(await read(owner, environmentId)).toMatchObject({
+      state: "winding_down",
+      membership: { state: "active" },
+      continuity: {
+        windDownAtOnce: false,
+        windDown: { reason: "voluntary", finalAt, cancellable: false },
+      },
+    });
+    await expect(
+      run(cancelEnvironmentWindDown, owner, { environmentId }),
+    ).rejects.toMatchObject({ code: "conflict" });
+    expect(
+      await db
+        .selectFrom("app.environment_memberships")
+        .select(["state", "end_reason"])
+        .where("environment_id", "=", environmentId)
+        .where("user_id", "=", applicant.userId)
+        .executeTakeFirstOrThrow(),
+    ).toEqual({ state: "ended", end_reason: "environment_wound_down" });
+    expect(
+      (await environmentEvents(environmentId)).filter((event) =>
+        event.startsWith("environment.wind_down"),
+      ),
+    ).toEqual([
+      "environment.wind_down_started",
+      "environment.wind_down_finalized",
+    ]);
+  });
+
   it("is started once when a request is retried", async () => {
     const owner = await user();
     const environmentId = await environment(owner);
     const key = randomUUID();
 
     const [first, retry] = await Promise.all([
-      run(startEnvironmentWindDown, owner, { environmentId }, key),
-      run(startEnvironmentWindDown, owner, { environmentId }, key),
+      run(
+        startEnvironmentWindDown,
+        owner,
+        { environmentId, atOnce: true },
+        key,
+      ),
+      run(
+        startEnvironmentWindDown,
+        owner,
+        { environmentId, atOnce: true },
+        key,
+      ),
     ]);
 
     expect(first.output).toEqual(retry.output);
@@ -686,7 +786,7 @@ describe("temporary ownerlessness (PS-ENV-013–014)", () => {
     // Nobody holds the owner's powers in the meantime.
     for (const actor of [first, second]) {
       await expect(
-        run(startEnvironmentWindDown, actor, { environmentId }),
+        run(startEnvironmentWindDown, actor, { environmentId, atOnce: false }),
       ).rejects.toMatchObject({ code: "forbidden" });
     }
     await expect(

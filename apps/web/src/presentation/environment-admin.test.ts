@@ -16,6 +16,7 @@ import {
   typeChoices,
   waitingNames,
   waitingTasks,
+  windDownConsequences,
 } from "./environment-admin";
 import { administrationText } from "./home-tasks";
 
@@ -219,5 +220,18 @@ describe("who or what waits, in a short line", () => {
 
   it("counts also those the page did not list", () => {
     expect(waitingNames(["Sykkelhenger"], 4)).toBe("Sykkelhenger og 3 til");
+  });
+});
+
+describe("what winding down does (PS-ENV-012)", () => {
+  it("is final at once for an owner who is the only member", () => {
+    const alone = windDownConsequences(true);
+    const shared = windDownConsequences(false);
+
+    expect(alone.gone).toContain("Avviklingen er endelig og kan ikke angres.");
+    expect(JSON.stringify(alone)).not.toMatch(/angrefrist|angre i/);
+    expect(shared.gone?.join(" ")).toMatch(/angrefristen på 7 dager/);
+    expect(shared.affects?.join(" ")).toMatch(/Du kan angre i 7 dager/);
+    expect(alone.stays).toEqual(shared.stays);
   });
 });

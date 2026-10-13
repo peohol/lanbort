@@ -11,6 +11,7 @@ import {
   closeVacancy,
   findContinuity,
   grantRole,
+  isSoleMember,
   lapseInvitationsOf,
   revokeRoles,
   type RoleRevokeReason,
@@ -122,20 +123,29 @@ export const withdrawOwnershipClaim = defineCommand({
 /**
  * PS-ENV-012: the owner winds the environment down. From now on it takes no
  * new members and starts nothing new; existing loans and history continue.
- * The owner may cancel within 7 days, so nothing is ended before then.
+ * The owner may cancel within 7 days, so nothing is ended before then; an
+ * owner who is the only member winds it down for good at once. `atOnce` is
+ * what the owner was shown and confirmed (`continuity.windDownAtOnce`): if
+ * members came or went since, the command refuses rather than do something
+ * else than the owner agreed to.
  */
 export const startEnvironmentWindDown = defineCommand({
   name: "environment.start_wind_down",
-  input: environmentOnly,
+  input: z.strictObject({ ...environmentIdInput, atOnce: z.boolean() }),
   output: z.strictObject({ finalAt: z.iso.datetime() }),
   policy: startWindDownPolicy,
   idempotency: "required",
   load: loadLockedAccess,
-  execute: async ({ tx, actor, resource, events, now }) => {
+  execute: async ({ tx, actor, input, resource, events, now }) => {
     const environmentId = resource.environment.id;
 
     if (resource.environment.state !== "active") {
       conflict("The environment is already winding down");
+    }
+    if (
+      input.atOnce !== (await isSoleMember(tx, environmentId, userIdOf(actor)))
+    ) {
+      conflict("The members have changed since the owner confirmed");
     }
 
     await startWindDown(
