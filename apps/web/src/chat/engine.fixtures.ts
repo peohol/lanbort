@@ -131,6 +131,16 @@ interface DeviceRow extends ChatDevice {
   lastResort: string | null;
 }
 
+/** A history archive, with the life the real server gives it. */
+interface ArchiveRow {
+  userId: string;
+  deviceId: string;
+  purpose: "link" | "backup";
+  linkRequestId: string | null;
+  parts: (string | undefined)[];
+  expiresAt: number;
+}
+
 interface ConversationRow {
   id: string;
   participants: [string, string];
@@ -165,6 +175,8 @@ const fail = (code: Failure): never => {
 
 let clock = Date.parse("2026-10-01T10:00:00Z");
 const now = () => new Date((clock += 1000)).toISOString();
+/** chatRetention.archiveMs: an archive no backup points to, is gone after. */
+const archiveMs = 60 * 60_000;
 
 export class FakeChatServer {
   readonly accountKeys = new Map<string, string | null>();
@@ -172,10 +184,7 @@ export class FakeChatServer {
   readonly conversations = new Map<string, ConversationRow>();
   readonly inboxes = new Map<string, ChatInboxItem[]>();
   readonly links = new Map<string, LinkRow>();
-  readonly archives = new Map<
-    string,
-    { userId: string; parts: (string | undefined)[] }
-  >();
+  readonly archives = new Map<string, ArchiveRow>();
   readonly recovery = new Map<
     string,
     { keyId: string; backup: string; archiveId: string | null }
@@ -198,6 +207,8 @@ export class FakeChatServer {
   hideRevocations = false;
   /** Takes the next commit, then acts as if the answer was lost. */
   loseNextCommitAnswer = false;
+  /** Takes the next new recovery key, then acts as if the answer was lost. */
+  loseNextRecoveryAnswer = false;
   /** Overrides what the directory says, after the server built it. */
   directoryFilter: ((directory: ChatDirectory) => ChatDirectory) | null = null;
   /** Overrides what a conversation's page is told, likewise. */
@@ -208,6 +219,72 @@ export class FakeChatServer {
   beforeBackUp: (() => Promise<void>) | null = null;
   /** The backup cannot be read, for this reason. */
   failBackupRead: Failure | null = null;
+  /** No new archive can be made: the connection is lost. */
+  failArchives = false;
+
+  #complete = (archive: ArchiveRow) =>
+    archive.parts.every((part) => part !== undefined);
+
+  #attached = (archiveId: string) =>
+    [...this.recovery.values()].some((r) => r.archiveId === archiveId);
+
+  /** The caller's account's archive, still there and `usable`. */
+  #ownArchive(id: string, usable: (archive: ArchiveRow) => boolean) {
+    const archive = this.archives.get(id);
+    if (
+      !archive ||
+      archive.userId !== current().userId ||
+      (!this.#attached(id) && archive.expiresAt <= clock) ||
+      !usable(archive)
+    ) {
+      fail("not_found");
+    }
+    return archive!;
+  }
+
+  #dropArchives(drop: (id: string, archive: ArchiveRow) => boolean) {
+    for (const [id, archive] of this.archives) {
+      if (!this.#attached(id) && drop(id, archive)) this.archives.delete(id);
+    }
+  }
+
+  /**
+   * The backup now. As the real server does, the archive it pointed to
+   * goes, with the device's own unfinished ones; another device's stays
+   * until it is attached or expires.
+   */
+  #attach(
+    backup: { keyId: string; backup: string; archiveId: string | null },
+    deviceId: string,
+  ) {
+    const { userId } = current();
+    const previous = this.recovery.get(userId)?.archiveId ?? null;
+    this.recovery.set(userId, backup);
+    this.#dropBackups(userId, deviceId, previous);
+  }
+
+  #dropBackups(userId: string, deviceId: string, previous: string | null) {
+    this.#dropArchives(
+      (id, archive) =>
+        archive.userId === userId &&
+        archive.purpose === "backup" &&
+        (archive.deviceId === deviceId || id === previous),
+    );
+  }
+
+  /** A complete, live backup archive of the caller's, for a backup. */
+  #backupArchive(archiveId: string) {
+    this.#ownArchive(
+      archiveId,
+      (a) => a.purpose === "backup" && this.#complete(a),
+    );
+  }
+
+  /** Time passes: archives no backup points to expire. */
+  expireArchives() {
+    clock += archiveMs;
+    this.#dropArchives((_id, archive) => archive.expiresAt <= clock);
+  }
 
   /** Only the backup the caller read is replaced, as the real server does. */
   async #checkReplaces(replaces: string | null) {
@@ -453,45 +530,73 @@ export class FakeChatServer {
     declineLink: async () => ({}),
 
     createArchive: async (body) => {
+      if (this.failArchives) fail("network");
+      const device = this.#device();
+      const { userId } = current();
+      const linkRequestId = body.purpose === "link" ? body.linkRequestId : null;
+      if (body.purpose === "backup" && !this.recovery.has(userId)) {
+        fail("conflict");
+      }
+      if (linkRequestId === null) {
+        this.#dropBackups(userId, device.deviceId, null);
+      } else {
+        this.#dropArchives(
+          (_id, archive) => archive.linkRequestId === linkRequestId,
+        );
+      }
       const archiveId = crypto.randomUUID();
+      now();
       this.archives.set(archiveId, {
-        userId: current().userId,
+        userId,
+        deviceId: device.deviceId,
+        purpose: body.purpose,
+        linkRequestId,
         parts: Array.from({ length: body.partCount }, () => undefined),
+        expiresAt: clock + archiveMs,
       });
-      return { archiveId, expiresAt: now() };
+      return {
+        archiveId,
+        expiresAt: new Date(clock + archiveMs).toISOString(),
+      };
     },
     putArchivePart: async (id, part, data) => {
-      const archive = this.archives.get(id) ?? fail("not_found");
+      const archive = this.#ownArchive(id, (a) => !this.#complete(a));
       archive.parts[part] = data;
-      return { complete: archive.parts.every((p) => p !== undefined) };
+      return { complete: this.#complete(archive) };
     },
     archivePart: async (id, part) => {
-      const archive = this.archives.get(id);
-      if (!archive || archive.userId !== current().userId) fail("not_found");
-      return { data: archive!.parts[part] ?? fail("not_found") };
+      const archive = this.#ownArchive(id, (a) => this.#complete(a));
+      return { data: archive.parts[part] ?? fail("not_found") };
     },
     deleteArchive: async (id) => {
-      this.archives.delete(id);
+      this.#ownArchive(id, () => true);
+      if (!this.#attached(id)) this.archives.delete(id);
       return {};
     },
 
     acknowledgeNotice: async () => ({}),
 
-    createRecoveryKey: async ({ keyId, backup, replaces }) => {
-      this.#device();
+    createRecoveryKey: async ({ keyId, backup, archiveId, replaces }) => {
+      const device = this.#device();
+      if (archiveId !== null) this.#backupArchive(archiveId);
       await this.#checkReplaces(replaces);
-      this.recovery.set(current().userId, { keyId, backup, archiveId: null });
+      this.#attach({ keyId, backup, archiveId }, device.deviceId);
+      if (this.loseNextRecoveryAnswer) {
+        this.loseNextRecoveryAnswer = false;
+        fail("network");
+      }
       return {};
     },
     backUp: async ({ keyId, backup, archiveId, replaces }) => {
-      this.#device();
+      const device = this.#device();
       const before = this.beforeBackUp;
       this.beforeBackUp = null;
       await before?.();
+      this.#backupArchive(archiveId);
       const recovery = this.recovery.get(current().userId);
       if (!recovery || recovery.keyId !== keyId) fail("conflict");
       await this.#checkReplaces(replaces);
-      this.recovery.set(current().userId, { keyId, backup, archiveId });
+      this.#attach({ keyId, backup, archiveId }, device.deviceId);
       return {};
     },
     recoveryBackup: async () => {

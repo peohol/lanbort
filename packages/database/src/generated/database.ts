@@ -179,6 +179,10 @@ export interface AppChatArchiveParts {
 export interface AppChatArchives {
   completed_at: Timestamp | null;
   created_at: Generated<Timestamp>;
+  /**
+   * The device that started the archive; its next archive replaces its own unfinished one only.
+   */
+  device_id: string | null;
   expires_at: Timestamp;
   id: Generated<string>;
   link_request_id: string | null;

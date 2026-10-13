@@ -301,10 +301,16 @@ const recoveryBackup = base64Bytes(chatLimits.recoveryBackupBytes, 29);
  */
 const replacedBackup = base64Bytes(32, 32);
 
-/** A new recovery key's first backup; the earlier key stops working. */
+/**
+ * A new recovery key's first backup; the earlier key stops working. It
+ * points to a complete archive of the history the earlier backup and the
+ * device held, so none is lost while the key changes.
+ */
 export const createChatRecoveryKeySchema = z.strictObject({
   keyId: recoveryKeyId,
   backup: recoveryBackup,
+  /** Null: there is no history to keep yet. */
+  archiveId: z.uuid().nullable(),
   /** Null: there was no backup. */
   replaces: replacedBackup.nullable(),
 });

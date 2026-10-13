@@ -85,6 +85,12 @@ async function loadArchive(
 export const archiveLive = (archive: ArchiveRow, now: Date) =>
   archive.attached || archive.expires_at > now;
 
+/** A backup archive with every part stored, for the backup to point to. */
+export const completeBackup = (now: Date) => (archive: ArchiveRow) =>
+  archive.purpose === "backup" &&
+  archive.completed_at !== null &&
+  archiveLive(archive, now);
+
 /** The caller's device, and whether the archive is its account's. */
 export async function archiveResource(
   db: Db,
@@ -94,13 +100,14 @@ export async function archiveResource(
   options: { lock?: boolean } = {},
 ) {
   const [device, archive] = await Promise.all([
-    sessionDevice(db, actor),
+    sessionDevice(db, actor, options),
     loadArchive(db, archiveId, options),
   ]);
 
   return {
     resource: {
       hasDevice: device !== null,
+      device,
       own:
         archive !== undefined &&
         archive.user_id === actingUserId(actor) &&
@@ -114,8 +121,9 @@ export async function archiveResource(
 /**
  * A device starts an archive: for a device waiting to be linked, or for the
  * recovery key's backup. It replaces the earlier one for the same link
- * request, or the earlier backup the backup does not point to, so another
- * device being linked at the same time keeps its own.
+ * request, or the device's own earlier backup archive the backup does not
+ * point to, so another device being linked or backing up at the same time
+ * keeps its own.
  */
 export const createChatArchive = defineCommand({
   name: "chat.create_archive",
@@ -128,10 +136,14 @@ export const createChatArchive = defineCommand({
     await lockChatAccount(tx, actingUserId(actor));
     const device = await sessionDevice(tx, actor, { lock: true });
 
-    return { resource: { hasDevice: device !== null }, context: undefined };
+    return {
+      resource: { hasDevice: device !== null, device },
+      context: undefined,
+    };
   },
-  execute: async ({ tx, actor, input, now }) => {
+  execute: async ({ tx, actor, input, resource, now }) => {
     const userId = actingUserId(actor);
+    const deviceId = resource.device!.id;
 
     const linkRequestId = input.purpose === "link" ? input.linkRequestId : null;
 
@@ -144,16 +156,18 @@ export const createChatArchive = defineCommand({
       );
     }
 
-    await unattachedArchives(tx, userId)
-      .where("purpose", "=", input.purpose)
-      .$if(linkRequestId !== null, (query) =>
-        query.where("link_request_id", "=", linkRequestId),
-      )
-      .execute();
+    await (
+      linkRequestId === null
+        ? replacedBackups(tx, userId, deviceId, null)
+        : unattachedArchives(tx, userId)
+            .where("purpose", "=", "link")
+            .where("link_request_id", "=", linkRequestId)
+    ).execute();
     const archive = await tx
       .insertInto("app.chat_archives")
       .values({
         user_id: userId,
+        device_id: deviceId,
         purpose: input.purpose,
         link_request_id: linkRequestId,
         part_count: input.partCount,
@@ -207,6 +221,26 @@ export const unattachedArchives = (db: Db, userId: string) =>
     .deleteFrom("app.chat_archives")
     .where("user_id", "=", userId)
     .where("id", "not in", attachedArchives(db));
+
+/**
+ * Deletes the backup archives a newly attached one replaces: the one the
+ * backup pointed to before, and the device's own unfinished ones. Another
+ * device's unfinished archive stays until it is attached or expires.
+ */
+export const replacedBackups = (
+  db: Db,
+  userId: string,
+  deviceId: string,
+  previous: string | null,
+) =>
+  unattachedArchives(db, userId)
+    .where("purpose", "=", "backup")
+    .where((eb) =>
+      eb.or([
+        eb("device_id", "=", deviceId),
+        ...(previous === null ? [] : [eb("id", "=", previous)]),
+      ]),
+    );
 
 /** Expired archives, except the one a backup points to. */
 export const expiredArchives = (db: Db, now: Date) =>

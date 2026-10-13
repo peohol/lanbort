@@ -15,6 +15,7 @@ import { Intro } from "./intro";
 import type { ChatEngine } from "./engine";
 import { chatErrorMessage } from "./messages";
 import { Points } from "./points";
+import { Notice } from "./notice";
 
 /**
  * The recovery key (ADR-0010 §8, PS-COM-019): offered once right after
@@ -114,13 +115,18 @@ function Offer({
 /**
  * Before a key that ends a backup this device cannot open: its history
  * goes with it, for good, so the user must say they know (ADR-0010 §8).
+ * Each backup is confirmed on its own: the flow shows a fresh one when the
+ * backup changed after the user said they knew.
  */
 function ConfirmDrop({
   make,
   cancel,
+  changed,
 }: {
   make: () => Promise<void>;
   cancel: () => void;
+  /** The backup changed after the user confirmed: they confirm again. */
+  changed: boolean;
 }) {
   const [understood, setUnderstood] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -141,6 +147,14 @@ function ConfirmDrop({
   return (
     <section className={`card ${styles.intro}`} aria-labelledby="gar-tapt">
       <h2 id="gar-tapt">Meldingene i sikkerhetskopien går tapt</h2>
+      {changed && (
+        <Notice tag="Endret" tone="warning" role="alert">
+          <p>
+            Sikkerhetskopien ble endret på en annen enhet etter at du bekreftet.
+            Les gjennom og bekreft på nytt.
+          </p>
+        </Notice>
+      )}
       <p>
         Sikkerhetskopien som finnes nå, ble laget på en annen enhet, og denne
         enheten kan ikke åpne den. Lager du en ny nøkkel her, slettes den, med
@@ -269,7 +283,10 @@ export function RecoveryKeyFlow({
   done: () => void;
 }) {
   const [code, setCode] = useState<string | null>(null);
-  const [dropping, setDropping] = useState<string | null>(null);
+  const [dropping, setDropping] = useState<{
+    backup: string;
+    changed: boolean;
+  } | null>(null);
 
   async function make(confirmed: string | null) {
     const made = await engine.createRecoveryKey(confirmed);
@@ -277,7 +294,8 @@ export function RecoveryKeyFlow({
       setDropping(null);
       setCode(made.code);
     } else {
-      setDropping(made.dropsHistory);
+      // A confirmation holds only for the backup it was given for.
+      setDropping({ backup: made.dropsHistory, changed: confirmed !== null });
     }
   }
 
@@ -290,7 +308,12 @@ export function RecoveryKeyFlow({
       }}
     />
   ) : dropping ? (
-    <ConfirmDrop make={() => make(dropping)} cancel={() => setDropping(null)} />
+    <ConfirmDrop
+      key={dropping.backup}
+      changed={dropping.changed}
+      make={() => make(dropping.backup)}
+      cancel={() => setDropping(null)}
+    />
   ) : (
     <Offer
       replacing={replacing}

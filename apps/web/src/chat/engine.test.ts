@@ -601,6 +601,94 @@ describe("the engine against a delivery service that may lie", () => {
     });
   });
 
+  describe("the history a backup keeps", () => {
+    /**
+     * Alice's first device has the recovery key and backed up a message;
+     * her second has the key too, but its copy of the history lacks that
+     * message, as when moving it failed.
+     */
+    async function laggingDevice() {
+      const alice1 = await startChat();
+      const bob = await startChat();
+      const id = await conversationBetween(alice1, bob);
+      await send(alice1, id, "før");
+      await sync(bob);
+      const code = await createRecoveryKey(alice1);
+      await on(alice1, () => alice1.engine.backUp());
+      const linked = await link(alice1, true);
+      storedJson.set(linked, `history:${id}`, []);
+      const alice2 = await reload(linked);
+      await send(bob, id, "etter");
+      await sync(alice1);
+      await sync(alice2);
+      expect(await texts(alice2, id)).toEqual(["etter"]);
+      return { alice1, alice2, bob, id, code };
+    }
+
+    /** What a device restored with the code gets back. */
+    async function restored(userId: string, code: string, id: string) {
+      const device = context(userId);
+      const engine = await on(device, () => restoreChat(userId, code));
+      if (engine === "wrong_key") throw new Error("wrong key");
+      await on(device, () => engine.resumeHistory());
+      return texts({ ...device, engine }, id);
+    }
+
+    it("keeps what the backup had when a device with less backs up", async () => {
+      const { alice2, id, code } = await laggingDevice();
+      await on(alice2, () => alice2.engine.backUp());
+      expect(await restored(alice2.userId, code, id)).toEqual(["før", "etter"]);
+    });
+
+    it("keeps the backed-up history when a device with less makes a new key", async () => {
+      const { alice2, id } = await laggingDevice();
+      const code = await createRecoveryKey(alice2);
+      expect(await restored(alice2.userId, code, id)).toEqual(["før", "etter"]);
+    });
+
+    it("keeps both devices' history when they back up at the same time", async () => {
+      const { alice1, alice2, id, code } = await laggingDevice();
+      server.beforeBackUp = () => on(alice1, () => alice1.engine.backUp());
+      await on(alice2, () => alice2.engine.backUp());
+      expect(await restored(alice2.userId, code, id)).toEqual(["før", "etter"]);
+    });
+
+    it("backs up again when its archive expired before the backup", async () => {
+      const { alice2, id, code } = await laggingDevice();
+      server.beforeBackUp = async () => server.expireArchives();
+      await on(alice2, () => alice2.engine.backUp());
+      expect(await restored(alice2.userId, code, id)).toEqual(["før", "etter"]);
+    });
+
+    it("keeps the backup as it was when a new key does not get through", async () => {
+      const { alice2, id, code } = await laggingDevice();
+      server.failArchives = true;
+      await expect(createRecoveryKey(alice2)).rejects.toThrow();
+      server.failArchives = false;
+      expect(await restored(alice2.userId, code, id)).toEqual(["før"]);
+    });
+
+    it("keeps the backed-up history when the answer to a new key is lost", async () => {
+      const { alice2, id } = await laggingDevice();
+      server.loseNextRecoveryAnswer = true;
+      await expect(createRecoveryKey(alice2)).rejects.toThrow();
+      // The page closes; the user makes the key again.
+      const again = await reload(alice2);
+      const code = await createRecoveryKey(again);
+      expect(await restored(again.userId, code, id)).toEqual(["før", "etter"]);
+    });
+
+    it("keeps the backed-up history if the connection goes as a new key is made", async () => {
+      const { alice1, id } = await laggingDevice();
+      const code = await createRecoveryKey(alice1);
+      // The backup that follows the new key does not get through.
+      server.failArchives = true;
+      await on(alice1, () => alice1.engine.backUp()).catch(() => undefined);
+      server.failArchives = false;
+      expect(await restored(alice1.userId, code, id)).toEqual(["før", "etter"]);
+    });
+  });
+
   describe("priority 2", () => {
     it("replaces its own keys on schedule, not only when it adds a device", async () => {
       vi.useFakeTimers({ toFake: ["Date"] });

@@ -15,8 +15,14 @@ import { rateLimits } from "../abuse/rate-limits";
 import { defineCommand } from "../commands/command";
 import { defineQuery } from "../commands/query";
 import { DomainError } from "../errors";
+import type { Actor } from "../actor";
 import { actingUserId } from "../objects/state";
-import { archiveLive, archiveResource, unattachedArchives } from "./archives";
+import {
+  archiveResource,
+  completeBackup,
+  replacedBackups,
+  unattachedArchives,
+} from "./archives";
 import {
   checkCertificate,
   deviceIdTaken,
@@ -103,14 +109,93 @@ function checkReplaces(
   if (!read) conflict("The backup changed since it was read");
 }
 
-/** The backup archives no backup points to: an older one, or a stray. */
-const strayBackups = (db: Db, userId: string) =>
-  unattachedArchives(db, userId).where("purpose", "=", "backup");
+/**
+ * Points the backup to its new archive, or none, if it replaces the backup
+ * the device read. The archive the backup pointed to goes, with the
+ * device's own unfinished ones; another device's stays until it is
+ * attached or expires.
+ */
+async function replaceBackup(
+  tx: Db,
+  device: { id: string; userId: string; accountKeyId: string },
+  input: {
+    keyId: string;
+    backup: string;
+    archiveId: string | null;
+    replaces: string | null;
+  },
+  now: Date,
+  newKey: boolean,
+) {
+  const recovery = await loadRecovery(tx, device.userId, { lock: true });
+
+  if (
+    !newKey &&
+    (!recovery || !Buffer.from(recovery.key_id).equals(fromBase64(input.keyId)))
+  ) {
+    conflict("A newer recovery key replaced this one");
+  }
+  checkReplaces(recovery, input.replaces);
+
+  const backup = {
+    backup: fromBase64(input.backup),
+    archive_id: input.archiveId,
+    backed_up_at: now,
+  };
+  const key = {
+    account_key_id: device.accountKeyId,
+    key_id: fromBase64(input.keyId),
+    created_at: now,
+  };
+
+  await tx
+    .insertInto("app.chat_recovery_keys")
+    .values({ user_id: device.userId, ...key, ...backup })
+    .onConflict((oc) =>
+      oc.column("user_id").doUpdateSet(newKey ? { ...key, ...backup } : backup),
+    )
+    .execute();
+  await replacedBackups(
+    tx,
+    device.userId,
+    device.id,
+    recovery?.archive_id ?? null,
+  ).execute();
+}
+
+/** The device, and the archive the backup is to point to, if any. */
+async function backupResource(
+  tx: Db,
+  actor: Actor,
+  archiveId: string | null,
+  now: Date,
+) {
+  await lockChatAccount(tx, actingUserId(actor));
+
+  if (archiveId !== null) {
+    const { resource } = await archiveResource(
+      tx,
+      actor,
+      archiveId,
+      completeBackup(now),
+      { lock: true },
+    );
+    return { resource, context: undefined };
+  }
+
+  const device = await sessionDevice(tx, actor, { lock: true });
+  return {
+    resource: { hasDevice: device !== null, device, own: true },
+    context: undefined,
+  };
+}
 
 /**
  * A new recovery key and its first backup, from one of the account's
  * devices. It replaces the earlier key, which stops working, and only the
- * backup the device read (none, if there was none).
+ * backup the device read (none, if there was none), in the same step as
+ * the archive of the history it held, so that history is never without a
+ * backup.
  */
 export const createChatRecoveryKey = defineCommand({
   name: "chat.create_recovery_key",
@@ -119,36 +204,10 @@ export const createChatRecoveryKey = defineCommand({
   policy: createChatRecoveryKeyPolicy,
   rateLimit: rateLimits.chatKeys,
   idempotency: "required",
-  load: async ({ tx, actor }) => {
-    await lockChatAccount(tx, actingUserId(actor));
-    const device = await sessionDevice(tx, actor, { lock: true });
-
-    return {
-      resource: { hasDevice: device !== null, device },
-      context: undefined,
-    };
-  },
+  load: ({ tx, actor, input, now }) =>
+    backupResource(tx, actor, input.archiveId, now),
   execute: async ({ tx, input, resource, now }) => {
-    const device = resource.device!;
-    checkReplaces(
-      await loadRecovery(tx, device.userId, { lock: true }),
-      input.replaces,
-    );
-    const row = {
-      account_key_id: device.accountKeyId,
-      key_id: fromBase64(input.keyId),
-      backup: fromBase64(input.backup),
-      archive_id: null,
-      created_at: now,
-      backed_up_at: now,
-    };
-
-    await tx
-      .insertInto("app.chat_recovery_keys")
-      .values({ user_id: device.userId, ...row })
-      .onConflict((oc) => oc.column("user_id").doUpdateSet(row))
-      .execute();
-    await strayBackups(tx, device.userId).execute();
+    await replaceBackup(tx, resource.device!, input, now, true);
 
     return {};
   },
@@ -156,9 +215,8 @@ export const createChatRecoveryKey = defineCommand({
 
 /**
  * A newer backup under the same key, pointing to a complete archive of the
- * device's history. The older archive goes. A device whose key was
- * replaced on another device is refused, so it never overwrites the
- * backup the newer key opens.
+ * device's history. A device whose key was replaced on another device is
+ * refused, so it never overwrites the backup the newer key opens.
  */
 export const backUpChatHistory = defineCommand({
   name: "chat.back_up_history",
@@ -167,42 +225,10 @@ export const backUpChatHistory = defineCommand({
   policy: backUpChatHistoryPolicy,
   rateLimit: rateLimits.chatArchives,
   idempotency: "required",
-  load: async ({ tx, actor, input, now }) => {
-    await lockChatAccount(tx, actingUserId(actor));
-
-    return archiveResource(
-      tx,
-      actor,
-      input.archiveId,
-      (archive) =>
-        archive.purpose === "backup" &&
-        archive.completed_at !== null &&
-        archiveLive(archive, now),
-      { lock: true },
-    );
-  },
-  execute: async ({ tx, actor, input, now }) => {
-    const userId = actingUserId(actor);
-    const recovery = await loadRecovery(tx, userId, { lock: true });
-
-    if (
-      !recovery ||
-      !Buffer.from(recovery.key_id).equals(fromBase64(input.keyId))
-    ) {
-      conflict("A newer recovery key replaced this one");
-    }
-    checkReplaces(recovery, input.replaces);
-
-    await tx
-      .updateTable("app.chat_recovery_keys")
-      .set({
-        backup: fromBase64(input.backup),
-        archive_id: input.archiveId,
-        backed_up_at: now,
-      })
-      .where("user_id", "=", userId)
-      .execute();
-    await strayBackups(tx, userId).execute();
+  load: ({ tx, actor, input, now }) =>
+    backupResource(tx, actor, input.archiveId, now),
+  execute: async ({ tx, input, resource, now }) => {
+    await replaceBackup(tx, resource.device!, input, now, false);
 
     return {};
   },

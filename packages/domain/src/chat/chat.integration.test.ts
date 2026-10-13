@@ -1490,6 +1490,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
       run(createChatRecoveryKey, newSession(alice.actor), {
         keyId: keyA,
         backup: backup(1),
+        archiveId: null,
         replaces: null,
       }),
     ).rejects.toMatchObject(forbidden);
@@ -1502,6 +1503,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
     await run(createChatRecoveryKey, alice.actor, {
       keyId: keyA,
       backup: backup(1),
+      archiveId: null,
       replaces: null,
     });
     expect((await devices(alice.actor)).recovery).toMatchObject({
@@ -1573,6 +1575,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
       run(createChatRecoveryKey, alice.actor, {
         keyId: keyB,
         backup: backup(9),
+        archiveId: null,
         replaces: null,
       }),
     ).rejects.toMatchObject(conflict);
@@ -1603,14 +1606,41 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
     });
     expect(await archiveExists(archiveId)).toBe(false);
 
-    // A new key replaces the old one, and its backup: the old key's
-    // devices can no longer overwrite it.
+    // A new key replaces the old one, and its backup, in the same step as
+    // the archive it points to: only a complete one of the account's own.
+    const unfinishedForKey = (
+      await run(createChatArchive, alice.actor, {
+        partCount: 2,
+        purpose: "backup",
+      })
+    ).archiveId;
+    for (const [actor, archiveId] of [
+      [alice.actor, unfinishedForKey],
+      [bob.actor, newer],
+    ] as const) {
+      await expect(
+        run(createChatRecoveryKey, actor, {
+          keyId: keyB,
+          backup: backup(4),
+          archiveId,
+          replaces: read(3),
+        }),
+      ).rejects.toMatchObject(notFound);
+    }
+    const keyArchive = await backupArchive(alice);
     await run(createChatRecoveryKey, alice.actor, {
       keyId: keyB,
       backup: backup(4),
+      archiveId: keyArchive,
       replaces: read(3),
     });
+    await expect(readBackup(alice.actor)).resolves.toEqual({
+      keyId: keyB,
+      backup: backup(4),
+      archive: { archiveId: keyArchive, parts: 1 },
+    });
     expect(await archiveExists(newer)).toBe(false);
+    // The old key's devices can no longer overwrite it.
     const stale = await backupArchive(alice);
     await expect(
       run(backUpChatHistory, alice.actor, {
@@ -1624,6 +1654,77 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
       keyId: keyB,
       backup: backup(4),
     });
+  });
+
+  it("keeps another device's backup archive while one device backs up", async () => {
+    const phone = await providerSession(await user());
+    const alice = await chatUser(phone);
+    const laptop = await providerSession(phone);
+    const laptopDevice = testChatDevice(alice.account);
+    const { linkRequestId } = await run(requestChatLink, laptop, {
+      deviceId: laptopDevice.deviceId,
+      deviceKey: laptopDevice.deviceKey,
+      linkKey: laptopDevice.deviceKey,
+      commitment: linkCommitment,
+    });
+    await run(approveChatLink, phone, {
+      linkRequestId,
+      certificate: laptopDevice.certificate,
+      package: "c2VhbGVk",
+    });
+    await run(createChatRecoveryKey, phone, {
+      keyId: keyA,
+      backup: backup(1),
+      archiveId: null,
+      replaces: null,
+    });
+    const started = async (actor: UserActor) =>
+      (await run(createChatArchive, actor, { partCount: 1, purpose: "backup" }))
+        .archiveId;
+    const finished = async (actor: UserActor, archiveId: string) => {
+      await run(putChatArchivePart, actor, {
+        archiveId,
+        part: 0,
+        data: bytes(32, 7),
+      });
+      return archiveId;
+    };
+
+    // The laptop starts an archive; the phone makes and backs up its own.
+    const laptopArchive = await started(laptop);
+    const phoneArchive = await finished(phone, await started(phone));
+    expect(await archiveExists(laptopArchive)).toBe(true);
+    await run(backUpChatHistory, phone, {
+      keyId: keyA,
+      backup: backup(2),
+      replaces: read(1),
+      archiveId: phoneArchive,
+    });
+    expect(await archiveExists(laptopArchive)).toBe(true);
+
+    // The laptop finishes its archive and backs up, having read the phone's.
+    await finished(laptop, laptopArchive);
+    await run(backUpChatHistory, laptop, {
+      keyId: keyA,
+      backup: backup(3),
+      replaces: read(2),
+      archiveId: laptopArchive,
+    });
+    await expect(readBackup(alice.actor)).resolves.toEqual({
+      keyId: keyA,
+      backup: backup(3),
+      archive: { archiveId: laptopArchive, parts: 1 },
+    });
+    // The archive it replaced goes; a device's new archive replaces only
+    // its own unfinished one.
+    expect(await archiveExists(phoneArchive)).toBe(false);
+    const laptopFirst = await started(laptop);
+    const phoneNext = await started(phone);
+    const laptopNext = await started(laptop);
+    expect(await archiveExists(laptopFirst)).toBe(false);
+    expect(await archiveExists(phoneNext)).toBe(true);
+    expect(await archiveExists(laptopNext)).toBe(true);
+    expect(await archiveExists(laptopArchive)).toBe(true);
   });
 
   it("restores chat on a new session under the same key, shutting out every other device", async () => {
@@ -1645,6 +1746,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
     await run(createChatRecoveryKey, phone, {
       keyId: keyA,
       backup: backup(1),
+      archiveId: null,
       replaces: null,
     });
     const archiveId = await backupArchive(alice);
@@ -1751,6 +1853,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
     await run(createChatRecoveryKey, alice.actor, {
       keyId: keyA,
       backup: backup(1),
+      archiveId: null,
       replaces: null,
     });
     const account = testChatAccount(alice.actor.userId);
@@ -1764,6 +1867,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
     await run(createChatRecoveryKey, bob.actor, {
       keyId: keyA,
       backup: backup(1),
+      archiveId: null,
       replaces: null,
     });
     await run(answerChatRecoveryPrompt, bob.actor, { prompt: "offer" });
@@ -1800,6 +1904,7 @@ describe("the recovery key (ADR-0010 §8, PS-COM-019)", () => {
     await run(createChatRecoveryKey, bob.actor, {
       keyId: keyA,
       backup: backup(1),
+      archiveId: null,
       replaces: null,
     });
     expect((await devices(bob.actor)).recoveryReminder).toBe(false);

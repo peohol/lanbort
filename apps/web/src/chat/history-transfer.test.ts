@@ -3,6 +3,7 @@ import { utf8 } from "./bytes";
 import type { HistoryEntry } from "./engine";
 import {
   historyLost,
+  mergeConversations,
   mergeHistory,
   missesEarlier,
   packHistory,
@@ -131,6 +132,24 @@ describe("moving history to a linked device", () => {
       entry("a", 1),
       entry("c", 5),
       entry("d", 6),
+    ]);
+  });
+
+  it("backs up every conversation either copy has, read as far as this one says", () => {
+    const own = [
+      { id: "a", history: [entry("2", 2)], seen: null },
+      { id: "b", history: [entry("4", 4)], seen: "4" },
+    ];
+    const backedUp = [
+      { id: "a", history: [entry("1", 1)], seen: "1" },
+      { id: "b", history: [entry("3", 3)], seen: "3" },
+      { id: "c", history: [entry("5", 5)], seen: null },
+    ];
+
+    expect(mergeConversations(own, backedUp)).toEqual([
+      { id: "a", history: [entry("1", 1), entry("2", 2)], seen: "1" },
+      { id: "b", history: [entry("3", 3), entry("4", 4)], seen: "4" },
+      { id: "c", history: [entry("5", 5)], seen: null },
     ]);
   });
 

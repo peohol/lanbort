@@ -65,6 +65,7 @@ import { fromBase64, fromUtf8, toBase64, utf8 } from "./bytes";
 import {
   type ConversationHistory,
   historyLost,
+  mergeConversations,
   mergeHistory,
   packHistory,
   receiveHistory,
@@ -214,6 +215,8 @@ const records = {
   account: "account",
   device: "device",
   recovery: "recovery",
+  /** A new key whose answer is not in yet: the server may have taken it. */
+  recoveryPending: "recovery-pending",
   backup: "backup",
   /** Set on a device that was linked (13), not on a first or restored one. */
   linked: "linked",
@@ -251,6 +254,14 @@ const linkKeysOf = (request: ChatLinkRequest) => ({
 
 const isConflict = (error: unknown) =>
   error instanceof ChatApiError && error.code === "conflict";
+
+/**
+ * A backup refused because another device replaced it since it was read,
+ * or because its archive is gone: tried again from what is there now.
+ */
+const backupOutdated = (error: unknown) =>
+  isConflict(error) ||
+  (error instanceof ChatApiError && error.code === "not_found");
 
 /** What is inside every encrypted message. */
 interface MessageBody {
@@ -796,54 +807,100 @@ export class ChatEngine {
   }
 
   /**
-   * Makes a new recovery key, which replaces the account's earlier one,
-   * and backs up the history under it. The code is for the user to write
-   * down, once; this device keeps only what it needs for the backup.
+   * Makes a new recovery key, which replaces the account's earlier one.
+   * The code is for the user to write down, once; this device keeps only
+   * what it needs for the backup.
    *
-   * The backup there is now goes with the old key. Its history too, unless
-   * this device holds that key (its own history is what it backs up): then
-   * nothing is made, and the answer is what the user must agree to lose
-   * first. Made again with that answer's `history`, the key replaces that
-   * backup and no other.
+   * The new backup keeps the history the one there now holds, with this
+   * device's, in the same step: none of it is ever without a backup. That
+   * needs the backup's key; without it, the backup's history goes, and
+   * nothing is made until the user agrees to lose it: the answer is what
+   * they agree to. Made again with that answer's `dropsHistory`, the key
+   * replaces that backup and no other.
    */
   async createRecoveryKey(
     dropping: string | null = null,
   ): Promise<{ code: string } | { dropsHistory: string }> {
     for (let attempt = 1; ; attempt++) {
-      const recovery = this.#recovery;
       const current = await this.#exclusive(() => this.#readBackup());
-      const ours = current !== null && this.#holdsKeyOf(current, recovery);
-      if (current?.history && !ours && current.digest !== dropping) {
+      const pending = await this.#pendingKey(current);
+      const opener =
+        current &&
+        [this.#recovery, pending].find((key) => this.#holdsKeyOf(current, key));
+      if (current?.history && !opener && current.digest !== dropping) {
         return { dropsHistory: current.digest };
       }
-      if (ours) {
-        await this.#exclusive(() =>
-          this.#keepBackedUpRevocations(current, recovery!),
-        );
-      }
+      const startedAt = Date.now();
+      // A first key has no backup to keep history in yet: it follows.
+      const archive = current && (await this.#backupArchive(current, opener));
       const { code, key } = await createRecoveryKey();
       try {
+        // Kept first: if the answer is lost, the backup the server may have
+        // taken under it can still be opened, and its history kept.
+        await putSecret(
+          this.store,
+          records.recoveryPending,
+          exportRecoveryKey(key),
+        );
         await chatApi.createRecoveryKey({
           keyId: toBase64(key.id),
           backup: toBase64(
             await sealRecoveryBackup(key, {
               account: this.account,
+              ...(archive ? { archive } : {}),
               ...(await this.#carriedTrust()),
             }),
           ),
+          archiveId: archive?.archiveId ?? null,
           replaces: current?.digest ?? null,
         });
       } catch (error) {
-        // The backup changed since it was read: read it again.
-        if (isConflict(error) && attempt < chatTuning.conflictRetries) continue;
+        if (backupOutdated(error) && attempt < chatTuning.conflictRetries) {
+          continue;
+        }
         throw error;
+      } finally {
+        if (archive) wipe(archive.key.reveal());
       }
       await putSecret(this.store, records.recovery, exportRecoveryKey(key));
+      await this.store.delete(records.recoveryPending);
       this.#recovery = key;
       this.#changed();
-      void this.backUp().catch(() => undefined);
+      if (archive) {
+        await this.#backedUp(startedAt);
+      } else {
+        void this.backUp().catch(() => undefined);
+      }
       return { code };
     }
+  }
+
+  /**
+   * A key this device made whose answer never came, if the backup there is
+   * now is under it: the server took it, and only this device can open
+   * that backup. Otherwise it is gone, and so is the record of it.
+   */
+  async #pendingKey(
+    current: CurrentBackup | null,
+  ): Promise<RecoveryKey | null> {
+    const stored = await this.store.get(records.recoveryPending);
+    if (!stored) return null;
+    try {
+      const key = importRecoveryKey(stored);
+      if (
+        current &&
+        this.#holdsKeyOf(current, key) &&
+        !this.#holdsKeyOf(current, this.#recovery)
+      ) {
+        return key;
+      }
+    } catch {
+      // Not a key: nothing to open with it.
+    } finally {
+      wipe(stored);
+    }
+    await this.store.delete(records.recoveryPending);
+    return null;
   }
 
   /**
@@ -859,57 +916,55 @@ export class ChatEngine {
   }
 
   /**
-   * Replaces only the backup it read, after taking in what that one holds:
-   * if another device backed up in between, it reads and merges again. A
-   * backup it cannot read stops it, rather than lose what that one held.
+   * Replaces only the backup it read, with what that one holds and what
+   * this device holds: if another device backed up in between, it reads
+   * and merges again. A backup it cannot read stops it, rather than lose
+   * what that one held.
    */
   async #backUpNow(): Promise<void> {
     const recovery = this.#recovery;
     // Until history on its way here is in, a backup would leave it out.
     if (!recovery || (await this.#heldHistory()).length > 0) return;
     const startedAt = Date.now();
-    const history = await this.#exclusive(() => this.#ownHistory());
-    const archive = await sendHistory(packHistory(history), {
-      purpose: "backup",
-    });
-    try {
-      for (let attempt = 1; ; attempt++) {
-        const current = await this.#exclusive(() => this.#readBackup());
-        if (!current || !this.#holdsKeyOf(current, recovery)) {
-          // Another device has made a newer key.
-          if (this.#recovery === recovery) {
-            await this.store.delete(records.recovery);
-            this.#recovery = null;
-            this.#changed();
-          }
-          throw new ChatApiError("conflict");
+    for (let attempt = 1; ; attempt++) {
+      const current = await this.#exclusive(() => this.#readBackup());
+      if (!current || !this.#holdsKeyOf(current, recovery)) {
+        // Another device has made a newer key.
+        if (this.#recovery === recovery) {
+          await this.store.delete(records.recovery);
+          this.#recovery = null;
+          this.#changed();
         }
-        await this.#exclusive(() =>
-          this.#keepBackedUpRevocations(current, recovery),
-        );
-        try {
-          await chatApi.backUp({
-            keyId: toBase64(recovery.id),
-            backup: toBase64(
-              await sealRecoveryBackup(recovery, {
-                account: this.account,
-                archive,
-                ...(await this.#carriedTrust()),
-              }),
-            ),
-            archiveId: archive.archiveId,
-            replaces: current.digest,
-          });
-          break;
-        } catch (error) {
-          if (!isConflict(error) || attempt >= chatTuning.conflictRetries) {
-            throw error;
-          }
-        }
+        throw new ChatApiError("conflict");
       }
-    } finally {
-      wipe(archive.key.reveal());
+      const archive = await this.#backupArchive(current, recovery);
+      try {
+        await chatApi.backUp({
+          keyId: toBase64(recovery.id),
+          backup: toBase64(
+            await sealRecoveryBackup(recovery, {
+              account: this.account,
+              archive,
+              ...(await this.#carriedTrust()),
+            }),
+          ),
+          archiveId: archive.archiveId,
+          replaces: current.digest,
+        });
+        break;
+      } catch (error) {
+        if (!backupOutdated(error) || attempt >= chatTuning.conflictRetries) {
+          throw error;
+        }
+      } finally {
+        wipe(archive.key.reveal());
+      }
     }
+    await this.#backedUp(startedAt);
+  }
+
+  /** The backup holds what had changed by `startedAt`. */
+  async #backedUp(startedAt: number) {
     const state = await this.#backupState();
     state.backedUpAt = startedAt;
     await this.store.putJson(records.backup, state);
@@ -937,30 +992,66 @@ export class ChatEngine {
     };
   }
 
-  #holdsKeyOf(backup: CurrentBackup, recovery: RecoveryKey | null): boolean {
-    return recovery !== null && backup.keyId === toBase64(recovery.id);
+  #holdsKeyOf(
+    backup: CurrentBackup,
+    recovery: RecoveryKey | null | undefined,
+  ): boolean {
+    return recovery != null && backup.keyId === toBase64(recovery.id);
   }
 
   /**
-   * Takes in the revocations the backup holds before replacing it, so a
-   * device that has not heard of a revocation yet does not drop one
-   * another device of the account backed up. Only revocations: they can
-   * only take trust away. A backup under this device's key that does not
-   * open stops the backup: it is not replaced unread.
+   * Stores, encrypted, the history a backup that replaces `current` keeps:
+   * this device's, with what `current` holds if `key` opens it. A device
+   * that is behind so never backs up less than the backup had.
    */
-  async #keepBackedUpRevocations(backup: CurrentBackup, recovery: RecoveryKey) {
+  async #backupArchive(
+    current: CurrentBackup,
+    key: RecoveryKey | null | undefined,
+  ): Promise<LinkedArchive> {
+    const backedUp = key ? await this.#takeInBackup(current, key) : [];
+    const own = await this.#exclusive(() => this.#ownHistory());
+    return sendHistory(packHistory(mergeConversations(own, backedUp)), {
+      purpose: "backup",
+    });
+  }
+
+  /**
+   * What the backup holds that a backup replacing it must keep: its
+   * revocations, taken in here, and its history, returned. Only
+   * revocations: they can only take trust away. A backup under this
+   * device's key that does not open stops the backup: it is not replaced
+   * unread. Nor is it while its history cannot be fetched; once that is
+   * gone or does not open, there is none left to keep.
+   */
+  async #takeInBackup(
+    backup: CurrentBackup,
+    recovery: RecoveryKey,
+  ): Promise<ConversationHistory[]> {
     const opened = await openRecoveryBackup(
       recovery,
       this.userId,
       backup.sealed,
     );
     wipe(opened.account.signingKey.reveal());
-    if (opened.archive) wipe(opened.archive.key.reveal());
-    for (const ref of opened.revoked ?? []) {
-      const device = revokedDeviceOf(ref);
-      if (device) this.trust.addRevocation(device);
+    const { archive } = opened;
+    try {
+      await this.#exclusive(async () => {
+        for (const ref of opened.revoked ?? []) {
+          const device = revokedDeviceOf(ref);
+          if (device) this.trust.addRevocation(device);
+        }
+        await this.#saveTrust();
+      });
+      if (!archive) return [];
+      try {
+        return unpackHistory(await receiveHistory(archive));
+      } catch (error) {
+        if (historyLost(error)) return [];
+        throw error;
+      }
+    } finally {
+      if (archive) wipe(archive.key.reveal());
     }
-    await this.#saveTrust();
   }
 
   /** Backs up when the history has changed and the last backup is old. */
