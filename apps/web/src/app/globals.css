@@ -141,8 +141,56 @@
   line-height: 1.5;
 }
 
+/* Dark: as the device is set, or chosen under Konto › Utseende, which puts
+   `data-theme` on <html> (presentation/theme.ts). The two blocks below are
+   the same tokens, kept identical by theme.test.ts. */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-page: #14171c;
+  --color-surface: #1e232a;
+  --color-sunken: #2a3038;
+  --color-text: #e8ebf0;
+  --color-muted: #a9b1bc;
+  --color-border: #353c46;
+  --color-border-strong: #7f8894;
+
+  --color-accent: #e39274;
+  --color-accent-hover: #eba68d;
+  --color-on-accent: #20120d;
+  --color-accent-strong: #f2b39c;
+  --color-accent-soft: #3e2a23;
+
+  --color-link: #a8c1f5;
+  --color-focus: #a8c1f5;
+  --color-info: #7d9bdd;
+  --color-info-strong: #b5cbf7;
+  --color-info-soft: #26334d;
+
+  --color-waiting: #c3cad4;
+  --color-waiting-soft: #2a3038;
+  --color-positive: #8fd5a8;
+  --color-positive-soft: #1d3627;
+  --color-warning: #f0c36a;
+  --color-warning-soft: #3a2c12;
+  --color-danger: #ff8f95;
+  --color-danger-soft: #3d1a1f;
+  --color-on-danger: #2a0508;
+
+  --color-image-from: #3a414c;
+  --color-image-to: #2c323b;
+
+  --shadow-low: none;
+  --shadow-raised: none;
+  --color-backdrop: rgb(0 0 0 / 0.65);
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --color-page: #14171c;
     --color-surface: #1e232a;
     --color-sunken: #2a3038;
