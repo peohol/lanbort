@@ -493,7 +493,13 @@ describe("the notice to whoever a measure hits (PS-TRUST-018)", () => {
       measure: "object_blocked",
       reason: "Ulovlig gjenstand.",
     });
-    await told(owner);
+    // Another file's worker may still hold the block's event; the notice of
+    // the lifted block comes after the owner has had that one.
+    await expect
+      .poll(async () => (await told(owner)).map(({ kind }) => kind), {
+        timeout: 30_000,
+      })
+      .toContain("moderation.measure_taken");
     await told(reporter);
 
     const { measureId } = await run(takeModerationMeasure, handler, {
