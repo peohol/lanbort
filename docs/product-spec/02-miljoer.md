@@ -79,6 +79,8 @@ Miljøet får egen tilstand **under avvikling**. Nye medlemmer og nye miljøbase
 
 Er eieren miljøets eneste medlem (ingen andre har aktivt eller passivt medlemskap), blir avviklingen endelig med en gang, uten angrefrist. Eieren ser dette i konsekvensvisningen før bekreftelsen. Ventende søknader og invitasjoner er ikke medlemskap og avsluttes nøytralt med en gang, som ved annen endelig avvikling. (Produkteier, 13. oktober 2026.)
 
+Når avviklingen er endelig, skal miljøet automatisk forsvinne fra «Dine miljøer» og andre oversikter over aktuelle miljøer så snart ingen åpne saker, uavsluttede lån, aktive anmeldelsesvinduer eller uavklarte kontrollbekreftelser gjenstår. Historiske medlemskap, roller, lån og saker bevares etter de vanlige reglene; å skjule miljøet er ikke sletting av data. Miljøet forblir synlig mens avviklingen kan angres eller slike forpliktelser må følges opp. (Produkteier, 13. oktober 2026.)
+
 ### PS-ENV-013 — Midlertidig eierløshet skal løses eller ende i avvikling
 **Forankring:** [Midlertidig eierløst miljø](../vision/03-miljoer.md)
 
