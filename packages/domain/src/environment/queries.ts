@@ -405,6 +405,7 @@ export const listOwnEnvironments = defineQuery({
               )
               .select("loan.id")
               .whereRef("request.environment_id", "=", "environment.id")
+              .where("request.status", "=", "approved")
               .where((eb) =>
                 eb.or([
                   eb("loan.status", "<>", "ended"),
