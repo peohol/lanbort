@@ -386,11 +386,7 @@ export const listOwnEnvironments = defineQuery({
             exists(
               selectFrom("app.environment_wind_downs as windDown")
                 .select("windDown.id")
-                .whereRef(
-                  "windDown.environment_id",
-                  "=",
-                  "environment.id",
-                )
+                .whereRef("windDown.environment_id", "=", "environment.id")
                 .where("windDown.outcome", "=", "finalized"),
             ),
           ),
@@ -426,11 +422,7 @@ export const listOwnEnvironments = defineQuery({
           exists(
             selectFrom("app.cases as environmentCase")
               .select("environmentCase.id")
-              .whereRef(
-                "environmentCase.environment_id",
-                "=",
-                "environment.id",
-              )
+              .whereRef("environmentCase.environment_id", "=", "environment.id")
               .where("environmentCase.status", "=", "open"),
           ),
         ]),
