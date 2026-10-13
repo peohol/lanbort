@@ -15,7 +15,7 @@ import { StatusCard } from "@/components/status-card";
 import { ContextTag } from "@/components/tag";
 import { ThingThumbnail } from "@/components/thing-thumbnail";
 import { caseEvidenceHref, environmentCasesHref } from "@/navigation/cases";
-import { casesHref, loanHref } from "@/navigation/routes";
+import { caseHref, casesHref, loanHref } from "@/navigation/routes";
 import { platformQueueHref } from "@/navigation/stewardship";
 import {
   aboutCase,
