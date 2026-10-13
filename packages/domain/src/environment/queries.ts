@@ -355,7 +355,7 @@ export const listOwnEnvironments = defineQuery({
   name: "environment.list_own",
   input: z.strictObject({}),
   policy: listOwnEnvironmentsPolicy,
-  load: async ({ db, actor }) => {
+  load: async ({ db, actor, now }) => {
     if (actor.kind !== "user") {
       return null;
     }
@@ -377,6 +377,57 @@ export const listOwnEnvironments = defineQuery({
       ])
       .where("membership.user_id", "=", actor.userId)
       .where("membership.state", "<>", "ended")
+      // Final winding down deliberately retains memberships and roles for
+      // history. Hide the environment from current lists only when there is
+      // no loan, review, case, or unresolved object-control task left.
+      .where(({ or, not, exists, selectFrom }) =>
+        or([
+          not(
+            exists(
+              selectFrom("app.environment_wind_downs as windDown")
+                .select("windDown.id")
+                .whereRef("windDown.environment_id", "=", "environment.id")
+                .where("windDown.outcome", "=", "finalized"),
+            ),
+          ),
+          exists(
+            selectFrom("app.loan_requests as request")
+              .innerJoin("app.loans as loan", "loan.request_id", "request.id")
+              .leftJoin(
+                "app.loan_review_periods as review",
+                "review.loan_id",
+                "loan.id",
+              )
+              .leftJoin(
+                "app.loan_control_confirmations as control",
+                "control.loan_id",
+                "loan.id",
+              )
+              .select("loan.id")
+              .whereRef("request.environment_id", "=", "environment.id")
+              .where("request.status", "=", "approved")
+              .where((eb) =>
+                eb.or([
+                  eb("loan.status", "<>", "ended"),
+                  eb.and([
+                    eb("review.status", "=", "open"),
+                    eb("review.due_at", ">", now),
+                  ]),
+                  eb.and([
+                    eb("loan.end_reason", "=", "unresolved"),
+                    eb("control.loan_id", "is", null),
+                  ]),
+                ]),
+              ),
+          ),
+          exists(
+            selectFrom("app.cases as environmentCase")
+              .select("environmentCase.id")
+              .whereRef("environmentCase.environment_id", "=", "environment.id")
+              .where("environmentCase.status", "=", "open"),
+          ),
+        ]),
+      )
       .orderBy("environment.name")
       .orderBy("environment.id")
       .execute();
