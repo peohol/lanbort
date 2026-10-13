@@ -14,6 +14,7 @@ import {
   type PasskeyResult,
   passkeyErrorMessage,
 } from "./passkeys";
+import { passkeyOriginRedirect } from "./passkey-origin";
 import { useCommand } from "./use-command";
 
 /**
@@ -32,6 +33,17 @@ export function useCeremony() {
     steps: () => Promise<PasskeyResult<T>>,
   ): Promise<T | null> {
     if (pending) return null;
+
+    const target = passkeyOriginRedirect(
+      window.location.href,
+      document.documentElement.dataset.passkeyOrigin,
+    );
+
+    if (target) {
+      window.location.assign(target);
+      return null;
+    }
+
     setPending(true);
     setFailure(null);
     const result = await steps();
