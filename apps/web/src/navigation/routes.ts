@@ -138,6 +138,7 @@ export const notificationChoicesHref = `${accountHref}/varslingsvalg`;
 export const accountStateHref = `${accountHref}/kontoen`;
 export const profilePictureHref = `${accountHref}/profilbilde`;
 export const privacyHref = `${accountHref}/personvern`;
+export const appearanceHref = `${accountHref}/utseende`;
 
 /**
  * Pages that open inside the account when they are reached from it, so

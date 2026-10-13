@@ -7,7 +7,9 @@ import { AppShell } from "@/components/app-shell";
 import { HeaderBoundary } from "@/components/header-boundary";
 import { NetworkStatus } from "@/components/network-status";
 import { restingNotice } from "@/presentation/account";
+import { themeAttribute } from "@/presentation/theme";
 import { getPageAccount, pageQuery } from "@/server/session";
+import { readTheme } from "@/server/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -39,12 +41,14 @@ export default async function RootLayout({
   // cases and notifications to see to (PS-ADM-002).
   const signedIn =
     account !== null && account.status !== "pending_registration";
-  const unread = signedIn
-    ? await pageQuery(countUnreadNotifications, {})
-    : null;
+  const [unread, theme] = await Promise.all([
+    signedIn ? pageQuery(countUnreadNotifications, {}) : null,
+    readTheme(),
+  ]);
 
   return (
-    <html lang="nb">
+    // The chosen theme is on the page from the start, so it never flashes.
+    <html lang="nb" data-theme={themeAttribute(theme)}>
       <body>
         <HeaderBoundary />
         <NetworkStatus />

@@ -15,6 +15,7 @@ import { Tag } from "@/components/tag";
 import { chatSignOutHref } from "@/navigation/chat";
 import {
   accountStateHref,
+  appearanceHref,
   privacyHref,
   blockedHref,
   casesHref,
@@ -24,12 +25,14 @@ import {
   profilePictureHref,
 } from "@/navigation/routes";
 import { accountStatusLabel } from "@/presentation/account";
+import { themeLabels } from "@/presentation/theme";
 import { chatEnabled } from "@/server/chat-enabled";
 import {
   pageQuery,
   pageQueryIfAllowed,
   requirePageAccount,
 } from "@/server/session";
+import { readTheme } from "@/server/theme";
 
 export const metadata: Metadata = { title: "Konto – Lånbort" };
 
@@ -93,9 +96,10 @@ function SignOutRow({ chat, userId }: { chat: boolean; userId: string }) {
 export default async function AccountPage() {
   const account = await requirePageAccount();
   const active = takesNewActivity(account.status);
-  const [social, chat] = await Promise.all([
+  const [social, chat, theme] = await Promise.all([
     active ? pageQuery(getSocialOverview, {}) : null,
     hasChatDevice(),
+    readTheme(),
   ]);
   const waiting = social?.incomingRequests.length ?? 0;
 
@@ -155,6 +159,12 @@ export default async function AccountPage() {
             href={notificationChoicesHref}
             icon="bell"
             label="Varslingsvalg"
+          />
+          <MenuRow
+            href={appearanceHref}
+            icon="theme"
+            label="Utseende"
+            detail={themeLabels[theme]}
           />
           <MenuRow
             href={accountStateHref}

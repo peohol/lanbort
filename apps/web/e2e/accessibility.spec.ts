@@ -114,6 +114,7 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
   { name: "Profilbilde", path: () => "/konto/profilbilde" },
   { name: "Kontoen din", path: () => "/konto/kontoen" },
   { name: "Personvern og sikkerhet", path: () => "/konto/personvern" },
+  { name: "Utseende", path: () => "/konto/utseende" },
   { name: "Saker i Konto", path: () => "/konto/saker" },
   { name: "Saker", path: () => "/saker" },
   { name: "Saken", path: ({ cases }) => `/saker/${cases.own}` },
