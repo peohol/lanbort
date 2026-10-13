@@ -3,15 +3,19 @@ import {
   createDevice,
   importRecoveryKey,
   openRecoveryBackup,
+  readRecoveryKey,
+  sealArchive,
+  sealRecoveryBackup,
 } from "@lanbort/e2ee";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fromBase64, fromUtf8, toBase64 } from "./bytes";
+import { fromBase64, fromUtf8, toBase64, utf8 } from "./bytes";
 import {
   type DeviceContext,
   FakeChatServer,
   fake,
   on,
   storedJson,
+  storedNames,
   storedRecord,
 } from "./engine.fixtures";
 import {
@@ -112,10 +116,20 @@ async function reload(device: TestDevice): Promise<TestDevice> {
   return { ...device, engine: loaded.engine };
 }
 
+/** Step one of a new recovery key: its code, or what it would end. */
+const prepare = (device: TestDevice, dropping: string | null = null) =>
+  on(device, () => device.engine.createRecoveryKey(dropping));
+/** Step two, once the user has kept the code: the key is put to use. */
+const activate = (device: TestDevice, dropping: string | null = null) =>
+  on(device, () => device.engine.activateRecoveryKey(dropping));
 /** Makes a recovery key where no confirmation is needed; its code. */
 const createRecoveryKey = async (device: TestDevice) => {
-  const made = await on(device, () => device.engine.createRecoveryKey());
+  const made = await prepare(device);
   if (!("code" in made)) throw new Error("asked to drop backed-up history");
+  const activated = await activate(device);
+  if (!("active" in activated)) {
+    throw new Error("asked to drop backed-up history");
+  }
   return made.code;
 };
 const texts = async (device: TestDevice, id: string) =>
@@ -127,6 +141,38 @@ async function conversationBetween(a: TestDevice, b: TestDevice) {
   await maintain(a, id);
   await sync(b);
   return id;
+}
+
+/**
+ * Alice's first device has the recovery key and backed up a message;
+ * her second has the key too, but its copy of the history lacks that
+ * message, as when moving it failed.
+ */
+async function laggingDevice() {
+  const alice1 = await startChat();
+  const bob = await startChat();
+  const id = await conversationBetween(alice1, bob);
+  await send(alice1, id, "før");
+  await sync(bob);
+  const code = await createRecoveryKey(alice1);
+  await on(alice1, () => alice1.engine.backUp());
+  const linked = await link(alice1, true);
+  storedJson.set(linked, `history:${id}`, []);
+  const alice2 = await reload(linked);
+  await send(bob, id, "etter");
+  await sync(alice1);
+  await sync(alice2);
+  expect(await texts(alice2, id)).toEqual(["etter"]);
+  return { alice1, alice2, bob, id, code };
+}
+
+/** What a device restored with the code gets back. */
+async function restored(userId: string, code: string, id: string) {
+  const device = context(userId);
+  const engine = await on(device, () => restoreChat(userId, code));
+  if (engine === "wrong_key") throw new Error("wrong key");
+  await on(device, () => engine.resumeHistory());
+  return texts({ ...device, engine }, id);
 }
 
 /** A device the server certifies under a key of its own for `userId`. */
@@ -325,6 +371,10 @@ describe("the engine against a delivery service that may lie", () => {
         linked.engine.createRecoveryKey(again.dropsHistory),
       );
       expect(made).toEqual({ code: expect.any(String) });
+      expect(linked.engine.hasRecoveryKey).toBe(false);
+      await expect(activate(linked, again.dropsHistory)).resolves.toEqual({
+        active: true,
+      });
       expect(linked.engine.hasRecoveryKey).toBe(true);
     });
   });
@@ -602,38 +652,6 @@ describe("the engine against a delivery service that may lie", () => {
   });
 
   describe("the history a backup keeps", () => {
-    /**
-     * Alice's first device has the recovery key and backed up a message;
-     * her second has the key too, but its copy of the history lacks that
-     * message, as when moving it failed.
-     */
-    async function laggingDevice() {
-      const alice1 = await startChat();
-      const bob = await startChat();
-      const id = await conversationBetween(alice1, bob);
-      await send(alice1, id, "før");
-      await sync(bob);
-      const code = await createRecoveryKey(alice1);
-      await on(alice1, () => alice1.engine.backUp());
-      const linked = await link(alice1, true);
-      storedJson.set(linked, `history:${id}`, []);
-      const alice2 = await reload(linked);
-      await send(bob, id, "etter");
-      await sync(alice1);
-      await sync(alice2);
-      expect(await texts(alice2, id)).toEqual(["etter"]);
-      return { alice1, alice2, bob, id, code };
-    }
-
-    /** What a device restored with the code gets back. */
-    async function restored(userId: string, code: string, id: string) {
-      const device = context(userId);
-      const engine = await on(device, () => restoreChat(userId, code));
-      if (engine === "wrong_key") throw new Error("wrong key");
-      await on(device, () => engine.resumeHistory());
-      return texts({ ...device, engine }, id);
-    }
-
     it("keeps what the backup had when a device with less backs up", async () => {
       const { alice2, id, code } = await laggingDevice();
       await on(alice2, () => alice2.engine.backUp());
@@ -687,6 +705,176 @@ describe("the engine against a delivery service that may lie", () => {
       server.failArchives = false;
       expect(await restored(alice1.userId, code, id)).toEqual(["før", "etter"]);
     });
+  });
+
+  describe("a new key and the code the user keeps", () => {
+    const backupOf = (device: TestDevice) =>
+      server.recovery.get(device.userId)!;
+
+    it("puts a new key to use only once the user has kept its code", async () => {
+      const { alice2 } = await laggingDevice();
+      const before = backupOf(alice2).keyId;
+      const made = await prepare(alice2);
+      expect("code" in made).toBe(true);
+      expect(backupOf(alice2).keyId).toBe(before);
+      await activate(alice2);
+      expect(backupOf(alice2).keyId).not.toBe(before);
+    });
+
+    it("restores with the kept code when the answer was lost and the device is gone", async () => {
+      const { alice2, id } = await laggingDevice();
+      const made = await prepare(alice2);
+      if (!("code" in made)) throw new Error("asked to drop history");
+      server.loseNextRecoveryAnswer = true;
+      await expect(activate(alice2)).rejects.toThrow();
+      expect(await restored(alice2.userId, made.code, id)).toEqual([
+        "før",
+        "etter",
+      ]);
+    });
+
+    it("keeps backing up under a key the server took though the answer was lost", async () => {
+      const { alice2, bob, id } = await laggingDevice();
+      const made = await prepare(alice2);
+      if (!("code" in made)) throw new Error("asked to drop history");
+      server.loseNextRecoveryAnswer = true;
+      await expect(activate(alice2)).rejects.toThrow();
+      const again = await reload(alice2);
+      await send(bob, id, "senere");
+      await sync(again);
+      await on(again, () => again.engine.backUp());
+      expect(again.engine.hasRecoveryKey).toBe(true);
+      expect(await restored(again.userId, made.code, id)).toEqual([
+        "før",
+        "etter",
+        "senere",
+      ]);
+    });
+
+    it("keeps a key whose request is still on its way when the device tries again", async () => {
+      const { alice2, id } = await laggingDevice();
+      server.holdNextRecoveryKey = true;
+      await expect(createRecoveryKey(alice2)).rejects.toThrow();
+      // The page is reloaded and the key made again; the first request is
+      // taken right after the second try read the backup.
+      const again = await reload(alice2);
+      server.afterBackupRead = () => server.heldRecoveryKey!();
+      const code = await createRecoveryKey(again);
+      expect(await restored(again.userId, code, id)).toEqual(["før", "etter"]);
+    });
+
+    it("finishes when an earlier try of the same key is taken late", async () => {
+      const { alice2, id } = await laggingDevice();
+      const made = await prepare(alice2);
+      if (!("code" in made)) throw new Error("asked to drop history");
+      server.holdNextRecoveryKey = true;
+      await expect(activate(alice2)).rejects.toThrow();
+      // The user tries again; the first try is taken after the backup is read.
+      server.afterBackupRead = () => server.heldRecoveryKey!();
+      await expect(activate(alice2)).resolves.toEqual({ active: true });
+      expect(await restored(alice2.userId, made.code, id)).toEqual([
+        "før",
+        "etter",
+      ]);
+    });
+
+    it("keeps a key sent without an answer until the server can no longer take it", async () => {
+      const { alice2 } = await laggingDevice();
+      server.holdNextRecoveryKey = true;
+      await expect(createRecoveryKey(alice2)).rejects.toThrow();
+      const pending = () => storedNames(alice2, "recovery-pending:");
+      expect(pending()).toHaveLength(1);
+      const again = await reload(alice2);
+      // A backup reads the backup the request was sent to replace: it may
+      // still be taken.
+      await on(again, () => again.engine.backUp());
+      expect(pending()).toHaveLength(1);
+      await createRecoveryKey(again);
+      // Only now can it never be taken.
+      await expect(server.heldRecoveryKey!()).rejects.toThrow();
+      await on(again, () => again.engine.backUp());
+      expect(pending()).toEqual([]);
+    });
+
+    it("asks before replacing a backup it cannot open, whatever the server says of its history", async () => {
+      const alice1 = await startChat();
+      const bob = await startChat();
+      const id = await conversationBetween(alice1, bob);
+      await send(alice1, id, "før");
+      await createRecoveryKey(alice1);
+      await on(alice1, () => alice1.engine.backUp());
+      const linked = await link(alice1, false);
+      server.hideBackupArchive = true;
+      const made = await prepare(linked);
+      expect("dropsHistory" in made).toBe(true);
+    });
+
+    it("backs up and makes a new key on the same device one at a time", async () => {
+      const { alice2, id } = await laggingDevice();
+      const [, code] = await Promise.all([
+        on(alice2, () => alice2.engine.backUp()),
+        createRecoveryKey(alice2),
+      ]);
+      expect(await restored(alice2.userId, code, id)).toEqual(["før", "etter"]);
+    });
+  });
+
+  describe("a backup whose history does not open", () => {
+    /** A backup under Alice's key that points to `archive`'s parts. */
+    async function pointBackupTo(
+      device: TestDevice,
+      code: string,
+      plaintext: Uint8Array | null,
+    ) {
+      const backup = server.recovery.get(device.userId)!;
+      const key = (await readRecoveryKey(code))!;
+      const opened = await openRecoveryBackup(
+        key,
+        device.userId,
+        fromBase64(backup.backup),
+      );
+      const archiveId = backup.archiveId!;
+      const row = server.archives.get(archiveId)!;
+      if (plaintext) {
+        const sealed = await sealArchive(plaintext);
+        row.parts = sealed.parts.map((part) => toBase64(part));
+        backup.backup = toBase64(
+          await sealRecoveryBackup(key, {
+            account: opened.account,
+            pinned: opened.pinned,
+            revoked: opened.revoked,
+            archive: { archiveId, parts: sealed.parts.length, key: sealed.key },
+          }),
+        );
+      } else {
+        row.parts = row.parts.map((part) =>
+          toBase64(
+            crypto.getRandomValues(new Uint8Array(fromBase64(part!).length)),
+          ),
+        );
+      }
+      return backup.backup;
+    }
+
+    for (const [problem, plaintext] of [
+      ["does not decrypt", null],
+      ["is not in the expected form", utf8('{"v":2}')],
+    ] as const) {
+      it(`replaces no backup whose history ${problem}`, async () => {
+        const { alice2, code } = await laggingDevice();
+        // Any backup the last sync started is done first.
+        await on(alice2, () => alice2.engine.backUp());
+        const sealed = await pointBackupTo(alice2, code, plaintext);
+        await expect(
+          on(alice2, () => alice2.engine.backUp()),
+        ).rejects.toThrow();
+        const made = await prepare(alice2);
+        if ("code" in made) {
+          await expect(activate(alice2)).rejects.toThrow();
+        }
+        expect(server.recovery.get(alice2.userId)!.backup).toBe(sealed);
+      });
+    }
   });
 
   describe("priority 2", () => {

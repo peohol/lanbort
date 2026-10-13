@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type {
+  CreateChatRecoveryKey,
   ChatConversation,
   ChatDevice,
   ChatDirectory,
@@ -93,6 +94,12 @@ export const memoryStores = {
 /** A record of a device's store, for a test to look into. */
 export const storedRecord = (device: DeviceContext, record: string) =>
   stores.get(`${device.browser}:${device.userId}`)?.get(record);
+
+/** The names of a device's records that start with `prefix`. */
+export const storedNames = (device: DeviceContext, prefix: string) =>
+  [...(stores.get(`${device.browser}:${device.userId}`)?.keys() ?? [])].filter(
+    (name) => name.startsWith(prefix),
+  );
 
 /** A record of a device's store as JSON, read or replaced by a test. */
 export const storedJson = {
@@ -209,6 +216,17 @@ export class FakeChatServer {
   loseNextCommitAnswer = false;
   /** Takes the next new recovery key, then acts as if the answer was lost. */
   loseNextRecoveryAnswer = false;
+  /**
+   * Answers the next new recovery key as if the connection was lost, but
+   * takes it only when the test runs `heldRecoveryKey`: a request still on
+   * its way when the device tries again.
+   */
+  holdNextRecoveryKey = false;
+  heldRecoveryKey: (() => Promise<void>) | null = null;
+  /** Runs once after the next read of the backup, which it does not change. */
+  afterBackupRead: (() => Promise<void>) | null = null;
+  /** Says the backup has no history archive, whatever it points to. */
+  hideBackupArchive = false;
   /** Overrides what the directory says, after the server built it. */
   directoryFilter: ((directory: ChatDirectory) => ChatDirectory) | null = null;
   /** Overrides what a conversation's page is told, likewise. */
@@ -278,6 +296,18 @@ export class FakeChatServer {
       archiveId,
       (a) => a.purpose === "backup" && this.#complete(a),
     );
+  }
+
+  async #createRecoveryKey({
+    keyId,
+    backup,
+    archiveId,
+    replaces,
+  }: CreateChatRecoveryKey) {
+    const device = this.#device();
+    if (archiveId !== null) this.#backupArchive(archiveId);
+    await this.#checkReplaces(replaces);
+    this.#attach({ keyId, backup, archiveId }, device.deviceId);
   }
 
   /** Time passes: archives no backup points to expire. */
@@ -576,11 +606,15 @@ export class FakeChatServer {
 
     acknowledgeNotice: async () => ({}),
 
-    createRecoveryKey: async ({ keyId, backup, archiveId, replaces }) => {
-      const device = this.#device();
-      if (archiveId !== null) this.#backupArchive(archiveId);
-      await this.#checkReplaces(replaces);
-      this.#attach({ keyId, backup, archiveId }, device.deviceId);
+    createRecoveryKey: async (body) => {
+      if (this.holdNextRecoveryKey) {
+        this.holdNextRecoveryKey = false;
+        const caller = current();
+        this.heldRecoveryKey = () =>
+          on(caller, () => this.#createRecoveryKey(body));
+        fail("network");
+      }
+      await this.#createRecoveryKey(body);
       if (this.loseNextRecoveryAnswer) {
         this.loseNextRecoveryAnswer = false;
         fail("network");
@@ -606,14 +640,18 @@ export class FakeChatServer {
         recovery.archiveId !== null
           ? this.archives.get(recovery.archiveId)
           : undefined;
-      return {
+      const read = {
         keyId: recovery.keyId,
         backup: recovery.backup,
         archive:
-          archive && recovery.archiveId
+          archive && recovery.archiveId && !this.hideBackupArchive
             ? { archiveId: recovery.archiveId, parts: archive.parts.length }
             : null,
       };
+      const after = this.afterBackupRead;
+      this.afterBackupRead = null;
+      await after?.();
+      return read;
     },
     restore: async ({ certificate, revocations }) => {
       const { userId, session } = current();

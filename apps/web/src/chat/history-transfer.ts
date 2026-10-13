@@ -220,6 +220,10 @@ export async function receiveHistory(
   return openArchive(archive.key.reveal(), parts);
 }
 
+/** The archive is no longer on the server: expired, or replaced. */
+export const archiveGone = (error: unknown) =>
+  error instanceof ChatApiError && error.code === "not_found";
+
 /**
  * Whether trying again cannot help: the archive is gone or expired, or it
  * does not open. A lost connection or a busy server can.

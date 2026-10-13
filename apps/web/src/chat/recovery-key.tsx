@@ -150,8 +150,8 @@ function ConfirmDrop({
       {changed && (
         <Notice tag="Endret" tone="warning" role="alert">
           <p>
-            Sikkerhetskopien ble endret på en annen enhet etter at du bekreftet.
-            Les gjennom og bekreft på nytt.
+            Sikkerhetskopien ble endret på en annen enhet mens du laget
+            nøkkelen. Les gjennom og bekreft på nytt.
           </p>
         </Notice>
       )}
@@ -199,10 +199,15 @@ function ConfirmDrop({
   );
 }
 
-/** R2: the key, once, until the user says it is written down. */
-function ShowKey({ code, done }: { code: string; done: () => void }) {
+/**
+ * R2: the key, once, until the user says it is written down. Only then is
+ * it put to use, so a key in use is always one the user has kept.
+ */
+function ShowKey({ code, done }: { code: string; done: () => Promise<void> }) {
   const [kept, setKept] = useState(false);
   const [copied, setCopied] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const groups = groupRecoveryKey(code);
 
   async function copy() {
@@ -214,12 +219,26 @@ function ShowKey({ code, done }: { code: string; done: () => void }) {
     }
   }
 
+  async function finish() {
+    setBusy(true);
+    setError(null);
+    try {
+      await done();
+    } catch (problem) {
+      setError(
+        `${chatErrorMessage(problem)} Nøkkelen er kanskje ikke tatt i bruk ennå. Ta vare på den og prøv igjen.`,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <section className={`card ${styles.intro}`} aria-labelledby="ta-vare">
       <h2 id="ta-vare">Ta vare på nøkkelen</h2>
       <p className="quiet">
         Skriv den ned eller lagre den i en passordbehandler. Den vises ikke
-        igjen.
+        igjen, og den tas i bruk først når du har krysset av og trykket Ferdig.
       </p>
       <p
         className={styles.code}
@@ -253,22 +272,24 @@ function ShowKey({ code, done }: { code: string; done: () => void }) {
           Jeg har skrevet ned eller lagret nøkkelen
         </label>
       </div>
-      <button
+      <BusyButton
         type="button"
         className="button-primary"
+        busy={busy}
         disabled={!kept}
-        onClick={done}
+        onClick={() => void finish()}
       >
         Ferdig
-      </button>
+      </BusyButton>
+      <ErrorText>{error}</ErrorText>
     </section>
   );
 }
 
 /**
  * Makes the key and shows it once (R1–R2), asking first if it would end
- * backed-up history this device does not have. `done` comes when the user
- * has written it down.
+ * backed-up history this device does not have. `done` comes once the key
+ * the user wrote down is in use.
  */
 export function RecoveryKeyFlow({
   engine,
@@ -283,6 +304,8 @@ export function RecoveryKeyFlow({
   done: () => void;
 }) {
   const [code, setCode] = useState<string | null>(null);
+  /** The backup the user agreed to end before the code was shown. */
+  const [agreed, setAgreed] = useState<string | null>(null);
   const [dropping, setDropping] = useState<{
     backup: string;
     changed: boolean;
@@ -292,6 +315,7 @@ export function RecoveryKeyFlow({
     const made = await engine.createRecoveryKey(confirmed);
     if ("code" in made) {
       setDropping(null);
+      setAgreed(confirmed);
       setCode(made.code);
     } else {
       // A confirmation holds only for the backup it was given for.
@@ -299,21 +323,32 @@ export function RecoveryKeyFlow({
     }
   }
 
-  return code ? (
-    <ShowKey
-      code={code}
-      done={() => {
-        setCode(null);
-        done();
-      }}
-    />
-  ) : dropping ? (
+  /** The user has kept the code: the key is put to use. */
+  async function use(confirmed: string | null) {
+    const used = await engine.activateRecoveryKey(confirmed);
+    if ("active" in used) {
+      setDropping(null);
+      setCode(null);
+      done();
+    } else {
+      // The backup changed since the code was shown.
+      setAgreed(null);
+      setDropping({ backup: used.dropsHistory, changed: true });
+    }
+  }
+
+  return dropping ? (
     <ConfirmDrop
       key={dropping.backup}
       changed={dropping.changed}
-      make={() => make(dropping.backup)}
-      cancel={() => setDropping(null)}
+      make={() => (code ? use(dropping.backup) : make(dropping.backup))}
+      cancel={() => {
+        setDropping(null);
+        setCode(null);
+      }}
     />
+  ) : code ? (
+    <ShowKey code={code} done={() => use(agreed)} />
   ) : (
     <Offer
       replacing={replacing}

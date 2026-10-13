@@ -64,6 +64,7 @@ import { ChatApiError, chatApi } from "./api";
 import { fromBase64, fromUtf8, toBase64, utf8 } from "./bytes";
 import {
   type ConversationHistory,
+  archiveGone,
   historyLost,
   mergeConversations,
   mergeHistory,
@@ -170,8 +171,13 @@ interface CurrentBackup {
   sealed: Uint8Array;
   /** What the server checks that the backup it replaces is (SHA-256). */
   digest: string;
-  /** It points to a history archive. */
-  history: boolean;
+}
+
+/** A recovery key this device sent, while the answer is not known. */
+interface PendingRecovery {
+  key: RecoveryKey;
+  /** The backups it was sent to replace, by SHA-256; "" for none. */
+  sentFor: string[];
 }
 
 interface ConversationRecord {
@@ -215,8 +221,8 @@ const records = {
   account: "account",
   device: "device",
   recovery: "recovery",
-  /** A new key whose answer is not in yet: the server may have taken it. */
-  recoveryPending: "recovery-pending",
+  /** A new key sent without an answer: the server may yet take it. */
+  recoveryPending: (keyId: string) => `recovery-pending:${keyId}`,
   backup: "backup",
   /** Set on a device that was linked (13), not on a first or restored one. */
   linked: "linked",
@@ -522,6 +528,9 @@ export class ChatEngine {
   #linkedAt: Promise<string | null> | null = null;
   #backup: BackupState | undefined;
   #backingUp: Promise<void> | null = null;
+  #backupQueue: Promise<unknown> = Promise.resolve();
+  /** A new recovery key whose code is shown, not yet in use. */
+  #prepared: RecoveryKey | null = null;
   /** The pinned keys and revocations as last saved: the backup carries them. */
   #trusted: string;
 
@@ -807,100 +816,183 @@ export class ChatEngine {
   }
 
   /**
-   * Makes a new recovery key, which replaces the account's earlier one.
-   * The code is for the user to write down, once; this device keeps only
-   * what it needs for the backup.
+   * Step one of a new recovery key, which replaces the account's earlier
+   * one: the key is made and its code shown, for the user to keep, once.
+   * Nothing changes on the server until `activateRecoveryKey`, after the
+   * user says the code is kept: a key in use is always one the user has.
    *
-   * The new backup keeps the history the one there now holds, with this
-   * device's, in the same step: none of it is ever without a backup. That
-   * needs the backup's key; without it, the backup's history goes, and
-   * nothing is made until the user agrees to lose it: the answer is what
-   * they agree to. Made again with that answer's `dropsHistory`, the key
-   * replaces that backup and no other.
+   * A backup this device cannot open ends with the new key, and nothing is
+   * made until the user agrees: the answer is what they agree to. Made
+   * again with that answer's `dropsHistory`, the key replaces that backup
+   * and no other.
    */
-  async createRecoveryKey(
+  createRecoveryKey(
     dropping: string | null = null,
   ): Promise<{ code: string } | { dropsHistory: string }> {
-    for (let attempt = 1; ; attempt++) {
+    return this.#backupStep(async () => {
       const current = await this.#exclusive(() => this.#readBackup());
-      const pending = await this.#pendingKey(current);
-      const opener =
-        current &&
-        [this.#recovery, pending].find((key) => this.#holdsKeyOf(current, key));
-      if (current?.history && !opener && current.digest !== dropping) {
+      const opener = await this.#settleRecovery(current);
+      if (current && !opener && current.digest !== dropping) {
         return { dropsHistory: current.digest };
       }
-      const startedAt = Date.now();
-      // A first key has no backup to keep history in yet: it follows.
-      const archive = current && (await this.#backupArchive(current, opener));
       const { code, key } = await createRecoveryKey();
-      try {
-        // Kept first: if the answer is lost, the backup the server may have
-        // taken under it can still be opened, and its history kept.
-        await putSecret(
-          this.store,
-          records.recoveryPending,
-          exportRecoveryKey(key),
-        );
-        await chatApi.createRecoveryKey({
-          keyId: toBase64(key.id),
-          backup: toBase64(
-            await sealRecoveryBackup(key, {
-              account: this.account,
-              ...(archive ? { archive } : {}),
-              ...(await this.#carriedTrust()),
-            }),
-          ),
-          archiveId: archive?.archiveId ?? null,
-          replaces: current?.digest ?? null,
-        });
-      } catch (error) {
-        if (backupOutdated(error) && attempt < chatTuning.conflictRetries) {
-          continue;
-        }
-        throw error;
-      } finally {
-        if (archive) wipe(archive.key.reveal());
-      }
-      await putSecret(this.store, records.recovery, exportRecoveryKey(key));
-      await this.store.delete(records.recoveryPending);
-      this.#recovery = key;
-      this.#changed();
-      if (archive) {
-        await this.#backedUp(startedAt);
-      } else {
-        void this.backUp().catch(() => undefined);
-      }
+      this.#prepared = key;
       return { code };
-    }
+    });
   }
 
   /**
-   * A key this device made whose answer never came, if the backup there is
-   * now is under it: the server took it, and only this device can open
-   * that backup. Otherwise it is gone, and so is the record of it.
+   * Step two: the key whose code the user kept replaces the earlier one.
+   * The new backup keeps the history the one there now holds, with this
+   * device's, in the same step: none of it is ever without a backup. If
+   * the backup changed since step one into one this device cannot open,
+   * the user is asked again, as in step one.
+   *
+   * The key is kept on the device before it is sent. If no answer comes,
+   * it stays there for as long as the server may still take it, so the
+   * backup it would replace can always be opened here.
    */
-  async #pendingKey(
+  activateRecoveryKey(
+    dropping: string | null = null,
+  ): Promise<{ active: true } | { dropsHistory: string }> {
+    return this.#backupStep(async () => {
+      const key = this.#prepared;
+      if (!key) throw new Error("No recovery key is waiting to be used");
+      const id = toBase64(key.id);
+      const sentFor =
+        (await this.#pendingKeys()).find((p) => toBase64(p.key.id) === id)
+          ?.sentFor ?? [];
+      for (let attempt = 1; ; attempt++) {
+        const current = await this.#exclusive(() => this.#readBackup());
+        const opener = await this.#settleRecovery(current);
+        // An earlier try was taken.
+        if (this.#holdsKeyOf(current, key)) {
+          this.#prepared = null;
+          return { active: true };
+        }
+        if (current && !opener && current.digest !== dropping) {
+          return { dropsHistory: current.digest };
+        }
+        const startedAt = Date.now();
+        // A first key has no backup to keep history in yet: it follows.
+        const archive = current && (await this.#backupArchive(current, opener));
+        try {
+          sentFor.push(current?.digest ?? "");
+          await this.#keepPending({ key, sentFor });
+          await chatApi.createRecoveryKey({
+            keyId: id,
+            backup: toBase64(
+              await sealRecoveryBackup(key, {
+                account: this.account,
+                ...(archive ? { archive } : {}),
+                ...(await this.#carriedTrust()),
+              }),
+            ),
+            archiveId: archive?.archiveId ?? null,
+            replaces: current?.digest ?? null,
+          });
+        } catch (error) {
+          if (backupOutdated(error) && attempt < chatTuning.conflictRetries) {
+            continue;
+          }
+          throw error;
+        } finally {
+          if (archive) wipe(archive.key.reveal());
+        }
+        await this.#useRecoveryKey(key);
+        this.#prepared = null;
+        if (archive) {
+          await this.#backedUp(startedAt);
+        } else {
+          // The first backup with history, now that there is a key for it;
+          // if it fails, a later one is due.
+          await this.#backUpNow().catch(() => undefined);
+        }
+        return { active: true };
+      }
+    });
+  }
+
+  /** From now on the key this device backs up under. */
+  async #useRecoveryKey(key: RecoveryKey) {
+    await putSecret(this.store, records.recovery, exportRecoveryKey(key));
+    await this.store.delete(records.recoveryPending(toBase64(key.id)));
+    this.#recovery = key;
+    this.#changed();
+  }
+
+  /**
+   * Settles, from the backup there is now, the keys this device sent
+   * without an answer. The one the backup is under was taken: this device
+   * backs up under it from now on. One sent only to replace backups that
+   * are gone can never be taken, and goes. The rest stay, for a request
+   * may still be on its way. The answer is the key that opens `current`.
+   */
+  async #settleRecovery(
     current: CurrentBackup | null,
   ): Promise<RecoveryKey | null> {
-    const stored = await this.store.get(records.recoveryPending);
-    if (!stored) return null;
-    try {
-      const key = importRecoveryKey(stored);
-      if (
-        current &&
-        this.#holdsKeyOf(current, key) &&
-        !this.#holdsKeyOf(current, this.#recovery)
+    for (const { key, sentFor } of await this.#pendingKeys()) {
+      if (this.#holdsKeyOf(current, key)) {
+        await this.#useRecoveryKey(key);
+      } else if (
+        key !== this.#prepared &&
+        !sentFor.includes(current?.digest ?? "")
       ) {
-        return key;
+        await this.store.delete(records.recoveryPending(toBase64(key.id)));
       }
-    } catch {
-      // Not a key: nothing to open with it.
-    } finally {
-      wipe(stored);
     }
-    await this.store.delete(records.recoveryPending);
-    return null;
+    return this.#holdsKeyOf(current, this.#recovery) ? this.#recovery : null;
+  }
+
+  async #pendingKeys(): Promise<PendingRecovery[]> {
+    const prefix = records.recoveryPending("");
+    const found: PendingRecovery[] = [];
+    for (const name of await this.store.names(prefix)) {
+      const stored = await this.store.get(name);
+      if (!stored) continue;
+      try {
+        const { key, sentFor } = JSON.parse(fromUtf8(stored)) as {
+          key: string;
+          sentFor: string[];
+        };
+        const exported = fromBase64(key);
+        const imported = importRecoveryKey(exported);
+        wipe(exported);
+        // The one in memory, so the step that made it knows it.
+        found.push({
+          key:
+            this.#prepared &&
+            toBase64(this.#prepared.id) === toBase64(imported.id)
+              ? this.#prepared
+              : imported,
+          sentFor,
+        });
+      } catch {
+        await this.store.delete(name);
+      } finally {
+        wipe(stored);
+      }
+    }
+    return found;
+  }
+
+  async #keepPending({ key, sentFor }: PendingRecovery) {
+    const exported = exportRecoveryKey(key).reveal();
+    const bytes = utf8(JSON.stringify({ key: toBase64(exported), sentFor }));
+    wipe(exported);
+    await putSecret(this.store, records.recoveryPending(toBase64(key.id)), {
+      reveal: () => bytes,
+    });
+  }
+
+  /**
+   * Backup steps, one at a time: a backup and a new key on this device
+   * never replace each other's archive. Other tabs wait for the chat lock.
+   */
+  #backupStep<T>(step: () => Promise<T>): Promise<T> {
+    const run = this.#backupQueue.then(step);
+    this.#backupQueue = run.catch(() => undefined);
+    return run;
   }
 
   /**
@@ -909,9 +1001,11 @@ export class ChatEngine {
    * stops: only that key's devices keep the backup.
    */
   backUp(): Promise<void> {
-    this.#backingUp ??= this.#backUpNow().finally(() => {
-      this.#backingUp = null;
-    });
+    this.#backingUp ??= this.#backupStep(() => this.#backUpNow()).finally(
+      () => {
+        this.#backingUp = null;
+      },
+    );
     return this.#backingUp;
   }
 
@@ -922,22 +1016,22 @@ export class ChatEngine {
    * what that one held.
    */
   async #backUpNow(): Promise<void> {
-    const recovery = this.#recovery;
     // Until history on its way here is in, a backup would leave it out.
-    if (!recovery || (await this.#heldHistory()).length > 0) return;
+    if ((await this.#heldHistory()).length > 0) return;
+    if (!this.#recovery && (await this.#pendingKeys()).length === 0) return;
     const startedAt = Date.now();
     for (let attempt = 1; ; attempt++) {
       const current = await this.#exclusive(() => this.#readBackup());
-      if (!current || !this.#holdsKeyOf(current, recovery)) {
+      const recovery = await this.#settleRecovery(current);
+      if (!recovery) {
+        if (!this.#recovery) return;
         // Another device has made a newer key.
-        if (this.#recovery === recovery) {
-          await this.store.delete(records.recovery);
-          this.#recovery = null;
-          this.#changed();
-        }
+        await this.store.delete(records.recovery);
+        this.#recovery = null;
+        this.#changed();
         throw new ChatApiError("conflict");
       }
-      const archive = await this.#backupArchive(current, recovery);
+      const archive = await this.#backupArchive(current!, recovery);
       try {
         await chatApi.backUp({
           keyId: toBase64(recovery.id),
@@ -949,7 +1043,7 @@ export class ChatEngine {
             }),
           ),
           archiveId: archive.archiveId,
-          replaces: current.digest,
+          replaces: current!.digest,
         });
         break;
       } catch (error) {
@@ -988,15 +1082,18 @@ export class ChatEngine {
       digest: toBase64(
         new Uint8Array(await crypto.subtle.digest("SHA-256", sealed)),
       ),
-      history: backup.archive !== null,
     };
   }
 
   #holdsKeyOf(
-    backup: CurrentBackup,
+    backup: CurrentBackup | null,
     recovery: RecoveryKey | null | undefined,
   ): boolean {
-    return recovery != null && backup.keyId === toBase64(recovery.id);
+    return (
+      backup !== null &&
+      recovery != null &&
+      backup.keyId === toBase64(recovery.id)
+    );
   }
 
   /**
@@ -1020,8 +1117,9 @@ export class ChatEngine {
    * revocations, taken in here, and its history, returned. Only
    * revocations: they can only take trust away. A backup under this
    * device's key that does not open stops the backup: it is not replaced
-   * unread. Nor is it while its history cannot be fetched; once that is
-   * gone or does not open, there is none left to keep.
+   * unread. Nor is it while its history cannot be fetched, or does not
+   * open or read as history: only an archive the server no longer has
+   * leaves none to keep.
    */
   async #takeInBackup(
     backup: CurrentBackup,
@@ -1046,7 +1144,7 @@ export class ChatEngine {
       try {
         return unpackHistory(await receiveHistory(archive));
       } catch (error) {
-        if (historyLost(error)) return [];
+        if (archiveGone(error)) return [];
         throw error;
       }
     } finally {

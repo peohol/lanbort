@@ -456,7 +456,7 @@ test("the recovery key brings chat and its backed-up messages back when every de
   }
 });
 
-test("a new key that ends backed-up history asks again for each changed backup (ADR-0010 §8)", async ({
+test("a new key is used only once its code is kept, and asks again for each changed backup it ends (ADR-0010 §8)", async ({
   browser,
 }) => {
   test.setTimeout(240_000);
@@ -468,10 +468,19 @@ test("a new key that ends backed-up history asks again for each changed backup (
       .getByRole("button", { name: "Lag gjenopprettingsnøkkel" })
       .click();
   };
+  /** The user says the shown key is kept: only then is it used. */
+  const keep = async (page: Page) => {
+    await expect(page.getByLabel(/^Gjenopprettingsnøkkel: /)).toBeVisible();
+    await page.getByLabel("Jeg har skrevet ned eller lagret nøkkelen").check();
+    await page.getByRole("button", { name: "Ferdig" }).click();
+    await expect(
+      page.getByText("Gjenopprettingsnøkkelen er laget."),
+    ).toBeVisible();
+  };
   const backup = async () =>
     (await phone.context.request.get("/api/chat/recovery")).json();
   await makeKey(phone.page);
-  await expect(phone.page.getByLabel(/^Gjenopprettingsnøkkel: /)).toBeVisible();
+  await keep(phone.page);
   await expect(async () => {
     expect((await backup()).archive).not.toBeNull();
   }).toPass({ timeout: 20_000 });
@@ -505,10 +514,13 @@ test("a new key that ends backed-up history asks again for each changed backup (
   await expect(anyway).toBeEnabled();
   expect(await axeViolations(laptop.page)).toEqual([]);
 
-  // Meanwhile the phone makes a new key: the backup is another one now.
+  // Meanwhile the phone makes a new key. The backup stays as it is while
+  // the code is shown, and changes once the user says it is kept.
   const before = (await backup()).backup;
   await makeKey(phone.page);
   await expect(phone.page.getByLabel(/^Gjenopprettingsnøkkel: /)).toBeVisible();
+  expect((await backup()).backup).toBe(before);
+  await keep(phone.page);
   expect((await backup()).backup).not.toBe(before);
 
   // The earlier confirmation does not hold for it: asked again, unticked.
@@ -517,16 +529,14 @@ test("a new key that ends backed-up history asks again for each changed backup (
   await expect(anyway).toBeDisabled();
   await expect(
     confirmation.getByText(
-      "Sikkerhetskopien ble endret på en annen enhet etter at du bekreftet.",
+      "Sikkerhetskopien ble endret på en annen enhet mens du laget nøkkelen.",
       { exact: false },
     ),
   ).toBeVisible();
   expect(await axeViolations(laptop.page)).toEqual([]);
   await understood.check();
   await anyway.click();
-  await expect(
-    laptop.page.getByLabel(/^Gjenopprettingsnøkkel: /),
-  ).toBeVisible();
+  await keep(laptop.page);
 
   // The first key looks for a backup to replace and finds none.
   expect(
