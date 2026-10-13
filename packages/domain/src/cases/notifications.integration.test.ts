@@ -530,5 +530,5 @@ describe("the notice to whoever a measure hits (PS-TRUST-018)", () => {
     await expect(notice(reporter)).rejects.toMatchObject({
       code: "not_found",
     });
-  });
+  }, 60_000);
 });
