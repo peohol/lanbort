@@ -20,7 +20,7 @@ const bars = [
  * height allows for. A browser that scrolls a tall field only until its
  * top shows is helped the rest of the way: the field is moved up until it
  * clears the navigation, as far as it can without its top going under the
- * header.
+ * header's buttons, which stay at the top of the screen.
  */
 export function StickyBars() {
   useEffect(() => {
@@ -59,7 +59,9 @@ export function StickyBars() {
       if (wide.matches || navigation.getClientRects().length === 0) return;
 
       const box = event.target.getBoundingClientRect();
-      const top = header.getBoundingClientRect().bottom;
+      const top =
+        header.querySelector(".header-actions")?.getBoundingClientRect()
+          .bottom ?? 0;
       const bottom = navigation.getBoundingClientRect().top;
       if (box.bottom <= bottom) return;
 
