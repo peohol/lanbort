@@ -31,10 +31,16 @@ describe("moving history to a linked device", () => {
     const conversations = [
       {
         id: "c1",
+        participants: ["me", "them"],
         history: [entry("a", 1), entry("b", 2, { own: true })],
         seen: "b",
       },
-      { id: "c2", history: [entry("c", 3, { text: null })], seen: null },
+      {
+        id: "c2",
+        participants: null,
+        history: [entry("c", 3, { text: null })],
+        seen: null,
+      },
     ];
 
     expect(unpackHistory(packHistory(conversations))).toEqual(conversations);
@@ -110,6 +116,30 @@ describe("moving history to a linked device", () => {
     );
   });
 
+  it("keeps whom each conversation is with, as the device had settled it", () => {
+    const [known, unknown] = unpackHistory(
+      packHistory([
+        { id: "c1", participants: ["me", "them"], history: [], seen: null },
+        { id: "c2", history: [entry("a", 1)], seen: null },
+      ]),
+    );
+    expect(known!.participants).toEqual(["me", "them"]);
+    expect(unknown!.participants).toBeNull();
+  });
+
+  it("reads an archive from before it kept whom, as not known", () => {
+    const [moved] = unpackHistory(
+      utf8(
+        JSON.stringify({
+          v: 1,
+          conversations: [{ id: "c1", history: [entry("a", 1)], seen: null }],
+        }),
+      ),
+    );
+    expect(moved).toEqual({ id: "c1", history: [entry("a", 1)], seen: null });
+    expect(moved!.participants).toBeUndefined();
+  });
+
   it("refuses an archive that is not history", () => {
     expect(() => unpackHistory(utf8('{"v":2}'))).toThrow();
     expect(() =>
@@ -147,10 +177,35 @@ describe("moving history to a linked device", () => {
     ];
 
     expect(mergeConversations(own, backedUp)).toEqual([
-      { id: "a", history: [entry("1", 1), entry("2", 2)], seen: "1" },
-      { id: "b", history: [entry("3", 3), entry("4", 4)], seen: "4" },
+      {
+        id: "a",
+        participants: null,
+        history: [entry("1", 1), entry("2", 2)],
+        seen: "1",
+      },
+      {
+        id: "b",
+        participants: null,
+        history: [entry("3", 3), entry("4", 4)],
+        seen: "4",
+      },
       { id: "c", history: [entry("5", 5)], seen: null },
     ]);
+  });
+
+  it("backs up whom a conversation is with from either copy, this one's first", () => {
+    const [both, only] = mergeConversations(
+      [
+        { id: "c1", participants: ["me", "them"], history: [], seen: null },
+        { id: "c2", participants: null, history: [], seen: null },
+      ],
+      [
+        { id: "c1", participants: ["me", "other"], history: [], seen: null },
+        { id: "c2", participants: ["me", "them"], history: [], seen: null },
+      ],
+    );
+    expect(both!.participants).toEqual(["me", "them"]);
+    expect(only!.participants).toEqual(["me", "them"]);
   });
 
   it("tries again after a lost connection, not when the archive is gone", () => {

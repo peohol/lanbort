@@ -165,6 +165,20 @@ export interface SecurityCode {
 export type ConversationProblem =
   "no_key_package" | "out_of_sync" | "other_person";
 
+/**
+ * Whom a page may say a conversation's messages are with (ADR-0010 §3):
+ * the account it shows, once this device has settled that account as the
+ * group's other participant, from its own verification or from the
+ * history it was given. Null until then, or when the page shows someone
+ * else (`elsewhere`): nothing is then said to be from them, or readable
+ * by them.
+ */
+export interface Counterpart {
+  userId: string | null;
+  /** This device has settled the conversation is with someone else. */
+  elsewhere: boolean;
+}
+
 /** The account's backup as read from the server, before it is replaced. */
 interface CurrentBackup {
   keyId: string;
@@ -237,6 +251,8 @@ const records = {
   conversation: (id: string) => `conversation:${id}`,
   history: (id: string) => `history:${id}`,
   seen: (id: string) => `seen:${id}`,
+  /** The contact's changed key whose code the user was shown. */
+  codeShown: (userId: string) => `code-shown:${userId}`,
 };
 
 const certificateWire = (c: DeviceCertificate): DeviceCertificateWire =>
@@ -1143,12 +1159,15 @@ export class ChatEngine {
         await this.#saveTrust();
       });
       if (!archive) return [];
+      let backedUp: ConversationHistory[];
       try {
-        return unpackHistory(await receiveHistory(archive));
+        backedUp = unpackHistory(await receiveHistory(archive));
       } catch (error) {
         if (archiveGone(error)) return [];
         throw error;
       }
+      await this.#exclusive(() => this.#takeInParticipants(backedUp));
+      return backedUp;
     } finally {
       if (archive) wipe(archive.key.reveal());
     }
@@ -1217,6 +1236,64 @@ export class ChatEngine {
   }
 
   /**
+   * Starts each conversation of history given to this device from whom
+   * the device that wrote it had settled it is between (ADR-0010 §3, §5,
+   * §8), so what the server says cannot name anyone else for it. Where
+   * this device had settled someone else, the server has told one of them
+   * otherwise: the history's participants stay, and, as with a directory
+   * that does not name them, the group is dropped and the conversation is
+   * out of step.
+   */
+  async #takeInParticipants(conversations: readonly ConversationHistory[]) {
+    for (const conversation of conversations) {
+      const carried = this.#carriedParticipants(conversation);
+      if (!carried) continue;
+      const record = await this.#record(conversation.id);
+      if (
+        record.participants.length > 0 &&
+        settleParticipants(this.userId, record.participants, carried)
+      ) {
+        continue;
+      }
+      if (record.participants.length > 0) {
+        record.problem = "out_of_sync";
+        // A commit waiting for its answer would bring the group back.
+        await this.#forgetCommit(conversation.id);
+        await this.#dropGroup(conversation.id);
+      }
+      // In place: a group's policy holds this very list.
+      record.participants.splice(0, Infinity, ...carried);
+      await this.store.putJson(records.conversation(conversation.id), record);
+      this.#changed();
+    }
+  }
+
+  /**
+   * Whom a conversation of given history is between: as its archive says,
+   * or, in one from before archives said it, the one other account its
+   * messages were verified to be from, if there is exactly one. Undefined
+   * when that is not known: nothing there is then said to be from anyone.
+   */
+  #carriedParticipants({
+    participants,
+    history,
+  }: ConversationHistory): string[] | undefined {
+    const said =
+      participants?.length && settleParticipants(this.userId, [], participants);
+    if (said) return said;
+    const senders = new Set(
+      history.flatMap(({ own, senderUserId, text }) =>
+        !own && text !== null && senderUserId && senderUserId !== this.userId
+          ? [senderUserId]
+          : [],
+      ),
+    );
+    return senders.size === 1
+      ? settleParticipants(this.userId, [], [this.userId, ...senders])
+      : undefined;
+  }
+
+  /**
    * Pins first-seen account keys, records revocations and key changes. A
    * directory that does not name the conversation's two accounts, the same
    * as before, is not used: the group is dropped, so nothing more is read
@@ -1243,10 +1320,16 @@ export class ChatEngine {
     for (const account of directory.accounts) {
       if (account.accountKey) {
         const key = fromBase64(account.accountKey);
+        const before = this.#keyChanges.get(account.userId);
         if (observeAccountKey(this.trust, account.userId, key) === "changed") {
           this.#keyChanges.set(account.userId, key);
         } else {
           this.#keyChanges.delete(account.userId);
+        }
+        const after = this.#keyChanges.get(account.userId);
+        // Pages show the change, or that it is gone, at once.
+        if ((before && toBase64(before)) !== (after && toBase64(after))) {
+          this.#changed();
         }
       }
 
@@ -1270,19 +1353,23 @@ export class ChatEngine {
   }
 
   /**
-   * Only after the user has seen that the security code changed, and only
-   * the key that code was for (`SecurityCode.key`): if the server has shown
-   * another since, nothing is accepted. The conversations with the contact
-   * are brought in line at once: their old devices out, the ones under the
-   * new key in. Whether the key was accepted.
+   * Only the changed key whose code the user was shown (`showSecurityCode`),
+   * and only while it is the one waiting: if the server has shown another
+   * since, nothing is accepted until its code has been shown too. The
+   * conversations with the contact are brought in line at once: their old
+   * devices out, the ones under the new key in. Whether the key was
+   * accepted.
    */
   acceptKeyChange(userId: string, shownKey: string): Promise<boolean> {
     return this.#exclusive(async () => {
       const key = this.#keyChanges.get(userId);
       if (!key || toBase64(key) !== shownKey) return false;
+      if ((await this.#shownKey(userId)) !== shownKey) return false;
       acceptChangedAccountKey(this.trust, userId, key);
       this.#keyChanges.delete(userId);
       await this.#saveTrust();
+      await this.store.delete(records.codeShown(userId));
+      this.#changed();
 
       const prefix = records.conversation("");
       for (const name of await this.store.names(prefix)) {
@@ -1309,7 +1396,9 @@ export class ChatEngine {
     conversationId: string,
     userId: string,
   ): Promise<SecurityCode | null | undefined> {
-    if (userId === this.userId) return undefined;
+    if (userId === this.userId || (await this.#holdsHistory())) {
+      return undefined;
+    }
     if (!(await this.#shows(conversationId, [userId]))) {
       return (await this.#record(conversationId)).participants.length === 0
         ? undefined
@@ -1326,6 +1415,64 @@ export class ChatEngine {
       key: toBase64(key),
       pending: proposed !== undefined,
     };
+  }
+
+  /**
+   * Records that the code of the contact's changed key `key` is on the
+   * user's screen: only that key can then be accepted. Whether it is the
+   * key waiting now; if not, nothing is recorded.
+   */
+  showSecurityCode(userId: string, key: string): Promise<boolean> {
+    return this.#exclusive(async () => {
+      const waiting = this.#keyChanges.get(userId);
+      if (!waiting || toBase64(waiting) !== key) return false;
+      await this.store.putJson(records.codeShown(userId), { key });
+      return true;
+    });
+  }
+
+  /**
+   * The code the user was last shown of the contact's changed key, while a
+   * change waits; it is not the one `securityCode` gives if the server has
+   * shown yet another key since. Null if none was shown, or if the
+   * conversation is not with them.
+   */
+  async shownSecurityCode(
+    conversationId: string,
+    userId: string,
+  ): Promise<SecurityCode | null> {
+    const key = await this.#shownKey(userId);
+    if (!key || !this.#keyChanges.has(userId)) return null;
+    if (!(await this.#shows(conversationId, [userId]))) return null;
+    return {
+      code: await securityCode(
+        { accountId: this.userId, accountKey: this.account.publicKey },
+        { accountId: userId, accountKey: fromBase64(key) },
+      ),
+      key,
+      pending: true,
+    };
+  }
+
+  async #shownKey(userId: string): Promise<string | undefined> {
+    return (
+      await this.store.getJson<{ key: string }>(records.codeShown(userId))
+    )?.key;
+  }
+
+  /** For a page that shows the conversation with `shows` (`Counterpart`). */
+  async counterpart(
+    conversationId: string,
+    shows: readonly string[],
+  ): Promise<Counterpart> {
+    // Until held history is in, whom it is with is not known here.
+    if (await this.#holdsHistory()) return { userId: null, elsewhere: false };
+    const { participants } = await this.#record(conversationId);
+    if (await this.#shows(conversationId, shows)) {
+      const other = participants.find((userId) => userId !== this.userId);
+      return { userId: other ?? null, elsewhere: false };
+    }
+    return { userId: null, elsewhere: participants.length > 0 };
   }
 
   // Conversations on this device
@@ -1426,11 +1573,13 @@ export class ChatEngine {
     /** No one else's device is in the group yet: nothing can reach them. */
     alone: boolean;
     problem: ConversationProblem | null;
+    counterpart: Counterpart;
   }> {
-    await this.#shows(id, shows);
+    const counterpart = await this.counterpart(id, shows);
     const record = await this.#record(id);
     const group = await this.#group(id);
     return {
+      counterpart,
       joined: group !== undefined,
       alone:
         group !== undefined &&
@@ -1485,6 +1634,16 @@ export class ChatEngine {
     );
   }
 
+  /**
+   * Whether history moved or backed up here is still to come: until it is
+   * in, or given up, the server alone would say whom a conversation is
+   * with (ADR-0010 §5, §8). Nothing is then said to be with anyone, no
+   * group is started and nothing is encrypted.
+   */
+  async #holdsHistory(): Promise<boolean> {
+    return (await this.#heldHistory()).length > 0;
+  }
+
   async #receiveHeldHistory(): Promise<void> {
     for (const from of await this.#heldHistory()) {
       const stored = await this.store.get(records.transfer(from));
@@ -1503,6 +1662,7 @@ export class ChatEngine {
       try {
         const moved = unpackHistory(await receiveHistory(archive));
         await this.#exclusive(async () => {
+          await this.#takeInParticipants(moved);
           for (const { id, history, seen } of moved) {
             await this.#updateHistory(id, (own) => mergeHistory(own, history));
             if (seen !== null && (await this.seen(id)) === null) {
@@ -1542,8 +1702,12 @@ export class ChatEngine {
     return Promise.all(
       (await this.store.names(prefix)).map(async (name) => {
         const id = name.slice(prefix.length);
+        const { participants } = await this.#record(id);
         return {
           id,
+          // Only two accounts with this one: anything else would not open.
+          participants:
+            settleParticipants(this.userId, [], participants) ?? null,
           history: await this.history(id),
           seen: await this.seen(id),
         };
@@ -1830,7 +1994,9 @@ export class ChatEngine {
     if (!group) {
       // Another device adds this one with a welcome, unless no device is
       // left: then this device starts the group anew.
-      if (directory.members.length > 0) return;
+      if (directory.members.length > 0 || (await this.#holdsHistory())) {
+        return;
+      }
       const generation =
         conversation.epoch === 0
           ? conversation.generation
@@ -2152,6 +2318,7 @@ export class ChatEngine {
     const record = await this.#record(id);
     return (
       entry.to !== undefined &&
+      !(await this.#holdsHistory()) &&
       (await this.#shows(id, entry.to)) &&
       record.problem === null &&
       record.participants.length === 2 &&

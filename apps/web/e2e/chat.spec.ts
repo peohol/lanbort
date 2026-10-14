@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { type Browser, expect, type Page, test } from "@playwright/test";
+import { readEmailCode } from "@lanbort/auth/testing";
 import sharp from "sharp";
 import {
   accountId,
@@ -546,6 +547,399 @@ test("a new key is used only once its code is kept, and asks again for each chan
   ).toEqual([]);
   expect(unexpected(laptop.problems)).toEqual([]);
   for (const someone of [phone, laptop]) await someone.context.close();
+});
+
+/** Two friends with chat on, in a conversation both have opened. */
+async function friendsInConversation(browser: Browser) {
+  const anna = await person(browser, "Anna Holm");
+  const bo = await person(browser, "Bo Lund");
+  await postCommand(anna.context.request, "/api/social/friend-requests", {
+    userId: bo.id,
+  });
+  await postCommand(bo.context.request, "/api/social/friend-requests/accept", {
+    userId: anna.id,
+  });
+  await turnOnChat(anna.page);
+  await turnOnChat(bo.page);
+  await anna.page.reload();
+  await anna.page.getByRole("button", { name: "Start samtale" }).click();
+  await expect(
+    anna.page.getByRole("heading", { level: 1, name: "Bo Lund" }),
+  ).toBeVisible();
+  const conversation = anna.page.url();
+  await anna.page.getByLabel("Ny melding").fill("Hei Bo");
+  await anna.page.getByRole("button", { name: "Send" }).click();
+  await bo.page.goto(conversation);
+  await expectMessage(bo.page, "Hei Bo");
+  return { anna, bo, conversation };
+}
+
+/** Starts private chat anew with a new account key (screen 18). */
+async function resetChat(someone: { page: Page; email: string }) {
+  const { page, email } = someone;
+  await page.goto("/samtaler/tilbakestill");
+  // Local Auth sends one code per address a second.
+  await page.waitForTimeout(1_100);
+  const since = new Date();
+  await page.getByRole("button", { name: "Tilbakestill privat chat" }).click();
+  await page
+    .getByLabel("Kode fra e-posten")
+    .fill(await readEmailCode(email, { since }));
+  await page.getByRole("button", { name: "Tilbakestill privat chat" }).click();
+  await page.waitForURL(/\/samtaler$/);
+}
+
+/**
+ * From now on the page is told each conversation with one of `people` is
+ * with someone else, named as given: in the conversation list, on its
+ * page, and in its directory, with the same devices under a new account.
+ */
+async function nameInstead(page: Page, people: ReadonlyMap<string, string>) {
+  const others = new Map(
+    [...people].map(([userId, realName]) => [
+      userId,
+      { userId: randomUUID(), realName },
+    ]),
+  );
+  const swap = <T extends { userId: string }>(each: T[]) =>
+    each.map((p) => ({ ...p, ...others.get(p.userId) }));
+  await page.route("**/api/chat/conversations**", async (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    const response = await route.fetch();
+    const body = await response.json();
+    if (Array.isArray(body.conversations)) {
+      for (const c of body.conversations) c.others = swap(c.others);
+    } else if (Array.isArray(body.others)) {
+      body.others = swap(body.others);
+    } else if (Array.isArray(body.accounts)) {
+      body.accounts = swap(body.accounts);
+    }
+    await route.fulfill({ response, json: body });
+  });
+}
+
+const shownCode = (scope: Page | ReturnType<Page["getByRole"]>) =>
+  scope.locator(".security-code").getAttribute("aria-label");
+
+test("a changed key is accepted only with the code shown, and a newer one is shown and confirmed first (ADR-0010 §3)", async ({
+  browser,
+}) => {
+  test.setTimeout(240_000);
+  const { anna, bo, conversation } = await friendsInConversation(browser);
+
+  // Bo starts chat anew: Anna is told, and sees the new code.
+  await resetChat(bo);
+  const notice = anna.page.getByRole("alert").filter({
+    hasText: "Sikkerhetskoden til Bo Lund er endret",
+  });
+  await expect(async () => {
+    await anna.page.goto(conversation);
+    await expect(notice).toBeVisible({ timeout: 5_000 });
+  }).toPass({ timeout: 45_000 });
+  await notice
+    .getByRole("link", { name: "Sammenlign sikkerhetskoden" })
+    .click();
+  await expect(
+    anna.page.getByRole("heading", { name: "Om samtalen" }),
+  ).toBeVisible();
+  await expect(anna.page.getByText("Dette er den nye koden.")).toBeVisible();
+  const compared = await shownCode(anna.page);
+  expect(compared).toMatch(/^(\d{5} ){11}\d{5}$/);
+
+  // Before Anna accepts, Bo's key changes again.
+  await resetChat(bo);
+  await wayBack(anna.page).filter({ hasText: "Bo Lund" }).click();
+  await expect(anna.page).toHaveURL(conversation);
+  const again = notice.getByText("Sikkerhetskoden er endret igjen", {
+    exact: false,
+  });
+  await expect(again).toBeVisible({ timeout: 30_000 });
+  // The code compared is still the one on the screen, and nothing can be
+  // accepted until the new one is shown.
+  expect(await shownCode(notice)).toBe(compared);
+  await expect(
+    notice.getByRole("button", { name: "Godta og fortsett" }),
+  ).toHaveCount(0);
+  expect(await axeViolations(anna.page)).toEqual([]);
+  await notice.getByRole("button", { name: "Vis den nye koden" }).click();
+  await expect(again).toHaveCount(0);
+  const newer = await shownCode(notice);
+  expect(newer).not.toBe(compared);
+
+  // The same holds on «Om samtalen», after navigating there and back.
+  await notice
+    .getByRole("link", { name: "Sammenlign sikkerhetskoden" })
+    .click();
+  await expect(anna.page.getByText("Dette er den nye koden.")).toBeVisible();
+  expect(await shownCode(anna.page)).toBe(newer);
+  await wayBack(anna.page).filter({ hasText: "Bo Lund" }).click();
+  await notice.getByRole("button", { name: "Godta og fortsett" }).click();
+  await expect(notice).toHaveCount(0);
+
+  // The key accepted is Bo's newest: both now see the same code.
+  await anna.page.goto(`${conversation}/om`);
+  await expect(anna.page.getByText("Dette er den nye koden.")).toHaveCount(0);
+  expect(await shownCode(anna.page)).toBe(newer);
+  await expect(async () => {
+    await bo.page.goto(`${conversation}/om`);
+    expect(await shownCode(bo.page)).toBe(newer);
+  }).toPass({ timeout: 45_000 });
+
+  expect(unexpected(anna.problems)).toEqual([]);
+  for (const someone of [anna, bo]) await someone.context.close();
+});
+
+test("a conversation whose group is with someone else than the page shows names no one as sender or reader (ADR-0010 §3)", async ({
+  browser,
+}) => {
+  test.setTimeout(180_000);
+  const { anna, bo, conversation } = await friendsInConversation(browser);
+  await bo.page.getByLabel("Ny melding").fill("Hei Anna");
+  await bo.page.getByRole("button", { name: "Send" }).click();
+  await expectMessage(anna.page, "Hei Anna");
+
+  // The server now says the conversation is with someone else.
+  await nameInstead(anna.page, new Map([[bo.id, "Kari Nordmann"]]));
+
+  await anna.page.goto(conversation);
+  await expect(
+    anna.page.getByRole("heading", { level: 1, name: "Kari Nordmann" }),
+  ).toBeVisible();
+  await expect(
+    anna.page.getByText(
+      "Samtalen er kryptert med en annen enn den som vises her.",
+    ),
+  ).toBeVisible();
+  // Bo's message is not said to be Kari's, nor is she said to read them.
+  await expect(messages(anna.page).getByText("Hei Anna")).toBeVisible();
+  await expect(
+    messages(anna.page).getByText("Kari Nordmann skrev:"),
+  ).toHaveCount(0);
+  await expect(
+    messages(anna.page).getByText("Ukjent avsender skrev:"),
+  ).toHaveCount(1);
+  await expect(anna.page.getByText(/Bare du og .* kan lese/)).toHaveCount(0);
+  await expect(
+    anna.page.getByText(
+      "Ende-til-ende-kryptert, men med en annen enn den som vises her.",
+    ),
+  ).toBeVisible();
+  await expect(anna.page.getByLabel("Ny melding")).toHaveCount(0);
+  expect(await axeViolations(anna.page)).toEqual([]);
+
+  // Nor in the list of conversations.
+  await anna.page.goto("/samtaler");
+  const row = anna.page.getByRole("link", { name: /Kari Nordmann/ });
+  await expect(row).toContainText(
+    "Kryptert med en annen enn den som vises her",
+  );
+  await expect(row).not.toContainText("Hei Anna");
+
+  await anna.page.unrouteAll({ behavior: "ignoreErrors" });
+  for (const someone of [anna, bo]) await someone.context.close();
+});
+
+test("history restored or moved to a new device is said to be from and with only whom it was with (ADR-0010 §3, §5, §8)", async ({
+  browser,
+}) => {
+  test.setTimeout(300_000);
+  const liv = await person(browser, "Liv Strand");
+  const ola = await person(browser, "Ola Berg");
+  const per = await person(browser, "Per Hauge");
+  for (const friend of [ola, per]) {
+    await postCommand(liv.context.request, "/api/social/friend-requests", {
+      userId: friend.id,
+    });
+    await postCommand(
+      friend.context.request,
+      "/api/social/friend-requests/accept",
+      { userId: liv.id },
+    );
+  }
+  for (const someone of [liv, ola, per]) await turnOnChat(someone.page);
+
+  // Liv and Ola write to each other; to Per, only Liv writes.
+  const start = async (name: string, text: string) => {
+    await liv.page.goto("/samtaler");
+    await liv.page
+      .getByRole("group", { name: new RegExp(name) })
+      .getByRole("button", { name: "Start samtale" })
+      .click();
+    await expect(
+      liv.page.getByRole("heading", { level: 1, name }),
+    ).toBeVisible();
+    await liv.page.getByLabel("Ny melding").fill(text);
+    await liv.page.getByRole("button", { name: "Send" }).click();
+    await expect(messages(liv.page).getByText(text)).toBeVisible();
+    return liv.page.url();
+  };
+  const withOla = await start("Ola Berg", "Hei Ola");
+  await ola.page.goto(withOla);
+  await expectMessage(ola.page, "Hei Ola");
+  await ola.page.getByLabel("Ny melding").fill("Hei Liv");
+  await ola.page.getByRole("button", { name: "Send" }).click();
+  await expectMessage(liv.page, "Hei Liv");
+  const withPer = await start("Per Hauge", "Bare fra Liv");
+
+  // Liv's history is backed up. Ola and Per are away from now on, so no
+  // device of theirs adds a new one of Liv's to the groups.
+  await ola.context.close();
+  await per.context.close();
+  await liv.page.goto("/samtaler/enheter/gjenopprettingsnokkel");
+  await liv.page
+    .getByRole("button", { name: "Lag gjenopprettingsnøkkel" })
+    .click();
+  const key = (await liv.page
+    .getByLabel(/^Gjenopprettingsnøkkel: /)
+    .getAttribute("aria-label"))!.replace("Gjenopprettingsnøkkel: ", "");
+  await liv.page
+    .getByLabel("Jeg har skrevet ned eller lagret nøkkelen")
+    .check();
+  await liv.page.getByRole("button", { name: "Ferdig" }).click();
+  await expect(
+    liv.page.getByText("Gjenopprettingsnøkkelen er laget."),
+  ).toBeVisible();
+  await expect(async () => {
+    const backup = await (
+      await liv.context.request.get("/api/chat/recovery")
+    ).json();
+    expect(backup.archive).not.toBeNull();
+  }).toPass({ timeout: 20_000 });
+
+  /** A new device of Liv's whose server names others for Ola and Per. */
+  const misled = async () => {
+    const opened = await device(browser);
+    await signInThroughApi(opened.context.request, liv.email);
+    await nameInstead(
+      opened.page,
+      new Map([
+        [ola.id, "Kari Nordmann"],
+        [per.id, "Nils Nordmann"],
+      ]),
+    );
+    return opened;
+  };
+
+  /** What the device shows of the history, where the server names others. */
+  const expectNoOneElseNamed = async (page: Page) => {
+    for (const [conversation, other, kept] of [
+      [withOla, "Kari Nordmann", ["Hei Ola", "Hei Liv"]],
+      [withPer, "Nils Nordmann", ["Bare fra Liv"]],
+    ] as const) {
+      await page.goto(conversation);
+      await expect(
+        page.getByRole("heading", { level: 1, name: other }),
+      ).toBeVisible();
+      for (const text of kept) {
+        await expect(messages(page).getByText(text)).toBeVisible();
+      }
+      await expect(messages(page).getByText(`${other} skrev:`)).toHaveCount(0);
+      const unknown = messages(page).getByText("Ukjent avsender skrev:");
+      await expect(unknown).toHaveCount(kept.length - 1);
+      // Seen as well as read out: under the name above, it would pass for theirs.
+      for (const label of await unknown.all()) {
+        await expect(label).toBeVisible();
+      }
+      await expect(page.getByText(/Bare du og .* kan lese/)).toHaveCount(0);
+      await expect(
+        page.getByText(
+          "Ende-til-ende-kryptert, men med en annen enn den som vises her.",
+        ),
+      ).toBeVisible();
+      await expect(page.getByLabel("Ny melding")).toHaveCount(0);
+      expect(await axeViolations(page)).toEqual([]);
+    }
+    await page.goto("/samtaler");
+    for (const other of ["Kari Nordmann", "Nils Nordmann"]) {
+      const row = page.getByRole("link", { name: new RegExp(other) });
+      await expect(row).toContainText(
+        "Kryptert med en annen enn den som vises her",
+      );
+      await expect(row).not.toContainText("Hei");
+      await expect(row).not.toContainText("Bare fra Liv");
+    }
+  };
+
+  // A tablet is linked with the history moved to it, and its server names
+  // others from the start, before it is in any of the groups.
+  const tablet = await misled();
+  await tablet.page.goto("/samtaler/koble");
+  const code = (await tablet.page.locator("p.link-code").textContent())!;
+  await liv.page.goto("/samtaler/enheter/koble?kode");
+  await liv.page.getByLabel("Kode fra den nye enheten").fill(code);
+  await liv.page.getByRole("button", { name: "Fortsett" }).click();
+  await liv.page.getByLabel("Overfør meldingene herfra").check();
+  await liv.page.getByRole("button", { name: "Godkjenn enheten" }).click();
+  await expect(
+    liv.page.getByText("Meldingene herfra er sendt kryptert til den."),
+  ).toBeVisible();
+  // Nor does Liv's first device add it: it is put away.
+  await liv.context.close();
+  await expect(
+    tablet.page.getByText("Meldingene fra den andre enheten er hentet hit."),
+  ).toBeVisible({ timeout: 30_000 });
+  await expectNoOneElseNamed(tablet.page);
+  await tablet.page.unrouteAll({ behavior: "ignoreErrors" });
+  await tablet.context.close();
+
+  // Every device lost: one restored with the key, misled the same way.
+  const restore = async (opened: Awaited<ReturnType<typeof device>>) => {
+    await opened.page.goto("/samtaler/gjenopprett");
+    await opened.page.getByLabel("Gjenopprettingsnøkkel").fill(key);
+    await opened.page.getByRole("button", { name: "Hent tilbake" }).click();
+    await expect(
+      opened.page.getByText(
+        "Privat chat er hentet tilbake på denne enheten, med meldingene som var sikkerhetskopiert.",
+      ),
+    ).toBeVisible({ timeout: 30_000 });
+  };
+  const laptop = await misled();
+  await restore(laptop);
+  await expectNoOneElseNamed(laptop.page);
+  await laptop.page.unrouteAll({ behavior: "ignoreErrors" });
+  await laptop.context.close();
+
+  // Restored where the server tells the truth, the history is said to be
+  // from and with Ola and Per, though the device is in no group yet.
+  const phone = await device(browser);
+  await signInThroughApi(phone.context.request, liv.email);
+  await restore(phone);
+  for (const [conversation, name] of [
+    [withOla, "Ola Berg"],
+    [withPer, "Per Hauge"],
+  ] as const) {
+    await phone.page.goto(conversation);
+    await expect(
+      phone.page.getByText(
+        "Venter på at en enhet i samtalen legger til denne enheten.",
+        { exact: false },
+      ),
+    ).toBeVisible();
+    await expect(
+      phone.page.getByText(
+        `Ende-til-ende-kryptert. Bare du og ${name} kan lese meldingene.`,
+      ),
+    ).toBeVisible();
+  }
+  await phone.page.goto(withOla);
+  await expect(messages(phone.page).getByText("Ola Berg skrev:")).toHaveCount(
+    1,
+  );
+  await expect(
+    messages(phone.page).getByText("Ukjent avsender skrev:"),
+  ).toHaveCount(0);
+  await phone.page.goto("/samtaler");
+  await expect(
+    phone.page.getByRole("link", { name: /Ola Berg/ }),
+  ).toContainText("Hei Liv");
+  await expect(
+    phone.page.getByRole("link", { name: /Per Hauge/ }),
+  ).toContainText("Du: Bare fra Liv");
+
+  for (const someone of [tablet, laptop, phone]) {
+    expect(unexpected(someone.problems)).toEqual([]);
+  }
+  await phone.context.close();
 });
 
 test("a first key the server took though its answer was lost is put to use after a reload (ADR-0010 §8)", async ({

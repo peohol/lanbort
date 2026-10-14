@@ -24,6 +24,13 @@ import type { HistoryEntry } from "./engine";
 /** One conversation's history and how far it has been read. */
 export interface ConversationHistory {
   id: string;
+  /**
+   * The two accounts the device that wrote the archive had settled the
+   * conversation is between (ADR-0010 §3): the device the history comes
+   * to starts from them, not from what the server says. Null or left
+   * out: not known, as in an archive from before they were kept.
+   */
+  participants?: readonly string[] | null;
   history: HistoryEntry[];
   seen: string | null;
 }
@@ -36,22 +43,33 @@ const entrySchema = z.strictObject({
   sentAt: z.string().nullable(),
 });
 
-const archiveSchema = z.strictObject({
-  v: z.literal(1),
-  conversations: z.array(
-    z.strictObject({
-      id: z.string(),
-      history: z.array(entrySchema),
-      seen: z.string().nullable(),
-    }),
-  ),
+const conversationSchema = z.strictObject({
+  id: z.string(),
+  history: z.array(entrySchema),
+  seen: z.string().nullable(),
 });
+
+/** Version 1 has no participants; version 2 keeps them with the history. */
+const archiveSchema = z.discriminatedUnion("v", [
+  z.strictObject({
+    v: z.literal(1),
+    conversations: z.array(conversationSchema),
+  }),
+  z.strictObject({
+    v: z.literal(2),
+    conversations: z.array(
+      conversationSchema.extend({
+        participants: z.array(z.string()).max(2).nullable(),
+      }),
+    ),
+  }),
+]);
 
 /** The most an archive can hold. */
 const archiveBytes = chatLimits.archivePartBytes * chatLimits.archiveParts;
 
 const encode = (conversations: readonly ConversationHistory[]) =>
-  utf8(JSON.stringify({ v: 1, conversations }));
+  utf8(JSON.stringify({ v: 2, conversations }));
 
 /**
  * How far a conversation was read, on a message the archive keeps: the
@@ -84,8 +102,9 @@ export function packHistory(
 ): Uint8Array {
   const encodeKept = (kept: readonly HistoryEntry[][]) =>
     encode(
-      conversations.map(({ id, history, seen }, index) => ({
+      conversations.map(({ id, participants, history, seen }, index) => ({
         id,
+        participants: participants?.length ? [...participants] : null,
         history: kept[index]!.map(
           ({ id, senderUserId, own, text, sentAt }) => ({
             id,
@@ -120,7 +139,7 @@ export function packHistory(
   return packed;
 }
 
-/** The archive's conversations; it throws on anything else. */
+/** The archive's conversations, of either version; it throws on anything else. */
 export const unpackHistory = (plaintext: Uint8Array): ConversationHistory[] =>
   archiveSchema.parse(JSON.parse(fromUtf8(plaintext))).conversations;
 
@@ -143,7 +162,9 @@ export function mergeHistory(
 /**
  * Two copies of the conversations as one: each message once, as
  * `mergeHistory` keeps it, and each read as far as `own` says, or else as
- * far as `other` does.
+ * far as `other` does. Its participants likewise: `own`'s once this device
+ * has taken in `other`'s (`ChatEngine`), so they are the same, or `other`'s
+ * where this device has none.
  */
 export function mergeConversations(
   own: readonly ConversationHistory[],
@@ -159,6 +180,9 @@ export function mergeConversations(
       known
         ? {
             id: known.id,
+            participants: known.participants?.length
+              ? known.participants
+              : (conversation.participants ?? null),
             history: mergeHistory(known.history, conversation.history),
             seen: known.seen ?? conversation.seen,
           }
