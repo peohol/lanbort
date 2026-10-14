@@ -114,6 +114,8 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
   --space-7: 4rem;
+  /* The air between the screen's edge and what is on it, the same on every
+     side: across, above the bar's buttons and below the last block. */
   --gutter: 1.125rem;
 
   /* Layout: the rhythm every page, card and row is built from, so the same
@@ -323,7 +325,7 @@ a {
 main {
   width: min(42rem, calc(100% - 2 * var(--gutter)));
   margin: 0 auto;
-  padding: var(--space-7) 0;
+  padding: var(--gutter) 0;
   overflow-wrap: anywhere;
 }
 
@@ -723,13 +725,15 @@ button:disabled,
    list in the same order (UX-A11Y-001). The navigation takes its own place
    in the layout instead of a fixed one over the content, so larger text
    makes it taller without hiding the end of the page (UX-A11Y-007), and
-   what gets focus is scrolled clear of the bar and the navigation
-   (WCAG 2.4.11). */
+   what gets focus is scrolled clear of the bar's buttons and the
+   navigation (WCAG 2.4.11). */
 :root {
-  --header-height: 3.75rem;
+  --header-height: calc(var(--target) + 2 * var(--gutter));
+  /* How far down the bar's buttons, which stay, cover the screen. */
+  --buttons-cover: calc(var(--gutter) + var(--target));
   --nav-height: 3.75rem;
   --nav-width: 15rem;
-  scroll-padding: calc(var(--header-covers, var(--header-height)) + 0.5rem) 0
+  scroll-padding: calc(var(--buttons-cover) + var(--space-2)) 0
     calc(var(--nav-covers, var(--nav-height)) + 1rem);
 }
 
@@ -769,50 +773,33 @@ button:disabled,
 }
 
 .app-header {
-  position: sticky;
-  top: 0;
-  z-index: 5;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-2) var(--space-3);
   min-height: var(--header-height);
-  padding: var(--space-2) var(--gutter);
+  padding: var(--gutter);
   background: var(--color-page);
-}
-
-/* A bar that stays while the page scrolls shows its edge once something
-   lies under it, so what scrolls away goes under the bar rather than into
-   nothing. Without scroll-linked animations the edge is always there. */
-@supports (animation-timeline: scroll()) {
-  :is(.app-header, .layer-header) {
-    animation: bar-edge linear both;
-    animation-timeline: scroll();
-    animation-range: 0 var(--space-2);
-  }
-}
-
-@supports not (animation-timeline: scroll()) {
-  :is(.app-header, .layer-header) {
-    box-shadow: 0 1px 0 var(--color-border);
-  }
-}
-
-@keyframes bar-edge {
-  from {
-    box-shadow: 0 1px 0 transparent;
-  }
-
-  to {
-    box-shadow: 0 1px 0 var(--color-border);
-  }
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-left: auto;
+}
+
+/* The bar scrolls with the page, the page's title in it too, so nothing
+   goes under a bar. Only its buttons stay at the top of the screen, where
+   they lie at the top of the page: the bell and the account, «Lukk» in a
+   layer and «Avbryt» in a form (UX-IA-013). Above the page's first row,
+   also when a notice about the account pushes the page down. */
+.header-actions,
+.layer-close,
+.page-header[data-task] > .place-bar:first-child > .task-cancel {
+  position: fixed;
+  z-index: 7;
+  top: var(--gutter);
 }
 
 /* The bell (UX-IA-002, UX-IA-019): the number of unread notifications in
@@ -985,7 +972,7 @@ button:disabled,
 .app-content {
   flex: 1;
   min-width: 0;
-  padding-bottom: var(--space-4);
+  padding-bottom: var(--gutter);
 }
 
 .app-content:focus {
@@ -993,7 +980,7 @@ button:disabled,
 }
 
 .app-content > main {
-  padding: var(--space-2) 0 var(--space-6);
+  padding: var(--space-2) 0 0;
 }
 
 /* Why the account is not active, above every page (PS-ADM-002). */
@@ -1011,6 +998,7 @@ button:disabled,
 
 @media (min-width: 48rem) {
   :root {
+    --gutter: var(--space-5);
     scroll-padding-bottom: 0;
   }
 
@@ -1027,20 +1015,19 @@ button:disabled,
     display: flex;
     align-items: center;
     min-height: var(--header-height);
-    padding: var(--space-3) var(--space-5);
+    padding: var(--gutter);
   }
 
   .app-header {
     grid-area: header;
-    padding: var(--space-3) var(--space-6);
   }
 
   .main-navigation {
     grid-area: navigation;
-    top: var(--header-covers, var(--header-height));
+    top: var(--gutter);
     bottom: auto;
     align-self: start;
-    max-height: calc(100dvh - var(--header-covers, var(--header-height)));
+    max-height: calc(100dvh - var(--gutter));
     overflow-y: auto;
     border-top: 0;
   }
@@ -1049,7 +1036,7 @@ button:disabled,
     flex-direction: column;
     flex-wrap: nowrap;
     gap: var(--space-1);
-    padding: var(--space-2) var(--space-3);
+    padding: 0 var(--gutter) var(--gutter);
   }
 
   .main-navigation li {
@@ -1077,7 +1064,7 @@ button:disabled,
 
   .app-content {
     grid-area: content;
-    padding: 0 var(--space-6) var(--space-6);
+    padding: 0 var(--gutter) var(--gutter);
   }
 
   .app-content > main,
@@ -1211,8 +1198,8 @@ button:disabled,
 
 /* A page's first row shares the bar with the bell and the account, as in
    the prototypes: the way back or the area's title on the left, the bar's
-   own buttons on the right. The row lies above the bar, so it stays in
-   view, but lets clicks through where it is empty. */
+   own buttons on the right. The row lies above the bar, but lets clicks
+   through where it is empty. */
 :is(.app-content, .layer-content)
   > main:first-child:has(
     > h1:first-child,
@@ -1249,7 +1236,7 @@ button:disabled,
    over the page. The layer's own bar holds «Lukk»; a page's first row
    shares it, as in the app's frame. */
 .layer {
-  --header-covers: calc(var(--target) + 2 * var(--space-2));
+  --header-covers: calc(var(--target) + 2 * var(--gutter));
   --actions-covers: var(--target);
   position: fixed;
   inset: 0;
@@ -1257,7 +1244,7 @@ button:disabled,
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--color-page);
-  scroll-padding-top: calc(var(--header-covers) + 0.5rem);
+  scroll-padding-top: calc(var(--buttons-cover) + var(--space-2));
 }
 
 .layer-backdrop {
@@ -1265,12 +1252,9 @@ button:disabled,
 }
 
 .layer-header {
-  position: sticky;
-  top: 0;
-  z-index: 5;
   display: flex;
   justify-content: flex-end;
-  padding: var(--space-2) var(--gutter);
+  padding: var(--gutter);
   background: var(--color-page);
 }
 
@@ -1288,7 +1272,7 @@ button:disabled,
 }
 
 .layer-content main {
-  padding: var(--space-2) 0 var(--space-6);
+  padding: var(--space-2) 0 var(--gutter);
 }
 
 /* The title a page in the layer is read from takes focus, not a marker. */
@@ -1325,16 +1309,8 @@ body:has(> .layer) .app-shell .layer {
     background: var(--color-backdrop);
   }
 
-  .layer {
-    --header-covers: calc(var(--target) + 2 * var(--space-3));
-  }
-
-  .layer-header {
-    padding: var(--space-3) var(--space-5);
-  }
-
   .layer-content main {
-    width: calc(100% - 2 * var(--space-5));
+    width: calc(100% - 2 * var(--gutter));
   }
 
   /* Reached from outside, the layer is the page: the panel's column in the
@@ -1532,15 +1508,6 @@ body:has(> .layer) .app-shell .layer {
 .app-shell:has(.page-header[data-task])
   :is(.brand, .main-navigation, .header-actions) {
   display: none;
-}
-
-/* Its way out stays in the bar while the form scrolls under it, as «Lukk»
-   does in a layer, so the bar is never left empty; above the bar, also
-   when a notice about the account pushes the page down. */
-.page-header[data-task] > .place-bar:first-child > .task-cancel {
-  position: fixed;
-  z-index: 6;
-  top: calc((var(--header-covers, var(--header-height)) - var(--target)) / 2);
 }
 
 .page-lead {
