@@ -1,5 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { isChatPage, usesCamera } from "@/navigation/chat";
+import {
+  requiresCanonicalStewardOrigin,
+  stableVercelHost,
+} from "@/navigation/origins";
 import { getSecurityHeaders } from "@/security-headers";
 import { pagePathHeader } from "@/server/page-path";
 import { runtime } from "@/server/runtime";
@@ -38,6 +42,10 @@ export async function proxy(request: NextRequest) {
   const policy = security.find(
     ({ key }) => key === "Content-Security-Policy",
   )?.value;
+  const canonicalStewardOnly =
+    request.nextUrl.hostname === stableVercelHost &&
+    requiresCanonicalStewardOrigin(request.nextUrl.pathname);
+
   const forward = () => {
     const headers = new Headers(request.headers);
     headers.set(
@@ -47,6 +55,13 @@ export async function proxy(request: NextRequest) {
 
     if (policy) {
       headers.set("content-security-policy", policy);
+    }
+
+    if (canonicalStewardOnly) {
+      const destination = request.nextUrl.clone();
+      destination.pathname = "/hovedadresse-kreves";
+      destination.search = "";
+      return NextResponse.rewrite(destination, { request: { headers } });
     }
 
     return NextResponse.next({ request: { headers } });

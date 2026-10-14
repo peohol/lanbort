@@ -9,12 +9,13 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Fragment, type ReactNode } from "react";
+import { CanonicalStewardshipNotice } from "@/components/canonical-stewardship-notice";
 import { PageHeader } from "@/components/page-header";
 import { StatusCard } from "@/components/status-card";
 import { ContextTag } from "@/components/tag";
 import { ThingThumbnail } from "@/components/thing-thumbnail";
 import { caseEvidenceHref, environmentCasesHref } from "@/navigation/cases";
-import { casesHref, loanHref } from "@/navigation/routes";
+import { caseHref, casesHref, loanHref } from "@/navigation/routes";
 import { platformQueueHref } from "@/navigation/stewardship";
 import {
   aboutCase,
@@ -35,6 +36,7 @@ import { accountStatusLabels } from "@/presentation/interventions";
 import { loanStatusLabels } from "@/presentation/loans";
 import { firstImageHref } from "@/presentation/object-images";
 import { chatEnabled } from "@/server/chat-enabled";
+import { canonicalAppHref, onStableVercelHost } from "@/server/request-origin";
 import { pageQuery, requirePageAccount } from "@/server/session";
 import {
   getStewardship,
@@ -264,7 +266,7 @@ export default async function CasePage({
   const c = await stewardPageQuery(readCase, { caseId });
 
   if (c === "confirm") {
-    return <ConfirmFirst />;
+    return <ConfirmFirst caseId={caseId} />;
   }
 
   const asHandler = c.viewer === "handler";
@@ -467,7 +469,16 @@ export default async function CasePage({
  * A platform case for a steward whose session is not confirmed: nothing
  * from the case until they confirm with a passkey (Tomat screen 6).
  */
-async function ConfirmFirst() {
+async function ConfirmFirst({ caseId }: { caseId: string }) {
+  if (await onStableVercelHost()) {
+    return (
+      <CanonicalStewardshipNotice
+        href={canonicalAppHref(caseHref(caseId))}
+        back={{ href: casesHref, label: "Saker" }}
+      />
+    );
+  }
+
   const steward = await requireStewardship();
 
   return (

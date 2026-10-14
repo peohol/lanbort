@@ -10,11 +10,13 @@ if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
-  // Pages on Vercel's own addresses send people to the app's public address
-  // (APP_URL, production), so sessions and links stay on one origin. The
-  // domain's other names are redirected by Vercel itself, so this can never
-  // loop with them. APIs, and the scheduled jobs Vercel calls on its own
-  // address, answer on every address.
+  // The stable lanbort.vercel.app alias is deliberately usable as an
+  // alternative entry point for ordinary app use. Platform-steward pages that
+  // depend on WebAuthn are stopped by the proxy on that alias because neither
+  // passkeys nor session cookies can cross to APP_URL. Other Vercel
+  // preview/deployment addresses send pages to APP_URL, so sessions and links
+  // do not fragment across disposable origins. APIs and scheduled jobs answer
+  // everywhere.
   async redirects() {
     if (!process.env.APP_URL) return [];
     const { host, origin } = new URL(process.env.APP_URL);
@@ -23,7 +25,10 @@ const nextConfig: NextConfig = {
       {
         source: "/:path((?!api/|_next/).*)",
         has: [{ type: "host", value: ".*\\.vercel\\.app" }],
-        missing: [{ type: "host", value: host.replaceAll(".", "\\.") }],
+        missing: [
+          { type: "host", value: "lanbort\\.vercel\\.app" },
+          { type: "host", value: host.replaceAll(".", "\\.") },
+        ],
         destination: `${origin}/:path`,
         permanent: false,
       },
