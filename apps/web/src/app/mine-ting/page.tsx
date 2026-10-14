@@ -9,9 +9,9 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ActionButton } from "@/components/action-button";
+import { AreaTitle } from "@/components/area-title";
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
-import { PageHeader } from "@/components/page-header";
 import { PilotObjectPolicy } from "@/components/pilot-object-policy";
 import { Tag } from "@/components/tag";
 import { ThingCard, ThingCards } from "@/components/thing-card";
@@ -95,7 +95,7 @@ export default async function ThingsPage() {
 
   return (
     <main>
-      <PageHeader title="Mine ting" />
+      <AreaTitle area="things" />
       {register}
       {invitations.length > 0 && (
         <section aria-labelledby="invitasjoner">
