@@ -82,7 +82,7 @@ Oppfylt. Port A er beskrevet under Fase 1 i [implementeringsplanen](README.md). 
 
 ### Port C: oppfylt med unntak for den lukkede piloten
 
-Privat chat er klar til å slås på i produksjon for inviterte deltakere (`CHAT_ENABLED=pilot` i Vercel), med det midlertidige unntaket for den uavhengige gjennomgangen som er besluttet i OD-0056 og vurdert i [risikovurderingen](chat-pilot-risikovurdering.md). Den slås på først når den adversarielle sikkerhetsrevisjonen produkteier bestilte 11. oktober 2026 er levert og funnene som må rettes før pilot, er håndtert; til da er bryteren ikke satt, og chatrutene svarer «finnes ikke».
+Privat chat er klar til å slås på i produksjon for inviterte deltakere (`CHAT_ENABLED=pilot` i Vercel), med det midlertidige unntaket for den uavhengige gjennomgangen som er besluttet i OD-0056 og vurdert i [risikovurderingen](chat-pilot-risikovurdering.md). Den adversarielle sikkerhetsrevisjonen produkteier bestilte 11. oktober 2026 er levert, og funnene er rettet og i produksjon (#204, #207, 14. oktober 2026). Bryteren settes bare med produkteiers uttrykkelige ja; til da svarer chatrutene «finnes ikke».
 
 | Krav | Status | Sjekk |
 | --- | --- | --- |

@@ -76,6 +76,7 @@ Alle kjøres i CI på hver endring. Lokalt: se [lokal utvikling](local-developme
 | Sider utenfor chat hadde `unsafe-inline` for skript, men deler opprinnelse og IndexedDB med chatsidene; COOP og CORP manglet | Rettet (#172) |
 | Utlogging sletter ikke enhetens chattilstand og tilbakekaller ikke enheten, slik ADR-0010 punkt 7 sier | Rettet (#161, #189): utlogging sletter alltid chatten i nettleseren, og en enhet der chatten kjører, tilbakekaller seg selv. Der chatten ikke kan åpnes, stenger serveren enheten ute når sesjonen avsluttes; se kjente begrensninger |
 | En lesbar kopi av chatmeldinger sendt inn til en sak (WP-46) kunne oppgi en vilkårlig person som avsender og vise personens ekte navn | Rettet (#155): kopien må komme fra en samtale innsenderen selv er med i |
+| En adversariell revisjon (12.–14. oktober 2026) fant svakheter i sikkerhetskopi, kobling av enheter, godkjenning av ny sikkerhetskode og i hvem samtaler og meldinger tilskrives | Rettet (#204, #207); se ADR-0010 punkt 8 for hvordan deltakerne følger historikken |
 
 ## Kjente begrensninger og spørsmål til gjennomgangen
 
