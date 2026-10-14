@@ -224,7 +224,7 @@ Avklar OD-0006 og en konservativ pilotgrense for OD-0001 før reelle objekter å
 ### WP-75 — Pilot release gate
 Kjør [kvalitetsportene](quality-gates.md), dokumenter kjente begrensninger og åpne kun for definert pilotgruppe.
 
-**Status:** Portene er kjørt ([status 11. oktober 2026](quality-gates.md#status-11-oktober-2026)), og de kjente begrensningene står i [drift av piloten](pilot-operations.md#kjente-mangler). Produksjon slipper bare inn adresser produkteier har lagt inn. Piloten åpnes når produkteier legger inn de første deltakerne.
+**Status:** Portene er kjørt ([status 14. oktober 2026](quality-gates.md#status-14-oktober-2026)), og de kjente begrensningene står i [drift av piloten](pilot-operations.md#kjente-mangler). Produksjon slipper bare inn adresser produkteier har lagt inn. Piloten åpnes når produkteier legger inn de første deltakerne.
 
 ## Fase 8
 

@@ -1,6 +1,6 @@
 # Implementeringsplan
 
-> **Status (11. oktober 2026):** Første implementeringsplan basert på validert produktspesifikasjon v0.1, UX-modell v0.1 og systemarkitektur v0.1. Fase 0–7 er levert, sammen med brukerflaten (Fase 8 i [arbeidspakkene](work-packages.md#fase-8)). Privat chat og plattformforvaltning er bygget, men står av i produksjon til sine porter. Hvor hver kvalitetsport står, står i [kvalitetsportene](quality-gates.md#status-11-oktober-2026).
+> **Status (11. oktober 2026):** Første implementeringsplan basert på validert produktspesifikasjon v0.1, UX-modell v0.1 og systemarkitektur v0.1. Fase 0–7 er levert, sammen med brukerflaten (Fase 8 i [arbeidspakkene](work-packages.md#fase-8)). Privat chat og plattformforvaltning er bygget, men står av i produksjon til sine porter. Hvor hver kvalitetsport står, står i [kvalitetsportene](quality-gates.md#status-14-oktober-2026).
 
 ## Prinsipp
 
