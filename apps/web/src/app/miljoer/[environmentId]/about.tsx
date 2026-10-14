@@ -18,7 +18,10 @@ export function About({ environment }: { environment: Environment }) {
     environment;
 
   return (
-    <section aria-labelledby="om-miljoet" className={styles.card}>
+    <section
+      aria-labelledby="om-miljoet"
+      className={`card-flat ${styles.card}`}
+    >
       <h2 id="om-miljoet">Om miljøet</h2>
       <dl className="facts">
         <dt>Type</dt>
@@ -96,7 +99,7 @@ export function Requirements({
   if (requirements.length === 0) return null;
 
   return (
-    <section aria-labelledby="krav" className={styles.card}>
+    <section aria-labelledby="krav" className={`card-flat ${styles.card}`}>
       <h2 id="krav">{heading}</h2>
       <dl className="facts">
         {requirements.map(({ id, kind, text }) => (
@@ -113,7 +116,10 @@ export function Requirements({
 /** What joining gives, said before it (Tomat kjerneflyt 3). */
 export function MembersOnly() {
   return (
-    <section aria-labelledby="bare-medlemmer" className={styles.card}>
+    <section
+      aria-labelledby="bare-medlemmer"
+      className={`card-flat ${styles.card}`}
+    >
       <h2 id="bare-medlemmer">Bare for medlemmer</h2>
       <p>Tingene i miljøet, hvem som eier dem, og hvem som er med.</p>
     </section>

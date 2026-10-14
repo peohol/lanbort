@@ -143,7 +143,7 @@ function Entry({
 export function Entries({ c, viewer }: { c: Case; viewer: EntryViewer }) {
   return (
     <section className={styles.section} aria-labelledby="innlegg">
-      <div className={styles.sectionHead}>
+      <div className={`section-heading ${styles.sectionHead}`}>
         <h2 id="innlegg">Innlegg</h2>
         <span>eldste først</span>
       </div>

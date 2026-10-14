@@ -260,7 +260,7 @@ export function RequestForm({
             send();
           }}
         >
-          <section className={styles.flat} aria-label="Forespørselen">
+          <section className="card-flat" aria-label="Forespørselen">
             <dl className="facts">
               <dt>Ting</dt>
               <dd>{title}</dd>

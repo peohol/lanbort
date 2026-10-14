@@ -2,15 +2,21 @@
    cards; the day's tasks as full cards, the rest as rows that open the
    place where the work is done. */
 
-.title {
-  margin-bottom: var(--space-2);
+/* The sections, one under another on a phone, with a section's room
+   between them, also after the card that says nothing waits. */
+.sections {
+  display: grid;
+  gap: var(--gap-page);
+}
+
+:not(.title) + .sections {
+  margin-top: calc(var(--gap-page) - var(--gap-block));
 }
 
 .heading {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin: var(--space-5) 0 var(--space-2);
   padding: 0 var(--space-1);
 }
 
@@ -19,28 +25,20 @@
   height: 1.125rem;
 }
 
-.sections > section:first-child .heading {
-  margin-top: var(--space-2);
-}
-
 .stack {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--gap-list);
 }
 
 .list {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--gap-list);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 /* A full card: why it is now, what it is, and the way on. */
-.card {
-  gap: var(--space-2);
-}
-
 .tagLine {
   margin: 0;
 }
@@ -49,7 +47,7 @@
 .cardHead {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--gap-row);
 }
 
 .cardTitle {
@@ -67,7 +65,7 @@
 
 .cardFoot {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--gap-actions);
   justify-items: start;
 }
 
@@ -84,9 +82,9 @@
 .task {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--gap-row);
   min-height: var(--target);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--pad-row);
   color: var(--color-text);
   text-decoration: none;
   background: var(--color-surface);
@@ -121,7 +119,7 @@
 .rowText {
   display: grid;
   flex: 1;
-  gap: 0.125rem;
+  gap: var(--gap-lines);
   min-width: 0;
 }
 
@@ -140,7 +138,7 @@
    every «more» has. */
 .group > summary {
   width: 100%;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--pad-row);
   color: var(--color-text);
   text-decoration: none;
   border-radius: var(--radius-m);
@@ -153,7 +151,7 @@
 }
 
 .group > .list {
-  margin: var(--space-2) 0 0 var(--space-5);
+  margin: var(--gap-list) 0 0 var(--space-5);
 }
 
 /* What is coming and what is unsettled are outlined: they wait, they do
@@ -240,7 +238,9 @@
 }
 
 .role {
+  flex: none;
   margin-left: auto;
+  white-space: nowrap;
   font-size: var(--text-s);
   color: var(--color-muted);
 }
@@ -265,17 +265,14 @@
   }
 
   .sections {
+    display: block;
     column-count: 2;
     column-gap: var(--space-6);
   }
 
-  .sections > section {
+  .sections > * {
     break-inside: avoid;
-    padding-bottom: var(--space-4);
-  }
-
-  .sections > section .heading {
-    margin-top: var(--space-2);
+    margin-bottom: var(--gap-page);
   }
 
   .cardFoot {

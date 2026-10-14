@@ -3,7 +3,7 @@
 
 .sections {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--gap-page);
 }
 
 .heading {
@@ -12,12 +12,10 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  margin: 0 0 var(--space-2);
   padding: 0 var(--space-1);
 }
 
-.heading h2,
-h2.heading {
+.heading h2 {
   margin: 0;
   font-size: var(--text-m);
   color: var(--color-muted);
@@ -43,7 +41,7 @@ h2.heading {
 
 .list {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--gap-list);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -60,9 +58,9 @@ h2.heading {
 .notification {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-3);
+  gap: var(--gap-row);
   min-height: var(--target);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--pad-row);
   color: var(--color-text);
   text-decoration: none;
   border-radius: var(--radius-m);
@@ -109,7 +107,7 @@ a.notification:hover .title {
 .text {
   display: grid;
   flex: 1;
-  gap: 0.125rem;
+  gap: var(--gap-lines);
   min-width: 0;
 }
 
@@ -147,7 +145,7 @@ a.notification:hover .title {
 }
 
 .empty h2 {
-  margin: var(--space-4) 0 var(--space-1);
+  margin: 0 0 var(--space-1);
   font-size: var(--text-xl);
 }
 

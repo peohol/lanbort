@@ -24,7 +24,7 @@
 /* The list of conversations: one card, a row per person (01). */
 .list {
   overflow: hidden;
-  margin: 0 0 var(--space-4);
+  margin: 0;
   padding: var(--space-1) 0;
   list-style: none;
   background: var(--color-surface);
@@ -39,8 +39,8 @@
 .row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  gap: var(--gap-row);
+  padding: var(--pad-row);
   color: inherit;
   text-decoration: none;
 }
@@ -55,7 +55,7 @@
 
 .rowText {
   display: grid;
-  gap: 0.125rem;
+  gap: var(--gap-lines);
   min-width: 0;
 }
 
@@ -108,8 +108,8 @@
 .linkCard {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  gap: var(--gap-row);
+  padding: var(--pad-row);
   color: inherit;
   text-decoration: none;
   border-radius: var(--radius-l);
@@ -144,7 +144,6 @@
 }
 
 .sectionHeading {
-  margin: var(--space-5) 0 var(--space-2);
   padding: 0 var(--space-1);
   font-family: var(--font-body);
   font-size: var(--text-m);
@@ -156,16 +155,15 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2) var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  gap: var(--space-2) var(--gap-actions);
+  padding: var(--pad-row);
 }
 
 /* The conversation (02). */
 .head {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-3);
+  gap: var(--gap-row);
 }
 
 .headText {
@@ -199,8 +197,7 @@
 .loans {
   display: grid;
   gap: var(--space-1);
-  margin-bottom: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--pad-row);
   background: var(--color-surface);
   border-radius: var(--radius-l);
   box-shadow: var(--shadow-raised);
@@ -259,7 +256,7 @@
 /* One line on who can read the messages, with the way to more. */
 .secure,
 .since {
-  margin: 0 0 var(--space-3);
+  margin: 0;
   font-size: var(--text-s);
   color: var(--color-muted);
   text-align: center;
@@ -291,8 +288,7 @@
 .notice {
   display: grid;
   gap: var(--space-2);
-  margin-bottom: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--pad-row);
   background: var(--color-surface);
   border-radius: var(--radius-l);
   box-shadow: var(--shadow-raised);
@@ -314,7 +310,7 @@
 .noticeRow {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-3);
+  gap: var(--gap-row);
 }
 
 /* The messages, own to the right (02). */
@@ -355,7 +351,7 @@
 .message {
   display: grid;
   justify-items: start;
-  gap: 0.125rem;
+  gap: var(--gap-lines);
   max-width: 85%;
 }
 
@@ -365,7 +361,7 @@
 }
 
 .bubble {
-  padding: var(--space-3) 0.875rem;
+  padding: var(--space-3) var(--space-4);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   background: var(--color-surface);
@@ -427,7 +423,6 @@
   align-items: end;
   gap: var(--space-2);
   max-width: none;
-  margin-top: var(--space-4);
   padding: var(--space-2) 0;
   background: var(--color-page);
 }
@@ -521,7 +516,7 @@
 }
 
 .cardList {
-  margin: 0 0 var(--space-3);
+  margin: 0;
   padding: 0 var(--space-4);
   list-style: none;
   background: var(--color-surface);
@@ -535,7 +530,7 @@
 
 .stack {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--gap-card);
 }
 
 .stack > :global(.card) :is(h2, p) {
@@ -550,7 +545,7 @@
 .points {
   display: grid;
   gap: var(--space-2);
-  margin: 0 0 var(--space-3);
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -558,7 +553,7 @@
 .points li {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-3);
+  gap: var(--gap-row);
 }
 
 .pointsHeading {
@@ -574,8 +569,7 @@
    one main button. */
 .intro {
   display: grid;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  gap: var(--gap-card);
 }
 
 .intro h2,
@@ -614,9 +608,6 @@
 
 /* A question with its answer behind it, such as «Har du ingen annen
    enhet med privat chat?». */
-.disclosure {
-  margin-top: var(--space-4);
-}
 
 .disclosure summary {
   min-height: var(--target);
@@ -629,7 +620,7 @@
 .disclosure[open] {
   display: grid;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--pad-row);
   background: var(--color-surface);
   border-radius: var(--radius-l);
   box-shadow: var(--shadow-raised);
@@ -643,7 +634,7 @@
 .steps {
   display: grid;
   gap: var(--space-2);
-  margin: 0 0 var(--space-4);
+  margin: 0;
   padding: 0;
   list-style: none;
   counter-reset: step;
@@ -652,7 +643,7 @@
 .steps li {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--gap-row);
   counter-increment: step;
 }
 
@@ -674,7 +665,6 @@
   display: grid;
   justify-items: center;
   gap: var(--space-3);
-  margin-bottom: var(--space-3);
   text-align: center;
 }
 
@@ -691,8 +681,7 @@
 
 /* The code to type where the other device cannot scan. */
 .typeCode {
-  margin-bottom: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--pad-row);
   text-align: center;
   border-radius: var(--radius-l);
   box-shadow: inset 0 0 0 1.5px var(--color-border);
@@ -715,8 +704,8 @@
 .deviceRow {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  gap: var(--gap-row);
+  padding: var(--pad-row);
 }
 
 .deviceRow small {
@@ -726,7 +715,7 @@
 
 /* A quiet word beside the way to act, such as on lost devices. */
 .hint {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--pad-row);
   font-size: var(--text-s);
   color: var(--color-muted);
   border-radius: var(--radius-l);
@@ -768,7 +757,7 @@
     display: grid;
     grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
     align-items: start;
-    gap: var(--space-5);
+    gap: var(--gap-page);
   }
 
   .splitList {

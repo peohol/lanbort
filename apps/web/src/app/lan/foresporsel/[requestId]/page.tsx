@@ -247,14 +247,14 @@ export default async function LoanRequestPage({
           {approvalNote(request)}
         </StatusCard>
         {request.pendingTerms && (
-          <section className={styles.flat} aria-labelledby="nye-vilkar">
+          <section className="card-flat" aria-labelledby="nye-vilkar">
             <h2 id="nye-vilkar">Nye vilkår</h2>
             <p className="message-text">
               {terms(request.pendingTerms.loanTerms)}
             </p>
           </section>
         )}
-        <section className={styles.flat} aria-label="Forespørselen">
+        <section className="card-flat" aria-label="Forespørselen">
           <dl className="facts">
             <dt>Ønsket periode</dt>
             <dd>{formatDesiredPeriod(request.start, request.end)}</dd>
@@ -279,7 +279,7 @@ export default async function LoanRequestPage({
         )}
         {declaration && requestIsOpen(request) && (
           <section
-            className={`${styles.flat} ${styles.declaration}`}
+            className={`card-flat ${styles.declaration}`}
             aria-labelledby="ansvar"
           >
             <h2 id="ansvar">Ansvarserklæring</h2>

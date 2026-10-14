@@ -105,13 +105,34 @@
   --shadow-raised: 0 1px 3px rgb(30 40 60 / 0.09);
   --color-backdrop: rgb(30 39 51 / 0.55);
 
+  /* Spacing: every gap, margin and padding is a step on this scale. */
+  --space-0: 0.125rem;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
   --space-5: 1.5rem;
   --space-6: 2rem;
+  --space-7: 4rem;
   --gutter: 1.125rem;
+
+  /* Layout: the rhythm every page, card and row is built from, so the same
+     kind of distance is the same everywhere. A page or component never sets
+     its own distance between blocks: the page (`main`) and its sections
+     stack their blocks with these gaps (see «Page rhythm»). */
+  --gap-page: var(--space-5); /* after the title, before a section */
+  --gap-block: var(--space-4); /* between the blocks of a section */
+  --gap-heading: var(--space-2); /* a section's heading to what it heads */
+  --gap-list: var(--space-2); /* between the cards of a list */
+  --gap-card: var(--space-2); /* between the parts of a card */
+  --gap-row: var(--space-3); /* an icon or picture to its text */
+  --gap-lines: var(--space-0); /* a row's title to its detail */
+  --gap-actions: var(--space-3); /* between buttons side by side */
+  --gap-field: var(--space-4); /* between the fields of a form */
+  --gap-label: var(--space-1); /* a label, its help and its field */
+  --pad-card: var(--space-4); /* inside a card */
+  --pad-row: var(--space-3) var(--space-4); /* inside a card that is one row */
+  --pad-control: 1.25rem; /* either side of a button's label */
 
   --radius-s: 0.5rem;
   --radius-field: 0.875rem;
@@ -246,34 +267,44 @@ a {
   text-underline-offset: 0.2em;
 }
 
+/* The order of the two cascade layers below: what is in them gives way to
+   any component's own rule, whatever its selector. */
+@layer base, layout;
+
 /* Headings: the page's own title and the status that is now in Quicksand;
    a section's heading is a quiet label above its cards. */
-h1,
-h2,
-h3 {
-  line-height: 1.25;
-}
+@layer base {
+  h1,
+  h2,
+  h3 {
+    line-height: 1.25;
+  }
 
-h1 {
-  font-family: var(--font-heading);
-  font-size: var(--text-2xl);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
-  margin: 0 0 var(--space-4);
-}
+  h1 {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    margin: 0;
+  }
 
-h2 {
-  font-size: var(--text-m);
-  font-weight: 700;
-  color: var(--color-muted);
-  margin: var(--space-5) 0 var(--space-2);
-}
+  h2 {
+    font-size: var(--text-m);
+    font-weight: 700;
+    color: var(--color-muted);
+    margin: var(--gap-page) 0 var(--gap-heading);
+  }
 
-h3 {
-  font-size: var(--text-l);
-  font-weight: 700;
-  margin: var(--space-4) 0 var(--space-2);
+  h3 {
+    font-size: var(--text-l);
+    font-weight: 700;
+    margin: var(--gap-block) 0 var(--gap-heading);
+  }
+
+  :is(h2, h3):first-child {
+    margin-top: 0;
+  }
 }
 
 /* The app's line icons (`Icon`), at the size of the text beside them. */
@@ -292,8 +323,101 @@ h3 {
 main {
   width: min(42rem, calc(100% - 2 * var(--gutter)));
   margin: 0 auto;
-  padding: 4rem 0;
+  padding: var(--space-7) 0;
   overflow-wrap: anywhere;
+}
+
+/* Signed out (the start page, signing in and registering): one narrow
+   column in the middle of the screen, across and down, its words centred
+   above a form that reads from the left as every form does. */
+body > main {
+  width: min(28rem, calc(100% - 2 * var(--gutter)));
+  min-height: 100dvh;
+  align-content: center;
+  text-align: center;
+}
+
+body > main > :is(a, button) {
+  justify-self: center;
+}
+
+body > main form {
+  text-align: start;
+}
+
+body > main form > p:first-child {
+  text-align: center;
+}
+
+/* Page rhythm: the page and every section in it stack their blocks with
+   one gap, so the distance between two blocks is the same on every page,
+   and no two blocks ever touch. A block never adds its own margin to it.
+   The page's title gets more room after it, a section more room before
+   it, and a section's heading sits closer to what it heads. A component
+   that lays out its own parts (a card, a list) sets its own display and
+   gap, which win over these. */
+@layer layout {
+  :where(
+    main,
+    main :is(section, article):not(.card, .card-flat, .status-card)
+  ) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: var(--gap-block);
+  }
+
+  /* No block adds a margin of its own, in a stack or in a card. */
+  :where(
+      main,
+      main section,
+      main article,
+      .card,
+      .card-flat,
+      .status-card,
+      .empty-state
+    )
+    > * {
+    margin-block: 0;
+  }
+
+  /* A button or a link on its own keeps its own width. */
+  :where(main, main :is(section, article):not(.card, .card-flat, .status-card))
+    > :where(a.button, a:not([class]), button, img, label, span, strong) {
+    justify-self: start;
+  }
+
+  /* What holds nothing to see, such as the mark a list scrolls to, takes
+     no room in the stack either. */
+  :where(main, main :is(section, article):not(.card, .card-flat, .status-card))
+    > :where(div, p, span):empty {
+    margin-top: calc(-1 * var(--gap-block));
+  }
+
+  :where(main) > :where(h1, .page-header) {
+    margin-bottom: calc(var(--gap-page) - var(--gap-block));
+  }
+
+  :where(main, main :is(section, article):not(.card, .card-flat, .status-card))
+    > :where(
+      h2:not(.visually-hidden),
+      .section-heading,
+      :not(.card, .card-flat, .status-card):has(
+        > :is(h2, .section-heading):first-child:not(.visually-hidden)
+      )
+    ) {
+    margin-top: calc(var(--gap-page) - var(--gap-block));
+  }
+
+  :where(main, main :is(section, article):not(.card, .card-flat, .status-card))
+    > :where(:first-child, h1 + *, .page-header + *) {
+    margin-top: 0;
+  }
+
+  :where(main, main :is(section, article):not(.card, .card-flat, .status-card))
+    > :is(h2, .section-heading) {
+    margin-bottom: calc(var(--gap-heading) - var(--gap-block));
+  }
 }
 
 /* One column that never grows wider than the screen, even when large text
@@ -301,8 +425,14 @@ main {
 form {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-3);
+  gap: var(--gap-field);
   max-width: 28rem;
+}
+
+/* A label, its help and its field belong together, also where they stand
+   in the form on their own rather than in a `.field`. */
+form > :is(label, .help) + :is(input, select, textarea, .help) {
+  margin-top: calc(var(--gap-label) - var(--gap-field));
 }
 
 label,
@@ -314,7 +444,7 @@ input:not([type="checkbox"], [type="radio"]),
 select,
 textarea {
   font: inherit;
-  padding: var(--space-3) 0.875rem;
+  padding: var(--space-3) var(--space-4);
   min-height: var(--control);
   min-width: 0;
   max-width: 100%;
@@ -350,7 +480,7 @@ button,
   justify-content: center;
   gap: var(--space-2);
   min-height: var(--control);
-  padding: var(--space-2) 1.25rem;
+  padding: var(--space-2) var(--pad-control);
   border: 0;
   border-radius: var(--radius-pill);
   box-shadow: inset 0 0 0 1.5px var(--color-muted);
@@ -395,7 +525,6 @@ button .icon,
 button[type="submit"],
 .button-primary {
   min-height: var(--control-primary);
-  padding-inline: 1.375rem;
   font-size: 1rem;
   color: var(--color-on-accent);
   background: var(--color-accent);
@@ -553,13 +682,13 @@ button:disabled,
 .field {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-1);
+  gap: var(--gap-label);
 }
 
 .secondary-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--gap-actions);
 }
 
 .error {
@@ -665,10 +794,10 @@ button:disabled,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
+  gap: var(--space-1);
   min-width: var(--target);
   min-height: var(--target);
-  padding: 0 0.8rem;
+  padding: 0 var(--space-3);
   border-radius: var(--radius-pill);
   font-weight: 700;
   font-size: var(--text-m);
@@ -837,7 +966,7 @@ button:disabled,
 }
 
 .app-content > main {
-  padding: var(--space-2) 0 var(--space-5);
+  padding: var(--space-2) 0 var(--space-6);
 }
 
 /* Why the account is not active, above every page (PS-ADM-002). */
@@ -943,12 +1072,12 @@ button:disabled,
 
 /* Page header (PageHeader): the way back, what kind of page it is, the
    title, the context it belongs to (UX-PRIV-003, UX-IA-015) and a lead. */
-.page-header {
-  margin-bottom: var(--space-5);
-}
-
 .page-header h1 {
   margin-bottom: var(--space-2);
+}
+
+.page-header > :last-child {
+  margin-bottom: 0;
 }
 
 .page-kind {
@@ -964,9 +1093,9 @@ button:disabled,
 .back-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.125rem;
+  gap: var(--space-0);
   min-height: var(--target);
-  padding: 0 0.875rem 0 0.5rem;
+  padding: 0 var(--space-3) 0 var(--space-2);
   border-radius: var(--radius-pill);
   font-size: var(--text-m);
   font-weight: 700;
@@ -1063,6 +1192,7 @@ button:disabled,
     > .page-header:first-child > :is(.place-bar, h1):first-child
   ) {
   margin-top: calc(-1 * var(--header-covers, var(--header-height)));
+  padding-top: 0;
 }
 
 :is(.app-content, .layer-content) > main:first-child > h1:first-child,
@@ -1168,6 +1298,10 @@ body:has(> .layer) .app-shell .layer {
     background: var(--color-backdrop);
   }
 
+  .layer {
+    --header-covers: calc(var(--target) + 2 * var(--space-3));
+  }
+
   .layer-header {
     padding: var(--space-3) var(--space-5);
   }
@@ -1215,7 +1349,7 @@ body:has(> .layer) .app-shell .layer {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: var(--space-3);
+  gap: var(--gap-row);
   width: 100%;
   min-height: 3.5rem;
   padding: var(--space-2) var(--space-3);
@@ -1267,7 +1401,7 @@ body:has(> .layer) .app-shell .layer {
 .menu-text {
   display: grid;
   flex: 1;
-  gap: 0.125rem;
+  gap: var(--gap-lines);
   min-width: 0;
 }
 
@@ -1388,6 +1522,20 @@ body:has(> .layer) .app-shell .layer {
   list-style: none;
 }
 
+/* A section's heading with something at its end, such as «Marker alle som
+   lest»; the page's rhythm treats it as the heading it holds. */
+.section-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+}
+
+.section-heading > h2 {
+  margin: 0;
+}
+
 /* A short status in words with its icon (`Tag`). The tone adds a colour
    and an icon; the words carry the meaning. */
 .tag {
@@ -1462,19 +1610,25 @@ body:has(> .layer) .app-shell .layer {
 .status-card,
 .empty-state {
   display: grid;
-  gap: var(--space-2);
-  padding: 1.125rem;
+  gap: var(--gap-card);
+  padding: var(--pad-card);
   background: var(--color-surface);
   border-radius: var(--radius-l);
   box-shadow: var(--shadow-raised);
 }
 
-/* Status card («Nå», UX-INT standard): status, time, who acts, the next
-   step and a way to more. The tone is an icon beside the words. */
-.status-card {
-  margin: 0 0 var(--space-5);
+/* A flat card: outlined instead of raised, for what is quieter than the
+   card above it, such as a loan's agreement under its status (KF7). */
+.card-flat {
+  display: grid;
+  gap: var(--gap-card);
+  padding: var(--pad-card);
+  border-radius: var(--radius-l);
+  box-shadow: inset 0 0 0 1.5px var(--color-border);
 }
 
+/* Status card («Nå», UX-INT standard): status, time, who acts, the next
+   step and a way to more. The tone is an icon beside the words. */
 .status-card h2 {
   margin: 0;
 }
@@ -1518,7 +1672,6 @@ body:has(> .layer) .app-shell .layer {
    at their own width. */
 .status-card .actions {
   display: grid;
-  margin: var(--space-2) 0 0;
 }
 
 @media (min-width: 48rem) {
@@ -1528,14 +1681,10 @@ body:has(> .layer) .app-shell .layer {
 }
 
 /* «Flere valg» (UX-INT-009): the rarer steps, always in the same place. */
-.more-actions {
-  margin: var(--space-2) 0 0;
-}
-
 .more-actions > div {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: var(--gap-actions);
   padding: var(--space-2) 0 var(--space-3);
 }
 
@@ -1547,7 +1696,6 @@ body:has(> .layer) .app-shell .layer {
 /* When there is nothing yet, say so and offer the way to begin. */
 .empty-state {
   justify-items: start;
-  gap: var(--space-3);
 }
 
 .empty-state p {
@@ -1574,7 +1722,7 @@ body:has(> .layer) .app-shell .layer {
     width: 100%;
     max-width: 100%;
     margin: auto 0 0;
-    padding: var(--space-5) 1.25rem 1.75rem;
+    padding: var(--space-5) var(--gutter) var(--space-6);
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   }
 }
@@ -1593,7 +1741,7 @@ body:has(> .layer) .app-shell .layer {
 .consequences {
   display: grid;
   gap: var(--space-3);
-  margin: 0 0 var(--space-4);
+  margin: 0 0 var(--gap-block);
 }
 
 .consequences h3 {
@@ -1611,7 +1759,7 @@ body:has(> .layer) .app-shell .layer {
 
 /* Fields that go with a confirmation, between its consequences and buttons. */
 .dialog form:not(:empty) {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--gap-block);
 }
 
 /* The buttons keep the order they are reached in: «Avbryt», then the
@@ -1619,7 +1767,7 @@ body:has(> .layer) .app-shell .layer {
 .dialog-actions {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--gap-actions);
 }
 
 @media (min-width: 48rem) {
@@ -1633,7 +1781,7 @@ body:has(> .layer) .app-shell .layer {
 /* Lists of things to look at or act on, one card each. */
 .entries {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--gap-list);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1642,7 +1790,7 @@ body:has(> .layer) .app-shell .layer {
 .entry {
   display: grid;
   gap: var(--space-1);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--pad-row);
   background: var(--color-surface);
   border-radius: var(--radius-m);
   box-shadow: var(--shadow-low);
@@ -1668,7 +1816,7 @@ body:has(> .layer) .app-shell .layer {
 }
 
 .link-row {
-  margin: var(--space-2) 0;
+  margin: 0;
 }
 
 .entry-detail,
@@ -1696,8 +1844,8 @@ body:has(> .layer) .app-shell .layer {
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
-  margin: var(--space-1) 0 var(--space-4);
+  gap: var(--space-2) var(--gap-actions);
+  margin: 0;
 }
 
 /* Filters, such as «Låner» and «Låner bort»: the chosen one is raised and
@@ -1727,7 +1875,7 @@ body:has(> .layer) .app-shell .layer {
   align-items: baseline;
   grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
   gap: var(--space-2) var(--space-4);
-  margin: 0 0 var(--space-4);
+  margin: 0;
 }
 
 .facts dt {
@@ -1787,7 +1935,7 @@ fieldset {
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   gap: var(--space-2);
-  margin: 0 0 var(--space-4);
+  margin: 0;
   padding: var(--space-3) var(--space-4) var(--space-4);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-m);
@@ -1866,7 +2014,7 @@ fieldset {
 .stepper {
   display: flex;
   align-items: center;
-  margin: 0 0 var(--space-4);
+  margin: 0;
   padding: 0;
   list-style: none;
   font-size: var(--text-s);
@@ -1929,7 +2077,7 @@ fieldset {
 .consequence-rows {
   display: grid;
   gap: var(--space-3);
-  margin: 0 0 var(--space-4);
+  margin: 0;
   padding: 0;
   list-style: none;
 }

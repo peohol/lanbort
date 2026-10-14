@@ -45,7 +45,8 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
-  margin: calc(-1 * var(--space-3)) 0 var(--space-4);
+  /* Close under the page's title, as part of it. */
+  margin: calc(var(--gap-block) - var(--gap-page)) 0 0;
   font-size: var(--text-s);
   color: var(--color-muted);
 }
@@ -62,12 +63,7 @@
   color: var(--color-muted);
 }
 
-.section {
-  margin: 0 0 var(--space-5);
-}
-
 .section > h2 {
-  margin: 0 0 var(--space-2);
   padding: 0 var(--space-1);
   font-size: var(--text-m);
   color: var(--color-muted);
@@ -88,7 +84,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--gap-row);
   min-height: var(--control);
   padding: var(--space-3) 0;
 }
@@ -113,7 +109,7 @@
   flex: 1;
   min-width: 0;
   display: grid;
-  gap: 0.125rem;
+  gap: var(--gap-lines);
 }
 
 .roleText > span {
@@ -163,7 +159,7 @@
 @media (min-width: 48rem) {
   .roles {
     align-items: start;
-    gap: var(--space-3);
+    gap: var(--gap-list);
     padding: 0;
     background: none;
     border-radius: 0;
@@ -285,8 +281,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin: 0 0 var(--space-4);
-  padding: var(--space-3) var(--space-4);
+  margin: 0;
+  padding: var(--pad-row);
   font-size: var(--text-s);
   background: var(--color-surface);
   border-radius: var(--radius-m);
@@ -300,7 +296,7 @@
 }
 
 .card {
-  margin: 0 0 var(--space-4);
+  margin: 0;
   padding: var(--space-1) var(--space-4);
   background: var(--color-surface);
   border-radius: var(--radius-l);
@@ -311,7 +307,7 @@
    the one reply. */
 .reviews {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--gap-list);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -319,8 +315,8 @@
 
 .review {
   display: grid;
-  gap: var(--space-2);
-  padding: var(--space-4);
+  gap: var(--gap-card);
+  padding: var(--pad-card);
   background: var(--color-surface);
   border-radius: var(--radius-l);
   box-shadow: var(--shadow-raised);
@@ -333,7 +329,7 @@
 .scores {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.125rem var(--space-3);
+  gap: var(--gap-lines) var(--space-3);
   margin: 0;
   font-size: var(--text-s);
 }
@@ -358,7 +354,7 @@
 }
 
 .quote {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--pad-row);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   background: var(--color-page);
@@ -367,8 +363,8 @@
 
 .reply {
   display: grid;
-  gap: 0.125rem;
-  padding: 0.125rem 0 0.125rem var(--space-3);
+  gap: var(--gap-lines);
+  padding: var(--space-0) 0 var(--space-0) var(--space-3);
   border-left: 3px solid var(--color-border);
   white-space: pre-wrap;
   overflow-wrap: anywhere;

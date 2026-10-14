@@ -8,17 +8,13 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin: 0 0 var(--space-4);
-  padding: var(--space-2) var(--space-3);
+  margin: 0;
+  padding: var(--pad-row);
   border-radius: var(--radius-m);
   background: var(--color-info-soft);
   color: var(--color-info-strong);
   font-weight: 700;
   line-height: 1.3;
-}
-
-.section {
-  margin: 0 0 var(--space-5);
 }
 
 /* A heading with a quiet note at its end, such as «eldste først». */
@@ -35,7 +31,7 @@
 }
 
 .facts {
-  margin: 0 0 var(--space-5);
+  margin: 0;
 }
 
 .facts dl {
@@ -44,8 +40,8 @@
 
 .entries {
   display: grid;
-  gap: var(--space-2);
-  margin: 0 0 var(--space-3);
+  gap: var(--gap-list);
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -54,7 +50,7 @@
   display: grid;
   gap: var(--space-2);
   min-width: 0;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--pad-row);
   background: var(--color-surface);
   border-radius: var(--radius-m);
   box-shadow: var(--shadow-low);
@@ -144,24 +140,29 @@
    is outlined in the accent, a choice not available yet is quiet. */
 .options {
   display: grid;
-  gap: var(--space-2);
-  margin: 0 0 var(--space-4);
+  gap: var(--gap-list);
+  margin: 0;
   padding: 0;
   border: 0;
 }
 
 .options legend,
 .options h2 {
-  margin-bottom: var(--space-2);
+  margin: 0 0 var(--gap-heading);
   padding: 0;
   font-weight: 700;
+}
+
+/* The section's own gap stands between its heading and the choices. */
+.options h2 {
+  margin: 0;
 }
 
 .option {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  gap: var(--gap-row);
+  padding: var(--pad-row);
   border-radius: var(--radius-m);
   background: var(--color-surface);
   box-shadow: inset 0 0 0 1.5px var(--color-border);
@@ -199,7 +200,7 @@
 
 .receiver {
   margin: 0;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--pad-row);
   border-radius: var(--radius-m);
   box-shadow: inset 0 0 0 1.5px var(--color-border);
   color: var(--color-muted);
@@ -215,13 +216,13 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  margin: 0 0 var(--space-3);
+  margin: 0;
   padding: 0;
   border: 0;
 }
 
 .audiences legend {
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--gap-heading);
   padding: 0;
   font-weight: 700;
 }

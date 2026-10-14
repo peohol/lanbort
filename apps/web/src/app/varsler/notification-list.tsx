@@ -109,7 +109,7 @@ export function NotificationList({
     <div id={id} className={styles.sections}>
       {unread.length > 0 && (
         <section aria-labelledby="varsler-uleste">
-          <div className={styles.heading}>
+          <div className={`section-heading ${styles.heading}`}>
             <h2 id="varsler-uleste">Uleste · {unreadCount}</h2>
             {newest && (
               <ActionButton
