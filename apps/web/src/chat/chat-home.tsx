@@ -79,9 +79,20 @@ function rowContext(conversation: ChatConversation, loans: ChatLoans) {
 }
 
 function preview(summary: ConversationSummary | undefined) {
+  // Not under the name of someone the messages are not from.
+  if (summary?.counterpart.elsewhere) {
+    return "Kryptert med en annen enn den som vises her";
+  }
   if (!summary?.last) return "Ingen meldinger på denne enheten ennå";
-  const text = summary.last.text ?? "Meldingen kunne ikke leses her";
-  return summary.last.own ? `Du: ${text}` : text;
+  const { last, counterpart } = summary;
+  // History this device has not settled whom it is with (ADR-0010 §3).
+  if (!counterpart.userId) return "Ikke bekreftet hvem samtalen er med ennå";
+  // Not read, so from no one verified: it claims nothing either.
+  if (last.text === null) return "Meldingen kunne ikke leses her";
+  if (last.own) return `Du: ${last.text}`;
+  return last.senderUserId === counterpart.userId
+    ? last.text
+    : `Ukjent avsender: ${last.text}`;
 }
 
 /** One row per conversation (01), the open one marked where it shows. */

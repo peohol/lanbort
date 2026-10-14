@@ -239,6 +239,8 @@ export class FakeChatServer {
   failBackupRead: Failure | null = null;
   /** No new archive can be made: the connection is lost. */
   failArchives = false;
+  /** No archive can be fetched: the connection is lost. */
+  failArchiveReads = false;
 
   #complete = (archive: ArchiveRow) =>
     archive.parts.every((part) => part !== undefined);
@@ -595,6 +597,7 @@ export class FakeChatServer {
       return { complete: this.#complete(archive) };
     },
     archivePart: async (id, part) => {
+      if (this.failArchiveReads) fail("network");
       const archive = this.#ownArchive(id, (a) => this.#complete(a));
       return { data: archive.parts[part] ?? fail("not_found") };
     },

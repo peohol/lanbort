@@ -69,7 +69,7 @@ Signaturene har et formålsmerke (`Lanbort device-certificate v1`, `Lanbort devi
 **Hvem en enhet stoler på.** Hver enhet har et eget tillitslager:
 
 - Første gang den ser en kontos kontonøkkel, husker den nøkkelen (trust on first use).
-- En annen kontonøkkel senere blir **ikke** godtatt automatisk. Brukeren får beskjed om at kontaktens sikkerhetskode er endret, og nøkkelen godtas først når brukeren har sett det.
+- En annen kontonøkkel senere blir **ikke** godtatt automatisk. Brukeren får beskjed om at kontaktens sikkerhetskode er endret, med den nye koden, og nøkkelen godtas først når brukeren har sett det. Godkjenningen gjelder nøyaktig nøkkelen bak koden som ble vist, også etter navigering og ny innlasting. Viser serveren enda en ny nøkkel før brukeren har godtatt, blir den viste koden stående til brukeren ber om å se den nye, og den må godtas for seg.
 - Kontakter kan sammenligne en **sikkerhetskode** utledet fra begge kontonøklene for å utelukke at serveren har byttet nøkkel ved første kontakt. Formatet følger Signals «safety number» (iterert SHA-512, 60 sifre); WP-43 bygger visningen.
 
 **Adgangskontroll i hver gruppe (MLS authentication service).** En enhet godtas som medlem bare hvis enhetssertifikatet:
@@ -89,7 +89,7 @@ Dette sjekkes av hver klient for hvert medlem som legges til, hver nøkkeloppdat
 - Bare forslagene `add`, `remove` og `update` godtas i en commit. Alt annet MLS tillater (reinit, eksterne forslag, PSK, endring av gruppeutvidelser) avvises av klienten.
 - En enhet kan bare fjernes når mottakerens egen enhet ikke lenger stoler på den: den er tilbakekalt med signatur fra sin kontonøkkel, kontoen har fått ny kontonøkkel, eller kontoen er ikke lenger deltaker. Hver mottaker sjekker dette selv og avviser ellers hele commiten, så én deltaker kan ikke kaste ut en annens enhet.
 - Korte meldinger fylles opp til 1024 byte før kryptering, så lengden ikke røper innholdet.
-- Hver samtale er mellom nøyaktig to kontoer, der den ene er enhetens egen, og det endres aldri. Klienten husker de to kontoene første gang den ser samtalen, og bruker ikke en katalog fra serveren som legger til en tredje konto eller bytter ut den andre. Serveren kan dermed ikke smugle inn en ekstra deltaker («spøkelsesbruker»). Viser samtalesiden en annen person enn kontoen gruppen er med, sendes ingenting mer i samtalen, og det vises ingen sikkerhetskode for den personen.
+- Hver samtale er mellom nøyaktig to kontoer, der den ene er enhetens egen, og det endres aldri. Klienten husker de to kontoene første gang den ser samtalen, og bruker ikke en katalog fra serveren som legger til en tredje konto eller bytter ut den andre. Serveren kan dermed ikke smugle inn en ekstra deltaker («spøkelsesbruker»). Viser samtalesiden en annen person enn kontoen gruppen er med, sendes ingenting mer i samtalen, og det vises ingen sikkerhetskode for den personen. Meldingene i samtalen tilskrives da ikke personen siden viser, verken i samtalen eller i samtalelisten, og krypteringslinjen sier ikke at den personen kan lese dem.
 - Meldings-ID-en ligger inne i den krypterte meldingen og kommer fra avsenderen. En mottatt melding legges bare til hvis ID-en er ny, så en deltaker kan ikke erstatte eller endre en melding som allerede står i historikken.
 
 ## 5. Ny enhet (kobling)
@@ -134,7 +134,7 @@ Er chatten på enheten ikke til å åpne (nøklene mangler, eller tilstanden er 
 
 **Historikk lagres på enheten.** På grunn av forward secrecy kan ciphertext på serveren ikke dekrypteres senere. Leste meldinger lagres derfor dekryptert i enhetens lokale lager (kryptert i ro, punkt 10). Serveren sletter ciphertext når alle mottakerenheter har hentet den, eller etter en øvre frist som settes ett sted i WP-43 og følger pilotpolicyen for oppbevaring (OD-0002).
 
-**Historikkarkiv.** Én felles mekanisme for både kobling og sikkerhetskopi: historikken pakkes og krypteres med en tilfeldig 256-bit nøkkel (AES-256-GCM via WebCrypto, i biter). Bare nøkkelen avgjør hvem som kan lese den.
+**Historikkarkiv.** Én felles mekanisme for både kobling og sikkerhetskopi: historikken pakkes og krypteres med en tilfeldig 256-bit nøkkel (AES-256-GCM via WebCrypto, i biter). Bare nøkkelen avgjør hvem som kan lese den. Arkivet har med hvilke to kontoer hver samtale er mellom, slik enheten som lagde det hadde fastslått dem. En enhet som får historikken, bruker dem i stedet for det serveren sier, også før den er med i samtalens gruppe. Så lenge historikken ennå ikke er hentet, sier enheten ikke hvem noen samtale er med, starter ingen gruppe og krypterer ingenting. Har den allerede fastslått noen andre, sendes ingenting mer i samtalen. En mottatt melding tilskrives bare den kontoen den ble bekreftet å være fra, og bare når samtalesiden viser nettopp den kontoen. Et arkiv fra før kontoene ble tatt med, kan fortsatt leses. Da hentes kontoene fra meldingene i det som ble bekreftet å være fra den andre. Har den bare brukerens egne meldinger, viser samtalen og samtalelisten ingen motpart før enheten selv har fastslått hvem samtalen er med.
 
 **Gjenopprettingsnøkkel (valgfri, tilbys brukeren):**
 

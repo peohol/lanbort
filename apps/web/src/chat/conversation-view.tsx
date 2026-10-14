@@ -33,13 +33,14 @@ import {
   Picture,
 } from "./chat-home";
 import { ChatIcon } from "./chat-icon";
-import { useEngineVersion, useSecurityCode } from "./chat-provider";
+import { useEngineVersion } from "./chat-provider";
 import { addedAt } from "./device-names";
 import { ReadyChat } from "./chat-setup";
 import { EncryptionLine } from "./encryption";
 import {
   type ChatEngine,
   type ConversationProblem,
+  type Counterpart,
   chatTuning,
   type HistoryEntry,
   shortMessageRoom,
@@ -50,6 +51,7 @@ import { type ChatLoan, type ChatLoans, cameFromFirst } from "./loans";
 import { chatErrorMessage } from "./messages";
 import { Notice } from "./notice";
 import { dayHeading, messageTime, sameDay } from "./time";
+import { ChangedAgain, SecurityDigits, useSecurityCode } from "./security-code";
 import { firstUnseen } from "./unread";
 import { useConversations } from "./use-conversations";
 import { useOwnDevices } from "./use-own-devices";
@@ -110,8 +112,10 @@ function LoansBetween({ loans }: { loans: readonly ChatLoan[] }) {
 
 /**
  * A contact's security code changed (19): it says what it can mean without
- * accusing anyone, and nothing is written until the reader has seen it
- * (ADR-0010 §3).
+ * accusing anyone, shows the new code, and nothing is written until the
+ * reader has accepted that code (ADR-0010 §3). Should the server show yet
+ * another key, the new code is shown only when asked for, before anything
+ * can be accepted.
  */
 function KeyChanged({
   engine,
@@ -123,8 +127,12 @@ function KeyChanged({
   person: ChatConversation["others"][number];
 }) {
   const name = person.realName ?? "Tidligere bruker";
-  // The key whose code «Sammenlign» shows is the one accepted, no other.
-  const code = useSecurityCode(engine, conversationId, person.userId);
+  const { code, changedAgain, showNew, accept } = useSecurityCode(
+    engine,
+    conversationId,
+    person.userId,
+  );
+  const [busy, setBusy] = useState(false);
   return (
     <Notice
       tag="Sikkerhetskode endret"
@@ -139,17 +147,23 @@ function KeyChanged({
         seg for å være {name}. Er du usikker, spør {name} på en annen måte,
         eller sammenlign koden når dere møtes.
       </p>
-      <BusyButton
-        type="button"
-        className="button-primary"
-        busy={!code?.pending}
-        busyNote="henter koden …"
-        onClick={() =>
-          code?.pending && void engine.acceptKeyChange(person.userId, code.key)
-        }
-      >
-        Godta og fortsett
-      </BusyButton>
+      {code?.pending && <SecurityDigits code={code} />}
+      {changedAgain ? (
+        <ChangedAgain showNew={showNew} />
+      ) : (
+        <BusyButton
+          type="button"
+          className="button-primary"
+          busy={busy || !code?.pending}
+          busyNote={busy ? "godtar …" : "henter koden …"}
+          onClick={() => {
+            setBusy(true);
+            void accept().finally(() => setBusy(false));
+          }}
+        >
+          Godta og fortsett
+        </BusyButton>
+      )}
       <Link href={chatAboutHref(conversationId)} className="button-quiet">
         Sammenlign sikkerhetskoden
       </Link>
@@ -173,12 +187,18 @@ function Messages({
   divider,
   online,
   alone,
+  from,
   name,
 }: {
   history: readonly HistoryEntry[];
   divider: string | null;
   online: boolean;
   alone: boolean;
+  /**
+   * The account the page may name (`Counterpart`): only a message verified
+   * to be from it is said to be from `name`.
+   */
+  from: string | null;
   name: string;
 }) {
   return (
@@ -211,9 +231,19 @@ function Messages({
                 .filter(Boolean)
                 .join(" ")}
             >
-              <span className="visually-hidden">
-                {entry.own ? "Du skrev:" : `${name} skrev:`}
-              </span>
+              {entry.own || (from !== null && entry.senderUserId === from) ? (
+                <span className="visually-hidden">
+                  {entry.own ? "Du skrev:" : `${name} skrev:`}
+                </span>
+              ) : entry.text === null ? (
+                <span className="visually-hidden">Ukjent avsender skrev:</span>
+              ) : (
+                // Seen too: under the name above, it would read as theirs.
+                <span className={styles.sender}>
+                  Ukjent avsender
+                  <span className="visually-hidden"> skrev:</span>
+                </span>
+              )}
               {entry.text === null ? (
                 <span className={`${styles.bubble} ${styles.unreadable}`}>
                   Meldingen kunne ikke leses på denne enheten.
@@ -361,6 +391,7 @@ function Conversation({
     joined: boolean;
     alone: boolean;
     problem: ConversationProblem | null;
+    counterpart: Counterpart;
   }>();
   const [jump, setJump] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -493,10 +524,14 @@ function Conversation({
     missesEarlier(linkedAt, info.startedAt, history)
       ? linkedAt
       : null;
-  const canWrite =
-    info?.open === true &&
-    status?.joined === true &&
-    status.problem !== "other_person";
+  // Nothing here is said to be from, or readable by, anyone but the one
+  // this device has settled the conversation is with.
+  const from = status?.counterpart.userId ?? null;
+  const elsewhere =
+    status?.problem === "other_person" ||
+    status?.counterpart.elsewhere === true;
+  const settled = from !== null && !elsewhere;
+  const canWrite = info?.open === true && status?.joined === true && settled;
 
   return (
     <>
@@ -578,16 +613,19 @@ function Conversation({
         </p>
       )}
 
-      {changed.map((person) => (
-        <KeyChanged
-          key={person.userId}
-          engine={engine}
-          conversationId={id}
-          person={person}
-        />
-      ))}
+      {settled &&
+        changed.map((person) => (
+          <KeyChanged
+            key={person.userId}
+            engine={engine}
+            conversationId={id}
+            person={person}
+          />
+        ))}
 
-      {info && <EncryptionLine with={name} />}
+      {info && status && (
+        <EncryptionLine with={settled ? name : null} elsewhere={elsewhere} />
+      )}
 
       <section aria-labelledby="meldinger">
         <h2 id="meldinger" className="visually-hidden">
@@ -610,6 +648,7 @@ function Conversation({
             divider={divider}
             online={online}
             alone={status?.alone === true}
+            from={elsewhere ? null : from}
             name={name}
           />
         )}

@@ -4,7 +4,7 @@ import type { ChatConversation } from "@lanbort/contracts";
 import { useEffect, useRef, useState } from "react";
 import { chatApi } from "./api";
 import { useEngineVersion } from "./chat-provider";
-import type { ChatEngine, HistoryEntry } from "./engine";
+import type { ChatEngine, Counterpart, HistoryEntry } from "./engine";
 import { chatErrorMessage } from "./messages";
 import { firstUnseen } from "./unread";
 
@@ -14,6 +14,8 @@ export interface ConversationSummary {
   last: HistoryEntry | null;
   /** A message from someone else since the conversation was last shown. */
   isNew: boolean;
+  /** Whom its messages may be said to be with (`Counterpart`). */
+  counterpart: Counterpart;
 }
 
 /**
@@ -37,13 +39,18 @@ export function useConversations(engine: ChatEngine) {
       .then(async ({ conversations: list }) => {
         const entries = await Promise.all(
           list.map(async (c) => {
-            const [history, seen] = await Promise.all([
+            const [history, seen, counterpart] = await Promise.all([
               engine.history(c.conversationId),
               engine.seen(c.conversationId),
+              engine.counterpart(
+                c.conversationId,
+                c.others.map((other) => other.userId),
+              ),
             ]);
             const summary: ConversationSummary = {
               last: history.at(-1) ?? null,
               isNew: firstUnseen(history, seen) !== null,
+              counterpart,
             };
             return [c.conversationId, summary] as const;
           }),

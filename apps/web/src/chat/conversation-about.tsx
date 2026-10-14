@@ -17,12 +17,12 @@ import { personHref } from "@/navigation/routes";
 import { chatApi } from "./api";
 import styles from "./chat.module.css";
 import { loanOf, nameOf } from "./chat-home";
-import { useSecurityCode } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";
 import type { ChatEngine } from "./engine";
 import { LinkRow } from "./link-row";
 import { type ChatLoan, type ChatLoans, cameFromFirst } from "./loans";
 import { chatErrorMessage } from "./messages";
+import { ChangedAgain, SecurityDigits, useSecurityCode } from "./security-code";
 
 type Person = ChatConversation["others"][number];
 
@@ -39,50 +39,53 @@ const whose = (name: string) =>
 /**
  * The 60 digits both compare, as 12 groups of 5 (ADR-0010 §3). While the
  * contact's changed key waits for the user, it is the new key's code: the
- * one «Godta og fortsett» would accept.
+ * one «Godta og fortsett» accepts, and it stays the same until the user
+ * asks to see a newer one.
  */
 function SecurityCode({
   engine,
   conversationId,
   person,
+  directory,
 }: {
   engine: ChatEngine;
   conversationId: string;
   person: Person;
+  directory: ChatDirectory | undefined;
 }) {
-  const code = useSecurityCode(engine, conversationId, person.userId);
+  const { code, changedAgain, showNew } = useSecurityCode(
+    engine,
+    conversationId,
+    person.userId,
+  );
   const name = person.realName ?? "Tidligere bruker";
 
   return (
-    <section className="card" aria-labelledby={`kode-${person.userId}`}>
-      <h2 id={`kode-${person.userId}`}>Sikkerhetskode</h2>
-      <p className="quiet">
-        Sammenlign med koden på {whose(name)} skjerm når dere møtes. Er de like,
-        bruker samtalen {whose(name)} egne nøkler, ikke noen andres.
-      </p>
-      {code === null && (
-        <p role="alert">
-          Samtalen er kryptert med en annen enn {name}. Det finnes ingen kode å
-          sammenligne, og ingenting sendes i samtalen.
+    <>
+      <section className="card" aria-labelledby={`kode-${person.userId}`}>
+        <h2 id={`kode-${person.userId}`}>Sikkerhetskode</h2>
+        <p className="quiet">
+          Sammenlign med koden på {whose(name)} skjerm når dere møtes. Er de
+          like, bruker samtalen {whose(name)} egne nøkler, ikke noen andres.
         </p>
-      )}
-      {code?.pending && (
-        <p role="status">
-          Dette er den nye koden. Den er ikke godtatt ennå, og ingenting sendes
-          i samtalen før du har godtatt den.
-        </p>
-      )}
-      {code && (
-        <p
-          className={`security-code ${styles.code}`}
-          aria-label={code.code.join(" ")}
-        >
-          {code.code.map((group, index) => (
-            <span key={index}>{group}</span>
-          ))}
-        </p>
-      )}
-    </section>
+        {code === null && (
+          <p role="alert">
+            Samtalen er kryptert med en annen enn {name}. Det finnes ingen kode
+            å sammenligne, og ingenting sendes i samtalen.
+          </p>
+        )}
+        {code?.pending && !changedAgain && (
+          <p role="status">
+            Dette er den nye koden. Den er ikke godtatt ennå, og ingenting
+            sendes i samtalen før du har godtatt den.
+          </p>
+        )}
+        {changedAgain && <ChangedAgain showNew={showNew} />}
+        {code && <SecurityDigits code={code} />}
+      </section>
+      {/* Only for the one this device settled the conversation is with. */}
+      {code && <TheirDevices directory={directory} person={person} />}
+    </>
   );
 }
 
@@ -223,13 +226,7 @@ function About({
               engine={engine}
               conversationId={id}
               person={person}
-            />
-          ))}
-          {others.map((person) => (
-            <TheirDevices
-              key={person.userId}
               directory={directory}
-              person={person}
             />
           ))}
 

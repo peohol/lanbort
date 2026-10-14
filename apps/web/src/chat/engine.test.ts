@@ -175,13 +175,55 @@ async function laggingDevice() {
   return { alice1, alice2, bob, id, code };
 }
 
-/** What a device restored with the code gets back. */
-async function restored(userId: string, code: string, id: string) {
+/** A new device restored with the code, before its history is fetched. */
+async function restore(userId: string, code: string): Promise<TestDevice> {
   const device = context(userId);
   const engine = await on(device, () => restoreChat(userId, code));
   if (engine === "wrong_key") throw new Error("wrong key");
-  await on(device, () => engine.resumeHistory());
-  return texts({ ...device, engine }, id);
+  return { ...device, engine };
+}
+
+/** What a device restored with the code gets back. */
+async function restored(userId: string, code: string, id: string) {
+  const device = await restore(userId, code);
+  await on(device, () => device.engine.resumeHistory());
+  return texts(device, id);
+}
+
+/** A backup under Alice's key that points to `archive`'s parts. */
+async function pointBackupTo(
+  device: TestDevice,
+  code: string,
+  plaintext: Uint8Array | null,
+) {
+  const backup = server.recovery.get(device.userId)!;
+  const key = (await readRecoveryKey(code))!;
+  const opened = await openRecoveryBackup(
+    key,
+    device.userId,
+    fromBase64(backup.backup),
+  );
+  const archiveId = backup.archiveId!;
+  const row = server.archives.get(archiveId)!;
+  if (plaintext) {
+    const sealed = await sealArchive(plaintext);
+    row.parts = sealed.parts.map((part) => toBase64(part));
+    backup.backup = toBase64(
+      await sealRecoveryBackup(key, {
+        account: opened.account,
+        pinned: opened.pinned,
+        revoked: opened.revoked,
+        archive: { archiveId, parts: sealed.parts.length, key: sealed.key },
+      }),
+    );
+  } else {
+    row.parts = row.parts.map((part) =>
+      toBase64(
+        crypto.getRandomValues(new Uint8Array(fromBase64(part!).length)),
+      ),
+    );
+  }
+  return backup.backup;
 }
 
 /** A device the server certifies under a key of its own for `userId`. */
@@ -253,6 +295,86 @@ describe("the engine against a delivery service that may lie", () => {
       expect(now?.key).not.toBe(toBase64(swap.account.publicKey));
     });
 
+    it("accepts no key whose code it did not show", async () => {
+      const { alice, bob, id } = await swappedKey();
+      const now = await on(alice, () =>
+        alice.engine.securityCode(id, bob.userId),
+      );
+      expect(
+        await on(alice, () =>
+          alice.engine.acceptKeyChange(bob.userId, now!.key),
+        ),
+      ).toBe(false);
+      expect(alice.engine.keyChanged(bob.userId)).toBe(true);
+    });
+
+    it("keeps the code shown until the new one is shown, when the server shows yet another key", async () => {
+      const { alice, bob, id, swap } = await swappedKey();
+      const first = await on(alice, () =>
+        alice.engine.securityCode(id, bob.userId),
+      );
+      expect(
+        await on(alice, () =>
+          alice.engine.showSecurityCode(bob.userId, first!.key),
+        ),
+      ).toBe(true);
+
+      const other = await serverOwnedDevice(bob.userId);
+      server.accountKeys.set(bob.userId, toBase64(other.account.publicKey));
+      await maintain(alice, id);
+
+      // The page, reloaded or not, still has the code it showed.
+      const shown = await on(alice, () =>
+        alice.engine.shownSecurityCode(id, bob.userId),
+      );
+      expect(shown).toEqual(first);
+      expect(shown?.key).toBe(toBase64(swap.account.publicKey));
+      // Neither the code shown nor the new one is accepted yet.
+      for (const key of [first!.key, toBase64(other.account.publicKey)]) {
+        expect(
+          await on(alice, () => alice.engine.acceptKeyChange(bob.userId, key)),
+        ).toBe(false);
+      }
+      // Only a shown code can be recorded, and only the key waiting.
+      expect(
+        await on(alice, () =>
+          alice.engine.showSecurityCode(bob.userId, first!.key),
+        ),
+      ).toBe(false);
+      const latest = await on(alice, () =>
+        alice.engine.securityCode(id, bob.userId),
+      );
+      await on(alice, () =>
+        alice.engine.showSecurityCode(bob.userId, latest!.key),
+      );
+      expect(
+        await on(alice, () =>
+          alice.engine.acceptKeyChange(bob.userId, latest!.key),
+        ),
+      ).toBe(true);
+      expect(alice.engine.keyChanged(bob.userId)).toBe(false);
+      expect(
+        await on(alice, () => alice.engine.shownSecurityCode(id, bob.userId)),
+      ).toBeNull();
+    });
+
+    it("says nothing is from someone a page shows instead of the one the group is with", async () => {
+      const alice = await startChat();
+      const bob = await startChat();
+      const carol = await startChat();
+      const id = await conversationBetween(alice, bob);
+      expect(
+        await on(alice, () => alice.engine.counterpart(id, [bob.userId])),
+      ).toEqual({ userId: bob.userId, elsewhere: false });
+      expect(
+        await on(alice, () => alice.engine.counterpart(id, [carol.userId])),
+      ).toEqual({ userId: null, elsewhere: true });
+      // Once marked, the conversation stays so.
+      expect(
+        (await on(alice, () => alice.engine.status(id, [bob.userId]))).problem,
+      ).toBe("other_person");
+    });
+
     it("gives no code for someone who is not in the conversation", async () => {
       const alice = await startChat();
       const bob = await startChat();
@@ -310,6 +432,349 @@ describe("the engine against a delivery service that may lie", () => {
       await sync(alice);
       vi.useRealTimers();
       expect(server.log.slice(before)).toEqual([]);
+    });
+  });
+
+  describe("history a device is given keeps whom it is with", () => {
+    /** Alice wrote to Bob, and Bob back if `bobWrites`; it is backed up. */
+    async function aliceAndBob(bobWrites: boolean) {
+      const alice = await startChat();
+      const bob = await startChat();
+      const carol = await startChat();
+      const id = await conversationBetween(alice, bob);
+      await send(alice, id, "fra Alice");
+      await sync(bob);
+      if (bobWrites) {
+        await send(bob, id, "fra Bob");
+        await sync(alice);
+      }
+      const code = await createRecoveryKey(alice);
+      await on(alice, () => alice.engine.backUp());
+      return { alice, bob, carol, id, code };
+    }
+
+    /**
+     * From now on the server names Carol in Bob's place: to the page, and
+     * in the directory with her own account and devices.
+     */
+    async function carolInBobsPlace(
+      alice: TestDevice,
+      bob: TestDevice,
+      carol: TestDevice,
+    ) {
+      const theirs = await conversationBetween(alice, carol);
+      const carolAccount = (
+        await on(alice, () => server.api.directory(theirs))
+      ).accounts.find((account) => account.userId === carol.userId)!;
+      server.conversationFilter = (conversation) => ({
+        ...conversation,
+        others: conversation.others.map((other) =>
+          other.userId === bob.userId
+            ? { ...other, userId: carol.userId }
+            : other,
+        ),
+      });
+      server.directoryFilter = (directory) => ({
+        ...directory,
+        accounts: directory.accounts.map((account) =>
+          account.userId === bob.userId ? carolAccount : account,
+        ),
+      });
+    }
+
+    const given = {
+      backup: async (alice: TestDevice, code: string) => {
+        const device = await restore(alice.userId, code);
+        await on(device, () => device.engine.resumeHistory());
+        return device;
+      },
+      device: (alice: TestDevice) => link(alice, true),
+    };
+
+    const senders = async (device: TestDevice, id: string) =>
+      (await on(device, () => device.engine.history(id))).map((entry) =>
+        entry.own ? "own" : entry.senderUserId,
+      );
+
+    for (const from of ["backup", "device"] as const) {
+      for (const bobWrites of [true, false]) {
+        const what = `${bobWrites ? "history" : "history of only own messages"} from the ${from}`;
+
+        it(`names whom ${what} is with before the device is in its group`, async () => {
+          const { alice, bob, id, code } = await aliceAndBob(bobWrites);
+          const device = await given[from](alice, code);
+          expect(
+            await on(device, () => device.engine.counterpart(id, [bob.userId])),
+          ).toEqual({ userId: bob.userId, elsewhere: false });
+          const status = await on(device, () =>
+            device.engine.status(id, [bob.userId]),
+          );
+          expect(status.joined).toBe(false);
+          expect(await senders(device, id)).toEqual(
+            bobWrites ? ["own", bob.userId] : ["own"],
+          );
+        });
+
+        it(`names no one else for ${what}, whatever the server says`, async () => {
+          const { alice, bob, carol, id, code } = await aliceAndBob(bobWrites);
+          await carolInBobsPlace(alice, bob, carol);
+          const device = await given[from](alice, code);
+          const shows = await shown(device, id);
+          expect(shows).toEqual([carol.userId]);
+
+          // No group here yet: only the history says whom it is with.
+          expect(
+            await on(device, () => device.engine.counterpart(id, shows)),
+          ).toEqual({ userId: null, elsewhere: true });
+
+          // Nor once the device has heard from the server.
+          await maintain(device, id).catch(() => undefined);
+          await sync(device);
+          expect(
+            await on(device, () => device.engine.counterpart(id, shows)),
+          ).toEqual({ userId: null, elsewhere: true });
+          expect(
+            await on(device, () =>
+              device.engine.securityCode(id, carol.userId),
+            ),
+          ).toBeNull();
+          expect(
+            (await on(device, () => device.engine.status(id, shows))).problem,
+          ).not.toBeNull();
+          expect(await senders(device, id)).toEqual(
+            bobWrites ? ["own", bob.userId] : ["own"],
+          );
+          const before = server.log.length;
+          await send(device, id, "til den som vises").catch(() => false);
+          await sync(device);
+          expect(server.log.slice(before)).toEqual([]);
+        });
+      }
+    }
+
+    it("keeps whom the history is with when the server settled someone else first", async () => {
+      const { alice, bob, carol, id, code } = await aliceAndBob(false);
+      await carolInBobsPlace(alice, bob, carol);
+      const device = await restore(alice.userId, code);
+      // The page is opened before the history is here.
+      await maintain(device, id).catch(() => undefined);
+      await on(device, () => device.engine.resumeHistory());
+
+      // Bob is the one the history is with; the conversation is out of
+      // step, so nothing is sent in it, and Carol is named for nothing.
+      server.conversationFilter = null;
+      expect(
+        await on(device, () => device.engine.counterpart(id, [bob.userId])),
+      ).toEqual({ userId: bob.userId, elsewhere: false });
+      const status = await on(device, () =>
+        device.engine.status(id, [bob.userId]),
+      );
+      expect(status).toMatchObject({ joined: false, problem: "out_of_sync" });
+      expect(
+        await on(device, () => device.engine.counterpart(id, [carol.userId])),
+      ).toEqual({ userId: null, elsewhere: true });
+    });
+
+    it("keeps whom the history is with in the backup a device with none makes", async () => {
+      const { alice, bob, carol, id, code } = await aliceAndBob(false);
+      const linked = await link(alice, false);
+      await carolInBobsPlace(alice, bob, carol);
+      // The new device settles Carol from the server, then backs up.
+      await maintain(linked, id).catch(() => undefined);
+      await on(linked, () => linked.engine.backUp()).catch(() => undefined);
+      server.conversationFilter = null;
+      server.directoryFilter = null;
+      const device = await given.backup(alice, code);
+      expect(
+        await on(device, () => device.engine.counterpart(id, [bob.userId])),
+      ).toEqual({ userId: bob.userId, elsewhere: false });
+    });
+
+    for (const from of ["backup", "device"] as const) {
+      it(`names no one and sends nothing while the history from the ${from} is still to come`, async () => {
+        const { alice, bob, carol, id, code } = await aliceAndBob(true);
+        await carolInBobsPlace(alice, bob, carol);
+        server.failArchiveReads = true;
+        const device = await given[from](alice, code);
+        expect(await texts(device, id)).toEqual([]);
+        const shows = await shown(device, id);
+
+        // The server alone says Carol, so nothing is said to be with her.
+        await maintain(device, id).catch(() => undefined);
+        await sync(device);
+        expect(
+          await on(device, () => device.engine.counterpart(id, shows)),
+        ).toEqual({ userId: null, elsewhere: false });
+        expect(
+          await on(device, () => device.engine.securityCode(id, carol.userId)),
+        ).toBeUndefined();
+        expect(
+          (await on(device, () => device.engine.status(id, shows))).joined,
+        ).toBe(false);
+        const before = server.log.length;
+        await send(device, id, "til den som vises").catch(() => false);
+        await sync(device);
+        expect(server.log.slice(before)).toEqual([]);
+
+        // Once it is in, it is with Bob, and Carol is named for nothing.
+        server.failArchiveReads = false;
+        vi.useFakeTimers({ toFake: ["Date"] });
+        vi.setSystemTime(Date.now() + chatTuning.historyRetryMs + 1_000);
+        await on(device, () => device.engine.resumeHistory());
+        vi.useRealTimers();
+        expect(await texts(device, id)).toEqual([
+          "fra Alice",
+          "fra Bob",
+          "til den som vises",
+        ]);
+        expect(
+          await on(device, () => device.engine.counterpart(id, shows)),
+        ).toEqual({ userId: null, elsewhere: true });
+        expect(
+          await on(device, () => device.engine.counterpart(id, [bob.userId])),
+        ).toEqual({ userId: bob.userId, elsewhere: false });
+        await sync(device);
+        expect(server.log.slice(before)).toEqual([]);
+      });
+    }
+
+    for (const from of ["backup", "device"] as const) {
+      it(`names no one else for a conversation with no messages from the ${from}`, async () => {
+        const alice = await startChat();
+        const bob = await startChat();
+        const carol = await startChat();
+        const id = await conversationBetween(alice, bob);
+        const code = await createRecoveryKey(alice);
+        await on(alice, () => alice.engine.backUp());
+        await carolInBobsPlace(alice, bob, carol);
+        const device = await given[from](alice, code);
+        const shows = await shown(device, id);
+
+        await maintain(device, id).catch(() => undefined);
+        await sync(device);
+        expect(
+          await on(device, () => device.engine.counterpart(id, shows)),
+        ).toEqual({ userId: null, elsewhere: true });
+        expect(
+          await on(device, () => device.engine.counterpart(id, [bob.userId])),
+        ).toEqual({ userId: bob.userId, elsewhere: false });
+        const before = server.log.length;
+        await send(device, id, "til den som vises").catch(() => false);
+        await sync(device);
+        expect(server.log.slice(before)).toEqual([]);
+      });
+    }
+
+    it("still opens history whose device kept a wrong list of whom", async () => {
+      const { alice, bob, id } = await aliceAndBob(false);
+      const record = `conversation:${id}`;
+      storedJson.set(alice, record, {
+        ...storedJson.get<object>(alice, record),
+        participants: [alice.userId, bob.userId, crypto.randomUUID()],
+      });
+      const device = await link(await reload(alice), true);
+      expect(await texts(device, id)).toEqual(["fra Alice"]);
+      expect(
+        await on(device, () => device.engine.counterpart(id, [bob.userId])),
+      ).toEqual({ userId: null, elsewhere: false });
+    });
+
+    describe("an archive from before it kept whom", () => {
+      const v1 = (id: string, history: object[]) =>
+        utf8(
+          JSON.stringify({
+            v: 1,
+            conversations: [{ id, history, seen: null }],
+          }),
+        );
+      const entry = (senderUserId: string | null, own: boolean) => ({
+        id: crypto.randomUUID(),
+        senderUserId,
+        own,
+        text: own ? "fra Alice" : "fra Bob",
+        sentAt: new Date().toISOString(),
+      });
+
+      it("takes whom from the messages verified to be from the other", async () => {
+        const { alice, bob, carol, id, code } = await aliceAndBob(true);
+        await pointBackupTo(
+          alice,
+          code,
+          v1(id, [entry(alice.userId, true), entry(bob.userId, false)]),
+        );
+        const device = await given.backup(alice, code);
+        expect(await texts(device, id)).toEqual(["fra Alice", "fra Bob"]);
+        expect(
+          await on(device, () => device.engine.counterpart(id, [bob.userId])),
+        ).toEqual({ userId: bob.userId, elsewhere: false });
+        expect(
+          await on(device, () => device.engine.counterpart(id, [carol.userId])),
+        ).toEqual({ userId: null, elsewhere: true });
+      });
+
+      it("takes whom from readable messages only, and only from the other", async () => {
+        const { alice, bob, carol, id, code } = await aliceAndBob(true);
+        await pointBackupTo(
+          alice,
+          code,
+          v1(id, [
+            entry(alice.userId, true),
+            // Not read here: said to be from no one, so it names no one.
+            { ...entry(carol.userId, false), text: null },
+            { ...entry(null, false), text: null },
+            // Not own, yet from this account: not the other.
+            { ...entry(alice.userId, false), text: "fra Alice" },
+            entry(bob.userId, false),
+          ]),
+        );
+        const device = await given.backup(alice, code);
+        expect(
+          await on(device, () => device.engine.counterpart(id, [bob.userId])),
+        ).toEqual({ userId: bob.userId, elsewhere: false });
+      });
+
+      it("names no one when the messages are from more than one other", async () => {
+        const { alice, bob, carol, id, code } = await aliceAndBob(true);
+        await pointBackupTo(
+          alice,
+          code,
+          v1(id, [entry(bob.userId, false), entry(carol.userId, false)]),
+        );
+        const device = await given.backup(alice, code);
+        for (const shows of [[bob.userId], [carol.userId]]) {
+          expect(
+            await on(device, () => device.engine.counterpart(id, shows)),
+          ).toEqual({ userId: null, elsewhere: false });
+        }
+      });
+
+      it("takes whom from the messages verified to be from the other in moved history", async () => {
+        const { alice, bob, carol, id } = await aliceAndBob(true);
+        // The approving device's own record, as one from before it kept whom.
+        const record = `conversation:${id}`;
+        storedJson.set(alice, record, {
+          ...storedJson.get<object>(alice, record),
+          participants: [],
+        });
+        const device = await link(await reload(alice), true);
+        expect(await texts(device, id)).toEqual(["fra Alice", "fra Bob"]);
+        expect(
+          await on(device, () => device.engine.counterpart(id, [bob.userId])),
+        ).toEqual({ userId: bob.userId, elsewhere: false });
+        expect(
+          await on(device, () => device.engine.counterpart(id, [carol.userId])),
+        ).toEqual({ userId: null, elsewhere: true });
+      });
+
+      it("names no one for only own messages until the device settles whom", async () => {
+        const { alice, bob, id, code } = await aliceAndBob(false);
+        await pointBackupTo(alice, code, v1(id, [entry(alice.userId, true)]));
+        const device = await given.backup(alice, code);
+        expect(await texts(device, id)).toEqual(["fra Alice"]);
+        expect(
+          await on(device, () => device.engine.counterpart(id, [bob.userId])),
+        ).toEqual({ userId: null, elsewhere: false });
+      });
     });
   });
 
@@ -483,6 +948,9 @@ describe("the engine against a delivery service that may lie", () => {
       // Once the user accepts the key they were shown, it goes.
       const shown = await on(alice, () =>
         alice.engine.securityCode(id, bob.userId),
+      );
+      await on(alice, () =>
+        alice.engine.showSecurityCode(bob.userId, shown!.key),
       );
       await on(alice, () =>
         alice.engine.acceptKeyChange(bob.userId, shown!.key),
@@ -895,42 +1363,6 @@ describe("the engine against a delivery service that may lie", () => {
   });
 
   describe("a backup whose history does not open", () => {
-    /** A backup under Alice's key that points to `archive`'s parts. */
-    async function pointBackupTo(
-      device: TestDevice,
-      code: string,
-      plaintext: Uint8Array | null,
-    ) {
-      const backup = server.recovery.get(device.userId)!;
-      const key = (await readRecoveryKey(code))!;
-      const opened = await openRecoveryBackup(
-        key,
-        device.userId,
-        fromBase64(backup.backup),
-      );
-      const archiveId = backup.archiveId!;
-      const row = server.archives.get(archiveId)!;
-      if (plaintext) {
-        const sealed = await sealArchive(plaintext);
-        row.parts = sealed.parts.map((part) => toBase64(part));
-        backup.backup = toBase64(
-          await sealRecoveryBackup(key, {
-            account: opened.account,
-            pinned: opened.pinned,
-            revoked: opened.revoked,
-            archive: { archiveId, parts: sealed.parts.length, key: sealed.key },
-          }),
-        );
-      } else {
-        row.parts = row.parts.map((part) =>
-          toBase64(
-            crypto.getRandomValues(new Uint8Array(fromBase64(part!).length)),
-          ),
-        );
-      }
-      return backup.backup;
-    }
-
     for (const [problem, plaintext] of [
       ["does not decrypt", null],
       ["is not in the expected form", utf8('{"v":2}')],

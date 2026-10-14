@@ -12,12 +12,7 @@ import {
 import type { ApiFailureCode } from "@/components/api-client";
 import { isChatPage, loadedPath } from "@/navigation/chat";
 import { ChatApiError } from "./api";
-import {
-  type ChatEngine,
-  type ChatSetup,
-  type SecurityCode,
-  loadChat,
-} from "./engine";
+import { type ChatEngine, type ChatSetup, loadChat } from "./engine";
 
 /** How the device just got chat, to say so once (07, 13, 18, R3). */
 export type ChatStart = "started" | "linked" | "reset" | "restored";
@@ -174,28 +169,4 @@ export function useEngineVersion(engine: ChatEngine | undefined): number {
   const [version, setVersion] = useState(0);
   useEffect(() => engine?.subscribe(() => setVersion((n) => n + 1)), [engine]);
   return version;
-}
-
-/**
- * A contact's security code in a conversation, as the engine has it now:
- * the code shown and the key a «Godta» accepts are always the same one.
- * Null: the conversation is not with them (`ChatEngine.securityCode`).
- */
-export function useSecurityCode(
-  engine: ChatEngine,
-  conversationId: string,
-  userId: string,
-): SecurityCode | null | undefined {
-  const version = useEngineVersion(engine);
-  const [code, setCode] = useState<SecurityCode | null>();
-  useEffect(() => {
-    let current = true;
-    void engine.securityCode(conversationId, userId).then((found) => {
-      if (current) setCode(found);
-    });
-    return () => {
-      current = false;
-    };
-  }, [engine, conversationId, userId, version]);
-  return code;
 }

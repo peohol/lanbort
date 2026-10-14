@@ -43,13 +43,27 @@ export function EncryptionSheet() {
   );
 }
 
-/** The one line in a conversation on who can read it (02). */
-export function EncryptionLine({ with: name }: { with: string }) {
+/**
+ * The one line in a conversation on who can read it (02). It names only
+ * the one this device has settled the conversation is with (`Counterpart`):
+ * no one while that is not known, or when it is someone else.
+ */
+export function EncryptionLine({
+  with: name,
+  elsewhere,
+}: {
+  with: string | null;
+  elsewhere: boolean;
+}) {
   return (
     <div className={styles.secure}>
       <span>
         <Icon name="lock" />
-        Ende-til-ende-kryptert. Bare du og {name} kan lese meldingene.
+        {name
+          ? `Ende-til-ende-kryptert. Bare du og ${name} kan lese meldingene.`
+          : elsewhere
+            ? "Ende-til-ende-kryptert, men med en annen enn den som vises her."
+            : "Ende-til-ende-kryptert. Denne enheten har ikke bekreftet hvem samtalen er med ennå."}
       </span>{" "}
       <EncryptionSheet />
     </div>
