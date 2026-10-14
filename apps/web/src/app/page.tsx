@@ -1,6 +1,7 @@
 import { isDomainError, readHome, readNotification } from "@lanbort/domain";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Brand } from "@/components/brand";
 import { HomeView } from "@/components/home-view";
 import { NotificationRedirect } from "@/components/notification-redirect";
 import { notificationsHref } from "@/navigation/areas";
@@ -54,7 +55,9 @@ export default async function HomePage({
   if (!account) {
     return (
       <main>
-        <h1>Lånbort</h1>
+        <h1 className="brand-title">
+          <Brand />
+        </h1>
         <p>Lån ting av mennesker du stoler på.</p>
         <Link className="button button-primary" href={signInHref(back)}>
           Logg inn eller opprett konto

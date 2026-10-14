@@ -2,6 +2,7 @@ import { getSocialOverview } from "@lanbort/domain";
 import type { Metadata } from "next";
 import { z } from "zod";
 import { ChatHome, type ChatInvitation } from "@/chat/chat-home";
+import { AreaTitle } from "@/components/area-title";
 import { pageQuery } from "@/server/session";
 import { loansBetween } from "./loans-between";
 
@@ -44,7 +45,7 @@ export default async function ConversationsPage({
 
   return (
     <main>
-      <h1>Samtaler</h1>
+      <AreaTitle area="conversations" />
       <ChatHome
         friends={friends}
         loans={loans}

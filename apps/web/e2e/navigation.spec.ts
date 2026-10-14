@@ -258,7 +258,7 @@ test("the way back follows the path taken, also through the browser's back and f
   // A form is a bounded task: only «Avbryt» leads out of it (UX-IA-013).
   await page.goto("/ting/ny");
   await expect(page.getByRole("link", { name: "Avbryt" })).toBeVisible();
-  for (const name of ["Lånbort", "Hjem"]) {
+  for (const name of ["lånbort", "Hjem"]) {
     await expect(page.getByRole("link", { name, exact: true })).toBeHidden();
   }
   expect(problems).toEqual([]);

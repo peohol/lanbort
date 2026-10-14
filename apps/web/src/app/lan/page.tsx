@@ -1,6 +1,7 @@
 import type { LoanRequestRole } from "@lanbort/contracts";
 import { collectPages, listLoanRequests, listLoans } from "@lanbort/domain";
 import type { Metadata } from "next";
+import { AreaTitle } from "@/components/area-title";
 import { LoanList } from "@/components/loan-list";
 import { MenuList, MenuRow } from "@/components/menu-list";
 import { loansHref } from "@/navigation/areas";
@@ -56,7 +57,7 @@ export default async function LoansPage({
 
   return (
     <main>
-      <h1>Lån</h1>
+      <AreaTitle area="loans" />
       <SideFilter pathname={loansHref} side={side} />
       {groups.length === 0 && (
         <p className="quiet">Ingen forespørsler eller lån pågår nå.</p>

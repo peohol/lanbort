@@ -339,7 +339,7 @@ body > main {
   text-align: center;
 }
 
-body > main > :is(a, button) {
+body > main > :is(a, button, .brand-title) {
   justify-self: center;
 }
 
@@ -760,16 +760,61 @@ button:disabled,
   top: var(--space-2);
 }
 
-/* The name of the app heads the side of a wide screen; a phone has the
-   areas at the bottom instead. */
+/* The app's mark and name (`Brand`) head the side of a wide screen; a
+   phone has the areas at the bottom instead. The «l» and «lån» are tomat,
+   the b's bowl and «bort» the colour of the text, in either theme. */
 .brand {
   display: none;
   font-family: var(--font-heading);
   font-weight: 700;
   font-size: 1.5rem;
   letter-spacing: -0.01em;
-  color: var(--color-accent-strong);
+  color: var(--color-text);
   text-decoration: none;
+}
+
+.brand,
+.brand-title {
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.brand-title {
+  display: flex;
+}
+
+.logo {
+  flex: none;
+  width: 1.5em;
+  height: 1.5em;
+}
+
+.logo-stem {
+  stroke: var(--color-accent);
+}
+
+.wordmark-lend {
+  color: var(--color-accent);
+}
+
+.logo-bowl {
+  stroke: currentColor;
+}
+
+/* An area's own title with the icon the menu shows for it (`AreaTitle`),
+   marked in tomat as the menu marks the current area. */
+.area-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.area-title .icon {
+  width: 1.1em;
+  height: 1.1em;
+  color: var(--color-accent-strong);
+  fill: var(--color-accent-soft);
+  stroke-width: 2;
 }
 
 .app-header {

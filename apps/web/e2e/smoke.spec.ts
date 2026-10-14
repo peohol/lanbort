@@ -18,7 +18,7 @@ test("home page renders without CSP violations or console errors", async ({
 
   expect(response?.status()).toBe(200);
   await expect(page.locator("html")).toHaveAttribute("lang", "nb");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Lånbort");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("lånbort");
   await page.waitForLoadState("networkidle");
   expect(problems).toEqual([]);
 });

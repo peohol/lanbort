@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { accountHref } from "@/navigation/areas";
 import { accountStateHref } from "@/navigation/routes";
 import { minimumAccessText } from "@/presentation/account";
+import { Brand } from "./brand";
 import { FocusKeeper } from "./focus-keeper";
 import { MainNavigation } from "./main-navigation";
 import { NotificationIndicator } from "./notification-indicator";
@@ -13,8 +14,8 @@ import { StickyBars } from "./sticky-bars";
  * The frame around every page of a signed-in user (UX-IA-001–003): the
  * five areas, the notification indicator, the account behind the user's
  * own picture or initials, and, while the account is not active, why. It
- * decides nothing about access; it only shows the way. The app's name heads
- * the side of a wide screen. The navigation comes first for the keyboard,
+ * decides nothing about access; it only shows the way. The app's mark and
+ * name head the side of a wide screen. The navigation comes first for the keyboard,
  * after the skip link, while a phone shows it at the bottom (globals.css).
  */
 export function AppShell({
@@ -37,7 +38,7 @@ export function AppShell({
         Hopp til innholdet
       </a>
       <Link href="/" className="brand">
-        Lånbort
+        <Brand />
       </Link>
       <header className="app-header">
         <div className="header-actions">

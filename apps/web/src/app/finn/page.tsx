@@ -11,6 +11,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { AreaMap } from "@/components/area-map";
+import { AreaTitle } from "@/components/area-title";
 import { errorMessage } from "@/components/error-messages";
 import { EntryDetail } from "@/components/entry-detail";
 import { ErrorText } from "@/components/error-text";
@@ -75,7 +76,7 @@ export default async function FindPage({
     // start (PS-ADM-002); the server refuses to search for it as well.
     return (
       <main>
-        <h1>Finn</h1>
+        <AreaTitle area="find" />
         <p className="quiet">
           Du kan ikke finne nye ting mens kontoen ikke er aktiv.
         </p>
@@ -87,7 +88,7 @@ export default async function FindPage({
 
   return (
     <main className={styles.finn}>
-      <h1>Finn</h1>
+      <AreaTitle area="find" />
       <nav aria-label="Hva du leter etter" className={styles.segments}>
         {tabs.map(({ tab, href, label }) => (
           <a
