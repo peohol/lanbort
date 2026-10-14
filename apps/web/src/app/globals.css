@@ -259,7 +259,6 @@
 
 body {
   margin: 0;
-  min-height: 100vh;
   background: var(--color-page);
   color: var(--color-text);
 }
@@ -725,16 +724,17 @@ button:disabled,
    list in the same order (UX-A11Y-001). The navigation takes its own place
    in the layout instead of a fixed one over the content, so larger text
    makes it taller without hiding the end of the page (UX-A11Y-007), and
-   what gets focus is scrolled clear of the bar's buttons and the
-   navigation (WCAG 2.4.11). */
+   what gets focus is scrolled clear of the bar and the navigation
+   (WCAG 2.4.11). The bar is as tall as its buttons or the page's first row
+   (`--row-height`, measured by `StickyBars`) need, with the screen's air
+   above and below. */
 :root {
-  --header-height: calc(var(--target) + 2 * var(--gutter));
-  /* How far down the bar's buttons, which stay, cover the screen. */
-  --buttons-cover: calc(var(--gutter) + var(--target));
+  --header-height: calc(
+    max(var(--target), var(--row-height, 0px)) + 2 * var(--gutter)
+  );
   --nav-height: 3.75rem;
   --nav-width: 15rem;
-  scroll-padding: calc(var(--buttons-cover) + var(--space-2)) 0
-    calc(var(--nav-covers, var(--nav-height)) + 1rem);
+  scroll-padding: 0.5rem 0 calc(var(--nav-covers, var(--nav-height)) + 1rem);
 }
 
 .app-shell {
@@ -818,6 +818,8 @@ button:disabled,
 }
 
 .app-header {
+  position: relative;
+  z-index: 5;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -834,17 +836,54 @@ button:disabled,
   gap: var(--space-2);
 }
 
-/* The bar scrolls with the page, the page's title in it too, so nothing
-   goes under a bar. Only its buttons stay at the top of the screen, where
-   they lie at the top of the page: the bell and the account, «Lukk» in a
-   layer and «Avbryt» in a form (UX-IA-013). Above the page's first row,
-   also when a notice about the account pushes the page down. */
-.header-actions,
-.layer-close,
-.page-header[data-task] > .place-bar:first-child > .task-cancel {
-  position: fixed;
-  z-index: 7;
-  top: var(--gutter);
+/* Where the bar fits in a quarter of the screen, `StickyBars` marks it
+   `data-bar="pinned"`: it stays while the page scrolls under it, with the
+   page's first row in it, and what gets focus is scrolled clear of it.
+   With text so large that it would take more, the bar scrolls with the
+   page instead (UX-A11Y-007). */
+:is(
+  :root[data-bar="pinned"] .app-header,
+  .layer[data-bar="pinned"] > .layer-header
+) {
+  position: sticky;
+  top: 0;
+}
+
+:root[data-bar="pinned"] {
+  scroll-padding-top: calc(var(--header-covers, var(--header-height)) + 0.5rem);
+}
+
+/* A bar that stays while the page scrolls shows its edge once something
+   lies under it, so what scrolls away goes under the bar rather than into
+   nothing. Without scroll-linked animations the edge is always there. */
+@supports (animation-timeline: scroll()) {
+  :is(
+    :root[data-bar="pinned"] .app-header,
+    .layer[data-bar="pinned"] > .layer-header
+  ) {
+    animation: bar-edge linear both;
+    animation-timeline: scroll();
+    animation-range: 0 var(--space-2);
+  }
+}
+
+@supports not (animation-timeline: scroll()) {
+  :is(
+    :root[data-bar="pinned"] .app-header,
+    .layer[data-bar="pinned"] > .layer-header
+  ) {
+    box-shadow: 0 1px 0 var(--color-border);
+  }
+}
+
+@keyframes bar-edge {
+  from {
+    box-shadow: 0 1px 0 transparent;
+  }
+
+  to {
+    box-shadow: 0 1px 0 var(--color-border);
+  }
 }
 
 /* The bell (UX-IA-002, UX-IA-019): the number of unread notifications in
@@ -1242,9 +1281,9 @@ button:disabled,
 }
 
 /* A page's first row shares the bar with the bell and the account, as in
-   the prototypes: the way back or the area's title on the left, the bar's
-   own buttons on the right. The row lies above the bar, but lets clicks
-   through where it is empty. */
+   the prototypes: the way back, «Avbryt» or the area's title on the left,
+   the bar's own buttons on the right. The row lies above the bar, but lets
+   clicks through where it is empty. */
 :is(.app-content, .layer-content)
   > main:first-child:has(
     > h1:first-child,
@@ -1276,12 +1315,76 @@ button:disabled,
   pointer-events: auto;
 }
 
+/* In a pinned bar the row stays too, so the page starts below the bar, at
+   the distance the row keeps below itself. */
+:is(
+    :root[data-bar="pinned"] .app-content,
+    .layer[data-bar="pinned"] > .layer-content
+  )
+  > main:first-child:has(
+    > h1:first-child,
+    > .page-header:first-child > :is(.place-bar, h1):first-child
+  ) {
+  margin-top: 0;
+}
+
+:is(
+    :root[data-bar="pinned"] .app-content,
+    .layer[data-bar="pinned"] > .layer-content
+  )
+  > main:first-child
+  > h1:first-child
+  + * {
+  margin-top: var(--gap-page);
+}
+
+:is(
+    :root[data-bar="pinned"] .app-content,
+    .layer[data-bar="pinned"] > .layer-content
+  )
+  > main:first-child
+  > .page-header:first-child
+  > .place-bar:first-child
+  + * {
+  margin-top: var(--space-3);
+}
+
+:is(
+    :root[data-bar="pinned"] .app-content,
+    .layer[data-bar="pinned"] > .layer-content
+  )
+  > main:first-child
+  > .page-header:first-child
+  > h1:first-child
+  + * {
+  margin-top: var(--space-2);
+}
+
+:is(
+    :root[data-bar="pinned"] .app-content,
+    .layer[data-bar="pinned"] > .layer-content
+  )
+  > main:first-child
+  > h1:first-child,
+:is(
+    :root[data-bar="pinned"] .app-content,
+    .layer[data-bar="pinned"] > .layer-content
+  )
+  > main:first-child
+  > .page-header:first-child
+  > :is(.place-bar, h1):first-child {
+  position: fixed;
+  top: 0;
+}
+
 /* Konto and Varsler as layers (UX-IA-002, UX-IA-020, `Layer`): on a phone
    the whole screen, the areas and the bell too; on a larger screen a panel
    over the page. The layer's own bar holds «Lukk»; a page's first row
    shares it, as in the app's frame. */
 .layer {
-  --header-covers: calc(var(--target) + 2 * var(--gutter));
+  --header-covers: calc(
+    max(var(--target), var(--row-height, 0px)) + 2 * var(--gutter)
+  );
   --actions-covers: var(--target);
   position: fixed;
   inset: 0;
@@ -1289,7 +1392,11 @@ button:disabled,
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--color-page);
-  scroll-padding-top: calc(var(--buttons-cover) + var(--space-2));
+  scroll-padding-top: 0.5rem;
+}
+
+.layer[data-bar="pinned"] {
+  scroll-padding-top: calc(var(--header-covers) + 0.5rem);
 }
 
 .layer-backdrop {
@@ -1297,8 +1404,12 @@ button:disabled,
 }
 
 .layer-header {
+  position: relative;
+  z-index: 5;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  min-height: var(--header-covers);
   padding: var(--gutter);
   background: var(--color-page);
 }
