@@ -1,6 +1,6 @@
 # Kvalitetsporter
 
-> **Status:** Obligatoriske porter før de angitte milepælene. Hvor hver port står, er samlet i [status 11. oktober 2026](#status-11-oktober-2026).
+> **Status:** Obligatoriske porter før de angitte milepælene. Hvor hver port står, er samlet i [status 14. oktober 2026](#status-14-oktober-2026).
 
 ## Port A — Før domeneutvidelse etter fase 1
 
@@ -68,7 +68,7 @@ I tillegg til pilotport:
 - tilgjengelighetsgjennomgang mot gjeldende krav
 - driftsberedskap, restore og hendelseshåndtering er dokumentert
 
-## Status 11. oktober 2026
+## Status 14. oktober 2026
 
 Hver rad sier hva slags sjekk påstanden hviler på:
 
