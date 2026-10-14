@@ -638,6 +638,33 @@ describe("the engine against a delivery service that may lie", () => {
       });
     }
 
+    for (const from of ["backup", "device"] as const) {
+      it(`names no one else for a conversation with no messages from the ${from}`, async () => {
+        const alice = await startChat();
+        const bob = await startChat();
+        const carol = await startChat();
+        const id = await conversationBetween(alice, bob);
+        const code = await createRecoveryKey(alice);
+        await on(alice, () => alice.engine.backUp());
+        await carolInBobsPlace(alice, bob, carol);
+        const device = await given[from](alice, code);
+        const shows = await shown(device, id);
+
+        await maintain(device, id).catch(() => undefined);
+        await sync(device);
+        expect(
+          await on(device, () => device.engine.counterpart(id, shows)),
+        ).toEqual({ userId: null, elsewhere: true });
+        expect(
+          await on(device, () => device.engine.counterpart(id, [bob.userId])),
+        ).toEqual({ userId: bob.userId, elsewhere: false });
+        const before = server.log.length;
+        await send(device, id, "til den som vises").catch(() => false);
+        await sync(device);
+        expect(server.log.slice(before)).toEqual([]);
+      });
+    }
+
     it("still opens history whose device kept a wrong list of whom", async () => {
       const { alice, bob, id } = await aliceAndBob(false);
       const record = `conversation:${id}`;

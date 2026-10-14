@@ -1344,6 +1344,8 @@ export class ChatEngine {
       // In place: the groups' policies hold this very list.
       record.participants.splice(0, Infinity, ...participants);
       await this.store.putJson(records.conversation(conversationId), record);
+      // The backup keeps whom it is with, before any message (`#ownHistory`).
+      await this.#backupDue();
     }
   }
 
@@ -1697,21 +1699,34 @@ export class ChatEngine {
     }
   }
 
+  /**
+   * Every conversation this device has history of or has settled whom it
+   * is with: one with no message yet carries its participants too, so the
+   * device the history goes to does not take them from the server.
+   */
   async #ownHistory(): Promise<ConversationHistory[]> {
-    const prefix = records.history("");
-    return Promise.all(
-      (await this.store.names(prefix)).map(async (name) => {
-        const id = name.slice(prefix.length);
+    const ids = async (prefix: string) =>
+      (await this.store.names(prefix)).map((name) => name.slice(prefix.length));
+    const withHistory = new Set(await ids(records.history("")));
+    const all = new Set([
+      ...withHistory,
+      ...(await ids(records.conversation(""))),
+    ]);
+    const conversations = await Promise.all(
+      [...all].map(async (id) => {
         const { participants } = await this.#record(id);
         return {
           id,
           // Only two accounts with this one: anything else would not open.
           participants:
             settleParticipants(this.userId, [], participants) ?? null,
-          history: await this.history(id),
+          history: withHistory.has(id) ? await this.history(id) : [],
           seen: await this.seen(id),
         };
       }),
+    );
+    return conversations.filter(
+      ({ id, participants }) => withHistory.has(id) || participants !== null,
     );
   }
 
