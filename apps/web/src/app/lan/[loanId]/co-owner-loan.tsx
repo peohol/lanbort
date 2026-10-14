@@ -70,7 +70,7 @@ export function CoOwnerLoan({
             </p>
           ))}
         </StatusCard>
-        <section className={styles.flat} aria-label="Avtalen">
+        <section className="card-flat" aria-label="Avtalen">
           <dl className="facts">
             <dt>Periode</dt>
             <dd>{formatPeriod(view.period)}</dd>

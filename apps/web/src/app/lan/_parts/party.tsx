@@ -32,7 +32,7 @@ export function Party({
 }) {
   return (
     <section
-      className={`${styles.flat} ${styles.party}`}
+      className={`card-flat ${styles.party}`}
       aria-label={roleLabels[role]}
     >
       <span className={styles.who}>

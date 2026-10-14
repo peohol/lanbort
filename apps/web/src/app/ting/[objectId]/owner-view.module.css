@@ -9,16 +9,9 @@
   border-radius: var(--radius-m);
 }
 
+/* Flat cards (`.card-flat`) on the surface. */
 .card {
-  margin-block: var(--space-5);
-  padding: var(--space-3) var(--space-4);
   background: var(--color-surface);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-m);
-}
-
-.card > h2 {
-  margin-top: 0;
 }
 
 .places {
@@ -33,7 +26,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-1) var(--space-3);
+  gap: var(--space-1) var(--gap-actions);
   padding-block: var(--space-3);
 }
 
@@ -58,7 +51,7 @@
 .placeActions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--gap-actions);
   flex-basis: 100%;
 }
 

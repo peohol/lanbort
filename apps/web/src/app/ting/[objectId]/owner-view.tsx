@@ -382,7 +382,7 @@ function About({
   today: string;
 }) {
   return (
-    <section aria-labelledby="om-tingen" className={styles.card}>
+    <section aria-labelledby="om-tingen" className={`card-flat ${styles.card}`}>
       <h2 id="om-tingen">Om tingen</h2>
       <dl className="facts">
         <dt>Ledig</dt>
@@ -507,7 +507,7 @@ function WhereShownSection({
   const places = shownPlaces(publications, environments);
 
   return (
-    <section aria-labelledby="hvor" className={styles.card}>
+    <section aria-labelledby="hvor" className={`card-flat ${styles.card}`}>
       <h2 id="hvor">Hvor den vises</h2>
       <ul className={styles.places}>
         {places.map(({ key, environment, publication, publishable }) => {

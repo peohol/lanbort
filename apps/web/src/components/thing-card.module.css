@@ -5,7 +5,7 @@
 .cards {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-2);
+  gap: var(--gap-list);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -21,8 +21,8 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3);
+  gap: var(--gap-row);
+  padding: var(--pad-row);
   background: var(--color-surface);
   border-radius: var(--radius-m);
   box-shadow: var(--shadow-low);
@@ -35,7 +35,7 @@
 .body {
   display: grid;
   justify-items: start;
-  gap: 0.125rem;
+  gap: var(--gap-lines);
   min-width: 0;
   flex: 1;
 }

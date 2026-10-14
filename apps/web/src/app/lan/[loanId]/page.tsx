@@ -435,7 +435,7 @@ function Logistics({ channel }: { channel: LoanLogisticsChannel }) {
 /** What was agreed, as it is now (PS-LOAN-008, PS-LOAN-010). */
 function Agreement({ loan }: { loan: Loan }) {
   return (
-    <section className={styles.flat} aria-label="Avtalen">
+    <section className="card-flat" aria-label="Avtalen">
       <dl className="facts">
         <dt>Periode</dt>
         <dd>{formatPeriod(loan.period)}</dd>

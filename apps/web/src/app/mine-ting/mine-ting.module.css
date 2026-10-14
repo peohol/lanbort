@@ -2,17 +2,12 @@
    column on a phone (Tomat kjerneflyt 2). */
 .register {
   width: 100%;
-  margin-bottom: var(--space-2);
 }
 
 @media (min-width: 48rem) {
   .register {
     width: auto;
   }
-}
-
-.more {
-  margin-top: var(--space-4);
 }
 
 .more > ul {

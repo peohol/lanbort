@@ -4,12 +4,8 @@
 .form {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-4);
+  gap: var(--gap-block);
   max-width: 28rem;
-}
-
-.form > form {
-  gap: var(--space-4);
 }
 
 /* How far the user has come, and the way to the step before. */
@@ -97,23 +93,23 @@
 
 /* Choices drawn as cards: radio buttons for when, boxes for who. */
 .choices {
-  gap: var(--space-2);
+  gap: var(--gap-list);
   margin: 0;
   padding: 0;
   border: 0;
 }
 
 .choices > legend {
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--gap-heading);
   padding: 0;
 }
 
 .choice {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 0 var(--space-3);
+  gap: 0 var(--gap-row);
   align-items: center;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--pad-row);
   background: var(--color-surface);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-m);
@@ -147,7 +143,7 @@
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-3);
+  gap: var(--gap-field);
   margin-top: var(--space-3);
 }
 
@@ -196,7 +192,7 @@
   justify-content: center;
   gap: var(--space-2);
   min-height: var(--control);
-  padding-inline: 1.375rem;
+  padding-inline: var(--pad-control);
   font-size: var(--text-m);
   color: var(--color-accent-strong);
   background: var(--color-accent-soft);
@@ -286,7 +282,7 @@
 
 .periods {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--gap-list);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -298,7 +294,7 @@
 
 /* The review: one card per step, with the way back to it. */
 .group {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--pad-card);
   background: var(--color-surface);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-m);

@@ -4,7 +4,7 @@
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: var(--space-1);
-  margin: 0 0 var(--space-2);
+  margin: 0;
   padding: 0;
   list-style: none;
   text-align: center;
@@ -37,8 +37,7 @@
 }
 
 .terms {
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
+  padding-top: var(--gap-card);
   border-top: 1px solid var(--color-border);
 }
 

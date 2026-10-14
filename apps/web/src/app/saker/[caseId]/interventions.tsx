@@ -46,7 +46,7 @@ export function Interventions({
 
   return (
     <section className={styles.section} aria-labelledby="inngrep">
-      <div className={styles.sectionHead}>
+      <div className={`section-heading ${styles.sectionHead}`}>
         <h2 id="inngrep">
           Inngrep <span className="count">· {items.length}</span>
         </h2>
