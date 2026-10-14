@@ -11,13 +11,10 @@ describe("canonical steward origin", () => {
     expect(requiresCanonicalStewardOrigin(pathname)).toBe(true);
   });
 
-  it.each([
-    "/",
-    "/finn",
-    "/saker",
-    "/saker/abc",
-    "/miljoer/abc",
-  ])("allows ordinary app page %s on the stable Vercel alias", (pathname) => {
-    expect(requiresCanonicalStewardOrigin(pathname)).toBe(false);
-  });
+  it.each(["/", "/finn", "/saker", "/saker/abc", "/miljoer/abc"])(
+    "allows ordinary app page %s on the stable Vercel alias",
+    (pathname) => {
+      expect(requiresCanonicalStewardOrigin(pathname)).toBe(false);
+    },
+  );
 });
