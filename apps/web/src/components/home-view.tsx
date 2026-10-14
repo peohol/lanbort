@@ -29,6 +29,7 @@ import {
   type StewardStanding,
   stewardHomeTask,
 } from "@/presentation/stewardship";
+import { AreaTitle } from "./area-title";
 import { EmptyState } from "./empty-state";
 import { Icon, type IconName } from "./icon";
 import { ContextTag, Tag } from "./tag";
@@ -402,7 +403,7 @@ export function HomeView({
 
   return (
     <main className={styles.home}>
-      <h1 className={styles.title}>Hjem</h1>
+      <AreaTitle area="home" className={styles.title} />
       {sections.length === 0 && (
         <EmptyState
           action={

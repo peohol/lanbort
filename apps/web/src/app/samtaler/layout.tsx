@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ChatProvider } from "@/chat/chat-provider";
+import { AreaTitle } from "@/components/area-title";
 import { chatEnabled } from "@/server/chat-enabled";
 import { requirePageAccount } from "@/server/session";
 
@@ -18,7 +19,7 @@ export default async function ConversationsLayout({
   if (!(await chatEnabled())) {
     return (
       <main>
-        <h1>Samtaler</h1>
+        <AreaTitle area="conversations" />
         <p className="quiet">
           Private samtaler er ikke tilgjengelige nå. Det du trenger for et lån,
           finner du under Lån.
