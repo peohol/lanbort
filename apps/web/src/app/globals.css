@@ -781,6 +781,33 @@ button:disabled,
   background: var(--color-page);
 }
 
+/* A bar that stays while the page scrolls shows its edge once something
+   lies under it, so what scrolls away goes under the bar rather than into
+   nothing. Without scroll-linked animations the edge is always there. */
+@supports (animation-timeline: scroll()) {
+  :is(.app-header, .layer-header) {
+    animation: bar-edge linear both;
+    animation-timeline: scroll();
+    animation-range: 0 var(--space-2);
+  }
+}
+
+@supports not (animation-timeline: scroll()) {
+  :is(.app-header, .layer-header) {
+    box-shadow: 0 1px 0 var(--color-border);
+  }
+}
+
+@keyframes bar-edge {
+  from {
+    box-shadow: 0 1px 0 transparent;
+  }
+
+  to {
+    box-shadow: 0 1px 0 var(--color-border);
+  }
+}
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -1505,6 +1532,15 @@ body:has(> .layer) .app-shell .layer {
 .app-shell:has(.page-header[data-task])
   :is(.brand, .main-navigation, .header-actions) {
   display: none;
+}
+
+/* Its way out stays in the bar while the form scrolls under it, as «Lukk»
+   does in a layer, so the bar is never left empty; above the bar, also
+   when a notice about the account pushes the page down. */
+.page-header[data-task] > .place-bar:first-child > .task-cancel {
+  position: fixed;
+  z-index: 6;
+  top: calc((var(--header-covers, var(--header-height)) - var(--target)) / 2);
 }
 
 .page-lead {
