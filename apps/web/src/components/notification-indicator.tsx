@@ -3,7 +3,7 @@
 import type { NotificationReadResult } from "@lanbort/contracts";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { notificationsHref } from "@/navigation/areas";
 import { getJson } from "./api-client";
 import { onDataChanged } from "./data-changed";
@@ -19,8 +19,6 @@ import { Icon } from "./icon";
 export function NotificationIndicator({ unread }: { unread: number }) {
   const pathname = usePathname();
   const [count, setCount] = useState(unread);
-  // The page the count came with needs no second reading.
-  const counted = useRef<string | null>(pathname);
 
   useEffect(() => {
     let current = true;
@@ -35,10 +33,7 @@ export function NotificationIndicator({ unread }: { unread: number }) {
       if (document.visibilityState === "visible") void refresh();
     };
 
-    if (counted.current !== pathname) {
-      counted.current = null;
-      void refresh();
-    }
+    void refresh();
     document.addEventListener("visibilitychange", onVisible);
     const unsubscribe = onDataChanged(() => void refresh());
 

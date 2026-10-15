@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { needsOwnDocument } from "@/navigation/headers";
-import { followedLink } from "@/navigation/links";
+import { followedLink, replacesPage } from "@/navigation/links";
 import { expectNewDocument } from "./navigation-stack";
 
 /**
@@ -27,13 +27,16 @@ export function HeaderBoundary() {
 
   useEffect(() => {
     function onClick(event: MouseEvent) {
-      const url = followedLink(event);
-      if (!url || !needsOwnDocument(url.pathname)) return;
+      const link = followedLink(event);
+      if (!link || !needsOwnDocument(link.pathname)) return;
 
       event.preventDefault();
+      const { href, pathname, search } = link;
+      const replace = replacesPage(link);
       setTimeout(() => {
-        expectNewDocument(`${url.pathname}${url.search}`);
-        location.assign(url.href);
+        expectNewDocument(`${pathname}${search}`);
+        if (replace) location.replace(href);
+        else location.assign(href);
       });
     }
 

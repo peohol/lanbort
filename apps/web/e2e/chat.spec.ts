@@ -1579,5 +1579,22 @@ test("Samtaler and the rest of the app are each loaded as their own document at 
   expect(await loadedAs()).toBe("/");
   expect(fetchedInside).not.toContain("/samtaler");
   expect(fetchedInside).not.toContain("/");
+
+  // A link that takes the page's place, such as the way on from a
+  // notification's e-mail, still does so as a new document.
+  await page.evaluate(() => {
+    const link = Object.assign(document.createElement("a"), {
+      href: "/samtaler",
+      textContent: "Videre",
+    });
+    link.dataset.history = "replace";
+    document.getElementById("innhold")!.append(link);
+  });
+  await page.getByRole("link", { name: "Videre" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Samtaler");
+  await page.goBack();
+  await expect(page).toHaveURL(/\/samtaler$/);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/mine-ting$/);
   await eli.context.close();
 });

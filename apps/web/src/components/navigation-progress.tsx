@@ -35,7 +35,8 @@ export function usePendingPath(): string | null {
 /** How long a page may take before the bar stops waiting for it. */
 const giveUpAfterMs = 15_000;
 
-const address = (url: URL | Location) => `${url.pathname}${url.search}`;
+const address = (url: Pick<URL, "pathname" | "search">) =>
+  `${url.pathname}${url.search}`;
 
 export function NavigationProgress() {
   const active = useSyncExternalStore(
@@ -46,15 +47,15 @@ export function NavigationProgress() {
 
   useEffect(() => {
     function onClick(event: MouseEvent) {
-      const url = followedLink(event);
+      const link = followedLink(event);
       // Only a link to another address shows a new page; the API's
       // addresses are files and the like.
       if (
-        url &&
-        address(url) !== address(location) &&
-        !url.pathname.startsWith("/api/")
+        link &&
+        address(link) !== address(location) &&
+        !link.pathname.startsWith("/api/")
       ) {
-        setPending(url);
+        setPending(new URL(link.href));
       }
     }
 
