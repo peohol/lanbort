@@ -32,6 +32,11 @@
   box-shadow: var(--shadow-low);
 }
 
+/* The chosen choice's icon in its filled form, in tomat like the menu's. */
+.segments a[aria-current="page"] :global(.icon) {
+  color: var(--color-accent-strong);
+}
+
 .form {
   display: grid;
   gap: var(--space-2);
