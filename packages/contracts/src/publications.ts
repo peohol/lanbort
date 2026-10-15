@@ -185,37 +185,60 @@ export const environmentObjectSchema = z.strictObject({
   owners: z.array(shownOwnerSchema),
 });
 
+/**
+ * One of the caller's own things they can add to the environment now
+ * (PS-OBJ-006): active, not frozen (PS-OBJ-009), not stopped by another
+ * owner (PS-OBJ-008), and not already there, waiting or stopped by the
+ * administrators (PS-OBJ-017).
+ */
+export const addableObjectSchema = z.strictObject({
+  objectId: objectIdSchema,
+  title: z.string(),
+  categoryId: objectCategoryIdSchema,
+  images: z.array(objectImageSchema),
+});
+
+export const addableObjectListSchema = z.strictObject({
+  objects: z.array(addableObjectSchema),
+});
+
+/**
+ * A list of things to look through, such as an environment's or a friend's,
+ * is shown whole, grouped by category and filtered where it is read, so it
+ * is not paged (UX-IA-021). It holds at most this many, the newest first;
+ * `more` says that there are others, which a search finds.
+ */
+export const thingListLimit = 200;
+
 export const environmentObjectsQuerySchema = z.strictObject({
   environmentId: z.uuid(),
-  cursor,
 });
 
 export const environmentObjectListSchema = z.strictObject({
   objects: z.array(environmentObjectSchema),
-  /** Pass as `cursor` for the next page; null on the last one. */
-  nextCursor: publicationIdSchema.nullable(),
+  /** There are more than {@link thingListLimit}. */
+  more: z.boolean(),
 });
 
 /**
  * An object a friend has made visible to friends (PS-OBJ-020), as it is shown
- * on their profile: its availability does not say what blocks it, and the
- * profile already says whose it is.
+ * on their profile: its availability does not say what blocks it, and
+ * `owners` names the owners the caller is a friend of (PS-OBJ-022), as
+ * everywhere a thing is found.
  */
 export const friendObjectSchema = environmentObjectSchema.omit({
   publicationId: true,
-  owners: true,
 });
 
-/** The objects a friend has made visible to friends, newest first. */
+/** The objects a friend has made visible to friends. */
 export const friendObjectsQuerySchema = z.strictObject({
   userId: z.uuid(),
-  cursor: z.uuid().optional(),
 });
 
 export const friendObjectListSchema = z.strictObject({
   objects: z.array(friendObjectSchema),
-  /** Pass as `cursor` for the next page; null on the last one. */
-  nextCursor: z.uuid().nullable(),
+  /** There are more than {@link thingListLimit}. */
+  more: z.boolean(),
 });
 
 /** An image of an object the caller finds through a friend. */
@@ -241,6 +264,8 @@ export type EnvironmentPublicationList = z.infer<
 export type ShownOwner = z.infer<typeof shownOwnerSchema>;
 export type EnvironmentObject = z.infer<typeof environmentObjectSchema>;
 export type EnvironmentObjectList = z.infer<typeof environmentObjectListSchema>;
+export type AddableObject = z.infer<typeof addableObjectSchema>;
+export type AddableObjectList = z.infer<typeof addableObjectListSchema>;
 export type ObjectFriendPublication = z.infer<
   typeof objectFriendPublicationSchema
 >;

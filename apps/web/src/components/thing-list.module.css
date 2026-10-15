@@ -1,0 +1,15 @@
+/* Things grouped by category (ThingList): the filters, then each category's
+   heading over its cards. */
+.list {
+  display: grid;
+  gap: var(--gap-block);
+}
+
+.filters {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.group > h3 {
+  margin: 0 0 var(--gap-heading);
+}

@@ -1,8 +1,11 @@
 import {
   calendarDate,
   getEnvironment,
+  listAddableObjects,
   listEnvironmentAdministrationTasks,
+  listEnvironmentMembers,
   listEnvironmentObjects,
+  listObjectCategories,
   searchObjects,
 } from "@lanbort/domain";
 import { searchTextSchema } from "@lanbort/contracts";
@@ -15,9 +18,15 @@ import { Tag } from "@/components/tag";
 import {
   environmentAboutHref,
   environmentHref,
+  environmentMembershipHref,
   welcomeParam,
 } from "@/navigation/routes";
 import { membershipStep, roleName, welcome } from "@/presentation/environments";
+import {
+  readThingFilter,
+  type ThingFilter,
+  thingFilterHref,
+} from "@/presentation/thing-list";
 import {
   pageQuery,
   pageQueryOrNotFound,
@@ -29,12 +38,10 @@ import { environmentBack } from "./back";
 import styles from "./environment.module.css";
 import { FoundThings, Things } from "./member-content";
 import { ForgetParam } from "./forget-param";
+import { Members } from "./members";
 import { Membership } from "./membership";
 
 export const metadata: Metadata = { title: "Miljøet – Lånbort" };
-
-/** The query parameter for the next page of things. */
-const afterParam = "etter";
 
 /** What a member searches for among the things here, as in Finn. */
 const searchParam = "q";
@@ -42,11 +49,12 @@ const searchParam = "q";
 /**
  * An environment as a context (UX-IA-004, WP-84, Tomat kjerneflyt 3):
  * before joining, what it is and what it asks of members (UX-JRN-002) and
- * the way in; for active members its things, with the rest («Om miljøet
- * og medlemmer») a page away, and a search among the things («Søk i …»).
- * Arriving right after joining, the new member is welcomed. What the caller may see is decided by each
- * query's own policy; a hidden environment looks like nothing at all to
- * outsiders (UX-PRIV-002).
+ * the way in; for active members who is in it (PS-ENV-015), a search among
+ * the things («Søk i …») and the things, with «Om miljøet» and «Mitt
+ * medlemskap» a page away. An active membership is the «Medlem» tag under
+ * the title; arriving right after joining, the new member is welcomed.
+ * What the caller may see is decided by each query's own policy; a hidden
+ * environment looks like nothing at all to outsiders (UX-PRIV-002).
  */
 export default async function EnvironmentPage({
   params,
@@ -62,36 +70,55 @@ export default async function EnvironmentPage({
   });
   const step = membershipStep(environment);
   const active = environment.membership?.state === "active";
-  const after = query[afterParam];
   const administrator = environment.roles.includes("administrator");
   const searched = query[searchParam];
   const q = typeof searched === "string" ? searched.trim() : "";
   const search = q ? searchTextSchema.safeParse(q) : null;
-  const [found, things, tasks] = await Promise.all([
-    active && search?.success
-      ? pageQuery(searchObjects, { q: search.data, environmentId })
-      : null,
-    active && !search?.success
-      ? pageQuery(listEnvironmentObjects, {
-          environmentId,
-          ...(typeof after === "string" ? { cursor: after } : {}),
-        })
-      : null,
-    // The administrators' tasks here, counted as on Home (UX-JRN-012).
-    administrator && active
-      ? pageQuery(listEnvironmentAdministrationTasks, { environmentId })
-      : null,
-  ]);
+  const takesThings = active && environment.state === "active";
+  const [found, things, tasks, members, addable, categories] =
+    await Promise.all([
+      active && search?.success
+        ? pageQuery(searchObjects, { q: search.data, environmentId })
+        : null,
+      active && !search?.success
+        ? pageQuery(listEnvironmentObjects, { environmentId })
+        : null,
+      // The administrators' tasks here, counted as on Home (UX-JRN-012).
+      administrator && active
+        ? pageQuery(listEnvironmentAdministrationTasks, { environmentId })
+        : null,
+      active ? pageQuery(listEnvironmentMembers, { environmentId }) : null,
+      takesThings && !search?.success
+        ? pageQuery(listAddableObjects, { environmentId })
+        : null,
+      active ? pageQuery(listObjectCategories, {}) : null,
+    ]);
+  const today = calendarDate(new Date());
+  // A filter keeps the search, but not the one-time welcome.
+  const kept = Object.fromEntries(
+    Object.entries(query).filter(([name]) => name !== welcomeParam),
+  );
+  const filter = {
+    chosen: readThingFilter(query),
+    href: (chosen: ThingFilter) =>
+      thingFilterHref(environmentHref(environmentId), kept, chosen),
+  };
   const role = roleName(environment.roles);
-  const member = environment.membership !== null;
+  const state = environment.membership?.state;
 
   return (
     <main>
       <PageHeader
         title={environment.name}
-        kind="Miljø"
         back={environmentBack(environment)}
-        context={role && <Tag>Du er {role.toLowerCase()}</Tag>}
+        context={
+          (step.kind === "member" || role) && (
+            <>
+              {step.kind === "member" && <Tag tone="positive">Medlem</Tag>}
+              {role && <Tag>Du er {role.toLowerCase()}</Tag>}
+            </>
+          )
+        }
       >
         {environment.location}
       </PageHeader>
@@ -101,6 +128,18 @@ export default async function EnvironmentPage({
         step={step}
         welcomed={welcomeParam in query ? welcome(account.realName) : undefined}
       />
+      {members && (
+        <Members
+          others={members.members}
+          me={{
+            userId: account.userId,
+            realName: account.realName,
+            profileId: account.userId,
+            pictureId: account.picture.pictureId,
+            roles: environment.roles,
+          }}
+        />
+      )}
       {administrator && (
         <AdministrationTasks
           environmentId={environmentId}
@@ -130,29 +169,35 @@ export default async function EnvironmentPage({
           environment={environment}
           q={q}
           found={found}
-          today={calendarDate(new Date())}
+          categories={categories?.categories ?? []}
+          filter={filter}
+          today={today}
         />
       )}
       {things && (
         <Things
           environment={environment}
           things={things}
-          today={calendarDate(new Date())}
-          nextHref={(cursor) =>
-            `${environmentHref(environmentId)}?${new URLSearchParams({ [afterParam]: cursor })}`
-          }
-          paged={typeof after === "string"}
+          categories={categories?.categories ?? []}
+          filter={filter}
+          addable={addable}
+          today={today}
         />
       )}
-      {member ? (
+      {state ? (
         <MenuList>
           <MenuRow
             href={environmentAboutHref(environmentId)}
-            icon="people"
-            label={
-              active ? "Om miljøet og medlemmer" : "Om miljøet og medlemskapet"
-            }
+            icon="environment"
+            label="Om miljøet"
           />
+          {(state === "active" || state === "passive") && (
+            <MenuRow
+              href={environmentMembershipHref(environmentId)}
+              icon="person"
+              label="Mitt medlemskap"
+            />
+          )}
         </MenuList>
       ) : (
         <>

@@ -87,8 +87,12 @@ export const environmentHref = (id: string) => `/miljoer/${id}`;
 export const environmentAdminHref = (id: string) =>
   `${environmentHref(id)}/administrer`;
 
-/** «Om miljøet og medlemmer»: what it is, who is in it, your membership. */
+/** «Om miljøet»: what it is and its rules. */
 export const environmentAboutHref = (id: string) => `${environmentHref(id)}/om`;
+
+/** «Mitt medlemskap»: contacting the administrators, and leaving. */
+export const environmentMembershipHref = (id: string) =>
+  `${environmentHref(id)}/medlemskap`;
 
 /** Joining, applying or answering requirements, as a bounded task. */
 export const environmentJoinHref = (id: string) =>

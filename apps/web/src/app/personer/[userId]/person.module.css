@@ -51,17 +51,11 @@
   color: var(--color-muted);
 }
 
-/* A heading with its icon, such as the things to borrow. */
-.section > h2:has(:global(.icon)) {
+/* A section's heading with its icon, such as the friend's things. */
+.iconHeading {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-}
-
-.section > h2 :global(.icon) {
-  flex: none;
-  width: 1.125rem;
-  height: 1.125rem;
 }
 
 /* A role's heading row. On a phone its link covers the whole row, so the
