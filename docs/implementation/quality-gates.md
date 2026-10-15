@@ -1,6 +1,6 @@
 # Kvalitetsporter
 
-> **Status:** Obligatoriske porter før de angitte milepælene. Hvor hver port står, er samlet i [status 14. oktober 2026](#status-14-oktober-2026).
+> **Status:** Obligatoriske porter før de angitte milepælene. Hvor hver port står, er samlet i [status 15. oktober 2026](#status-15-oktober-2026).
 
 ## Port A — Før domeneutvidelse etter fase 1
 
@@ -68,7 +68,7 @@ I tillegg til pilotport:
 - tilgjengelighetsgjennomgang mot gjeldende krav
 - driftsberedskap, restore og hendelseshåndtering er dokumentert
 
-## Status 14. oktober 2026
+## Status 15. oktober 2026
 
 Hver rad sier hva slags sjekk påstanden hviler på:
 
@@ -82,15 +82,15 @@ Oppfylt. Port A er beskrevet under Fase 1 i [implementeringsplanen](README.md). 
 
 ### Port C: oppfylt med unntak for den lukkede piloten
 
-Privat chat er klar til å slås på i produksjon for inviterte deltakere (`CHAT_ENABLED=pilot` i Vercel), med det midlertidige unntaket for den uavhengige gjennomgangen som er besluttet i OD-0056 og vurdert i [risikovurderingen](chat-pilot-risikovurdering.md). Den adversarielle sikkerhetsrevisjonen produkteier bestilte 11. oktober 2026 er levert, og funnene er rettet og i produksjon (#204, #207, 14. oktober 2026). Bryteren settes bare med produkteiers uttrykkelige ja; til da svarer chatrutene «finnes ikke».
+Privat chat er på i produksjon for inviterte deltakere fra 14. oktober 2026 (`CHAT_ENABLED=pilot` i Vercel, med produkteiers uttrykkelige ja), med det midlertidige unntaket for den uavhengige gjennomgangen som er besluttet i OD-0056 og vurdert i [risikovurderingen](chat-pilot-risikovurdering.md). Den adversarielle sikkerhetsrevisjonen produkteier bestilte 11. oktober 2026 er levert, og funnene er rettet og i produksjon (#204, #207, 14. oktober 2026). Etter at bryteren ble satt, ble det sjekket i produksjon at chatrutene bare svarer innloggede og avviser forespørsler fra andre nettsteder, og at chat kan slås av og på igjen på under halvannet minutt. Produkteier testet samtykket, sending og mottak med to inviterte kontoer 15. oktober 2026.
 
 | Krav | Status | Sjekk |
 | --- | --- | --- |
 | OD-0005 avgjort | Ja ([ADR-0010](../architecture/decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md)) | – |
 | CSP uten `unsafe-inline` for skript, ingen tredjepartsskript | Ja, på alle sider, ikke bare chatsidene (#172) | Test; produksjon (CSP-hodet på www.lånbort.no) |
 | Uavhengig kryptografisk designreview | Gjenstår; unntatt i piloten (OD-0056). Grunnlaget er klart ([e2ee-gjennomgangsgrunnlag](e2ee-gjennomgangsgrunnlag.md)). Ingen kjente, alvorlige svakheter står uadressert | Uavhengig; til da intern gjennomgang og [risikovurdering](chat-pilot-risikovurdering.md) |
-| Brukerne bekrefter merknaden før første gangs bruk (PS-COM-023) | Ja. Serveren avviser en chatnøkkel uten bekreftelse | Test |
-| Chat bare for inviterte, og rask avslåing | Ja. `pilot` virker bare mens nye adresser ikke får konto; fjernes bryteren, svarer chat «finnes ikke» ([drift](pilot-operations.md#alvorlige-hendelser)) | Test; produksjon når bryteren settes |
+| Brukerne bekrefter merknaden før første gangs bruk (PS-COM-023) | Ja. Serveren avviser en chatnøkkel uten bekreftelse | Test; produksjon (produkteier, 15. oktober 2026) |
+| Chat bare for inviterte, og rask avslåing | Ja. `pilot` virker bare mens nye adresser ikke får konto; fjernes bryteren, svarer chat «finnes ikke» ([drift](pilot-operations.md#alvorlige-hendelser)) | Test; produksjon 14. oktober 2026: av etter 86 sekunder, på igjen etter 84 |
 | Serveren kan ikke lese klartekst | Bygget slik og prøvd internt | Test; bekreftes av den uavhengige gjennomgangen |
 | Nøkkel- og enhetstap har definert UX | Bygget: fjerne og avvise enheter, gjenopprettingsnøkkel, tilbakestilling, og utlogging som fjerner enheten der chatten kjører. Der chatten ikke kan åpnes, slettes den lokalt, og serveren stenger enheten ute | Test |
 | XSS, CSP og supply chain er testet | Internt: CSP-tester, `pnpm audit` og Gitleaks i CI | Test; bekreftes etter gjennomgangen |

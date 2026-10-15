@@ -28,6 +28,6 @@ Planleggingsløpet fra visjon til byggbar spesifikasjon ble fullført 1. oktober
 - [Kodeagent-arbeidspakker](docs/implementation/work-packages.md)
 - [Kvalitetsporter](docs/implementation/quality-gates.md)
 
-Fase 0–7 og brukerflaten (Fase 8) er levert, og Port D for den lukkede piloten er oppfylt. Privat chat og plattformforvaltning er bygget, men står av i produksjon til sine porter. Hva som er ferdig, hva som står av, og hva som gjenstår før Port C og Port E, står i [kvalitetsportene](docs/implementation/quality-gates.md#status-14-oktober-2026).
+Fase 0–7 og brukerflaten (Fase 8) er levert, og Port D for den lukkede piloten er oppfylt. Privat chat er på for de inviterte i den lukkede piloten (OD-0056). Plattformforvaltning er bygget, men står av i produksjon til sin port. Hva som er ferdig, hva som står av, og hva som gjenstår før Port C og Port E, står i [kvalitetsportene](docs/implementation/quality-gates.md#status-15-oktober-2026).
 
 - [Lokal utvikling, database og CI](docs/implementation/local-development.md)
