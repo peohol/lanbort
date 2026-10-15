@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  type ChatConversation,
-  type ChatDirectory,
-  productTimeZone,
-} from "@lanbort/contracts";
+import type { ChatConversation } from "@lanbort/contracts";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { announce } from "@/components/announcer";
@@ -26,12 +22,6 @@ import { ChangedAgain, SecurityDigits, useSecurityCode } from "./security-code";
 
 type Person = ChatConversation["others"][number];
 
-const dayFormat = new Intl.DateTimeFormat("nb-NO", {
-  day: "numeric",
-  month: "long",
-  timeZone: productTimeZone,
-});
-
 /** «Olas», «Hans'»: whose something is, in Norwegian. */
 const whose = (name: string) =>
   /[sxz]$/i.test(name) ? `${name}'` : `${name}s`;
@@ -46,12 +36,10 @@ function SecurityCode({
   engine,
   conversationId,
   person,
-  directory,
 }: {
   engine: ChatEngine;
   conversationId: string;
   person: Person;
-  directory: ChatDirectory | undefined;
 }) {
   const { code, changedAgain, showNew } = useSecurityCode(
     engine,
@@ -61,65 +49,26 @@ function SecurityCode({
   const name = person.realName ?? "Tidligere bruker";
 
   return (
-    <>
-      <section className="card" aria-labelledby={`kode-${person.userId}`}>
-        <h2 id={`kode-${person.userId}`}>Sikkerhetskode</h2>
-        <p className="quiet">
-          Sammenlign med koden på {whose(name)} skjerm når dere møtes. Er de
-          like, bruker samtalen {whose(name)} egne nøkler, ikke noen andres.
-        </p>
-        {code === null && (
-          <p role="alert">
-            Samtalen er kryptert med en annen enn {name}. Det finnes ingen kode
-            å sammenligne, og ingenting sendes i samtalen.
-          </p>
-        )}
-        {code?.pending && !changedAgain && (
-          <p role="status">
-            Dette er den nye koden. Den er ikke godtatt ennå, og ingenting
-            sendes i samtalen før du har godtatt den.
-          </p>
-        )}
-        {changedAgain && <ChangedAgain showNew={showNew} />}
-        {code && <SecurityDigits code={code} />}
-      </section>
-      {/* Only for the one this device settled the conversation is with. */}
-      {code && <TheirDevices directory={directory} person={person} />}
-    </>
-  );
-}
-
-/**
- * The contact's devices (ADR-0010 §4): how many can read the conversation
- * and when the newest was linked. No warning: each is signed with the
- * contact's known account key.
- */
-function TheirDevices({
-  directory,
-  person,
-}: {
-  directory: ChatDirectory | undefined;
-  person: Person;
-}) {
-  const devices =
-    directory?.accounts
-      .find((account) => account.userId === person.userId)
-      ?.devices.filter((device) => device.revokedAt === null) ?? [];
-  if (devices.length === 0) return null;
-  const newest = devices
-    .map((device) => device.createdAt)
-    .sort()
-    .at(-1)!;
-  const name = person.realName ?? "Tidligere bruker";
-
-  return (
-    <section className="card" aria-labelledby={`enheter-${person.userId}`}>
-      <h2 id={`enheter-${person.userId}`}>
-        {whose(name)} enheter: {devices.length}
-      </h2>
+    <section className="card" aria-labelledby={`kode-${person.userId}`}>
+      <h2 id={`kode-${person.userId}`}>Sikkerhetskode</h2>
       <p className="quiet">
-        Sist koblet til en ny enhet {dayFormat.format(new Date(newest))}.
+        Sammenlign med koden på {whose(name)} skjerm når dere møtes. Er de like,
+        bruker samtalen {whose(name)} egne nøkler, ikke noen andres.
       </p>
+      {code === null && (
+        <p role="alert">
+          Samtalen er kryptert med en annen enn {name}. Det finnes ingen kode å
+          sammenligne, og ingenting sendes i samtalen.
+        </p>
+      )}
+      {code?.pending && !changedAgain && (
+        <p role="status">
+          Dette er den nye koden. Den er ikke godtatt ennå, og ingenting sendes
+          i samtalen før du har godtatt den.
+        </p>
+      )}
+      {changedAgain && <ChangedAgain showNew={showNew} />}
+      {code && <SecurityDigits code={code} />}
     </section>
   );
 }
@@ -135,17 +84,14 @@ function About({
 }) {
   const router = useRouter();
   const [info, setInfo] = useState<ChatConversation>();
-  const [directory, setDirectory] = useState<ChatDirectory>();
   const [busy, setBusy] = useState(false);
   const [muting, setMuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([chatApi.conversation(id), chatApi.directory(id)])
-      .then(([conversation, keys]) => {
-        setInfo(conversation);
-        setDirectory(keys);
-      })
+    chatApi
+      .conversation(id)
+      .then(setInfo)
       .catch((problem: unknown) => setError(chatErrorMessage(problem)));
   }, [id]);
 
@@ -226,7 +172,6 @@ function About({
               engine={engine}
               conversationId={id}
               person={person}
-              directory={directory}
             />
           ))}
 

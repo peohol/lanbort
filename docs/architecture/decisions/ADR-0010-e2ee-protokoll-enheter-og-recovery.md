@@ -85,7 +85,7 @@ Dette sjekkes av hver klient for hvert medlem som legges til, hver nøkkeloppdat
 
 - En samtale er én MLS-gruppe. Gruppe-ID er samtalens ID (med generasjonsnummer, se punkt 9).
 - Medlemmene er alle ikke-tilbakekalte enheter til samtalens deltakere.
-- Når en konto får ny enhet, legger kontoens egne enheter den til i kontoens aktive samtaler. Kontaktene ser at Peder har en ny enhet i samtaleinformasjonen, men får ikke advarsel, fordi enheten er signert med Peders kjente kontonøkkel.
+- Når en konto får ny enhet, legger kontoens egne enheter den til i kontoens aktive samtaler. Kontaktene får ingen advarsel, fordi enheten er signert med Peders kjente kontonøkkel, og de ser heller ikke Peders enheter: det angår Peder, som selv må godkjenne hver ny enhet og alltid varsles når en kobles til (PS-COM-016). Kontaktene varsles bare når kontonøkkelen endres. (Produkteiers beslutning 15. oktober 2026; før det viste «Om samtalen» antall enheter og når den nyeste ble koblet til.)
 - Bare forslagene `add`, `remove` og `update` godtas i en commit. Alt annet MLS tillater (reinit, eksterne forslag, PSK, endring av gruppeutvidelser) avvises av klienten.
 - En enhet kan bare fjernes når mottakerens egen enhet ikke lenger stoler på den: den er tilbakekalt med signatur fra sin kontonøkkel, kontoen har fått ny kontonøkkel, eller kontoen er ikke lenger deltaker. Hver mottaker sjekker dette selv og avviser ellers hele commiten, så én deltaker kan ikke kaste ut en annens enhet.
 - Korte meldinger fylles opp til 1024 byte før kryptering, så lengden ikke røper innholdet.
