@@ -14,8 +14,10 @@
 }
 
 .segments a {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-row);
   min-height: var(--target);
   font-weight: 600;
   color: var(--color-muted);
