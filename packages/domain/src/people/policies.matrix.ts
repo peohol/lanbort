@@ -44,10 +44,20 @@ const person = (
 });
 
 const friends = {
-  openFriendship: { id: "f", status: "active", requesterId: other },
+  openFriendship: {
+    id: "f",
+    status: "active",
+    requesterId: other,
+    hiddenFromRequester: false,
+  },
 } as const;
 const asked = {
-  openFriendship: { id: "f", status: "pending", requesterId: other },
+  openFriendship: {
+    id: "f",
+    status: "pending",
+    requesterId: other,
+    hiddenFromRequester: false,
+  },
 } as const;
 
 function expectCase<R = PersonRelation>(
@@ -132,6 +142,7 @@ export const peopleMatrices = [
           id: "f",
           status: "pending",
           requesterId: viewer.userId,
+          hiddenFromRequester: false,
         },
       }),
       "allow",

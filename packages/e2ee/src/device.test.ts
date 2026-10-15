@@ -21,7 +21,7 @@ import {
   startLink,
   verifyDeviceCertificate,
 } from "./index";
-import { decodeBase32 } from "./base32";
+import { decodeBase32 } from "@lanbort/contracts";
 import { commit } from "./linking";
 import { fromBase64, fromUtf8, toBase64, utf8 } from "./suite";
 

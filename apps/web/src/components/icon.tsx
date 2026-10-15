@@ -46,6 +46,9 @@ const paths = {
   link: "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1",
   move: "M4 12h14M14 7l5 5-5 5",
   theme: "M19.5 14.5A8 8 0 1 1 9.5 4.5a6.5 6.5 0 0 0 10 10z",
+  mail: "M4 6h16v12H4zM4 6l8 7 8-7",
+  qr: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h3v3h-3zM20 17v3h-3",
+  scan: "M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5",
 } as const;
 
 export type IconName = keyof typeof paths;

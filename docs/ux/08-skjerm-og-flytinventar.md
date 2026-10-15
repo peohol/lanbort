@@ -268,9 +268,9 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 #### Konto og innstillinger
 
 - **Oppgave:** forvalte egen konto, relasjoner, saker og varsler.
-- **Tilstander:** venner, forespørsler og blokkerte; egne saker; varslingsvalg per nivå; profilfelt og synlighet; slette konto, med hva som hindrer sletting; logge ut, og på en enhet med privat chat først hva enheten mister (ADR-0010 punkt 7).
+- **Tilstander:** venner, forespørsler og blokkerte; nye venner på e-post og med QR-kode («Legg til venner» under Venner: «Inviter en person» for den som kan invitere nye deltakere i piloten, ellers «Venneforespørsel på e-post»; «Min QR-kode» med nedtelling og kode å skrive inn; «Skann QR-kode» med kamera der nettleseren kan, ellers mobilens kamera eller koden skrevet inn; åpne invitasjoner under «Sendt på e-post» med «Trekk», og samme bekreftelse uansett adresse); egne saker; varslingsvalg per nivå; profilfelt og synlighet; slette konto, med hva som hindrer sletting; logge ut, og på en enhet med privat chat først hva enheten mister (ADR-0010 punkt 7).
 - **Ser / handler:** brukeren selv.
-- **Regler:** UX-IA-003, UX-IA-020, UX-PRIV-001, PS-USR-002, PS-COM-002, PS-COM-003, PS-ADM-004, PS-ADM-005, PS-ADM-012.
+- **Regler:** UX-IA-003, UX-IA-020, UX-PRIV-001, PS-USR-002, PS-USR-013–015, PS-COM-002, PS-COM-003, PS-ADM-004, PS-ADM-005, PS-ADM-012.
 - **Forløp:** begge.
 - **UI-pakke:** WP-80 (eksisterende varslingsvalg, kontostatus, deaktivering/reaktivering og sletting), WP-86 (relasjoner) og WP-88 (egne saker). Profilbildet, med beskjæring og synlighetsvalg, ligger på Konto og vises som sirkel (PS-USR-002). Presentasjon og synlighetsvalg for andre profilfelt står under «Senere».
 

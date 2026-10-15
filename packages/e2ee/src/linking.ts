@@ -11,7 +11,11 @@ import {
   readAccountPackage,
   writeAccountPackage,
 } from "./account-package";
-import { decodeBase32, encodeBase32, normalizeBase32 } from "./base32";
+import {
+  decodeBase32,
+  encodeBase32,
+  normalizeBase32,
+} from "@lanbort/contracts";
 import { Secret, wipe } from "./secret";
 import { bytesEqual, fromBase64, loadSuite, toBase64, utf8 } from "./suite";
 

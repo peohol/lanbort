@@ -59,6 +59,11 @@ const nonUserRoutes: Record<
     reason:
       "deletes chat ciphertext and keys past their retention, authenticated with the cron secret",
   },
+  "GET /api/internal/friend-invitations": {
+    access: "scheduler",
+    reason:
+      "ends expired invitations by e-mail address and friend codes, authenticated with the cron secret",
+  },
   "GET /api/internal/retention": {
     access: "scheduler",
     reason:

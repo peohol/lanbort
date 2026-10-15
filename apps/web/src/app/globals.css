@@ -2138,15 +2138,16 @@ fieldset {
   );
 }
 
-/* Private chat (WP-43): a message keeps its line breaks; a security code
-   and a link code are read in groups. */
+/* Private chat (WP-43): a message keeps its line breaks; a security code,
+   a link code and a friend code (PS-USR-014) are read in groups. */
 .message-text {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
 .security-code,
-.link-code {
+.link-code,
+.friend-code {
   font-family: ui-monospace, monospace;
   font-size: var(--text-l);
   letter-spacing: 0.05em;

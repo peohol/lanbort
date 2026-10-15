@@ -14,9 +14,11 @@ export interface SecurityHeaderOptions {
   nonce?: string;
   /**
    * A private chat page (ADR-0010 §13): nothing is loaded from another
-   * origin, and only the approval page may use the camera.
+   * origin.
    */
-  chat?: { camera: boolean };
+  chat?: boolean;
+  /** One of the pages that scan a QR code, which may use the camera. */
+  camera?: boolean;
 }
 
 const buildContentSecurityPolicy = ({
@@ -46,11 +48,16 @@ const buildContentSecurityPolicy = ({
   ].join("; ");
 };
 
-const permissionsPolicy = ({ chat }: SecurityHeaderOptions) =>
-  chat
-    ? `camera=${chat.camera ? "(self)" : "()"}, microphone=(), geolocation=()`
-    : // «Bruk der jeg er» in Finn asks once, on this site only (WP-62).
-      "camera=(), microphone=(), geolocation=(self)";
+/** A feature for this site only, or for nobody. */
+const allow = (allowed: boolean) => (allowed ? "(self)" : "()");
+
+const permissionsPolicy = ({
+  chat = false,
+  camera = false,
+}: SecurityHeaderOptions) =>
+  // «Bruk der jeg er» in Finn asks once, on this site only (WP-62); chat
+  // pages have no map.
+  `camera=${allow(camera)}, microphone=(), geolocation=${allow(!chat)}`;
 
 export function getSecurityHeaders(
   options: SecurityHeaderOptions = {},

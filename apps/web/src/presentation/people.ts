@@ -3,6 +3,7 @@ import {
   type Person,
   type ProfileReview,
   productTimeZone,
+  type SocialRelation,
 } from "@lanbort/contracts";
 import type { IconName } from "@/components/icon";
 import type { Tone } from "@/components/tag";
@@ -42,11 +43,19 @@ const sinceFormat = new Intl.DateTimeFormat("nb-NO", {
 });
 
 /**
+ * Whom a relation is told about: a person's page, or the owner of a friend
+ * code (PS-USR-014), which says nothing more than the name and relation.
+ */
+export type RelationSubject = Pick<Person, "realName" | "relationSince"> & {
+  readonly relation: Omit<SocialRelation, "userId"> | null;
+};
+
+/**
  * The reader's relation to the person (PS-USR-003–006), said as a
  * situation. A block the person has placed is never part of it, and
  * nothing says that a request was declined (PS-USR-012).
  */
-export function describeRelation(person: Person): RelationText {
+export function describeRelation(person: RelationSubject): RelationText {
   const { relation, realName, relationSince } = person;
 
   if (!relation) {

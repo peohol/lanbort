@@ -128,7 +128,7 @@ export function notificationEmailLink(
   return url.toString();
 }
 
-const escapeHtml = (value: string) =>
+export const escapeHtml = (value: string) =>
   value.replace(
     /[&<>"']/g,
     (character) =>

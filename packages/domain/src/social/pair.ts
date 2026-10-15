@@ -30,6 +30,11 @@ export interface OpenFriendship {
   readonly id: string;
   readonly status: "pending" | "active";
   readonly requesterId: string;
+  /**
+   * A request sent to an e-mail address, which its sender does not see
+   * until it is accepted (PS-USR-013).
+   */
+  readonly hiddenFromRequester: boolean;
 }
 
 /** {@link SocialPair.requestHeldBack} for `actorId` asking `otherUserId`. */
@@ -93,7 +98,7 @@ export async function loadPair(
   const [low, high] = orderedPair(actorId, otherUserId);
   const friendship = await db
     .selectFrom("app.friendships")
-    .select(["id", "status", "requester_id"])
+    .select(["id", "status", "requester_id", "hidden_from_requester"])
     .where("user_low_id", "=", low)
     .where("user_high_id", "=", high)
     .where("status", "<>", "ended")
@@ -125,6 +130,7 @@ export async function loadPair(
           id: friendship.id,
           status: friendship.status as OpenFriendship["status"],
           requesterId: friendship.requester_id,
+          hiddenFromRequester: friendship.hidden_from_requester,
         }
       : null,
     blockedByActor: blocks.some((block) => block.blocker_id === actorId),
@@ -149,8 +155,25 @@ export function readSnapshot<T>(
     .execute(read);
 }
 
-export function friendshipStateOf(pair: SocialPair): FriendshipState {
+/**
+ * The pair's open relation as the actor may know it: a request the actor
+ * sent to an e-mail address stays out of it until it is accepted, so the
+ * actor cannot tell which account the address belongs to (PS-USR-013).
+ */
+export function knownFriendship(
+  pair: Pick<SocialPair, "actorId" | "openFriendship">,
+): OpenFriendship | null {
   const friendship = pair.openFriendship;
+
+  return friendship?.status === "pending" &&
+    friendship.hiddenFromRequester &&
+    friendship.requesterId === pair.actorId
+    ? null
+    : friendship;
+}
+
+export function friendshipStateOf(pair: SocialPair): FriendshipState {
+  const friendship = knownFriendship(pair);
 
   if (!friendship) {
     return "none";
@@ -167,13 +190,14 @@ export function friendshipStateOf(pair: SocialPair): FriendshipState {
 
 /**
  * The actor may send the other a friend request now: an active account, no
- * open relation, no block of their own, and no declined request to wait out
- * (PS-USR-012).
+ * open relation they know of, no block of their own, and no declined
+ * request to wait out (PS-USR-012). Their own hidden request is shown to
+ * them by asking again (PS-USR-013).
  */
 export function mayRequestFriendship(pair: SocialPair): boolean {
   return (
     pair.otherActive &&
-    !pair.openFriendship &&
+    !knownFriendship(pair) &&
     !pair.blockedByActor &&
     !pair.requestHeldBack
   );

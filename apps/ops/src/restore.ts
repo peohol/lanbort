@@ -29,6 +29,7 @@ const domain: DomainContext = {
     imageStore: () => undefined,
     pictureStore: () => undefined,
     identities: () => undefined,
+    emails: () => undefined,
   }),
 };
 

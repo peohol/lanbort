@@ -109,6 +109,9 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
   { name: "Varsler", path: () => "/varsler" },
   { name: "Konto", path: () => "/konto" },
   { name: "Venner", path: () => "/konto/venner" },
+  { name: "Inviter", path: () => "/konto/venner/inviter" },
+  { name: "Min QR-kode", path: () => "/konto/venner/min-kode" },
+  { name: "Skann QR-kode", path: () => "/konto/venner/skann" },
   { name: "Blokkerte", path: () => "/konto/blokkerte" },
   { name: "Varslingsvalg", path: () => "/konto/varslingsvalg" },
   { name: "Profilbilde", path: () => "/konto/profilbilde" },
@@ -147,7 +150,8 @@ let signedIn: Awaited<ReturnType<BrowserContext["storageState"]>>;
 
 /**
  * Bo, with something on every page: a loan waiting for its handover, a
- * friend request to answer, a co-ownership to accept, a block, an
+ * friend request to answer, one sent by e-mail, a co-ownership to accept,
+ * a block, an
  * environment with an area that Bo helps administer, and notifications.
  */
 test.beforeAll(async ({ browser, playwright }) => {
@@ -180,6 +184,10 @@ test.beforeAll(async ({ browser, playwright }) => {
     userId: boId,
   });
   await postCommand(bo, "/api/social/blocks", { userId: dan.id });
+  await postCommand(bo, "/api/social/invitations", {
+    email: newEmail(),
+    befriend: true,
+  });
 
   const place = uniqueWord();
   const thing = uniqueWord();

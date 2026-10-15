@@ -18,4 +18,9 @@ export const pilotRetention = {
   commandResultsMs: 30 * day,
   /** Answers given to join an environment, after the membership ended. */
   membershipAnswersMs: 90 * day,
+  /**
+   * Invitations sent to an e-mail address, with the address, from when they
+   * were withdrawn or expired (PS-USR-013).
+   */
+  friendInvitationsMs: 30 * day,
 } as const;

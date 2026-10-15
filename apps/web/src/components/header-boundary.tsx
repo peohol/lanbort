@@ -3,7 +3,8 @@
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { layerOf } from "@/navigation/areas";
-import { isChatPage, loadedPath } from "@/navigation/chat";
+import { isChatPage } from "@/navigation/chat";
+import { loadedPath } from "@/navigation/headers";
 
 /**
  * A document keeps the security headers it was loaded with (ADR-0010 §13).

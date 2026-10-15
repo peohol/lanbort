@@ -4,7 +4,7 @@
 
 ## Hvem som kommer inn
 
-Produksjon lager ikke kontoer for nye e-postadresser (`enable_signup = false` under `[remotes.production.auth]` i `supabase/config.toml`). Bare adresser som allerede finnes i Supabase Auth, får en kode:
+Produksjon lager ikke kontoer for nye e-postadresser (`enable_signup = false` under `[remotes.production.auth]` i `supabase/config.toml`). Bare adresser som allerede finnes i Supabase Auth, får en kode, og de kommer dit bare når produkteieren inviterer dem fra appen (PS-USR-015):
 
 - Innloggingssiden sier at Lånbort foreløpig bare er åpent for inviterte, og svarer likt for alle adresser («Er … invitert, har vi sendt en kode dit»), så ingen kan finne ut hvem som er med (`newAccountsOpen` i `@lanbort/auth`, som leser Auths egen innstilling).
 - En invitert logger inn med engangskode som vanlig. Ved første innlogging lager appen kontoen og går videre til registreringen (alder og navn), som før.
@@ -12,9 +12,15 @@ Produksjon lager ikke kontoer for nye e-postadresser (`enable_signup = false` un
 
 Lokalt og i testene er nyregistrering åpen.
 
-Privat chat følger den samme sperren: `CHAT_ENABLED=pilot` holder chat på bare så lenge nye adresser ikke får konto ([risikovurderingen](chat-pilot-risikovurdering.md)). Åpnes Lånbort, lukkes chat av seg selv til Port C er oppfylt.
+Privat chat følger den samme sperren: `CHAT_ENABLED=pilot` holder chat på bare så lenge nye adresser ikke får konto ([risikovurderingen](chat-pilot-risikovurdering.md)). Åpnes Lånbort, lukkes chat av seg selv til Port C er oppfylt. Invitasjonene fra appen endrer ikke dette: de lager brukeren gjennom innloggingstjenestens administrasjon, mens registreringen for alle andre fortsatt er stengt.
 
 ### Slik legger produkteier til en deltaker
+
+I appen: **Konto › Venner › Inviter en person**. Skriv deltakerens e-postadresse, kryss eventuelt av for «Spør også om å bli venner», og trykk **Send invitasjon**. Deltakeren får en e-post med navnet ditt og en lenke til innloggingen, og registrerer seg der med en kode på e-post. Invitasjonen gjelder i 14 dager og kan trekkes tilbake under «Sendt på e-post» på Venner; da fjernes adressen fra innloggingen igjen hvis den ikke er tatt i bruk.
+
+Hvem som kan invitere nye deltakere, står i miljøvariabelen `PILOT_INVITERS` i Vercel (Lånborts bruker-ID-er, adskilt med komma; satt til produkteierens konto). Andre ser «Venneforespørsel på e-post» i stedet, som bare når adresser som allerede har konto. Invitasjonene trenger `SUPABASE_SECRET_KEY`, `RESEND_API_KEY`, `NOTIFICATION_EMAIL_FROM` og `APP_URL`; uten dem venter de i køen og prøves igjen.
+
+Virker ikke appen, kan en deltaker også legges til i Supabase:
 
 1. Gå til <https://supabase.com/dashboard> og åpne Lånbort-prosjektet.
 2. Velg **Authentication** i menyen til venstre, deretter **Users**.

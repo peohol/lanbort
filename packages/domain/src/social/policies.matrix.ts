@@ -7,6 +7,16 @@ import type { SocialPair } from "./pair";
 import {
   acceptFriendRequestPolicy,
   blockUserPolicy,
+  createFriendCodePolicy,
+  expireFriendInvitationsPolicy,
+  friendInvitationDeliveryProcess,
+  friendInvitationExpiryProcess,
+  readFriendCodePolicy,
+  readFriendInvitationsPolicy,
+  recordInvitationIdentityPolicy,
+  requestFriendByCodePolicy,
+  sendFriendInvitationPolicy,
+  withdrawFriendInvitationPolicy,
   declineFriendRequestPolicy,
   liftUserBlockPolicy,
   readSocialOverviewPolicy,
@@ -72,7 +82,29 @@ const situations: readonly {
   {
     name: "a pending request between them",
     resource: pair({
-      openFriendship: { id: "f", status: "pending", requesterId: other },
+      openFriendship: {
+        id: "f",
+        status: "pending",
+        requesterId: other,
+        hiddenFromRequester: false,
+      },
+    }),
+    expected: {
+      request: "allow",
+      relation: "allow",
+      ending: "allow",
+      block: "allow",
+    },
+  },
+  {
+    name: "the actor's own request sent to the other's e-mail address (PS-USR-013)",
+    resource: pair({
+      openFriendship: {
+        id: "f",
+        status: "pending",
+        requesterId: me.userId,
+        hiddenFromRequester: true,
+      },
     }),
     expected: {
       request: "allow",
@@ -192,11 +224,102 @@ function matrixFor(
   );
 }
 
+const own = { inviterId: me.userId };
+
+/** What only the sender of an invitation, or the owner of a code, can do. */
+const ownInvitationMatrix = (policy: Policy<{ inviterId: string }, void>) =>
+  policyMatrix(policy, [
+    {
+      name: "the caller's own",
+      actor: me,
+      resource: own,
+      context: undefined,
+      expected: "allow",
+    },
+    {
+      name: "someone else's looks like one that does not exist",
+      actor: me,
+      resource: { inviterId: other },
+      context: undefined,
+      expected: "not_found",
+    },
+    {
+      name: "an actor who has not completed registration",
+      actor: pending,
+      resource: own,
+      context: undefined,
+      expected: "registration_required",
+    },
+    {
+      name: "an anonymous caller",
+      actor: anonymousActor,
+      resource: own,
+      context: undefined,
+      expected: "unauthenticated",
+    },
+  ]);
+
+/** A job's or worker's own step, which no person can take. */
+const processMatrix = (policy: Policy<void, void>, process: string) =>
+  policyMatrix(policy, [
+    {
+      name: "the process itself",
+      actor: systemActor(process),
+      resource: undefined,
+      context: undefined,
+      expected: "allow",
+    },
+    {
+      name: "another process",
+      actor: systemActor("outbox.worker"),
+      resource: undefined,
+      context: undefined,
+      expected: "forbidden",
+    },
+    {
+      name: "a signed-in user",
+      actor: me,
+      resource: undefined,
+      context: undefined,
+      expected: "forbidden",
+    },
+  ]);
+
 export const socialMatrices = [
-  matrixFor(sendFriendRequestPolicy, "request"),
-  ...[acceptFriendRequestPolicy, readSocialRelationPolicy].map((policy) =>
-    matrixFor(policy, "relation"),
+  ...[sendFriendRequestPolicy, requestFriendByCodePolicy].map((policy) =>
+    matrixFor(policy, "request"),
   ),
+  ...[
+    acceptFriendRequestPolicy,
+    readSocialRelationPolicy,
+    readFriendCodePolicy,
+  ].map((policy) => matrixFor(policy, "relation")),
+  ...[
+    sendFriendInvitationPolicy,
+    withdrawFriendInvitationPolicy,
+    createFriendCodePolicy,
+  ].map(ownInvitationMatrix),
+  processMatrix(expireFriendInvitationsPolicy, friendInvitationExpiryProcess),
+  processMatrix(
+    recordInvitationIdentityPolicy,
+    friendInvitationDeliveryProcess,
+  ),
+  policyMatrix(readFriendInvitationsPolicy, [
+    {
+      name: "a registered user reads their own invitations",
+      actor: me,
+      resource: [],
+      context: undefined,
+      expected: "allow",
+    },
+    {
+      name: "an actor who has not completed registration",
+      actor: pending,
+      resource: [],
+      context: undefined,
+      expected: "registration_required",
+    },
+  ]),
   ...[
     declineFriendRequestPolicy,
     withdrawFriendRequestPolicy,

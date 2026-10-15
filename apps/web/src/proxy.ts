@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { isChatPage, usesCamera } from "@/navigation/chat";
+import { isChatPage } from "@/navigation/chat";
+import { usesCamera } from "@/navigation/headers";
 import {
   requiresCanonicalStewardOrigin,
   stableVercelHost,
@@ -26,7 +27,8 @@ function pageHeaders(request: NextRequest) {
   return getSecurityHeaders({
     development: process.env.NODE_ENV === "development",
     nonce,
-    ...(isChatPage(pathname) && { chat: { camera: usesCamera(pathname) } }),
+    chat: isChatPage(pathname),
+    camera: usesCamera(pathname),
   });
 }
 

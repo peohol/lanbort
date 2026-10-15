@@ -23,6 +23,7 @@ import {
 } from "./events";
 import {
   friendshipStateOf,
+  knownFriendship,
   loadPair,
   lockPair,
   relationOf,
@@ -129,30 +130,56 @@ export async function endFriendship(
   events.record(event, { resourceId: friendshipId, payload: {} });
 }
 
+/**
+ * PS-USR-003: the actor asks the other, who is told (PS-USR-011). Any open
+ * relation is left as it is. In particular a crossing request leaves the
+ * other's pending request in place for the actor to accept: a friendship
+ * only ever starts with an acceptance. A request the actor sent to the
+ * other's e-mail address is shown to them now that they ask in the app
+ * (PS-USR-013). Returns the new request's id, if one was made: `hidden`
+ * for one sent to an e-mail address.
+ */
+export async function requestFriendship(
+  { tx, pair, events, now }: ChangeArgs,
+  hidden = false,
+): Promise<string | null> {
+  const open = pair.openFriendship;
+
+  if (open) {
+    if (!hidden && !knownFriendship(pair)) {
+      await tx
+        .updateTable("app.friendships")
+        .set({ hidden_from_requester: false })
+        .where("id", "=", open.id)
+        .execute();
+    }
+
+    return null;
+  }
+
+  const { id } = await tx
+    .insertInto("app.friendships")
+    .values({
+      requester_id: pair.actorId,
+      addressee_id: pair.otherUserId,
+      requested_at: now,
+      hidden_from_requester: hidden,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+
+  events.record(friendshipRequested, { resourceId: id, payload: {} });
+
+  return id;
+}
+
 /** PS-USR-003: a request to someone the caller can reach. */
 export const sendFriendRequest = pairCommand({
   name: "friendship.request",
   policy: sendFriendRequestPolicy,
   rateLimit: rateLimits.contact,
-  // Any open relation is left as it is. In particular a crossing request
-  // leaves the other's pending request in place for the caller to accept:
-  // a friendship only ever starts with an acceptance.
-  change: async ({ tx, pair, events, now }) => {
-    if (pair.openFriendship) {
-      return;
-    }
-
-    const { id } = await tx
-      .insertInto("app.friendships")
-      .values({
-        requester_id: pair.actorId,
-        addressee_id: pair.otherUserId,
-        requested_at: now,
-      })
-      .returning("id")
-      .executeTakeFirstOrThrow();
-
-    events.record(friendshipRequested, { resourceId: id, payload: {} });
+  change: async (args) => {
+    await requestFriendship(args);
   },
 });
 

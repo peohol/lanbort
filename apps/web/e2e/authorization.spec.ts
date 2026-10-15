@@ -155,14 +155,23 @@ const namesNoResource = new Set([
   "places",
   "search/environments",
   "social",
+  "social/invitations",
 ]);
+
+/**
+ * Read routes that name the person behind a short-lived code on purpose:
+ * whoever holds a friend code may see whose it is (PS-USR-014). A replaced,
+ * unknown or own code is checked in `friend-invitations.spec`.
+ */
+const answersToCode = new Set(["social/friend-codes/read"]);
 
 test("every read route that names a resource is probed", () => {
   const unprobed = readRoutes().filter(
     (route) =>
       !route.startsWith("internal/") &&
       !(route in probes) &&
-      !namesNoResource.has(route),
+      !namesNoResource.has(route) &&
+      !answersToCode.has(route),
   );
   expect(unprobed).toEqual([]);
 });

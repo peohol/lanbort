@@ -2,6 +2,7 @@ import { completeRegistrationSchema } from "@lanbort/contracts";
 import { z } from "zod";
 import type { AccountStatus } from "../actor";
 import { defineCommand } from "../commands/command";
+import { redeemFriendInvitations } from "../social/invitations";
 import { registrationCompleted } from "./events";
 import { completeRegistrationPolicy } from "./policies";
 
@@ -51,6 +52,10 @@ export const completeRegistration = defineCommand({
       resourceId: resource.userId,
       payload: {},
     });
+
+    // Friend requests sent to the address before there was an account
+    // arrive now (PS-USR-013).
+    await redeemFriendInvitations(tx, resource.userId, events, now);
 
     return { status: "active" as const };
   },

@@ -33,6 +33,13 @@ export const rateLimits = {
   /** Invitations to environments, roles and co-ownership. */
   invitations: rule("invitations", 60, hours),
   /**
+   * Invitations and friend requests sent to an e-mail address (PS-USR-013),
+   * which may reach people outside Lånbort.
+   */
+  emailInvitations: rule("email_invitations", 30, 24 * hours),
+  /** Friend codes made to be shown as QR codes (PS-USR-014). */
+  friendCodes: rule("friend_codes", 60, hours),
+  /**
    * Writing in cases, where a participant may submit copies of private
    * messages with what they write (WP-46).
    */

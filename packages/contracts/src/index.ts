@@ -1,5 +1,6 @@
 export * from "./health";
 export * from "./errors";
+export * from "./base32";
 export * from "./auth";
 export * from "./geo";
 export * from "./environment";

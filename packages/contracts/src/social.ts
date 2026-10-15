@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { emailAddressSchema } from "./auth";
+import { normalizeBase32 } from "./base32";
 
 /**
  * Friendships and blocks (PS-USR-003–007). Every command names only the other
@@ -110,3 +112,77 @@ export type SocialOverview = z.infer<typeof socialOverviewSchema>;
 export type SharedEnvironment = z.infer<typeof sharedEnvironmentSchema>;
 export type Person = z.infer<typeof personSchema>;
 export type PersonLink = z.infer<typeof personLinkSchema>;
+
+/**
+ * PS-USR-013: invite someone by e-mail address. With `befriend`, the
+ * recipient also gets a friend request, at once if the address has an
+ * account, or once they have registered. Without it, only a new participant
+ * gets anything: an invitation to Lånbort (PS-USR-015).
+ */
+export const sendFriendInvitationSchema = z.strictObject({
+  email: emailAddressSchema,
+  befriend: z.boolean(),
+});
+
+/**
+ * An invitation as its sender sees it, the same whether the address has an
+ * account or not, and whatever the recipient did about it: only what the
+ * sender wrote and when it ends (PS-USR-013).
+ */
+export const friendInvitationSchema = z.strictObject({
+  id: z.uuid(),
+  email: z.string(),
+  befriend: z.boolean(),
+  sentAt: z.iso.datetime(),
+  expiresAt: z.iso.datetime(),
+});
+
+/** The caller's open invitations, newest first. */
+export const friendInvitationsSchema = z.strictObject({
+  invitations: z.array(friendInvitationSchema),
+});
+
+export const friendInvitationTargetSchema = z.strictObject({
+  invitationId: z.uuid(),
+});
+
+/** How many characters a friend code has (PS-USR-014). */
+export const friendCodeLength = 10;
+
+/**
+ * A friend code as someone may type it from the screen: any case, spaces
+ * and dashes, O for 0 (Crockford base32).
+ */
+export const friendCodeSchema = z
+  .string()
+  .max(40)
+  .transform(normalizeBase32)
+  .pipe(
+    z.string().regex(new RegExp(`^[0-9A-HJKMNP-TV-Z]{${friendCodeLength}}$`)),
+  );
+
+export const friendCodeInputSchema = z.strictObject({ code: friendCodeSchema });
+
+/** The caller's own friend code, shown as a QR code until it expires. */
+export const ownFriendCodeSchema = z.strictObject({
+  code: z.string(),
+  expiresAt: z.iso.datetime(),
+});
+
+/**
+ * The person whose friend code was scanned, as the scanner sees them: the
+ * name the person chose to show and the scanner's relation to them, never
+ * an id or an address (PS-USR-014).
+ */
+export const friendCodeOwnerSchema = z.strictObject({
+  realName: z.string(),
+  friendship: friendshipStateSchema,
+  blockedByMe: z.boolean(),
+  canRequest: z.boolean(),
+});
+
+export type SendFriendInvitation = z.infer<typeof sendFriendInvitationSchema>;
+export type FriendInvitation = z.infer<typeof friendInvitationSchema>;
+export type FriendInvitations = z.infer<typeof friendInvitationsSchema>;
+export type OwnFriendCode = z.infer<typeof ownFriendCodeSchema>;
+export type FriendCodeOwner = z.infer<typeof friendCodeOwnerSchema>;

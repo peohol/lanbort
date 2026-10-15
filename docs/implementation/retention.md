@@ -26,6 +26,8 @@
 | E-postleveranser (status, aldri adresse eller innhold) | 30 dager etter at de er sendt eller droppet | Slettejobben |
 | Utførte outbox-meldinger | 30 dager. Feilede står til de er håndtert | Slettejobben |
 | Lagrede svar på kommandoer (gjentar svaret ved et nytt forsøk) | 30 dager | Slettejobben |
+| Invitasjoner og venneforespørsler på e-post, med adressen (PS-USR-013) | Til 30 dager etter at de er trukket tilbake eller utløpt; til den er avsluttet, når avsenderen sletter kontoen | Slettejobben; kontoslettingen avslutter åpne invitasjoner |
+| QR-koder for vennskap (bare fingeravtrykk, PS-USR-014) | Fem minutter | Utløpsjobben `/api/internal/friend-invitations` og kontoslettingen |
 | Fartsgrensetellere (bare nøkkelhasher) | Til de utløper | Hver bruk og slettejobben |
 | Backuper | 7 dager | Supabase og den egne backupen sletter eldre selv |
 

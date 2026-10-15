@@ -3,25 +3,22 @@
 import type { ChatLinkRequest } from "@lanbort/contracts";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  type FormEvent,
-  useEffect,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { announce } from "@/components/announcer";
 import { BusyButton } from "@/components/busy-button";
 import { ErrorText } from "@/components/error-text";
 import { PageHeader } from "@/components/page-header";
+import { hasScanner, QrScanner } from "@/components/qr-scanner";
+import { useLoadedAt } from "@/components/use-loaded-at";
 import {
   chatApproveLinkHref,
   chatDevicesAnsweredHref,
   chatDevicesHref,
 } from "@/navigation/chat";
+import { readLinkQr } from "@lanbort/e2ee";
 import { chatApi } from "./api";
 import styles from "./chat.module.css";
 import { ChatIcon } from "./chat-icon";
-import { loadedPath } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";
 import { DeclineLink } from "./decline-link";
 import { deviceName } from "./device-names";
@@ -29,7 +26,6 @@ import type { ChatEngine, MatchedLinkRequest } from "./engine";
 import { chatErrorMessage } from "./messages";
 import { Notice } from "./notice";
 import { Points } from "./points";
-import { hasScanner, Scanner, type ShownLink } from "./scanner";
 import { messageTime } from "./time";
 
 /** Approving is a bounded task, started from Mine enheter (UX-IA-013). */
@@ -171,7 +167,7 @@ function Approve({ engine }: { engine: ChatEngine }) {
     void refresh();
   }, []);
 
-  async function check(shown: ShownLink) {
+  async function check(shown: { code: string }) {
     setError(null);
     // The new device may have asked after this page fetched the list.
     const request = await engine.findLinkRequest(await refresh(), shown);
@@ -258,7 +254,11 @@ function Approve({ engine }: { engine: ChatEngine }) {
           )}
           {mode === "scan" ? (
             <>
-              <Scanner onCode={(shown) => void check(shown)} />
+              <QrScanner
+                read={readLinkQr}
+                onCode={(shown) => void check(shown)}
+                failure="Fikk ikke brukt kameraet. Skriv inn koden fra den nye enheten i stedet."
+              />
               <p>Hold kameraet mot koden på den nye enheten.</p>
               <button
                 type="button"
@@ -315,24 +315,11 @@ function Approve({ engine }: { engine: ChatEngine }) {
 }
 
 /**
- * On an existing device (10–12, ADR-0010 §5): the only page that may use
- * the camera. Reached by navigating inside the app, the page still runs
- * under the first page's headers, without the camera, so it is loaded anew.
+ * On an existing device (10–12, ADR-0010 §5): a page that may use the
+ * camera, so it is loaded with its own headers (`useLoadedAt`).
  */
-const noSubscription = () => () => undefined;
-
 export function ApproveLink() {
-  const loaded = useSyncExternalStore(
-    noSubscription,
-    () => loadedPath() === chatApproveLinkHref,
-    () => false,
-  );
-
-  useEffect(() => {
-    if (loadedPath() !== chatApproveLinkHref) location.reload();
-  }, []);
-
-  if (!loaded) return null;
+  if (!useLoadedAt(chatApproveLinkHref)) return null;
 
   return (
     <ReadyChat header={header("Godkjenn en ny enhet")}>

@@ -89,6 +89,7 @@ export const getSocialOverview = defineQuery({
           .select([
             "friendship.status",
             "friendship.requester_id as requesterId",
+            "friendship.hidden_from_requester as hidden",
             "other.status as otherStatus",
             "profile.user_id as userId",
             "profile.real_name as realName",
@@ -134,9 +135,14 @@ export const getSocialOverview = defineQuery({
     );
 
     // A request waits only while both can answer it: one with an account
-    // that is not active comes back if the account does (PS-ADM-002).
+    // that is not active comes back if the account does (PS-ADM-002). One
+    // the caller sent to an e-mail address shows as that invitation, not
+    // as the person, until it is accepted (PS-USR-013).
     const pending = relations.filter(
-      (r) => r.status === "pending" && r.otherStatus === "active",
+      (r) =>
+        r.status === "pending" &&
+        r.otherStatus === "active" &&
+        !(r.hidden && r.requesterId === me),
     );
     const overview: SocialOverview = {
       friends: contacts(

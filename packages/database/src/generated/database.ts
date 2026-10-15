@@ -482,12 +482,33 @@ export interface AppEnvironmentWindDowns {
   started_by_user_id: string | null;
 }
 
+export interface AppFriendCodes {
+  code_hash: Buffer;
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  user_id: string;
+}
+
+export interface AppFriendInvitations {
+  address: string;
+  befriend: boolean;
+  created_at: Generated<Timestamp>;
+  end_reason: string | null;
+  ended_at: Timestamp | null;
+  expires_at: Timestamp;
+  friendship_id: string | null;
+  id: Generated<string>;
+  identity_subject: string | null;
+  inviter_id: string;
+}
+
 export interface AppFriendships {
   accepted_at: Timestamp | null;
   addressee_id: string;
   end_reason: string | null;
   ended_at: Timestamp | null;
   ended_by_user_id: string | null;
+  hidden_from_requester: Generated<boolean>;
   id: Generated<string>;
   position: Generated<Int8>;
   requested_at: Generated<Timestamp>;
@@ -1122,6 +1143,8 @@ export interface DB {
   "app.environment_type_responses": AppEnvironmentTypeResponses;
   "app.environment_wind_downs": AppEnvironmentWindDowns;
   "app.environments": AppEnvironments;
+  "app.friend_codes": AppFriendCodes;
+  "app.friend_invitations": AppFriendInvitations;
   "app.friendships": AppFriendships;
   "app.idempotency_records": AppIdempotencyRecords;
   "app.loan_agreements": AppLoanAgreements;

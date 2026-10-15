@@ -1,5 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { chatApproveLinkHref } from "./navigation/chat";
+import { usesCamera } from "./navigation/headers";
+import { friendCodeHref, friendScanHref } from "./navigation/routes";
 import { getSecurityHeaders, unproxiedPaths } from "./security-headers";
 
 const headersOf = (...options: Parameters<typeof getSecurityHeaders>) =>
@@ -49,7 +52,7 @@ describe("security headers", () => {
 
   it("lets chat pages load nothing from elsewhere, and only the approval page use the camera", () => {
     const headers = (camera: boolean) =>
-      headersOf({ nonce: "abc123", chat: { camera } });
+      headersOf({ nonce: "abc123", chat: true, camera });
     const csp = headers(false).get("Content-Security-Policy")!;
 
     expect(scriptsOf(csp)).toBe(
@@ -63,6 +66,16 @@ describe("security headers", () => {
     expect(headers(true).get("Permissions-Policy")).toBe(
       "camera=(self), microphone=(), geolocation=()",
     );
+  });
+
+  it("lets only the pages that scan a QR code use the camera", () => {
+    expect(usesCamera(chatApproveLinkHref)).toBe(true);
+    expect(usesCamera(friendScanHref)).toBe(true);
+    expect(usesCamera(friendCodeHref)).toBe(false);
+    expect(usesCamera(`${friendScanHref}/annet`)).toBe(false);
+    expect(
+      headersOf({ nonce: "abc123", camera: true }).get("Permissions-Policy"),
+    ).toBe("camera=(self), microphone=(), geolocation=(self)");
   });
 
   it("covers in the Next.js config exactly what the proxy does not see", () => {

@@ -196,6 +196,9 @@ export function createAuthGateway(
   };
 }
 
+/** What the provider answers when an address already has an identity. */
+const existingUserCodes = new Set(["email_exists", "user_already_exists"]);
+
 /** What the provider answers when it creates no new accounts. */
 const newAccountsClosedCodes = new Set(["signup_disabled", "otp_disabled"]);
 
@@ -232,6 +235,14 @@ export interface AuthAdmin {
    * provider no longer has counts as deleted, so a retry is harmless.
    */
   deleteUser(subject: string): Promise<void>;
+  /**
+   * Creates an identity for `email` that can sign in with a one-time code
+   * also while new accounts are closed (PS-USR-015), with the address
+   * counted as confirmed, as the provider does for invited users. Returns
+   * its subject, or null when the address already has an identity, which
+   * is left as it is.
+   */
+  createInvitedUser(email: string): Promise<string | null>;
 }
 
 export function createAuthAdmin(config: AuthAdminConfig): AuthAdmin {
@@ -246,6 +257,23 @@ export function createAuthAdmin(config: AuthAdminConfig): AuthAdmin {
       if (error && !(isAuthApiError(error) && error.status === 404)) {
         throw providerError(error);
       }
+    },
+
+    async createInvitedUser(email) {
+      const { data, error } = await admin.createUser({
+        email,
+        email_confirm: true,
+      });
+
+      if (isAuthApiError(error) && existingUserCodes.has(error.code ?? "")) {
+        return null;
+      }
+
+      if (error || !data.user) {
+        throw providerError(error);
+      }
+
+      return data.user.id;
     },
   };
 }

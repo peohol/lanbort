@@ -10,7 +10,8 @@ import {
   useState,
 } from "react";
 import type { ApiFailureCode } from "@/components/api-client";
-import { isChatPage, loadedPath } from "@/navigation/chat";
+import { isChatPage } from "@/navigation/chat";
+import { loadedPath } from "@/navigation/headers";
 import { ChatApiError } from "./api";
 import { type ChatEngine, type ChatSetup, loadChat } from "./engine";
 
@@ -51,8 +52,6 @@ export function useChat(): ChatContextValue {
 /** How often an open chat page asks for new messages (no push, OD-0004). */
 const syncIntervalMs = 15_000;
 const lockWaitMs = 3_000;
-
-export { loadedPath } from "@/navigation/chat";
 
 const failure = (error: unknown): ChatState => ({
   status: "failed",

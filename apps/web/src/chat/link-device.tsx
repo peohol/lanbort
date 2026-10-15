@@ -6,16 +6,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { PageHeader } from "@/components/page-header";
+import { QrCode } from "@/components/qr-code";
+import qr from "@/components/qr.module.css";
 import { Tag } from "@/components/tag";
 import { chatHref } from "@/navigation/chat";
+import { groupCode } from "@/presentation/codes";
 import { chatApi } from "./api";
 import styles from "./chat.module.css";
 import { useChat } from "./chat-provider";
 import { completeDeviceLink, requestDeviceLink } from "./engine";
-import { groupLinkCode } from "./link-code";
 import { chatErrorMessage } from "./messages";
 import { Notice } from "./notice";
-import { QrCode } from "./qr-code";
 import { messageTime } from "./time";
 
 /** How often the new device asks whether it has been approved. */
@@ -217,12 +218,12 @@ export function LinkDevice() {
             <li>Gå til Samtaler › Mine enheter</li>
             <li>Velg «Skann koden» og hold kameraet hit</li>
           </ol>
-          <div className={`card ${styles.qr}`}>
+          <div className={`card ${qr.qr}`}>
             <QrCode
               value={phase.link.qr}
               label="QR-kode for å koble til enheten"
             />
-            <div role="status" className={styles.qrStatus}>
+            <div role="status" className={qr.qrStatus}>
               <Tag tone="waiting">Venter på godkjenning</Tag>
               <strong>
                 Koden gjelder til kl. {messageTime(phase.status.expiresAt)}
@@ -230,9 +231,11 @@ export function LinkDevice() {
               <small>{phase.minutes} minutter. Den kan brukes én gang.</small>
             </div>
           </div>
-          <div className={styles.typeCode}>
+          <div className={qr.typeCode}>
             <p>Kan ikke den andre enheten skanne? Skriv inn denne koden der:</p>
-            <p className="link-code">{groupLinkCode(phase.link.code)}</p>
+            <p className={`link-code ${qr.code}`}>
+              {groupCode(phase.link.code)}
+            </p>
           </div>
           <p className="quiet">
             La denne siden være åpen til koblingen er godkjent.

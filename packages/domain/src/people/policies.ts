@@ -5,6 +5,7 @@ import {
   type ResourceRule,
 } from "../authorization/policy";
 import { requireActiveAccount } from "../authorization/rules";
+import { knownFriendship } from "../social/pair";
 import { hasProfileAccess } from "../trust/policies";
 import { type PersonRelation, profileAccessOf } from "./store";
 
@@ -13,7 +14,8 @@ import { type PersonRelation, profileAccessOf } from "./store";
  * deleted account (UX-PRIV-010); always their own; anyone whose profile
  * they have access to (friends or a shared environment now, PS-TRUST-007);
  * someone they block, so they can lift it; and someone with a pending
- * friend request between them, so it can be answered or withdrawn. A
+ * friend request between them that the viewer knows of, so it can be
+ * answered or withdrawn. A
  * person who blocks the viewer, or whose account is not active, looks like
  * one who does not exist (PS-USR-006, UX-PRIV-007).
  */
@@ -27,7 +29,7 @@ export function personVisible(person: PersonRelation): boolean {
       pair.blockedByActor ||
       (pair.otherActive &&
         !pair.blockedByOther &&
-        pair.openFriendship?.status === "pending"))
+        knownFriendship(pair)?.status === "pending"))
   );
 }
 

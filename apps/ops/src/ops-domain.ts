@@ -31,6 +31,7 @@ export async function runAgainstDatabase(
       imageStore: () => undefined,
       pictureStore: () => undefined,
       identities: () => undefined,
+      emails: () => undefined,
     }),
   };
 

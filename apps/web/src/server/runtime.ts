@@ -16,8 +16,9 @@ import {
   type StewardPasskeyCommands,
   stewardPasskeyCommands,
 } from "@lanbort/domain";
-import { platformStewardsEnabled, serverEnv } from "./env";
+import { accountInviters, platformStewardsEnabled, serverEnv } from "./env";
 import { objectImageServices, profilePictureServices } from "./images";
+import { notificationEmailServices } from "./notification-emails";
 
 /**
  * The composition root: the only place that wires the database, the auth
@@ -49,7 +50,10 @@ function identityAdmin(): IdentityProviderAdmin | undefined {
     secretKey: env.SUPABASE_SECRET_KEY,
   }));
 
-  return { deleteIdentity: (subject) => admin.deleteUser(subject) };
+  return {
+    deleteIdentity: (subject) => admin.deleteUser(subject),
+    inviteIdentity: (email) => admin.createInvitedUser(email),
+  };
 }
 
 /** The outbox consumers, wired to this runtime (`outboxConsumers`). */
@@ -58,6 +62,7 @@ const consumers = outboxConsumers({
   imageStore: () => objectImageServices()?.store,
   pictureStore: () => profilePictureServices()?.store,
   identities: identityAdmin,
+  emails: notificationEmailServices,
 });
 
 let domain: DomainContext | undefined;
@@ -73,6 +78,7 @@ export const runtime: Runtime = {
       }),
       consumers,
       platformStewards: platformStewardsEnabled(),
+      accountInviters: accountInviters(),
     };
 
     return domain;

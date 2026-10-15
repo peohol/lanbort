@@ -28,6 +28,7 @@ import {
   registerChatAccount,
   reportUnavailability,
   requestChatLink,
+  sendFriendInvitation,
   createChatArchive,
   requestLoanMediation,
   resolveUserActor,
@@ -192,6 +193,11 @@ async function hiddenWorld() {
     admin,
     { environmentId, userId: other.userId },
   );
+  // An invitation sent by a member of the world to an e-mail address.
+  const { id: friendInvitationId } = await run(sendFriendInvitation, admin, {
+    email: `${randomUUID()}@example.test`,
+    befriend: true,
+  });
 
   const { requestId } = await ask(
     borrower,
@@ -269,6 +275,7 @@ async function hiddenWorld() {
       membershipId,
       roleInvitationId,
       coOwnerInvitationId,
+      friendInvitationId,
       proposalId: randomUUID(),
       requestId,
       loanId,
@@ -336,6 +343,9 @@ beforeAll(async () => {
  * so a new one is probed as soon as it exists.
  */
 const probes: Record<string, (ids: WorldIds) => object> = {
+  "friend_invitation.withdraw": (ids) => ({
+    invitationId: ids.friendInvitationId,
+  }),
   // Environments
   "environment.read": (ids) => ({ environmentId: ids.environmentId }),
   "environment_membership.list": (ids) => ({
@@ -1063,6 +1073,9 @@ function ownInputs(operation: Operation, world: World): object[] {
       return [{ state: "current" }, { state: "ended" }];
     case "search.environments":
       return [{ q: world.name }];
+    // A friend code is shown face to face, never part of a world.
+    case "friend_code.read":
+      return [{ code: "0000000000" }];
     default:
       return operation.inputKeys.has("userId")
         ? people.map(({ userId }) => ({ userId }))

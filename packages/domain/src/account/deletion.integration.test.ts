@@ -530,6 +530,7 @@ describe("removing the sign-in identity (PS-ADM-006)", () => {
           ).toHaveLength(1);
           removed.push(subject);
         },
+        inviteIdentity: async () => null,
       }),
       domain: () => kit.domain,
     });
@@ -572,7 +573,10 @@ describe("removing the sign-in identity (PS-ADM-006)", () => {
   it("never releases the identity of an account that is not deleted", async () => {
     const { actor } = await registerTestUser(kit.domain);
     const consumer = accountIdentityRemoval({
-      identities: () => ({ deleteIdentity: async () => {} }),
+      identities: () => ({
+        deleteIdentity: async () => {},
+        inviteIdentity: async () => null,
+      }),
       domain: () => kit.domain,
     });
 
