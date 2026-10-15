@@ -28,15 +28,8 @@ import { Notice } from "./notice";
 import { Points } from "./points";
 import { messageTime } from "./time";
 
-/** Approving is a bounded task, started from Mine enheter (UX-IA-013). */
-const header = (title: string, task = true) => (
-  <PageHeader
-    title={title}
-    back={{ href: chatDevicesHref, label: "Mine enheter" }}
-    home="conversations"
-    task={task}
-  />
-);
+/** A step from Mine enheter, in the account (UX-IA-020). */
+const header = (title: string) => <PageHeader title={title} />;
 
 /**
  * «Tidligere meldinger» (12): history moves only when the user chooses it
@@ -203,7 +196,7 @@ function Approve({ engine }: { engine: ChatEngine }) {
   if (done) {
     return (
       <>
-        {header("Ny enhet godkjent", false)}
+        {header("Ny enhet godkjent")}
         <Notice tag="Godkjent" tone="positive" role="status">
           <p>
             {done.moved
@@ -329,10 +322,12 @@ function Approve({ engine }: { engine: ChatEngine }) {
  * camera, so it is loaded with its own headers (`useLoadedAt`).
  */
 export function ApproveLink() {
-  if (!useLoadedAt(chatApproveLinkHref)) return null;
+  const title = header("Godkjenn en ny enhet");
+  // Shown while the page loads anew, so the step is in the account's stack.
+  if (!useLoadedAt(chatApproveLinkHref)) return title;
 
   return (
-    <ReadyChat header={header("Godkjenn en ny enhet")}>
+    <ReadyChat header={title}>
       {(engine) => <Approve engine={engine} />}
     </ReadyChat>
   );

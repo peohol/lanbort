@@ -12,7 +12,6 @@ import { Tag } from "@/components/tag";
 import {
   chatApproveByCodeHref,
   chatApproveLinkHref,
-  chatHref,
   chatRecoveryKeyHref,
   chatResetHref,
 } from "@/navigation/chat";
@@ -44,12 +43,9 @@ import { ConfirmSheet } from "./sheet";
 import { currentDevicePoints, securesFirst } from "./sign-out";
 import { messageTime } from "./time";
 
+// In the account, which gives the way back (UX-IA-020).
 const header = (
-  <PageHeader
-    title="Mine enheter"
-    icon={<ChatIcon name="anyDevice" />}
-    back={{ href: chatHref, label: "Samtaler" }}
-  />
+  <PageHeader title="Mine enheter" icon={<ChatIcon name="anyDevice" />} />
 );
 
 /**

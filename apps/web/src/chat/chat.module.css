@@ -743,7 +743,7 @@
     gap: var(--gap-page);
   }
 
-  /* The list and «Mine enheter» stand apart as on the list page. */
+  /* The other conversations, beside the open one. */
   .splitList {
     display: grid;
     align-content: start;

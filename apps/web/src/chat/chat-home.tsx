@@ -22,6 +22,7 @@ import { type ChatStart, useChat } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";
 import type { ChatEngine, HistoryTransfer } from "./engine";
 import { type ChatLoans, loansLine } from "./loans";
+import { readersText } from "./device-names";
 import { chatErrorMessage } from "./messages";
 import { Notice } from "./notice";
 import { RecoveryReminder } from "./recovery-key";
@@ -193,13 +194,7 @@ function StartButton({
 }
 
 /** «Mine enheter», with how many devices can read the conversations. */
-export function DevicesLink({
-  devices,
-}: {
-  devices: OwnChatDevices | undefined;
-}) {
-  const count = devices?.devices.filter((d) => d.revokedAt === null).length;
-
+function DevicesLink({ devices }: { devices: OwnChatDevices | undefined }) {
   return (
     <Link href={chatDevicesHref} className={styles.linkCard}>
       <span className={styles.iconBubble}>
@@ -207,12 +202,7 @@ export function DevicesLink({
       </span>
       <span className={styles.linkText}>
         <strong>Mine enheter</strong>
-        {count !== undefined && (
-          <small>
-            {count === 1 ? "1 enhet kan" : `${count} enheter kan`} lese
-            samtalene dine
-          </small>
-        )}
+        {devices && <small>{readersText(devices)}</small>}
       </span>
       <Icon name="chevron" />
     </Link>

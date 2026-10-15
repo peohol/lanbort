@@ -74,7 +74,7 @@ Områdene:
 - **Finn:** søk etter ting eller miljøer, med filtrene «Venner» og område. Treff viser ledighet og kontekst.
 - **Lån:** én liste med filtrene «Alle», «Låner» og «Låner bort», gruppert i «Venter på deg», «Pågår og kommende» og «Venter på andre», med avsluttede lån bak en egen rad (UX-IA-006).
 - **Mine ting:** egne og medeide ting med nåstatus og hvem de er synlige for, «Registrer» og arkiverte ting bak en egen rad.
-- **Samtaler:** én privat samtale per person, med de pågående lånene mellom dere (PS-COM-017), lånelogistikk-kanaler etter blokkering, én per lån (PS-COM-007), og «Mine enheter».
+- **Samtaler:** én privat samtale per person, med de pågående lånene mellom dere (PS-COM-017), lånelogistikk-kanaler etter blokkering, én per lån (PS-COM-007), og hvor mange enheter som kan lese samtalene, med vei til «Mine enheter» i Konto.
 
 ### UX-IA-009 — Detaljer legges i en stabel i området brukeren startet i
 **Forankring:** UX-P02, UX-P05, UX-P12, UX-P13
@@ -190,7 +190,8 @@ Hver detalj har en typeetikett (Ting, Forespørsel, Lån, Person, Miljø, Samtal
 **Forankring:** UX-P02, UX-P05, UX-P13; UX-IA-003; OD-0031
 
 - Konto åpnes fra profilbildet øverst, som har samme plassering i alle fem hovedområder og i detaljer i stabelen. På mobil dekker laget hele skjermen, også bunnmenyen.
-- Det som åpnes fra Konto, for eksempel Venner, Blokkerte, egne saker og personer åpnet derfra, legger seg i Kontos egen stabel. Tilbake navigerer innenfor Konto og navngir forrige ledd («‹ Venner»).
+- Det som åpnes fra Konto, for eksempel Venner, Blokkerte, Mine enheter, egne saker og personer åpnet derfra, legger seg i Kontos egen stabel. Tilbake navigerer innenfor Konto og navngir forrige ledd («‹ Venner»).
+- Mine enheter og stegene derfra er sider i privat chat med egne sikkerhetsregler (ADR-0010 punkt 13). De lastes derfor på nytt når de åpnes, og skjermen under lastes på nytt når de lukkes.
 - «Lukk» finnes på alle nivåer i Konto og returnerer til nøyaktig skjermen brukeren kom fra, inkludert område, stabel, filter, utfylte felt og rulleposisjon, som når varslingssenteret lukkes (UX-IA-011).
 - Konto er ikke et steg i områdets stabel, og varselindikatoren vises ikke i Konto. Områdene og varslene nås igjen med «Lukk».
 - Utformingen på større skjerm avgjøres i den visuelle retningen; navigasjonsreglene over gjelder uendret.

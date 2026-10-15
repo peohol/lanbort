@@ -48,7 +48,7 @@ Disse tilstandene og mønstrene gjelder alle flater nedenfor og gjentas ikke for
 
 ### Varslingssenteret og varselslenker
 
-**Påkrevd sikkerhetsvarsel ved godkjent ny enhet for privat chat** (PS-COM-003, PS-COM-016; ADR-0010 punkt 5): Tittel «En ny enhet er koblet til privat chat». Tekst «Enheten kan motta nye meldinger fra nå av. Den får ikke tidligere meldinger automatisk. Var det ikke deg, fjern den i Mine enheter.» Varselet leder til stabelen Samtaler › Mine enheter.
+**Påkrevd sikkerhetsvarsel ved godkjent ny enhet for privat chat** (PS-COM-003, PS-COM-016; ADR-0010 punkt 5): Tittel «En ny enhet er koblet til privat chat». Tekst «Enheten kan motta nye meldinger fra nå av. Den får ikke tidligere meldinger automatisk. Var det ikke deg, fjern den i Mine enheter.» Varselet leder til Konto › Mine enheter.
 
 - **Oppgave:** se hva som krever oppmerksomhet, forstå hvorfor, og komme til konteksten.
 - **Tilstander:** ulest og lest; markert som lest uten at oppgaven er gjort; handling allerede gjort et annet sted; eldre, leste varsler fra samme låneforløp samlet; nivå (påkrevd, handling, informasjon); varsel om noe brukeren ikke lenger har tilgang til; ingen varsler; lenke fra e-post; åpnet fra hvilket som helst hovedområde og lukket tilbake til samme skjerm, stabel, filter og rulleposisjon.
@@ -260,7 +260,7 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 
 - **Oppgave:** se hvilke enheter som kan lese de private samtalene, fjerne en tapt eller ukjent enhet, og finne veien til å koble til en ny.
 - **Tilstander:** enhetene med navn, ikon for typen, operativsystem og nettleser når de er kjent, og når de ble lagt til, med denne først og merket «Denne enheten»; to med samme navn skilles med starten av enhetens ID; endre navn og type, som vises likt på alle enhetene (PS-COM-024); enheter som venter på godkjenning nå, med navnet og typen de selv oppgir, merket som ubekreftet; fjern en annen enhet, med konsekvensen at den stenges ute med en gang, logges ut og ikke kan lese nye meldinger; fjern denne enheten, med konsekvensen at den mister chatten og alt den har lagret av samtaler, og at brukeren logges ut her; fjernet.
-- **Ser / handler:** brukeren selv, på en godkjent enhet. Nås fra Samtaler.
+- **Ser / handler:** brukeren selv, på en godkjent enhet. Nås fra Konto, og fra Samtaler, som viser hvor mange enheter som kan lese samtalene.
 - **Regler:** UX-INT-007, PS-COM-005, ADR-0010 punkt 4 og 7.
 - **Forløp:** begge.
 - **UI-pakke:** WP-80 (finnes fra WP-43).
@@ -268,7 +268,7 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 #### Konto og innstillinger
 
 - **Oppgave:** forvalte egen konto, relasjoner, saker og varsler.
-- **Tilstander:** venner, forespørsler og blokkerte; nye venner på e-post og med QR-kode («Legg til venner» under Venner: «Inviter en person» for den som kan invitere nye deltakere i piloten, ellers «Venneforespørsel på e-post»; «Min QR-kode» med nedtelling og kode å skrive inn; «Skann QR-kode» med kamera der nettleseren kan, ellers mobilens kamera eller koden skrevet inn; åpne invitasjoner under «Sendt på e-post» med «Trekk», og samme bekreftelse uansett adresse); egne saker; varslingsvalg per nivå; profilfelt og synlighet; slette konto, med hva som hindrer sletting; logge ut, og på en enhet med privat chat først hva enheten mister (ADR-0010 punkt 7).
+- **Tilstander:** venner, forespørsler og blokkerte; nye venner på e-post og med QR-kode («Legg til venner» under Venner: «Inviter en person» for den som kan invitere nye deltakere i piloten, ellers «Venneforespørsel på e-post»; «Min QR-kode» med nedtelling og kode å skrive inn; «Skann QR-kode» med kamera der nettleseren kan, ellers mobilens kamera eller koden skrevet inn; åpne invitasjoner under «Sendt på e-post» med «Trekk», og samme bekreftelse uansett adresse); egne saker; varslingsvalg per nivå; Mine enheter for privat chat, med hvor mange enheter som kan lese samtalene; profilfelt og synlighet; slette konto, med hva som hindrer sletting; logge ut, og på en enhet med privat chat først hva enheten mister (ADR-0010 punkt 7).
 - **Ser / handler:** brukeren selv.
 - **Regler:** UX-IA-003, UX-IA-020, UX-PRIV-001, PS-USR-002, PS-USR-013–015, PS-COM-002, PS-COM-003, PS-ADM-004, PS-ADM-005, PS-ADM-012.
 - **Forløp:** begge.

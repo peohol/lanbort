@@ -217,14 +217,20 @@ test("two friends chat end to end, and a new device is linked with its code", as
   expect(await axeViolations(laptop.page)).toEqual([]);
   expect(code.replace(/\s/g, "").length).toBeGreaterThan(8);
 
-  await anna.page.goto("/samtaler/enheter");
+  // Mine enheter is in Konto, which says how many devices can read the
+  // conversations.
+  await anna.page.goto("/konto");
+  await anna.page
+    .getByRole("link", { name: "Mine enheter 1 enhet kan lese samtalene dine" })
+    .click();
+  await expect(anna.page).toHaveURL(/\/konto\/enheter$/);
   await expect(
     anna.page.getByRole("heading", { name: "Mine enheter" }),
   ).toBeVisible();
   expect(await axeViolations(anna.page)).toEqual([]);
   // The waiting device is the task on top (10); the camera is not used here.
   await anna.page.getByRole("link", { name: /^Skriv inn koden/ }).click();
-  await expect(anna.page).toHaveURL(/\/samtaler\/enheter\/koble\?kode$/);
+  await expect(anna.page).toHaveURL(/\/konto\/enheter\/koble\?kode$/);
   await anna.page.getByLabel("Kode fra den nye enheten").fill(code);
   await anna.page.getByRole("button", { name: "Fortsett" }).click();
   await anna.page.getByRole("button", { name: "Godkjenn enheten" }).click();
@@ -262,7 +268,7 @@ test("two friends chat end to end, and a new device is linked with its code", as
 
   // Anna names the laptop from her phone and says it is a PC; the laptop
   // shows the same, as the device in use there.
-  await anna.page.goto("/samtaler/enheter");
+  await anna.page.goto("/konto/enheter");
   const laptopRow = anna.page
     .getByRole("listitem")
     .filter({ has: anna.page.getByRole("button", { name: "Fjern" }) });
@@ -279,7 +285,7 @@ test("two friends chat end to end, and a new device is linked with its code", as
   expect(await axeViolations(anna.page)).toEqual([]);
   await edit.getByRole("button", { name: "Lagre" }).click();
   await expect(laptopRow.getByText("Jobb-PC", { exact: true })).toBeVisible();
-  await laptop.page.goto("/samtaler/enheter");
+  await laptop.page.goto("/konto/enheter");
   await expect(
     laptop.page
       .getByRole("listitem")
@@ -293,7 +299,7 @@ test("two friends chat end to end, and a new device is linked with its code", as
   await laptop.context.close();
 
   // Anna removes the laptop from her phone: it is shut out of chat.
-  await anna.page.goto("/samtaler/enheter");
+  await anna.page.goto("/konto/enheter");
   await anna.page.getByRole("button", { name: "Fjern", exact: true }).click();
   const sheet = anna.page.getByRole("dialog");
   await expect(sheet.getByRole("heading")).toHaveText("Fjerne Jobb-PC?");
@@ -311,7 +317,7 @@ test("two friends chat end to end, and a new device is linked with its code", as
   await signInThroughApi(tablet.context.request, anna.email);
   await tablet.page.goto("/samtaler/koble");
   const tabletCode = (await tablet.page.locator("p.link-code").textContent())!;
-  await anna.page.goto("/samtaler/enheter/koble?kode");
+  await anna.page.goto("/konto/enheter/koble?kode");
   await anna.page.getByLabel("Kode fra den nye enheten").fill(tabletCode);
   await anna.page.getByRole("button", { name: "Fortsett" }).click();
   await expect(anna.page.getByLabel("Bare nye meldinger")).toBeChecked();
@@ -366,7 +372,7 @@ test("the recovery key brings chat and its backed-up messages back when every de
   await turnOnChat(bo.page);
 
   // Without a key, Mine enheter says what is at stake (PS-COM-019).
-  await anna.page.goto("/samtaler/enheter");
+  await anna.page.goto("/konto/enheter");
   await expect(
     anna.page.getByRole("heading", { name: "Ingen gjenopprettingsnøkkel" }),
   ).toBeVisible();
@@ -497,7 +503,7 @@ test("a new key is used only once its code is kept, and asks again for each chan
   const phone = await person(browser, "Mona Lie");
   await turnOnChat(phone.page);
   const makeKey = async (page: Page) => {
-    await page.goto("/samtaler/enheter/gjenopprettingsnokkel");
+    await page.goto("/konto/enheter/gjenopprettingsnokkel");
     await page
       .getByRole("button", { name: "Lag gjenopprettingsnøkkel" })
       .click();
@@ -524,7 +530,7 @@ test("a new key is used only once its code is kept, and asks again for each chan
   await signInThroughApi(laptop.context.request, phone.email);
   await laptop.page.goto("/samtaler/koble");
   const code = (await laptop.page.locator("p.link-code").textContent())!;
-  await phone.page.goto("/samtaler/enheter/koble?kode");
+  await phone.page.goto("/konto/enheter/koble?kode");
   await phone.page.getByLabel("Kode fra den nye enheten").fill(code);
   await phone.page.getByRole("button", { name: "Fortsett" }).click();
   await phone.page.getByRole("button", { name: "Godkjenn enheten" }).click();
@@ -818,7 +824,7 @@ test("history restored or moved to a new device is said to be from and with only
   // device of theirs adds a new one of Liv's to the groups.
   await ola.context.close();
   await per.context.close();
-  await liv.page.goto("/samtaler/enheter/gjenopprettingsnokkel");
+  await liv.page.goto("/konto/enheter/gjenopprettingsnokkel");
   await liv.page
     .getByRole("button", { name: "Lag gjenopprettingsnøkkel" })
     .click();
@@ -898,7 +904,7 @@ test("history restored or moved to a new device is said to be from and with only
   const tablet = await misled();
   await tablet.page.goto("/samtaler/koble");
   const code = (await tablet.page.locator("p.link-code").textContent())!;
-  await liv.page.goto("/samtaler/enheter/koble?kode");
+  await liv.page.goto("/konto/enheter/koble?kode");
   await liv.page.getByLabel("Kode fra den nye enheten").fill(code);
   await liv.page.getByRole("button", { name: "Fortsett" }).click();
   await liv.page.getByLabel("Overfør meldingene herfra").check();
@@ -990,7 +996,7 @@ test("a first key the server took though its answer was lost is put to use after
     await route.fetch();
     await route.abort("failed");
   });
-  await phone.page.goto("/samtaler/enheter/gjenopprettingsnokkel");
+  await phone.page.goto("/konto/enheter/gjenopprettingsnokkel");
   await phone.page
     .getByRole("button", { name: "Lag gjenopprettingsnøkkel" })
     .click();
@@ -1013,7 +1019,7 @@ test("a first key the server took though its answer was lost is put to use after
   await expect(async () => {
     expect((await backup()).archive).not.toBeNull();
   }).toPass({ timeout: 20_000 });
-  await phone.page.goto("/samtaler/enheter");
+  await phone.page.goto("/konto/enheter");
   await expect(phone.page.getByText("Lag en ny nøkkel")).toBeVisible();
   await expect(
     phone.page.getByRole("heading", { name: "Ingen gjenopprettingsnøkkel" }),
@@ -1158,7 +1164,7 @@ test("a device that waits to be linked can be declined, and ask again", async ({
   await signInThroughApi(tablet.context.request, anna.email);
   await tablet.page.goto("/samtaler/koble");
   await expect(tablet.page.locator("p.link-code")).toBeVisible();
-  await anna.page.goto("/samtaler/enheter");
+  await anna.page.goto("/konto/enheter");
   await expect(
     anna.page.getByRole("heading", {
       name: "2 enheter vil koble til privat chat",
@@ -1198,7 +1204,7 @@ test("a device that waits to be linked can be declined, and ask again", async ({
   // A new code; «Ikke godkjenn» after it was typed declines it too (12).
   await laptop.page.getByRole("button", { name: "Lag ny kode" }).click();
   const code = (await laptop.page.locator("p.link-code").textContent())!;
-  await anna.page.goto("/samtaler/enheter/koble?kode");
+  await anna.page.goto("/konto/enheter/koble?kode");
   await anna.page.getByLabel("Kode fra den nye enheten").fill(code);
   await anna.page.getByRole("button", { name: "Fortsett" }).click();
   await anna.page.getByRole("button", { name: "Ikke godkjenn" }).click();
@@ -1207,7 +1213,7 @@ test("a device that waits to be linked can be declined, and ask again", async ({
     .getByRole("button", { name: "Avvis enheten" })
     .click();
   await expect(anna.page).toHaveURL(
-    /\/samtaler\/enheter\?avvisning=declined&enhet=/,
+    /\/konto\/enheter\?avvisning=declined&enhet=/,
   );
   await expect(
     anna.page.getByText("Enheten fikk ikke tilgang til privat chat."),
@@ -1224,7 +1230,7 @@ test("a device that waits to be linked can be declined, and ask again", async ({
     await row.actions.getByRole("button", { name: "Avvis" }).click();
     return anna.page.getByRole("dialog", { name: `Avvise ${row.name}?` });
   };
-  await anna.page.goto("/samtaler/enheter");
+  await anna.page.goto("/konto/enheter");
   await expect(
     anna.page.getByRole("heading", {
       name: "2 enheter vil koble til privat chat",
@@ -1252,7 +1258,7 @@ test("a device that waits to be linked can be declined, and ask again", async ({
   await anna.page.unroute(expired);
 
   // It was not declined, so it can still be approved.
-  await anna.page.goto("/samtaler/enheter/koble?kode");
+  await anna.page.goto("/konto/enheter/koble?kode");
   await anna.page.getByLabel("Kode fra den nye enheten").fill(last);
   await anna.page.getByRole("button", { name: "Fortsett" }).click();
   await anna.page.getByRole("button", { name: "Godkjenn enheten" }).click();
@@ -1266,10 +1272,10 @@ test("a device that waits to be linked can be declined, and ask again", async ({
   await signInThroughApi(phone.context.request, anna.email);
   await phone.page.goto("/samtaler/koble");
   const phoneCode = (await phone.page.locator("p.link-code").textContent())!;
-  await anna.page.goto("/samtaler/enheter");
+  await anna.page.goto("/konto/enheter");
   const phoneRow = (await waiting()).at(-1)!;
   const late = await openDecline(phoneRow);
-  await laptop.page.goto("/samtaler/enheter/koble?kode");
+  await laptop.page.goto("/konto/enheter/koble?kode");
   await laptop.page.getByLabel("Kode fra den nye enheten").fill(phoneCode);
   await laptop.page.getByRole("button", { name: "Fortsett" }).click();
   await laptop.page.getByRole("button", { name: "Godkjenn enheten" }).click();
@@ -1496,8 +1502,21 @@ test("chat pages get a strict script policy, and only the approval page may use 
   expect(scripts).not.toContain("unsafe-inline");
   expect(chat["permissions-policy"]).toContain("camera=()");
   expect(
-    (await headers("/samtaler/enheter/koble"))["permissions-policy"],
+    (await headers("/konto/enheter/koble"))["permissions-policy"],
   ).toContain("camera=(self)");
+  // Mine enheter lies in Konto, and is a chat page all the same; the old
+  // address under Samtaler leads there.
+  const withoutNonce = (csp: string | undefined) =>
+    csp?.replace(/'nonce-[^']+'/, "");
+  expect(
+    withoutNonce((await headers("/konto/enheter"))["content-security-policy"]),
+  ).toBe(withoutNonce(chat["content-security-policy"]));
+  const moved = await someone.context.request.get(
+    "/samtaler/enheter/koble?kode",
+    { maxRedirects: 0 },
+  );
+  expect(moved.status()).toBe(307);
+  expect(moved.headers().location).toMatch(/^\/konto\/enheter\/koble\?kode=?$/);
   expect((await headers("/samtaler/koble"))["permissions-policy"]).toContain(
     "camera=()",
   );

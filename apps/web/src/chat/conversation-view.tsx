@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   type FormEvent,
   type KeyboardEvent,
+  type ReactNode,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -25,13 +26,7 @@ import { chatAboutHref, chatHref } from "@/navigation/chat";
 import { loanHref } from "@/navigation/routes";
 import { ChatApiError, chatApi } from "./api";
 import styles from "./chat.module.css";
-import {
-  ConversationRows,
-  DevicesLink,
-  loanOf,
-  nameOf,
-  Picture,
-} from "./chat-home";
+import { ConversationRows, loanOf, nameOf, Picture } from "./chat-home";
 import { ChatIcon } from "./chat-icon";
 import { useEngineVersion } from "./chat-provider";
 import { addedAt } from "./device-names";
@@ -54,7 +49,6 @@ import { dayHeading, messageTime, sameDay } from "./time";
 import { ChangedAgain, SecurityDigits, useSecurityCode } from "./security-code";
 import { firstUnseen } from "./unread";
 import { useConversations } from "./use-conversations";
-import { useOwnDevices } from "./use-own-devices";
 
 const problems: Record<ConversationProblem, string> = {
   no_key_package:
@@ -694,29 +688,38 @@ const useWide = () =>
     () => false,
   );
 
-function SideList({
+/**
+ * On a larger screen, the other conversations beside this one, to go
+ * between them. With only this one there is nothing to go to, so the
+ * conversation stands alone; Mine enheter is offered on the list page.
+ */
+function WideSplit({
   engine,
   id,
   loans,
+  conversation,
 }: {
   engine: ChatEngine;
   id: string;
   loans: ChatLoans;
+  conversation: ReactNode;
 }) {
   const { conversations, summaries } = useConversations(engine);
-  const { devices } = useOwnDevices();
-  return (
-    <nav className={styles.splitList} aria-label="Alle samtaler">
-      {conversations && conversations.length > 0 && (
+
+  return conversations && conversations.length > 1 ? (
+    <div className={styles.split}>
+      <nav className={styles.splitList} aria-label="Alle samtaler">
         <ConversationRows
           conversations={conversations}
           summaries={summaries}
           loans={loans}
           current={id}
         />
-      )}
-      <DevicesLink devices={devices} />
-    </nav>
+      </nav>
+      <div>{conversation}</div>
+    </div>
+  ) : (
+    conversation
   );
 }
 
@@ -754,10 +757,12 @@ function Split({
   // On a phone the conversation is the page, and its first row shares the
   // bar at the top.
   return useWide() ? (
-    <div className={styles.split}>
-      <SideList engine={engine} id={id} loans={loans} />
-      <div>{conversation}</div>
-    </div>
+    <WideSplit
+      engine={engine}
+      id={id}
+      loans={loans}
+      conversation={conversation}
+    />
   ) : (
     conversation
   );

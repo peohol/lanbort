@@ -218,7 +218,7 @@ export function LinkDevice() {
           {header("Skann koden med en enhet som har privat chat")}
           <ol className={styles.steps}>
             <li>Åpne Lånbort på den andre enheten</li>
-            <li>Gå til Samtaler › Mine enheter</li>
+            <li>Gå til Konto › Mine enheter</li>
             <li>Velg «Skann koden» og hold kameraet hit</li>
           </ol>
           <div className={`card ${qr.qr}`}>
