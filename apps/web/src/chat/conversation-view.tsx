@@ -465,12 +465,16 @@ function Conversation({
   }, [engine, id, version, shows]);
 
   // Opens at the newest message; new ones keep the reader there if they
-  // were already, or offer the way down instead of moving them.
+  // were already, or offer the way down instead of moving them. Only a
+  // message the reader just wrote takes them down; the history read anew
+  // at each sync leaves them where they are.
   useLayoutEffect(() => {
     if (!history) return;
     const count = history.length;
-    newest.current = history.at(-1)?.id;
-    if (shown.current === 0 || history.at(-1)?.own || atEnd.current) {
+    const last = history.at(-1);
+    const wrote = last?.own === true && last.id !== newest.current;
+    newest.current = last?.id;
+    if (shown.current === 0 || wrote || atEnd.current) {
       end.current?.scrollIntoView({ block: "end" });
       setJump(false);
       readToEnd();
