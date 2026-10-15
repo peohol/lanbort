@@ -1487,6 +1487,28 @@ test("after a block, a loan's parties write about the loan only, in short messag
   }
 });
 
+test("Mine enheter opens from Konto over Samtaler, in place of the layer", async ({
+  browser,
+}) => {
+  const ada = await person(browser, "Ada Ask");
+  await turnOnChat(ada.page);
+  await ada.page.locator(`a[href="/konto"]`).first().click();
+  const account = ada.page.getByRole("dialog", { name: "Konto" });
+  await account
+    .getByRole("link", { name: "Mine enheter 1 enhet kan lese samtalene dine" })
+    .click();
+  await expect(ada.page).toHaveURL(/\/konto\/enheter$/);
+  // The page is the account's step, not hidden behind the layer it left.
+  await expect(account).toHaveCount(0);
+  await expect(
+    ada.page.getByRole("heading", { name: "Mine enheter" }),
+  ).toBeVisible();
+  await expect(ada.page.getByText("Denne enheten").first()).toBeVisible();
+  await ada.page.getByRole("link", { name: "Konto" }).click();
+  await expect(ada.page).toHaveURL(/\/konto$/);
+  await ada.context.close();
+});
+
 test("chat pages get a strict script policy, and only the approval page may use the camera", async ({
   browser,
 }) => {
