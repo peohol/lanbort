@@ -1,4 +1,4 @@
-/* A thing's picture (ThingThumbnail), square at one of three sizes. */
+/* A thing's picture (ThingThumbnail), square at one of its sizes. */
 .thumbnail {
   display: block;
   flex: none;
@@ -8,6 +8,18 @@
 /* Behind a picture that is still on its way. */
 .picture {
   background: var(--color-sunken);
+}
+
+/* The square the owners chose: the picture moved and scaled behind it. */
+.cropped {
+  position: relative;
+  overflow: hidden;
+}
+
+.square {
+  position: absolute;
+  display: block;
+  max-width: none;
 }
 
 /* The size of a row's icon. */
@@ -27,4 +39,17 @@
   width: 4rem;
   height: 4rem;
   border-radius: var(--radius-s);
+}
+
+.cover {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: var(--radius-m);
+}
+
+.fill {
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+  border-radius: var(--radius-m);
 }

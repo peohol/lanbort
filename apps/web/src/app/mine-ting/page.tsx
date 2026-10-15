@@ -19,7 +19,7 @@ import { ThingCard, ThingCards } from "@/components/thing-card";
 import { ThingList } from "@/components/thing-list";
 import { newObjectHref, objectHref } from "@/navigation/routes";
 import { anchorFor } from "@/navigation/targets";
-import { firstImageHref, ownImageHref } from "@/presentation/object-images";
+import { firstImage, ownImageHref } from "@/presentation/object-images";
 import { whereShown } from "@/presentation/object-owners";
 import { ownThingStatus } from "@/presentation/objects";
 import { pageQuery, requirePageAccount } from "@/server/session";
@@ -83,7 +83,7 @@ export default async function ThingsPage() {
         key={object.id}
         href={objectHref(object.id)}
         title={object.title}
-        image={firstImageHref(object.images, (imageId) =>
+        image={firstImage(object.images, (imageId) =>
           ownImageHref(object.id, imageId),
         )}
         details={[

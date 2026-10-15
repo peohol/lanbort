@@ -3,6 +3,7 @@ import type { Database } from "@lanbort/database";
 import {
   type ObjectImageAdded,
   objectImageAddedSchema,
+  objectImageCropInputSchema,
   objectImageIdSchema,
   objectIdSchema,
   objectImageMaxCount,
@@ -30,11 +31,14 @@ import type { EventRecorder } from "../events/recorder";
 import { defineConsumer, OutboxDeliveryError } from "../outbox/consumer";
 import {
   objectImageAdded,
+  objectImageCropped,
   objectImageRemoved,
   objectImageUploadStarted,
 } from "./events";
+import { cropPixels, cropShares } from "./image-crop";
 import {
   addObjectImagePolicy,
+  cropObjectImagePolicy,
   readObjectPolicy,
   removeObjectImagePolicy,
 } from "./policies";
@@ -471,6 +475,58 @@ export async function removeImage(
 
   return version;
 }
+
+/**
+ * Chooses the square part of one of the object's pictures that is shown
+ * where it is shown square (PS-OBJ-002), or the middle again with null.
+ * The picture stays whole, so this is no new version of the object's
+ * content: it is how the owners frame what they already show.
+ */
+export const cropObjectImage = defineCommand({
+  name: "object.crop_image",
+  input: objectImageCropInputSchema,
+  output: objectImageCropInputSchema,
+  policy: cropObjectImagePolicy,
+  idempotency: "required",
+  load: async ({ tx, input }) => {
+    const state = await loadObjectState(tx, input.objectId, { lock: true });
+    const image =
+      state &&
+      (await tx
+        .selectFrom("app.object_images")
+        .select(["width", "height"])
+        .where("id", "=", input.imageId)
+        .where("object_id", "=", state.objectId)
+        .executeTakeFirst());
+
+    return state && image
+      ? { resource: { ...state, image }, context: undefined }
+      : null;
+  },
+  execute: async ({ tx, input, resource, events }) => {
+    const crop = input.crop && cropPixels(resource.image, input.crop);
+
+    await tx
+      .updateTable("app.object_images")
+      .set({
+        crop_left: crop?.left ?? null,
+        crop_top: crop?.top ?? null,
+        crop_side: crop?.side ?? null,
+      })
+      .where("id", "=", input.imageId)
+      .execute();
+    events.record(objectImageCropped, {
+      resourceId: resource.objectId,
+      payload: { imageId: input.imageId },
+    });
+
+    return {
+      objectId: resource.objectId,
+      imageId: input.imageId,
+      crop: cropShares(resource.image, crop),
+    };
+  },
+});
 
 /** Where one image's file is kept, and its type. */
 export interface ImageFile {

@@ -1,8 +1,9 @@
 "use client";
 
-import type {
-  OwnProfilePicture,
-  ProfilePictureVisibility,
+import {
+  type OwnProfilePicture,
+  profilePictureMaxUploadBytes,
+  type ProfilePictureVisibility,
 } from "@lanbort/contracts";
 import { useRouter } from "next/navigation";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
@@ -13,8 +14,14 @@ import { announceDataChanged } from "@/components/data-changed";
 import { errorMessage } from "@/components/error-messages";
 import { ErrorText } from "@/components/error-text";
 import { helpId } from "@/components/field";
+import { PictureCropper } from "@/components/picture-cropper";
 import { ProfilePicture } from "@/components/profile-picture";
-import { PictureCropper } from "./picture-cropper";
+import { readPhoto } from "@/components/read-photo";
+import { type Crop, drawCrop } from "@/presentation/picture-crop";
+import {
+  pictureOutputSize,
+  pictureShape,
+} from "@/presentation/profile-picture";
 
 /** Who sees the picture, as the people it reaches (UX-PRIV-001). */
 const visibilityLabels: Record<ProfilePictureVisibility, string> = {
@@ -23,28 +30,38 @@ const visibilityLabels: Record<ProfilePictureVisibility, string> = {
   only_me: "Bare deg",
 };
 
-/** The longest side a photo is read at; more is never needed to crop. */
-const readMaxSide = 2048;
+/**
+ * The cropped picture as a compressed file: WebP where the browser can
+ * write it, otherwise JPEG. The server re-encodes it either way.
+ */
+async function croppedFile(
+  photo: ImageBitmap,
+  crop: Crop,
+): Promise<Blob | null> {
+  const { width, height } = pictureOutputSize();
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+  drawCrop(
+    context,
+    photo,
+    photo,
+    crop,
+    { left: 0, top: 0, width },
+    pictureShape,
+  );
 
-/** A chosen photo, upright and no larger than needed to crop it. */
-async function readPhoto(file: File): Promise<ImageBitmap | null> {
-  try {
-    const full = await createImageBitmap(file, {
-      imageOrientation: "from-image",
-    });
-    const scale = readMaxSide / Math.max(full.width, full.height);
-    if (scale >= 1) return full;
+  const encode = (type: string, quality: number) =>
+    new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, type, quality),
+    );
+  const webp = await encode("image/webp", 0.85);
+  const blob =
+    webp?.type === "image/webp" ? webp : await encode("image/jpeg", 0.88);
 
-    const smaller = await createImageBitmap(full, {
-      resizeWidth: Math.round(full.width * scale),
-      resizeHeight: Math.round(full.height * scale),
-      resizeQuality: "high",
-    });
-    full.close();
-    return smaller;
-  } catch {
-    return null;
-  }
+  return blob && blob.size <= profilePictureMaxUploadBytes ? blob : null;
 }
 
 /**
@@ -160,8 +177,10 @@ export function ProfilePictureSettings({
       {photo ? (
         <PictureCropper
           photo={photo}
+          shape={pictureShape}
+          saveLabel="Lagre bildet"
           saving={saving}
-          onSave={(file) => void save(file)}
+          onSave={async (crop) => void save(await croppedFile(photo, crop))}
           onCancel={() => setPhoto(null)}
         />
       ) : (

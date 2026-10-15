@@ -1,6 +1,10 @@
 "use client";
 
-import type { EnvironmentSummary, ObjectCategory } from "@lanbort/contracts";
+import type {
+  EnvironmentSummary,
+  ObjectCategory,
+  ObjectImageCrop,
+} from "@lanbort/contracts";
 import type { ReactNode, RefObject } from "react";
 import { describedBy, Field, helpId } from "@/components/field";
 import { Icon } from "@/components/icon";
@@ -43,6 +47,7 @@ export function AboutStep({
   images,
   onAddImages,
   onRemoveImage,
+  onCropImage,
   titleField,
 }: {
   draft: ObjectDraft;
@@ -52,6 +57,7 @@ export function AboutStep({
   images: readonly FormImage[];
   onAddImages: (images: FormImage[]) => void;
   onRemoveImage: (image: FormImage) => void;
+  onCropImage: (image: FormImage, crop: ObjectImageCrop) => void;
   titleField: RefObject<HTMLInputElement | null>;
 }) {
   const categoryHelp = "kategori-grense";
@@ -98,6 +104,7 @@ export function AboutStep({
         images={images}
         onAdd={onAddImages}
         onRemove={onRemoveImage}
+        onCrop={onCropImage}
       />
       <Field id="beskrivelse" label={objectFieldLabels.description}>
         <textarea

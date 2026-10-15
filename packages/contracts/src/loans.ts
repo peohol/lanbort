@@ -9,6 +9,7 @@ import {
   multilineText,
   objectCategoryIdSchema,
   objectIdSchema,
+  objectImageCropSchema,
   objectImageIdSchema,
   objectImageSchema,
 } from "./objects";
@@ -413,6 +414,12 @@ export const loanImageQuerySchema = z.strictObject({
 
 export const loanReferenceSchema = loanReadQuerySchema;
 
+/** The picture itself, as a list shows it: its square part (PS-OBJ-002). */
+const pictureShape = {
+  imageId: objectImageIdSchema,
+  crop: objectImageCropSchema.nullable(),
+};
+
 /**
  * PS-OBJ-021: the first picture of a thing where a list names it, and the
  * read it goes through: as a party of the loan (`loan.read_image`) or the
@@ -424,22 +431,22 @@ export const thingPictureSchema = z.discriminatedUnion("through", [
   z.strictObject({
     through: z.literal("loan"),
     loanId: loanIdSchema,
-    imageId: objectImageIdSchema,
+    ...pictureShape,
   }),
   z.strictObject({
     through: z.literal("loan_request"),
     requestId: loanRequestIdSchema,
-    imageId: objectImageIdSchema,
+    ...pictureShape,
   }),
   z.strictObject({
     through: z.literal("owner"),
     objectId: objectIdSchema,
-    imageId: objectImageIdSchema,
+    ...pictureShape,
   }),
   z.strictObject({
     through: z.literal("object_invitation"),
     invitationId: coOwnerInvitationIdSchema,
-    imageId: objectImageIdSchema,
+    ...pictureShape,
   }),
 ]);
 

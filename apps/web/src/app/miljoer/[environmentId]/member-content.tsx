@@ -19,7 +19,7 @@ import {
 } from "@/navigation/routes";
 import {
   environmentImageHref,
-  firstImageHref,
+  firstImage,
   ownImageHref,
 } from "@/presentation/object-images";
 import { filterThings } from "@/presentation/thing-list";
@@ -100,9 +100,7 @@ function ThingActions({
     ({ objectId, title, images }) => ({
       objectId,
       title,
-      image: firstImageHref(images, (imageId) =>
-        ownImageHref(objectId, imageId),
-      ),
+      image: firstImage(images, (imageId) => ownImageHref(objectId, imageId)),
     }),
   );
 
@@ -154,7 +152,7 @@ function EnvironmentThings({
             kind: "environment",
             environmentId: environment.id,
           })}
-          image={firstImageHref(thing.images, (imageId) =>
+          image={firstImage(thing.images, (imageId) =>
             environmentImageHref(environment.id, thing.objectId, imageId),
           )}
           today={today}

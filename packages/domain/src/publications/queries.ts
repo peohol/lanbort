@@ -53,6 +53,7 @@ import {
   loadImages,
   loadObjectState,
   type ObjectImageRow,
+  presentImage,
 } from "../objects/state";
 import {
   listAddableObjectsPolicy,
@@ -179,11 +180,7 @@ export function presentContent(
     categoryId: row.category_id,
     description: row.description,
     loanTerms: row.loan_terms,
-    images: (images.get(row.object_id) ?? []).map(({ id, width, height }) => ({
-      id,
-      width,
-      height,
-    })),
+    images: (images.get(row.object_id) ?? []).map(presentImage),
   };
 }
 
@@ -651,9 +648,7 @@ export const listAddableObjects = defineQuery({
       objectId: row.object_id,
       title: row.title,
       categoryId: row.category_id,
-      images: (resource.images.get(row.object_id) ?? []).map(
-        ({ id, width, height }) => ({ id, width, height }),
-      ),
+      images: (resource.images.get(row.object_id) ?? []).map(presentImage),
     })),
   }),
 });

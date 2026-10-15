@@ -16,7 +16,7 @@ Et objekt skal ha:
 - beskrivelse
 - minst ett tilgjengelighetsintervall før det kan tilbys for nye lån
 
-Objektet kan ha 1–5 bilder og valgfrie utlånsvilkår. Merke/modell, størrelse, tilstand og mangler kan beskrives i fritekst i første versjon; felt skal bare struktureres når de gir tydelig funksjonell verdi.
+Objektet kan ha 1–5 bilder og valgfrie utlånsvilkår. Det første bildet er hovedbildet. Der hovedbildet vises som kvadrat, som på kortet for tingen, vises utsnittet eieren har valgt, ellers midten av bildet. Eieren velger utsnittet slik som for profilbildet, men uten å rotere, og kan endre det senere. Hele bildet beholdes og vises på tingens side. Merke/modell, størrelse, tilstand og mangler kan beskrives i fritekst i første versjon; felt skal bare struktureres når de gir tydelig funksjonell verdi.
 
 ### PS-OBJ-003 — Tilgjengelighetsintervaller skal være konsistente
 **Forankring:** [Tilgjengelighet og faktisk ledighet](../vision/04-utlansobjekter.md)

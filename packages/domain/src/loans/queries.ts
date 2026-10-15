@@ -30,6 +30,7 @@ import {
   inSnapshot,
   loadImages,
   loadObjectState,
+  presentImage,
 } from "../objects/state";
 import { linkIn, noPersonLinks, personLinks } from "../people/queries";
 import { shownOwners } from "../publications/owners";
@@ -190,11 +191,7 @@ export const previewLoanRequest = defineQuery({
       input.environmentId === undefined
         ? responsibilityDeclarationVersion
         : null,
-    images: (resource.seen?.images ?? []).map(({ id, width, height }) => ({
-      id,
-      width,
-      height,
-    })),
+    images: (resource.seen?.images ?? []).map(presentImage),
     following: resource.seen?.following ?? false,
     owners: resource.owners,
   }),

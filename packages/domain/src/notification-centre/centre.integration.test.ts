@@ -140,13 +140,14 @@ describe("a loan request", () => {
     );
     expect(
       (await latest(owner, "loan_request.received")).about.picture,
-    ).toEqual({ through: "loan_request", requestId, imageId });
+    ).toEqual({ through: "loan_request", requestId, imageId, crop: null });
 
     const { loanId } = await run(approveLoanRequest, owner, { requestId });
     expect((await latest(borrower, "loan.approved")).about.picture).toEqual({
       through: "loan",
       loanId,
       imageId,
+      crop: null,
     });
   });
 

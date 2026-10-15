@@ -25,10 +25,7 @@ import {
 } from "@/presentation/loan-requests";
 import { personName } from "@/presentation/loan-status";
 import { formatDesiredPeriod } from "@/presentation/loans";
-import {
-  firstImageHref,
-  loanRequestImageHref,
-} from "@/presentation/object-images";
+import { firstImage, loanRequestImageHref } from "@/presentation/object-images";
 import { chatContactLink } from "@/server/chat-contact";
 import { ThingThumbnail } from "@/components/thing-thumbnail";
 import { pageQueryOrNotFound, requirePageAccount } from "@/server/session";
@@ -224,7 +221,7 @@ export default async function LoanRequestPage({
         kind="Forespørsel"
         picture={
           <ThingThumbnail
-            src={firstImageHref(request.images, (imageId) =>
+            image={firstImage(request.images, (imageId) =>
               loanRequestImageHref(request.id, imageId),
             )}
             size="title"

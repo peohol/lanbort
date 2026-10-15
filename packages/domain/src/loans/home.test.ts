@@ -336,22 +336,25 @@ describe("what a loan asks of a co-owner", () => {
 
 describe("the thing's picture (PS-OBJ-021)", () => {
   const imageId = "00000000-0000-4000-8000-0000000000a1";
-  const images = [{ id: imageId, width: 800, height: 600 }];
+  const crop = { x: 0.25, y: 0, width: 0.75, height: 1 };
+  const images = [{ id: imageId, width: 800, height: 600, crop }];
 
   it("is read the way the reader sees the thing", () => {
     expect(loanHomeItem(loan({ images }))?.picture).toEqual({
       through: "loan",
       loanId: id,
       imageId,
+      crop,
     });
     expect(loanRequestHomeItem(request({ images }))?.picture).toEqual({
       through: "loan_request",
       requestId: id,
       imageId,
+      crop,
     });
     expect(
       coOwnerLoanHomeItem(coOwnerLoan({ images, mayTakeOver: true }))?.picture,
-    ).toEqual({ through: "owner", objectId: id, imageId });
+    ).toEqual({ through: "owner", objectId: id, imageId, crop });
   });
 
   it("is left out when the thing has none", () => {

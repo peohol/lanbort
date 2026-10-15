@@ -127,10 +127,26 @@ export const updateObjectSchema = objectEditSchema.refine(changesSomething, {
 
 export const objectStatusSchema = z.enum(["active", "archived"]);
 
+const share = z.number().min(0).max(1);
+
+/**
+ * The square part of a picture that is shown where the picture is shown
+ * square, such as on the thing's card (PS-OBJ-002), as shares of the
+ * picture: `x` and `width` of its width, `y` and `height` of its height.
+ * Null where the owners chose none: the middle is shown.
+ */
+export const objectImageCropSchema = z.strictObject({
+  x: share,
+  y: share,
+  width: share.positive(),
+  height: share.positive(),
+});
+
 export const objectImageSchema = z.strictObject({
   id: objectImageIdSchema,
   width: z.int(),
   height: z.int(),
+  crop: objectImageCropSchema.nullable(),
 });
 
 /** A registered owner, as every owner of the object sees it. */
@@ -213,6 +229,17 @@ export const objectImageAddedSchema = z.strictObject({
   objectId: objectIdSchema,
   imageId: objectImageIdSchema,
   version: z.int(),
+});
+
+/**
+ * Chooses the square part of one of the thing's pictures that is shown
+ * where it is shown square (PS-OBJ-002); null shows the middle again. The
+ * server fits the square inside the picture and answers with what it chose.
+ */
+export const objectImageCropInputSchema = z.strictObject({
+  objectId: objectIdSchema,
+  imageId: objectImageIdSchema,
+  crop: objectImageCropSchema.nullable(),
 });
 
 export const objectCategorySchema = z.strictObject({
@@ -364,6 +391,9 @@ export type OwnObject = z.infer<typeof ownObjectSchema>;
 export type OwnObjectList = z.infer<typeof ownObjectListSchema>;
 export type ObjectVersion = z.infer<typeof objectVersionSchema>;
 export type ObjectImageAdded = z.infer<typeof objectImageAddedSchema>;
+export type ObjectImage = z.infer<typeof objectImageSchema>;
+export type ObjectImageCrop = z.infer<typeof objectImageCropSchema>;
+export type ObjectImageCropInput = z.infer<typeof objectImageCropInputSchema>;
 export type ObjectCategory = z.infer<typeof objectCategorySchema>;
 export type ObjectCategoryList = z.infer<typeof objectCategoryListSchema>;
 export type ObjectOwner = z.infer<typeof objectOwnerSchema>;

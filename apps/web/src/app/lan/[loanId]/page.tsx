@@ -45,7 +45,7 @@ import {
   personName,
   proposalDefaults,
 } from "@/presentation/loan-status";
-import { firstImageHref, loanImageHref } from "@/presentation/object-images";
+import { firstImage, loanImageHref } from "@/presentation/object-images";
 import { ThingThumbnail } from "@/components/thing-thumbnail";
 import { hiddenUntil } from "@/presentation/reviews";
 import { chatContactLink } from "@/server/chat-contact";
@@ -529,7 +529,7 @@ export default async function LoanPage({
         kind="Lån"
         picture={
           <ThingThumbnail
-            src={firstImageHref(loan.images, (imageId) =>
+            image={firstImage(loan.images, (imageId) =>
               loanImageHref(loan.id, imageId),
             )}
             size="title"

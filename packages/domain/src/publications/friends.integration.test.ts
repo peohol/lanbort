@@ -430,7 +430,7 @@ describe("images of friends' objects", () => {
 
     expect(await read(friend)).toMatchObject({ contentType: "image/webp" });
     expect((await profile(friend, owner)).objects[0]?.images).toEqual([
-      { id: imageId, width: 10, height: 10 },
+      { id: imageId, width: 10, height: 10, crop: null },
     ]);
     await expect(read(stranger)).rejects.toMatchObject(notFound);
 

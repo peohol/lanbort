@@ -3,6 +3,7 @@
 import type {
   ObjectCategory,
   ObjectImageAdded,
+  ObjectImageCrop,
   ObjectVersion,
   OwnObject,
 } from "@lanbort/contracts";
@@ -45,7 +46,7 @@ import {
   publishOutcome,
   rebaseDraft,
 } from "@/presentation/object-form";
-import { ownImageHref } from "@/presentation/object-images";
+import { cropChanged, ownImageHref } from "@/presentation/object-images";
 import {
   availabilityLine,
   categoryLabel,
@@ -90,9 +91,11 @@ interface Base {
 }
 
 const savedImages = (object: OwnObject): FormImage[] =>
-  object.images.map(({ id }) => ({
+  object.images.map(({ id, crop }) => ({
     kind: "saved",
     id,
+    crop,
+    savedCrop: crop,
     src: ownImageHref(object.id, id),
   }));
 
@@ -206,7 +209,8 @@ export function ObjectForm(props: ObjectFormProps) {
   const overlapping = overlappingPeriods(draft.availability);
   const changed = base ? changedFields(base.draft, draft) : [];
   const imagesChanged =
-    removed.length > 0 || images.some((image) => image.kind === "new");
+    removed.length > 0 ||
+    images.some((image) => image.kind === "new" || cropChanged(image));
   const dirty = editing
     ? changed.length > 0 || imagesChanged
     : changedFields(newDraft(today), draft).length > 0 || images.length > 0;
@@ -303,9 +307,15 @@ export function ObjectForm(props: ObjectFormProps) {
     }
   }
 
+  function cropImage(image: FormImage, crop: ObjectImageCrop) {
+    setImages((current) =>
+      current.map((each) => (each.id === image.id ? { ...each, crop } : each)),
+    );
+  }
+
   /**
-   * The photos to upload and the saved ones to remove, for `objectId`.
-   * `saw` hears each version they make.
+   * The photos to upload, the saved ones to remove, and the squares chosen
+   * of them, for `objectId`. `saw` hears each version they make.
    */
   async function saveImages(
     objectId: string,
@@ -327,16 +337,33 @@ export function ObjectForm(props: ObjectFormProps) {
     }
 
     for (const image of images) {
-      if (image.kind !== "new") continue;
-      const result = await steps.run<ObjectImageAdded>(
-        `image:${image.id}`,
+      let imageId = image.id;
+
+      if (image.kind === "new") {
+        const result = await steps.run<ObjectImageAdded>(
+          `image:${image.id}`,
+          (idempotencyKey) =>
+            postFile(`/api/objects/${objectId}/images`, image.blob, {
+              idempotencyKey,
+            }),
+        );
+        if (!result.ok) return result;
+        saw(result.data.version);
+        imageId = result.data.imageId;
+      }
+
+      if (!cropChanged(image)) continue;
+      // Each square chosen is its own step, so a retry sends the last one.
+      const result = await steps.run(
+        `crop:${image.id}:${JSON.stringify(image.crop)}`,
         (idempotencyKey) =>
-          postFile(`/api/objects/${objectId}/images`, image.blob, {
-            idempotencyKey,
-          }),
+          postJson(
+            ownImageHref(objectId, imageId),
+            { crop: image.crop },
+            { method: "PATCH", idempotencyKey },
+          ),
       );
       if (!result.ok) return result;
-      saw(result.data.version);
     }
 
     return { ok: true, data: null };
@@ -760,6 +787,7 @@ export function ObjectForm(props: ObjectFormProps) {
                 setImages((current) => [...current, ...added])
               }
               onRemoveImage={removeImage}
+              onCropImage={cropImage}
               titleField={titleField}
             />
           )}

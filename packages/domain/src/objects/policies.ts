@@ -80,6 +80,7 @@ export const archiveObjectPolicy = ownerPolicy(
 export const restoreObjectPolicy = ownerPolicy("object.restore");
 export const addObjectImagePolicy = ownerPolicy("object.add_image");
 export const removeObjectImagePolicy = ownerPolicy("object.remove_image");
+export const cropObjectImagePolicy = ownerPolicy("object.crop_image");
 
 export const readObjectHistoryPolicy = ownerPolicy("object.read_history");
 export const revertObjectPolicy = ownerPolicy("object.revert");
@@ -110,6 +111,7 @@ export const ownerPolicies = [
   restoreObjectPolicy,
   addObjectImagePolicy,
   removeObjectImagePolicy,
+  cropObjectImagePolicy,
   readObjectHistoryPolicy,
   revertObjectPolicy,
   inviteCoOwnerPolicy,

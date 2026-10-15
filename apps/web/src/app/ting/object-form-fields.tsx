@@ -1,39 +1,86 @@
 "use client";
 
-import { objectImageMaxCount } from "@lanbort/contracts";
-import { type ChangeEvent, type ReactNode, useState } from "react";
+import { type ObjectImageCrop, objectImageMaxCount } from "@lanbort/contracts";
+import { type ChangeEvent, type ReactNode, useEffect, useState } from "react";
 import { describedBy, helpId } from "@/components/field";
 import { Icon } from "@/components/icon";
+import { PictureCropper } from "@/components/picture-cropper";
+import { readPhoto } from "@/components/read-photo";
+import { ThingThumbnail } from "@/components/thing-thumbnail";
 import type { DraftInterval } from "@/presentation/object-form";
+import { thingPictureShape } from "@/presentation/object-images";
+import {
+  cropFromSquare,
+  cropToSquare,
+  initialCrop,
+} from "@/presentation/picture-crop";
 import styles from "./object-form.module.css";
 import { prepareImage } from "./prepare-image";
 
-/** A photo in the form: one already saved, or one chosen to upload. */
-export type FormImage =
-  | { readonly kind: "saved"; readonly id: string; readonly src: string }
+/**
+ * A photo in the form: one already saved, or one chosen to upload, with
+ * the square it is shown in where it is shown square (PS-OBJ-002).
+ */
+export type FormImage = {
+  readonly src: string;
+  /** Null shows its middle. */
+  readonly crop: ObjectImageCrop | null;
+} & (
+  | {
+      readonly kind: "saved";
+      readonly id: string;
+      /** The square saved now, to tell whether it changed. */
+      readonly savedCrop: ObjectImageCrop | null;
+    }
   | {
       readonly kind: "new";
       /** Also the upload's step, so a retry sends it once (UX-INT-006). */
       readonly id: string;
       readonly blob: Blob;
-      readonly src: string;
-    };
+    }
+);
+
+/** The photo being framed, read from its file or from the API. */
+interface Framing {
+  readonly image: FormImage;
+  readonly photo: ImageBitmap;
+}
 
 /**
- * Up to five photos (PS-OBJ-002): what is there, a way to remove each, and
- * a way to add more. Photos are prepared for upload as they are chosen, so
- * the same bytes are sent however often a retry is needed.
+ * Up to five photos (PS-OBJ-002): what is there, a way to remove each, a
+ * way to add more, and a way to choose the square the main photo is shown
+ * in, as for a profile picture. Photos are prepared for upload as they are
+ * chosen, so the same bytes are sent however often a retry is needed.
  */
 export function ImagesField({
   images,
   onAdd,
   onRemove,
+  onCrop,
 }: {
   images: readonly FormImage[];
   onAdd: (images: FormImage[]) => void;
   onRemove: (image: FormImage) => void;
+  onCrop: (image: FormImage, crop: ObjectImageCrop) => void;
 }) {
   const [problem, setProblem] = useState<string | null>(null);
+  const [framing, setFraming] = useState<Framing | null>(null);
+
+  useEffect(() => () => framing?.photo.close(), [framing]);
+
+  async function frame(image: FormImage) {
+    setProblem(null);
+    const file =
+      image.kind === "new"
+        ? image.blob
+        : await fetch(image.src)
+            .then((response) => (response.ok ? response.blob() : null))
+            .catch(() => null);
+    const photo = file && (await readPhoto(file));
+    if (photo) setFraming({ image, photo });
+    else setProblem("Bildet kunne ikke åpnes. Prøv igjen.");
+  }
+
   const room = objectImageMaxCount - images.length;
   const help = `Valgfritt, inntil ${objectImageMaxCount} bilder. Bildene lagres uten posisjon og andre opplysninger fra kameraet.`;
 
@@ -50,6 +97,7 @@ export function ImagesField({
               id: crypto.randomUUID(),
               blob,
               src: URL.createObjectURL(blob),
+              crop: null,
             },
           ]
         : [],
@@ -80,6 +128,32 @@ export function ImagesField({
     </label>
   );
 
+  if (framing) {
+    const { image, photo } = framing;
+
+    return (
+      <div className="field">
+        <p className={styles.imagesLabel}>Velg utsnitt av hovedbildet</p>
+        <p className="help">
+          Utsnittet vises der bildet vises som et kvadrat, som på kortet for
+          tingen. Hele bildet vises på tingens side.
+        </p>
+        <PictureCropper
+          photo={photo}
+          shape={thingPictureShape}
+          rotatable={false}
+          initial={image.crop ? cropFromSquare(photo, image.crop) : initialCrop}
+          saveLabel="Bruk utsnittet"
+          onSave={(crop) => {
+            onCrop(image, cropToSquare(photo, crop));
+            setFraming(null);
+          }}
+          onCancel={() => setFraming(null)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="field">
       {images.length === 0 ? (
@@ -104,10 +178,23 @@ export function ImagesField({
           <ul className={styles.images} aria-label="Bilder">
             {images.map((image, index) => (
               <li key={image.id}>
-                {/* The API's own address or a local preview; nothing to optimize. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={image.src} alt={`Bilde ${index + 1}`} />
-                {index === 0 && <span className={styles.main}>Hovedbilde</span>}
+                <ThingThumbnail
+                  image={image}
+                  size="fill"
+                  alt={`Bilde ${index + 1}`}
+                />
+                {index === 0 && (
+                  <>
+                    <span className={styles.main}>Hovedbilde</span>
+                    <button
+                      type="button"
+                      className="button-quiet"
+                      onClick={() => void frame(image)}
+                    >
+                      Velg utsnitt
+                    </button>
+                  </>
+                )}
                 <button
                   type="button"
                   className="button-quiet"

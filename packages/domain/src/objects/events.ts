@@ -50,6 +50,15 @@ export const objectImageAdded = objectEvent(
   z.strictObject({ version, imageId: z.uuid() }),
 );
 
+/**
+ * The owners chose which square of a picture is shown where it is shown
+ * square (PS-OBJ-002); not a new version of the content.
+ */
+export const objectImageCropped = objectEvent(
+  "object.image_cropped",
+  z.strictObject({ imageId: z.uuid() }),
+);
+
 /** Also triggers deletion of the stored image file (outbox). */
 export const objectImageRemoved = objectEvent(
   "object.image_removed",
