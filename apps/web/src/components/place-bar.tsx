@@ -111,7 +111,19 @@ function StackBar({
         className={standalone ? "back-link one-step" : "back-link"}
         href={back.href}
         onClick={(event) => {
-          if (returnToLayer(back.href)) event.preventDefault();
+          // A new tab or window opens the page as a link does.
+          if (
+            event.button === 0 &&
+            !(
+              event.metaKey ||
+              event.ctrlKey ||
+              event.shiftKey ||
+              event.altKey
+            ) &&
+            returnToLayer(back.href)
+          ) {
+            event.preventDefault();
+          }
         }}
       >
         <Icon name="back" /> {back.label}

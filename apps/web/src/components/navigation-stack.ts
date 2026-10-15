@@ -268,9 +268,10 @@ export function closeLayer(open: (href: string) => void) {
 }
 
 /**
- * The way back to a page in a layer: the browser's back when that page is
- * the entry just before, so the layer opens again over exactly the screen
- * it lay over. False where it is not; the link is then followed instead.
+ * The way back to a page in a layer: the browser's back to the nearest
+ * earlier entry that is that page, so the layer opens again over exactly
+ * the screen it lay over. False where the history has none; the link is
+ * then followed instead.
  */
 export function returnToLayer(href: string): boolean {
   const history = browserHistory();
@@ -278,15 +279,20 @@ export function returnToLayer(href: string): boolean {
 
   if (
     !history ||
-    !current ||
-    layerOf(href.split(/[?#]/, 1)[0]!) === null ||
-    historyAddress(history, current - 1) !== href
+    current === null ||
+    layerOf(href.split(/[?#]/, 1)[0]!) === null
   ) {
     return false;
   }
 
-  window.history.back();
-  return true;
+  for (let index = current - 1; index >= 0; index -= 1) {
+    if (historyAddress(history, index) === href) {
+      window.history.go(index - current);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
