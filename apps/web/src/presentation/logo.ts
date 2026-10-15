@@ -2,9 +2,11 @@
  * Lånbort's mark (Tomat): an «l» in tomat whose stem is also the stem of a
  * «b», with the b's bowl in the colour of the text. The stem and the bowl
  * have the size and shape of the b in Quicksand, the headings' font, at
- * weight 700 (its units, 1000 to the em), but one stroke of the same width
- * all the way round, so the mark is not the font's letter. `Brand` draws
- * it in the app and `logoSvg` for the browser's tab, so both are the same.
+ * weight 700 (its units, 1000 to the em), each one stroke of even width,
+ * so the mark is not the font's letter. The bowl's stroke is a little
+ * thinner than the stem, so its left side lies wholly behind the stem, and
+ * it ends level with the stem's foot. `Brand` draws it in the app and
+ * `logoSvg` for the browser's tab, so both are the same.
  */
 const box = { x: -48, y: 0, size: 750 };
 
@@ -13,7 +15,8 @@ export const logo = {
   viewBox: `${box.x} ${box.y} ${box.size} ${box.size}`,
   stroke: 118,
   stem: "M125 60V690",
-  bowl: "M129 473.5a200 216.5 0 1 0 400 0a200 216.5 0 1 0-400 0",
+  bowlStroke: 104,
+  bowl: "M125 473.5a205.5 223.5 0 1 0 411 0a205.5 223.5 0 1 0-411 0",
 } as const;
 
 /**
@@ -40,7 +43,7 @@ export function logoSvg({ radius = 0.2 } = {}) {
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${size} ${size}">`,
     `<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${size * radius}" fill="${iconColours.background}"/>`,
     `<g fill="none" stroke-width="${logo.stroke}" stroke-linecap="round">`,
-    `<path d="${logo.bowl}" stroke="${iconColours.bowl}"/>`,
+    `<path d="${logo.bowl}" stroke="${iconColours.bowl}" stroke-width="${logo.bowlStroke}"/>`,
     `<path d="${logo.stem}" stroke="${iconColours.stem}"/>`,
     `</g></svg>`,
   ].join("");

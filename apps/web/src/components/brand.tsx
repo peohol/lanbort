@@ -19,7 +19,11 @@ export function Brand() {
         strokeWidth={logo.stroke}
         strokeLinecap="round"
       >
-        <path className="logo-bowl" d={logo.bowl} />
+        <path
+          className="logo-bowl"
+          d={logo.bowl}
+          strokeWidth={logo.bowlStroke}
+        />
         <path className="logo-stem" d={logo.stem} />
       </svg>
       <span className="wordmark">
