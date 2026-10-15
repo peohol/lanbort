@@ -7,7 +7,7 @@ const acceptedFormats = new Set(["jpeg", "png", "webp"]);
 export const storedImageMaxSide = 2048;
 
 /** Refuses decompression bombs before decoding: about 50 megapixels. */
-const maxInputPixels = 50_000_000;
+export const maxInputPixels = 50_000_000;
 
 export interface NormalizeOptions {
   /** Longest side kept, in pixels; smaller images are never enlarged. */
