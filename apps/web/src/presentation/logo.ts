@@ -1,14 +1,19 @@
 /**
  * Lånbort's mark (Tomat): an «l» in tomat whose stem is also the stem of a
- * «b», with the b's bowl in the colour of the text. One stroke on a
- * 32-point grid, drawn by `Logo` in the app and by `logoSvg` for the
- * browser's tab, so both are the same shape.
+ * «b», with the b's bowl in the colour of the text. The stem and the bowl
+ * have the size and shape of the b in Quicksand, the headings' font, at
+ * weight 700 (its units, 1000 to the em), but one stroke of the same width
+ * all the way round, so the mark is not the font's letter. `Brand` draws
+ * it in the app and `logoSvg` for the browser's tab, so both are the same.
  */
+const box = { x: -48, y: 0, size: 750 };
+
 export const logo = {
-  viewBox: "0 0 32 32",
-  stroke: 4,
-  stem: "M11 3.5v25",
-  bowl: "M11 13.5h3.5a6.5 6.5 0 0 1 0 13H11",
+  box,
+  viewBox: `${box.x} ${box.y} ${box.size} ${box.size}`,
+  stroke: 118,
+  stem: "M125 60V690",
+  bowl: "M125 472.5a202 222.5 0 1 0 404 0a202 222.5 0 1 0-404 0",
 } as const;
 
 /**
@@ -24,15 +29,18 @@ export const iconColours = {
 
 /**
  * The mark as an SVG file on its own background, with room around it. A
- * tab shows the background's rounded corners; a phone's home screen rounds
- * them itself and wants it square.
+ * tab shows the background's rounded corners (`radius`, a share of its
+ * side); a phone's home screen rounds them itself and wants it square.
  */
-export function logoSvg({ radius = 8 } = {}) {
+export function logoSvg({ radius = 0.2 } = {}) {
+  const room = box.size * 0.12;
+  const [x, y, size] = [box.x - room, box.y - room, box.size + 2 * room];
+
   return [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 -3 38 38">`,
-    `<rect x="-3" y="-3" width="38" height="38" rx="${radius}" fill="${iconColours.background}"/>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${size} ${size}">`,
+    `<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${size * radius}" fill="${iconColours.background}"/>`,
     `<g fill="none" stroke-width="${logo.stroke}" stroke-linecap="round">`,
-    `<path d="${logo.bowl}" stroke="${iconColours.bowl}" stroke-linecap="butt" stroke-linejoin="round"/>`,
+    `<path d="${logo.bowl}" stroke="${iconColours.bowl}"/>`,
     `<path d="${logo.stem}" stroke="${iconColours.stem}"/>`,
     `</g></svg>`,
   ].join("");

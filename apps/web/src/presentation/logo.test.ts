@@ -26,5 +26,6 @@ describe("logo", () => {
     expect(svg).toContain(`d="${logo.bowl}" stroke="${iconColours.bowl}"`);
     expect(svg).toContain(`fill="${iconColours.background}"`);
     expect(logoSvg({ radius: 0 })).toContain('rx="0"');
+    expect(logoSvg()).not.toContain('rx="0"');
   });
 });
