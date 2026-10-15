@@ -18,6 +18,7 @@ import {
 } from "@/navigation/chat";
 import { chatApi } from "./api";
 import styles from "./chat.module.css";
+import { ChatIcon } from "./chat-icon";
 import { useEngineVersion } from "./chat-provider";
 import { ReadyChat } from "./chat-setup";
 import {
@@ -46,6 +47,7 @@ import { messageTime } from "./time";
 const header = (
   <PageHeader
     title="Mine enheter"
+    icon={<ChatIcon name="anyDevice" />}
     back={{ href: chatHref, label: "Samtaler" }}
   />
 );
