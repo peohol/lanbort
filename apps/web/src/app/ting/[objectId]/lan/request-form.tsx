@@ -19,7 +19,6 @@ import { PageHeader } from "@/components/page-header";
 import { useCommand } from "@/components/use-command";
 import { Choice } from "@/app/lan/_parts/choice";
 import styles from "@/app/lan/_parts/loan.module.css";
-import { OriginTag } from "@/app/lan/_parts/origin-tag";
 import { loanRequestHref } from "@/navigation/routes";
 import { addDays, formatShortPeriod } from "@/presentation/dates";
 import {
@@ -167,7 +166,6 @@ export function RequestForm({
         back={from}
         home="find"
         task
-        context={<OriginTag origin={shownOrigin} />}
       >
         {reviewing ? undefined : availability}
       </PageHeader>

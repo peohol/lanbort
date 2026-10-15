@@ -82,7 +82,7 @@ Områdene:
 - De fem områdene er alltid synlige, som bunnmeny på mobil og sidekolonne på større skjerm, og markerer området brukeren startet i. Unntakene er avgrensede oppgaver (UX-IA-013) og Konto (UX-IA-020).
 - Detaljer (ting, forespørsel, lån, person, miljø, samtale, administrativ kø og det som ligger i den) åpnes som en stabel innenfor det området. En person åpnet fra en ting i Finn ligger i Finn.
 - Tilbake navngir forrige ledd i stabelen («‹ Kari Nordmann»). På større skjerm er brødsmulene den samme stabelen, og hvert ledd er klikkbart.
-- Et trykk på et område går til områdets start. Åpner brukeren noe som allerede ligger i stabelen, går hen tilbake dit i stedet for å lage en løkke.
+- Et trykk på et område går til områdets start. Åpner brukeren noe som allerede ligger i stabelen, går hen tilbake dit i stedet for å lage en løkke. En ting sett gjennom et miljø og den samme tingen sett direkte hos en venn er ulike ledd, så brødsmulene viser hvor brukeren kom fra (UX-IA-015).
 - Større skjerm bruker samme modell med mer plass (UX-A11Y-001): liste og detalj vises side om side når brukeren kom fra en liste (Lån, Samtaler, Innmeldinger); åpnet fra Hjem eller en person får detaljen full bredde.
 
 ### UX-IA-010 — Hver flate har ett fast hjemområde
@@ -93,7 +93,7 @@ Hjemområdet bestemmer stabelen når en direkte inngang må bygge en ny (UX-IA-0
 | Flate                                               | Hjemområde                                                   |
 | --------------------------------------------------- | ------------------------------------------------------------ |
 | Lån og forespørsler                                 | Lån                                                          |
-| Andres ting                                         | Finn                                                         |
+| Andres ting                                         | Finn; sett gjennom et miljø ligger tingen under miljøet       |
 | Egne og medeide ting                                | Mine ting                                                    |
 | Samtaler                                            | Samtaler                                                     |
 | Egne miljøer                                        | Hjem                                                         |
@@ -144,10 +144,10 @@ Et skjema som sendes inn, for eksempel låneforespørselen, skjuler områdene og
 - Under «Nå» ligger avtalen, motparten, samtalen, tidslinjen og «Flere valg». Samtalen er ikke en fane i lånet; lånet og samtalen lenker til hverandre.
 - Et avvik overtar samme side og samme «Nå»-kort, og steget får et nøytralt avklaringsnavn, for eksempel «Overlevering avklares» (UX-EXC-001, UX-EXC-002).
 
-### UX-IA-015 — Detaljer viser type, kontekst og hvorfor brukeren ser dem
+### UX-IA-015 — Detaljer viser bare kontekst som har praktisk betydning
 **Forankring:** UX-P11, UX-P13; PS-DOM-005, PS-DOM-007
 
-Hver detalj har en typeetikett (Ting, Forespørsel, Lån, Person, Miljø, Samtale) og et kontekstmerke («Via Borettslaget Lia», «Direkte mellom venner») eller en rolle («Du handler som administrator»). Der synligheten avhenger av kontekst, forklarer én linje hvorfor («Du ser tingen fordi du er medlem i Borettslaget Lia»). Kontekstmerker og forklaringer erstatter en vedvarende kontekstlinse, så ingen skjult filtertilstand avgjør hva brukeren ser.
+Det skal være åpenbart av siden selv hva slags detalj brukeren er på. En typeetikett over tittelen brukes bare når den sier noe tittelen ikke sier, som «Forespørsel» eller «Lån» på samme side (UX-IA-014) eller hva slags sak det er, ikke «Ting», «Person» eller «Miljø». Hvor brukeren kom fra, vises i brødsmulene (UX-IA-009), ikke som merke eller forklaring på siden: en ting nådd fra et miljø har miljøet i brødsmulene, og ingen linje forklarer hvorfor brukeren ser den. Kontekstmerker («Via Borettslaget Lia», «Direkte mellom venner») og roller («Du handler som administrator») vises der konteksten avgjør hva brukeren kan gjøre eller hvilke regler som gjelder, som på forespørselens og lånets side (UX-PRIV-003). Brødsmuler og kontekstmerker erstatter en vedvarende kontekstlinse, så ingen skjult filtertilstand avgjør hva brukeren ser. Besluttet av Peder 15. oktober 2026 for å fjerne systeminformasjon uten praktisk betydning.
 
 **Designreferanse for Hjem og varsler:** [Lånbort – Hjem og varsler v3](../../design/L%C3%A5nbort%20-%20Hjem%20og%20varsler%20v3.html). Besluttet 8. oktober 2026; navn og datoer i referansen er eksempler. Ved tvil gjelder reglene nedenfor.
 

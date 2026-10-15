@@ -120,6 +120,8 @@ Det vedtatte Tomat-uttrykket ([designreferansene](../../design/README.md)) og na
 
 **I Tomat (kjerneflyt 1), 10. oktober 2026:** «Objekt for andre» har «Via …» eller «Direkte mellom venner» under navnet, og i et miljø også eierne som er medlemmer der (PS-ENV-015). Direkte mellom venner nevnes ingen eier, som før. Statuskortet viser ledigheten, ukestripen for de neste sju dagene (fylte dager er ledige, PS-OBJ-003) og vilkårene før «Be om å låne». Under kortet sier én linje hvorfor brukeren ser tingen (UX-IA-015), og i et miljø følger «Følg tingen» og «Spørsmål». Det som sperrer tingen, sies ikke (UX-PRIV-004).
 
+**15. oktober 2026:** «Ting» over tittelen, «Via …»/«Direkte mellom venner» og linjen om hvorfor brukeren ser tingen er fjernet (UX-IA-015). Opprinnelsen vises i brødsmulene; åpnet utenfra ligger tingen under miljøet sitt.
+
 ## WP-84 — Miljøets side og medlemskap
 
 **Leverer:** Miljøet som kontekst: forstå det før innmelding, bli med, bruke det, og forlate det (UX-IA-004, UX-JRN-002).

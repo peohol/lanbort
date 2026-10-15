@@ -93,9 +93,9 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 #### Tingens side for andre
 
 - **Oppgave:** forstå hva tingen er og om den kan lånes, og be om å låne den.
-- **Tilstander:** ledig og når; ikke ledig (uten å røpe hvorfor, UX-PRIV-004); opprinnelse (miljø eller «Direkte mellom venner»); vilkår; egen åpen forespørsel; følger tingen; spørsmål og svar i miljøet; tilgang borte.
+- **Tilstander:** ledig og når; ikke ledig (uten å røpe hvorfor, UX-PRIV-004); opprinnelse i brødsmulene (miljøet, en venns side eller Finn, UX-IA-015); vilkår; egen åpen forespørsel; følger tingen; spørsmål og svar i miljøet; tilgang borte.
 - **Ser / handler:** medlemmer av miljøer der tingen er publisert, og venner når tingen er synlig for venner. De kan be om å låne, følge tingen og stille spørsmål i miljøet. Gjennom et miljø vises eierne med navn (PS-ENV-015, WP-89).
-- **Regler:** UX-INT-001, UX-P06, UX-PRIV-003, UX-PRIV-004, PS-OBJ-001, PS-OBJ-014, PS-OBJ-015, PS-OBJ-020, PS-DOM-008.
+- **Regler:** UX-INT-001, UX-P06, UX-IA-015, UX-PRIV-004, PS-OBJ-001, PS-OBJ-014, PS-OBJ-015, PS-OBJ-020, PS-DOM-008.
 - **Forløp:** normal.
 - **UI-pakke:** WP-83.
 

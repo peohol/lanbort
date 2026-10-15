@@ -43,6 +43,7 @@ import {
   environmentHref,
   friendsHref,
   loanHref,
+  objectHref,
 } from "@/navigation/routes";
 import { anchorFor, hrefFor } from "@/navigation/targets";
 import { formatPeriod, formatTime } from "@/presentation/dates";
@@ -1017,8 +1018,9 @@ export async function OwnerView({
     <main>
       <PageHeader
         title={object.title}
-        kind={shared(owned) ? "Deres ting" : "Din ting"}
         back={{ href: thingsHref, label: "Mine ting" }}
+        // Seen from an environment it is still the owners' one page.
+        href={objectHref(object.id)}
         picture={
           cover && (
             // The API's own address; nothing to optimize.

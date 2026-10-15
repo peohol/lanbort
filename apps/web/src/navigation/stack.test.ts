@@ -43,9 +43,29 @@ describe("the navigation stack (UX-IA-009–011)", () => {
       loan,
       "push",
     );
-    const again = arrive(deep, { ...thing, href: "/ting/3" }, "push");
+    const again = arrive(
+      deep,
+      { ...thing, href: "/ting/3?miljo=4&sporsmal=2" },
+      "push",
+    );
 
     expect(again.entries.map(({ label }) => label)).toEqual(["Stige"]);
+  });
+
+  it("takes a thing seen in another context as a step of its own", () => {
+    const fromFriend = arrive(
+      arrive(arrive(areaStack("home"), thing, "push"), person, "push"),
+      { ...thing, href: "/ting/3" },
+      "push",
+    );
+
+    // Reached from a friend's page, the way back leads to the friend.
+    expect(trail(fromFriend).map(({ href }) => href)).toEqual([
+      "/",
+      "/ting/3?miljo=4",
+      "/personer/2",
+      "/ting/3",
+    ]);
   });
 
   it("builds a direct entry from the rule, never from history", () => {
