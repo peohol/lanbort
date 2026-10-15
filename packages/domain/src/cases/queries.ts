@@ -7,6 +7,7 @@ import {
   caseReferenceSchema,
   type CaseSummary,
   environmentCaseQueueQuerySchema,
+  type ObjectImage,
   platformCaseQueueQuerySchema,
   socialTargetSchema,
 } from "@lanbort/contracts";
@@ -62,7 +63,7 @@ const nothingRead = {
   entries: [] as EntryRecord[],
   actions: [] as ActionRecord[],
   titles: { loanTitle: null, objectTitle: null },
-  images: [] as { id: string; width: number; height: number }[],
+  images: [] as ObjectImage[],
   loanStatus: null,
   loanClarified: false,
   handlers: [] as string[],

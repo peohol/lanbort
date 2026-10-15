@@ -10,7 +10,8 @@ import {
 import type { ObjectOrigin } from "@/navigation/routes";
 import {
   environmentImageHref,
-  firstImageHref,
+  firstImage,
+  type ThingImage,
   friendImageHref,
   ownImageHref,
 } from "./object-images";
@@ -183,10 +184,10 @@ export const joiningExplained = [
 ] as const;
 
 /** The first photo of a thing they found, read the way `foundOrigin` sees it. */
-export function foundImage(object: FoundObject): string | null {
+export function foundImage(object: FoundObject): ThingImage | null {
   const place = object.foundIn[0];
 
-  return firstImageHref(object.images, (imageId) =>
+  return firstImage(object.images, (imageId) =>
     object.ownedByYou
       ? ownImageHref(object.objectId, imageId)
       : place

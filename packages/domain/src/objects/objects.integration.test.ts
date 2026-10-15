@@ -23,6 +23,7 @@ import {
   updateObject,
 } from "./commands";
 import {
+  cropObjectImage,
   type ImageProcessor,
   objectImageFileCleanup,
   objectImageKey,
@@ -1039,5 +1040,82 @@ describe("actual availability is derived, never stored (PS-OBJ-003–005)", () =
     expect(await loadAvailabilityBlocks(db, [objectId])).toEqual(
       new Map([[objectId, []]]),
     );
+  });
+});
+
+describe("the square a picture is shown in (PS-OBJ-002)", () => {
+  const crop = (actor: UserActor, input: object) =>
+    executeCommand(domain, cropObjectImage, {
+      actor,
+      input,
+      idempotencyKey: key(),
+    });
+
+  it("shows the middle until the owners choose a square, fitted inside the picture", async () => {
+    const owner = await user();
+    const { objectId } = await create(owner);
+    const { imageId } = (await upload(owner, objectId)).output;
+
+    expect((await read(owner, objectId)).images[0]?.crop).toBeNull();
+
+    // 40 × 30 pixels: a square as high as the picture, at its right edge.
+    const chosen = await crop(owner, {
+      objectId,
+      imageId,
+      crop: { x: 0.25, y: 0, width: 0.75, height: 1 },
+    });
+    expect(chosen.output.crop).toEqual({
+      x: 0.25,
+      y: 0,
+      width: 0.75,
+      height: 1,
+    });
+
+    // Asked to reach outside, it is moved and kept inside.
+    await crop(owner, {
+      objectId,
+      imageId,
+      crop: { x: 0.9, y: 0.5, width: 0.5, height: 0.9 },
+    });
+    const object = await read(owner, objectId);
+    expect(object.images[0]?.crop).toEqual({
+      x: 0.5,
+      y: 1 / 3,
+      width: 0.5,
+      height: 2 / 3,
+    });
+    // A frame is not new content: the version stays.
+    expect(object.version).toBe(2);
+    expect((await eventsFor(objectId)).at(-1)).toMatchObject({
+      event_type: "object.image_cropped",
+      payload: { imageId },
+    });
+
+    await crop(owner, { objectId, imageId, crop: null });
+    expect((await read(owner, objectId)).images[0]?.crop).toBeNull();
+  });
+
+  it("is chosen only by the owners, and only for the thing's own pictures", async () => {
+    const owner = await user();
+    const stranger = await user();
+    const { objectId } = await create(owner);
+    const other = (await create(owner)).objectId;
+    const { imageId } = (await upload(owner, objectId)).output;
+    const square = { x: 0, y: 0, width: 0.75, height: 1 };
+
+    await expect(
+      crop(stranger, { objectId, imageId, crop: square }),
+    ).rejects.toMatchObject({ code: "not_found" });
+    await expect(
+      crop(owner, { objectId: other, imageId, crop: square }),
+    ).rejects.toMatchObject({ code: "not_found" });
+    await expect(
+      crop(owner, {
+        objectId,
+        imageId,
+        crop: { x: 0, y: 0, width: 0, height: 1 },
+      }),
+    ).rejects.toMatchObject({ code: "invalid_input" });
+    expect((await read(owner, objectId)).images[0]?.crop).toBeNull();
   });
 });

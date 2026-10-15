@@ -1,4 +1,4 @@
-import type { ObjectStatus, OwnObject } from "@lanbort/contracts";
+import type { ObjectImage, ObjectStatus, OwnObject } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql, type Updateable } from "kysely";
 import { lockAccounts, realNames } from "../account/store";
@@ -18,6 +18,7 @@ import {
 } from "./blocks";
 import { returnPhaseStatuses } from "../loans/model";
 import { loadFreezes } from "./co-owner-blocks";
+import { storedCrop } from "./image-crop";
 import type { ObjectResource } from "./policies";
 import { type RevisionNote, recordRevision } from "./revisions";
 
@@ -40,11 +41,8 @@ export interface ObjectState extends ObjectResource {
   readonly updatedAt: Date;
 }
 
-export interface ObjectImageRow {
-  readonly id: string;
+export interface ObjectImageRow extends ObjectImage {
   readonly position: number;
-  readonly width: number;
-  readonly height: number;
 }
 
 export interface ObjectRestrictionRow {
@@ -260,19 +258,42 @@ export async function loadImages(
   if (objectIds.length > 0) {
     const rows = await db
       .selectFrom("app.object_images")
-      .select(["object_id", "id", "position", "width", "height"])
+      .select([
+        "object_id",
+        "id",
+        "position",
+        "width",
+        "height",
+        "crop_left",
+        "crop_top",
+        "crop_side",
+      ])
       .where("object_id", "in", objectIds)
       .orderBy("object_id")
       .orderBy("position")
       .execute();
 
-    for (const { object_id, ...image } of rows) {
-      images.get(object_id)?.push(image);
+    for (const row of rows) {
+      images.get(row.object_id)?.push({
+        id: row.id,
+        position: row.position,
+        width: row.width,
+        height: row.height,
+        crop: storedCrop(row),
+      });
     }
   }
 
   return images;
 }
+
+/** A picture as the API gives it. */
+export const presentImage = ({
+  id,
+  width,
+  height,
+  crop,
+}: ObjectImage): ObjectImage => ({ id, width, height, crop });
 
 /**
  * One object's pictures in their order, as the API gives them; none once
@@ -281,13 +302,13 @@ export async function loadImages(
 export async function currentImages(
   db: Kysely<Database>,
   objectId: string | null,
-): Promise<{ id: string; width: number; height: number }[]> {
+): Promise<ObjectImage[]> {
   if (objectId === null) {
     return [];
   }
 
   return ((await loadImages(db, [objectId])).get(objectId) ?? []).map(
-    ({ id, width, height }) => ({ id, width, height }),
+    presentImage,
   );
 }
 
@@ -555,11 +576,7 @@ export function presentOwnObject(details: ObjectDetails, now: Date): OwnObject {
     availability: details.availability.map(toApiInterval),
     effectiveAvailability: derived.effective.map(toApiInterval),
     availableForNewLoans: derived.availableForNewLoans,
-    images: details.images.map(({ id, width, height }) => ({
-      id,
-      width,
-      height,
-    })),
+    images: details.images.map(presentImage),
     owners: details.owners.map((owner) => ({
       userId: owner.userId,
       realName: details.names.get(owner.userId) ?? null,

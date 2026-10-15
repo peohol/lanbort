@@ -186,7 +186,7 @@ describe("the picture of the thing a case names (PS-OBJ-021)", () => {
 
     for (const reader of [admin, borrower]) {
       expect((await read(reader, caseId)).images).toEqual([
-        { id: imageId, width: 10, height: 10 },
+        { id: imageId, width: 10, height: 10, crop: null },
       ]);
       expect(await image(reader)).toMatchObject({ contentType: "image/webp" });
     }

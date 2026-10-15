@@ -251,14 +251,6 @@
   gap: var(--space-1);
 }
 
-.images img {
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  background: var(--color-sunken);
-  border-radius: var(--radius-m);
-}
-
 .images .picker {
   flex-direction: column;
   aspect-ratio: 1;

@@ -864,6 +864,12 @@ export interface AppObjectImages {
   byte_size: number;
   content_type: string;
   created_at: Generated<Timestamp>;
+  crop_left: number | null;
+  /**
+   * The side of the square shown where the picture is shown square, in pixels; null shows the middle (PS-OBJ-002).
+   */
+  crop_side: number | null;
+  crop_top: number | null;
   height: number;
   id: string;
   object_id: string;

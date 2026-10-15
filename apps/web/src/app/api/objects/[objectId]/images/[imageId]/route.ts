@@ -1,9 +1,11 @@
 import {
+  cropObjectImage,
   executeCommand,
   readObjectImage,
   removeObjectImage,
 } from "@lanbort/domain";
 import { commandResponse, idempotencyKeyOf } from "@/server/http/body";
+import { userCommandRoute } from "@/server/http/command-route";
 import { errorResponse } from "@/server/http/errors";
 import { route } from "@/server/http/route";
 import { imageFileResponse, objectImageServices } from "@/server/images";
@@ -36,3 +38,6 @@ export const DELETE = route.user(
       }),
     ),
 );
+
+/** Chooses the square shown where the picture is shown square (PS-OBJ-002). */
+export const PATCH = userCommandRoute(cropObjectImage);

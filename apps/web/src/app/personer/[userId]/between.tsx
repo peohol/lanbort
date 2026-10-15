@@ -14,7 +14,7 @@ import { loansHref } from "@/navigation/areas";
 import { loanHref, objectHref } from "@/navigation/routes";
 import { formatShortPeriod } from "@/presentation/dates";
 import { loanRoleLabels, loanStatusLabels } from "@/presentation/loans";
-import { firstImageHref, friendImageHref } from "@/presentation/object-images";
+import { firstImage, friendImageHref } from "@/presentation/object-images";
 import styles from "./person.module.css";
 
 /**
@@ -96,7 +96,7 @@ export function FriendThings({
             key={thing.objectId}
             thing={thing}
             href={objectHref(thing.objectId, { kind: "direct" })}
-            image={firstImageHref(thing.images, (imageId) =>
+            image={firstImage(thing.images, (imageId) =>
               friendImageHref(thing.objectId, imageId),
             )}
             today={today}

@@ -34,7 +34,7 @@ import {
 import { formatShortTime } from "@/presentation/dates";
 import { accountStatusLabels } from "@/presentation/interventions";
 import { loanStatusLabels } from "@/presentation/loans";
-import { firstImageHref } from "@/presentation/object-images";
+import { firstImage } from "@/presentation/object-images";
 import { chatEnabled } from "@/server/chat-enabled";
 import { canonicalAppHref, onStableVercelHost } from "@/server/request-origin";
 import { pageQuery, requirePageAccount } from "@/server/session";
@@ -363,7 +363,7 @@ export default async function CasePage({
         picture={
           (c.loanTitle ?? c.objectTitle) !== null && (
             <ThingThumbnail
-              src={firstImageHref(c.images, (imageId) =>
+              image={firstImage(c.images, (imageId) =>
                 caseImageHref(c.id, imageId),
               )}
               size="title"

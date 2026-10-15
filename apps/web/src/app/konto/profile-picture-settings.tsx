@@ -1,8 +1,9 @@
 "use client";
 
-import type {
-  OwnProfilePicture,
-  ProfilePictureVisibility,
+import {
+  type OwnProfilePicture,
+  profilePictureMaxUploadBytes,
+  type ProfilePictureVisibility,
 } from "@lanbort/contracts";
 import { useRouter } from "next/navigation";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
@@ -13,10 +14,19 @@ import { announceDataChanged } from "@/components/data-changed";
 import { errorMessage } from "@/components/error-messages";
 import { ErrorText } from "@/components/error-text";
 import { helpId } from "@/components/field";
-import { readPhoto } from "@/components/photo";
+import { PictureCropper } from "@/components/picture-cropper";
 import { ProfilePicture } from "@/components/profile-picture";
+import { encodePhoto, readPhoto } from "@/components/photo";
 import { photoProblemText } from "@/presentation/photos";
-import { PictureCropper } from "./picture-cropper";
+import {
+  type Crop,
+  cropReadMaxSide,
+  drawCrop,
+} from "@/presentation/picture-crop";
+import {
+  pictureOutputSize,
+  pictureShape,
+} from "@/presentation/profile-picture";
 
 /** Who sees the picture, as the people it reaches (UX-PRIV-001). */
 const visibilityLabels: Record<ProfilePictureVisibility, string> = {
@@ -25,8 +35,31 @@ const visibilityLabels: Record<ProfilePictureVisibility, string> = {
   only_me: "Bare deg",
 };
 
-/** The longest side a photo is read at; more is never needed to crop. */
-const readMaxSide = 2048;
+/**
+ * The cropped picture as a compressed file: WebP where the browser can
+ * write it, otherwise JPEG. The server re-encodes it either way.
+ */
+async function croppedFile(
+  photo: ImageBitmap,
+  crop: Crop,
+): Promise<Blob | null> {
+  const { width, height } = pictureOutputSize();
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+  drawCrop(
+    context,
+    photo,
+    photo,
+    crop,
+    { left: 0, top: 0, width },
+    pictureShape,
+  );
+
+  return encodePhoto(canvas, profilePictureMaxUploadBytes);
+}
 
 /**
  * The own profile picture (PS-USR-002): choose a photo, place it in the
@@ -60,7 +93,7 @@ export function ProfilePictureSettings({
     event.target.value = "";
     if (!file) return;
     setError(null);
-    const read = await readPhoto(file, readMaxSide);
+    const read = await readPhoto(file, cropReadMaxSide);
     if (!read.ok) {
       setError(photoProblemText([read.problem], 1));
       return;
@@ -141,8 +174,10 @@ export function ProfilePictureSettings({
       {photo ? (
         <PictureCropper
           photo={photo}
+          shape={pictureShape}
+          saveLabel="Lagre bildet"
           saving={saving}
-          onSave={(file) => void save(file)}
+          onSave={async (crop) => void save(await croppedFile(photo, crop))}
           onCancel={() => setPhoto(null)}
         />
       ) : (

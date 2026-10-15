@@ -570,6 +570,11 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     objectId: ids.objectId,
     imageId: ids.imageId,
   }),
+  "object.crop_image": (ids) => ({
+    objectId: ids.objectId,
+    imageId: ids.imageId,
+    crop: null,
+  }),
   "object.invite_co_owner": (ids) => ({
     objectId: ids.objectId,
     userId: ids.userId,

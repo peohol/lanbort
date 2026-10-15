@@ -11,7 +11,7 @@ import {
   describeCoOwnerLoan,
 } from "@/presentation/loan-co-owner";
 import { personName } from "@/presentation/loan-status";
-import { firstImageHref, ownImageHref } from "@/presentation/object-images";
+import { firstImage, ownImageHref } from "@/presentation/object-images";
 import { ThingThumbnail } from "@/components/thing-thumbnail";
 import styles from "../_parts/loan.module.css";
 import { Progress } from "../_parts/progress";
@@ -40,7 +40,7 @@ export function CoOwnerLoan({
         kind="Lån · Du er medeier"
         picture={
           <ThingThumbnail
-            src={firstImageHref(view.images, (imageId) =>
+            image={firstImage(view.images, (imageId) =>
               ownImageHref(view.objectId, imageId),
             )}
             size="title"

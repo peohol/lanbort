@@ -1,6 +1,7 @@
 import type { ShownOwner } from "@lanbort/contracts";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import type { ThingImage } from "@/presentation/object-images";
 import { availabilityStatus } from "@/presentation/objects";
 import type { ListedThing } from "@/presentation/thing-list";
 import { Icon } from "./icon";
@@ -25,8 +26,8 @@ export function ThingCard({
 }: {
   href: string;
   title: string;
-  /** The address of its first photo; without one, a quiet placeholder. */
-  image: string | null;
+  /** Its first photo; without one, a quiet placeholder. */
+  image: ThingImage | null;
   /** Lines under the name; empty ones are left out. */
   details?: readonly ReactNode[];
   /** Usually a `Tag`. */
@@ -39,7 +40,7 @@ export function ThingCard({
 
   return (
     <li className={styles.card} id={id} tabIndex={id ? -1 : undefined}>
-      <ThingThumbnail src={image} size="card" placeholder />
+      <ThingThumbnail image={image} size="card" placeholder />
       <div className={styles.body}>
         <Link className={styles.title} href={href}>
           {title}
@@ -93,7 +94,7 @@ export function FoundThingCard({
 }: {
   thing: FoundThing;
   href: string;
-  image: string | null;
+  image: ThingImage | null;
   today: string;
 }) {
   const status = availabilityStatus(thing, today);

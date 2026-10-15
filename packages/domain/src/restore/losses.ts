@@ -52,6 +52,7 @@ import {
   objectDeletionConsentWithdrawn,
   objectFreezeEnded,
   objectImageAdded,
+  objectImageCropped,
   objectRestored,
   objectRestrictionLifted,
   objectReverted,
@@ -160,6 +161,8 @@ export const restoreLosses: readonly EventDefinition<unknown>[] = [
   objectUpdated,
   objectRestored,
   objectImageAdded,
+  // A lost choice of a picture's square shows its middle again.
+  objectImageCropped,
   objectReverted,
   coOwnerInvited,
   coOwnerInvitationWithdrawn,

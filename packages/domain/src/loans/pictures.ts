@@ -2,35 +2,44 @@ import type {
   CoOwnerLoan,
   Loan,
   LoanRequest,
+  ObjectImage,
   ThingPicture,
 } from "@lanbort/contracts";
+
+/** The first picture, as a list shows it (PS-OBJ-002). */
+const first = (images: readonly ObjectImage[]) =>
+  images[0] ? { imageId: images[0].id, crop: images[0].crop } : null;
 
 /**
  * PS-OBJ-021: the first picture of a loan's or request's thing, read the way
  * the reader sees it there: as a party, or as a co-owner who is not one.
  */
-export const loanPicture = ({ id, images }: Loan): ThingPicture | null =>
-  images[0] ? { through: "loan", loanId: id, imageId: images[0].id } : null;
+export function loanPicture({ id, images }: Loan): ThingPicture | null {
+  const picture = first(images);
+  return picture && { through: "loan", loanId: id, ...picture };
+}
 
-export const loanRequestPicture = ({
+export function loanRequestPicture({
   id,
   images,
-}: LoanRequest): ThingPicture | null =>
-  images[0]
-    ? { through: "loan_request", requestId: id, imageId: images[0].id }
-    : null;
+}: LoanRequest): ThingPicture | null {
+  const picture = first(images);
+  return picture && { through: "loan_request", requestId: id, ...picture };
+}
 
-export const coOwnerLoanPicture = ({
+export function coOwnerLoanPicture({
   objectId,
   images,
-}: CoOwnerLoan): ThingPicture | null =>
-  images[0] ? { through: "owner", objectId, imageId: images[0].id } : null;
+}: CoOwnerLoan): ThingPicture | null {
+  const picture = first(images);
+  return picture && { through: "owner", objectId, ...picture };
+}
 
 /** The invited user's view of the thing, only while they are asked. */
-export const coOwnerInvitationPicture = (
+export function coOwnerInvitationPicture(
   invitationId: string,
-  images: readonly { readonly id: string }[],
-): ThingPicture | null =>
-  images[0]
-    ? { through: "object_invitation", invitationId, imageId: images[0].id }
-    : null;
+  images: readonly ObjectImage[],
+): ThingPicture | null {
+  const picture = first(images);
+  return picture && { through: "object_invitation", invitationId, ...picture };
+}

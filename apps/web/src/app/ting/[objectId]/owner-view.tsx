@@ -37,6 +37,7 @@ import { MoreActions } from "@/components/more-actions";
 import { PageHeader } from "@/components/page-header";
 import { StatusCard } from "@/components/status-card";
 import { ContextTag, Tag } from "@/components/tag";
+import { ThingThumbnail } from "@/components/thing-thumbnail";
 import { thingsHref } from "@/navigation/areas";
 import {
   editObjectHref,
@@ -69,7 +70,7 @@ import {
 } from "@/presentation/object-owners";
 import { describeLoanRequest } from "@/presentation/loan-requests";
 import { formatDesiredPeriod, loanStatusLabels } from "@/presentation/loans";
-import { ownImageHref } from "@/presentation/object-images";
+import { firstImage, ownImageHref } from "@/presentation/object-images";
 import { availabilityLine, categoryLabel } from "@/presentation/objects";
 import { chatContactLink } from "@/server/chat-contact";
 import { pageQuery } from "@/server/session";
@@ -1012,7 +1013,9 @@ export async function OwnerView({
     published !== null &&
     !friends &&
     !published.publications.some(withdrawable);
-  const [cover] = object.images;
+  const cover = firstImage(object.images, (imageId) =>
+    ownImageHref(object.id, imageId),
+  );
 
   return (
     <main>
@@ -1021,17 +1024,7 @@ export async function OwnerView({
         back={{ href: thingsHref, label: "Mine ting" }}
         // Seen from an environment it is still the owners' one page.
         href={objectHref(object.id)}
-        picture={
-          cover && (
-            // The API's own address; nothing to optimize.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              className={styles.cover}
-              src={ownImageHref(object.id, cover.id)}
-              alt=""
-            />
-          )
-        }
+        picture={cover && <ThingThumbnail image={cover} size="cover" />}
         context={
           <>
             <ContextTag label="Kategori">

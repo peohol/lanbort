@@ -10,6 +10,7 @@ import { errorMessage } from "@/components/error-messages";
 import { ErrorText } from "@/components/error-text";
 import { Icon } from "@/components/icon";
 import { ThingThumbnail } from "@/components/thing-thumbnail";
+import type { ThingImage } from "@/presentation/object-images";
 import styles from "./add-things.module.css";
 
 /** One of the user's own things that can be added here. */
@@ -17,7 +18,7 @@ export interface AddableThing {
   readonly objectId: string;
   readonly title: string;
   /** The address of its first photo, if it has one. */
-  readonly image: string | null;
+  readonly image: ThingImage | null;
 }
 
 /** Titles as they are searched: without case, and words in any order. */
@@ -207,7 +208,7 @@ export function AddThings({
                         toggle([objectId], event.target.checked)
                       }
                     />
-                    <ThingThumbnail src={image} placeholder />
+                    <ThingThumbnail image={image} placeholder />
                     <span className={styles.title}>{title}</span>
                   </label>
                 </li>

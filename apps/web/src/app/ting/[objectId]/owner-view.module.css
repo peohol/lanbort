@@ -1,14 +1,5 @@
 /* The owners' view of a thing (Tomat kjerneflyt 2): its photo above its
    name, and where it is shown and what borrowers see as cards. */
-.cover {
-  display: block;
-  width: 4.5rem;
-  height: 4.5rem;
-  object-fit: cover;
-  background: var(--color-sunken);
-  border-radius: var(--radius-m);
-}
-
 /* Flat cards (`.card-flat`) on the surface. */
 .card {
   background: var(--color-surface);
