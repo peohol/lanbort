@@ -13,7 +13,7 @@ export const logo = {
   viewBox: `${box.x} ${box.y} ${box.size} ${box.size}`,
   stroke: 118,
   stem: "M125 60V690",
-  bowl: "M125 472.5a202 218.5 0 1 0 404 0a202 218.5 0 1 0-404 0",
+  bowl: "M129 473.5a200 216.5 0 1 0 400 0a200 216.5 0 1 0-400 0",
 } as const;
 
 /**
