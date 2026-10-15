@@ -10,14 +10,8 @@ import { Notice } from "./notice";
 import { RecoveryKeyFlow } from "./recovery-key";
 import { useOwnDevices } from "./use-own-devices";
 
-const header = (
-  <PageHeader
-    title="Gjenopprettingsnøkkel"
-    back={{ href: chatDevicesHref, label: "Mine enheter" }}
-    home="conversations"
-    task
-  />
-);
+// A step from Mine enheter, in the account (UX-IA-020).
+const header = <PageHeader title="Gjenopprettingsnøkkel" />;
 
 function RecoveryKeyTask({ engine }: { engine: ChatEngine }) {
   const { devices } = useOwnDevices();

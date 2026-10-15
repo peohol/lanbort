@@ -6,13 +6,15 @@ import {
 } from "@lanbort/domain";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ChatIcon } from "@/chat/chat-icon";
+import { readersText } from "@/chat/device-names";
 import { Icon } from "@/components/icon";
 import { MenuList, MenuRow } from "@/components/menu-list";
 import { PageHeader } from "@/components/page-header";
 import { ProfilePicture } from "@/components/profile-picture";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Tag } from "@/components/tag";
-import { chatSignOutHref } from "@/navigation/chat";
+import { chatDevicesHref, chatSignOutHref } from "@/navigation/chat";
 import {
   accountStateHref,
   appearanceHref,
@@ -50,14 +52,14 @@ const pictureReach = ({ pictureId, visibility }: OwnProfilePicture) =>
     : "Legg til et profilbilde";
 
 /**
- * Whether this sign-in has a device with private chat, which is told what
- * it loses before it signs out (ADR-0010 §7).
+ * The account's devices with private chat, where it may use chat: Mine
+ * enheter, and whether this sign-in is told what it loses before it signs
+ * out (ADR-0010 §7).
  */
-const hasChatDevice = async () =>
-  (await chatEnabled()) &&
-  // An account that may not use chat has no device to lose.
-  ((await pageQueryIfAllowed(readOwnChatDevices, {}))?.currentDeviceId ??
-    null) !== null;
+const ownChatDevices = async () =>
+  (await chatEnabled())
+    ? await pageQueryIfAllowed(readOwnChatDevices, {})
+    : null;
 
 /** «Logg ut», in Konto's menu. */
 function SignOutRow({ chat, userId }: { chat: boolean; userId: string }) {
@@ -96,9 +98,9 @@ function SignOutRow({ chat, userId }: { chat: boolean; userId: string }) {
 export default async function AccountPage() {
   const account = await requirePageAccount();
   const active = takesNewActivity(account.status);
-  const [social, chat, theme] = await Promise.all([
+  const [social, devices, theme] = await Promise.all([
     active ? pageQuery(getSocialOverview, {}) : null,
-    hasChatDevice(),
+    ownChatDevices(),
     readTheme(),
   ]);
   const waiting = social?.incomingRequests.length ?? 0;
@@ -172,12 +174,23 @@ export default async function AccountPage() {
             label="Kontoen din"
             detail={accountStatusLabel(account.status)}
           />
+          {devices && (
+            <MenuRow
+              href={chatDevicesHref}
+              icon={<ChatIcon name="anyDevice" />}
+              label="Mine enheter"
+              detail={readersText(devices)}
+            />
+          )}
           <MenuRow
             href={privacyHref}
             icon="lock"
             label="Personvern og sikkerhet"
           />
-          <SignOutRow chat={chat} userId={account.userId} />
+          <SignOutRow
+            chat={(devices?.currentDeviceId ?? null) !== null}
+            userId={account.userId}
+          />
         </MenuList>
       </section>
     </main>

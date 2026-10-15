@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { deviceName, distinctNames, suggestedName } from "./device-names";
+import {
+  deviceName,
+  distinctNames,
+  readersText,
+  suggestedName,
+} from "./device-names";
 
 describe("suggestedName", () => {
   it.each([
@@ -52,5 +57,21 @@ describe("distinctNames", () => {
       "Enhet ABCD (ABCD12)",
       "Enhet ABCD (ABCD23)",
     ]);
+  });
+});
+
+describe("readersText", () => {
+  const device = (revokedAt: string | null) => ({ revokedAt });
+
+  it("counts only the devices that can still read", () => {
+    expect(readersText({ devices: [device(null)] })).toBe(
+      "1 enhet kan lese samtalene dine",
+    );
+    expect(
+      readersText({
+        devices: [device(null), device("2026-10-15T10:00:00Z"), device(null)],
+      }),
+    ).toBe("2 enheter kan lese samtalene dine");
+    expect(readersText({ devices: [] })).toBe("Privat chat er ikke slått på");
   });
 });

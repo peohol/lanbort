@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import type { NextConfig } from "next";
+import { movedChatPages } from "./src/navigation/chat";
 import { getSecurityHeaders, unproxiedPaths } from "./src/security-headers";
 
 // Local development reads the repository's single .env. Variables that are
@@ -18,7 +19,13 @@ const nextConfig: NextConfig = {
   // do not fragment across disposable origins. APIs and scheduled jobs answer
   // everywhere.
   async redirects() {
-    if (!process.env.APP_URL) return [];
+    // Pages that have moved: links to where they were still lead to them.
+    const moved = movedChatPages.map(({ from, to }) => ({
+      source: `${from}/:rest*`,
+      destination: `${to}/:rest*`,
+      permanent: false,
+    }));
+    if (!process.env.APP_URL) return moved;
     const { host, origin } = new URL(process.env.APP_URL);
 
     return [
@@ -32,6 +39,7 @@ const nextConfig: NextConfig = {
         destination: `${origin}/:path`,
         permanent: false,
       },
+      ...moved,
     ];
   },
   async headers() {

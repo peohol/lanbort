@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { areaOf, areas } from "./areas";
+import { areaOf, areas, layerOf } from "./areas";
+import { chatDevicesHref, isChatPage } from "./chat";
 import { hrefFor } from "./targets";
 
 const id = "00000000-0000-4000-8000-000000000001";
@@ -43,5 +44,22 @@ describe("where notifications and Home lead (UX-IA-002)", () => {
 
   it("leads nowhere while no page shows the target", () => {
     expect(hrefFor({ type: "object_subscription", id })).toBeNull();
+  });
+});
+
+describe("the chat pages (ADR-0010 §13)", () => {
+  it("are Samtaler and Mine enheter in Konto, with what lies below them", () => {
+    for (const path of [
+      "/samtaler",
+      "/samtaler/abc",
+      chatDevicesHref,
+      `${chatDevicesHref}/koble`,
+    ]) {
+      expect(isChatPage(path)).toBe(true);
+    }
+    expect(layerOf(chatDevicesHref)).toBe("account");
+    for (const path of ["/konto", "/konto/venner", "/samtalerx", "/"]) {
+      expect(isChatPage(path)).toBe(false);
+    }
   });
 });

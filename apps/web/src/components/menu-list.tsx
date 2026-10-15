@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { Icon, type IconName } from "./icon";
 
 /**
@@ -35,8 +35,9 @@ export function MenuRow({
   /** Where the row leads; without it the row is only shown, as a person
    * without a page (UX-PRIV-010). */
   href?: string | undefined;
-  /** A quiet icon at the start of the row. */
-  icon?: IconName;
+  /** A quiet icon at the start of the row: the app's own, or one drawn
+   * like it. */
+  icon?: IconName | ReactElement;
   /** In place of the icon: a picture, or a soft square for a thing. */
   lead?: ReactNode;
   label: string;
@@ -54,8 +55,10 @@ export function MenuRow({
     <>
       {lead ? (
         <span className="menu-lead">{lead}</span>
+      ) : typeof icon === "string" ? (
+        <Icon name={icon} />
       ) : (
-        icon && <Icon name={icon} />
+        icon
       )}
       <div className="menu-text">
         <span className="menu-label">{label}</span>

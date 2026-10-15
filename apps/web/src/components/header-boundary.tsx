@@ -12,7 +12,8 @@ import { loadedPath } from "@/navigation/headers";
  * them inside the app loads the page anew: chat's keys are left behind in
  * the old document, and the map and location work again outside chat.
  * Konto and Varsler open as a layer over the page below, which keeps its
- * headers, so they are no such step.
+ * headers, so they are no such step. Mine enheter, the chat page in Konto,
+ * is loaded anew by chat itself (`ChatProvider`).
  */
 export function HeaderBoundary() {
   const pathname = usePathname();

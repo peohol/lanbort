@@ -1,11 +1,16 @@
 import type { ChatContext } from "@lanbort/contracts";
+import { accountHref } from "./areas";
 
 /**
  * The pages of private chat (WP-43). They get their own, stricter security
  * headers (ADR-0010 §13), so where they are is decided here, once.
  */
 export const chatHref = "/samtaler";
-export const chatDevicesHref = `${chatHref}/enheter`;
+/**
+ * «Mine enheter» belongs to the account, not to Samtaler, which only says
+ * how many devices can read the conversations and leads here.
+ */
+export const chatDevicesHref = `${accountHref}/enheter`;
 /**
  * Back in Mine enheter after declining the device that waited, with what
  * became of it (`declineOutcomes`).
@@ -44,6 +49,16 @@ export const chatWithHref = (userId: string, context?: ChatContext) =>
 export const chatAboutHref = (conversationId: string) =>
   `${chatConversationHref(conversationId)}/om`;
 
+/** The chat pages: Samtaler and Mine enheter, each with what lies below it. */
+const chatPageRoots = [chatHref, chatDevicesHref];
+
 /** Whether a path is one of the chat pages. */
 export const isChatPage = (pathname: string) =>
-  pathname === chatHref || pathname.startsWith(`${chatHref}/`);
+  chatPageRoots.some(
+    (root) => pathname === root || pathname.startsWith(`${root}/`),
+  );
+
+/** Where Mine enheter was, under Samtaler: old links still lead there. */
+export const movedChatPages = [
+  { from: `${chatHref}/enheter`, to: chatDevicesHref },
+];

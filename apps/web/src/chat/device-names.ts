@@ -157,5 +157,21 @@ export const deviceIcon = (
   label: ChatDeviceLabel | null | undefined,
 ): ChatIconName => label?.kind ?? "anyDevice";
 
+/**
+ * How many devices can read the conversations, where Mine enheter is
+ * offered: «2 enheter kan lese samtalene dine».
+ */
+export function readersText({
+  devices,
+}: {
+  devices: readonly { revokedAt: string | null }[];
+}) {
+  const count = devices.filter((d) => d.revokedAt === null).length;
+
+  return count === 0
+    ? "Privat chat er ikke slått på"
+    : `${count === 1 ? "1 enhet kan" : `${count} enheter kan`} lese samtalene dine`;
+}
+
 /** When a device was added: «3. mars 2026 kl. 12:10». */
 export const addedAt = (iso: string) => addedFormat.format(new Date(iso));
