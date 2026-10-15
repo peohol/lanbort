@@ -21,19 +21,12 @@ const afterEnding = (person: Person) =>
   person.sharedEnvironments.length > 0 ? {} : { next: friendsHref };
 
 /**
- * The card «Dere to» (UX-INT-001): where the reader stands with the person
- * and only the next step: send, accept or decline, withdraw, or lift the
- * block (PS-USR-003–006). Friends can write to each other (PS-COM-017),
- * where private chat is on.
+ * The card «Dere to» (UX-INT-001): where the reader stands with someone who
+ * is not a friend, and only the next step: send, accept or decline,
+ * withdraw, or lift the block (PS-USR-003–006). Friends need no card; the
+ * page leads them to their conversation.
  */
-export function RelationCard({
-  person,
-  writeHref,
-}: {
-  person: Person;
-  /** Where «Skriv til» leads; none while private chat is off. */
-  writeHref: string | null;
-}) {
+export function RelationCard({ person }: { person: Person }) {
   const { relation, realName: name } = person;
   const text = describeRelation(person);
   const body = { userId: person.userId };
@@ -77,11 +70,7 @@ export function RelationCard({
             {...afterEnding(person)}
           />
         ),
-        friends: writeHref && (
-          <Link className="button button-secondary" href={writeHref}>
-            Skriv til {name}
-          </Link>
-        ),
+        friends: null,
       }[relation.friendship]
     ));
 

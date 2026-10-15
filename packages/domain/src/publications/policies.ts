@@ -141,6 +141,16 @@ export const listEnvironmentObjectsPolicy = definePolicy<
   resource: [canSeeEnvironment, isActiveMember],
 });
 
+/**
+ * The caller's own things they can add to the environment: the same active
+ * access publishing needs (PS-OBJ-006).
+ */
+export const listAddableObjectsPolicy = definePolicy<EnvironmentAccess, void>({
+  action: "environment_publication.list_addable",
+  actor: [requireActiveAccount],
+  resource: [canSeeEnvironment, isActiveMember],
+});
+
 /** An object's image, reached through one of its publications. */
 export interface PublishedImageResource {
   readonly access: EnvironmentAccess;
@@ -233,6 +243,7 @@ export const publicationPolicies = [
   listEnvironmentPublicationsPolicy,
   setObjectApprovalPolicy,
   listEnvironmentObjectsPolicy,
+  listAddableObjectsPolicy,
   readPublishedImagePolicy,
   publishToFriendsPolicy,
   withdrawFromFriendsPolicy,

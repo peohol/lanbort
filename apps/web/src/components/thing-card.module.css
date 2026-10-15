@@ -1,5 +1,5 @@
-/* Things in a list (ThingCard): a photo, the name, context and status, and
-   a mark that it leads on. The name's link covers the whole card, so the
+/* Things in a list (ThingCard): a photo, the name, a line or two and the
+   status, and a mark that it leads on. The name's link covers the whole card, so the
    card is one large target (UX-A11Y-006); links in the context lie above
    it and stay their own targets. */
 .cards {
@@ -41,6 +41,7 @@
 }
 
 .title {
+  font-size: var(--text-l);
   font-weight: 700;
   color: var(--color-text);
   text-decoration: none;
@@ -73,4 +74,9 @@
 
 .chevron {
   color: var(--color-muted);
+}
+
+/* The owners' pictures and names, as the person's own text, not muted. */
+.owners {
+  color: var(--color-text);
 }

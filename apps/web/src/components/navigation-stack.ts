@@ -14,6 +14,7 @@ import {
   arrive,
   arriveInLayer,
   type DirectEntry,
+  fromLayer,
   isLayerStackOf,
   isStackOf,
   type LayerStack,
@@ -73,6 +74,14 @@ interface NavigationHistory {
 
 const browserHistory = () =>
   (globalThis as { navigation?: NavigationHistory }).navigation ?? null;
+
+/** The address of an entry in the browser's history, where it is known. */
+function historyAddress(history: NavigationHistory, index: number) {
+  const url = history.entries()[index]?.url;
+  if (!url) return null;
+  const { pathname, search } = new URL(url);
+  return `${pathname}${search}`;
+}
 
 if (typeof window !== "undefined") {
   try {
@@ -159,11 +168,14 @@ const followed = (how: Arrival) => how === "push" || how === "replace";
 /** The user has arrived at a detail page. */
 export function enterPlace(place: Place) {
   const { how, via } = take();
-  // A page followed from inside a layer is not part of the stack under it.
-  const fromLayer = state.layer !== null && followed(how);
+  // A page followed from inside a layer is not part of the stack under it,
+  // but its way back leads to the layer's page it was opened from.
+  const layer = followed(how) ? state.layer : null;
 
   set({
-    stack: arrive(state.stack, place, fromLayer ? "direct" : how, via),
+    stack: layer
+      ? fromLayer(place, layer.entries.at(-1) ?? null)
+      : arrive(state.stack, place, how, via),
     layer: null,
     outside: place.href,
   });
@@ -240,18 +252,47 @@ export function closeLayer(open: (href: string) => void) {
   const history = browserHistory();
   const current = history?.currentEntry?.index ?? null;
 
-  if (under?.index != null && current !== null && under.index < current) {
-    const url = history?.entries()[under.index]?.url;
-    const entry = url ? new URL(url) : null;
-
-    if (entry && `${entry.pathname}${entry.search}` === under.href) {
-      window.history.go(under.index - current);
-      return;
-    }
+  if (
+    history &&
+    under?.index != null &&
+    current !== null &&
+    under.index < current &&
+    historyAddress(history, under.index) === under.href
+  ) {
+    window.history.go(under.index - current);
+    return;
   }
 
   next = { how: "history", via: null, seen: false };
   open(under?.href ?? homeHref);
+}
+
+/**
+ * The way back to a page in a layer: the browser's back to the nearest
+ * earlier entry that is that page, so the layer opens again over exactly
+ * the screen it lay over. False where the history has none; the link is
+ * then followed instead.
+ */
+export function returnToLayer(href: string): boolean {
+  const history = browserHistory();
+  const current = history?.currentEntry?.index ?? null;
+
+  if (
+    !history ||
+    current === null ||
+    layerOf(href.split(/[?#]/, 1)[0]!) === null
+  ) {
+    return false;
+  }
+
+  for (let index = current - 1; index >= 0; index -= 1) {
+    if (historyAddress(history, index) === href) {
+      window.history.go(index - current);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**

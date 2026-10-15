@@ -1,14 +1,20 @@
-import type { FriendObjectList, LoanList } from "@lanbort/contracts";
+import {
+  type FriendObjectList,
+  type LoanList,
+  type ObjectCategory,
+  thingListLimit,
+} from "@lanbort/contracts";
 import Link from "next/link";
 import { EntryDetail } from "@/components/entry-detail";
 import { Icon } from "@/components/icon";
 import { MenuList, MenuRow } from "@/components/menu-list";
-import { ContextTag } from "@/components/tag";
+import { FoundThingCard } from "@/components/thing-card";
+import { ThingList, type ThingListFilter } from "@/components/thing-list";
 import { loansHref } from "@/navigation/areas";
 import { loanHref, objectHref } from "@/navigation/routes";
 import { formatShortPeriod } from "@/presentation/dates";
 import { loanRoleLabels, loanStatusLabels } from "@/presentation/loans";
-import { describeAvailability } from "@/presentation/objects";
+import { firstImageHref, friendImageHref } from "@/presentation/object-images";
 import styles from "./person.module.css";
 
 /**
@@ -51,50 +57,54 @@ export function Between({ loans }: { loans: LoanList }) {
 }
 
 /**
- * The things a friend has made visible to friends (PS-OBJ-020), newest
- * first, each leading to the thing as seen directly between friends.
+ * The things a friend has made visible to friends (PS-OBJ-020): what the
+ * reader may borrow directly from them, each leading to the thing as seen
+ * directly between friends, grouped by category and filtered like every
+ * list of things (UX-IA-021). Nothing when there are none.
  */
 export function FriendThings({
   name,
   things,
   more,
+  categories,
+  filter,
   today,
 }: {
   name: string;
   things: FriendObjectList["objects"];
-  /** The address of the next page of things, if there is one. */
-  more: string | null;
+  /** There are more than are shown. */
+  more: boolean;
+  categories: readonly ObjectCategory[];
+  filter: ThingListFilter;
   today: string;
 }) {
+  if (things.length === 0) return null;
+
   return (
     <section aria-labelledby="venners-ting" className={styles.section}>
-      <h2 id="venners-ting">Tingene {name} har gjort synlige for venner</h2>
-      {things.length === 0 ? (
-        <p className="quiet">{name} har ingen ting synlige for venner nå.</p>
-      ) : (
-        <MenuList label="venners-ting">
-          {things.map((thing) => (
-            <MenuRow
-              key={thing.objectId}
-              lead={<Icon name="things" />}
-              href={objectHref(thing.objectId, { kind: "direct" })}
-              label={thing.title}
-              detail={
-                <span className={styles.lines}>
-                  <span>{describeAvailability(thing, today)}</span>
-                  <ContextTag label="Synlig" icon="people">
-                    Direkte mellom venner
-                  </ContextTag>
-                </span>
-              }
-            />
-          ))}
-        </MenuList>
-      )}
+      <h2 id="venners-ting" className={styles.iconHeading}>
+        <Icon name="things" />
+        {`Ting du kan låne direkte fra ${name}`}
+      </h2>
+      <ThingList
+        things={things}
+        categories={categories}
+        today={today}
+        filter={filter}
+        card={(thing) => (
+          <FoundThingCard
+            key={thing.objectId}
+            thing={thing}
+            href={objectHref(thing.objectId, { kind: "direct" })}
+            image={firstImageHref(thing.images, (imageId) =>
+              friendImageHref(thing.objectId, imageId),
+            )}
+            today={today}
+          />
+        )}
+      />
       {more && (
-        <p className="link-row">
-          <a href={more}>Vis flere ting</a>
-        </p>
+        <p className="quiet">Viser de {thingListLimit} nyeste tingene.</p>
       )}
     </section>
   );

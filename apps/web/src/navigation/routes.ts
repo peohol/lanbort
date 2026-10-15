@@ -87,8 +87,12 @@ export const environmentHref = (id: string) => `/miljoer/${id}`;
 export const environmentAdminHref = (id: string) =>
   `${environmentHref(id)}/administrer`;
 
-/** «Om miljøet og medlemmer»: what it is, who is in it, your membership. */
+/** «Om miljøet»: what it is and its rules. */
 export const environmentAboutHref = (id: string) => `${environmentHref(id)}/om`;
+
+/** «Mitt medlemskap»: contacting the administrators, and leaving. */
+export const environmentMembershipHref = (id: string) =>
+  `${environmentHref(id)}/medlemskap`;
 
 /** Joining, applying or answering requirements, as a bounded task. */
 export const environmentJoinHref = (id: string) =>
@@ -148,14 +152,11 @@ export const appearanceHref = `${accountHref}/utseende`;
 
 /**
  * Pages that open inside the account when they are reached from it, so
- * they join its stack (UX-IA-020): people, and the user's own cases with
- * a case from them. Each has a page of the same name under the account.
+ * they join its stack (UX-IA-020): the user's own cases with a case from
+ * them. Each has a page of the same name under the account. A person's
+ * page stands on its own, whichever way it was reached.
  */
-const withinAccount = [
-  /^\/personer\/[^/?#]+$/,
-  /^\/saker$/,
-  /^\/saker\/(?!ny$)[^/?#]+$/,
-];
+const withinAccount = [/^\/saker$/, /^\/saker\/(?!ny$)[^/?#]+$/];
 
 /** Where `href` leads when it is followed from inside the account. */
 export function accountLayerHref(href: string): string | null {

@@ -1,4 +1,5 @@
 import {
+  type AddableObjectList,
   type EnvironmentObjectList,
   type EnvironmentPublicationList,
   environmentObjectsQuerySchema,
@@ -9,6 +10,7 @@ import {
   type PublicationStatus,
   publicationPageSize,
   publishedObjectImageSchema,
+  thingListLimit,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
@@ -53,6 +55,7 @@ import {
   type ObjectImageRow,
 } from "../objects/state";
 import {
+  listAddableObjectsPolicy,
   listEnvironmentObjectsPolicy,
   listEnvironmentPublicationsPolicy,
   listObjectPublicationsPolicy,
@@ -494,8 +497,8 @@ export function presentFound(row: FoundRow, details: FoundDetails, now: Date) {
 }
 
 /**
- * The objects an active member finds in the environment, newest publication
- * first.
+ * The objects an active member finds in the environment, the newest
+ * {@link thingListLimit} publications.
  */
 export const listEnvironmentObjects = defineQuery({
   name: "environment_object.list",
@@ -522,13 +525,12 @@ export const listEnvironmentObjects = defineQuery({
       const rows =
         viewerId && discoverable
           ? await selectFound(discoverable, viewerId)
-              .where(afterCursor(input.cursor))
               .orderBy("publication.created_at", "desc")
               .orderBy("publication.id", "desc")
-              .limit(publicationPageSize + 1)
+              .limit(thingListLimit + 1)
               .execute()
           : [];
-      const { items, nextCursor } = page(rows);
+      const items = rows.slice(0, thingListLimit);
       const details = await loadFoundDetails(
         tx,
         items.map((row) => row.object_id),
@@ -548,7 +550,13 @@ export const listEnvironmentObjects = defineQuery({
         : new Map();
 
       return {
-        resource: { ...access, items, nextCursor, details, owners },
+        resource: {
+          ...access,
+          items,
+          more: rows.length > thingListLimit,
+          details,
+          owners,
+        },
         context: undefined,
       };
     }),
@@ -558,7 +566,95 @@ export const listEnvironmentObjects = defineQuery({
       ...presentFound(row, resource.details, now),
       owners: [...(resource.owners.get(row.object_id) ?? [])],
     })),
-    nextCursor: resource.nextCursor,
+    more: resource.more,
+  }),
+});
+
+/**
+ * The caller's own things they can add to the environment now, by the same
+ * rules as publishing (`publishObject`): none while the environment takes
+ * no new publications; otherwise each active object they own that is not
+ * frozen (PS-OBJ-009), not stopped by another owner (PS-OBJ-008), and has
+ * no publication there that is live or stands as the administrators'
+ * decision (PS-OBJ-017). By title.
+ */
+export const listAddableObjects = defineQuery({
+  name: "environment_publication.list_addable",
+  input: z.strictObject({ environmentId: z.uuid() }),
+  policy: listAddableObjectsPolicy,
+  rateLimit: rateLimits.lookups,
+  load: ({ db, actor, input, now }) =>
+    inSnapshot(db, async (tx) => {
+      const access = await loadEnvironmentAccess(
+        tx,
+        input.environmentId,
+        actor,
+        now,
+      );
+      const viewerId = viewerIdOf(actor);
+
+      if (!access) {
+        return null;
+      }
+
+      const rows =
+        viewerId && acceptsNewActivity(access.environment)
+          ? await tx
+              .selectFrom("app.objects as object")
+              .select([
+                "object.id as object_id",
+                "object.title",
+                "object.category_id",
+              ])
+              .where("object.status", "=", "active")
+              .where(ownedBy(viewerId))
+              .where(
+                sql<boolean>`not exists (
+                  select 1 from app.object_freezes as open_freeze
+                  where open_freeze.object_id = object.id
+                    and open_freeze.ended_at is null
+                )`,
+              )
+              .where(
+                sql<boolean>`not exists (
+                  select 1 from app.object_restrictions as veto
+                  where veto.object_id = object.id
+                    and veto.lifted_at is null
+                    and veto.period is null
+                    and veto.set_by_user_id <> ${viewerId}
+                )`,
+              )
+              .where(
+                sql<boolean>`not exists (
+                  select 1 from app.environment_publications as current
+                  where current.object_id = object.id
+                    and current.environment_id = ${access.environment.id}
+                    and current.status <> 'unpublished'
+                )`,
+              )
+              .orderBy(sql`lower(object.title)`)
+              .orderBy("object.id")
+              .execute()
+          : [];
+      const images = await loadImages(
+        tx,
+        rows.map((row) => row.object_id),
+      );
+
+      return {
+        resource: { ...access, rows, images },
+        context: undefined,
+      };
+    }),
+  present: ({ resource }): AddableObjectList => ({
+    objects: resource.rows.map((row) => ({
+      objectId: row.object_id,
+      title: row.title,
+      categoryId: row.category_id,
+      images: (resource.images.get(row.object_id) ?? []).map(
+        ({ id, width, height }) => ({ id, width, height }),
+      ),
+    })),
   }),
 });
 

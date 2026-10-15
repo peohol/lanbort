@@ -1,11 +1,13 @@
 import type {
   ApproximateMembers,
   Environment,
+  EnvironmentMember,
   EnvironmentRole,
   EnvironmentType,
   RequirementKind,
   TypeChangeProposal,
 } from "@lanbort/contracts";
+import type { IconName } from "@/components/icon";
 import { formatTime } from "./dates";
 
 /** The three types by name (PS-ENV-001). */
@@ -45,6 +47,51 @@ export const roleName = (roles: readonly EnvironmentRole[]) =>
     : roles.includes("administrator")
       ? environmentRoleNames.administrator
       : null;
+
+/** One group of the member list, under its heading. */
+export interface MemberGroup {
+  readonly key: "owners" | "administrators" | "members";
+  readonly heading: string;
+  readonly icon: IconName;
+  readonly people: readonly EnvironmentMember[];
+}
+
+const memberGroupHeadings: readonly Omit<MemberGroup, "people">[] = [
+  { key: "owners", heading: "Eier", icon: "crown" },
+  { key: "administrators", heading: "Administratorer", icon: "shield" },
+  { key: "members", heading: "Medlemmer", icon: "people" },
+];
+
+const groupOf = ({ roles }: EnvironmentMember): MemberGroup["key"] =>
+  roles.includes("owner")
+    ? "owners"
+    : roles.includes("administrator")
+      ? "administrators"
+      : "members";
+
+/**
+ * Who is in the environment, as its active members see it (PS-ENV-015):
+ * the owner, the other administrators and everyone else, each person once
+ * and by name, with `me` in their place. A group without anyone in it is
+ * left out, so an owner who is the only administrator is not listed twice.
+ */
+export function memberGroups(
+  others: readonly EnvironmentMember[],
+  me: EnvironmentMember,
+): MemberGroup[] {
+  const everyone = [...others, me].sort(
+    (a, b) =>
+      Number(a.realName === null) - Number(b.realName === null) ||
+      (a.realName ?? "").localeCompare(b.realName ?? "", "nb"),
+  );
+
+  return memberGroupHeadings
+    .map((group) => ({
+      ...group,
+      people: everyone.filter((person) => groupOf(person) === group.key),
+    }))
+    .filter(({ people }) => people.length > 0);
+}
 
 /** What the member does with a requirement (PS-ENV-005). */
 export const requirementKindNames: Record<RequirementKind, string> = {
@@ -131,6 +178,19 @@ export function membershipStep(environment: Environment): MembershipStep {
 
   return { kind: "member" };
 }
+
+/**
+ * An active membership with nothing more to say than that (Tomat): the
+ * «Medlem» tag under the title says it, without a card. A winding-down
+ * environment, or one without administration, still says so on the card.
+ */
+export const plainMembership = (
+  environment: Pick<Environment, "continuity">,
+  step: MembershipStep,
+) =>
+  step.kind === "member" &&
+  !environment.continuity?.windDown &&
+  environment.continuity?.administrationAvailable !== false;
 
 /** The status in words, said as a situation (UX-INT-004). */
 export function describeMembership(

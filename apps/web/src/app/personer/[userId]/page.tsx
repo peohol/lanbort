@@ -1,25 +1,23 @@
 import {
   calendarDate,
-  collectPages,
   listFriendObjects,
   listInvitableEnvironments,
   listLoans,
+  listObjectCategories,
   readPerson,
   readTrustProfile,
 } from "@lanbort/domain";
 import type { Person } from "@lanbort/contracts";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Icon } from "@/components/icon";
 import { PageHeader } from "@/components/page-header";
 import { ProfilePicture } from "@/components/profile-picture";
 import { ContextTag, Tag } from "@/components/tag";
-import {
-  morePagesHref,
-  pagesShown,
-  type SearchParams,
-} from "@/navigation/list-pages";
-import { personHref } from "@/navigation/routes";
-import { describeRelation, whyVisible } from "@/presentation/people";
+import type { SearchParams } from "@/navigation/list-pages";
+import { environmentHref, personHref } from "@/navigation/routes";
+import { describeRelation } from "@/presentation/people";
+import { readThingFilter, thingFilterHref } from "@/presentation/thing-list";
 import { chatContactLink } from "@/server/chat-contact";
 import { unavailabilityReportLink } from "@/server/unavailability-report";
 import {
@@ -36,31 +34,25 @@ import { TrustSummary } from "./trust";
 
 export const metadata: Metadata = { title: "Person – Lånbort" };
 
-/** The friend's things' element, and their pages in the address. */
-const thingsKey = "ting";
-
 /**
- * The things a friend has made visible to friends, as many pages as the
- * address asks for; none for anyone who is not a friend (PS-OBJ-020).
+ * The things a friend has made visible to friends, with the categories to
+ * group them by; none for anyone who is not a friend (PS-OBJ-020).
  */
-async function friendThingsOf(person: Person, query: SearchParams) {
+async function friendThingsOf(person: Person) {
   if (person.relation?.friendship !== "friends") return null;
 
-  return collectPages(
-    (cursor) =>
-      pageQuery(listFriendObjects, {
-        userId: person.userId,
-        ...(cursor ? { cursor } : {}),
-      }),
-    (page) => page.objects,
-    pagesShown(query, thingsKey),
-  );
+  const [things, categories] = await Promise.all([
+    pageQuery(listFriendObjects, { userId: person.userId }),
+    pageQuery(listObjectCategories, {}),
+  ]);
+
+  return things && { ...things, categories: categories?.categories ?? [] };
 }
 
 /**
  * The person's header: the picture, or initials where none is shown; a tag
- * for the relation; the environments they share with the reader
- * (UX-PRIV-003).
+ * for the relation; the environments they share with the reader, each
+ * leading to the environment (UX-PRIV-003).
  */
 function header(person: Person) {
   const { tag } = describeRelation(person);
@@ -82,7 +74,12 @@ function header(person: Person) {
           </Tag>
         )}
         {person.sharedEnvironments.map((environment) => (
-          <ContextTag key={environment.id} label="Miljø" icon="environment">
+          <ContextTag
+            key={environment.id}
+            label="Miljø"
+            icon="environment"
+            href={environmentHref(environment.id)}
+          >
             {environment.name}
           </ContextTag>
         ))}
@@ -92,12 +89,14 @@ function header(person: Person) {
 }
 
 /**
- * A person (WP-86, kjerneflyt 6): who they are, why the reader sees them,
- * where the reader stands with them and the next step, what is between
- * them now, where the reader may invite them (PS-ENV-018), what others
- * said about them in each role (PS-TRUST-006–007) and, for a friend, the
- * things they show friends. Someone the reader may
- * not see shows the same «not found» as someone who does not exist
+ * A person (WP-86, kjerneflyt 6): one page of its own, the same whichever
+ * way it was reached, with only the way back. Who they are and where the
+ * reader knows them from; for a friend the way to the conversation, and
+ * otherwise where the reader stands with them and the next step; what is
+ * between them now, where the reader may invite them (PS-ENV-018), what
+ * others said about them in each role (PS-TRUST-006–007) and, for a
+ * friend, the things the reader may borrow from them. Someone the reader
+ * may not see shows the same «not found» as someone who does not exist
  * (PS-USR-006, UX-PRIV-007). There are no activity figures (PS-TRUST-017).
  */
 export default async function PersonPage({
@@ -116,32 +115,36 @@ export default async function PersonPage({
         ? pageQuery(listLoans, { state: "current", counterpartId: userId })
         : null,
       person.trustProfile ? pageQuery(readTrustProfile, { userId }) : null,
-      friendThingsOf(person, query),
+      friendThingsOf(person),
       chatContactLink(userId),
       person.relation && !person.relation.blockedByMe
         ? pageQuery(listInvitableEnvironments, { userId })
         : null,
       unavailabilityReportLink(userId),
     ]);
-  const why = whyVisible(person);
   const { picture, context } = header(person);
 
   return (
     <main className={`main-wide ${styles.page}`}>
       <PageHeader
-        kind="Person"
         title={person.realName}
         picture={picture}
         home="home"
         context={context}
+        standalone
       />
-      {why && (
-        <p className={styles.why}>
-          <Icon name="info" />
-          <span>{why}</span>
-        </p>
+      {person.relation?.friendship === "friends" ? (
+        contact && (
+          <p className="actions">
+            <Link className="button button-secondary" href={contact.href}>
+              <Icon name="conversations" />
+              Åpne chat
+            </Link>
+          </p>
+        )
+      ) : (
+        <RelationCard person={person} />
       )}
-      <RelationCard person={person} writeHref={contact?.href ?? null} />
       {loans && <Between loans={loans} />}
       {invitable && (
         <InviteTo
@@ -150,33 +153,23 @@ export default async function PersonPage({
           environments={invitable.environments}
         />
       )}
-      <div className={styles.aside}>
-        {trust ? (
+      {trust && (
+        <div className={styles.aside}>
           <TrustSummary userId={userId} profile={trust} role={roleIn(query)} />
-        ) : (
-          !person.relation?.blockedByMe && (
-            <p className="quiet">
-              Anmeldelser fra lån vises for venner og for medlemmer av et felles
-              miljø.
-            </p>
-          )
-        )}
-      </div>
+        </div>
+      )}
       {things && (
         <FriendThings
           name={person.realName}
-          things={things.items}
+          things={things.objects}
+          more={things.more}
+          categories={things.categories}
+          filter={{
+            chosen: readThingFilter(query),
+            href: (filter) =>
+              thingFilterHref(personHref(userId), query, filter),
+          }}
           today={calendarDate(new Date())}
-          more={
-            things.nextCursor === null
-              ? null
-              : morePagesHref(
-                  personHref(userId),
-                  query,
-                  thingsKey,
-                  "venners-ting",
-                )
-          }
         />
       )}
       <PersonMoreActions

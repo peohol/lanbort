@@ -2,7 +2,6 @@ import type {
   AvailabilityInterval,
   ObjectCategory,
   OwnObject,
-  ShownOwner,
 } from "@lanbort/contracts";
 import type { Tone } from "@/components/tag";
 import { addDays, formatDay } from "./dates";
@@ -185,7 +184,3 @@ export const sayList = (words: readonly string[]) =>
   words
     .map((word, index) => listSeparator(index, words.length) + word)
     .join("");
-
-/** The heading for a thing's owners, one or several. */
-export const ownersLabel = (owners: readonly ShownOwner[]) =>
-  owners.length === 1 ? "Eier" : "Eiere";

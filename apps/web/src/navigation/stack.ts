@@ -24,6 +24,12 @@ export interface Stack {
   readonly via: DirectEntry | null;
   /** What the browser's forward leads back into, nearest first. */
   readonly forward: readonly StackEntry[];
+  /**
+   * The page in a layer the first detail was opened from, such as Konto ›
+   * Venner: where that detail's way back leads, without the layer being a
+   * step in the area's stack (UX-IA-020).
+   */
+  readonly from?: StackEntry | undefined;
 }
 
 /** What a page says about its place: the facts the rule builds from. */
@@ -70,6 +76,15 @@ export const ruleStack = (place: Place, via: DirectEntry | null): Stack => ({
   ],
   via,
   forward: [],
+});
+
+/**
+ * A detail followed from a page in a layer: the stack by the rule, with the
+ * way back to that page while the detail is the first in it.
+ */
+export const fromLayer = (place: Place, from: StackEntry | null): Stack => ({
+  ...ruleStack(place, null),
+  ...(from && !place.container && { from }),
 });
 
 /** An area's own page starts its stack over (UX-IA-009). */
@@ -166,11 +181,16 @@ export function arrive(
   if (moved === null) return ruleStack(place, null);
 
   const current = previous.entries.at(-1);
+  const first = previous.entries[0];
   return {
     area: previous.area,
     ...moved,
     // Still on the page the entry led to, as after a reload.
     via: current && samePlace(current.href, place.href) ? previous.via : null,
+    // The first detail still leads back into the layer it was opened from.
+    ...(previous.from &&
+      first &&
+      samePlace(moved.entries[0]!.href, first.href) && { from: previous.from }),
   };
 }
 
@@ -189,8 +209,12 @@ export const trail = (stack: Stack): readonly StackEntry[] => {
   return [{ href: area.href, label: area.label }, ...stack.entries];
 };
 
-/** The one step back, named after where it leads («‹ Kari Nordmann»). */
-export const backOf = (stack: Stack): StackEntry => trail(stack).at(-2)!;
+/**
+ * The one step back, named after where it leads («‹ Kari Nordmann»): from
+ * the first detail opened from a layer, back to that layer's page.
+ */
+export const backOf = (stack: Stack): StackEntry =>
+  (stack.entries.length === 1 && stack.from) || trail(stack).at(-2)!;
 
 /**
  * A layer's own stack (UX-IA-020): the pages opened in it, in order, and

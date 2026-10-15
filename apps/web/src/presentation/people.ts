@@ -2,7 +2,6 @@ import {
   type DimensionTrust,
   type Person,
   type ProfileReview,
-  productTimeZone,
   type SocialRelation,
 } from "@lanbort/contracts";
 import type { IconName } from "@/components/icon";
@@ -35,18 +34,11 @@ export interface RelationText {
 const friendsGive =
   "Som venner kan dere låne direkte av hverandre og se tingene dere har gjort synlige for venner.";
 
-const sinceFormat = new Intl.DateTimeFormat("nb-NO", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  timeZone: productTimeZone,
-});
-
 /**
  * Whom a relation is told about: a person's page, or the owner of a friend
  * code (PS-USR-014), which says nothing more than the name and relation.
  */
-export type RelationSubject = Pick<Person, "realName" | "relationSince"> & {
+export type RelationSubject = Pick<Person, "realName"> & {
   readonly relation: Omit<SocialRelation, "userId"> | null;
 };
 
@@ -56,7 +48,7 @@ export type RelationSubject = Pick<Person, "realName" | "relationSince"> & {
  * nothing says that a request was declined (PS-USR-012).
  */
 export function describeRelation(person: RelationSubject): RelationText {
-  const { relation, realName, relationSince } = person;
+  const { relation, realName } = person;
 
   if (!relation) {
     return {
@@ -84,13 +76,7 @@ export function describeRelation(person: RelationSubject): RelationText {
         tag: { text: "Venn", icon: "personCheck", tone: "positive" },
         tone: "positive",
         status: "Dere er venner",
-        detail: [
-          relationSince &&
-            `Siden ${sinceFormat.format(new Date(relationSince))}.`,
-          "Dere kan låne direkte av hverandre.",
-        ]
-          .filter(Boolean)
-          .join(" "),
+        detail: "Dere kan låne direkte av hverandre.",
       };
     case "incoming_pending":
       return {
@@ -129,34 +115,6 @@ export const sharedNames = (person: Person) =>
   person.sharedEnvironments.length > 0
     ? listFormat.format(person.sharedEnvironments.map(({ name }) => name))
     : null;
-
-/**
- * Why the reader sees the person (UX-PRIV-003): what gives them access to
- * the page now. Nothing for the reader's own page or someone they block,
- * where the card already says it.
- */
-export function whyVisible(person: Person): string | null {
-  const { relation, realName } = person;
-
-  if (!relation || relation.blockedByMe) return null;
-
-  const names = sharedNames(person);
-  const shared = names && `begge er med i ${names}`;
-  const reason =
-    relation.friendship === "friends"
-      ? shared
-        ? `dere er venner og ${shared}`
-        : "dere er venner"
-      : shared
-        ? `dere ${shared}`
-        : {
-            incoming_pending: `${realName} vil bli venn med deg`,
-            outgoing_pending: `du har sendt ${realName} en venneforespørsel`,
-            none: null,
-          }[relation.friendship];
-
-  return reason && `Du ser ${realName} fordi ${reason}.`;
-}
 
 /** What each dimension asks about (PS-TRUST-001), by its code. */
 const dimensionLabels: Record<string, string> = {

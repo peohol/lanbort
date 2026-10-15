@@ -1,14 +1,19 @@
+import type { ShownOwner } from "@lanbort/contracts";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { availabilityStatus } from "@/presentation/objects";
+import type { ListedThing } from "@/presentation/thing-list";
 import { Icon } from "./icon";
+import { OwnerNames } from "./owner-names";
+import { Tag } from "./tag";
 import styles from "./thing-card.module.css";
 import { ThingThumbnail } from "./thing-thumbnail";
 
 /**
  * One thing in a list (Tomat, kjerneflyt 2 and 3): its first photo, its
- * name leading to the thing's page, a line or two of context, such as
- * where it is shown or who owns it, and its status in words. The whole card
- * is the target; links inside the context stay their own targets.
+ * name leading to the thing's page, a line or two below it and its status
+ * in words. The whole card is the target; links in the lines stay their own
+ * targets.
  */
 export function ThingCard({
   href,
@@ -64,5 +69,50 @@ export function ThingCards({
     <ul className={styles.cards} aria-label={label}>
       {children}
     </ul>
+  );
+}
+
+/** A thing someone may borrow, as every list of such things has it. */
+export interface FoundThing extends ListedThing {
+  readonly ownedByYou: boolean;
+  readonly owners: readonly ShownOwner[];
+}
+
+/**
+ * A thing to borrow, the same wherever it is found: in an environment, on a
+ * friend's page or in Finn (UX-IA-021). Its picture, its name, its owners
+ * with their pictures (or «Din ting») and whether it is free. The card is
+ * one target, so the owners are not links of their own; the thing's page
+ * links them. Where it was found is said by the page, not the card.
+ */
+export function FoundThingCard({
+  thing,
+  href,
+  image,
+  today,
+}: {
+  thing: FoundThing;
+  href: string;
+  image: string | null;
+  today: string;
+}) {
+  const status = availabilityStatus(thing, today);
+
+  return (
+    <ThingCard
+      href={href}
+      title={thing.title}
+      image={image}
+      details={[
+        thing.ownedByYou
+          ? "Din ting"
+          : thing.owners.length > 0 && (
+              <span className={styles.owners}>
+                <OwnerNames owners={thing.owners} plain />
+              </span>
+            ),
+      ]}
+      status={<Tag tone={status.tone}>{status.label}</Tag>}
+    />
   );
 }

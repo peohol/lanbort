@@ -1,7 +1,6 @@
 import type { FoundObject } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import {
-  describeFoundIn,
   finnHref,
   foundOrigin,
   prepareEnvironmentSearch,
@@ -94,28 +93,6 @@ describe("Finn's form", () => {
 });
 
 describe("found things in the user's words", () => {
-  it("names the user's environments it is found in", () => {
-    const place = (environmentName: string) => ({
-      environmentId: id,
-      environmentName,
-      publicationId: id,
-    });
-    const via = (text: string) => ({ icon: "environment", text });
-    const friend = { icon: "people", text: "Hos en venn" };
-
-    expect(
-      describeFoundIn(found({ foundIn: [place("Gata"), place("Hytta")] })),
-    ).toEqual([via("Via Gata, Hytta")]);
-    expect(
-      describeFoundIn(
-        found({ foundIn: [place("Gata")], foundThroughFriends: true }),
-      ),
-    ).toEqual([via("Via Gata"), friend]);
-    expect(describeFoundIn(found({ foundThroughFriends: true }))).toEqual([
-      friend,
-    ]);
-  });
-
   it("opens a thing through where it was found (PS-OBJ-020)", () => {
     const place = {
       environmentId: id,

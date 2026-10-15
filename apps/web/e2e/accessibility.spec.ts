@@ -70,6 +70,10 @@ const pages: readonly { name: string; path: (world: World) => string }[] = [
     path: ({ environmentId }) => `/miljoer/${environmentId}/om`,
   },
   {
+    name: "Mitt medlemskap",
+    path: ({ environmentId }) => `/miljoer/${environmentId}/medlemskap`,
+  },
+  {
     name: "Ting fra en venn",
     path: ({ ladder }) => `/ting/${ladder}`,
   },

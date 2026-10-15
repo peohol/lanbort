@@ -4,7 +4,7 @@ import {
   friendObjectsQuerySchema,
   friendPublicationResultSchema,
   friendPublicationSchema,
-  publicationPageSize,
+  thingListLimit,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
@@ -17,6 +17,7 @@ import { findImageFile } from "../objects/images";
 import { actingUserId, inSnapshot, loadObjectState } from "../objects/state";
 import { loadPair } from "../social/pair";
 import { vetoedByAnotherOwner } from "./commands";
+import { shownOwners } from "./owners";
 import { endFriendPublication, findFriendPublication } from "./store";
 import { friendPublicationCreated, friendPublicationWithdrawn } from "./events";
 import {
@@ -185,27 +186,19 @@ export const withdrawFromFriends = defineCommand({
   },
 });
 
-/** Rows after the cursor, newest first. */
-function afterCursor(cursor: string | undefined) {
-  return cursor === undefined
-    ? sql<boolean>`true`
-    : sql<boolean>`(friend_publication.published_at, friend_publication.id) < (
-        select published_at, id from app.object_friend_publications where id = ${cursor}
-      )`;
-}
-
 /**
  * A friend's objects that are visible to friends, for their profile
- * (PS-OBJ-020, UX-JRN-013), newest first: the ones the caller finds through
- * friends that this user owns. Anyone else's profile shows none, and a user
- * who blocks the caller is `not_found`.
+ * (PS-OBJ-020, UX-JRN-013), the newest {@link thingListLimit}: the ones the
+ * caller finds through friends that this user owns, with the owners the
+ * caller is a friend of (PS-OBJ-022). Anyone else's profile shows none, and
+ * a user who blocks the caller is `not_found`.
  */
 export const listFriendObjects = defineQuery({
   name: "friend_object.list",
   input: friendObjectsQuerySchema,
   policy: listFriendObjectsPolicy,
   rateLimit: rateLimits.lookups,
-  load: ({ db, actor, input }) =>
+  load: ({ db, actor, input, now }) =>
     inSnapshot(db, async (tx) => {
       const pair =
         actor.kind === "user"
@@ -232,16 +225,19 @@ export const listFriendObjects = defineQuery({
               .where(
                 sql<boolean>`app.account_accepts_new_activity(${pair.otherUserId}::uuid)`,
               )
-              .where(afterCursor(input.cursor))
               .orderBy("friend_publication.published_at", "desc")
               .orderBy("friend_publication.id", "desc")
-              .limit(publicationPageSize + 1)
+              .limit(thingListLimit + 1)
               .execute()
           : [];
-      const items = rows.slice(0, publicationPageSize);
-      const details = await loadFoundDetails(
+      const items = rows.slice(0, thingListLimit);
+      const objectIds = items.map((row) => row.object_id);
+      const details = await loadFoundDetails(tx, objectIds);
+      const owners = await shownOwners(
         tx,
-        items.map((row) => row.object_id),
+        pair.actorId,
+        { friends: objectIds },
+        now,
       );
 
       return {
@@ -249,19 +245,18 @@ export const listFriendObjects = defineQuery({
           pair,
           items,
           details,
-          nextCursor:
-            rows.length > publicationPageSize
-              ? (items.at(-1)?.id ?? null)
-              : null,
+          owners,
+          more: rows.length > thingListLimit,
         },
         context: undefined,
       };
     }),
   present: ({ resource, now }): FriendObjectList => ({
-    objects: resource.items.map((row) =>
-      presentFound(row, resource.details, now),
-    ),
-    nextCursor: resource.nextCursor,
+    objects: resource.items.map((row) => ({
+      ...presentFound(row, resource.details, now),
+      owners: [...(resource.owners.get(row.object_id) ?? [])],
+    })),
+    more: resource.more,
   }),
 });
 

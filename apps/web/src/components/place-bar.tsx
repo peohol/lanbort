@@ -19,6 +19,7 @@ import {
   enterLayerPlace,
   enterPlace,
   enterTask,
+  returnToLayer,
   screenUnder,
   useLayerStack,
   useStack,
@@ -66,15 +67,18 @@ function useOwnAddress() {
 export function PlaceBar({
   place,
   located = true,
+  standalone = false,
 }: {
   place: PagePlace;
   /** False for an area's own page, which lies nowhere but in a layer. */
   located?: boolean;
+  /** One step back on every screen, and no breadcrumbs (`PageHeader`). */
+  standalone?: boolean;
 }) {
   const layer = useLayer();
 
   if (layer) return <LayerBar layer={layer} label={place.label} />;
-  return located ? <StackBar place={place} /> : null;
+  return located ? <StackBar place={place} standalone={standalone} /> : null;
 }
 
 /**
@@ -82,9 +86,17 @@ export function PlaceBar({
  * after where it leads, and on a larger screen the whole stack as
  * breadcrumbs, each step a link. Until the browser knows the stack, and for
  * a page reached from outside, the stack is built from the page's place by
- * the rule. A direct entry is marked as one until the user moves on.
+ * the rule. A direct entry is marked as one until the user moves on. A page
+ * that stands on its own, the same whichever way it was reached, has only
+ * the step back.
  */
-function StackBar({ place }: { place: PagePlace }) {
+function StackBar({
+  place,
+  standalone,
+}: {
+  place: PagePlace;
+  standalone: boolean;
+}) {
   const { address, covered } = useOwnAddress();
   const href = place.href ?? address;
   const path = href.split("?", 1)[0]!;
@@ -93,7 +105,6 @@ function StackBar({ place }: { place: PagePlace }) {
     ? stack!
     : ruleStack({ ...place, href: path }, null);
   const back = backOf(shown);
-  const steps = trail(shown);
 
   useEffect(() => {
     if (!covered) enterPlace({ ...place, href });
@@ -103,24 +114,44 @@ function StackBar({ place }: { place: PagePlace }) {
 
   return (
     <div className="place-bar">
-      <Link className="back-link" href={back.href}>
+      <Link
+        className={standalone ? "back-link one-step" : "back-link"}
+        href={back.href}
+        onClick={(event) => {
+          // A new tab or window opens the page as a link does.
+          if (
+            event.button === 0 &&
+            !(
+              event.metaKey ||
+              event.ctrlKey ||
+              event.shiftKey ||
+              event.altKey
+            ) &&
+            returnToLayer(back.href)
+          ) {
+            event.preventDefault();
+          }
+        }}
+      >
         <Icon name="back" /> {back.label}
       </Link>
-      <nav className="breadcrumbs" aria-label="Du er her">
-        <ol>
-          {steps.map((step, index) =>
-            index === steps.length - 1 ? (
-              <li key={step.href} aria-current="page">
-                {step.label}
-              </li>
-            ) : (
-              <li key={step.href}>
-                <Link href={step.href}>{step.label}</Link>
-              </li>
-            ),
-          )}
-        </ol>
-      </nav>
+      {!standalone && (
+        <nav className="breadcrumbs" aria-label="Du er her">
+          <ol>
+            {trail(shown).map((step, index, steps) =>
+              index === steps.length - 1 ? (
+                <li key={step.href} aria-current="page">
+                  {step.label}
+                </li>
+              ) : (
+                <li key={step.href}>
+                  <Link href={step.href}>{step.label}</Link>
+                </li>
+              ),
+            )}
+          </ol>
+        </nav>
+      )}
       {shown.via && (
         <span className="direct-entry">{directEntryLabels[shown.via]}</span>
       )}

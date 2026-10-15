@@ -1338,6 +1338,11 @@ button:disabled,
   .breadcrumbs {
     display: block;
   }
+
+  /* A page that stands on its own keeps its one step back. */
+  .place-bar .back-link.one-step {
+    display: inline-flex;
+  }
 }
 
 .direct-entry {
@@ -1836,6 +1841,13 @@ body:has(> .layer) .app-shell .layer {
   height: 1.0625rem;
 }
 
+/* A context that leads somewhere, with room for a finger (UX-A11Y-006). */
+a.tag-context {
+  min-width: var(--target);
+  min-height: var(--target);
+  color: var(--color-link);
+}
+
 /* A card: the surface that holds one thing (Tomat). */
 .card,
 .status-card,
@@ -2080,10 +2092,12 @@ body:has(> .layer) .app-shell .layer {
 }
 
 /* Filters, such as «Låner» and «Låner bort»: the chosen one is raised and
-   bold, not only coloured. */
+   bold, not only coloured. Where several can be chosen, such as a list's
+   categories, each chosen one also has a check. */
 .filters a {
   display: inline-flex;
   align-items: center;
+  gap: var(--space-1);
   min-height: var(--target);
   padding: 0 var(--space-4);
   border-radius: var(--radius-pill);
@@ -2093,7 +2107,7 @@ body:has(> .layer) .app-shell .layer {
   box-shadow: inset 0 0 0 1.5px var(--color-border-strong);
 }
 
-.filters a[aria-current="page"] {
+.filters a[aria-current] {
   font-weight: 700;
   color: var(--color-accent-strong);
   background: var(--color-surface);
