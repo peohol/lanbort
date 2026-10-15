@@ -14,8 +14,10 @@
 }
 
 .segments a {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-row);
   min-height: var(--target);
   font-weight: 600;
   color: var(--color-muted);
@@ -28,6 +30,11 @@
   color: var(--color-text);
   background: var(--color-surface);
   box-shadow: var(--shadow-low);
+}
+
+/* The chosen choice's icon in its filled form, in tomat like the menu's. */
+.segments a[aria-current="page"] :global(.icon) {
+  color: var(--color-accent-strong);
 }
 
 .form {

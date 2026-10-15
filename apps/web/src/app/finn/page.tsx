@@ -15,6 +15,7 @@ import { AreaTitle } from "@/components/area-title";
 import { errorMessage } from "@/components/error-messages";
 import { EntryDetail } from "@/components/entry-detail";
 import { ErrorText } from "@/components/error-text";
+import { Icon } from "@/components/icon";
 import { NearMeButton } from "@/components/near-me-button";
 import { ownersDetail } from "@/components/owner-names";
 import { SearchField } from "@/components/search-field";
@@ -54,8 +55,13 @@ import styles from "./finn.module.css";
 export const metadata: Metadata = { title: "Finn – Lånbort" };
 
 const tabs = [
-  { tab: "objects", href: "/finn", label: "Ting" },
-  { tab: "environments", href: "/finn?vis=miljoer", label: "Miljøer" },
+  { tab: "objects", href: "/finn", label: "Ting", icon: "things" },
+  {
+    tab: "environments",
+    href: "/finn?vis=miljoer",
+    label: "Miljøer",
+    icon: "environment",
+  },
 ] as const;
 
 /**
@@ -90,12 +96,13 @@ export default async function FindPage({
     <main className={styles.finn}>
       <AreaTitle area="find" />
       <nav aria-label="Hva du leter etter" className={styles.segments}>
-        {tabs.map(({ tab, href, label }) => (
+        {tabs.map(({ tab, href, label, icon }) => (
           <a
             key={tab}
             href={href}
             aria-current={tab === form.tab ? "page" : undefined}
           >
+            <Icon name={icon} />
             {label}
           </a>
         ))}

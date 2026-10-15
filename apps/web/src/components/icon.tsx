@@ -3,24 +3,73 @@
  * grid, the same set the prototypes use. An icon always stands beside words
  * that say what it means (UX-A11Y-005), so it says nothing to assistive
  * technology itself.
+ *
+ * An icon may also have flat areas under its line. `ink` is always drawn,
+ * in the line's colour (a dot). The others are its filled form, shown only
+ * where the icon marks the current place (globals.css): `soft` and `accent`
+ * in tomat, `light` in the surface colour, so each follows the theme.
  */
-const paths = {
-  home: "M4 10.5L12 4l8 6.5V20h-5v-6H9v6H4z",
-  find: "M11 5a6 6 0 1 0 0 12a6 6 0 1 0 0-12M20 20l-4.5-4.5",
-  loans: "M5 8h14l-3.5-3.5M19 16H5l3.5 3.5",
-  things: "M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8",
-  conversations: "M5 5h14v10h-9l-5 4z",
+export type IconTone = "ink" | "soft" | "accent" | "light";
+
+export type IconShape =
+  | string
+  | {
+      readonly line?: string;
+      readonly fills: Readonly<Partial<Record<IconTone, string>>>;
+    };
+
+/** A circle as a path, for lines and fills alike. */
+export const circle = (cx: number, cy: number, r: number) =>
+  `M${cx} ${cy - r}a${r} ${r} 0 1 0 0 ${2 * r}a${r} ${r} 0 1 0 0-${2 * r}`;
+
+/** A closed outline whose whole inside takes one tone. */
+const filled = (tone: IconTone, line: string): IconShape => ({
+  line,
+  fills: { [tone]: line },
+});
+
+const cube = {
+  top: "M4 8l8-4 8 4-8 4z",
+  left: "M4 8l8 4v8l-8-4z",
+  right: "M20 8l-8 4v8l8-4z",
+};
+
+const bubble = "M8 5h8a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3h-6l-5 4V8a3 3 0 0 1 3-3z";
+
+const houses = {
+  front: "M3 20v-8l5-4.5 5 4.5v8z",
+  back: "M11.2 10.3L16.5 5l4.5 4.5V20h-8v-8z",
+};
+
+const shapes = {
+  home: filled("soft", "M4 10.5L12 4l8 6.5V20h-5v-6H9v6H4z"),
+  find: {
+    line: `${circle(11, 11, 6)}M20 20l-4.5-4.5`,
+    fills: { light: circle(11, 11, 6) },
+  },
+  loans: filled("soft", "M5 8h14l-3.5-3.5M19 16H5l3.5 3.5"),
+  things: {
+    line: "M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8",
+    fills: { light: cube.top, accent: cube.left, soft: cube.right },
+  },
+  conversations: filled("light", bubble),
   bell: "M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0",
   back: "M15 5l-7 7 7 7",
   chevron: "M9 5l7 7-7 7",
   close: "M6 6l12 12M18 6L6 18",
-  environment: "M4 20V9.5L12 4l8 5.5V20zM10 20v-5h4v5",
+  environment: {
+    line: `${houses.front}M6.5 20v-4h3v4M11.2 10.3L16.5 5l4.5 4.5V20h-8`,
+    fills: { soft: houses.front, light: houses.back },
+  },
   clock: "M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16M12 8v4l3 2",
   check: "M5 12.5l4.5 4.5L19 7.5",
   info: "M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16M12 8v4M12 15.5v.5",
   warning: "M12 4l9 16H3zM12 10v4M12 17v.5",
   lock: "M6 11h12v9H6zM9 11V8a3 3 0 0 1 6 0v3",
-  attention: "M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16",
+  attention: {
+    line: circle(12, 12, 8),
+    fills: { ink: circle(12, 12, 3) },
+  },
   shield: "M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z",
   signOut: "M15 5h4v14h-4M10 8l-4 4 4 4M6 12h10",
   offline:
@@ -49,20 +98,21 @@ const paths = {
   mail: "M4 6h16v12H4zM4 6l8 7 8-7",
   qr: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h3v3h-3zM20 17v3h-3",
   scan: "M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5",
-} as const;
+} satisfies Record<string, IconShape>;
 
-export type IconName = keyof typeof paths;
+export type IconName = keyof typeof shapes;
 
-/** Icons whose middle is a filled dot: the mark for «Venter på deg». */
-const dotted: ReadonlySet<IconName> = new Set(["attention"]);
-
-export function Icon({
-  name,
+/** An icon's lines and flat areas, flats first so the line lies on top. */
+export function IconSvg({
+  shape,
   className = "icon",
 }: {
-  name: IconName;
-  className?: string;
+  shape: IconShape;
+  className?: string | undefined;
 }) {
+  const { line, fills } =
+    typeof shape === "string" ? { line: shape, fills: {} } : shape;
+
   return (
     <svg
       className={className}
@@ -72,10 +122,20 @@ export function Icon({
       width="24"
       height="24"
     >
-      <path d={paths[name]} />
-      {dotted.has(name) && (
-        <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
-      )}
+      {Object.entries(fills).map(([tone, d]) => (
+        <path key={tone} className={`icon-fill icon-${tone}`} d={d} />
+      ))}
+      {line && <path d={line} />}
     </svg>
   );
+}
+
+export function Icon({
+  name,
+  className,
+}: {
+  name: IconName;
+  className?: string;
+}) {
+  return <IconSvg shape={shapes[name]} className={className} />;
 }

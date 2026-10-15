@@ -352,6 +352,35 @@ a {
   stroke-linejoin: round;
 }
 
+/* An icon's flat areas (`IconSvg`): a dot always, the rest only in the
+   icon's filled form, which marks the current place: an area's title, the
+   current area in the menu, the chosen choice among links. */
+.icon-fill {
+  stroke: none;
+}
+
+.icon-ink {
+  fill: currentColor;
+}
+
+:is(.area-title, [aria-current="page"]) > .icon {
+  --icon-soft: var(--color-accent-soft);
+  --icon-accent: var(--color-accent);
+  --icon-light: var(--color-surface);
+}
+
+.icon-soft {
+  fill: var(--icon-soft, none);
+}
+
+.icon-accent {
+  fill: var(--icon-accent, none);
+}
+
+.icon-light {
+  fill: var(--icon-light, none);
+}
+
 /* A long word breaks rather than push the page sideways (UX-A11Y-007). */
 main {
   width: min(42rem, calc(100% - 2 * var(--gutter)));
@@ -845,7 +874,6 @@ button:disabled,
   width: 1.1em;
   height: 1.1em;
   color: var(--color-accent-strong);
-  fill: var(--color-accent-soft);
   stroke-width: 2;
 }
 
@@ -1082,7 +1110,6 @@ button:disabled,
 }
 
 .main-navigation a[aria-current="page"] .icon {
-  fill: var(--color-accent-soft);
   stroke-width: 2.1;
 }
 
