@@ -13,6 +13,7 @@ export function PageHeader({
   title,
   label = typeof title === "string" ? title : undefined,
   kind,
+  icon,
   picture,
   back,
   home,
@@ -25,6 +26,8 @@ export function PageHeader({
   label?: string | undefined;
   /** The type of a detail, such as «Lån» or «Person» (UX-IA-015). */
   kind?: string;
+  /** An icon beside the title, drawn as an area's title draws its own. */
+  icon?: ReactNode;
   /** The picture of the person the page is about, beside its title. */
   picture?: ReactNode;
   /**
@@ -47,7 +50,10 @@ export function PageHeader({
   const heading = (
     <>
       {kind && <p className="page-kind">{kind}</p>}
-      <h1>{title}</h1>
+      <h1 className={icon ? "area-title" : undefined}>
+        {icon}
+        {title}
+      </h1>
     </>
   );
 

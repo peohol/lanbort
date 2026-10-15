@@ -203,7 +203,7 @@ export function DevicesLink({
   return (
     <Link href={chatDevicesHref} className={styles.linkCard}>
       <span className={styles.iconBubble}>
-        <ChatIcon name="device" />
+        <ChatIcon name="anyDevice" />
       </span>
       <span className={styles.linkText}>
         <strong>Mine enheter</strong>
