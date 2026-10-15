@@ -1032,6 +1032,11 @@ button:disabled,
   gap: var(--space-2);
 }
 
+/* Named on its own under a title, a person is a target of its own (UX-A11Y-006). */
+.page-header .tags > .person-name {
+  min-height: var(--target);
+}
+
 /* A person's picture beside the kind and title (kjerneflyt 6). */
 .page-title-row {
   display: flex;

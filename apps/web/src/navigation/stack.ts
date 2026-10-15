@@ -1,4 +1,5 @@
 import { type AreaId, areaById, type LayerId, layerById } from "./areas";
+import { environmentParam } from "./routes";
 
 /**
  * The navigation stack (UX-IA-009–011): the area the user started in and
@@ -45,6 +46,20 @@ export type Arrival = "push" | "replace" | "history" | "direct";
 /** Two addresses are the same place when their paths are. */
 export const samePlace = (a: string, b: string) =>
   a.split(/[?#]/)[0] === b.split(/[?#]/)[0];
+
+/** The environment an address shows its page through, if any. */
+const contextOf = (href: string) =>
+  new URLSearchParams(href.split("#", 1)[0]!.split("?")[1]).get(
+    environmentParam,
+  );
+
+/**
+ * Two addresses are the same step in a stack when they are the same place
+ * seen in the same context: a thing through an environment is another step
+ * than the thing seen directly as a friend's (UX-IA-015).
+ */
+const sameStep = (a: string, b: string) =>
+  samePlace(a, b) && contextOf(a) === contextOf(b);
 
 /** UX-IA-011: the home area, a fixed container if any, and the target. */
 export const ruleStack = (place: Place, via: DirectEntry | null): Stack => ({
@@ -96,7 +111,7 @@ interface Steps {
  */
 function step(previous: Steps, entry: StackEntry, how: Arrival): Steps | null {
   const at = (entries: readonly StackEntry[]) =>
-    entries.findIndex(({ href }) => samePlace(href, entry.href));
+    entries.findIndex(({ href }) => sameStep(href, entry.href));
   const index = at(previous.entries);
 
   if (index >= 0) {

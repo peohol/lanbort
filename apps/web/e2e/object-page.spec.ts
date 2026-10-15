@@ -10,6 +10,7 @@ import {
   today,
   uniqueWord,
   untilOutboxSettles,
+  wayBack,
 } from "./helpers";
 
 /**
@@ -80,12 +81,12 @@ test("a thing has one page, seen by its owner or through an environment", async 
   );
   await member.getByRole("link", { name: `Stige ${word}` }).click();
   await expect(member).toHaveURL(new RegExp(`/ting/${objectId}\\?miljo=`));
-  // Where it is seen and why, the week ahead and the terms before the
-  // request (UX-IA-015, Tomat kjerneflyt 1).
-  await expect(member.getByText(`Via Gården ${word}`)).toBeVisible();
-  await expect(
-    member.getByText(`Du ser tingen fordi du er medlem i Gården ${word}.`),
-  ).toBeVisible();
+  // Where it was reached from shows in the way back, not as words on the
+  // page (UX-IA-015); then the week ahead and the terms before the request
+  // (Tomat kjerneflyt 1).
+  await expect(wayBack(member).filter({ hasText: "Finn" })).toBeVisible();
+  await expect(member.getByText(`Via Gården ${word}`)).toHaveCount(0);
+  await expect(member.getByText("Du ser tingen fordi")).toHaveCount(0);
   const week = member.getByRole("list", { name: "De neste dagene" });
   await expect(week.getByRole("listitem")).toHaveCount(7);
   await expect(week.getByRole("listitem").first()).toContainText(": ledig");

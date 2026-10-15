@@ -8,7 +8,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
-import { OriginTag } from "@/app/lan/_parts/origin-tag";
 import {
   environmentParam,
   objectHref,
@@ -77,7 +76,6 @@ export default async function RequestPage({
             title={object.title}
             back={{ href: back, label: object.title }}
             home="find"
-            context={<OriginTag origin={shownOrigin} />}
           />
           <EmptyState action={<Link href={back}>Tilbake til tingen</Link>}>
             Tingen kan ikke lånes akkurat nå.

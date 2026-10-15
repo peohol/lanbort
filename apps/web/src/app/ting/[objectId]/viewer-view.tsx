@@ -24,6 +24,7 @@ import {
   type SearchParams,
 } from "@/navigation/list-pages";
 import {
+  environmentHref,
   loanRequestHref,
   objectHref,
   type ObjectOrigin,
@@ -41,10 +42,9 @@ import {
   categoryLabel,
   freeDays,
   freeThrough,
-  seenBecause,
 } from "@/presentation/objects";
 import { pageQuery } from "@/server/session";
-import { OriginTag } from "@/app/lan/_parts/origin-tag";
+import { environmentHome } from "@/app/miljoer/[environmentId]/back";
 import { Questions, questionsId } from "./questions";
 import styles from "./viewer-view.module.css";
 import { WeekStrip } from "./week-strip";
@@ -61,9 +61,10 @@ async function openRequestFor(objectId: string) {
 
 /**
  * A thing as someone who may borrow it sees it (UX-JRN-004, UX-JRN-013):
- * through one environment, or directly between friends, said as its
- * context (UX-PRIV-003). Its pictures are read the same way. Through an
- * environment its owners who are members there are named (PS-ENV-015),
+ * through one environment, or directly between friends. Where it was
+ * reached from shows in the way back, not as words on the page
+ * (UX-IA-015); opened from outside, it lies under its environment. Its
+ * pictures are read the same way. Through an environment its owners who are members there are named (PS-ENV-015),
  * directly the owners the caller is a friend of (PS-OBJ-022); what blocks
  * it is not said (UX-PRIV-004). The next step is to ask to borrow it; in an
  * environment the thing can also be followed and asked about there
@@ -107,24 +108,24 @@ export async function ViewerView({
   const days = freeDays(object, today);
   const through = freeThrough(object, days);
   const [onlyOwner] = object.owners.length === 1 ? object.owners : [];
+  // Where the thing lies when opened from outside (UX-IA-011).
+  const place = environment
+    ? {
+        back: {
+          href: environmentHref(environment.id),
+          label: environment.name,
+        },
+        home: environmentHome(environment),
+      }
+    : { back: { href: findHref, label: "Finn" } };
 
   return (
     <main>
       <PageHeader
         title={object.title}
-        kind="Ting"
-        back={{ href: findHref, label: "Finn" }}
+        {...place}
         context={
-          <>
-            {object.owners.length > 0 && <OwnerNames owners={object.owners} />}
-            <OriginTag
-              origin={
-                environment
-                  ? { kind: "environment", environment }
-                  : { kind: "direct" }
-              }
-            />
-          </>
+          object.owners.length > 0 && <OwnerNames owners={object.owners} />
         }
       />
       <ObjectGallery
@@ -176,14 +177,6 @@ export async function ViewerView({
           </p>
         </div>
       </StatusCard>
-      <p className="help">
-        {seenBecause(
-          environment && {
-            name: environment.name,
-            member: environment.membership?.state === "active",
-          },
-        )}
-      </p>
       {environment && (
         <div className="actions">
           <ActionButton

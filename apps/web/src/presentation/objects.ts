@@ -139,21 +139,6 @@ export function freeThrough(
 }
 
 /**
- * Why the reader sees a thing that is not theirs, in one line (UX-IA-015):
- * through an environment, or because its owner shows it to friends
- * (PS-OBJ-020).
- */
-export function seenBecause(
-  environment: { readonly name: string; readonly member: boolean } | null,
-): string {
-  if (!environment) return "Du ser tingen fordi eieren viser den for venner.";
-
-  return environment.member
-    ? `Du ser tingen fordi du er medlem i ${environment.name}.`
-    : `Du ser tingen fordi den er publisert i ${environment.name}.`;
-}
-
-/**
  * One of the user's own things in a list, in a word or two (WP-81): lent
  * out, blocked, can be lent out, or archived. What blocks it is said only
  * as far as every owner sees it (PS-OBJ-007–009).

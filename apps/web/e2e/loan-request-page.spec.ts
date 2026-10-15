@@ -151,10 +151,8 @@ test("a friend asks directly, and both accept the declaration first", async ({
 
   const dan = await friends.newPage();
   await dan.goto(`/ting/${objectId}`);
-  await expect(dan.getByText("Direkte mellom venner")).toBeVisible();
-  await expect(
-    dan.getByText("Du ser tingen fordi eieren viser den for venner."),
-  ).toBeVisible();
+  await expect(dan.getByRole("heading", { level: 1 })).toHaveText("Tilhenger");
+  await expect(dan.getByText("Direkte mellom venner")).toHaveCount(0);
   await dan.getByRole("link", { name: "Be om å låne" }).click();
   await dan.getByLabel("Varighet").check();
   await dan.getByLabel("Antall dager").fill("1");

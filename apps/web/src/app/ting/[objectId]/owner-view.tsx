@@ -1017,7 +1017,6 @@ export async function OwnerView({
     <main>
       <PageHeader
         title={object.title}
-        kind={shared(owned) ? "Deres ting" : "Din ting"}
         back={{ href: thingsHref, label: "Mine ting" }}
         picture={
           cover && (

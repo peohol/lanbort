@@ -12,7 +12,6 @@ import {
   ownersLabel,
   ownThingStatus,
   requestAvailability,
-  seenBecause,
 } from "./objects";
 
 const found = (details: {
@@ -236,19 +235,5 @@ describe("the week strip on a thing's page", () => {
     expect(days.some(({ free }) => free)).toBe(false);
     expect(freeThrough(closed, days)).toBeNull();
     expect(freeThrough(object, freeDays(object, "2026-10-14"))).toBeNull();
-  });
-});
-
-describe("why the reader sees a thing", () => {
-  it("names the environment, or the owner's friends", () => {
-    expect(seenBecause({ name: "Lia", member: true })).toBe(
-      "Du ser tingen fordi du er medlem i Lia.",
-    );
-    expect(seenBecause({ name: "Lia", member: false })).toBe(
-      "Du ser tingen fordi den er publisert i Lia.",
-    );
-    expect(seenBecause(null)).toBe(
-      "Du ser tingen fordi eieren viser den for venner.",
-    );
   });
 });
