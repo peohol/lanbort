@@ -1241,19 +1241,28 @@ button:disabled,
    a conversation: the bar stays at the top, the navigation at the bottom,
    and only the page's `.frame-scroll` scrolls, between what the page keeps
    in place. The frame follows the visual viewport, so an on-screen keyboard
-   makes it shorter instead of scrolling the bar out of sight. Moved rather
-   than placed, it is what the first row's `position: fixed` keeps to. */
+   makes it shorter instead of scrolling the bar out of sight. Whatever
+   stands above the app (being offline) keeps its place in the frame, and
+   the app's first row keeps to the app (`position: fixed` inside a
+   transformed box). */
 :root[data-frame] {
   overflow: hidden;
 }
 
-:root[data-frame] .app-shell {
+:root[data-frame] body {
   position: fixed;
   inset-inline: 0;
   top: 0;
+  display: flex;
+  flex-direction: column;
   height: var(--frame-height, 100dvh);
-  min-height: 0;
   transform: translateY(var(--frame-top, 0px));
+}
+
+:root[data-frame] .app-shell {
+  flex: 1;
+  min-height: 0;
+  transform: translate(0);
 }
 
 :root[data-frame] .app-content {
