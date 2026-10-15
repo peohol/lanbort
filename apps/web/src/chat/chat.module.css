@@ -21,11 +21,12 @@
   padding: 0;
 }
 
-/* The list of conversations: one card, a row per person (01). */
+/* The list of conversations: one card, a row per person (01). The rows go
+   edge to edge, so the open one is coloured all the way to the card's edge. */
 .list {
   overflow: hidden;
   margin: 0;
-  padding: var(--space-1) 0;
+  padding: 0;
   list-style: none;
   background: var(--color-surface);
   border-radius: var(--radius-l);
@@ -705,7 +706,11 @@
     gap: var(--gap-page);
   }
 
+  /* The list and «Mine enheter» stand apart as on the list page. */
   .splitList {
+    display: grid;
+    align-content: start;
+    gap: var(--gap-block);
     position: sticky;
     top: calc(var(--header-covers, var(--header-height)) + var(--space-3));
     max-height: calc(
