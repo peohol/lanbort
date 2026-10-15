@@ -105,6 +105,11 @@
   --shadow-raised: 0 1px 3px rgb(30 40 60 / 0.09);
   --color-backdrop: rgb(30 39 51 / 0.55);
 
+  /* A bar the page scrolls under (`.bar-surface`): the page's colour, made
+     see-through only where the browser can blur what lies beneath (below). */
+  --color-bar: var(--color-page);
+  --bar-filter: none;
+
   /* Spacing: every gap, margin and padding is a step on this scale. */
   --space-0: 0.125rem;
   --space-1: 0.25rem;
@@ -252,6 +257,32 @@
     --shadow-raised: none;
     --color-backdrop: rgb(0 0 0 / 0.65);
   }
+}
+
+/* Bars that the page scrolls under, as the header with the title, the way
+   back and the account, and the areas at the bottom of a phone: what lies
+   beneath only just shows through, blurred, so their own text reads as on
+   the page. Opaque where the browser cannot blur, where the device asks
+   for less transparency, and in forced colours. */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))
+  and (color: color-mix(in srgb, red, blue)) {
+  :root {
+    --color-bar: color-mix(in srgb, var(--color-page) 85%, transparent);
+    --bar-filter: blur(12px);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  :root {
+    --color-bar: var(--color-page);
+    --bar-filter: none;
+  }
+}
+
+.bar-surface {
+  background: var(--color-bar);
+  -webkit-backdrop-filter: var(--bar-filter);
+  backdrop-filter: var(--bar-filter);
 }
 
 * {
@@ -856,7 +887,6 @@ button:disabled,
   gap: var(--space-2) var(--space-3);
   min-height: var(--header-height);
   padding: var(--gutter);
-  background: var(--color-page);
 }
 
 .header-actions {
@@ -882,9 +912,10 @@ button:disabled,
   scroll-padding-top: calc(var(--header-covers, var(--header-height)) + 0.5rem);
 }
 
-/* A bar that stays while the page scrolls shows its edge once something
-   lies under it, so what scrolls away goes under the bar rather than into
-   nothing. Without scroll-linked animations the edge is always there. */
+/* A bar that stays while the page scrolls shows its edge, and lets what
+   lies under it show through (`.bar-surface`), once something lies under
+   it, so what scrolls away goes under the bar rather than into nothing.
+   Without scroll-linked animations the edge is always there. */
 @supports (animation-timeline: scroll()) {
   :is(
     :root[data-bar="pinned"] .app-header,
@@ -908,10 +939,12 @@ button:disabled,
 @keyframes bar-edge {
   from {
     box-shadow: 0 1px 0 transparent;
+    background-color: var(--color-page);
   }
 
   to {
     box-shadow: 0 1px 0 var(--color-border);
+    background-color: var(--color-bar);
   }
 }
 
@@ -1032,7 +1065,6 @@ button:disabled,
   bottom: 0;
   order: 1;
   z-index: 5;
-  background: var(--color-page);
   border-top: 1px solid var(--color-border);
 }
 
@@ -1142,6 +1174,10 @@ button:disabled,
     max-height: calc(100dvh - var(--gutter));
     overflow-y: auto;
     border-top: 0;
+    /* Beside the page here, not over it. */
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 
   .main-navigation ul {
@@ -1439,7 +1475,6 @@ button:disabled,
   justify-content: flex-end;
   min-height: var(--header-covers);
   padding: var(--gutter);
-  background: var(--color-page);
 }
 
 .layer-close {
