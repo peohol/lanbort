@@ -3,7 +3,6 @@ import Link from "next/link";
 import { EntryDetail } from "@/components/entry-detail";
 import { Icon } from "@/components/icon";
 import { MenuList, MenuRow } from "@/components/menu-list";
-import { ContextTag } from "@/components/tag";
 import { loansHref } from "@/navigation/areas";
 import { loanHref, objectHref } from "@/navigation/routes";
 import { formatShortPeriod } from "@/presentation/dates";
@@ -51,8 +50,9 @@ export function Between({ loans }: { loans: LoanList }) {
 }
 
 /**
- * The things a friend has made visible to friends (PS-OBJ-020), newest
- * first, each leading to the thing as seen directly between friends.
+ * The things a friend has made visible to friends (PS-OBJ-020): what the
+ * reader may borrow directly from them, newest first, each leading to the
+ * thing as seen directly between friends. Nothing when there are none.
  */
 export function FriendThings({
   name,
@@ -66,31 +66,25 @@ export function FriendThings({
   more: string | null;
   today: string;
 }) {
+  if (things.length === 0) return null;
+
   return (
     <section aria-labelledby="venners-ting" className={styles.section}>
-      <h2 id="venners-ting">Tingene {name} har gjort synlige for venner</h2>
-      {things.length === 0 ? (
-        <p className="quiet">{name} har ingen ting synlige for venner nå.</p>
-      ) : (
-        <MenuList label="venners-ting">
-          {things.map((thing) => (
-            <MenuRow
-              key={thing.objectId}
-              lead={<Icon name="things" />}
-              href={objectHref(thing.objectId, { kind: "direct" })}
-              label={thing.title}
-              detail={
-                <span className={styles.lines}>
-                  <span>{describeAvailability(thing, today)}</span>
-                  <ContextTag label="Synlig" icon="people">
-                    Direkte mellom venner
-                  </ContextTag>
-                </span>
-              }
-            />
-          ))}
-        </MenuList>
-      )}
+      <h2 id="venners-ting">
+        <Icon name="things" />
+        Ting du kan låne direkte fra {name}
+      </h2>
+      <MenuList label="venners-ting">
+        {things.map((thing) => (
+          <MenuRow
+            key={thing.objectId}
+            lead={<Icon name="things" />}
+            href={objectHref(thing.objectId, { kind: "direct" })}
+            label={thing.title}
+            detail={describeAvailability(thing, today)}
+          />
+        ))}
+      </MenuList>
       {more && (
         <p className="link-row">
           <a href={more}>Vis flere ting</a>

@@ -190,7 +190,8 @@ Hver detalj har en typeetikett (Ting, Forespørsel, Lån, Person, Miljø, Samtal
 **Forankring:** UX-P02, UX-P05, UX-P13; UX-IA-003; OD-0031
 
 - Konto åpnes fra profilbildet øverst, som har samme plassering i alle fem hovedområder og i detaljer i stabelen. På mobil dekker laget hele skjermen, også bunnmenyen.
-- Det som åpnes fra Konto, for eksempel Venner, Blokkerte, Mine enheter, egne saker og personer åpnet derfra, legger seg i Kontos egen stabel. Tilbake navigerer innenfor Konto og navngir forrige ledd («‹ Venner»).
+- Det som åpnes fra Konto, for eksempel Venner, Blokkerte, Mine enheter og egne saker, legger seg i Kontos egen stabel. Tilbake navigerer innenfor Konto og navngir forrige ledd («‹ Venner»).
+- En person åpnet fra Konto åpnes på sin egen, selvstendige side utenfor laget. Tilbake fra personen fører til Konto-siden den ble åpnet fra, slik den var.
 - Mine enheter og stegene derfra er sider i privat chat med egne sikkerhetsregler (ADR-0010 punkt 13). De lastes derfor på nytt når de åpnes, og skjermen under lastes på nytt når de lukkes.
 - «Lukk» finnes på alle nivåer i Konto og returnerer til nøyaktig skjermen brukeren kom fra, inkludert område, stabel, filter, utfylte felt og rulleposisjon, som når varslingssenteret lukkes (UX-IA-011).
 - Konto er ikke et steg i områdets stabel, og varselindikatoren vises ikke i Konto. Områdene og varslene nås igjen med «Lukk».

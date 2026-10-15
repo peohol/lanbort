@@ -13,6 +13,7 @@ import {
   enterEmailCode,
   registerThroughApi,
   showToFriends,
+  wayBack,
 } from "./helpers";
 
 /**
@@ -147,11 +148,16 @@ test("Konto is a layer with its own stack, and Lukk returns to exactly the scree
   await account.getByRole("link", { name: /Venner/ }).click();
   await expect(title).toHaveText("Venner");
 
-  // A person opened from Konto lies in Konto's stack.
+  // A person opened from Konto is their own page, and its way back leads
+  // to Konto just as it was left.
   await account.getByRole("link", { name: "Bo Dahl" }).click();
-  await expect(title).toHaveText("Bo Dahl");
-  await expect(page).toHaveURL(/\/konto\/personer\//);
-  await account.getByRole("link", { name: "Venner" }).click();
+  await expect(account).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Bo Dahl");
+  await expect(page).toHaveURL(personPage);
+  await expect(page.getByRole("navigation", { name: "Du er her" })).toHaveCount(
+    0,
+  );
+  await wayBack(page).filter({ hasText: "Venner" }).click();
   await expect(title).toHaveText("Venner");
   await account.getByRole("link", { name: "Konto" }).click();
   await expect(title).toHaveText("Konto");
@@ -247,13 +253,15 @@ test("the way back follows the path taken, also through the browser's back and f
   await account.getByRole("link", { name: /Venner/ }).click();
   await expect(title).toHaveText("Venner");
   await account.getByRole("link", { name: "Bo Dahl" }).click();
-  await expect(title).toHaveText("Bo Dahl");
+  const person = page.getByRole("heading", { level: 1, name: "Bo Dahl" });
+  await expect(person).toBeVisible();
 
   await page.goBack();
   await expect(title).toHaveText("Venner");
   await page.goForward();
-  await expect(title).toHaveText("Bo Dahl");
-  await expect(account.getByRole("link", { name: "Venner" })).toBeVisible();
+  await expect(person).toBeVisible();
+  await expect(account).toHaveCount(0);
+  await expect(wayBack(page)).toHaveText("Venner");
 
   // A form is a bounded task: only «Avbryt» leads out of it (UX-IA-013).
   await page.goto("/ting/ny");

@@ -137,7 +137,6 @@ export function ScanFriendCode() {
     const { owner, code } = phase;
     const relation = describeRelation({
       realName: owner.realName,
-      relationSince: null,
       relation: owner,
     });
     const mayAsk =

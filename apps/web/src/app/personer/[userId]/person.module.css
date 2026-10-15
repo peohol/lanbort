@@ -1,5 +1,5 @@
-/* A person's page (WP-86, kjerneflyt 6): why the reader sees them, what is
-   between them now, and what others said about them in each role. */
+/* A person's page (WP-86, kjerneflyt 6): who they are, what is between
+   you now, and what others said about them in each role. */
 
 /* The page in one column, and on a wide screen in two (the design's screen
    09): who the person is and what is between you on the left, what others
@@ -13,14 +13,14 @@
 }
 
 @media (min-width: 72rem) {
-  /* The left parts (header, why, «Dere to», between, invite, things,
-     more) each
-     take an auto row; the last row is flexible, so a long right column
-     grows into it instead of spreading the left parts apart. */
+  /* The left parts (header, the chat or «Dere to», between, invite,
+     things, more) each take an auto row; the last row is flexible, so a
+     long right column grows into it instead of spreading the left parts
+     apart. */
   .page {
     display: grid;
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    grid-template-rows: repeat(7, auto) 1fr;
+    grid-template-rows: repeat(6, auto) 1fr;
     align-items: start;
     column-gap: var(--space-6);
   }
@@ -40,24 +40,6 @@
   }
 }
 
-/* Why the reader sees the person: a quiet line with its icon. */
-.why {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  /* Close under the page's title, as part of it. */
-  margin: calc(var(--gap-block) - var(--gap-page)) 0 0;
-  font-size: var(--text-s);
-  color: var(--color-muted);
-}
-
-.why svg {
-  flex: none;
-  width: 1.0625rem;
-  height: 1.0625rem;
-  margin-top: 0.1em;
-}
-
 .detail {
   margin: 0;
   color: var(--color-muted);
@@ -69,12 +51,17 @@
   color: var(--color-muted);
 }
 
-/* A row's detail on lines of its own, such as a thing's availability over
-   where it is seen. */
-.lines {
-  display: grid;
-  justify-items: start;
-  gap: var(--space-1);
+/* A heading with its icon, such as the things to borrow. */
+.section > h2:has(:global(.icon)) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.section > h2 :global(.icon) {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 /* A role's heading row. On a phone its link covers the whole row, so the

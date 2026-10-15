@@ -18,6 +18,7 @@ export function PageHeader({
   back,
   home,
   task = false,
+  standalone = false,
   context,
   children,
 }: {
@@ -40,6 +41,11 @@ export function PageHeader({
   home?: AreaId;
   /** A form: no areas, no stack, and «Avbryt» (UX-IA-013). */
   task?: boolean;
+  /**
+   * A page that is the same whichever way it was reached, such as a
+   * person's: one step back on every screen and no breadcrumbs.
+   */
+  standalone?: boolean;
   context?: ReactNode;
   /** A short lead under the title. */
   children?: ReactNode;
@@ -66,6 +72,7 @@ export function PageHeader({
           <PlaceBar
             place={{ label, home: homeArea, container }}
             located={Boolean(back || home)}
+            standalone={standalone}
           />
         )
       )}
