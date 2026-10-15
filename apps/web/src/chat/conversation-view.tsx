@@ -312,7 +312,7 @@ function Composer({
 
   return (
     <form
-      className={styles.composer}
+      className={`${styles.composer} bar-surface`}
       onSubmit={(event) => void send(event)}
       aria-busy={busy}
     >

@@ -33,7 +33,7 @@ export function MainNavigation() {
   }, [root, pathname]);
 
   return (
-    <nav className="main-navigation" aria-label="Hovedmeny">
+    <nav className="main-navigation bar-surface" aria-label="Hovedmeny">
       <ul>
         {areas.map((area) => (
           <li key={area.id}>
