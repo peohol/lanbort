@@ -1,0 +1,40 @@
+/* Pills that wrap into rows (Tomat): each row as tall as a pill, so a few
+   rows can be measured out without a script. */
+.list {
+  --pill-height: var(--target);
+  --row-gap: var(--space-2);
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--row-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list > li {
+  display: inline-flex;
+  height: var(--pill-height);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.list[data-clamped] {
+  max-height: calc(
+    var(--rows) * var(--pill-height) + (var(--rows) - 1) * var(--row-gap)
+  );
+  overflow: hidden;
+}
+
+/* The last row fades out downwards while there is more beyond it. */
+.list[data-clamped][data-overflows] {
+  mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - var(--pill-height)),
+    transparent
+  );
+}
+
+.toggle {
+  margin-top: var(--space-1);
+}

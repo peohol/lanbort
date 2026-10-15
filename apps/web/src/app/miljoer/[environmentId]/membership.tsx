@@ -21,8 +21,13 @@ import {
   leavingConsequences,
   membershipLabel,
   type MembershipStep,
+  plainMembership,
   typeChangeAnswer,
 } from "@/presentation/environments";
+import {
+  administrationPageHref,
+  administrationPages,
+} from "@/presentation/environment-admin";
 import { findEnvironmentsHref } from "@/presentation/search";
 import { InformationQuestion } from "./information-question";
 
@@ -47,8 +52,10 @@ const stepTones: Record<MembershipStep["kind"], Tone> = {
  * the way to joining, applying, accepting an invitation or meeting new
  * requirements (PS-ENV-004–006), a bounded task of its own; what a pending
  * application holds; answering a proposed weaker type (UX-PRIV-008); and
- * taking on a role. Right after joining, the card welcomes the new member.
- * Contact and leaving are on «Om miljøet» (`YourMembership`).
+ * taking on a role. Right after joining, the card welcomes the new member;
+ * after that, an active membership with nothing more to say has no card,
+ * only the «Medlem» tag under the title (`plainMembership`). Contact and
+ * leaving are on «Mitt medlemskap» (`YourMembership`).
  */
 export function Membership({
   environment,
@@ -62,6 +69,7 @@ export function Membership({
 }) {
   const { continuity } = environment;
   const welcome = step.kind === "member" ? welcomed : undefined;
+  const plain = !welcome && plainMembership(environment, step);
   const given =
     step.kind === "awaiting_review" || step.kind === "information_requested"
       ? givenAnswers(environment)
@@ -69,49 +77,51 @@ export function Membership({
 
   return (
     <>
-      <StatusCard
-        label={membershipLabel(environment, step)}
-        status={welcome ?? describeMembership(environment, step)}
-        tone={stepTones[step.kind]}
-        when={
-          step.kind === "transition"
-            ? `Frist ${formatTime(step.deadline)}`
-            : continuity?.windDown
-              ? continuity.windDown.cancellable
-                ? `Miljøet avvikles ${formatTime(continuity.windDown.finalAt)}`
-                : "Miljøet er avviklet"
+      {!plain && (
+        <StatusCard
+          label={membershipLabel(environment, step)}
+          status={welcome ?? describeMembership(environment, step)}
+          tone={stepTones[step.kind]}
+          when={
+            step.kind === "transition"
+              ? `Frist ${formatTime(step.deadline)}`
+              : continuity?.windDown
+                ? continuity.windDown.cancellable
+                  ? `Miljøet avvikles ${formatTime(continuity.windDown.finalAt)}`
+                  : "Miljøet er avviklet"
+                : undefined
+          }
+          who={
+            continuity && !continuity.administrationAvailable
+              ? "Miljøet har ingen administrator som kan behandle noe akkurat nå."
               : undefined
-        }
-        who={
-          continuity && !continuity.administrationAvailable
-            ? "Miljøet har ingen administrator som kan behandle noe akkurat nå."
-            : undefined
-        }
-        actions={<StepActions environment={environment} step={step} />}
-      >
-        {welcome && (
-          <p>
-            Nå kan du låne av de andre medlemmene og legge ut dine egne ting
-            her. Du finner miljøet under «Dine miljøer» i Hjem.
-          </p>
-        )}
-        {step.kind === "information_requested" && (
-          <AskedQuestion environment={environment} />
-        )}
-        {given.length > 0 && (
-          <section aria-labelledby="soknaden-din">
-            <h3 id="soknaden-din">Søknaden din</h3>
-            <dl className="facts">
-              {given.map(({ term, value }, index) => (
-                <Fragment key={index}>
-                  <dt>{term}</dt>
-                  <dd className="message-text">{value}</dd>
-                </Fragment>
-              ))}
-            </dl>
-          </section>
-        )}
-      </StatusCard>
+          }
+          actions={<StepActions environment={environment} step={step} />}
+        >
+          {welcome && (
+            <p>
+              Nå kan du låne av de andre medlemmene og legge ut dine egne ting
+              her. Du finner miljøet under «Dine miljøer» i Hjem.
+            </p>
+          )}
+          {step.kind === "information_requested" && (
+            <AskedQuestion environment={environment} />
+          )}
+          {given.length > 0 && (
+            <section aria-labelledby="soknaden-din">
+              <h3 id="soknaden-din">Søknaden din</h3>
+              <dl className="facts">
+                {given.map(({ term, value }, index) => (
+                  <Fragment key={index}>
+                    <dt>{term}</dt>
+                    <dd className="message-text">{value}</dd>
+                  </Fragment>
+                ))}
+              </dl>
+            </section>
+          )}
+        </StatusCard>
+      )}
       <TypeChange environment={environment} />
       <RoleInvitations environment={environment} />
     </>
@@ -306,10 +316,10 @@ function RoleInvitations({ environment }: { environment: Environment }) {
 }
 
 /**
- * The user's own membership, on «Om miljøet» (Tomat kjerneflyt 3): writing
- * to the administrators as a group (PS-COM-010), and leaving with what
- * goes and what stays (UX-INT-007). Administrators hand over their role
- * first (PS-ENV-003), and are told so.
+ * The user's own membership, on «Mitt medlemskap» (Tomat): writing to the
+ * administrators as a group (PS-COM-010), and leaving with what goes and
+ * what stays (UX-INT-007). Administrators hand over their role first
+ * (PS-ENV-003), and are told so.
  */
 export function YourMembership({ environment }: { environment: Environment }) {
   const state = environment.membership?.state;
@@ -319,8 +329,7 @@ export function YourMembership({ environment }: { environment: Environment }) {
   const administrator = environment.roles.includes("administrator");
 
   return (
-    <section aria-labelledby="medlemskapet">
-      <h2 id="medlemskapet">Medlemskapet ditt</h2>
+    <>
       {state === "active" && !administrator && (
         <div className="field">
           <Link
@@ -340,13 +349,20 @@ export function YourMembership({ environment }: { environment: Environment }) {
         </div>
       )}
       {environment.roles.length > 0 ? (
-        <p className="help">
-          Du må gi fra deg rollen som{" "}
-          {environment.roles.includes("owner")
-            ? "eier og administrator"
-            : "administrator"}{" "}
-          før du kan forlate miljøet.
-        </p>
+        <>
+          <p className="help">
+            Du må gi fra deg rollen som{" "}
+            {environment.roles.includes("owner")
+              ? "eier og administrator"
+              : "administrator"}{" "}
+            før du kan forlate miljøet.
+          </p>
+          <p className="link-row">
+            <Link href={administrationPageHref(environment.id, "roles")}>
+              {administrationPages.roles.title}
+            </Link>
+          </p>
+        </>
       ) : (
         <div className="actions">
           <ConfirmAction
@@ -366,7 +382,7 @@ export function YourMembership({ environment }: { environment: Environment }) {
           Som passivt medlem er du fortsatt med i lån som allerede er avtalt.
         </p>
       )}
-    </section>
+    </>
   );
 }
 
