@@ -14,7 +14,7 @@ import { chatRecoveryKeyHref } from "@/navigation/chat";
 import styles from "./chat.module.css";
 import { useChat } from "./chat-provider";
 import { Setup } from "./chat-setup";
-import { deviceName } from "./device-names";
+import { distinctNames } from "./device-names";
 import type { ChatEngine } from "./engine";
 import { chatErrorMessage } from "./messages";
 import { type Point, Points } from "./points";
@@ -28,9 +28,9 @@ const names = new Intl.ListFormat("nb-NO", { type: "conjunction" });
  * and what happens to the messages depends on what else the account has.
  */
 export function currentDevicePoints(devices: OwnChatDevices): Point[] {
-  const others = devices.devices.filter(
-    (d) => d.revokedAt === null && d.deviceId !== devices.currentDeviceId,
-  );
+  const live = devices.devices.filter((d) => d.revokedAt === null);
+  const others = live.filter((d) => d.deviceId !== devices.currentDeviceId);
+  const named = distinctNames(live);
 
   return [
     {
@@ -41,7 +41,7 @@ export function currentDevicePoints(devices: OwnChatDevices): Point[] {
     others.length > 0
       ? {
           icon: "device",
-          text: `${names.format(others.map(deviceName))} beholder sine samtaler.`,
+          text: `${names.format(others.map((d) => named.get(d.deviceId)!))} beholder sine samtaler.`,
         }
       : devices.recovery
         ? {

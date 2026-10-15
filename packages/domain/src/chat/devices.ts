@@ -7,9 +7,12 @@ import {
   chatLinkRequestListSchema,
   chatLinkRequestTargetSchema,
   chatLinkStatusSchema,
+  type ChatDeviceDescription,
   declineChatLinkSchema,
+  describeChatDeviceSchema,
   type DeviceCertificateWire,
   type DeviceRevocationWire,
+  labelChatDeviceSchema,
   ownChatDevicesSchema,
   publishChatKeyPackagesSchema,
   registerChatAccountSchema,
@@ -38,6 +41,8 @@ import { chatRetention, keyPackagesPerDevice } from "./model";
 import {
   approveChatLinkPolicy,
   declineChatLinkPolicy,
+  describeChatDevicePolicy,
+  labelChatDevicePolicy,
   finishChatLinkPolicy,
   listChatLinkRequestsPolicy,
   publishChatKeyPackagesPolicy,
@@ -56,10 +61,13 @@ import {
 } from "./signatures";
 import {
   currentAccountKey,
+  describeDevice,
   devicesOf,
+  labelsOf,
   loadDevice,
   lockChatAccount,
   pendingLinkRequest,
+  presentDescription,
   presentDevice,
   sessionDevice,
   shutOut,
@@ -125,11 +133,17 @@ export async function deviceIdTaken(
   return device !== undefined || request !== undefined;
 }
 
+/**
+ * A device under the account key, with what it said it is as its label,
+ * when it said anything (display only).
+ */
 export async function insertDevice(
   tx: Tx,
   certificate: DeviceCertificateWire,
   accountKeyId: string,
   sessionId: string,
+  description: ChatDeviceDescription | undefined,
+  now: Date,
 ): Promise<void> {
   await tx
     .insertInto("app.chat_devices")
@@ -142,6 +156,10 @@ export async function insertDevice(
       certificate_signature: fromBase64(certificate.signature),
     })
     .execute();
+
+  if (description) {
+    await describeDevice(tx, certificate.deviceId, description, now);
+  }
 }
 
 /**
@@ -210,7 +228,14 @@ async function registerAccount(
     .values({ user_id: userId, public_key: accountKey, created_at: now })
     .returning("id")
     .executeTakeFirstOrThrow();
-  await insertDevice(tx, input.certificate, accountKeyId, sessionOf(actor));
+  await insertDevice(
+    tx,
+    input.certificate,
+    accountKeyId,
+    sessionOf(actor),
+    input.description,
+    now,
+  );
 
   if (previous) {
     events.record(chatAccountKeyReset, {
@@ -275,6 +300,9 @@ interface LinkRequestRow {
   approved_at: Date | null;
   declined_at: Date | null;
   package: Buffer | null;
+  kind: string | null;
+  system: string | null;
+  browser: string | null;
 }
 
 const linkRequestColumns = [
@@ -290,6 +318,9 @@ const linkRequestColumns = [
   "approved_at",
   "declined_at",
   "package",
+  "kind",
+  "system",
+  "browser",
 ] as const;
 
 async function loadLinkRequest(
@@ -381,6 +412,8 @@ export const requestChatLink = defineCommand({
         device_key: fromBase64(input.deviceKey),
         link_key: fromBase64(input.linkKey),
         commitment: fromBase64(input.commitment),
+        // Unconfirmed: shown as what the device says, until approved.
+        ...input.description,
         created_at: now,
         expires_at: new Date(now.getTime() + chatRetention.linkRequestMs),
       })
@@ -471,6 +504,7 @@ export const listChatLinkRequests = defineQuery({
         deviceKey: toBase64(request.device_key),
         linkKey: toBase64(request.link_key),
         commitment: toBase64(request.commitment!),
+        description: presentDescription(request),
         createdAt: request.created_at.toISOString(),
         expiresAt: request.expires_at.toISOString(),
       })),
@@ -537,11 +571,14 @@ export const approveChatLink = defineCommand({
       conflict("The account has as many devices as it can have");
     }
 
+    // What it said it is becomes its label, for the person to change.
     await insertDevice(
       tx,
       input.certificate,
       approver.accountKeyId,
       request.session_id,
+      presentDescription(request),
+      now,
     );
     await tx
       .updateTable("app.chat_link_requests")
@@ -701,18 +738,26 @@ export const readOwnChatDevices = defineQuery({
         .executeTakeFirst(),
     ]);
 
+    const labels = await labelsOf(
+      db,
+      devices.filter((d) => d.revokedAt === null).map((d) => d.id),
+    );
+
     return {
-      resource: { accountKey, devices, current, recovery, prompt },
+      resource: { accountKey, devices, labels, current, recovery, prompt },
       context: undefined,
     };
   },
-  present: ({ resource: { recovery, prompt, ...resource } }) =>
+  present: ({ resource: { recovery, prompt, labels, ...resource } }) =>
     ownChatDevicesSchema.parse({
       accountKey: resource.accountKey
         ? toBase64(resource.accountKey.publicKey)
         : null,
       currentDeviceId: resource.current?.id ?? null,
-      devices: resource.devices.map(presentDevice),
+      devices: resource.devices.map((device) => ({
+        ...presentDevice(device),
+        label: labels.get(device.id) ?? null,
+      })),
       recovery: recovery
         ? {
             createdAt: recovery.created_at.toISOString(),
@@ -723,6 +768,77 @@ export const readOwnChatDevices = defineQuery({
       recoveryReminder:
         !recovery && prompt?.declined_at != null && prompt.reminded_at === null,
     }),
+});
+
+/**
+ * The person renames one of their live devices or says what kind it is,
+ * from any device of theirs, and every device shows it (display only:
+ * nothing about the device's keys or approval changes). A null name goes
+ * back to the suggested one. What the device detected stays.
+ */
+export const labelChatDevice = defineCommand({
+  name: "chat.label_device",
+  input: labelChatDeviceSchema,
+  output: chatDoneSchema,
+  policy: labelChatDevicePolicy,
+  rateLimit: rateLimits.chatLabels,
+  idempotency: "required",
+  load: async ({ tx, actor, input }) => {
+    // Only one's own device is locked; another's is not found unlocked.
+    const target = await loadDevice(tx, input.deviceId, {
+      lock: true,
+      owner: actingUserId(actor),
+    });
+
+    return {
+      resource: {
+        hasDevice: (await sessionDevice(tx, actor)) !== null,
+        own: target !== null && target.revokedAt === null,
+      },
+      context: undefined,
+    };
+  },
+  execute: async ({ tx, input, now }) => {
+    const { deviceId, name, kind } = input;
+    await tx
+      .insertInto("app.chat_device_labels")
+      .values({ device_id: deviceId, name, kind, updated_at: now })
+      .onConflict((conflict) =>
+        conflict
+          .column("device_id")
+          .doUpdateSet({ name, kind, updated_at: now }),
+      )
+      .execute();
+
+    return {};
+  },
+});
+
+/**
+ * This session's device fills in what it can tell about itself and its
+ * label lacks: a device registered before devices said so, or one renamed
+ * from another device before it said so (`describeDevice`).
+ */
+export const describeChatDevice = defineCommand({
+  name: "chat.describe_device",
+  input: describeChatDeviceSchema,
+  output: chatDoneSchema,
+  policy: describeChatDevicePolicy,
+  rateLimit: rateLimits.chatLabels,
+  idempotency: "required",
+  load: async ({ tx, actor }) => {
+    const device = await sessionDevice(tx, actor, { lock: true });
+
+    return {
+      resource: { hasDevice: device !== null, device },
+      context: undefined,
+    };
+  },
+  execute: async ({ tx, input, resource, now }) => {
+    await describeDevice(tx, resource.device!.id, input.description, now);
+
+    return {};
+  },
 });
 
 /**

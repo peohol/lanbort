@@ -332,7 +332,14 @@ export const restoreChatAccount = defineCommand({
     await unattachedArchives(tx, userId)
       .where("purpose", "=", "link")
       .execute();
-    await insertDevice(tx, input.certificate, accountKey.id, sessionOf(actor));
+    await insertDevice(
+      tx,
+      input.certificate,
+      accountKey.id,
+      sessionOf(actor),
+      input.description,
+      now,
+    );
     events.record(chatAccountRestored, {
       resourceId: input.certificate.deviceId,
       payload: {},

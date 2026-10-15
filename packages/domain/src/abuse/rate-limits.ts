@@ -52,6 +52,8 @@ export const rateLimits = {
   chatMessages: rule("chat_messages", 600, hours),
   /** Chat devices, links and key packages: setting up and adding devices. */
   chatKeys: rule("chat_keys", 120, hours),
+  /** Naming chat devices and saying what they are (display only). */
+  chatLabels: rule("chat_labels", 120, hours),
   /** Replacing the account key, which shuts out every device (ADR-0010 §8). */
   chatResets: rule("chat_resets", 3, 24 * hours),
   /** History archives moved to a new device, part by part (ADR-0010 §5). */

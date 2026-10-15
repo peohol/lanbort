@@ -2,7 +2,6 @@
 
 import type { ChatLinkRequest } from "@lanbort/contracts";
 import { ChatApiError, chatApi } from "./api";
-import { deviceName } from "./device-names";
 import { Notice } from "./notice";
 import { ConfirmSheet } from "./sheet";
 
@@ -30,10 +29,13 @@ const outcomeOf = (problem: unknown): DeclineOutcome => {
  */
 export function DeclineLink({
   request,
+  name,
   label = "Avvis",
   onAnswered,
 }: {
   request: Pick<ChatLinkRequest, "linkRequestId" | "deviceId">;
+  /** What the waiting device is called (`deviceName`). */
+  name: string;
   /** The button that opens the sheet, such as «Ikke godkjenn». */
   label?: string;
   onAnswered: (outcome: DeclineOutcome) => void;
@@ -41,7 +43,7 @@ export function DeclineLink({
   return (
     <ConfirmSheet
       label={label}
-      title={`Avvise ${deviceName(request)}?`}
+      title={`Avvise ${name}?`}
       icon={null}
       points={[
         { icon: "lock", text: "Enheten får ikke tilgang til privat chat." },
@@ -74,25 +76,26 @@ export function DeclineLink({
  */
 export function DeclineReceipt({
   outcome,
-  deviceId,
+  name,
 }: {
   outcome: DeclineOutcome;
-  deviceId: string;
+  /** What the device was called (`deviceName`), where it is known. */
+  name?: string | undefined;
 }) {
-  const name = deviceName({ deviceId });
+  const named = name ?? "Enheten";
   switch (outcome) {
     case "declined":
       return (
         <Notice tag="Avvist" tone="positive" role="status">
-          <p>{name} fikk ikke tilgang til privat chat.</p>
+          <p>{named} fikk ikke tilgang til privat chat.</p>
         </Notice>
       );
     case "expired":
       return (
         <Notice tag="Utløpt" role="status">
           <p>
-            Forespørselen fra {name} gikk ut før den ble avvist. Enheten fikk
-            ikke tilgang til privat chat.
+            Forespørselen fra {name ?? "enheten"} gikk ut før den ble avvist.
+            Enheten fikk ikke tilgang til privat chat.
           </p>
         </Notice>
       );
@@ -100,7 +103,7 @@ export function DeclineReceipt({
       return (
         <Notice tag="Allerede godkjent" tone="warning" role="alert">
           <p>
-            {name} ble godkjent fra en annen av enhetene dine før den ble
+            {named} ble godkjent fra en annen av enhetene dine før den ble
             avvist, og kan lese samtalene dine. Kjenner du den ikke igjen, fjern
             den under.
           </p>

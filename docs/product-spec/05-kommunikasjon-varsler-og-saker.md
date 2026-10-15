@@ -119,6 +119,11 @@ Den som tok kontakt med administratorene, kan selv avslutte henvendelsen mens de
 
 Når partene selv avklarer et lån som har en åpen mekling, står saken åpen. Den viser lånets gjeldende status og at partene har avklart lånet, og behandleren får «Lukk saken» som neste steg. Dette er en oppryddingsoppgave og skal ikke gå foran tidskritiske saker i køen.
 
+### PS-COM-024 — Enheter for privat chat er lette å kjenne igjen
+**Forankring:** PS-COM-005, PS-COM-016; ADR-0010 §5 og §7
+
+En enhet for privat chat vises med et forståelig navn og et ikon for typen (mobil, nettbrett eller PC). Ved registrering foreslås navn og type ut fra det nettleseren selv sier om enheten, for eksempel «Windows-PC · Edge» eller «iPhone · Safari», uten ekstra steg. Det som ikke kan avgjøres sikkert, foreslås ikke; da vises en nøytral betegnelse. Brukeren kan senere endre navn og type under «Mine enheter», og endringen vises likt på alle brukerens enheter. Listen viser hvilken enhet som er i bruk nå, operativsystem og nettleser når de er kjent, og skiller flere registreringer fra samme fysiske enhet. En enhet som venter på godkjenning, vises med navnet og typen den selv oppgir, tydelig merket som ubekreftet. Navn og type er bare visning: de brukes aldri som sikkerhetsbevis, vises bare for kontoens eier og endrer ikke kryptografisk identitet, godkjenning eller tilbakekalling. Enheter registrert før dette fyller inn det de selv kan si, neste gang de åpnes. (Produkteier, 15. oktober 2026.)
+
 ## Kanalstandard for pilot
 
 Alle relevante hendelser representeres i appens varslingssenter. Verifisert e-post brukes som reservekanal for sikkerhets-/kontohendelser og tidskritiske hendelser i allerede godkjente lån. Vanlige handlings- og informasjonsvarsler skal kunne konfigureres uten at dette endrer systemtilstand. Web push kan legges til når teknisk støtte og samtykke er på plass.

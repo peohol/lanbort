@@ -53,7 +53,9 @@ import { acknowledgeChatNotice, chatNoticeAcknowledged } from "./notice";
 import {
   approveChatLink,
   declineChatLink,
+  describeChatDevice,
   finishChatLink,
+  labelChatDevice,
   listChatLinkRequests,
   publishChatKeyPackages,
   readChatLinkStatus,
@@ -1013,6 +1015,228 @@ describe("devices and the account key (ADR-0010 §3, §5)", () => {
         keyPackages: [alice.device.keyPackage()],
       }),
     ).rejects.toMatchObject(forbidden);
+  });
+});
+
+describe("device labels: display only (ADR-0010 §7)", () => {
+  const phone = { kind: "mobile", system: "ios", browser: "safari" } as const;
+  const laptop = {
+    kind: "computer",
+    system: "windows",
+    browser: "edge",
+  } as const;
+
+  const labels = async (actor: UserActor) =>
+    Object.fromEntries(
+      (
+        await executeQuery(tick(), readOwnChatDevices, { actor, input: {} })
+      ).devices.map((device) => [device.deviceId, device.label]),
+    );
+
+  /** Alice's phone, and a laptop session that waits to be linked. */
+  async function waitingLaptop() {
+    const me = await user();
+    const account = testChatAccount(me.userId);
+    const device = testChatDevice(account);
+    await confirmNotice(me);
+    await run(registerChatAccount, me, {
+      accountKey: account.accountKey,
+      certificate: device.certificate,
+      description: phone,
+    });
+    const session = newSession(me);
+    const linking = testChatDevice(account);
+    const { linkRequestId } = await run(requestChatLink, session, {
+      deviceId: linking.deviceId,
+      deviceKey: linking.deviceKey,
+      linkKey: linking.deviceKey,
+      commitment: linkCommitment,
+      description: laptop,
+    });
+
+    return {
+      alice: { actor: me, account, device },
+      session,
+      linking,
+      linkRequestId,
+    };
+  }
+
+  it("shows what a device said it is, unconfirmed while it waits, and keeps it once approved", async () => {
+    const { alice, session, linking, linkRequestId } = await waitingLaptop();
+    expect(await labels(alice.actor)).toEqual({
+      [alice.device.deviceId]: { name: null, ...phone },
+    });
+
+    const { requests } = await executeQuery(tick(), listChatLinkRequests, {
+      actor: alice.actor,
+      input: {},
+    });
+    expect(requests).toEqual([
+      expect.objectContaining({ linkRequestId, description: laptop }),
+    ]);
+
+    await run(approveChatLink, alice.actor, {
+      linkRequestId,
+      certificate: alice.account.certify(linking.deviceId, linking.deviceKey),
+      package: "c2VhbGVk",
+    });
+    expect(await labels(session)).toEqual({
+      [alice.device.deviceId]: { name: null, ...phone },
+      [linking.deviceId]: { name: null, ...laptop },
+    });
+  });
+
+  it("knows nothing about a device that said nothing, and asks it for no more than it can tell", async () => {
+    const alice = await chatUser();
+    expect(await labels(alice.actor)).toEqual({
+      [alice.device.deviceId]: null,
+    });
+
+    const unknown = { kind: null, system: null, browser: null };
+    const linking = testChatDevice(alice.account);
+    await run(requestChatLink, newSession(alice.actor), {
+      deviceId: linking.deviceId,
+      deviceKey: linking.deviceKey,
+      linkKey: linking.deviceKey,
+      commitment: linkCommitment,
+    });
+    const { requests } = await executeQuery(tick(), listChatLinkRequests, {
+      actor: alice.actor,
+      input: {},
+    });
+    expect(requests).toEqual([
+      expect.objectContaining({ description: unknown }),
+    ]);
+
+    // A device from before fills its label in about itself.
+    await run(describeChatDevice, alice.actor, { description: phone });
+    expect(await labels(alice.actor)).toEqual({
+      [alice.device.deviceId]: { name: null, ...phone },
+    });
+  });
+
+  it("lets the owner rename a device and say what kind it is, from any device, for every device", async () => {
+    const { alice, session, linking, linkRequestId } = await waitingLaptop();
+    await run(approveChatLink, alice.actor, {
+      linkRequestId,
+      certificate: alice.account.certify(linking.deviceId, linking.deviceKey),
+      package: "c2VhbGVk",
+    });
+
+    await run(labelChatDevice, session, {
+      deviceId: alice.device.deviceId,
+      name: "  Jobbmobilen ",
+      kind: "tablet",
+    });
+    const renamed = { ...phone, name: "Jobbmobilen", kind: "tablet" };
+    expect((await labels(alice.actor))[alice.device.deviceId]).toEqual(renamed);
+    expect((await labels(session))[alice.device.deviceId]).toEqual(renamed);
+
+    // What the device says about itself never overrides the owner's choice.
+    await run(describeChatDevice, alice.actor, { description: phone });
+    expect((await labels(alice.actor))[alice.device.deviceId]).toEqual(renamed);
+
+    // No name: back to the suggested one; the detected system stays.
+    await run(labelChatDevice, alice.actor, {
+      deviceId: alice.device.deviceId,
+      name: null,
+      kind: null,
+    });
+    expect((await labels(session))[alice.device.deviceId]).toEqual({
+      name: null,
+      kind: null,
+      system: "ios",
+      browser: "safari",
+    });
+  });
+
+  it("refuses a name or kind outside what it can show", async () => {
+    const alice = await chatUser();
+    for (const input of [
+      { name: "a\u0000b", kind: null },
+      { name: "x".repeat(41), kind: null },
+      { name: "   ", kind: null },
+      // Invisible, so it could pass for another device's name.
+      { name: "iPhone\u200b · Safari", kind: null },
+      { name: "PC \u202eiraf", kind: null },
+      { name: null, kind: "watch" },
+    ]) {
+      await expect(
+        run(labelChatDevice, alice.actor, {
+          deviceId: alice.device.deviceId,
+          ...input,
+        }),
+      ).rejects.toMatchObject(invalid);
+    }
+    await expect(
+      run(describeChatDevice, alice.actor, {
+        description: { kind: null, system: "beos", browser: null },
+      }),
+    ).rejects.toMatchObject(invalid);
+    expect(await labels(alice.actor)).toEqual({
+      [alice.device.deviceId]: null,
+    });
+  });
+
+  it("lets no one else, no session without chat and no revoked device be named", async () => {
+    const { alice, bob, conversationId } = await pairInConversation();
+    await run(labelChatDevice, alice.actor, {
+      deviceId: alice.device.deviceId,
+      name: "Alices mobil",
+      kind: "mobile",
+    });
+    const rename = (actor: UserActor, deviceId: string) =>
+      run(labelChatDevice, actor, { deviceId, name: "Min", kind: "mobile" });
+
+    await expect(
+      rename(bob.actor, alice.device.deviceId),
+    ).rejects.toMatchObject(notFound);
+    await expect(rename(bob.actor, randomUUID())).rejects.toMatchObject(
+      notFound,
+    );
+    await expect(
+      rename(newSession(alice.actor), alice.device.deviceId),
+    ).rejects.toMatchObject(forbidden);
+    await expect(
+      run(describeChatDevice, newSession(alice.actor), { description: phone }),
+    ).rejects.toMatchObject(forbidden);
+
+    // The contacts' devices never see a label, only keys.
+    const directory = await executeQuery(tick(), readChatDirectory, {
+      actor: bob.actor,
+      input: { conversationId },
+    });
+    expect(JSON.stringify(directory)).not.toContain("Alices mobil");
+
+    // A revoked device's label goes with it, and it gets no new one.
+    const other = newSession(alice.actor);
+    const linking = testChatDevice(alice.account);
+    const { linkRequestId } = await run(requestChatLink, other, {
+      deviceId: linking.deviceId,
+      deviceKey: linking.deviceKey,
+      linkKey: linking.deviceKey,
+      commitment: linkCommitment,
+      description: laptop,
+    });
+    await run(approveChatLink, alice.actor, {
+      linkRequestId,
+      certificate: alice.account.certify(linking.deviceId, linking.deviceKey),
+      package: "c2VhbGVk",
+    });
+    await run(revokeChatDevice, other, {
+      revocation: alice.account.revoke(alice.device.deviceId),
+    });
+    expect(
+      await db
+        .selectFrom("app.chat_device_labels")
+        .select("device_id")
+        .where("device_id", "=", alice.device.deviceId)
+        .execute(),
+    ).toEqual([]);
+    await expect(rename(other, alice.device.deviceId)).rejects.toMatchObject(
+      notFound,
+    );
   });
 });
 

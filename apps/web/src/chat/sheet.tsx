@@ -17,6 +17,7 @@ export function Sheet({
   label,
   title,
   className,
+  onClose,
   children,
 }: {
   /** The button that opens it. */
@@ -24,6 +25,8 @@ export function Sheet({
   title: string;
   /** The opening button's class, such as `button-quiet`. */
   className?: string;
+  /** When it closes, however: to leave nothing half-done for next time. */
+  onClose?: () => void;
   children: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -38,7 +41,12 @@ export function Sheet({
       >
         {label}
       </button>
-      <dialog ref={dialog} className="dialog" aria-labelledby={titleId}>
+      <dialog
+        ref={dialog}
+        className="dialog"
+        aria-labelledby={titleId}
+        onClose={onClose}
+      >
         <div className={styles.sheetHeading}>
           <h2 id={titleId}>{title}</h2>
           <button

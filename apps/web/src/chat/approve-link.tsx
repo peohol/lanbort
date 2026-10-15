@@ -18,10 +18,10 @@ import {
 import { readLinkQr } from "@lanbort/e2ee";
 import { chatApi } from "./api";
 import styles from "./chat.module.css";
-import { ChatIcon } from "./chat-icon";
 import { ReadyChat } from "./chat-setup";
 import { DeclineLink } from "./decline-link";
-import { deviceName } from "./device-names";
+import { DeviceSummary } from "./device-label";
+import { claimed, deviceName, suggestedName } from "./device-names";
 import type { ChatEngine, MatchedLinkRequest } from "./engine";
 import { chatErrorMessage } from "./messages";
 import { Notice } from "./notice";
@@ -55,7 +55,11 @@ const historyChoices = [
   },
 ] as const;
 
-/** Gi denne enheten tilgang (12): what approving means, then the choice. */
+/**
+ * Gi denne enheten tilgang (12): what approving means, then the choice. The
+ * device is named by what it says it is, and that is said too: only the
+ * code proves which device it is.
+ */
 function Confirm({
   request,
   busy,
@@ -67,18 +71,15 @@ function Confirm({
 }) {
   const router = useRouter();
   const [move, setMove] = useState(false);
+  const said = suggestedName(request.description);
   return (
     <>
       {header("Gi denne enheten tilgang til privat chat?")}
       <div className={styles.stack}>
         <div className={`card ${styles.deviceRow}`}>
-          <span className={styles.iconBubble}>
-            <ChatIcon name="device" />
-          </span>
-          <span className={styles.linkText}>
-            <strong>{deviceName(request)}</strong>
+          <DeviceSummary device={claimed(request)}>
             <small>Ba om tilgang kl. {messageTime(request.createdAt)}</small>
-          </span>
+          </DeviceSummary>
         </div>
         <Points
           points={[
@@ -86,6 +87,14 @@ function Confirm({
               icon: "conversations",
               text: "Den kan lese og sende meldinger fra nå av.",
             },
+            ...(said
+              ? [
+                  {
+                    icon: "info" as const,
+                    text: `«${said}» er det enheten selv oppgir. Det er ikke bekreftet.`,
+                  },
+                ]
+              : []),
             {
               icon: "shield",
               text: "Godkjenn bare hvis det er din enhet og du har den foran deg.",
@@ -126,6 +135,7 @@ function Confirm({
         </BusyButton>
         <DeclineLink
           request={request}
+          name={deviceName(claimed(request))}
           label="Ikke godkjenn"
           onAnswered={(outcome) =>
             router.push(chatDevicesAnsweredHref(request.deviceId, outcome))

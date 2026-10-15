@@ -1,4 +1,13 @@
+import type {
+  ChatDeviceBrowser,
+  ChatDeviceDescription,
+  ChatDeviceKind,
+  ChatDeviceLabel,
+  ChatDeviceSystem,
+  ChatLinkRequest,
+} from "@lanbort/contracts";
 import { productTimeZone } from "@lanbort/contracts";
+import type { ChatIconName } from "./chat-icon";
 
 const addedFormat = new Intl.DateTimeFormat("nb-NO", {
   day: "numeric",
@@ -9,12 +18,125 @@ const addedFormat = new Intl.DateTimeFormat("nb-NO", {
   timeZone: productTimeZone,
 });
 
+export const deviceKindLabels: Record<ChatDeviceKind, string> = {
+  mobile: "Mobil",
+  tablet: "Nettbrett",
+  computer: "PC",
+};
+
+const systemLabels: Record<ChatDeviceSystem, string> = {
+  windows: "Windows",
+  macos: "macOS",
+  ios: "iOS",
+  ipados: "iPadOS",
+  android: "Android",
+  chromeos: "ChromeOS",
+  linux: "Linux",
+};
+
+const browserLabels: Record<ChatDeviceBrowser, string> = {
+  chrome: "Chrome",
+  edge: "Edge",
+  firefox: "Firefox",
+  safari: "Safari",
+  opera: "Opera",
+  samsung: "Samsung Internet",
+  brave: "Brave",
+};
+
+/** What a kind of device is called on its own system. */
+const productNames: Partial<Record<string, string>> = {
+  "ios mobile": "iPhone",
+  "ipados tablet": "iPad",
+  "macos computer": "Mac",
+  "chromeos computer": "Chromebook",
+};
+
+const kindWord = (kind: ChatDeviceKind) =>
+  kind === "computer" ? "PC" : deviceKindLabels[kind].toLowerCase();
+
+/** «iPhone», «Windows-PC», «Android-nettbrett», or just «Nettbrett». */
+function deviceWord({ kind, system }: ChatDeviceDescription) {
+  if (kind && system) {
+    return (
+      productNames[`${system} ${kind}`] ??
+      `${systemLabels[system]}-${kindWord(kind)}`
+    );
+  }
+  return kind ? deviceKindLabels[kind] : system && systemLabels[system];
+}
+
 /**
- * A device is named by the start of its id (14): the browser and system
- * are not guessed, so the name says nothing that may be wrong.
+ * The name suggested from what a device is: «Windows-PC · Edge», «iPhone ·
+ * Safari». Null when nothing is known, so nothing is made up.
  */
-export const deviceName = (device: { deviceId: string }) =>
-  `Enhet ${device.deviceId.slice(0, 4).toUpperCase()}`;
+export function suggestedName(description: ChatDeviceDescription) {
+  const word = deviceWord(description);
+  if (!word) return null;
+  return description.browser
+    ? `${word} · ${browserLabels[description.browser]}`
+    : word;
+}
+
+/** A device's label, or what a device waiting to be linked says it is. */
+export interface Named {
+  readonly deviceId: string;
+  readonly label?: ChatDeviceLabel | null;
+}
+
+/** What a waiting device says it is, as a label: unconfirmed. */
+export const claimed = (request: ChatLinkRequest): Named => ({
+  deviceId: request.deviceId,
+  label: { name: null, ...request.description },
+});
+
+/** The start of a device's id, which tells it apart from any other. */
+const shortId = (deviceId: string) => deviceId.slice(0, 4).toUpperCase();
+
+/**
+ * What a device is called: the name its owner gave it, the one suggested
+ * from what it is, or, when nothing is known, the start of its id.
+ */
+export const deviceName = ({ deviceId, label }: Named) =>
+  label?.name ??
+  (label && suggestedName(label)) ??
+  `Enhet ${shortId(deviceId)}`;
+
+/**
+ * The names of the devices in one list, by id, told apart: two that would
+ * be called the same, such as two windows of one browser, also show the
+ * start of their ids.
+ */
+export function distinctNames(devices: readonly Named[]) {
+  const named = devices.map((device) => ({
+    id: device.deviceId,
+    name: deviceName(device),
+  }));
+  // Names told apart as a reader would: «Mobil» and «mobil» are the same.
+  const seen = (name: string) => name.normalize("NFKC").toLocaleLowerCase();
+  const shared = (name: string) =>
+    named.filter((other) => seen(other.name) === seen(name)).length > 1;
+  return new Map(
+    named.map(({ id, name }) => [
+      id,
+      shared(name) ? `${name} (${shortId(id)})` : name,
+    ]),
+  );
+}
+
+/** The system and browser, when known: «iOS · Safari». */
+export const deviceDetails = (label: ChatDeviceLabel | null | undefined) =>
+  [
+    label?.system && systemLabels[label.system],
+    label?.browser && browserLabels[label.browser],
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+/** The kind's own icon; a kind no one has said, a neutral one. */
+export const deviceIcon = (
+  label: ChatDeviceLabel | null | undefined,
+): ChatIconName => label?.kind ?? "anyDevice";
 
 /** When a device was added: «3. mars 2026 kl. 12:10». */
 export const addedAt = (iso: string) => addedFormat.format(new Date(iso));

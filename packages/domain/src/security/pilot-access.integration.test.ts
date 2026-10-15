@@ -835,6 +835,12 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     certificate: bystanderDevice.certificate,
     package: "AAECAw==",
   }),
+  // The owner's device, renamed from a session of the prober's own.
+  "chat.label_device": (ids) => ({
+    deviceId: ids.chatDeviceId,
+    name: "Min mobil",
+    kind: "mobile",
+  }),
   // The owner's device: it is looked up among the caller's devices only.
   "chat.decline_link": (ids) => ({
     linkRequestId: ids.linkRequestId,
@@ -874,13 +880,23 @@ const probes: Record<string, (ids: WorldIds) => object> = {
 };
 
 /**
+ * Operations aimed at an existing chat device by its id. Elsewhere a device
+ * id is the new device's own, or inside a certificate or revocation its
+ * account key signed.
+ */
+const namesDevice = new Set(["chat.label_device"]);
+
+/**
  * A private message copied into a case (WP-46) quotes its conversation's id
  * as evidence the party vouches for; it reads nothing from the conversation,
  * and the conversation must be one the party is in.
  */
 const namesResource = (operation: Operation, key: string) =>
-  resourceKeys.has(key) &&
-  !(key === "conversationId" && operation.inputKeys.has("privateMessages"));
+  (resourceKeys.has(key) &&
+    !(
+      key === "conversationId" && operation.inputKeys.has("privateMessages")
+    )) ||
+  (key === "deviceId" && namesDevice.has(operation.name));
 
 const probed = allOperations.filter(
   (operation) =>

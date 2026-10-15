@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { singleLine } from "./environment";
 import { personLinkShape } from "./social";
 
 /**
@@ -129,6 +130,77 @@ const archiveTagBytes = 16;
 /** A position in a device's inbox: the server's message order. */
 export const chatPositionSchema = z.string().regex(/^[1-9]\d{0,18}$/);
 
+// What a device is, for people to recognise it
+
+/**
+ * What a device says about itself: what kind of device, which system and
+ * which browser, each null when it cannot tell. Only for people to know
+ * their devices apart; nothing ever trusts it (ADR-0010 §7). A fixed set of
+ * values, so a device waiting to be linked cannot put its own words in
+ * front of the person who approves it.
+ */
+export const chatDeviceKinds = ["mobile", "tablet", "computer"] as const;
+export const chatDeviceSystems = [
+  "windows",
+  "macos",
+  "ios",
+  "ipados",
+  "android",
+  "chromeos",
+  "linux",
+] as const;
+export const chatDeviceBrowsers = [
+  "chrome",
+  "edge",
+  "firefox",
+  "safari",
+  "opera",
+  "samsung",
+  "brave",
+] as const;
+
+export const chatDeviceKindSchema = z.enum(chatDeviceKinds);
+
+export const chatDeviceDescriptionSchema = z.strictObject({
+  kind: chatDeviceKindSchema.nullable(),
+  system: z.enum(chatDeviceSystems).nullable(),
+  browser: z.enum(chatDeviceBrowsers).nullable(),
+});
+
+/**
+ * What the person calls a device instead of the suggested name. Only what
+ * can be seen: an invisible or direction-changing character could make one
+ * device's name pass for another's in the list it is removed from.
+ */
+export const chatDeviceNameMaxLength = 40;
+export const chatDeviceNameSchema = singleLine(chatDeviceNameMaxLength).regex(
+  /^[^\p{C}\p{Zl}\p{Zp}]*$/u,
+);
+
+/**
+ * A device as its account shows it on every device: the name the person
+ * gave it (null: the suggested one), the kind they chose or it detected,
+ * and the system and browser it detected about itself.
+ */
+export const chatDeviceLabelSchema = chatDeviceDescriptionSchema.extend({
+  name: chatDeviceNameSchema.nullable(),
+});
+
+/** The person renames one of their devices, or says what kind it is. */
+export const labelChatDeviceSchema = z.strictObject({
+  deviceId: chatDeviceIdSchema,
+  name: chatDeviceNameSchema.nullable(),
+  kind: chatDeviceKindSchema.nullable(),
+});
+
+/**
+ * A device fills in what it can tell about itself and its label lacks, for
+ * one registered before devices did so. Nothing the person chose changes.
+ */
+export const describeChatDeviceSchema = z.strictObject({
+  description: chatDeviceDescriptionSchema,
+});
+
 // Account keys and devices
 
 /**
@@ -139,6 +211,7 @@ export const chatPositionSchema = z.string().regex(/^[1-9]\d{0,18}$/);
 export const registerChatAccountSchema = z.strictObject({
   accountKey: publicKey,
   certificate: deviceCertificateSchema,
+  description: chatDeviceDescriptionSchema.optional(),
 });
 
 export const chatDeviceRegisteredSchema = z.strictObject({
@@ -158,6 +231,7 @@ export const requestChatLinkSchema = z.strictObject({
   /** The one-time HPKE key the package is sealed to. */
   linkKey: publicKey,
   commitment: linkCommitment,
+  description: chatDeviceDescriptionSchema.optional(),
 });
 
 export const chatLinkRequestSchema = z.strictObject({
@@ -166,6 +240,8 @@ export const chatLinkRequestSchema = z.strictObject({
   deviceKey: publicKey,
   linkKey: publicKey,
   commitment: linkCommitment,
+  /** What the waiting device says it is: unconfirmed until approved. */
+  description: chatDeviceDescriptionSchema,
   createdAt: z.iso.datetime(),
   expiresAt: z.iso.datetime(),
 });
@@ -287,6 +363,11 @@ export const chatDeviceSchema = z.strictObject({
   revocation: deviceRevocationSchema.nullable(),
 });
 
+/** One of the account's own devices, with its label once it has one. */
+export const ownChatDeviceSchema = chatDeviceSchema.extend({
+  label: chatDeviceLabelSchema.nullable(),
+});
+
 // The recovery key (ADR-0010 §8, PS-COM-019)
 
 /** Public, derived from the key: which key a backup is under. */
@@ -348,6 +429,7 @@ export const restoreChatAccountSchema = z.strictObject({
   revocations: z
     .array(deviceRevocationSchema)
     .max(chatLimits.devicesPerAccount),
+  description: chatDeviceDescriptionSchema.optional(),
 });
 
 /**
@@ -371,7 +453,7 @@ export const answerChatRecoveryPromptSchema = z.strictObject({
 export const ownChatDevicesSchema = z.strictObject({
   accountKey: publicKey.nullable(),
   currentDeviceId: chatDeviceIdSchema.nullable(),
-  devices: z.array(chatDeviceSchema),
+  devices: z.array(ownChatDeviceSchema),
   /** The recovery key, if there is one (PS-COM-019). */
   recovery: z
     .strictObject({
@@ -583,7 +665,13 @@ export type ChatConversationKind = z.infer<typeof chatConversationKindSchema>;
 export type ChatContext = z.infer<typeof chatContextSchema>;
 export type ChatContact = z.infer<typeof chatContactSchema>;
 export type ChatDevice = z.infer<typeof chatDeviceSchema>;
+export type OwnChatDevice = z.infer<typeof ownChatDeviceSchema>;
 export type OwnChatDevices = z.infer<typeof ownChatDevicesSchema>;
+export type ChatDeviceKind = z.infer<typeof chatDeviceKindSchema>;
+export type ChatDeviceSystem = (typeof chatDeviceSystems)[number];
+export type ChatDeviceBrowser = (typeof chatDeviceBrowsers)[number];
+export type ChatDeviceDescription = z.infer<typeof chatDeviceDescriptionSchema>;
+export type ChatDeviceLabel = z.infer<typeof chatDeviceLabelSchema>;
 export type ChatLinkRequest = z.infer<typeof chatLinkRequestSchema>;
 export type ChatLinkStatus = z.infer<typeof chatLinkStatusSchema>;
 export type ChatArchive = z.infer<typeof chatArchiveSchema>;

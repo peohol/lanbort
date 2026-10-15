@@ -70,7 +70,8 @@ const noControlCharacters = /^[^\p{Cc}]*$/u;
 // Multi-line text may keep line breaks and tabs, nothing else invisible.
 const noControlCharactersExceptLineBreaks = /^(?:[^\p{Cc}]|[\t\n\r])*$/u;
 
-const singleLine = (max: number) =>
+/** One line of text as typed, trimmed, with nothing invisible in it. */
+export const singleLine = (max: number) =>
   z.string().trim().min(1).max(max).regex(noControlCharacters);
 const multiLine = (max: number) =>
   z.string().trim().min(1).max(max).regex(noControlCharactersExceptLineBreaks);

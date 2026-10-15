@@ -249,6 +249,25 @@ export const answerChatRecoveryPromptPolicy = definePolicy<void, void>({
 });
 
 /**
+ * Naming one of the account's live devices, from a device of its own: only
+ * what the account's owner sees, never what anyone trusts.
+ */
+export const labelChatDevicePolicy = definePolicy<OwnChatResource, void>({
+  action: "chat.label_device",
+  actor: [requireActiveAccount],
+  resource: [sessionDevice, ownResource],
+});
+
+/** This session's device says what it is, for its own label. */
+export const describeChatDevicePolicy = definePolicy<ChatSessionResource, void>(
+  {
+    action: "chat.describe_device",
+    actor: [requireActiveAccount],
+    resource: [sessionDevice],
+  },
+);
+
+/**
  * Revoking one of the account's devices, also this one at sign-out. Kept
  * for an account that is no longer active, so a lost device can always be
  * shut out (PS-ADM-002).
@@ -403,6 +422,8 @@ export const chatPolicies = [
   restoreChatAccountPolicy,
   answerChatRecoveryPromptPolicy,
   revokeChatDevicePolicy,
+  labelChatDevicePolicy,
+  describeChatDevicePolicy,
   readOwnChatDevicesPolicy,
   publishChatKeyPackagesPolicy,
   startChatConversationPolicy,

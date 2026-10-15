@@ -3,6 +3,7 @@ import type {
   CreateChatRecoveryKey,
   ChatConversation,
   ChatDevice,
+  ChatDeviceDescription,
   ChatDirectory,
   ChatInboxItem,
   DeviceCertificateWire,
@@ -165,6 +166,7 @@ interface LinkRow {
   deviceKey: string;
   linkKey: string;
   commitment: string;
+  description: ChatDeviceDescription;
   package: string | null;
 }
 
@@ -475,7 +477,10 @@ export class FakeChatServer {
       return {
         accountKey: this.accountKeys.get(userId) ?? null,
         currentDeviceId: this.#sessionDevice()?.deviceId ?? null,
-        devices: this.#devicesOf(userId).map((row) => this.#presented(row)),
+        devices: this.#devicesOf(userId).map((row) => ({
+          ...this.#presented(row),
+          label: null,
+        })),
         recovery: recovery ? { createdAt: now(), backedUpAt: now() } : null,
         recoveryReminder: false,
       };
@@ -494,6 +499,8 @@ export class FakeChatServer {
       this.#insertDevice(userId, certificate, session);
       return { deviceId: certificate.deviceId };
     },
+    labelDevice: async () => ({}),
+    describeDevice: async () => ({}),
     revoke: async (revocation) => {
       const row = this.devices.get(revocation.deviceId) ?? fail("not_found");
       this.#shutOut(row, revocation);
@@ -548,6 +555,7 @@ export class FakeChatServer {
           deviceKey: link.deviceKey,
           linkKey: link.linkKey,
           commitment: link.commitment,
+          description: link.description,
           createdAt: now(),
           expiresAt: now(),
         })),

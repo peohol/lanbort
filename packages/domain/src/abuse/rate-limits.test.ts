@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   approveChatLink,
   claimChatKeyPackages,
+  describeChatDevice,
+  labelChatDevice,
   publishChatKeyPackages,
   registerChatAccount,
   requestChatLink,
@@ -96,6 +98,7 @@ const limited = {
     publishChatKeyPackages,
     claimChatKeyPackages,
   ],
+  chatLabels: [labelChatDevice, describeChatDevice],
   chatResets: [resetChatAccount],
   passkeys: [...Object.values(testPasskeyCommands), removeStewardPasskey],
 } as const;

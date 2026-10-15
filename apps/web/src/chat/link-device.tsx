@@ -14,6 +14,8 @@ import { groupCode } from "@/presentation/codes";
 import { chatApi } from "./api";
 import styles from "./chat.module.css";
 import { useChat } from "./chat-provider";
+import { describeThisDevice } from "./device-detection";
+import { suggestedName } from "./device-names";
 import { completeDeviceLink, requestDeviceLink } from "./engine";
 import { chatErrorMessage } from "./messages";
 import { Notice } from "./notice";
@@ -209,7 +211,8 @@ export function LinkDevice() {
           </Notice>
         </>
       );
-    case "waiting":
+    case "waiting": {
+      const shownAs = suggestedName(describeThisDevice());
       return (
         <>
           {header("Skann koden med en enhet som har privat chat")}
@@ -240,7 +243,14 @@ export function LinkDevice() {
           <p className="quiet">
             La denne siden være åpen til koblingen er godkjent.
           </p>
+          {shownAs && (
+            <p className="quiet">
+              Enhetene dine viser denne som «{shownAs}». Du kan endre navnet
+              under Mine enheter.
+            </p>
+          )}
         </>
       );
+    }
   }
 }
