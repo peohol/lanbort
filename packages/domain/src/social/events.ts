@@ -49,3 +49,22 @@ function blockEvent(type: string) {
 
 export const userBlocked = blockEvent("created");
 export const userBlockLifted = blockEvent("lifted");
+
+/**
+ * PS-USR-013: an invitation sent to an e-mail address, and how it ended.
+ * Only the sender's own course: the payload never holds the address, and
+ * nothing records what happened behind it.
+ */
+function invitationEvent(type: string) {
+  return defineEvent({
+    type: `friend_invitation.${type}`,
+    version: 1,
+    kind: "domain",
+    resourceType: "friend_invitation",
+    payload: z.strictObject({}),
+  });
+}
+
+export const friendInvitationSent = invitationEvent("sent");
+export const friendInvitationWithdrawn = invitationEvent("withdrawn");
+export const friendInvitationExpired = invitationEvent("expired");

@@ -86,9 +86,16 @@ export async function loadPeople(
       "friendship.id as friendshipId",
       "friendship.status as friendshipStatus",
       "friendship.requester_id as requesterId",
-      sql<Date | null>`coalesce(friendship.accepted_at, friendship.requested_at)`.as(
-        "relationSince",
-      ),
+      "friendship.hidden_from_requester as hiddenFromRequester",
+      // A request the viewer sent to the person's e-mail address is not
+      // theirs to know of until it is accepted (PS-USR-013).
+      sql<Date | null>`case
+        when friendship.hidden_from_requester
+          and friendship.status = 'pending'
+          and friendship.requester_id = ${viewerId}::uuid
+        then null
+        else coalesce(friendship.accepted_at, friendship.requested_at)
+      end`.as("relationSince"),
       sql<boolean>`exists (
         select 1 from app.user_blocks as block
         where block.lifted_at is null
@@ -137,6 +144,7 @@ export async function loadPeople(
                         status:
                           row.friendshipStatus as OpenFriendship["status"],
                         requesterId: row.requesterId,
+                        hiddenFromRequester: row.hiddenFromRequester ?? false,
                       }
                     : null,
                 blockedByActor: row.blockedByViewer,

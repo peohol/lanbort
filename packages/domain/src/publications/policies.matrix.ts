@@ -162,6 +162,7 @@ const profile = (overrides: Partial<SocialPair> = {}) => ({
       id: "00000000-0000-4000-8000-0000000000c1",
       status: "active" as const,
       requesterId: owner.userId,
+      hiddenFromRequester: false,
     },
     blockedByActor: false,
     blockedByOther: false,

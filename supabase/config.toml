@@ -70,8 +70,9 @@ project_id = "abgivjcloxembtnzfnyv"
 [remotes.production.auth]
 site_url = "https://www.xn--lnbort-iua.no"
 additional_redirect_urls = ["https://www.xn--lnbort-iua.no/**", "https://lanbort.vercel.app/**"]
-# The pilot is closed: only people added in the Supabase dashboard get a
-# code, and the app answers everyone else the same way
+# The pilot is closed: only people the product owner invites from the app
+# (PS-USR-015) or adds in the Supabase dashboard get a code, and the app
+# answers everyone else the same way
 # (docs/implementation/pilot-operations.md). This is [auth], not [auth.email]:
 # turning off e-mail sign-up there turns off sign-in by e-mail altogether.
 enable_signup = false

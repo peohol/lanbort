@@ -5,7 +5,10 @@ import {
   deny,
   type ResourceRule,
 } from "../authorization/policy";
-import { requireActiveAccount } from "../authorization/rules";
+import {
+  requireActiveAccount,
+  requireSystemProcess,
+} from "../authorization/rules";
 import type { SocialPair } from "./pair";
 
 type PairRule = ResourceRule<SocialPair, void>;
@@ -57,10 +60,17 @@ const notHeldBack: PairRule = ({ resource }) =>
 /** The actor's own pair with a user they can see. */
 export const visiblePair = [actorIsParty, otherIsVisible] as const;
 
+/** What a new friend request needs, however the actor found the other. */
+export const requestRules = [
+  ...visiblePair,
+  notBlockedByActor,
+  notHeldBack,
+] as const;
+
 export const sendFriendRequestPolicy = definePolicy<SocialPair, void>({
   action: "friendship.request",
   actor: [requireActiveAccount],
-  resource: [...visiblePair, notBlockedByActor, notHeldBack],
+  resource: requestRules,
 });
 
 /** Answering, withdrawing and ending act on the pair's open relation. */
@@ -118,6 +128,80 @@ export const readSocialOverviewPolicy = definePolicy<SocialOverview, void>({
   actor: [requireActiveAccount],
 });
 
+/** One of the caller's own invitations, or their own friend code. */
+export interface OwnInvitation {
+  readonly inviterId: string;
+}
+
+/**
+ * Only the sender acts on an invitation. Anyone else's looks like one that
+ * does not exist.
+ */
+const ownInvitation: ResourceRule<OwnInvitation, void> = ({
+  actor,
+  resource,
+}) =>
+  actor.kind === "user" && actor.userId === resource.inviterId
+    ? allow
+    : deny("not_found");
+
+function invitationPolicy(action: string) {
+  return definePolicy<OwnInvitation, void>({
+    action,
+    actor: [requireActiveAccount],
+    resource: [ownInvitation],
+  });
+}
+
+/** PS-USR-013: invitations and friend requests sent to an e-mail address. */
+export const sendFriendInvitationPolicy = invitationPolicy(
+  "friend_invitation.send",
+);
+export const withdrawFriendInvitationPolicy = invitationPolicy(
+  "friend_invitation.withdraw",
+);
+
+/** PS-USR-014: a friend code is only ever made for oneself. */
+export const createFriendCodePolicy = invitationPolicy("friend_code.create");
+
+/** The caller's own invitations, loaded for the caller only. */
+export const readFriendInvitationsPolicy = definePolicy<unknown, void>({
+  action: "friend_invitation.list",
+  actor: [requireActiveAccount],
+});
+
+/**
+ * PS-USR-014: the person behind a friend code, and a request to them. The
+ * code is what makes them reachable; after that the ordinary rules apply,
+ * so one who blocks the scanner looks like a code that does not exist.
+ */
+export const readFriendCodePolicy = relationPolicy("friend_code.read");
+
+export const requestFriendByCodePolicy = definePolicy<SocialPair, void>({
+  action: "friend_code.request",
+  actor: [requireActiveAccount],
+  resource: requestRules,
+});
+
+/** The scheduled job that ends invitations when they expire. */
+export const friendInvitationExpiryProcess = "friend_invitations.expiry";
+
+/**
+ * The outbox consumer that invites new participants and removes the
+ * sign-in identities of invitations that ended unused (PS-USR-015).
+ */
+export const friendInvitationDeliveryProcess = "friend_invitations.delivery";
+
+export const expireFriendInvitationsPolicy = definePolicy<void, void>({
+  action: "friend_invitation.expire_due",
+  actor: [requireSystemProcess(friendInvitationExpiryProcess)],
+});
+
+export const recordInvitationIdentityPolicy = definePolicy<void, void>({
+  action: "friend_invitation.record_identity",
+  actor: [requireSystemProcess(friendInvitationDeliveryProcess)],
+});
+
 export const socialPolicies = [
   sendFriendRequestPolicy,
   acceptFriendRequestPolicy,
@@ -128,4 +212,12 @@ export const socialPolicies = [
   blockUserPolicy,
   liftUserBlockPolicy,
   readSocialOverviewPolicy,
+  sendFriendInvitationPolicy,
+  withdrawFriendInvitationPolicy,
+  readFriendInvitationsPolicy,
+  createFriendCodePolicy,
+  readFriendCodePolicy,
+  requestFriendByCodePolicy,
+  expireFriendInvitationsPolicy,
+  recordInvitationIdentityPolicy,
 ];

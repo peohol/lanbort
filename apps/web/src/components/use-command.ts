@@ -8,8 +8,11 @@ import { announceDataChanged } from "./data-changed";
 import { type ErrorMessages, errorMessage } from "./error-messages";
 import { expectReplacement, scrollFor } from "./navigation-stack";
 
-/** Where the user goes after the command: the page read again, or another. */
-export type AfterCommand<T> = "refresh" | ((data: T) => string);
+/**
+ * Where the user goes after the command: the page read again, another, or
+ * nowhere, where the page shows the answer itself (`onDone`).
+ */
+export type AfterCommand<T> = "refresh" | "stay" | ((data: T) => string);
 
 export interface CommandOptions<T> {
   /** The API path of the command. */
@@ -28,6 +31,8 @@ export interface CommandOptions<T> {
   readonly messages?: ErrorMessages;
   /** What else a failure leads to here, beyond saying it. */
   readonly onFailure?: (code: ApiFailureCode) => void;
+  /** What the answer leads to here, such as a confirmation that tells it. */
+  readonly onDone?: (data: T) => void;
 }
 
 /**
@@ -59,6 +64,7 @@ export function useCommand<T = unknown>({
   replace = false,
   messages,
   onFailure,
+  onDone,
 }: CommandOptions<T>) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -94,9 +100,10 @@ export function useCommand<T = unknown>({
     setIdempotencyKey(crypto.randomUUID());
     announce(`Ferdig: ${done}`);
     announceDataChanged();
+    onDone?.(result.data);
     if (after === "refresh") {
       router.refresh();
-    } else {
+    } else if (after !== "stay") {
       const next = after(result.data);
       if (replace) {
         expectReplacement();

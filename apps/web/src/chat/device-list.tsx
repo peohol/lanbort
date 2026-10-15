@@ -32,7 +32,7 @@ import type { ChatEngine } from "./engine";
 import { chatErrorMessage } from "./messages";
 import { Notice } from "./notice";
 import { RecoveryKeyRow } from "./recovery-key";
-import { hasScanner } from "./scanner";
+import { hasScanner } from "@/components/qr-scanner";
 import { ConfirmSheet } from "./sheet";
 import { currentDevicePoints, securesFirst } from "./sign-out";
 import { messageTime } from "./time";
@@ -74,7 +74,7 @@ function Waiting({
       {scan ? (
         <>
           <a className="button button-primary" href={chatApproveLinkHref}>
-            <ChatIcon name="scan" />
+            <Icon name="scan" />
             Skann koden
           </a>
           <a className={styles.centered} href={chatApproveByCodeHref}>

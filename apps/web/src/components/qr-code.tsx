@@ -2,7 +2,8 @@ import { encode } from "uqr";
 
 /**
  * A QR code drawn as one SVG path, so the page needs no script or image
- * from elsewhere. The content is public (a key and its checksum).
+ * from elsewhere. What it holds is meant to be seen by anyone nearby: a
+ * device link's public key, or a short-lived friend code.
  */
 export function QrCode({ value, label }: { value: string; label: string }) {
   const { data, size } = encode(value, { ecc: "M", border: 2 });

@@ -36,6 +36,12 @@ export interface DomainContext {
    * set, so privileged access stays closed by default.
    */
   readonly platformStewards?: boolean;
+  /**
+   * The accounts that may invite people without an account to Lånbort
+   * (PS-USR-015): in the closed pilot only the product owner's, set in
+   * this deployment's configuration (PILOT_INVITERS). Nobody unless set.
+   */
+  readonly accountInviters?: ReadonlySet<string>;
 }
 
 export interface Loaded<R, C> {

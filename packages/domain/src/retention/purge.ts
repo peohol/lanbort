@@ -28,6 +28,8 @@ export const purgeExpiredData = defineCommand({
     outboxMessages: countSchema,
     commandResults: countSchema,
     membershipAnswers: countSchema,
+    friendInvitations: countSchema,
+    friendCodes: countSchema,
     rateLimits: countSchema,
   }),
   policy: purgeExpiredDataPolicy,
@@ -97,6 +99,19 @@ export const purgeExpiredData = defineCommand({
                 before(pilotRetention.membershipAnswersMs),
               ),
           ),
+      ),
+      friendInvitations: await deleted(
+        tx
+          .deleteFrom("app.friend_invitations")
+          .where(
+            sql<Date>`coalesce(ended_at, expires_at)`,
+            "<",
+            before(pilotRetention.friendInvitationsMs),
+          ),
+      ),
+      // The expiry job deletes them too; this catches what it has not.
+      friendCodes: await deleted(
+        tx.deleteFrom("app.friend_codes").where("expires_at", "<", now),
       ),
       // Each use already removes some; this catches subjects gone quiet.
       // Rows a use holds are left for later, as there.

@@ -1,0 +1,57 @@
+/* QR codes shown and scanned (Tomat 09–11): linking a device to private
+   chat, and friend codes (PS-USR-014). */
+
+.qr {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.qrStatus {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+}
+
+.qrStatus small {
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+/* The code to type where the other device cannot scan. */
+.typeCode {
+  padding: var(--pad-row);
+  text-align: center;
+  border-radius: var(--radius-l);
+  box-shadow: inset 0 0 0 1.5px var(--color-border);
+}
+
+.typeCode p {
+  margin: 0;
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+.typeCode .code {
+  margin-top: var(--space-2);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* The camera, framed like the prototype's viewfinder (11). */
+.camera {
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--color-text);
+  border-radius: var(--radius-l);
+}
+
+.camera :global(.scanner) {
+  width: 100%;
+  max-width: 24rem;
+  aspect-ratio: 1;
+  object-fit: cover;
+}

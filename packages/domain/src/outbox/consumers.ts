@@ -6,10 +6,15 @@ import {
 } from "../account/deletion";
 import { chatSessionEnding } from "../chat/maintenance";
 import type { DomainContext } from "../commands/command";
+import type { NotificationEmailServices } from "../notifications/delivery";
 import { notificationGenerator } from "../notifications/generator";
 import { type ImageStore, objectImageFileCleanup } from "../objects/images";
 import { profilePictureFileCleanup } from "../people/pictures";
 import { searchIndexer } from "../search/indexer";
+import {
+  friendInvitationDelivery,
+  friendInvitationIdentityRemoval,
+} from "../social/invitation-delivery";
 import { objectAvailabilityWatcher } from "../subscriptions/availability";
 import { ConsumerRegistry } from "./consumer";
 
@@ -22,14 +27,21 @@ export interface OutboxConsumerDependencies {
   readonly pictureStore: () => ImageStore | undefined;
   /** Undefined where no provider key is configured; deliveries are retried. */
   readonly identities: () => IdentityProviderAdmin | undefined;
+  /**
+   * The e-mail adapter for invitations to new participants; undefined where
+   * e-mail is not configured, and deliveries are retried.
+   */
+  readonly emails: () => NotificationEmailServices | undefined;
 }
 
 /**
  * Every side effect that runs from the outbox (ADR-0004, ADR-0008): image
  * and profile picture file cleanup, the in-app notifications (WP-40), telling object subscribers
  * when an object has become available (WP-63), the derived search index
- * (WP-61), removing a deleted account's sign-in identity (WP-53) and
- * ending the sign-in sessions of revoked chat devices (WP-43).
+ * (WP-61), removing a deleted account's sign-in identity (WP-53),
+ * ending the sign-in sessions of revoked chat devices (WP-43), and inviting
+ * new participants by e-mail and removing their unused sign-in identities
+ * (PS-USR-015).
  * Notification e-mails have their own queue and job.
  *
  * Messages are written for these consumers when an event is recorded, so
@@ -41,6 +53,7 @@ export function outboxConsumers({
   imageStore,
   pictureStore,
   identities,
+  emails,
 }: OutboxConsumerDependencies): ConsumerRegistry {
   const db = (): Kysely<Database> => domain().db;
 
@@ -52,5 +65,7 @@ export function outboxConsumers({
     searchIndexer({ db }),
     accountIdentityRemoval({ identities, domain }),
     chatSessionEnding({ db }),
+    friendInvitationDelivery({ domain, identities, emails }),
+    friendInvitationIdentityRemoval({ domain, identities }),
   ]);
 }

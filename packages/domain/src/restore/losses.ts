@@ -75,6 +75,9 @@ import {
 import * as questionEvents from "../questions/events";
 import * as reviewEvents from "../reviews/events";
 import {
+  friendInvitationExpired,
+  friendInvitationSent,
+  friendInvitationWithdrawn,
   friendshipAccepted,
   friendshipClosedByBlock,
   friendshipDeclined,
@@ -182,6 +185,10 @@ export const restoreLosses: readonly EventDefinition<unknown>[] = [
   friendshipClosedByBlock,
   friendshipEndedByAccountDeletion,
   userBlockLifted,
+  // Invitations by e-mail: a lost one is sent again by its sender.
+  friendInvitationSent,
+  friendInvitationWithdrawn,
+  friendInvitationExpired,
   platformRoleGranted,
   moderationReportEscalated,
   // Loans, cases, reviews and questions are the parties' own course; a

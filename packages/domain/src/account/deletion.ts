@@ -39,6 +39,7 @@ import { intervene } from "../platform/interventions";
 import { chatAccountDeletionStep } from "../chat/maintenance";
 import { reviewRightsStep } from "../reviews/account-deletion";
 import { friendshipEndedByAccountDeletion } from "../social/events";
+import { friendInvitationsDeletionStep } from "../social/invitations";
 import { subscriptionsStep } from "../subscriptions/account-deletion";
 import {
   type AccountBindingSource,
@@ -296,6 +297,7 @@ export const accountDeletionSteps: readonly AccountDeletionStep[] = [
   objectsStep(objectCommitmentSources),
   membershipsStep,
   friendshipsStep,
+  friendInvitationsDeletionStep,
   coOwnerInvitationsStep,
   platformRolesStep,
   reviewRightsStep,
@@ -489,6 +491,13 @@ export const releaseAccountIdentity = defineCommand({
  */
 export interface IdentityProviderAdmin {
   deleteIdentity(subject: string): Promise<void>;
+  /**
+   * Lets a new participant sign in with `email` while new accounts are
+   * closed (PS-USR-015): a sign-in identity whose address counts as
+   * confirmed, as an invited participant's always has. Returns its subject,
+   * or null when the address already has one, which is then left as it is.
+   */
+  inviteIdentity(email: string): Promise<string | null>;
 }
 
 export interface AccountIdentityRemovalOptions {

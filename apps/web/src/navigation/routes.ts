@@ -133,6 +133,12 @@ export const casesHref = "/saker";
 
 /** The account's own pages (UX-IA-020), each a step in its stack. */
 export const friendsHref = `${accountHref}/venner`;
+/** Invite a person, or ask them to be friends, by e-mail (PS-USR-013). */
+export const friendInviteHref = `${friendsHref}/inviter`;
+/** The user's own friend code as a QR code (PS-USR-014). */
+export const friendCodeHref = `${friendsHref}/min-kode`;
+/** Scan or type another person's friend code (PS-USR-014). */
+export const friendScanHref = `${friendsHref}/skann`;
 export const blockedHref = `${accountHref}/blokkerte`;
 export const notificationChoicesHref = `${accountHref}/varslingsvalg`;
 export const accountStateHref = `${accountHref}/kontoen`;

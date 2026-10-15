@@ -45,6 +45,12 @@ const serverEnvSchema = z.object({
    */
   OPERATOR_NAME: z.string().min(1).optional(),
   CONTACT_EMAIL: z.string().min(3).optional(),
+  /**
+   * The accounts (Lånbort's own user ids, comma-separated) that may invite
+   * people who have no account yet (PS-USR-015): in the closed pilot only
+   * the product owner's. Nobody unless set.
+   */
+  PILOT_INVITERS: z.string().optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -58,6 +64,19 @@ let cached: ServerEnv | undefined;
  */
 export const platformStewardsEnabled = () =>
   process.env.PLATFORM_STEWARDS_ENABLED === "true";
+
+/**
+ * Who may invite people without an account to Lånbort (PS-USR-015), from
+ * PILOT_INVITERS. Anything that is not a user id is left out.
+ */
+export function accountInviters(): ReadonlySet<string> {
+  return new Set(
+    (process.env.PILOT_INVITERS ?? "")
+      .split(",")
+      .map((id) => id.trim().toLowerCase())
+      .filter((id) => z.uuid().safeParse(id).success),
+  );
+}
 
 /**
  * Server configuration, validated on first use rather than at import time so

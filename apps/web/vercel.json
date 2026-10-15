@@ -47,6 +47,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/internal/friend-invitations",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/internal/search-index",
       "schedule": "0 * * * *"
     },
