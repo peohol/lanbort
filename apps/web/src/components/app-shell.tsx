@@ -40,7 +40,7 @@ export function AppShell({
       <Link href="/" className="brand">
         <Brand />
       </Link>
-      <header className="app-header">
+      <header className="app-header bar-surface">
         <div className="header-actions">
           <NotificationIndicator unread={unread} />
           <Link

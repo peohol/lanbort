@@ -154,7 +154,7 @@ export function Layer({
         })}
         onClickCapture={onClickCapture}
       >
-        <div className="layer-header">
+        <div className="layer-header bar-surface">
           <button
             type="button"
             className="layer-close"
