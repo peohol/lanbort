@@ -1,11 +1,12 @@
 import type { AccountBinding } from "@lanbort/contracts";
-import { getAccountDeletionCheck } from "@lanbort/domain";
+import { getAccountDeletionCheck, listOwnEnvironments } from "@lanbort/domain";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AccountDeletion } from "@/components/account-deletion";
 import { ActionButton } from "@/components/action-button";
 import { PageHeader } from "@/components/page-header";
 import { hrefFor } from "@/navigation/targets";
+import { administrationPageHref } from "@/presentation/environment-admin";
 import {
   minimumAccessText,
   ownAccountChoices,
@@ -23,21 +24,33 @@ const bindingLabels: Record<AccountBinding["kind"], string> = {
   case: "En åpen mekling der du er part",
 };
 
-function Binding({ binding }: { binding: AccountBinding }) {
-  const href =
-    binding.kind === "loan" || binding.kind === "case"
-      ? hrefFor({ type: binding.kind, id: binding.resourceId })
-      : null;
+/** The names of the environments the account owns, by id. */
+type EnvironmentNames = ReadonlyMap<string, string>;
 
-  return (
-    <li className="entry">
-      {href ? (
-        <Link href={href}>{bindingLabels[binding.kind]}</Link>
-      ) : (
-        bindingLabels[binding.kind]
-      )}
-    </li>
-  );
+/**
+ * One line per binding. An environment is named, since an owner may have
+ * several, and leads to its administration, where it is handed over or
+ * wound down.
+ */
+function bindingEntry(
+  binding: AccountBinding,
+  environmentNames: EnvironmentNames,
+): { text: string; href: string | null } {
+  if (binding.kind !== "environment_ownership") {
+    return {
+      text: bindingLabels[binding.kind],
+      href: hrefFor({ type: binding.kind, id: binding.resourceId }),
+    };
+  }
+
+  const name = environmentNames.get(binding.resourceId);
+
+  return {
+    text: name
+      ? `Du eier miljøet «${name}». Gi eierskapet til en annen eller avvikle miljøet først.`
+      : bindingLabels.environment_ownership,
+    href: administrationPageHref(binding.resourceId),
+  };
 }
 
 /**
@@ -45,7 +58,13 @@ function Binding({ binding }: { binding: AccountBinding }) {
  * what goes, what stays and who is affected (UX-INT-007), and only then
  * the action.
  */
-function Deletion({ bindings }: { bindings: readonly AccountBinding[] }) {
+function Deletion({
+  bindings,
+  environmentNames,
+}: {
+  bindings: readonly AccountBinding[];
+  environmentNames: EnvironmentNames;
+}) {
   return (
     <section aria-labelledby="slett">
       <h2 id="slett">Slett kontoen</h2>
@@ -53,9 +72,18 @@ function Deletion({ bindings }: { bindings: readonly AccountBinding[] }) {
         <>
           <p>Før kontoen kan slettes, må dette avsluttes:</p>
           <ul className="entries">
-            {bindings.map((binding) => (
-              <Binding key={binding.resourceId} binding={binding} />
-            ))}
+            {bindings.map((binding) => {
+              const { text, href } = bindingEntry(binding, environmentNames);
+
+              return (
+                <li
+                  key={`${binding.kind}-${binding.resourceId}`}
+                  className="entry"
+                >
+                  {href ? <Link href={href}>{text}</Link> : text}
+                </li>
+              );
+            })}
           </ul>
         </>
       ) : (
@@ -95,6 +123,15 @@ export default async function AccountStatePage() {
   const deletion = choices.delete
     ? await pageQuery(getAccountDeletionCheck, {})
     : null;
+  const environmentNames: EnvironmentNames = deletion?.bindings.some(
+    ({ kind }) => kind === "environment_ownership",
+  )
+    ? new Map(
+        ((await pageQuery(listOwnEnvironments, {})) ?? []).map(
+          ({ id, name }) => [id, name],
+        ),
+      )
+    : new Map();
   const notice = restingNotice(account.status);
 
   return (
@@ -129,7 +166,12 @@ export default async function AccountStatePage() {
           />
         </section>
       )}
-      {deletion && <Deletion bindings={deletion.bindings} />}
+      {deletion && (
+        <Deletion
+          bindings={deletion.bindings}
+          environmentNames={environmentNames}
+        />
+      )}
     </main>
   );
 }

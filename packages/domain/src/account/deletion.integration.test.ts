@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { type AccountStatus, systemActor, type UserActor } from "../actor";
 import { closeCase, requestLoanMediation } from "../cases/commands";
 import { executeQuery } from "../commands/query";
+import { startEnvironmentWindDown } from "../environment/continuity-commands";
 import { joinEnvironment } from "../environment/membership-commands";
 import { approveLoanRequest } from "../loans/approval";
 import { cancelLoan } from "../loans/cancellation";
@@ -56,6 +57,7 @@ const {
   showToFriends,
   ask,
   environment,
+  member,
   published,
   reservedLoan,
   stored,
@@ -222,6 +224,42 @@ describe("bindings (PS-ADM-004)", () => {
         .where("environment_id", "=", environmentId)
         .executeTakeFirst(),
     ).toEqual({ reason: "ownerless" });
+  });
+
+  it("binds only the environments that are not winding down", async () => {
+    const owner = await user();
+    const alone = await environment(owner, { name: "Alene" });
+    const shared = await environment(owner, { name: "Sammen" });
+    const kept = await environment(owner, { name: "Beholdt" });
+    await member(shared, owner);
+    expect(await check(owner)).toEqual({
+      bindings: [alone, shared, kept]
+        .sort()
+        .map((resourceId) => ({ kind: "environment_ownership", resourceId })),
+    });
+
+    // Wound down at once, and one still within its cancellation period:
+    // neither needs its owner any more (PS-ENV-012).
+    await run(startEnvironmentWindDown, owner, {
+      environmentId: alone,
+      atOnce: true,
+    });
+    await run(startEnvironmentWindDown, owner, {
+      environmentId: shared,
+      atOnce: false,
+    });
+    expect(await check(owner)).toEqual({
+      bindings: [{ kind: "environment_ownership", resourceId: kept }],
+    });
+    await expect(remove(owner)).rejects.toMatchObject({ code: "conflict" });
+
+    await run(startEnvironmentWindDown, owner, {
+      environmentId: kept,
+      atOnce: true,
+    });
+    expect(await check(owner)).toEqual({ bindings: [] });
+    await remove(owner);
+    expect(await statusOf(owner.userId)).toBe("deleted");
   });
 
   it("deletes nothing when a binding source cannot answer", async () => {

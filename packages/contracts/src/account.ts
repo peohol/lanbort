@@ -72,8 +72,8 @@ export const accountLifecycleResultSchema = z.strictObject({
  * - `loan`: a loan that has not ended, as borrower or as responsible
  *   lender, or one that ended unresolved and awaits an owner's control, as
  *   its responsible lender;
- * - `environment_ownership`: the owner of an environment, who hands it over
- *   or winds it down first;
+ * - `environment_ownership`: the owner of an environment that is not
+ *   winding down, who hands it over or winds it down first;
  * - `case`: an open mediation, as one of its parties.
  * Pending invitations and unused rights are not bindings (PS-ADM-005).
  */
