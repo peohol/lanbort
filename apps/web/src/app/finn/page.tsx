@@ -46,6 +46,7 @@ import {
   readFinnForm,
 } from "@/presentation/search";
 import {
+  filterThings,
   orderedCategories,
   readThingFilter,
   thingFilterHref,
@@ -185,6 +186,8 @@ async function ObjectSearch({
     ),
   ]);
   const today = calendarDate(new Date());
+  const chosen = readThingFilter(query);
+  const found = result?.objects ?? [];
 
   return (
     <>
@@ -238,18 +241,19 @@ async function ObjectSearch({
         prepared={prepared}
         location={location}
         form={form}
-        count={result?.objects.length ?? 0}
+        count={found.length}
+        shown={filterThings(found, chosen, today).length}
         counted={(count) => `${count} ting`}
         more={result?.more ?? false}
         empty="Ingen ting i miljøene dine passer med søket."
         hint="Søk etter ting i miljøene du er medlem av, med ord eller kategori."
       >
         <ThingList
-          things={result?.objects ?? []}
+          things={found}
           categories={categories?.categories ?? []}
           today={today}
           filter={{
-            chosen: readThingFilter(query),
+            chosen,
             href: (filter) => thingFilterHref("/finn", query, filter),
           }}
           card={(object) => (
@@ -476,6 +480,7 @@ function Results({
   location,
   form,
   count,
+  shown = count,
   counted,
   more,
   empty,
@@ -487,6 +492,8 @@ function Results({
   location: Location | undefined;
   form: FinnForm;
   count: number;
+  /** How many of them the list's filter shows, if it has one. */
+  shown?: number;
   /** The count in words, as the heading of the results. */
   counted: (count: number) => string;
   more: boolean;
@@ -507,7 +514,7 @@ function Results({
   return (
     <section aria-label="Treff" className={styles.found}>
       <h2 className={styles.count}>
-        {count === 0 ? "Ingen treff" : counted(count)}
+        {count === 0 ? "Ingen treff" : counted(shown)}
       </h2>
       {location && <LocationNote form={form} location={location} />}
       {count === 0 ? <p className="quiet">{empty}</p> : children}

@@ -24,6 +24,7 @@ import {
   environmentImageHref,
   firstImageHref,
 } from "@/presentation/object-images";
+import { filterThings } from "@/presentation/thing-list";
 
 /**
  * The things an active member finds in the environment (PS-OBJ-006), each
@@ -144,11 +145,13 @@ export function FoundThings({
   today: string;
 }) {
   const count = found.objects.length;
+  // The heading counts what the filter shows.
+  const shown = filterThings(found.objects, filter.chosen, today).length;
 
   return (
     <section aria-labelledby="treff">
       <h2 id="treff">
-        {count === 0 ? "Ingen treff" : `${count} ting`} for «{q}»
+        {count === 0 ? "Ingen treff" : `${shown} ting`} for «{q}»
       </h2>
       {count === 0 ? (
         <p className="quiet">Ingen ting i miljøet passer med søket.</p>
