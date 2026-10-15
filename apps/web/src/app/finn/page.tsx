@@ -1,4 +1,3 @@
-import type { ObjectCategory } from "@lanbort/contracts";
 import {
   calendarDate,
   listObjectCategories,
@@ -13,29 +12,27 @@ import type { ReactNode } from "react";
 import { AreaMap } from "@/components/area-map";
 import { AreaTitle } from "@/components/area-title";
 import { errorMessage } from "@/components/error-messages";
-import { EntryDetail } from "@/components/entry-detail";
 import { ErrorText } from "@/components/error-text";
 import { Icon } from "@/components/icon";
 import { NearMeButton } from "@/components/near-me-button";
-import { ownersDetail } from "@/components/owner-names";
 import { SearchField } from "@/components/search-field";
 import { ContextTag, Tag } from "@/components/tag";
-import { ThingCard, ThingCards } from "@/components/thing-card";
+import { FoundThingCard } from "@/components/thing-card";
+import { ThingList } from "@/components/thing-list";
 import {
   defaultDistanceKm,
   distanceOptions,
   type Location,
   locate,
 } from "@/presentation/places";
+import type { SearchParams } from "@/navigation/list-pages";
 import {
   environmentHref,
   newEnvironmentHref,
   objectHref,
 } from "@/navigation/routes";
 import { describeMembers } from "@/presentation/environments";
-import { availabilityStatus } from "@/presentation/objects";
 import {
-  describeFoundIn,
   foundImage,
   type FinnForm,
   finnHref,
@@ -48,6 +45,11 @@ import {
   prepareObjectSearch,
   readFinnForm,
 } from "@/presentation/search";
+import {
+  orderedCategories,
+  readThingFilter,
+  thingFilterHref,
+} from "@/presentation/thing-list";
 import { placeSearchFor } from "@/server/places";
 import { pageQuery, requirePageAccount } from "@/server/session";
 import styles from "./finn.module.css";
@@ -73,7 +75,7 @@ const tabs = [
 export default async function FindPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<SearchParams>;
 }) {
   const account = await requirePageAccount();
 
@@ -90,7 +92,8 @@ export default async function FindPage({
     );
   }
 
-  const form = readFinnForm(await searchParams);
+  const query = await searchParams;
+  const form = readFinnForm(query);
 
   return (
     <main className={styles.finn}>
@@ -108,7 +111,7 @@ export default async function FindPage({
         ))}
       </nav>
       {form.tab === "objects" ? (
-        <ObjectSearch form={form} userId={account.userId} />
+        <ObjectSearch form={form} query={query} userId={account.userId} />
       ) : (
         <EnvironmentSearch form={form} userId={account.userId} />
       )}
@@ -159,11 +162,17 @@ async function searched<I, O>(
   }
 }
 
+/**
+ * Things found, grouped by category and filtered as every list of things
+ * is (UX-IA-021); the cards say no more than anywhere else.
+ */
 async function ObjectSearch({
   form,
+  query,
   userId,
 }: {
   form: FinnForm;
+  query: SearchParams;
   userId: string;
 }) {
   const [categories, { location, prepared, result }] = await Promise.all([
@@ -175,12 +184,6 @@ async function ObjectSearch({
       (input) => pageQuery(searchObjects, input),
     ),
   ]);
-  const labels = new Map(
-    (categories?.categories ?? []).map((category) => [
-      category.id,
-      category.label,
-    ]),
-  );
   const today = calendarDate(new Date());
 
   return (
@@ -241,37 +244,24 @@ async function ObjectSearch({
         empty="Ingen ting i miljøene dine passer med søket."
         hint="Søk etter ting i miljøene du er medlem av, med ord eller kategori."
       >
-        <ThingCards>
-          {result?.objects.map((object) => {
-            const status = availabilityStatus(object, today);
-
-            return (
-              <ThingCard
-                key={object.objectId}
-                href={objectHref(object.objectId, foundOrigin(object))}
-                title={object.title}
-                image={foundImage(object)}
-                details={[
-                  <EntryDetail
-                    key="who"
-                    parts={[
-                      object.ownedByYou
-                        ? "Din ting"
-                        : ownersDetail(object.owners),
-                      labels.get(object.categoryId),
-                    ]}
-                  />,
-                  ...describeFoundIn(object).map(({ icon, text }) => (
-                    <ContextTag key={icon} label="Kontekst" icon={icon}>
-                      {text}
-                    </ContextTag>
-                  )),
-                ]}
-                status={<Tag tone={status.tone}>{status.label}</Tag>}
-              />
-            );
-          })}
-        </ThingCards>
+        <ThingList
+          things={result?.objects ?? []}
+          categories={categories?.categories ?? []}
+          today={today}
+          filter={{
+            chosen: readThingFilter(query),
+            href: (filter) => thingFilterHref("/finn", query, filter),
+          }}
+          card={(object) => (
+            <FoundThingCard
+              key={object.objectId}
+              thing={object}
+              href={objectHref(object.objectId, foundOrigin(object))}
+              image={foundImage(object)}
+              today={today}
+            />
+          )}
+        />
       </Results>
     </>
   );
@@ -529,18 +519,4 @@ function Results({
       {map}
     </section>
   );
-}
-
-/** Each category followed by those below it, for the list to choose from. */
-function orderedCategories(
-  categories: readonly ObjectCategory[],
-  parentId: string | null = null,
-  depth = 0,
-): { category: ObjectCategory; depth: number }[] {
-  return categories
-    .filter((category) => category.parentId === parentId)
-    .flatMap((category) => [
-      { category, depth },
-      ...orderedCategories(categories, category.id, depth + 1),
-    ]);
 }

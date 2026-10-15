@@ -73,13 +73,14 @@ test("a thing has one page, seen by its owner or through an environment", async 
   });
   const member = await members.newPage();
   await member.goto(`/finn?q=${word}`);
-  await expect(member.getByText("Eier: Anna Berg")).toBeVisible();
+  await expect(member.getByText("Anna Berg")).toBeVisible();
+  await member.getByRole("link", { name: `Stige ${word}` }).click();
+  await expect(member).toHaveURL(new RegExp(`/ting/${objectId}\\?miljo=`));
+  // The card is one target; the thing's page links the owner.
   await expect(member.getByRole("link", { name: "Anna Berg" })).toHaveAttribute(
     "href",
     `/personer/${annaId}?rolle=utlaaner`,
   );
-  await member.getByRole("link", { name: `Stige ${word}` }).click();
-  await expect(member).toHaveURL(new RegExp(`/ting/${objectId}\\?miljo=`));
   // Where it is seen and why, the week ahead and the terms before the
   // request (UX-IA-015, Tomat kjerneflyt 1).
   await expect(member.getByText(`Via Gården ${word}`)).toBeVisible();

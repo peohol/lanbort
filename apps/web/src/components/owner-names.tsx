@@ -1,28 +1,24 @@
 import type { ShownOwner } from "@lanbort/contracts";
 import { Fragment } from "react";
-import { listSeparator, ownersLabel } from "@/presentation/objects";
+import { listSeparator } from "@/presentation/objects";
 import { PersonName } from "./person-name";
 
 /**
  * A thing's owners as a member sees them (PS-ENV-015), each linked to their
- * page while the reader may open it, said as a list: «Anna, Bo og Cleo».
+ * page while the reader may open it, or `plain` inside a card, said as a
+ * list: «Anna, Bo og Cleo».
  */
-export function OwnerNames({ owners }: { owners: readonly ShownOwner[] }) {
+export function OwnerNames({
+  owners,
+  plain = false,
+}: {
+  owners: readonly ShownOwner[];
+  plain?: boolean;
+}) {
   return owners.map((owner, index) => (
     <Fragment key={index}>
       {listSeparator(index, owners.length)}
-      <PersonName person={owner} role="lender" />
+      <PersonName person={owner} role="lender" plain={plain} />
     </Fragment>
   ));
 }
-
-/**
- * «Eier: Anna» for a line of details; null when nobody else is named, so the
- * line leaves the part out.
- */
-export const ownersDetail = (owners: readonly ShownOwner[]) =>
-  owners.length === 0 ? null : (
-    <>
-      {ownersLabel(owners)}: <OwnerNames owners={owners} />
-    </>
-  );

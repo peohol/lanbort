@@ -69,12 +69,11 @@
   color: var(--color-muted);
 }
 
-/* A row's detail on lines of its own, such as a thing's availability over
-   where it is seen. */
-.lines {
-  display: grid;
-  justify-items: start;
-  gap: var(--space-1);
+/* A section's heading with its icon, such as the friend's things. */
+.iconHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 /* A role's heading row. On a phone its link covers the whole row, so the

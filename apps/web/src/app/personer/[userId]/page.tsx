@@ -1,9 +1,9 @@
 import {
   calendarDate,
-  collectPages,
   listFriendObjects,
   listInvitableEnvironments,
   listLoans,
+  listObjectCategories,
   readPerson,
   readTrustProfile,
 } from "@lanbort/domain";
@@ -13,13 +13,10 @@ import { Icon } from "@/components/icon";
 import { PageHeader } from "@/components/page-header";
 import { ProfilePicture } from "@/components/profile-picture";
 import { ContextTag, Tag } from "@/components/tag";
-import {
-  morePagesHref,
-  pagesShown,
-  type SearchParams,
-} from "@/navigation/list-pages";
+import type { SearchParams } from "@/navigation/list-pages";
 import { personHref } from "@/navigation/routes";
 import { describeRelation, whyVisible } from "@/presentation/people";
+import { readThingFilter, thingFilterHref } from "@/presentation/thing-list";
 import { chatContactLink } from "@/server/chat-contact";
 import { unavailabilityReportLink } from "@/server/unavailability-report";
 import {
@@ -36,25 +33,19 @@ import { TrustSummary } from "./trust";
 
 export const metadata: Metadata = { title: "Person – Lånbort" };
 
-/** The friend's things' element, and their pages in the address. */
-const thingsKey = "ting";
-
 /**
- * The things a friend has made visible to friends, as many pages as the
- * address asks for; none for anyone who is not a friend (PS-OBJ-020).
+ * The things a friend has made visible to friends, with the categories to
+ * group them by; none for anyone who is not a friend (PS-OBJ-020).
  */
-async function friendThingsOf(person: Person, query: SearchParams) {
+async function friendThingsOf(person: Person) {
   if (person.relation?.friendship !== "friends") return null;
 
-  return collectPages(
-    (cursor) =>
-      pageQuery(listFriendObjects, {
-        userId: person.userId,
-        ...(cursor ? { cursor } : {}),
-      }),
-    (page) => page.objects,
-    pagesShown(query, thingsKey),
-  );
+  const [things, categories] = await Promise.all([
+    pageQuery(listFriendObjects, { userId: person.userId }),
+    pageQuery(listObjectCategories, {}),
+  ]);
+
+  return things && { ...things, categories: categories?.categories ?? [] };
 }
 
 /**
@@ -116,7 +107,7 @@ export default async function PersonPage({
         ? pageQuery(listLoans, { state: "current", counterpartId: userId })
         : null,
       person.trustProfile ? pageQuery(readTrustProfile, { userId }) : null,
-      friendThingsOf(person, query),
+      friendThingsOf(person),
       chatContactLink(userId),
       person.relation && !person.relation.blockedByMe
         ? pageQuery(listInvitableEnvironments, { userId })
@@ -165,18 +156,15 @@ export default async function PersonPage({
       {things && (
         <FriendThings
           name={person.realName}
-          things={things.items}
+          things={things.objects}
+          more={things.more}
+          categories={things.categories}
+          filter={{
+            chosen: readThingFilter(query),
+            href: (filter) =>
+              thingFilterHref(personHref(userId), query, filter),
+          }}
           today={calendarDate(new Date())}
-          more={
-            things.nextCursor === null
-              ? null
-              : morePagesHref(
-                  personHref(userId),
-                  query,
-                  thingsKey,
-                  "venners-ting",
-                )
-          }
         />
       )}
       <PersonMoreActions

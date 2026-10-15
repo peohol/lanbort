@@ -2,6 +2,7 @@ import type { OwnObject } from "@lanbort/contracts";
 import {
   calendarDate,
   listCoOwnerInvitations,
+  listObjectCategories,
   listObjectPublications,
   listOwnObjects,
   takesNewActivity,
@@ -15,6 +16,7 @@ import { Icon } from "@/components/icon";
 import { PilotObjectPolicy } from "@/components/pilot-object-policy";
 import { Tag } from "@/components/tag";
 import { ThingCard, ThingCards } from "@/components/thing-card";
+import { ThingList } from "@/components/thing-list";
 import { newObjectHref, objectHref } from "@/navigation/routes";
 import { anchorFor } from "@/navigation/targets";
 import { firstImageHref, ownImageHref } from "@/presentation/object-images";
@@ -30,14 +32,16 @@ export const metadata: Metadata = { title: "Mine ting – Lånbort" };
  * Mine ting (UX-IA-001, Tomat kjerneflyt 2): the things the user owns or
  * co-owns, each with where it is shown and a short status, invitations to
  * co-own, the way to register another as the area's one primary step, the
- * archived ones apart, and the pilot's limit (PS-OBJ-019).
+ * things by category (UX-IA-021), the archived ones apart, and the pilot's
+ * limit (PS-OBJ-019).
  */
 export default async function ThingsPage() {
   const account = await requirePageAccount();
   const active = takesNewActivity(account.status);
-  const [owned, invited] = await Promise.all([
+  const [owned, invited, categories] = await Promise.all([
     pageQuery(listOwnObjects, {}),
     pageQuery(listCoOwnerInvitations, {}),
+    pageQuery(listObjectCategories, {}),
   ]);
   const objects = owned?.objects ?? [];
   const invitations = invited?.invitations ?? [];
@@ -149,7 +153,12 @@ export default async function ThingsPage() {
               : "Du har ingen ting ute nå. De arkiverte ligger under."}
           </EmptyState>
         ) : (
-          <ThingCards>{current.map(card)}</ThingCards>
+          <ThingList
+            things={current}
+            categories={categories?.categories ?? []}
+            today={today}
+            card={card}
+          />
         )}
       </section>
       {archived.length > 0 && (

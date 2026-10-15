@@ -9,6 +9,7 @@ import {
   type PublicationStatus,
   publicationPageSize,
   publishedObjectImageSchema,
+  thingListLimit,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
@@ -494,8 +495,8 @@ export function presentFound(row: FoundRow, details: FoundDetails, now: Date) {
 }
 
 /**
- * The objects an active member finds in the environment, newest publication
- * first.
+ * The objects an active member finds in the environment, the newest
+ * {@link thingListLimit} publications.
  */
 export const listEnvironmentObjects = defineQuery({
   name: "environment_object.list",
@@ -522,13 +523,12 @@ export const listEnvironmentObjects = defineQuery({
       const rows =
         viewerId && discoverable
           ? await selectFound(discoverable, viewerId)
-              .where(afterCursor(input.cursor))
               .orderBy("publication.created_at", "desc")
               .orderBy("publication.id", "desc")
-              .limit(publicationPageSize + 1)
+              .limit(thingListLimit + 1)
               .execute()
           : [];
-      const { items, nextCursor } = page(rows);
+      const items = rows.slice(0, thingListLimit);
       const details = await loadFoundDetails(
         tx,
         items.map((row) => row.object_id),
@@ -548,7 +548,13 @@ export const listEnvironmentObjects = defineQuery({
         : new Map();
 
       return {
-        resource: { ...access, items, nextCursor, details, owners },
+        resource: {
+          ...access,
+          items,
+          more: rows.length > thingListLimit,
+          details,
+          owners,
+        },
         context: undefined,
       };
     }),
@@ -558,7 +564,7 @@ export const listEnvironmentObjects = defineQuery({
       ...presentFound(row, resource.details, now),
       owners: [...(resource.owners.get(row.object_id) ?? [])],
     })),
-    nextCursor: resource.nextCursor,
+    more: resource.more,
   }),
 });
 
