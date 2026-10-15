@@ -1,4 +1,8 @@
-import type { Environment, OwnMembership } from "@lanbort/contracts";
+import type {
+  Environment,
+  EnvironmentMember,
+  OwnMembership,
+} from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import {
   answerCommand,
@@ -7,8 +11,10 @@ import {
   describeTypeChange,
   givenAnswers,
   leavingConsequences,
+  memberGroups,
   membershipLabel,
   membershipStep,
+  plainMembership,
   roleName,
   welcome,
 } from "./environments";
@@ -376,5 +382,96 @@ describe("about how many members (PS-ENV-016)", () => {
     expect(describeMembers({ kind: "about", count: 1200 })).toBe(
       "ca. 1\u00a0200 medlemmer",
     );
+  });
+});
+
+describe("the member list (PS-ENV-015)", () => {
+  const person = (
+    realName: string | null,
+    roles: EnvironmentMember["roles"] = [],
+  ): EnvironmentMember => ({
+    userId: crypto.randomUUID(),
+    realName,
+    profileId: null,
+    pictureId: null,
+    roles,
+  });
+  const names = (groups: ReturnType<typeof memberGroups>) =>
+    groups.map(({ heading, people }) => [
+      heading,
+      people.map(({ realName }) => realName),
+    ]);
+
+  it("lists the owner, the other administrators and the rest, each once, by name", () => {
+    expect(
+      names(
+        memberGroups(
+          [
+            person("Åse"),
+            person("Kari", ["administrator"]),
+            person("Bo"),
+            person(null),
+          ],
+          person("Ola", ["owner", "administrator"]),
+        ),
+      ),
+    ).toEqual([
+      ["Eier", ["Ola"]],
+      ["Administratorer", ["Kari"]],
+      ["Medlemmer", ["Bo", "Åse", null]],
+    ]);
+  });
+
+  it("leaves out a group without anyone, such as administrators besides the owner", () => {
+    expect(
+      names(
+        memberGroups([person("Bo")], person("Ola", ["owner", "administrator"])),
+      ),
+    ).toEqual([
+      ["Eier", ["Ola"]],
+      ["Medlemmer", ["Bo"]],
+    ]);
+    expect(names(memberGroups([], person("Bo")))).toEqual([
+      ["Medlemmer", ["Bo"]],
+    ]);
+  });
+});
+
+describe("plainMembership", () => {
+  const member = (changes: Partial<Environment> = {}) => {
+    const shown = environment(changes, {});
+    return plainMembership(shown, membershipStep(shown));
+  };
+  const continuity = {
+    administrationAvailable: true,
+    mayResign: false,
+    windDownAtOnce: false,
+    ownershipVacancy: null,
+    windDown: null,
+  };
+
+  it("leaves an ordinary active membership to the tag", () => {
+    expect(member()).toBe(true);
+    expect(member({ continuity })).toBe(true);
+  });
+
+  it("keeps the card when there is more to say", () => {
+    expect(
+      member({ continuity: { ...continuity, administrationAvailable: false } }),
+    ).toBe(false);
+    expect(
+      member({
+        continuity: {
+          ...continuity,
+          windDown: {
+            reason: "voluntary",
+            finalAt: "2026-11-01T00:00:00.000Z",
+            cancellable: true,
+          },
+        },
+      }),
+    ).toBe(false);
+    const applicant = environment({}, { state: "pending" });
+    expect(plainMembership(applicant, membershipStep(applicant))).toBe(false);
   });
 });

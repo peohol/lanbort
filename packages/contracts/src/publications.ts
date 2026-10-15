@@ -186,6 +186,23 @@ export const environmentObjectSchema = z.strictObject({
 });
 
 /**
+ * One of the caller's own things they can add to the environment now
+ * (PS-OBJ-006): active, not frozen (PS-OBJ-009), not stopped by another
+ * owner (PS-OBJ-008), and not already there, waiting or stopped by the
+ * administrators (PS-OBJ-017).
+ */
+export const addableObjectSchema = z.strictObject({
+  objectId: objectIdSchema,
+  title: z.string(),
+  categoryId: objectCategoryIdSchema,
+  images: z.array(objectImageSchema),
+});
+
+export const addableObjectListSchema = z.strictObject({
+  objects: z.array(addableObjectSchema),
+});
+
+/**
  * A list of things to look through, such as an environment's or a friend's,
  * is shown whole, grouped by category and filtered where it is read, so it
  * is not paged (UX-IA-021). It holds at most this many, the newest first;
@@ -247,6 +264,8 @@ export type EnvironmentPublicationList = z.infer<
 export type ShownOwner = z.infer<typeof shownOwnerSchema>;
 export type EnvironmentObject = z.infer<typeof environmentObjectSchema>;
 export type EnvironmentObjectList = z.infer<typeof environmentObjectListSchema>;
+export type AddableObject = z.infer<typeof addableObjectSchema>;
+export type AddableObjectList = z.infer<typeof addableObjectListSchema>;
 export type ObjectFriendPublication = z.infer<
   typeof objectFriendPublicationSchema
 >;

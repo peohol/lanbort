@@ -1,6 +1,6 @@
 import {
+  type AddableObjectList,
   type Environment,
-  type EnvironmentMember,
   type EnvironmentObject,
   type EnvironmentObjectList,
   type ObjectCategory,
@@ -10,8 +10,6 @@ import {
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
-import { PersonName } from "@/components/person-name";
-import { Tag } from "@/components/tag";
 import { FoundThingCard } from "@/components/thing-card";
 import { ThingList, type ThingListFilter } from "@/components/thing-list";
 import {
@@ -19,47 +17,44 @@ import {
   newObjectHref,
   objectHref,
 } from "@/navigation/routes";
-import { roleName } from "@/presentation/environments";
 import {
   environmentImageHref,
   firstImageHref,
+  ownImageHref,
 } from "@/presentation/object-images";
 import { filterThings } from "@/presentation/thing-list";
+import { AddThings } from "./add-things";
 
 /**
  * The things an active member finds in the environment (PS-OBJ-006), each
  * leading to the thing as seen here, with its owners who are members here
- * (PS-ENV-015), grouped by category and filtered (UX-IA-021). Registering a
- * thing from here preselects the environment (UX-JRN-003).
+ * (PS-ENV-015), grouped by category and filtered (UX-IA-021), and the ways
+ * to put more things here (`ThingActions`).
  */
 export function Things({
   environment,
   things,
   categories,
   filter,
+  addable,
   today,
 }: {
   environment: Environment;
   things: EnvironmentObjectList;
   categories: readonly ObjectCategory[];
   filter: ThingListFilter;
+  addable: AddableObjectList | null;
   today: string;
 }) {
-  const register = (primary: boolean) =>
-    environment.state === "active" ? (
-      <Link
-        className={`button ${primary ? "button-primary" : "button-secondary"}`}
-        href={newObjectHref(environment.id)}
-      >
-        <Icon name="plus" /> Registrer en ting her
-      </Link>
-    ) : null;
-
   return (
     <section aria-labelledby="ting">
       <h2 id="ting">Ting i miljøet</h2>
       {things.objects.length === 0 ? (
-        <EmptyState action={register(true)}>
+        <EmptyState
+          action={
+            <ThingActions environment={environment} addable={addable} primary />
+          }
+        >
           {`Ingen ting her ennå. Bli den første som legger ut noe i ${environment.name}.`}
         </EmptyState>
       ) : (
@@ -77,12 +72,57 @@ export function Things({
               andre.
             </p>
           )}
-          {environment.state === "active" && (
-            <div className="actions">{register(false)}</div>
-          )}
+          <ThingActions environment={environment} addable={addable} />
         </>
       )}
     </section>
+  );
+}
+
+/**
+ * The two ways to put things here while the environment takes them
+ * (Tomat): registering a new one with the environment preselected
+ * (UX-JRN-003), and adding things the user already has, when there are
+ * any that can be added (`AddThings`).
+ */
+function ThingActions({
+  environment,
+  addable,
+  primary = false,
+}: {
+  environment: Environment;
+  addable: AddableObjectList | null;
+  primary?: boolean;
+}) {
+  if (environment.state !== "active") return null;
+
+  const things = (addable?.objects ?? []).map(
+    ({ objectId, title, images }) => ({
+      objectId,
+      title,
+      image: firstImageHref(images, (imageId) =>
+        ownImageHref(objectId, imageId),
+      ),
+    }),
+  );
+
+  return (
+    <div className="actions">
+      <Link
+        className={`button ${primary ? "button-primary" : "button-secondary"}`}
+        href={newObjectHref(environment.id)}
+      >
+        <Icon name="plus" /> Registrer en ny ting
+      </Link>
+      {things.length > 0 && (
+        <AddThings
+          environmentId={environment.id}
+          environmentName={environment.name}
+          approval={environment.requiresObjectApproval}
+          things={things}
+        />
+      )}
+    </div>
   );
 }
 
@@ -172,45 +212,6 @@ export function FoundThings({
       <p className="link-row">
         <Link href={environmentHref(environment.id)}>Vis alle ting</Link>
       </p>
-    </section>
-  );
-}
-
-/**
- * The other active members (vision 03), each leading to the person's page,
- * where they can become friends (WP-86). Nothing given to the membership
- * process is shown (UX-PRIV-009).
- */
-export function Members({
-  members,
-}: {
-  members: readonly EnvironmentMember[];
-}) {
-  return (
-    <section aria-labelledby="medlemmer">
-      <h2 id="medlemmer">
-        Andre medlemmer <span className="count">({members.length})</span>
-      </h2>
-      {members.length === 0 ? (
-        <p className="quiet">Det er ingen andre medlemmer her ennå.</p>
-      ) : (
-        <ul className="entries">
-          {members.map((member) => {
-            const role = roleName(member.roles);
-
-            return (
-              <li key={member.userId} className="entry">
-                <PersonName person={member} />
-                {role && (
-                  <span>
-                    <Tag>{role}</Tag>
-                  </span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
     </section>
   );
 }
