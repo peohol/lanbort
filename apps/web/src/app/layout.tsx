@@ -5,6 +5,7 @@ import { countUnreadNotifications } from "@lanbort/domain";
 import { Announcer } from "@/components/announcer";
 import { AppShell } from "@/components/app-shell";
 import { HeaderBoundary } from "@/components/header-boundary";
+import { NavigationProgress } from "@/components/navigation-progress";
 import { NetworkStatus } from "@/components/network-status";
 import { restingNotice } from "@/presentation/account";
 import { themeAttribute } from "@/presentation/theme";
@@ -51,6 +52,7 @@ export default async function RootLayout({
     <html lang="nb" data-theme={themeAttribute(theme)}>
       <body>
         <HeaderBoundary />
+        <NavigationProgress />
         <NetworkStatus />
         {signedIn ? (
           <AppShell

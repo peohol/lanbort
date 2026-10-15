@@ -1548,3 +1548,36 @@ test("chat pages get a strict script policy, and only the approval page may use 
   );
   await someone.context.close();
 });
+
+test("Samtaler and the rest of the app are each loaded as their own document at once", async ({
+  browser,
+}) => {
+  const eli = await person(browser, "Eli Fjell");
+  const { page } = eli;
+  // A page fetched inside the app, rather than loaded as a document.
+  const fetchedInside: string[] = [];
+  page.on("request", (request) => {
+    const headers = request.headers();
+    if (headers.rsc && !headers["next-router-prefetch"]) {
+      fetchedInside.push(new URL(request.url()).pathname);
+    }
+  });
+  const loadedAs = () =>
+    page.evaluate(
+      () =>
+        new URL(performance.getEntriesByType("navigation")[0]!.name).pathname,
+    );
+  const navigation = page.getByRole("navigation", { name: "Hovedmeny" });
+
+  await page.goto("/mine-ting");
+  await navigation.getByRole("link", { name: "Samtaler" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Samtaler");
+  expect(await loadedAs()).toBe("/samtaler");
+
+  await navigation.getByRole("link", { name: "Hjem" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hjem");
+  expect(await loadedAs()).toBe("/");
+  expect(fetchedInside).not.toContain("/samtaler");
+  expect(fetchedInside).not.toContain("/");
+  await eli.context.close();
+});

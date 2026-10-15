@@ -515,3 +515,35 @@ test("the areas need a signed-in user", async ({ page, request }) => {
     expect((await request.get(path)).status()).toBe(401);
   }
 });
+
+test("a followed link answers at once while its page is on its way", async ({
+  page,
+}) => {
+  await registerThroughApi(page.request, undefined, "Kari Nordmann");
+  await page.goto("/");
+  // Lån's page is held back until the test lets it through.
+  let release = () => {};
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route(
+    (url) => url.pathname === "/lan",
+    async (route) => {
+      const headers = route.request().headers();
+      if (headers.rsc && !headers["next-router-prefetch"]) await held;
+      await route.continue();
+    },
+  );
+
+  const progress = page.locator(".navigation-progress");
+  const loans = mainNavigation(page).getByRole("link", { name: "Lån" });
+  await expect(progress).not.toHaveAttribute("data-active");
+  await loans.click();
+  await expect(progress).toHaveAttribute("data-active");
+  await expect(loans).toHaveAttribute("aria-current", "page");
+  await expect(page.locator("#innhold")).toHaveAttribute("aria-busy", "true");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hjem");
+
+  release();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Lån");
+  await expect(progress).not.toHaveAttribute("data-active");
+  await expect(page.locator("#innhold")).not.toHaveAttribute("aria-busy");
+});

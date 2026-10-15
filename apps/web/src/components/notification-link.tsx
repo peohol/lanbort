@@ -31,9 +31,12 @@ export function NotificationLink({
       onClick={() => {
         expectDirectEntry("varsel");
         if (notificationId) {
-          void postJson("/api/notifications/read", {
-            notificationIds: [notificationId],
-          }).then(announceDataChanged);
+          // The context may be loaded as a new document meanwhile.
+          void postJson(
+            "/api/notifications/read",
+            { notificationIds: [notificationId] },
+            { keepalive: true },
+          ).then(announceDataChanged);
         }
       }}
     >
