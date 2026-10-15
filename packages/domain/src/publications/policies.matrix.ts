@@ -11,6 +11,7 @@ import {
   publishToFriendsPolicy,
   readFriendObjectImagePolicy,
   withdrawFromFriendsPolicy,
+  listAddableObjectsPolicy,
   listEnvironmentObjectsPolicy,
   listEnvironmentPublicationsPolicy,
   listObjectPublicationsPolicy,
@@ -171,6 +172,47 @@ const profile = (overrides: Partial<SocialPair> = {}) => ({
   },
 });
 
+/** Only an active member who can see the environment (PS-OBJ-006). */
+const activeMemberCases = () => [
+  expectCase(
+    "an active member",
+    stranger,
+    access("closed", member("active")),
+    "allow",
+  ),
+  expectCase(
+    "an active member of a hidden environment",
+    stranger,
+    access("hidden", member("active")),
+    "allow",
+  ),
+  expectCase(
+    "a passive member has no active visibility",
+    stranger,
+    access("closed", member("passive")),
+    "forbidden",
+  ),
+  expectCase(
+    "an applicant",
+    stranger,
+    access("closed", member("pending")),
+    "forbidden",
+  ),
+  expectCase(
+    "a non-member of an open environment",
+    stranger,
+    access("open"),
+    "forbidden",
+  ),
+  expectCase(
+    "an outsider to a hidden environment",
+    stranger,
+    access("hidden"),
+    "not_found",
+  ),
+  ...callerCases(access("open", member("active"))),
+];
+
 export const publicationMatrices = [
   policyMatrix(publishObjectPolicy, [
     expectCase(
@@ -238,45 +280,8 @@ export const publicationMatrices = [
     setObjectApprovalPolicy,
     administrationCases((type, viewer) => access(type, viewer)),
   ),
-  policyMatrix(listEnvironmentObjectsPolicy, [
-    expectCase(
-      "an active member",
-      stranger,
-      access("closed", member("active")),
-      "allow",
-    ),
-    expectCase(
-      "an active member of a hidden environment",
-      stranger,
-      access("hidden", member("active")),
-      "allow",
-    ),
-    expectCase(
-      "a passive member has no active visibility",
-      stranger,
-      access("closed", member("passive")),
-      "forbidden",
-    ),
-    expectCase(
-      "an applicant",
-      stranger,
-      access("closed", member("pending")),
-      "forbidden",
-    ),
-    expectCase(
-      "a non-member of an open environment",
-      stranger,
-      access("open"),
-      "forbidden",
-    ),
-    expectCase(
-      "an outsider to a hidden environment",
-      stranger,
-      access("hidden"),
-      "not_found",
-    ),
-    ...callerCases(access("open", member("active"))),
-  ]),
+  policyMatrix(listEnvironmentObjectsPolicy, activeMemberCases()),
+  policyMatrix(listAddableObjectsPolicy, activeMemberCases()),
   policyMatrix(readPublishedImagePolicy, [
     expectCase(
       "an active member who finds the object",

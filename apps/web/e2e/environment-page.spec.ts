@@ -57,7 +57,9 @@ test("an environment is created, applied to, used and left in the browser", asyn
 
   await expect(page).toHaveURL(/\/miljoer\/[0-9a-f-]{36}$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
-  await expect(page.getByText("Du er medlem.")).toBeVisible();
+  // An active membership is a tag under the title, not a card.
+  await expect(page.getByText("Medlem", { exact: true })).toBeVisible();
+  await expect(page.getByText("Du er medlem.")).toHaveCount(0);
   await expect(page.getByText("Du er eier")).toBeVisible();
   const environmentId = page.url().split("/").at(-1)!;
   const { objectId } = await (
@@ -84,7 +86,7 @@ test("an environment is created, applied to, used and left in the browser", asyn
   // About how many, never the exact number (PS-ENV-016).
   await expect(bo.page.getByText("under 10 medlemmer")).toBeVisible();
   await expect(
-    bo.page.getByRole("heading", { name: /Andre medlemmer/ }),
+    bo.page.getByRole("region", { name: "Medlemmer", exact: true }),
   ).toHaveCount(0);
   const asks = bo.page.getByRole("region", { name: "For å bli med" });
   await expect(asks.getByText("Hvilken leilighet bor du i?")).toBeVisible();
@@ -158,7 +160,29 @@ test("an environment is created, applied to, used and left in the browser", asyn
 
   // As a member, Bo finds the thing, Anna and the administrators.
   await bo.page.reload();
-  await expect(bo.page.getByText("Du er medlem.")).toBeVisible();
+  await expect(bo.page.getByText("Medlem", { exact: true })).toBeVisible();
+  // Who is in it, by role, each leading to the person's page (PS-ENV-015).
+  const members = bo.page.getByRole("region", {
+    name: "Medlemmer",
+    exact: true,
+  });
+  await expect(
+    members.getByRole("list", { name: "Eier" }).getByRole("link"),
+  ).toHaveText(["Anna Berg"]);
+  await expect(
+    members.getByRole("link", { name: "Anna Berg" }),
+  ).toHaveAttribute("href", `/personer/${annaId}`);
+  await expect(
+    members.getByRole("heading", { name: "Administratorer" }),
+    "the owner is the only administrator",
+  ).toHaveCount(0);
+  await expect(
+    members.getByRole("list", { name: "Medlemmer" }).getByRole("link"),
+  ).toHaveText(["Bo Dahl"]);
+  await expect(
+    members.getByRole("button", { name: "Vis alle" }),
+    "everyone fits",
+  ).toHaveCount(0);
   await expect(bo.page.getByRole("link", { name: "Stige" })).toHaveAttribute(
     "href",
     `/ting/${objectId}?miljo=${environmentId}`,
@@ -170,8 +194,45 @@ test("an environment is created, applied to, used and left in the browser", asyn
     `/personer/${annaId}?rolle=utlaaner`,
   );
   await expect(
-    bo.page.getByRole("link", { name: "Registrer en ting her" }),
+    bo.page.getByRole("link", { name: "Registrer en ny ting" }),
   ).toHaveAttribute("href", `/ting/ny?miljo=${environmentId}`);
+  await expect(
+    bo.page.getByRole("button", { name: "Legg til ting du har fra før" }),
+    "Bo has nothing of his own to add",
+  ).toHaveCount(0);
+
+  // Things Bo already has are added a few at a time, from a search.
+  for (const title of ["Drill", "Skrutrekker", "Sykkelpumpe"]) {
+    await postCommand(bo.page.request, "/api/objects", {
+      title,
+      categoryId: "annet",
+      description: "Til utlån.",
+      availability: [{ start: today(), end: null }],
+    });
+  }
+  await bo.page.reload();
+  await bo.page
+    .getByRole("button", { name: "Legg til ting du har fra før" })
+    .click();
+  const adding = bo.page.getByRole("dialog", { name: "Legg til ting" });
+  await expect(adding.getByRole("checkbox")).toHaveCount(3);
+  expect(await axeViolations(bo.page)).toEqual([]);
+  await adding.getByLabel("Søk blant tingene dine").fill("dri");
+  await expect(adding.getByRole("checkbox")).toHaveCount(1);
+  await adding.getByLabel("Søk blant tingene dine").fill("");
+  await adding.getByRole("button", { name: "Velg alle" }).click();
+  await adding.getByLabel("Sykkelpumpe").uncheck();
+  await adding.getByRole("button", { name: "Legg til 2 ting" }).click();
+  await expect(adding).toBeHidden();
+  const added = bo.page.getByRole("region", { name: "Ting i miljøet" });
+  await expect(added.getByRole("link", { name: "Drill" })).toBeVisible();
+  await expect(added.getByRole("link", { name: "Skrutrekker" })).toBeVisible();
+  await expect(added.getByRole("link", { name: "Sykkelpumpe" })).toHaveCount(0);
+  await bo.page
+    .getByRole("button", { name: "Legg til ting du har fra før" })
+    .click();
+  await expect(adding.getByRole("checkbox")).toHaveCount(1);
+  await adding.getByRole("button", { name: "Avbryt" }).click();
   await expect(
     bo.page.getByRole("region", { name: "Som administrator" }),
   ).toHaveCount(0);
@@ -200,21 +261,24 @@ test("an environment is created, applied to, used and left in the browser", asyn
     bo.page.getByRole("region", { name: "Ting i miljøet" }),
   ).toBeVisible();
 
-  // About the environment and its members, a page away.
-  await bo.page.getByRole("link", { name: "Om miljøet og medlemmer" }).click();
+  // About the environment, a page away.
+  await bo.page.getByRole("link", { name: "Om miljøet" }).click();
   await expect(bo.page.getByRole("heading", { level: 1 })).toHaveText(
     `Om ${name}`,
   );
-  await expect(
-    bo.page
-      .getByRole("region", { name: /Andre medlemmer/ })
-      .getByRole("link", { name: "Anna Berg" }),
-  ).toHaveAttribute("href", `/personer/${annaId}`);
+  await expect(bo.page.getByText("Hvilken leilighet bor du i?")).toBeVisible();
+  await expect(bo.page.getByText("H0201")).toHaveCount(0);
+  await expect(bo.page.getByRole("link", { name: "Anna Berg" })).toHaveCount(0);
+
+  // His own membership, another.
+  await bo.page.goto(`/miljoer/${environmentId}`);
+  await bo.page.getByRole("link", { name: "Mitt medlemskap" }).click();
+  await expect(bo.page.getByRole("heading", { level: 1 })).toHaveText(
+    "Mitt medlemskap",
+  );
   await expect(
     bo.page.getByRole("link", { name: "Kontakt administratorene" }),
   ).toHaveAttribute("href", `/saker/ny?kontakt=${environmentId}`);
-  await expect(bo.page.getByText("Hvilken leilighet bor du i?")).toBeVisible();
-  await expect(bo.page.getByText("H0201")).toHaveCount(0);
 
   // Leaving says what goes and what stays before it happens.
   await bo.page.getByRole("button", { name: "Forlat miljøet" }).click();
@@ -368,11 +432,13 @@ test("an invitation to a hidden environment is accepted on its page, and members
   await expect(bo.page.getByText("Velkommen, Bo")).toBeVisible();
   await expect(bo.page).toHaveURL(`/miljoer/${environmentId}`);
   await bo.page.reload();
-  await expect(bo.page.getByText("Du er medlem.")).toBeVisible();
+  await expect(bo.page.getByText("Medlem", { exact: true })).toBeVisible();
   await expect(bo.page.getByText("Velkommen, Bo")).toHaveCount(0);
-  await bo.page.getByRole("link", { name: "Om miljøet og medlemmer" }).click();
-  await expect(bo.page.getByRole("link", { name: "Eva Eier" })).toBeVisible();
-  await bo.page.goto(`/miljoer/${environmentId}`);
+  await expect(
+    bo.page
+      .getByRole("region", { name: "Medlemmer", exact: true })
+      .getByRole("link", { name: "Eva Eier" }),
+  ).toBeVisible();
 
   // A weaker type is each member's own choice (UX-PRIV-008): hidden →
   // closed is a vote, and those without a yes are removed if it passes.

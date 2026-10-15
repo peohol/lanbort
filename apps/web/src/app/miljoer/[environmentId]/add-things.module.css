@@ -1,0 +1,136 @@
+/* «Legg til ting du har fra før» (Tomat): a dialog over the page on a
+   larger screen, a screen of its own on a phone. The list scrolls between
+   the search at the top and the buttons at the bottom. */
+.dialog[open] {
+  display: flex;
+  width: min(36rem, calc(100% - 2rem));
+  height: min(44rem, calc(100dvh - 4rem));
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 47.99rem) {
+  .dialog[open] {
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+  }
+}
+
+.dialog .form {
+  display: flex;
+  max-width: none;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  margin: 0;
+}
+
+.top,
+.search,
+.bar,
+.bottom {
+  flex: none;
+  margin: 0 var(--space-5);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.top h2 {
+  margin: 0;
+}
+
+.close {
+  margin-right: calc(-1 * var(--space-2));
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.search {
+  margin-top: var(--space-3);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--target);
+  margin-top: var(--space-2);
+}
+
+.count {
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0 var(--space-5) var(--space-3);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.thing {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-row);
+  min-height: var(--target);
+  padding: var(--space-2) 0;
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.thing input {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.title {
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.bottom {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) 0 var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.bottom p {
+  margin: 0;
+}
+
+@media (max-width: 47.99rem) {
+  .top,
+  .search,
+  .bar,
+  .bottom {
+    margin-inline: var(--gutter);
+  }
+
+  .list {
+    padding-inline: var(--gutter);
+  }
+
+  .bottom {
+    padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
+  }
+}

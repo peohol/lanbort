@@ -1,25 +1,18 @@
-import { getEnvironment, listEnvironmentMembers } from "@lanbort/domain";
+import { getEnvironment } from "@lanbort/domain";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
 import { environmentHref } from "@/navigation/routes";
-import {
-  pageQuery,
-  pageQueryOrNotFound,
-  requirePageAccount,
-} from "@/server/session";
+import { pageQueryOrNotFound, requirePageAccount } from "@/server/session";
 import { About, Requirements } from "../about";
 import { environmentHome } from "../back";
-import { Members } from "../member-content";
-import { YourMembership } from "../membership";
 
 export const metadata: Metadata = { title: "Om miljøet – Lånbort" };
 
 /**
- * «Om miljøet og medlemmer» (Tomat kjerneflyt 3): what the environment is,
- * for active members who is in it (vision 03) and the rules they have met
- * (PS-ENV-005), and the user's own membership: writing to the
- * administrators and leaving. Each part is read through its own query's
- * policy, as on the environment's page.
+ * «Om miljøet» (Tomat): what the environment is, and for active members
+ * the rules they have met (PS-ENV-005). Who is in it is on the
+ * environment's page, and the user's own membership on «Mitt medlemskap».
+ * Read through the environment's own policy, as on its page.
  */
 export default async function EnvironmentAboutPage({
   params,
@@ -31,10 +24,6 @@ export default async function EnvironmentAboutPage({
   const environment = await pageQueryOrNotFound(getEnvironment, {
     environmentId,
   });
-  const active = environment.membership?.state === "active";
-  const members = active
-    ? await pageQuery(listEnvironmentMembers, { environmentId })
-    : null;
 
   return (
     <main>
@@ -48,9 +37,9 @@ export default async function EnvironmentAboutPage({
         home={environmentHome(environment)}
       />
       <About environment={environment} />
-      {members && <Members members={members.members} />}
-      {active && <Requirements requirements={environment.requirements} />}
-      <YourMembership environment={environment} />
+      {environment.membership?.state === "active" && (
+        <Requirements requirements={environment.requirements} />
+      )}
     </main>
   );
 }

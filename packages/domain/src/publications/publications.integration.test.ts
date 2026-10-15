@@ -72,6 +72,7 @@ import {
 } from "./commands";
 import { loadPublicationGate } from "./gate";
 import {
+  listAddableObjects,
   listEnvironmentObjects,
   listEnvironmentPublications,
   listObjectPublications,
@@ -793,6 +794,102 @@ describe("co-ownership and blocks", () => {
 
     const outsider = await user();
     await expect(readImage(outsider)).rejects.toMatchObject(notFound);
+  });
+});
+
+describe("adding own things to an environment", () => {
+  /** The object ids `actor` is offered to add to the environment. */
+  async function addable(actor: UserActor, environmentId: string) {
+    const { objects } = await executeQuery(tick(), listAddableObjects, {
+      actor,
+      input: { environmentId },
+    });
+
+    return objects.map((object) => object.objectId);
+  }
+
+  it("offers exactly what publishing there accepts, by title", async () => {
+    const { admin, environmentId } = await openEnvironment();
+    const anna = await member(environmentId, admin);
+    const bo = await member(environmentId, admin);
+    const named = async (title: string) =>
+      (
+        await run(createObject, anna, {
+          title,
+          categoryId: "annet",
+          description: "Til utlån.",
+          availability: [{ start: calendarDate(clock), end: null }],
+        })
+      ).objectId;
+    const sag = await named("sag");
+    const bor = await named("Bor");
+    const published = await create(anna);
+    await publish(anna, published, environmentId);
+    const archived = await create(anna);
+    await run(archiveObject, anna, { objectId: archived });
+    const rejected = await create(anna);
+    await decide(
+      rejectPublication,
+      admin,
+      environmentId,
+      (await publish(anna, rejected, environmentId)).publicationId,
+    );
+    const vetoed = await coOwned(anna, bo);
+    await run(setObjectRestriction, bo, { objectId: vetoed, period: null });
+    const withdrawn = await create(anna);
+    const { publicationId } = await publish(anna, withdrawn, environmentId);
+    await run(withdrawPublication, anna, {
+      objectId: withdrawn,
+      publicationId,
+    });
+    await create(bo);
+
+    const offered = await addable(anna, environmentId);
+    expect(offered, "by title, whatever the case").toEqual([
+      bor,
+      sag,
+      withdrawn,
+    ]);
+    expect(
+      await addable(bo, environmentId),
+      "the owner who stopped new loans may still add it",
+    ).toContain(vetoed);
+
+    for (const objectId of offered) {
+      await publish(anna, objectId, environmentId);
+    }
+    expect(await addable(anna, environmentId)).toEqual([]);
+  });
+
+  it("leaves out a frozen object (PS-OBJ-009)", async () => {
+    const { admin, environmentId } = await openEnvironment();
+    const anna = await member(environmentId, admin);
+    const bo = await member(environmentId, admin);
+    const objectId = await coOwned(anna, bo);
+
+    await run(blockUser, anna, { userId: bo.userId });
+    expect(await addable(anna, environmentId)).not.toContain(objectId);
+  });
+
+  it("is only for active members, and offers nothing while winding down", async () => {
+    const { admin, environmentId } = await openEnvironment();
+    const anna = await member(environmentId, admin);
+    const objectId = await create(anna);
+    const outsider = await user();
+    await create(outsider);
+    const hidden = await environment(admin, { type: "hidden" });
+
+    await expect(addable(outsider, environmentId)).rejects.toMatchObject(
+      forbidden,
+    );
+    await expect(addable(anna, hidden)).rejects.toMatchObject(notFound);
+    expect(await addable(anna, environmentId)).toEqual([objectId]);
+
+    await run(startEnvironmentWindDown, admin, {
+      environmentId,
+      atOnce: false,
+    });
+    expect(await addable(anna, environmentId)).toEqual([]);
   });
 });
 

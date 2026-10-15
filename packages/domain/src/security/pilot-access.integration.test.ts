@@ -504,6 +504,9 @@ const probes: Record<string, (ids: WorldIds) => object> = {
     objectId: ids.objectId,
   }),
   "environment_object.list": (ids) => ({ environmentId: ids.environmentId }),
+  "environment_publication.list_addable": (ids) => ({
+    environmentId: ids.environmentId,
+  }),
   "environment_object.read_image": (ids) => ({
     environmentId: ids.environmentId,
     objectId: ids.objectId,
