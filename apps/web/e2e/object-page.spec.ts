@@ -113,6 +113,46 @@ test("a thing has one page, seen by its owner or through an environment", async 
  * (PS-OBJ-015), answers them there and may open the private conversation
  * with whoever asked (PS-COM-006); the asker stays «Et medlem».
  */
+test("the owner's own thing seen from an environment stays one step", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await registerThroughApi(page.request, undefined, "Anna Berg");
+  const word = uniqueWord();
+  const { environmentId } = await (
+    await postCommand(page.request, "/api/environments", {
+      name: `Gården ${word}`,
+      type: "open",
+    })
+  ).json();
+  const { objectId } = await (
+    await postCommand(page.request, "/api/objects", {
+      title: `Stige ${word}`,
+      categoryId: "annet",
+      description: "Aluminiumsstige, 4 meter.",
+      availability: [{ start: today(), end: null }],
+    })
+  ).json();
+  await postCommand(page.request, `/api/objects/${objectId}/publications`, {
+    environmentId,
+  });
+
+  await page.goto(`/miljoer/${environmentId}`);
+  await page.getByRole("link", { name: `Stige ${word}` }).click();
+  await expect(page).toHaveURL(new RegExp(`/ting/${objectId}\\?miljo=`));
+  await page.getByRole("link", { name: "Rediger tingen" }).click();
+  await page.getByLabel("Beskrivelse").fill("Aluminiumsstige, 5 meter.");
+  await page.getByRole("button", { name: "Videre" }).click();
+  await page.getByRole("button", { name: "Videre" }).click();
+  await page.getByRole("button", { name: "Lagre endringene" }).click();
+
+  // Saved, the owner is back on the same page, not on a copy of it.
+  await expect(page).toHaveURL(new RegExp(`/ting/${objectId}$`));
+  await expect(
+    page.getByRole("navigation", { name: "Du er her" }).getByRole("listitem"),
+  ).toHaveText(["Hjem", `Gården ${word}`, `Stige ${word}`]);
+});
+
 test("the owner answers questions about the thing and may write to who asked", async ({
   browser,
   page,

@@ -29,8 +29,14 @@ const directEntryLabels: Record<DirectEntry, string> = {
   epost: "Åpnet fra e-post",
 };
 
-/** Where this page is, without its address: the browser adds that. */
-export type PagePlace = Omit<Place, "href">;
+/**
+ * Where this page is. The browser adds its address, unless the page names
+ * its own (`href`): an address that says more than which page this is,
+ * such as a context that does not change it, is still the same step.
+ */
+export type PagePlace = Omit<Place, "href"> & {
+  readonly href?: string | undefined;
+};
 
 /**
  * The page's own address. While a layer lies over the page, the browser
@@ -80,7 +86,8 @@ export function PlaceBar({
  */
 function StackBar({ place }: { place: PagePlace }) {
   const { address, covered } = useOwnAddress();
-  const path = address.split("?", 1)[0]!;
+  const href = place.href ?? address;
+  const path = href.split("?", 1)[0]!;
   const stack = useStack();
   const shown = isStackOf(stack, path)
     ? stack!
@@ -89,10 +96,10 @@ function StackBar({ place }: { place: PagePlace }) {
   const steps = trail(shown);
 
   useEffect(() => {
-    if (!covered) enterPlace({ ...place, href: address });
+    if (!covered) enterPlace({ ...place, href });
     // The place's parts, not the object, decide whether the page changed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address, covered, place.label, place.home, place.container?.href]);
+  }, [href, covered, place.label, place.home, place.container?.href]);
 
   return (
     <div className="place-bar">

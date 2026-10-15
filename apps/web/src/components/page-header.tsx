@@ -17,6 +17,7 @@ export function PageHeader({
   picture,
   back,
   home,
+  href,
   task = false,
   context,
   children,
@@ -38,6 +39,8 @@ export function PageHeader({
   back?: { href: string; label: string };
   /** The home area (UX-IA-010), when `back` is not its own page. */
   home?: AreaId;
+  /** The page's address in the navigation stack, when not the browser's. */
+  href?: string;
   /** A form: no areas, no stack, and «Avbryt» (UX-IA-013). */
   task?: boolean;
   context?: ReactNode;
@@ -64,7 +67,7 @@ export function PageHeader({
       ) : (
         label && (
           <PlaceBar
-            place={{ label, home: homeArea, container }}
+            place={{ label, home: homeArea, container, href }}
             located={Boolean(back || home)}
           />
         )
