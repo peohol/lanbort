@@ -267,8 +267,8 @@
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))
   and (color: color-mix(in srgb, red, blue)) {
   :root {
-    --color-bar: color-mix(in srgb, var(--color-page) 85%, transparent);
-    --bar-filter: blur(12px);
+    --color-bar: color-mix(in srgb, var(--color-page) 75%, transparent);
+    --bar-filter: blur(8px);
   }
 }
 
