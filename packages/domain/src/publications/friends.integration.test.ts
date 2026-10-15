@@ -149,6 +149,12 @@ describe("visibility for friends (PS-OBJ-020)", () => {
     await friends(coOwnersFriend, coOwner);
     expect(await onProfile(coOwnersFriend, coOwner)).toEqual([objectId]);
     expect(await onProfile(coOwnersFriend, owner)).toEqual([]);
+    // PS-OBJ-022: only the owner they are a friend of is named.
+    expect(
+      (await profile(coOwnersFriend, coOwner)).objects[0]?.owners.map(
+        (shown) => shown.profileId,
+      ),
+    ).toEqual([coOwner.userId]);
     expect((await preview(coOwnersFriend, objectId)).objectId).toBe(objectId);
   });
 

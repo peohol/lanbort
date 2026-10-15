@@ -196,6 +196,15 @@ Hver detalj har en typeetikett (Ting, Forespørsel, Lån, Person, Miljø, Samtal
 - Konto er ikke et steg i områdets stabel, og varselindikatoren vises ikke i Konto. Områdene og varslene nås igjen med «Lukk».
 - Utformingen på større skjerm avgjøres i den visuelle retningen; navigasjonsreglene over gjelder uendret.
 
+### UX-IA-021 — Ting vises likt overalt, gruppert etter kategori
+**Forankring:** UX-P04, UX-P16; PS-OBJ-006, PS-OBJ-020; Peder 15. oktober 2026
+
+- Et tingkort ser likt ut overalt der brukeren finner ting: i et miljø, på en venns side og i treff fra Finn eller «Søk i …». Kortet har bildet til venstre, navnet, eierens profilbilde og navn (eller «Din ting») og om tingen er ledig. Kortet sier ikke hvor tingen er funnet; det sier siden.
+- Ting i en liste vises under kategorien som overskrift, i kategorienes egen rekkefølge. En kategori uten ting vises ikke. Innenfor en kategori står tingene alfanumerisk etter første bokstav eller tall i navnet, med tall etter verdi og æ, ø, å sist.
+- Der brukeren finner ting, kan listen avgrenses til én eller flere kategorier og til «Ledig nå» eller «Ledig snart» (ledig nå eller innen 14 dager). Et valg vises bare når det ville endret listen. Valgene står i adressen, så de er der fortsatt når brukeren går tilbake fra en ting.
+- En liste viser opptil 200 ting, de nyeste. Har miljøet flere, sier listen det og viser til søket.
+- Mine ting grupperes på samme måte, men kortene der viser hvor tingen vises og eierens egen status.
+
 ### Krav som ikke endrer strukturen
 
 Ukjent nettverksutfall (UX-INT-006) og ansvarserklæringen ved direkte vennelån (PS-LOAN-003, UX-JRN-006) er fortsatt krav. De er tilstander i låneforespørselen og godkjenningen og endrer ikke strukturen over. De designes i kjerneflyten i fase 4.

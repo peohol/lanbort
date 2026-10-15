@@ -5,6 +5,7 @@ import {
   listEnvironmentAdministrationTasks,
   listEnvironmentMembers,
   listEnvironmentObjects,
+  listObjectCategories,
   searchObjects,
 } from "@lanbort/domain";
 import { searchTextSchema } from "@lanbort/contracts";
@@ -22,6 +23,11 @@ import {
 } from "@/navigation/routes";
 import { membershipStep, roleName, welcome } from "@/presentation/environments";
 import {
+  readThingFilter,
+  type ThingFilter,
+  thingFilterHref,
+} from "@/presentation/thing-list";
+import {
   pageQuery,
   pageQueryOrNotFound,
   requirePageAccount,
@@ -36,9 +42,6 @@ import { Members } from "./members";
 import { Membership } from "./membership";
 
 export const metadata: Metadata = { title: "Miljøet – Lånbort" };
-
-/** The query parameter for the next page of things. */
-const afterParam = "etter";
 
 /** What a member searches for among the things here, as in Finn. */
 const searchParam = "q";
@@ -67,31 +70,39 @@ export default async function EnvironmentPage({
   });
   const step = membershipStep(environment);
   const active = environment.membership?.state === "active";
-  const after = query[afterParam];
   const administrator = environment.roles.includes("administrator");
   const searched = query[searchParam];
   const q = typeof searched === "string" ? searched.trim() : "";
   const search = q ? searchTextSchema.safeParse(q) : null;
   const takesThings = active && environment.state === "active";
-  const [found, things, tasks, members, addable] = await Promise.all([
-    active && search?.success
-      ? pageQuery(searchObjects, { q: search.data, environmentId })
-      : null,
-    active && !search?.success
-      ? pageQuery(listEnvironmentObjects, {
-          environmentId,
-          ...(typeof after === "string" ? { cursor: after } : {}),
-        })
-      : null,
-    // The administrators' tasks here, counted as on Home (UX-JRN-012).
-    administrator && active
-      ? pageQuery(listEnvironmentAdministrationTasks, { environmentId })
-      : null,
-    active ? pageQuery(listEnvironmentMembers, { environmentId }) : null,
-    takesThings && !search?.success
-      ? pageQuery(listAddableObjects, { environmentId })
-      : null,
-  ]);
+  const [found, things, tasks, members, addable, categories] =
+    await Promise.all([
+      active && search?.success
+        ? pageQuery(searchObjects, { q: search.data, environmentId })
+        : null,
+      active && !search?.success
+        ? pageQuery(listEnvironmentObjects, { environmentId })
+        : null,
+      // The administrators' tasks here, counted as on Home (UX-JRN-012).
+      administrator && active
+        ? pageQuery(listEnvironmentAdministrationTasks, { environmentId })
+        : null,
+      active ? pageQuery(listEnvironmentMembers, { environmentId }) : null,
+      takesThings && !search?.success
+        ? pageQuery(listAddableObjects, { environmentId })
+        : null,
+      active ? pageQuery(listObjectCategories, {}) : null,
+    ]);
+  const today = calendarDate(new Date());
+  // A filter keeps the search, but not the one-time welcome.
+  const kept = Object.fromEntries(
+    Object.entries(query).filter(([name]) => name !== welcomeParam),
+  );
+  const filter = {
+    chosen: readThingFilter(query),
+    href: (chosen: ThingFilter) =>
+      thingFilterHref(environmentHref(environmentId), kept, chosen),
+  };
   const role = roleName(environment.roles);
   const state = environment.membership?.state;
 
@@ -158,19 +169,19 @@ export default async function EnvironmentPage({
           environment={environment}
           q={q}
           found={found}
-          today={calendarDate(new Date())}
+          categories={categories?.categories ?? []}
+          filter={filter}
+          today={today}
         />
       )}
       {things && (
         <Things
           environment={environment}
           things={things}
+          categories={categories?.categories ?? []}
+          filter={filter}
           addable={addable}
-          today={calendarDate(new Date())}
-          nextHref={(cursor) =>
-            `${environmentHref(environmentId)}?${new URLSearchParams({ [afterParam]: cursor })}`
-          }
-          paged={typeof after === "string"}
+          today={today}
         />
       )}
       {state ? (

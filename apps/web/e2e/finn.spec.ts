@@ -120,7 +120,12 @@ test("Finn finds environments to join, and then the things in them", async ({
     .getByRole("listitem");
   await expect(thingFound).toHaveCount(1);
   await expect(thingFound).toContainText(`Kantklipper ${thing}`);
-  await expect(thingFound).toContainText(`Via Nabolaget ${place}`);
+  // Found things stand under their category (UX-IA-021).
+  await expect(
+    page.getByRole("region", { name: "Treff" }).getByRole("heading", {
+      name: "Annet",
+    }),
+  ).toBeVisible();
   await expect(thingFound).toContainText("Ledig fra");
   expect(problems).toEqual([]);
 });
