@@ -13,7 +13,9 @@ import { announceDataChanged } from "@/components/data-changed";
 import { errorMessage } from "@/components/error-messages";
 import { ErrorText } from "@/components/error-text";
 import { helpId } from "@/components/field";
+import { readPhoto } from "@/components/photo";
 import { ProfilePicture } from "@/components/profile-picture";
+import { photoProblemText } from "@/presentation/photos";
 import { PictureCropper } from "./picture-cropper";
 
 /** Who sees the picture, as the people it reaches (UX-PRIV-001). */
@@ -25,27 +27,6 @@ const visibilityLabels: Record<ProfilePictureVisibility, string> = {
 
 /** The longest side a photo is read at; more is never needed to crop. */
 const readMaxSide = 2048;
-
-/** A chosen photo, upright and no larger than needed to crop it. */
-async function readPhoto(file: File): Promise<ImageBitmap | null> {
-  try {
-    const full = await createImageBitmap(file, {
-      imageOrientation: "from-image",
-    });
-    const scale = readMaxSide / Math.max(full.width, full.height);
-    if (scale >= 1) return full;
-
-    const smaller = await createImageBitmap(full, {
-      resizeWidth: Math.round(full.width * scale),
-      resizeHeight: Math.round(full.height * scale),
-      resizeQuality: "high",
-    });
-    full.close();
-    return smaller;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * The own profile picture (PS-USR-002): choose a photo, place it in the
@@ -79,14 +60,14 @@ export function ProfilePictureSettings({
     event.target.value = "";
     if (!file) return;
     setError(null);
-    const read = await readPhoto(file);
-    if (!read) {
-      setError("Bildet kunne ikke leses. Prøv et annet bilde.");
+    const read = await readPhoto(file, readMaxSide);
+    if (!read.ok) {
+      setError(photoProblemText([read.problem], 1));
       return;
     }
     // A new photo is a new upload; a retry of the same one keeps its key.
     setUploadKey(crypto.randomUUID());
-    setPhoto(read);
+    setPhoto(read.photo);
   }
 
   async function save(file: Blob | null) {

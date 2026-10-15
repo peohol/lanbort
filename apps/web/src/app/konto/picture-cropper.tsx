@@ -11,6 +11,7 @@ import {
 } from "react";
 import { BusyButton } from "@/components/busy-button";
 import { Field } from "@/components/field";
+import { encodePhoto } from "@/components/photo";
 import {
   clampCrop,
   type Crop,
@@ -38,10 +39,7 @@ function stageFrame(size: number): FrameBox {
 
 const frame = stageFrame(stageSize);
 
-/**
- * The cropped picture as a compressed file: WebP where the browser can
- * write it, otherwise JPEG. The server re-encodes it either way.
- */
+/** The cropped picture as a compressed file. */
 async function croppedFile(
   photo: ImageBitmap,
   crop: Crop,
@@ -54,15 +52,7 @@ async function croppedFile(
   if (!context) return null;
   drawCrop(context, photo, photo, crop, { left: 0, top: 0, width });
 
-  const encode = (type: string, quality: number) =>
-    new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, type, quality),
-    );
-  const webp = await encode("image/webp", 0.85);
-  const blob =
-    webp?.type === "image/webp" ? webp : await encode("image/jpeg", 0.88);
-
-  return blob && blob.size <= profilePictureMaxUploadBytes ? blob : null;
+  return encodePhoto(canvas, profilePictureMaxUploadBytes);
 }
 
 /** Keyboard steps: a small move, zoom and turn, larger with Shift. */

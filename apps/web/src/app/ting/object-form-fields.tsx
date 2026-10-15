@@ -5,6 +5,7 @@ import { type ChangeEvent, type ReactNode, useState } from "react";
 import { describedBy, helpId } from "@/components/field";
 import { Icon } from "@/components/icon";
 import type { DraftInterval } from "@/presentation/object-form";
+import { photoProblemText } from "@/presentation/photos";
 import styles from "./object-form.module.css";
 import { prepareImage } from "./prepare-image";
 
@@ -41,26 +42,35 @@ export function ImagesField({
     const input = event.currentTarget;
     const files = Array.from(input.files ?? []);
     input.value = "";
-    const prepared = await Promise.all(files.slice(0, room).map(prepareImage));
-    const added = prepared.flatMap((blob): FormImage[] =>
-      blob
+    const chosen = files.slice(0, room);
+    // One at a time: a phone has room to decode one large photo, not five.
+    const prepared = [];
+    for (const file of chosen) prepared.push(await prepareImage(file));
+    const added = prepared.flatMap((result): FormImage[] =>
+      result.ok
         ? [
             {
               kind: "new",
               id: crypto.randomUUID(),
-              blob,
-              src: URL.createObjectURL(blob),
+              blob: result.blob,
+              src: URL.createObjectURL(result.blob),
             },
           ]
         : [],
     );
+    const problems = prepared.flatMap((result) =>
+      result.ok ? [] : [result.problem],
+    );
 
     setProblem(
-      files.length > room
-        ? `Bare ${objectImageMaxCount} bilder er med.`
-        : added.length < files.length
-          ? "Noen av filene kunne ikke brukes. Velg bilder i JPEG, PNG eller WebP."
+      [
+        files.length > room
+          ? `Bare ${objectImageMaxCount} bilder er med.`
           : null,
+        photoProblemText(problems, chosen.length),
+      ]
+        .filter(Boolean)
+        .join(" ") || null,
     );
     onAdd(added);
   }
