@@ -54,6 +54,22 @@
   background: var(--color-accent-soft);
 }
 
+/* The card clips what lies outside the rows, so a row's focus ring lies
+   inside it, rounded with the card at the first and last row. */
+.row:focus-visible {
+  outline-offset: -3px;
+}
+
+.list > :first-child > .row {
+  border-start-start-radius: var(--radius-l);
+  border-start-end-radius: var(--radius-l);
+}
+
+.list > :last-child > .row {
+  border-end-start-radius: var(--radius-l);
+  border-end-end-radius: var(--radius-l);
+}
+
 .rowText {
   display: grid;
   gap: var(--gap-lines);
