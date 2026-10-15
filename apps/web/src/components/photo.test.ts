@@ -80,6 +80,30 @@ describe("readPhoto", () => {
     expect(reads()).toBe(3);
   });
 
+  it("asks the server again when a HEIC photo's conversion fails", async () => {
+    const heic = ftyp("heic", "mif1", "heic");
+    let conversions = 0;
+    vi.stubGlobal("fetch", async () => {
+      conversions += 1;
+      return conversions < 2
+        ? new Response(null, { status: 503 })
+        : new Response(new Uint8Array([0xff, 0xd8, 0xff]));
+    });
+    let decodes = 0;
+    vi.useFakeTimers();
+    vi.stubGlobal("createImageBitmap", async () => {
+      decodes += 1;
+      // The browser cannot decode HEIC; it can decode the server's JPEG.
+      if (decodes !== 3) throw new DOMException("", "InvalidStateError");
+      return { width: 40, height: 30, close() {} } as ImageBitmap;
+    });
+    const result = readPhoto(new Blob([heic]), 2048);
+    await vi.runAllTimersAsync();
+
+    expect(await result).toMatchObject({ ok: true });
+    expect(conversions).toBe(2);
+  });
+
   it("says the photo could not be fetched when it never arrives", async () => {
     const { file, reads } = arrivingFile(Infinity);
 

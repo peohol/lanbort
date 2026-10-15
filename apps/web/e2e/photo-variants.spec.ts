@@ -80,8 +80,11 @@ test("photos whose name and type mislead are redrawn upright, or refused with a 
       asPhone(brokenHeic()),
       asPhone(Buffer.from("not a photo")),
     ]);
+  // Each is read three times before it is given up.
+  await expect(page.getByText("Henter bildene …")).toBeVisible();
   await expect(problem).toHaveText(
     "Ett bilde er i HEIC-format, som denne nettleseren ikke kan åpne. Lagre det som JPEG og velg det på nytt. Ett bilde kunne ikke åpnes. Velg det på nytt, eller velg et bilde i JPEG, PNG eller WebP.",
+    { timeout: 15_000 },
   );
   await expect(page.getByRole("img", { name: "Bilde 1" })).toHaveCount(0);
 
@@ -142,7 +145,9 @@ test("a profile picture is read the same way", async ({ page }) => {
   const choose = page.getByLabel("Legg til profilbilde");
 
   await choose.setInputFiles(asPhone(brokenHeic()));
-  await expect(page.getByText("Bildet er i HEIC-format")).toBeVisible();
+  await expect(page.getByText("Bildet er i HEIC-format")).toBeVisible({
+    timeout: 10_000,
+  });
 
   await choose.setInputFiles(asPhone(await heicPhoto()));
   await expect(

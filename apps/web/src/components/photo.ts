@@ -127,8 +127,9 @@ export async function readPhoto(
 ): Promise<PhotoRead> {
   let read = await readOnce(file, maxSide);
   for (const delay of retryDelaysMs) {
-    // The server has said what it could about a HEIC photo.
-    if (read.ok || read.problem === "heif") break;
+    // HEIC too: its conversion may have failed for the same reason, or on
+    // the way to the server and back.
+    if (read.ok) break;
     await new Promise((resolve) => setTimeout(resolve, delay));
     read = await readOnce(file, maxSide);
   }
