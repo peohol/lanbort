@@ -5,6 +5,7 @@ import {
   arriveInLayer,
   areaStack,
   backOf,
+  fromLayer,
   isStackOf,
   layerBackOf,
   type Place,
@@ -165,7 +166,7 @@ describe("the navigation stack (UX-IA-009–011)", () => {
 describe("a layer's own stack (UX-IA-020)", () => {
   const account = { href: "/konto", label: "Konto" };
   const friends = { href: "/konto/venner", label: "Venner" };
-  const ola = { href: "/konto/personer/2", label: "Ola" };
+  const blocked = { href: "/konto/blokkerte", label: "Blokkerte" };
   const under = { href: "/lan?rolle=laaner", index: 3 };
 
   it("keeps the screen it was opened over, and goes back within itself", () => {
@@ -173,7 +174,7 @@ describe("a layer's own stack (UX-IA-020)", () => {
     const stack = arriveInLayer(
       arriveInLayer(opened, "account", friends, "push", null),
       "account",
-      ola,
+      blocked,
       "push",
       null,
     );
@@ -182,9 +183,9 @@ describe("a layer's own stack (UX-IA-020)", () => {
     expect(stack.entries.map(({ label }) => label)).toEqual([
       "Konto",
       "Venner",
-      "Ola",
+      "Blokkerte",
     ]);
-    expect(layerBackOf(stack, ola.href)).toEqual(friends);
+    expect(layerBackOf(stack, blocked.href)).toEqual(friends);
     expect(layerBackOf(opened, account.href)).toBeNull();
 
     // Back to Venner, by the browser or the way back.
@@ -193,7 +194,9 @@ describe("a layer's own stack (UX-IA-020)", () => {
     expect(back.under).toEqual(under);
 
     // And forward again with the browser.
-    expect(arriveInLayer(back, "account", ola, "history", null)).toEqual(stack);
+    expect(arriveInLayer(back, "account", blocked, "history", null)).toEqual(
+      stack,
+    );
   });
 
   it("has nothing under it when reached from outside, and lies under its first page", () => {
@@ -207,10 +210,24 @@ describe("a layer's own stack (UX-IA-020)", () => {
     ).toEqual(under);
   });
 
-  it("opens people and own cases inside the account", () => {
-    expect(accountLayerHref("/personer/2?rolle=laantaker")).toBe(
-      "/konto/personer/2?rolle=laantaker",
-    );
+  it("leads a page followed from the layer back to where it was opened", () => {
+    const opened = fromLayer(person, friends);
+    expect(opened.entries).toEqual([{ href: person.href, label: "Kari" }]);
+    expect(trail(opened).map(({ label }) => label)).toEqual(["Hjem", "Kari"]);
+    expect(backOf(opened)).toEqual(friends);
+
+    // Further on, the way back is the stack's; back again, it is the layer's.
+    const further = arrive(opened, loan, "push");
+    expect(backOf(further)).toEqual({ href: person.href, label: "Kari" });
+    expect(backOf(arrive(further, person, "history"))).toEqual(friends);
+    expect(backOf(fromLayer(person, null))).toEqual({
+      href: "/",
+      label: "Hjem",
+    });
+  });
+
+  it("opens own cases inside the account, and people on their own page", () => {
+    expect(accountLayerHref("/personer/2?rolle=laantaker")).toBeNull();
     expect(accountLayerHref("/saker")).toBe("/konto/saker");
     expect(accountLayerHref("/saker/5")).toBe("/konto/saker/5");
     expect(accountLayerHref("/saker/ny")).toBeNull();

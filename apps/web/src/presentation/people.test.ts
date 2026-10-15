@@ -6,7 +6,6 @@ import {
   dimensionLabel,
   personName,
   rolesInOrder,
-  whyVisible,
 } from "./people";
 
 const person = (relation: Person["relation"]): Person => ({
@@ -44,12 +43,6 @@ describe("people", () => {
       detail: "Dere kan låne direkte av hverandre.",
     });
     expect(
-      describeRelation({
-        ...person(relation("friends")),
-        relationSince: "2026-03-14T10:00:00Z",
-      }).detail,
-    ).toBe("Siden 14. mars 2026. Dere kan låne direkte av hverandre.");
-    expect(
       describeRelation(person(relation("incoming_pending"))),
     ).toMatchObject({ tone: "attention", status: "Kari vil bli venn med deg" });
     expect(
@@ -72,35 +65,6 @@ describe("people", () => {
       tag: { text: "Blokkert", tone: "danger" },
       status: "Du har blokkert Kari",
     });
-  });
-
-  it("says why the reader sees the person, never for a block", () => {
-    const shared = (names: string[]) =>
-      names.map((name, index) => ({
-        id: `00000000-0000-4000-8000-00000000000${index}`,
-        name,
-      }));
-
-    expect(
-      whyVisible({
-        ...person(relation("friends")),
-        sharedEnvironments: shared(["Lia", "Tåsen"]),
-      }),
-    ).toBe("Du ser Kari fordi dere er venner og begge er med i Lia og Tåsen.");
-    expect(
-      whyVisible({
-        ...person(relation("none")),
-        sharedEnvironments: shared(["Lia"]),
-      }),
-    ).toBe("Du ser Kari fordi dere begge er med i Lia.");
-    expect(whyVisible(person(relation("friends")))).toBe(
-      "Du ser Kari fordi dere er venner.",
-    );
-    expect(whyVisible(person(relation("incoming_pending")))).toBe(
-      "Du ser Kari fordi Kari vil bli venn med deg.",
-    );
-    expect(whyVisible(person(relation("none", true)))).toBeNull();
-    expect(whyVisible(person(null))).toBeNull();
   });
 
   it("puts the role the page is opened in first, and keeps both (UX-PRIV-012)", () => {

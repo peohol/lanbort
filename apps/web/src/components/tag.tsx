@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { Icon, type IconName } from "./icon";
 
@@ -45,23 +46,33 @@ export function Tag({
 /**
  * Where something is seen or comes from (UX-PRIV-003, UX-IA-015), such as
  * an environment or «Direkte mellom venner». `label` says what kind of
- * context it is to assistive technology.
+ * context it is to assistive technology. With `href`, it leads there.
  */
 export function ContextTag({
   label,
   icon,
+  href,
   children,
 }: {
   label: string;
   /** Usually `environment` for an environment and `people` for friends. */
   icon?: IconName;
+  href?: string;
   children: ReactNode;
 }) {
-  return (
-    <span className="tag-context">
+  const content = (
+    <>
       {icon && <Icon name={icon} />}
       <span className="visually-hidden">{label}: </span>
       {children}
-    </span>
+    </>
+  );
+
+  return href ? (
+    <Link className="tag-context" href={href}>
+      {content}
+    </Link>
+  ) : (
+    <span className="tag-context">{content}</span>
   );
 }

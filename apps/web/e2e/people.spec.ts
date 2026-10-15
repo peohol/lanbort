@@ -46,10 +46,10 @@ test("members befriend each other on their pages, and a block hides the blocker"
     "Anna Berg",
   );
   await expect(status(bo.page)).toContainText("Dere er ikke venner");
-  // Why Bo sees Anna, and where (UX-PRIV-003).
+  // Where Bo knows Anna from, leading there (UX-PRIV-003).
   await expect(
-    bo.page.getByText("Du ser Anna Berg fordi dere begge er med i Gården"),
-  ).toBeVisible();
+    bo.page.getByRole("link", { name: /^Miljø: Gården / }),
+  ).toHaveAttribute("href", `/miljoer/${environmentId}`);
   await expect(
     bo.page.getByRole("heading", { name: "Erfaringer fra lån" }),
   ).toBeVisible();
@@ -62,13 +62,14 @@ test("members befriend each other on their pages, and a block hides the blocker"
   await anna.page
     .getByRole("button", { name: "Godta venneforespørselen" })
     .click();
-  await expect(status(anna.page)).toContainText("Dere er venner");
-  await expect(status(anna.page)).toContainText("Siden ");
+  // Friends need no card to say so: the tag beside the name does.
+  await expect(anna.page.locator(".page-header .tag")).toHaveText("Venn");
+  await expect(status(anna.page)).toHaveCount(0);
 
-  // The account lists the friend, linked to their page.
+  // The account lists the friend, linked to the same page of their own.
   await bo.page.goto("/konto/venner");
   await bo.page.getByRole("link", { name: "Anna Berg" }).click();
-  await expect(bo.page).toHaveURL(`/konto/personer/${anna.id}`);
+  await expect(bo.page).toHaveURL(`/personer/${anna.id}`);
 
   // Blocking says what it ends and what stays before it happens.
   await anna.page.getByText("Flere valg").click();

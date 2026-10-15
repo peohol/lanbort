@@ -57,9 +57,10 @@ export function Between({ loans }: { loans: LoanList }) {
 }
 
 /**
- * The things a friend has made visible to friends (PS-OBJ-020), each leading
- * to the thing as seen directly between friends, grouped by category and
- * filtered like every list of things (UX-IA-021).
+ * The things a friend has made visible to friends (PS-OBJ-020): what the
+ * reader may borrow directly from them, each leading to the thing as seen
+ * directly between friends, grouped by category and filtered like every
+ * list of things (UX-IA-021). Nothing when there are none.
  */
 export function FriendThings({
   name,
@@ -77,33 +78,31 @@ export function FriendThings({
   filter: ThingListFilter;
   today: string;
 }) {
+  if (things.length === 0) return null;
+
   return (
     <section aria-labelledby="venners-ting" className={styles.section}>
       <h2 id="venners-ting" className={styles.iconHeading}>
         <Icon name="things" />
         {`Ting du kan låne direkte fra ${name}`}
       </h2>
-      {things.length === 0 ? (
-        <p className="quiet">{name} har ingen ting synlige for venner nå.</p>
-      ) : (
-        <ThingList
-          things={things}
-          categories={categories}
-          today={today}
-          filter={filter}
-          card={(thing) => (
-            <FoundThingCard
-              key={thing.objectId}
-              thing={thing}
-              href={objectHref(thing.objectId, { kind: "direct" })}
-              image={firstImageHref(thing.images, (imageId) =>
-                friendImageHref(thing.objectId, imageId),
-              )}
-              today={today}
-            />
-          )}
-        />
-      )}
+      <ThingList
+        things={things}
+        categories={categories}
+        today={today}
+        filter={filter}
+        card={(thing) => (
+          <FoundThingCard
+            key={thing.objectId}
+            thing={thing}
+            href={objectHref(thing.objectId, { kind: "direct" })}
+            image={firstImageHref(thing.images, (imageId) =>
+              friendImageHref(thing.objectId, imageId),
+            )}
+            today={today}
+          />
+        )}
+      />
       {more && (
         <p className="quiet">Viser de {thingListLimit} nyeste tingene.</p>
       )}

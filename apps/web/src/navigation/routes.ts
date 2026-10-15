@@ -152,14 +152,11 @@ export const appearanceHref = `${accountHref}/utseende`;
 
 /**
  * Pages that open inside the account when they are reached from it, so
- * they join its stack (UX-IA-020): people, and the user's own cases with
- * a case from them. Each has a page of the same name under the account.
+ * they join its stack (UX-IA-020): the user's own cases with a case from
+ * them. Each has a page of the same name under the account. A person's
+ * page stands on its own, whichever way it was reached.
  */
-const withinAccount = [
-  /^\/personer\/[^/?#]+$/,
-  /^\/saker$/,
-  /^\/saker\/(?!ny$)[^/?#]+$/,
-];
+const withinAccount = [/^\/saker$/, /^\/saker\/(?!ny$)[^/?#]+$/];
 
 /** Where `href` leads when it is followed from inside the account. */
 export function accountLayerHref(href: string): string | null {

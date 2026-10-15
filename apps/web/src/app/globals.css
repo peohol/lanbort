@@ -1333,6 +1333,11 @@ button:disabled,
   .breadcrumbs {
     display: block;
   }
+
+  /* A page that stands on its own keeps its one step back. */
+  .place-bar .back-link.one-step {
+    display: inline-flex;
+  }
 }
 
 .direct-entry {
@@ -1829,6 +1834,13 @@ body:has(> .layer) .app-shell .layer {
 .tag-context .icon {
   width: 1.0625rem;
   height: 1.0625rem;
+}
+
+/* A context that leads somewhere, with room for a finger (UX-A11Y-006). */
+a.tag-context {
+  min-width: var(--target);
+  min-height: var(--target);
+  color: var(--color-link);
 }
 
 /* A card: the surface that holds one thing (Tomat). */

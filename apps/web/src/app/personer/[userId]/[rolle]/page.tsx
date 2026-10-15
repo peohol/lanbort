@@ -32,7 +32,8 @@ export const metadata: Metadata = { title: "Erfaringer fra lån – Lånbort" };
 /**
  * What others said about a person in one role (PS-TRUST-006–007): per
  * dimension the mean, what it rests on and how the scores spread, and the
- * reviews about them in that role, newest first. Only for those who may
+ * reviews about them in that role, newest first. Like the person's page,
+ * it has only the way back. Only for those who may
  * read the person's trust profile; anyone else finds nothing here.
  */
 export default async function PersonRolePage({
@@ -76,9 +77,9 @@ export default async function PersonRolePage({
   return (
     <main>
       <PageHeader
-        kind={heading}
         title={`${name} ${heading.toLowerCase()}`}
         back={{ href: personHref(userId, role), label: name }}
+        standalone
       >
         {trust.reviews > 0
           ? `${reviewCount(trust.reviews)} fra ${roleParts[role].fromWhom(name)}. Hver vurdering er fra 1 til 5.`
