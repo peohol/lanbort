@@ -16,7 +16,7 @@ describe("photoProblemText", () => {
     expect(
       photoProblemText(["undecodable", "unreadable", "unreadable"], 4),
     ).toBe(
-      "2 bilder kunne ikke hentes fra enheten. Ligger de bare i en skytjeneste, må de lastes ned til enheten først. Ett bilde kunne ikke åpnes. Velg et bilde i JPEG, PNG eller WebP.",
+      "2 bilder kunne ikke hentes fra enheten, kanskje fordi de fortsatt lastes ned fra en skytjeneste. Vent litt og velg dem på nytt. Ett bilde kunne ikke åpnes. Velg det på nytt, eller velg et bilde i JPEG, PNG eller WebP.",
     );
     expect(photoProblemText(["heif", "heif"], 2)).toContain(
       "Lagre dem som JPEG og velg dem på nytt.",

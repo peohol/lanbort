@@ -81,7 +81,7 @@ test("photos whose name and type mislead are redrawn upright, or refused with a 
       asPhone(Buffer.from("not a photo")),
     ]);
   await expect(problem).toHaveText(
-    "Ett bilde er i HEIC-format, som denne nettleseren ikke kan åpne. Lagre det som JPEG og velg det på nytt. Ett bilde kunne ikke åpnes. Velg et bilde i JPEG, PNG eller WebP.",
+    "Ett bilde er i HEIC-format, som denne nettleseren ikke kan åpne. Lagre det som JPEG og velg det på nytt. Ett bilde kunne ikke åpnes. Velg det på nytt, eller velg et bilde i JPEG, PNG eller WebP.",
   );
   await expect(page.getByRole("img", { name: "Bilde 1" })).toHaveCount(0);
 

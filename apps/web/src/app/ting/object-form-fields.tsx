@@ -35,6 +35,7 @@ export function ImagesField({
   onRemove: (image: FormImage) => void;
 }) {
   const [problem, setProblem] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
   const room = objectImageMaxCount - images.length;
   const help = `Valgfritt, inntil ${objectImageMaxCount} bilder. Bildene lagres uten posisjon og andre opplysninger fra kameraet.`;
 
@@ -43,9 +44,11 @@ export function ImagesField({
     const files = Array.from(input.files ?? []);
     input.value = "";
     const chosen = files.slice(0, room);
+    setReading(true);
     // One at a time: a phone has room to decode one large photo, not five.
     const prepared = [];
     for (const file of chosen) prepared.push(await prepareImage(file));
+    setReading(false);
     const added = prepared.flatMap((result): FormImage[] =>
       result.ok
         ? [
@@ -141,6 +144,11 @@ export function ImagesField({
             {help}
           </p>
         </>
+      )}
+      {reading && (
+        <p role="status" className="help">
+          Henter bildene …
+        </p>
       )}
       {problem && (
         <p role="alert" className="error">

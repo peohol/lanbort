@@ -111,6 +111,13 @@ async function decodeElement(blob: Blob, maxSide: number) {
 }
 
 /**
+ * Waits before reading again. A phone can hand over a photo before it is
+ * all there (still coming from a cloud service, say), and the same file
+ * reads fine moments later.
+ */
+const retryDelaysMs = [500, 1500];
+
+/**
  * The chosen photo, upright and with its longest side at most `maxSide`, or
  * why it cannot be used.
  */
@@ -118,6 +125,17 @@ export async function readPhoto(
   file: Blob,
   maxSide: number,
 ): Promise<PhotoRead> {
+  let read = await readOnce(file, maxSide);
+  for (const delay of retryDelaysMs) {
+    // The server has said what it could about a HEIC photo.
+    if (read.ok || read.problem === "heif") break;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    read = await readOnce(file, maxSide);
+  }
+  return read;
+}
+
+async function readOnce(file: Blob, maxSide: number): Promise<PhotoRead> {
   let bytes: Uint8Array<ArrayBuffer>;
   try {
     bytes = new Uint8Array(await file.arrayBuffer());

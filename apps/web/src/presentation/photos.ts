@@ -16,14 +16,14 @@ const sentences: Record<
 > = {
   unreadable: (subject, plural) => {
     const they = plural ? "de" : "det";
-    return `${subject} kunne ikke hentes fra enheten. Ligger ${they} bare i en skytjeneste, må ${they} lastes ned til enheten først.`;
+    return `${subject} kunne ikke hentes fra enheten, kanskje fordi ${they} fortsatt lastes ned fra en skytjeneste. Vent litt og velg ${plural ? "dem" : "det"} på nytt.`;
   },
   heif: (subject, plural) => {
     const them = plural ? "dem" : "det";
     return `${subject} er i HEIC-format, som denne nettleseren ikke kan åpne. Lagre ${them} som JPEG og velg ${them} på nytt.`;
   },
   undecodable: (subject, plural) =>
-    `${subject} kunne ikke åpnes. Velg ${plural ? "bilder" : "et bilde"} i JPEG, PNG eller WebP.`,
+    `${subject} kunne ikke åpnes. Velg ${plural ? "dem" : "det"} på nytt, eller velg ${plural ? "bilder" : "et bilde"} i JPEG, PNG eller WebP.`,
 };
 
 /**

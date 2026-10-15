@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { photoFormat } from "./photo";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { photoFormat, readPhoto } from "./photo";
 
 /** The start of an ISO-BMFF file: an `ftyp` box with these brands. */
 function ftyp(major: string, ...compatible: string[]) {
@@ -38,5 +38,52 @@ describe("photoFormat", () => {
   it("knows nothing of anything else", () => {
     expect(photoFormat(new TextEncoder().encode("not a photo"))).toBeNull();
     expect(photoFormat(new Uint8Array())).toBeNull();
+  });
+});
+
+describe("readPhoto", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  /** A chosen file that cannot be read the first `failures` times. */
+  function arrivingFile(failures: number) {
+    let reads = 0;
+    return {
+      reads: () => reads,
+      file: {
+        arrayBuffer: async () => {
+          reads += 1;
+          if (reads <= failures) throw new DOMException("", "NotReadableError");
+          return startingWith(0xff, 0xd8, 0xff).buffer;
+        },
+      } as Blob,
+    };
+  }
+
+  const read = async (file: Blob) => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "createImageBitmap",
+      async () => ({ width: 40, height: 30, close() {} }) as ImageBitmap,
+    );
+    const result = readPhoto(file, 2048);
+    await vi.runAllTimersAsync();
+    return result;
+  };
+
+  it("reads a photo again when it was not all there at first", async () => {
+    const { file, reads } = arrivingFile(2);
+
+    expect(await read(file)).toMatchObject({ ok: true, photo: { width: 40 } });
+    expect(reads()).toBe(3);
+  });
+
+  it("says the photo could not be fetched when it never arrives", async () => {
+    const { file, reads } = arrivingFile(Infinity);
+
+    expect(await read(file)).toEqual({ ok: false, problem: "unreadable" });
+    expect(reads()).toBe(3);
   });
 });
