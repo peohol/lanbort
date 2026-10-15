@@ -136,7 +136,7 @@ export function ImagesField({
         <p className={styles.imagesLabel}>Velg utsnitt av hovedbildet</p>
         <p className="help">
           Utsnittet vises der bildet vises som et kvadrat, som på kortet for
-          tingen. Hele bildet vises på tingens side.
+          tingen. De som kan låne den, ser også hele bildet.
         </p>
         <PictureCropper
           photo={photo}
