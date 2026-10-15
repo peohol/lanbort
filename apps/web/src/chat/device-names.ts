@@ -90,8 +90,22 @@ export const claimed = (request: ChatLinkRequest): Named => ({
   label: { name: null, ...request.description },
 });
 
-/** The start of a device's id, which tells it apart from any other. */
-const shortId = (deviceId: string) => deviceId.slice(0, 4).toUpperCase();
+/** The start of a device's id, which tells it apart from others. */
+const shortId = (deviceId: string, length = 4) =>
+  deviceId.slice(0, length).toUpperCase();
+
+/** As much of the start of these ids as tells each apart, at least four. */
+function distinguishingLength(ids: readonly string[]) {
+  let length = 4;
+  const longest = Math.max(...ids.map((id) => id.length));
+  while (
+    length < longest &&
+    new Set(ids.map((id) => shortId(id, length))).size < ids.length
+  ) {
+    length += 1;
+  }
+  return length;
+}
 
 /**
  * What a device is called: the name its owner gave it, the one suggested
@@ -104,8 +118,8 @@ export const deviceName = ({ deviceId, label }: Named) =>
 
 /**
  * The names of the devices in one list, by id, told apart: two that would
- * be called the same, such as two windows of one browser, also show the
- * start of their ids.
+ * be called the same, such as two windows of one browser, also show as
+ * much of the start of their ids as tells them apart.
  */
 export function distinctNames(devices: readonly Named[]) {
   const named = devices.map((device) => ({
@@ -114,13 +128,18 @@ export function distinctNames(devices: readonly Named[]) {
   }));
   // Names told apart as a reader would: «Mobil» and «mobil» are the same.
   const seen = (name: string) => name.normalize("NFKC").toLocaleLowerCase();
-  const shared = (name: string) =>
-    named.filter((other) => seen(other.name) === seen(name)).length > 1;
+  const alike = (name: string) =>
+    named.filter((other) => seen(other.name) === seen(name));
   return new Map(
-    named.map(({ id, name }) => [
-      id,
-      shared(name) ? `${name} (${shortId(id)})` : name,
-    ]),
+    named.map(({ id, name }) => {
+      const ids = alike(name).map((other) => other.id);
+      return [
+        id,
+        ids.length > 1
+          ? `${name} (${shortId(id, distinguishingLength(ids))})`
+          : name,
+      ];
+    }),
   );
 }
 

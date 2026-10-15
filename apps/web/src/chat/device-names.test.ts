@@ -40,4 +40,17 @@ describe("distinctNames", () => {
       "Jobb-PC",
     ]);
   });
+
+  it("shows as much of the ids as tells them apart, when they start alike", () => {
+    const names = distinctNames([
+      { deviceId: "abcd1111", label: null },
+      { deviceId: "abcd1222", label: null },
+      { deviceId: "abcd2333", label: null },
+    ]);
+    expect([...names.values()]).toEqual([
+      "Enhet ABCD (ABCD11)",
+      "Enhet ABCD (ABCD12)",
+      "Enhet ABCD (ABCD23)",
+    ]);
+  });
 });
