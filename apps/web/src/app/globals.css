@@ -1237,6 +1237,52 @@ button:disabled,
   }
 }
 
+/* A page held in the part of the screen that shows (`useScreenFrame`), as
+   a conversation: the bar stays at the top, the navigation at the bottom,
+   and only the page's `.frame-scroll` scrolls, between what the page keeps
+   in place. The frame follows the visual viewport, so an on-screen keyboard
+   makes it shorter instead of scrolling the bar out of sight. Moved rather
+   than placed, it is what the first row's `position: fixed` keeps to. */
+:root[data-frame] {
+  overflow: hidden;
+}
+
+:root[data-frame] .app-shell {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  height: var(--frame-height, 100dvh);
+  min-height: 0;
+  transform: translateY(var(--frame-top, 0px));
+}
+
+:root[data-frame] .app-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: var(--space-2);
+}
+
+:root[data-frame] .app-content > main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  gap: 0;
+}
+
+/* The part that scrolls reaches the screen's edges, so a finger scrolls it
+   there too, and shows where what scrolls goes under. */
+:root[data-frame] .frame-scroll {
+  flex: 1;
+  min-height: 0;
+  margin-inline: calc(-1 * var(--gutter));
+  padding: var(--space-3) var(--gutter);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-block: 1px solid var(--color-border);
+}
+
 /* Page header (PageHeader): the way back, what kind of page it is, the
    title, the context it belongs to (UX-PRIV-003, UX-IA-015) and a lead. */
 .page-header h1 {

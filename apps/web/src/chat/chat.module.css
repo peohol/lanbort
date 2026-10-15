@@ -176,7 +176,12 @@
   padding: var(--pad-row);
 }
 
-/* The conversation (02). */
+/* The conversation (02): its top and the field to write in stay where
+   they are while the messages between them scroll (`useScreenFrame`). */
+.top {
+  flex: none;
+}
+
 .head {
   display: flex;
   align-items: center;
@@ -208,6 +213,38 @@
   color: var(--color-text);
   background: var(--color-surface);
   box-shadow: var(--shadow-low);
+}
+
+/* What scrolls: the loans, the notices and the messages, stacked as a
+   section's blocks are. */
+.scroller {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: var(--gap-block);
+}
+
+:global(:root[data-frame]) .top {
+  margin-bottom: 0;
+  padding-bottom: var(--space-3);
+}
+
+:global(:root[data-frame]) .composer {
+  position: static;
+  flex: none;
+}
+
+:global(:root[data-frame]) .jump {
+  bottom: var(--space-2);
+}
+
+/* While writing on a touch screen the keyboard takes the bottom, so the
+   field lies on it rather than above the areas. */
+@media (pointer: coarse) and (max-width: 47.99rem) {
+  :global(:root[data-frame]):has(.composer:focus-within)
+    :global(.main-navigation) {
+    display: none;
+  }
 }
 
 /* «Lån mellom dere»: the loans, each a link, never an action here. */
@@ -741,6 +778,23 @@
     grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
     align-items: start;
     gap: var(--gap-page);
+  }
+
+  :global(:root[data-frame]) .split {
+    flex: 1;
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+    min-height: 0;
+  }
+
+  :global(:root[data-frame]) .splitList {
+    max-height: none;
+  }
+
+  :global(:root[data-frame]) .splitMain {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
   /* The other conversations, beside the open one. */
