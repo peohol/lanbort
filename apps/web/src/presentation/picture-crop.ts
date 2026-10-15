@@ -37,6 +37,9 @@ export interface Crop {
 
 export const initialCrop: Crop = { zoom: 1, rotation: 0, x: 0, y: 0 };
 
+/** The longest side a photo is read at to frame it; more is never needed. */
+export const cropReadMaxSide = 2048;
+
 /** How far one can zoom in from just covering the frame. */
 export const maxZoom = 5;
 

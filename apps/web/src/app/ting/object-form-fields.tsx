@@ -5,15 +5,17 @@ import { type ChangeEvent, type ReactNode, useEffect, useState } from "react";
 import { describedBy, helpId } from "@/components/field";
 import { Icon } from "@/components/icon";
 import { PictureCropper } from "@/components/picture-cropper";
-import { readPhoto } from "@/components/read-photo";
+import { readPhoto } from "@/components/photo";
 import { ThingThumbnail } from "@/components/thing-thumbnail";
 import type { DraftInterval } from "@/presentation/object-form";
 import { thingPictureShape } from "@/presentation/object-images";
 import {
   cropFromSquare,
+  cropReadMaxSide,
   cropToSquare,
   initialCrop,
 } from "@/presentation/picture-crop";
+import { photoProblemText } from "@/presentation/photos";
 import styles from "./object-form.module.css";
 import { prepareImage } from "./prepare-image";
 
@@ -64,6 +66,7 @@ export function ImagesField({
   onCrop: (image: FormImage, crop: ObjectImageCrop) => void;
 }) {
   const [problem, setProblem] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
   const [framing, setFraming] = useState<Framing | null>(null);
 
   useEffect(() => () => framing?.photo.close(), [framing]);
@@ -76,8 +79,8 @@ export function ImagesField({
         : await fetch(image.src)
             .then((response) => (response.ok ? response.blob() : null))
             .catch(() => null);
-    const photo = file && (await readPhoto(file));
-    if (photo) setFraming({ image, photo });
+    const read = file && (await readPhoto(file, cropReadMaxSide));
+    if (read?.ok) setFraming({ image, photo: read.photo });
     else setProblem("Bildet kunne ikke åpnes. Prøv igjen.");
   }
 
@@ -88,27 +91,38 @@ export function ImagesField({
     const input = event.currentTarget;
     const files = Array.from(input.files ?? []);
     input.value = "";
-    const prepared = await Promise.all(files.slice(0, room).map(prepareImage));
-    const added = prepared.flatMap((blob): FormImage[] =>
-      blob
+    const chosen = files.slice(0, room);
+    setReading(true);
+    // One at a time: a phone has room to decode one large photo, not five.
+    const prepared = [];
+    for (const file of chosen) prepared.push(await prepareImage(file));
+    setReading(false);
+    const added = prepared.flatMap((result): FormImage[] =>
+      result.ok
         ? [
             {
               kind: "new",
               id: crypto.randomUUID(),
-              blob,
-              src: URL.createObjectURL(blob),
+              blob: result.blob,
+              src: URL.createObjectURL(result.blob),
               crop: null,
             },
           ]
         : [],
     );
+    const problems = prepared.flatMap((result) =>
+      result.ok ? [] : [result.problem],
+    );
 
     setProblem(
-      files.length > room
-        ? `Bare ${objectImageMaxCount} bilder er med.`
-        : added.length < files.length
-          ? "Noen av filene kunne ikke brukes. Velg bilder i JPEG, PNG eller WebP."
+      [
+        files.length > room
+          ? `Bare ${objectImageMaxCount} bilder er med.`
           : null,
+        photoProblemText(problems, chosen.length),
+      ]
+        .filter(Boolean)
+        .join(" ") || null,
     );
     onAdd(added);
   }
@@ -218,6 +232,11 @@ export function ImagesField({
             {help}
           </p>
         </>
+      )}
+      {reading && (
+        <p role="status" className="help">
+          Henter bildene …
+        </p>
       )}
       {problem && (
         <p role="alert" className="error">

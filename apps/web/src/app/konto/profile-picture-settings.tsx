@@ -16,8 +16,13 @@ import { ErrorText } from "@/components/error-text";
 import { helpId } from "@/components/field";
 import { PictureCropper } from "@/components/picture-cropper";
 import { ProfilePicture } from "@/components/profile-picture";
-import { readPhoto } from "@/components/read-photo";
-import { type Crop, drawCrop } from "@/presentation/picture-crop";
+import { encodePhoto, readPhoto } from "@/components/photo";
+import { photoProblemText } from "@/presentation/photos";
+import {
+  type Crop,
+  cropReadMaxSide,
+  drawCrop,
+} from "@/presentation/picture-crop";
 import {
   pictureOutputSize,
   pictureShape,
@@ -53,15 +58,7 @@ async function croppedFile(
     pictureShape,
   );
 
-  const encode = (type: string, quality: number) =>
-    new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, type, quality),
-    );
-  const webp = await encode("image/webp", 0.85);
-  const blob =
-    webp?.type === "image/webp" ? webp : await encode("image/jpeg", 0.88);
-
-  return blob && blob.size <= profilePictureMaxUploadBytes ? blob : null;
+  return encodePhoto(canvas, profilePictureMaxUploadBytes);
 }
 
 /**
@@ -96,14 +93,14 @@ export function ProfilePictureSettings({
     event.target.value = "";
     if (!file) return;
     setError(null);
-    const read = await readPhoto(file);
-    if (!read) {
-      setError("Bildet kunne ikke leses. Prøv et annet bilde.");
+    const read = await readPhoto(file, cropReadMaxSide);
+    if (!read.ok) {
+      setError(photoProblemText([read.problem], 1));
       return;
     }
     // A new photo is a new upload; a retry of the same one keeps its key.
     setUploadKey(crypto.randomUUID());
-    setPhoto(read);
+    setPhoto(read.photo);
   }
 
   async function save(file: Blob | null) {
