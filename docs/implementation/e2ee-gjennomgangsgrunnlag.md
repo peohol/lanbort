@@ -58,7 +58,7 @@ Alle kjøres i CI på hver endring. Lokalt: se [lokal utvikling](local-developme
 | Klientmotoren | `apps/web/src/chat/*.test.ts` | Historikkoverføring, og at en avsender ikke kan erstatte en melding som allerede står i historikken |
 | Serveren | `packages/domain/src/chat/chat.integration.test.ts` (`pnpm test:integration`) | Hvem som når hvilke enheter, samtaler og arkiver; commit-rekkefølge; tilbakekalling og tilbakestilling; gjenoppretting; at en commit bare tar ut enheter serveren allerede har stengt ute; at utlogging stenger ute sesjonens enhet; grensen på 100 enheter |
 | Tilgang | `packages/domain/src/security/pilot-access.integration.test.ts`, `apps/web/e2e/authorization.spec.ts` | At fremmede får samme svar som for ID-er som ikke finnes, også for chatrutene |
-| Databasen | `supabase/tests/0033`, `0035`, `0043`, `0046`, `0047`, `0052` (`pnpm db:test`) | Grenser og regler i tabellene, også at en enhet bare kan flyttes til ny sesjon og ellers bare tilbakekalles én gang |
+| Databasen | `supabase/tests/0033`, `0035`, `0043`, `0046`, `0047`, `0052`, `0059` (`pnpm db:test`) | Grenser og regler i tabellene, også at en enhet bare kan flyttes til ny sesjon og ellers bare tilbakekalles én gang, og at navn og type ligger utenfor enhetsraden |
 | Nettleser | `apps/web/e2e/chat.spec.ts`, `smoke.spec.ts` | To venner chatter, kobling med kode, gjenoppretting med nøkkel, lånelogistikk ved blokkering; streng CSP med nonce på alle sider og kamera bare på godkjenningssiden |
 
 ## Funn i den interne gjennomgangen

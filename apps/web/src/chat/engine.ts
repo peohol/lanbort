@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+  ChatDeviceLabel,
   ChatDirectory,
   ChatInboxItem,
   ChatLinkRequest,
@@ -61,6 +62,7 @@ import {
   wipe,
 } from "@lanbort/e2ee";
 import { ChatApiError, chatApi } from "./api";
+import { describeThisDevice } from "./device-detection";
 import { fromBase64, fromUtf8, toBase64, utf8 } from "./bytes";
 import {
   type ConversationHistory,
@@ -384,6 +386,10 @@ export async function loadChat(userId: string): Promise<
       );
       // History a reload or a lost connection interrupted.
       void engine.resumeHistory();
+      describeIfUnknown(
+        devices.devices.find((d) => d.deviceId === devices.currentDeviceId)
+          ?.label,
+      );
       return { setup: "ready", engine };
     }
   }
@@ -396,6 +402,19 @@ export async function loadChat(userId: string): Promise<
       ? "link"
       : "new";
   return { setup, recovery: devices.recovery !== null };
+}
+
+/**
+ * A device that says nothing yet about what it is, registered before
+ * devices did, fills in what its label lacks. Display only: a failure
+ * changes nothing, and it tries again next time.
+ */
+function describeIfUnknown(label: ChatDeviceLabel | null | undefined) {
+  const description = describeThisDevice();
+  const unknown = (["kind", "system", "browser"] as const).some(
+    (key) => description[key] !== null && !label?.[key],
+  );
+  if (unknown) void chatApi.describeDevice(description).catch(() => {});
 }
 
 /**
@@ -412,6 +431,7 @@ export async function createChat(
     {
       accountKey: toBase64(account.publicKey),
       certificate: certificateWire(device.certificate),
+      description: describeThisDevice(),
     },
     reset,
   );
@@ -430,6 +450,7 @@ export async function requestDeviceLink(): Promise<{
     deviceKey: toBase64(link.keys.deviceKey),
     linkKey: toBase64(link.keys.linkKey),
     commitment: toBase64(link.keys.commitment),
+    description: describeThisDevice(),
   });
   return { link, status };
 }
@@ -498,6 +519,7 @@ export async function restoreChat(
   await chatApi.restore({
     certificate: certificateWire(device.certificate),
     revocations: revocations.map(revocationWire),
+    description: describeThisDevice(),
   });
   await deleteChatStore(userId);
   const engine = await ChatEngine.begin(userId, account, device, {

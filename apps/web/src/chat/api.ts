@@ -4,6 +4,8 @@ import type {
   BackUpChatHistory,
   ChatArchive,
   ChatClaimedKeyPackages,
+  ChatDeviceDescription,
+  ChatDeviceKind,
   ChatConversation,
   ChatConversationList,
   ChatDirectory,
@@ -68,7 +70,11 @@ const archive = (id: string) => `/api/chat/archives/${id}`;
 export const chatApi = {
   devices: () => get<OwnChatDevices>("/api/chat/devices"),
   register: (
-    body: { accountKey: string; certificate: DeviceCertificateWire },
+    body: {
+      accountKey: string;
+      certificate: DeviceCertificateWire;
+      description: ChatDeviceDescription;
+    },
     reset = false,
   ) =>
     post<{ deviceId: string }>(
@@ -77,6 +83,14 @@ export const chatApi = {
     ),
   revoke: (revocation: DeviceRevocationWire) =>
     post("/api/chat/devices/revoke", { revocation }),
+  /** What the owner calls a device, and its kind: display only. */
+  labelDevice: (body: {
+    deviceId: string;
+    name: string | null;
+    kind: ChatDeviceKind | null;
+  }) => post("/api/chat/devices/label", body),
+  describeDevice: (description: ChatDeviceDescription) =>
+    post("/api/chat/devices/describe", { description }),
   publishKeyPackages: (body: { keyPackages: string[]; lastResort?: string }) =>
     post<{ available: number; lastResort: boolean }>(
       "/api/chat/key-packages",
@@ -88,6 +102,7 @@ export const chatApi = {
     deviceKey: string;
     linkKey: string;
     commitment: string;
+    description: ChatDeviceDescription;
   }) => post<ChatLinkStatus>("/api/chat/links", body),
   linkStatus: (id: string) => get<ChatLinkStatus>(`/api/chat/links/${id}`),
   finishLink: (id: string) => post(`/api/chat/links/${id}/finish`, {}),
@@ -120,6 +135,7 @@ export const chatApi = {
   restore: (body: {
     certificate: DeviceCertificateWire;
     revocations: DeviceRevocationWire[];
+    description: ChatDeviceDescription;
   }) => post<{ deviceId: string }>("/api/chat/account/restore", body),
   answerRecoveryPrompt: (prompt: "offer" | "reminder") =>
     post("/api/chat/recovery/prompt", { prompt }),

@@ -1,5 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { type Browser, expect, type Page, test } from "@playwright/test";
+import {
+  type Browser,
+  expect,
+  type Locator,
+  type Page,
+  test,
+} from "@playwright/test";
 import { readEmailCode } from "@lanbort/auth/testing";
 import sharp from "sharp";
 import {
@@ -254,6 +260,33 @@ test("two friends chat end to end, and a new device is linked with its code", as
   await expectMessage(laptop.page, "Hent den når du vil.");
   await expectMessage(anna.page, "Hent den når du vil.");
 
+  // Anna names the laptop from her phone and says it is a PC; the laptop
+  // shows the same, as the device in use there.
+  await anna.page.goto("/samtaler/enheter");
+  const laptopRow = anna.page
+    .getByRole("listitem")
+    .filter({ has: anna.page.getByRole("button", { name: "Fjern" }) });
+  await expect(
+    anna.page
+      .getByRole("listitem")
+      .filter({ hasText: "Denne enheten" })
+      .getByRole("button", { name: "Fjern" }),
+  ).toHaveCount(0);
+  await laptopRow.getByRole("button", { name: "Endre" }).click();
+  const edit = anna.page.getByRole("dialog", { name: "Endre enheten" });
+  await edit.getByLabel("Navn").fill("Jobb-PC");
+  await edit.getByLabel("PC", { exact: true }).check();
+  expect(await axeViolations(anna.page)).toEqual([]);
+  await edit.getByRole("button", { name: "Lagre" }).click();
+  await expect(laptopRow.getByText("Jobb-PC", { exact: true })).toBeVisible();
+  await laptop.page.goto("/samtaler/enheter");
+  await expect(
+    laptop.page
+      .getByRole("listitem")
+      .filter({ hasText: "Denne enheten" })
+      .getByText("Jobb-PC", { exact: true }),
+  ).toBeVisible();
+
   // Done with the laptop: closed first, so its next sync is not refused
   // while the test goes on.
   expect(unexpected(laptop.problems)).toEqual([]);
@@ -263,7 +296,7 @@ test("two friends chat end to end, and a new device is linked with its code", as
   await anna.page.goto("/samtaler/enheter");
   await anna.page.getByRole("button", { name: "Fjern", exact: true }).click();
   const sheet = anna.page.getByRole("dialog");
-  await expect(sheet.getByRole("heading")).toHaveText(/^Fjerne Enhet /);
+  await expect(sheet.getByRole("heading")).toHaveText("Fjerne Jobb-PC?");
   expect(await axeViolations(anna.page)).toEqual([]);
   await sheet.getByRole("button", { name: "Fjern enheten" }).click();
   await expect(
@@ -1092,15 +1125,27 @@ test("a device that waits to be linked can be declined, and ask again", async ({
   await turnOnChat(anna.page);
   const laptop = await device(browser);
   await signInThroughApi(laptop.context.request, anna.email);
-  // The waiting devices' names, oldest first, as the app shows them. The
-  // tablet's request is left waiting, so the newest is the last.
-  const waitingNames = async () =>
-    (
-      await (await anna.context.request.get("/api/chat/links")).json()
-    ).requests.map(
-      (r: { deviceId: string }) =>
-        `Enhet ${r.deviceId.slice(0, 4).toUpperCase()}`,
+  // The waiting devices, oldest first, as Mine enheter lists them: the
+  // name each shows, and its own buttons. The tablet's request is left
+  // waiting, so the newest is the last.
+  const waiting = async () => {
+    const { requests } = (await (
+      await anna.context.request.get("/api/chat/links")
+    ).json()) as { requests: { linkRequestId: string }[] };
+    await expect(anna.page.locator('[id^="venter-"]')).toHaveCount(
+      requests.length,
     );
+    return Promise.all(
+      requests.map(async ({ linkRequestId }) => ({
+        name: (await anna.page
+          .locator(`[id="venter-${linkRequestId}"] strong`)
+          .textContent())!,
+        actions: anna.page.locator(
+          `[aria-labelledby="venter-${linkRequestId}"]`,
+        ),
+      })),
+    );
+  };
   const newCode = async () => {
     await laptop.page.goto("/samtaler/koble");
     return (await laptop.page.locator("p.link-code").textContent())!;
@@ -1113,34 +1158,33 @@ test("a device that waits to be linked can be declined, and ask again", async ({
   await signInThroughApi(tablet.context.request, anna.email);
   await tablet.page.goto("/samtaler/koble");
   await expect(tablet.page.locator("p.link-code")).toBeVisible();
-  const [laptopName, tabletName] = await waitingNames();
   await anna.page.goto("/samtaler/enheter");
   await expect(
     anna.page.getByRole("heading", {
       name: "2 enheter vil koble til privat chat",
     }),
   ).toBeVisible();
-  await anna.page
-    .getByRole("group", { name: laptopName })
-    .getByRole("button", { name: "Avvis" })
-    .click();
+  // Two of the same browser on the same system are still told apart.
+  const [laptopRow, tabletRow] = await waiting();
+  expect(laptopRow!.name).not.toEqual(tabletRow!.name);
+  await laptopRow!.actions.getByRole("button", { name: "Avvis" }).click();
   const sheet = anna.page.getByRole("dialog", {
-    name: `Avvise ${laptopName}?`,
+    name: `Avvise ${laptopRow!.name}?`,
   });
   await expect(sheet.getByText("Ba ikke du om dette?")).toBeVisible();
   expect(await axeViolations(anna.page)).toEqual([]);
   await sheet.getByRole("button", { name: "Avvis enheten" }).click();
   await expect(
-    anna.page.getByText(`${laptopName} fikk ikke tilgang til privat chat.`),
+    anna.page.getByText(
+      `${laptopRow!.name} fikk ikke tilgang til privat chat.`,
+    ),
   ).toBeVisible();
   await expect(
     anna.page.getByRole("heading", {
       name: "En enhet vil koble til privat chat",
     }),
   ).toBeVisible();
-  await expect(
-    anna.page.getByRole("group", { name: tabletName }),
-  ).toBeVisible();
+  await expect(tabletRow!.actions).toBeVisible();
 
   // The new device is told, instead of waiting for its code to run out;
   // the other one still waits.
@@ -1159,14 +1203,14 @@ test("a device that waits to be linked can be declined, and ask again", async ({
   await anna.page.getByRole("button", { name: "Fortsett" }).click();
   await anna.page.getByRole("button", { name: "Ikke godkjenn" }).click();
   await anna.page
-    .getByRole("dialog", { name: /^Avvise Enhet \w{4}\?$/ })
+    .getByRole("dialog", { name: /^Avvise .+\?$/ })
     .getByRole("button", { name: "Avvis enheten" })
     .click();
   await expect(anna.page).toHaveURL(
     /\/samtaler\/enheter\?avvisning=declined&enhet=/,
   );
   await expect(
-    anna.page.getByText(/^Enhet \w{4} fikk ikke tilgang til privat chat\.$/),
+    anna.page.getByText("Enheten fikk ikke tilgang til privat chat."),
   ).toBeVisible();
   await expect(
     laptop.page.getByRole("heading", { name: "Koblingen ble avvist" }),
@@ -1176,15 +1220,17 @@ test("a device that waits to be linked can be declined, and ask again", async ({
   // one. A request that ran out meanwhile says so (the server's not_found).
   await laptop.page.getByRole("button", { name: "Lag ny kode" }).click();
   const last = (await laptop.page.locator("p.link-code").textContent())!;
-  const again = (await waitingNames()).at(-1);
-  const openDecline = async (name: string) => {
-    await anna.page
-      .getByRole("group", { name })
-      .getByRole("button", { name: "Avvis" })
-      .click();
-    return anna.page.getByRole("dialog", { name: `Avvise ${name}?` });
+  const openDecline = async (row: { name: string; actions: Locator }) => {
+    await row.actions.getByRole("button", { name: "Avvis" }).click();
+    return anna.page.getByRole("dialog", { name: `Avvise ${row.name}?` });
   };
   await anna.page.goto("/samtaler/enheter");
+  await expect(
+    anna.page.getByRole("heading", {
+      name: "2 enheter vil koble til privat chat",
+    }),
+  ).toBeVisible();
+  const again = (await waiting()).at(-1)!;
   const expired = "**/api/chat/links/*/decline";
   await anna.page.route(expired, (route) =>
     route.fulfill({ status: 404, json: { error: { code: "not_found" } } }),
@@ -1196,7 +1242,7 @@ test("a device that waits to be linked can be declined, and ask again", async ({
     .click();
   await expect(
     anna.page.getByText(
-      `Forespørselen fra ${again} gikk ut før den ble avvist.`,
+      `Forespørselen fra ${again.name} gikk ut før den ble avvist.`,
       {
         exact: false,
       },
@@ -1220,9 +1266,9 @@ test("a device that waits to be linked can be declined, and ask again", async ({
   await signInThroughApi(phone.context.request, anna.email);
   await phone.page.goto("/samtaler/koble");
   const phoneCode = (await phone.page.locator("p.link-code").textContent())!;
-  const phoneName = (await waitingNames()).at(-1);
   await anna.page.goto("/samtaler/enheter");
-  const late = await openDecline(phoneName);
+  const phoneRow = (await waiting()).at(-1)!;
+  const late = await openDecline(phoneRow);
   await laptop.page.goto("/samtaler/enheter/koble?kode");
   await laptop.page.getByLabel("Kode fra den nye enheten").fill(phoneCode);
   await laptop.page.getByRole("button", { name: "Fortsett" }).click();
@@ -1234,12 +1280,12 @@ test("a device that waits to be linked can be declined, and ask again", async ({
   await expect(
     anna.page.getByRole("alert").filter({ hasText: "Allerede godkjent" }),
   ).toContainText(
-    `${phoneName} ble godkjent fra en annen av enhetene dine før den ble avvist`,
+    `${phoneRow.name} ble godkjent fra en annen av enhetene dine før den ble avvist`,
   );
   await expect(anna.page.getByText("Avvist", { exact: true })).toHaveCount(0);
   await expect(
     anna.page
-      .getByRole("group", { name: phoneName })
+      .getByRole("group", { name: phoneRow.name })
       .getByRole("button", { name: "Fjern" }),
   ).toBeVisible();
   expect(await axeViolations(anna.page)).toEqual([]);

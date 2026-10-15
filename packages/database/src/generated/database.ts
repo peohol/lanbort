@@ -210,6 +210,15 @@ export interface AppChatDeliveries {
   message_id: Int8;
 }
 
+export interface AppChatDeviceLabels {
+  browser: string | null;
+  device_id: string;
+  kind: string | null;
+  name: string | null;
+  system: string | null;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface AppChatDevices {
   account_key_id: string;
   certificate_signature: Buffer;
@@ -240,6 +249,7 @@ export interface AppChatKeyPackages {
 
 export interface AppChatLinkRequests {
   approved_at: Timestamp | null;
+  browser: string | null;
   /**
    * HMAC of the request's keys under a key from the secret on the new device's screen (ADR-0010 §5).
    */
@@ -253,9 +263,14 @@ export interface AppChatLinkRequests {
   device_key: Buffer;
   expires_at: Timestamp;
   id: Generated<string>;
+  /**
+   * The kind of device the waiting device says it is; unconfirmed, display only.
+   */
+  kind: string | null;
   link_key: Buffer;
   package: Buffer | null;
   session_id: string;
+  system: string | null;
   user_id: string;
 }
 
@@ -1120,6 +1135,7 @@ export interface DB {
   "app.chat_archives": AppChatArchives;
   "app.chat_conversations": AppChatConversations;
   "app.chat_deliveries": AppChatDeliveries;
+  "app.chat_device_labels": AppChatDeviceLabels;
   "app.chat_devices": AppChatDevices;
   "app.chat_group_members": AppChatGroupMembers;
   "app.chat_key_packages": AppChatKeyPackages;

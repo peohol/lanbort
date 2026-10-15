@@ -1,8 +1,13 @@
-import type {
-  ChatConversationKind,
-  ChatDevice,
-  DeviceCertificateWire,
-  DeviceRevocationWire,
+import {
+  type ChatConversationKind,
+  type ChatDevice,
+  type ChatDeviceDescription,
+  type ChatDeviceLabel,
+  chatDeviceBrowsers,
+  chatDeviceKinds,
+  chatDeviceSystems,
+  type DeviceCertificateWire,
+  type DeviceRevocationWire,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type ExpressionBuilder, type Kysely, sql } from "kysely";
@@ -109,9 +114,13 @@ export async function sessionDevice(
 export async function loadDevice(
   db: Db,
   deviceId: string,
-  options: { lock?: boolean } = {},
+  options: { lock?: boolean; owner?: string } = {},
 ): Promise<ChatDeviceRecord | null> {
   let query = devices(db).where("device.id", "=", deviceId);
+
+  if (options.owner !== undefined) {
+    query = query.where("device.user_id", "=", options.owner);
+  }
 
   if (options.lock) {
     query = query.forUpdate("device");
@@ -195,6 +204,80 @@ export const presentDevice = (device: ChatDeviceRecord): ChatDevice => ({
   revokedAt: device.revokedAt?.toISOString() ?? null,
   revocation: revocationOf(device),
 });
+
+/** A stored value outside today's fixed set is shown as not known. */
+const known = <T extends string>(values: readonly T[], value: string | null) =>
+  values.includes(value as T) ? (value as T) : null;
+
+/** What a device said it is, as stored (`app.chat_device_labels`). */
+export const presentDescription = (row: {
+  kind: string | null;
+  system: string | null;
+  browser: string | null;
+}): ChatDeviceDescription => ({
+  kind: known(chatDeviceKinds, row.kind),
+  system: known(chatDeviceSystems, row.system),
+  browser: known(chatDeviceBrowsers, row.browser),
+});
+
+/**
+ * The labels of these devices (display only, never trusted), by device. A
+ * device without one is not in the map.
+ */
+export async function labelsOf(
+  db: Db,
+  deviceIds: readonly string[],
+): Promise<Map<string, ChatDeviceLabel>> {
+  if (deviceIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await db
+    .selectFrom("app.chat_device_labels")
+    .select(["device_id", "name", "kind", "system", "browser"])
+    .where("device_id", "in", [...deviceIds])
+    .execute();
+
+  return new Map(
+    rows.map((row) => [
+      row.device_id,
+      { name: row.name, ...presentDescription(row) },
+    ]),
+  );
+}
+
+/**
+ * Fills in what a device said about itself where its label says nothing
+ * yet: what the person chose stays as it is.
+ */
+export async function describeDevice(
+  db: Db,
+  deviceId: string,
+  description: ChatDeviceDescription,
+  now: Date,
+): Promise<void> {
+  await db
+    .insertInto("app.chat_device_labels")
+    .values({ device_id: deviceId, ...description, updated_at: now })
+    .onConflict((conflict) =>
+      conflict.column("device_id").doUpdateSet((eb) => ({
+        kind: eb.fn.coalesce(
+          "app.chat_device_labels.kind",
+          eb.ref("excluded.kind"),
+        ),
+        system: eb.fn.coalesce(
+          "app.chat_device_labels.system",
+          eb.ref("excluded.system"),
+        ),
+        browser: eb.fn.coalesce(
+          "app.chat_device_labels.browser",
+          eb.ref("excluded.browser"),
+        ),
+        updated_at: now,
+      })),
+    )
+    .execute();
+}
 
 export interface ConversationRecord {
   readonly id: string;
@@ -358,7 +441,7 @@ export async function dropDelivered(
 
 /**
  * Shuts a device out: it is revoked, gets nothing more, and is taken out of
- * every group, with what was waiting for it.
+ * every group, with what was waiting for it and its label.
  */
 export async function shutOut(
   db: Db,
@@ -383,6 +466,10 @@ export async function shutOut(
     .execute();
   await db
     .deleteFrom("app.chat_key_packages")
+    .where("device_id", "in", [...deviceIds])
+    .execute();
+  await db
+    .deleteFrom("app.chat_device_labels")
     .where("device_id", "in", [...deviceIds])
     .execute();
   await db

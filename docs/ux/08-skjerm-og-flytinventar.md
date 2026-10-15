@@ -250,7 +250,7 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 ##### Godkjenn en ny enhet fra en eksisterende enhet
 
 - **Oppgave:** på en enhet som allerede har chat: godkjenne den nye enheten ved å skanne QR-koden eller skrive inn koden.
-- **Tilstander:** skann med kameraet; skriv inn koden når kameraet mangler eller ikke kan brukes; enheten som ber om tilgang og når den ba, vises før brukeren godkjenner eller avbryter; godkjent; fant ingen enhet med koden (feil, utløpt eller allerede brukt).
+- **Tilstander:** skann med kameraet; skriv inn koden når kameraet mangler eller ikke kan brukes; enheten som ber om tilgang og når den ba, vises før brukeren godkjenner eller avbryter, med navnet og typen den selv oppgir, merket som ubekreftet (PS-COM-024); godkjent; fant ingen enhet med koden (feil, utløpt eller allerede brukt).
 - **Ser / handler:** brukeren selv, på en godkjent enhet. Kameraet brukes bare på denne siden.
 - **Regler:** PS-COM-005, ADR-0010 punkt 5, UX-INT-003.
 - **Forløp:** normal.
@@ -259,7 +259,7 @@ Privat chat leses bare på enheter brukeren selv har godkjent. Innlogging alene 
 ##### Mine enheter
 
 - **Oppgave:** se hvilke enheter som kan lese de private samtalene, fjerne en tapt eller ukjent enhet, og finne veien til å koble til en ny.
-- **Tilstander:** enhetene med når de ble lagt til, og hvilken som er denne; enheter som venter på godkjenning nå; fjern en annen enhet, med konsekvensen at den stenges ute med en gang, logges ut og ikke kan lese nye meldinger; fjern denne enheten, med konsekvensen at den mister chatten og alt den har lagret av samtaler, og at brukeren logges ut her; fjernet.
+- **Tilstander:** enhetene med navn, ikon for typen, operativsystem og nettleser når de er kjent, og når de ble lagt til, med denne først og merket «Denne enheten»; to med samme navn skilles med starten av enhetens ID; endre navn og type, som vises likt på alle enhetene (PS-COM-024); enheter som venter på godkjenning nå, med navnet og typen de selv oppgir, merket som ubekreftet; fjern en annen enhet, med konsekvensen at den stenges ute med en gang, logges ut og ikke kan lese nye meldinger; fjern denne enheten, med konsekvensen at den mister chatten og alt den har lagret av samtaler, og at brukeren logges ut her; fjernet.
 - **Ser / handler:** brukeren selv, på en godkjent enhet. Nås fra Samtaler.
 - **Regler:** UX-INT-007, PS-COM-005, ADR-0010 punkt 4 og 7.
 - **Forløp:** begge.

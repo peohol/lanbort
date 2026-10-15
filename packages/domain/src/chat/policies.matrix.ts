@@ -9,6 +9,8 @@ import {
   answerChatRecoveryPromptPolicy,
   approveChatLinkPolicy,
   declineChatLinkPolicy,
+  describeChatDevicePolicy,
+  labelChatDevicePolicy,
   backUpChatHistoryPolicy,
   createChatRecoveryKeyPolicy,
   type ChatRecoveryResource,
@@ -281,6 +283,8 @@ export const chatMatrices = [
   recoveryAction(restoreChatAccountPolicy),
   accountAction(answerChatRecoveryPromptPolicy, false),
   ownAction(revokeChatDevicePolicy, true, true),
+  ownAction(labelChatDevicePolicy, true),
+  sessionAction(describeChatDevicePolicy, false),
   accountAction(readOwnChatDevicesPolicy, true),
   sessionAction(publishChatKeyPackagesPolicy, false),
   cases(startChatConversationPolicy, [
