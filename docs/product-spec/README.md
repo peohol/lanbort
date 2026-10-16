@@ -17,7 +17,8 @@ Normative produktkrav får stabile `PS-*`-ID-er og peker oppover til relevante v
 7. [Tillit, anmeldelser og moderering](06-tillit-anmeldelser-og-moderering.md)
 8. [Administrasjon og livssyklus](07-administrasjon-og-livssyklus.md)
 9. [Ikke-funksjonelle krav](08-ikke-funksjonelle-krav.md)
+10. [Medlemskap og låneabonnement](09-medlemskap-og-laneabonnement.md)
 
 Åpne detaljvalg som ennå ikke kan fastsettes, registreres i [det felles beslutningsregisteret](../open-decisions.md) fremfor å bli stående som løse TODO-er i spesifikasjonen.
 
-10. [Konsistenssjekk mot produktvisjonen](validation.md)
+11. [Konsistenssjekk mot produktvisjonen](validation.md)

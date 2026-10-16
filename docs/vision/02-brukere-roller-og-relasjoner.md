@@ -12,17 +12,17 @@ En bruker kan for eksempel være vanlig medlem i ett miljø, administrator i et 
 
 ## Brukeridentitet og grunnkrav
 
-For den første versjonen og en eventuell begrenset pilot skal en bruker:
+Brukeren skal være minst 18 år og identifiseres med sitt virkelige navn.
 
-- være minst 18 år
-- oppgi sitt virkelige navn
-- ha minst én verifisert kontaktkanal
+**Lukket pilot:** Bare personer som produkteieren personlig har godkjent/verifisert får delta. De registreres og logger inn med verifisert e-post og engangskode. Ingen Vipps eller abonnement.
 
-Den konkrete kontaktkanalen eller kombinasjonen av kontaktkanaler bestemmes senere. Poenget er at kontoen ikke bare skal være knyttet til en uverifisert opplysning.
+**Ordinær drift etter piloten:** Vipps Logg inn er **eneste registreringsmetode** og kreves også ved første innlogging på hver ny enhet. Det finnes ingen alternativ ordinær registrering via e-postkode, passord eller annen identitetsleverandør. Identiteten knyttes til Vipps' unike brukeridentifikator for tjenesten; navnet hentes fra Vipps og kan ikke redigeres manuelt. Reelle navneendringer kan oppdateres gjennom ny Vipps-verifisering. Verifiseringsmerker skal ikke vises, ettersom regelen gjelder alle.
 
-BankID skal **ikke være et krav fra start**, blant annet fordi hver identitetsverifisering har en kostnad som ikke passer med målet om en gratis app i pilot- og tidligfase.
+På en allerede godkjent enhet skal passkey/WebAuthn kunne brukes ved senere innlogging, med lokal biometri/PIN når støttet. Synkronisering av passkeys til nye enheter skal *ikke* erstatte deres første Vipps-innlogging. Kontoen og privat chats kryptografiske enheter må håndteres som forskjellige tillitsnivåer.
 
-Ved en eventuell senere bred utrulling kan sterk identitetsverifisering, for eksempel BankID, vurderes på nytt dersom behov, kostnad og finansieringsmodell gjør det rimelig.
+Pilotkontoer kobles til Vipps før ordinær bruk med bevis for kontroll over både pilotkontoen og Vipps-identiteten. Venner, miljøer, lån, objekter, historikk og E2EE-data skal bevares. Sammenfallende navn eller e-post gir aldri automatisk kontokobling.
+
+Vipps bekrefter personopplysninger, men Vipps Logg inn er ikke en formell elektronisk ID eller et bevis på at noen er pålitelige. Se [overgangsplanen](../implementation/vipps-identitet-og-abonnement.md).
 
 ## Vanlig bruker
 

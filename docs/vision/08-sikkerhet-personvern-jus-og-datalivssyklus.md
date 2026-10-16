@@ -23,16 +23,13 @@ Feil tilgang til slike opplysninger kan være mer skadelig enn tap av en vanlig 
 
 Lånbort er en plattform for utlån av fysiske eiendeler mellom mennesker. En viss grad av ansvarlig identitet er derfor et sikkerhets- og tillitstiltak.
 
-For første versjon og en eventuell lukket pilot gjelder følgende produktretning:
+Alle brukere skal være minst 18 år og ha et virkelig navn knyttet til sin konto.
 
-- brukeren må være minst 18 år
-- brukeren skal oppgi sitt virkelige navn
-- minst én kontaktkanal skal verifiseres
-- BankID eller tilsvarende sterk identitetsverifisering kreves ikke
+**Pilot:** Bare deltakere som produkteieren personlig har verifisert og godkjent, bruker verifisert e-post og engangskode. Vipps og betaling brukes ikke.
 
-BankID er ønskelig som en mulig senere styrking av identitetsnivået ved bred utrulling, men kostnaden gjør at dette ikke inngår i pilot- eller startmodellen.
+**Ordinær drift:** Bare Vipps Logg inn kan opprette kontoer, og Vipps kreves igjen ved første innlogging på en ny enhet. Godkjente enheter kan deretter bruke passkey/WebAuthn med lokal biometri eller PIN. Et synkronisert passkey alene gir ikke adgang på en ukjent enhet. Fullt navn hentes og oppdateres gjennom Vipps, ikke manuelt. Alle ordinære profiler følger samme verifiseringsregel uten egne merker.
 
-Hvis sterk identitetsverifisering senere innføres, må det vurderes særskilt hvordan dette påvirker kostnader, personvern, tilgjengelighet og hvem som kan bruke tjenesten.
+Lånbort skal lagre minst mulig persondata; en stabil Vipps-spesifikk konto-ID foretrekkes fremfor fødselsnummer. Vipps Logg inn er ikke i seg selv en formell elektronisk ID og garanterer ikke at en bruker opptrer redelig. Før lansering må alderskontroll, personvern, tilgjengelighet og situasjoner der noen ikke kan bruke Vipps utredes, uten å åpne en alternativ registreringsmetode. Pilotkontoer skal kobles kontrollert og uten tap av kryptert historikk. Se [målmodellen](../implementation/vipps-identitet-og-abonnement.md).
 
 ## Tilgang skal følge kontekst
 

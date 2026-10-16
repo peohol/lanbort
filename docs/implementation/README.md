@@ -171,4 +171,7 @@ Leveranser:
 
 ## Etter pilot
 
+[Planen for Vipps-identitet, nye enheter, passkeys og låneabonnement](vipps-identitet-og-abonnement.md) er vedtatt som framtidig modell. Den skal **ikke aktiveres under lukket pilot**. Arbeidet er delt opp som [Fase 9](work-packages.md#fase-9--ordinær-registrering-og-abonnement-etter-pilot).
+
+
 Pilotdata skal brukes til å revurdere konkrete tidsfrister, varslingsstandarder, oppdagelsesbehov og andre detaljer som er eksplisitt definert som justerbare standarder. Endringer som påvirker grunnmodellen skal fortsatt løftes til visjonslaget.

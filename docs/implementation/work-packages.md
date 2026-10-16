@@ -231,3 +231,32 @@ Kjør [kvalitetsportene](quality-gates.md), dokumenter kjente begrensninger og �
 ### WP-80–WP-89 — Brukerflaten
 **UX:** UX-IA, UX-JRN, UX-INT, UX-EXC, UX-PRIV, UX-A11Y  
 Den helhetlige, mobil-først brukerflaten oppå det bygde domenet: felles grunnlag først (WP-80), deretter parallelle pakker for objekter, forespørsler, miljøer, personer, lån og saker. Leveranser, skjermer, avhengigheter og rekkefølge står i [UI-arbeidspakkene](ui-work-packages.md).
+
+## Fase 9 — Ordinær registrering og abonnement etter pilot
+
+> **Status:** Planlagt, ikke implementert. Ingen endring i dagens lukkede pilot. Se [samlet overgangsplan](vipps-identitet-og-abonnement.md).
+
+### WP-90 — Utred identitet, enhetsbinding og leverandørkrav
+**Krav:** PS-USR-016–018; OD-0057
+
+Verifiser Vipps' scopes og identitetsgarantier, 18+-kravet, Supabase-integrasjon, passkey/WebAuthn, sikker enhetsgodkjenning og kontogjenoppretting. Dokumenter teknisk beslutning før bygging.
+
+### WP-91 — Vipps-registrering, godkjente enheter og passkeys
+**Krav:** PS-USR-016–018
+
+Bygg registrering kun med Vipps, låst navn, Vipps-krav på enhver ny enhet også ved synkronisert passkey, og senere passkey-innlogging. Ingen ordinær e-postkode eller passord-backdoor. Forvalterpasskeys følger fortsatt ADR-0011.
+
+### WP-92 — Migrering av pilotkontoer
+**Krav:** PS-USR-019; ADR-0010
+
+Koble eksisterende konto og Vipps med to bevis, bevar interne bruker-ID-er, venner, miljøer, ting, lån, historikk og E2EE. Test kontokollisjoner, avbrutt migrering, mistede enheter og recovery.
+
+### WP-93 — Medlemskap og betalingsbasert lånerett
+**Krav:** PS-PAY-001–006; OD-0058
+
+Gratis medlemskap/utlån og 30 kr/mnd. for nye låneforespørsler. Serverhåndhevet abonnementsstatus, pålitelig betalingsbehandling, enkel oppsigelse og kontinuitet i eksisterende lån. Ikke belast pilotbrukere.
+
+### WP-94 — Kontrollert innføring
+**Krav:** PS-USR-016–019; PS-PAY-001–006
+
+Negative sikkerhetstester av falsk innlogging, synkronisert passkey på ukjent enhet, navneendring, feil kontokobling, falske betalinger og lånerett. Reell mobil-/nettbrett-/PC-test og E2EE-kontroll. Aktiver ordinær registrering og betaling separat først når kvalitetsporten er oppfylt.

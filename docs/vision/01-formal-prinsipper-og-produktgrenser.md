@@ -24,7 +24,7 @@ Tillit skal ikke forstås som blind tillit. Appen skal gjøre ansvarlig deling l
 
 ## Ikke en markedsplass for utleie, salg eller betaling
 
-**Retning:** Lånbort skal ikke være en kommersiell markedsplass. Appen skal ikke ha funksjoner for at brukere kan:
+**Retning:** Lånbort skal ikke være en markedsplass for salg eller utleie mellom brukere. Appen skal ikke ha funksjoner for at brukere kan:
 
 - sette leiepris på objekter
 - selge objekter
@@ -36,6 +36,19 @@ Kjernen i produktet er gratis utlån og deling.
 Lånbort skal samtidig ikke forsøke å kontrollere eller forhindre at to brukere på eget initiativ gjør et privat økonomisk oppgjør utenfor appen. Et slikt oppgjør skjer utenfor Lånbort og er ikke en funksjon eller del av låneprosessen i systemet.
 
 En eventuell senere forsikrings- eller depositumløsning gjennom en tredjepart regnes som noe annet enn betaling mellom utlåner og låntaker. Formålet vil i så fall være trygghet og risikohåndtering, ikke vederlag for utlånet. Dette skal **ikke planlegges som del av den første produktvisjonen eller den første implementeringen**. Ideen kan vurderes på nytt når den øvrige appen er etablert.
+
+## Medlemskap og plattformens finansiering
+
+Medlemskap, opprettelse av profil og objekter, deltakelse i miljøer og utlån av egne ting er gratis. Lånene mellom mennesker er vederlagsfrie. En abonnementsavgift til Lånbort er ikke betaling til utlåner eller leie per gjenstand.
+
+- Etter den lukkede piloten er planlagt ordinær pris **30 kr per måned** for dem som ønsker å be om å låne ting. Det kommer ingen ekstra avgift per lån.
+- Brukere uten abonnement kan finne ting, delta i fellesskapet, tilby utlån og administrere egne ting og pågående lån.
+- Et bortfalt abonnement skal ikke oppheve reelle, eksisterende låneforpliktelser eller retten til å avslutte og dokumentere dem.
+- Betaling skal ikke gi prioritet til ting eller sosial rangering.
+- Under piloten er også det å låne gratis. Betaling aktiveres først etter at piloten har vist tilstrekkelig verdi og brukeren aktivt velger abonnement.
+- Redusert pris for personer med svak økonomi kan vurderes senere.
+
+Inntekten kan finansiere drift, utvikling og godtgjørelse for arbeidsinnsats. Se [produktreglene](../product-spec/09-medlemskap-og-laneabonnement.md).
 
 ## Miljøer som sosial ramme
 

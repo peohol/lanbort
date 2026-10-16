@@ -5,12 +5,12 @@
 ### PS-USR-001 — Minstekrav for konto i pilot
 **Forankring:** [Brukeridentitet og grunnkrav](../vision/02-brukere-roller-og-relasjoner.md)
 
-En ny bruker skal være minst 18 år, oppgi virkelig navn og verifisere minst én kontaktkanal. For pilotfasen brukes verifisert e-post som obligatorisk kontaktkanal. BankID er ikke et krav. Framtidig Vipps-innlogging og et mulig sterkere identitetsgrunnlag utredes separat i OD-0011 og endrer ikke dette pilotkravet før en ny beslutning er tatt.
+En bruker må være minst 18 år og oppgi sitt virkelige navn. I den lukkede piloten er verifisert e-post og engangskode obligatorisk, og produkteieren godkjenner/verifiserer personlig alle deltakere. Vipps og betaling brukes ikke. Kravene for ordinær drift står i PS-USR-016–019; de aktiveres ikke under piloten.
 
 ### PS-USR-002 — Minimal profil
 **Forankring:** [Profil og synlighet](../vision/02-brukere-roller-og-relasjoner.md)
 
-Profilen skal minst ha virkelig navn. Profilbilde og kort presentasjon kan være valgfrie. Hvert profilfelt som kan deles skal ha en eksplisitt synlighetsregel med minst nivåene **generelt**, **venner** og **bare meg**. Systemkritiske kontoopplysninger skal ikke gjøres til profilfelt bare fordi de finnes. Profilbildet vises som sirkel overalt der det vises, og brukeren beskjærer det i den samme sirkelen (OD-0027).
+Profilen skal minst ha virkelig navn. I ordinær drift er navnet hentet fra Vipps og ikke brukerredigerbart. Profilbilde og kort presentasjon kan være valgfrie. Hvert profilfelt som kan deles skal ha en eksplisitt synlighetsregel med minst nivåene **generelt**, **venner** og **bare meg**. Systemkritiske kontoopplysninger skal ikke gjøres til profilfelt bare fordi de finnes. Profilbildet vises som sirkel overalt der det vises, og brukeren beskjærer det i den samme sirkelen (OD-0027).
 
 ### PS-USR-003 — Vennskap krever gjensidig aksept
 **Forankring:** [Vennskap](../vision/02-brukere-roller-og-relasjoner.md)
@@ -66,6 +66,26 @@ Koden røper ikke e-postadresse eller noen fast identifikator, og serveren lagre
 Mens piloten er lukket, kan bare produkteierens konto invitere en adresse uten konto til Lånbort. Mottakeren får en e-post med avsenderens navn og en lenke til innloggingen, og kan logge inn med engangskode og registrere seg som vanlig, uten at noen lager brukeren manuelt. Valget «Spør også om å bli venner» er av som standard. Alle andre kan bare sende venneforespørsler på e-post til adresser som allerede har konto, og bruke QR-koden; en adresse uten konto får da ingenting.
 
 Registreringen er fortsatt lukket for alle andre, og sperrene for privat chat i piloten (PS-COM-023) gjelder uendret. En invitasjon som trekkes tilbake eller utløper før den er tatt i bruk, fjerner adressen fra innloggingstjenesten igjen.
+
+### PS-USR-016 — Bare Vipps kan registrere ordinære kontoer
+**Forankring:** [Brukeridentitet og grunnkrav](../vision/02-brukere-roller-og-relasjoner.md)
+
+Etter piloten skal opprettelse eller aktivering av ordinær konto kreve en fullført, serververifisert Vipps Logg inn-flyt og nødvendige identitetsopplysninger. Verken e-postkode, passord, passkey alene, invitasjon eller andre leverandører kan omgå dette. En Vipps-identitet skal kobles til høyst én aktiv konto ved sin stabile, leverandørspesifikke ID, ikke navn eller e-post. 18-årsgrensen gjelder. Ingen «identitet verifisert»-merker i UI: alle ordinære brukere er omfattet.
+
+### PS-USR-017 — Låst navn med oppdatering fra Vipps
+**Forankring:** [Brukeridentitet og grunnkrav](../vision/02-brukere-roller-og-relasjoner.md)
+
+Fullt navn hentes fra Vipps og kan ikke endres av brukeren, heller ikke via API-et. Ved faktisk navneendring kan brukeren gjennomføre en ny Vipps-flyt for kontrollert, sporbar oppdatering. Navnet vises for legitime motparter innenfor personvernreglene; historiske navn offentliggjøres ikke unødvendig.
+
+### PS-USR-018 — Første innlogging på ny enhet krever Vipps
+**Forankring:** [Brukeridentitet og grunnkrav](../vision/02-brukere-roller-og-relasjoner.md)
+
+På en ny, ukjent eller tilbakekalt enhet/nettleserinstallasjon må brukeren først autentiseres med Vipps. Etter sikker registrering kan den godkjente enheten bruke passkey/WebAuthn ved senere innlogging, med lokal biometri/PIN der det støttes. En synkronisert passkey på en *annen* enhet oppfyller ikke kravet om Vipps ved første bruk der. Enhetsgodkjenning og tilbakekalling håndheves av serveren og skal ikke baseres bare på nettleserfingeravtrykk. E-postkode og support gir ingen ordinær fallback etter overgang.
+
+### PS-USR-019 — Eksisterende pilotkontoer beholdes
+**Forankring:** [Brukeridentitet og grunnkrav](../vision/02-brukere-roller-og-relasjoner.md); VP-05, VP-10
+
+En pilotbruker skal koble Vipps-identitet til samme interne konto, ved å bevise kontroll over både pilotkontoen og Vipps-identiteten. Lik e-post eller navn er utilstrekkelig. Alle eksisterende sosiale relasjoner, miljøer, ting, lån og historikk skal bevares. Privat chats nøkler, enhetssertifikater, tilbakekallinger og recovery følger ADR-0010, ikke automatisk Vipps-innlogging. Feil eller duplikater skal føre til sikkert avslag, aldri stille sammenføyning eller tap av konto.
 
 ### PS-USR-007 — Blokkering opphever ikke etablerte forpliktelser
 **Forankring:** VP-05, VP-10, VP-11

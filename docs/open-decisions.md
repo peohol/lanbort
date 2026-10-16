@@ -106,13 +106,7 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Avhenger av:** Organisasjonsform og skala før bred lansering.
 - **Avklares før:** bred lansering (Port E), dersom organisasjonen har behovet.
 
-### OD-0011 — Framtidig Vipps-innlogging og identitetsgrunnlag
-- **Lag:** Tverrgående
-- **Status:** Åpen
-- **Berører:** PS-USR-001, [brukeridentitet og grunnkrav](vision/02-brukere-roller-og-relasjoner.md), ADR-0007
-- **Spørsmål:** Skal Vipps på sikt brukes som foretrukket eller alternativ innlogging og som sterkere identitetsgrunnlag for norske brukere, og i så fall hvordan skal dette samspille med dagens konto- og autentiseringsmodell?
-- **Avhenger av:** Teknisk og kontraktsmessig utredning av Vipps Login, hvilke verifiserte identitetsopplysninger og sikkerhetsgarantier tjenesten faktisk gir, personvern, recovery og alternativ tilgang for brukere som ikke kan eller ønsker å bruke Vipps. Kostnad og mulig sponsor-/samarbeidsmodell med Vipps kan inngå i vurderingen, men skal ikke være en teknisk forutsetning. Det skal også vurderes særskilt om fersk Vipps-autentisering kan ha en rolle ved privilegert re-autentisering.
-- **Avklares før:** ingen fast frist. Dagens innlogging med e-postkode gjelder.
+
 
 ### OD-0014 — Vesentlig eller redaksjonell vilkårsendring
 - **Lag:** Produktspesifikasjon
@@ -161,7 +155,29 @@ Gjennomgått 6. oktober 2026. Ingen åpne spørsmål blokkerer UI-arbeidet som h
 - **Spørsmål:** Skal plattformforvaltere kunne utnevnes og fjernes inne i appen, og i så fall av hvem? Inntil dette er besluttet, skjer det bare med den revisjonsloggede driftskommandoen.
 - **Avklares før:** kan vente. Driftskommandoen dekker behovet.
 
+### OD-0057 — Enhetsgodkjenning og gjenoppretting med Vipps
+- **Lag:** Arkitektur
+- **Status:** Åpen
+- **Berører:** PS-USR-016–019, ADR-0007, ADR-0010, ADR-0011
+- **Spørsmål:** Hvordan bekreftes og tilbakekalles en kjent enhet på serveren, også ved synkroniserte passkeys, tap av alle enheter, nytt nettlesermiljø og kobling fra pilot? Hvordan unngås bakdører og brudd i E2EE?
+- **Avhenger av:** Kontroll av Vipps Login, WebAuthn/passkey, Supabase Auth og eksisterende enhetsmodell.
+- **Avklares før:** Vipps-registrering og ordinær passkey-innlogging aktiveres.
+
+### OD-0058 — Praktisk abonnementshåndtering ved ordinær drift
+- **Lag:** Produktspesifikasjon / arkitektur
+- **Status:** Åpen
+- **Berører:** PS-PAY-002–005
+- **Spørsmål:** Hvilken betalingsleverandør, periode, kanselleringsflyt, purring, refusjon/angrerett og MVA-/kvitteringsmodell brukes? Hvordan behandles forsinkede eller ugyldige betalingshendelser og midlertidige driftsfeil?
+- **Avhenger av:** Leverandørvilkår, norske forbrukerregler, personvern og teknisk utredning.
+- **Avklares før:** første betalte abonnement.
+
 ## Avklart
+
+### OD-0011 — Framtidig Vipps-innlogging og identitetsgrunnlag
+- **Lag:** Tverrgående
+- **Status:** Avklart (produkteier, 16. oktober 2026)
+- **Beslutning:** Vipps er eneste ordinære registreringsmetode og påkrevd ved første innlogging på ny enhet; godkjente enheter kan deretter bruke passkey. Se [PS-USR-016–019](product-spec/01-brukere-kontoer-og-relasjoner.md#ps-usr-016--bare-vipps-kan-registrere-ordinære-kontoer), [visjonen](vision/02-brukere-roller-og-relasjoner.md) og [planen](implementation/vipps-identitet-og-abonnement.md). Tekniske detaljer behandles i OD-0057, betaling i OD-0058.
+
 
 ### OD-0056 — Privat chat i den lukkede piloten før den uavhengige gjennomgangen
 - **Lag:** Tverrgående
