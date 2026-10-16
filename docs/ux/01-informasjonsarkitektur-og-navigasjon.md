@@ -212,7 +212,7 @@ Det skal være åpenbart av siden selv hva slags detalj brukeren er på. En type
 - Et menyvalg har et merke med antall når noe har skjedd i området siden brukeren sist åpnet områdets egen side. Merket står ved ikonet, er det samme på mobil og større skjerm, og antallet står også i lenkens navn («Samtaler, 2 nye»).
 - Merket nullstilles når brukeren åpner området fra menyen, også om ingenting er lest eller håndtert. Det er likt på alle brukerens enheter.
 - Det som telles, er det et varsel gjelder, og bare der områdets egen side viser det:
-  - **Hjem:** ting som venter på brukeren eller kommer neste, og nye miljøer brukeren er blitt medlem av.
+  - **Hjem:** ting som venter på brukeren eller kommer neste, saker som venter i køen til miljøer brukeren administrerer, og nye miljøer brukeren er blitt medlem av.
   - **Lån:** lån og forespørsler det har skjedd noe med, hvert lån én gang fra forespørselen til anmeldelsene.
   - **Mine ting:** invitasjoner til å bli medeier.
   - **Samtaler:** samtaler med nye meldinger. En dempet samtale, eller nye meldinger brukeren har valgt å ikke få varsel om i appen, gir ikke merke.

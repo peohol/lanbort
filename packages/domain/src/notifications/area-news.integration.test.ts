@@ -2,6 +2,10 @@ import { randomUUID } from "node:crypto";
 import type { NotificationKind, NotificationTarget } from "@lanbort/contracts";
 import { afterAll, describe, expect, it } from "vitest";
 import type { UserActor } from "../actor";
+import {
+  openEnvironmentContact,
+  reportUnavailability,
+} from "../cases/commands";
 import { executeQuery } from "../commands/query";
 import { connectTestDatabase } from "../testing/database";
 import { loanTestKit } from "../testing/loans";
@@ -17,7 +21,7 @@ const db = connectTestDatabase();
 afterAll(() => db.destroy());
 
 const kit = loanTestKit(db);
-const { run, tick, user, reservedLoan } = kit;
+const { run, tick, user, reservedLoan, environment, member, friends } = kit;
 
 const attention = (actor: UserActor) =>
   executeQuery(tick(), readAttention, { actor, input: {} });
@@ -131,6 +135,33 @@ describe("news in the main navigation (UX-IA-022)", () => {
     // though its notification is the same one, now with a newer place.
     await message(actor, first);
     expect((await news(actor)).conversations).toBe(1);
+  });
+
+  it("counts a case waiting in an environment's queue on Home, not the platform's", async () => {
+    const admin = await user();
+    const environmentId = await environment(admin);
+    const requester = await member(environmentId, admin);
+    const { caseId } = await run(openEnvironmentContact, requester, {
+      environmentId,
+      body: "Hvem har nøkkelen til boden?",
+    });
+    const [reporter, subject] = [await user(), await user()];
+    await friends(reporter, subject);
+    const platformCase = await run(reportUnavailability, reporter, {
+      userId: subject.userId,
+      body: "Jeg har hørt at hun gikk bort.",
+    });
+    await run(markAreaSeen, admin, { area: "home" });
+
+    await tell(admin, "case.waiting", { type: "case", id: caseId });
+    await tell(admin, "case.assigned_to_you", { type: "case", id: caseId });
+    // As if the administrator also handled the platform's queue.
+    await tell(admin, "case.waiting", {
+      type: "case",
+      id: platformCase.caseId,
+    });
+
+    expect(await news(admin)).toEqual({ ...nothingNew, home: 1 });
   });
 
   it("leaves out what the user has already read in the notification centre", async () => {

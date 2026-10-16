@@ -271,8 +271,8 @@ const loanKinds = (Object.keys(notificationKinds) as NotificationKind[]).filter(
 /**
  * The notifications that are news in each area: those whose subject the
  * area's own page shows. Lån shows every loan and request; Home only what
- * waits on the user or comes up next (UX-IA-005), and the user's
- * environments; Mine ting the invitations to co-own; Samtaler the
+ * waits on the user or comes up next (UX-IA-005), the cases waiting in
+ * the queues of environments they administer, and their environments; Mine ting the invitations to co-own; Samtaler the
  * conversations. A notification can be news in more than one area.
  */
 export const newsAreaKinds: Record<NewsArea, readonly NotificationKind[]> = {
@@ -300,6 +300,8 @@ export const newsAreaKinds: Record<NewsArea, readonly NotificationKind[]> = {
     "environment.type_change_proposed",
     "environment.requirements_changed",
     "object.co_owner_invited",
+    "case.waiting",
+    "case.assigned_to_you",
   ],
   loans: loanKinds,
   things: ["object.co_owner_invited"],

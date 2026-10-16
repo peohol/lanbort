@@ -44,7 +44,12 @@ export async function loadAreaNews(db: Db, userId: string): Promise<AreaNews> {
         left join app.loans loan
           on notification.target_type in ('loan', 'loan_reviews')
          and loan.id = notification.target_id
+        left join app.cases "case"
+          on notification.target_type = 'case'
+         and "case".id = notification.target_id
        where notification.recipient_id = ${userId}
+         -- Home shows the queues of environments; the platform's is elsewhere.
+         and (notification.target_type <> 'case' or "case".environment_id is not null)
          and notification.read_at is null
          and notification.position > least(${sql.join(newsAreas.map(position))})
     ) news
