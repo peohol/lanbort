@@ -22,6 +22,7 @@ import { useStack } from "@/components/navigation-stack";
 import { PageHeader } from "@/components/page-header";
 import { PlaceBar } from "@/components/place-bar";
 import { Icon } from "@/components/icon";
+import { useScreenFrame } from "@/components/screen-frame";
 import { chatAboutHref, chatHref } from "@/navigation/chat";
 import { loanHref } from "@/navigation/routes";
 import { ChatApiError, chatApi } from "./api";
@@ -78,9 +79,14 @@ const useOnline = () =>
     () => true,
   );
 
-/** Whether the end of the page is in view, give or take a message. */
-const nearEnd = () =>
-  window.innerHeight + window.scrollY >= document.body.scrollHeight - 160;
+/**
+ * Whether the end of the messages is in view, give or take a message: in
+ * the frame the list scrolls on its own, otherwise the page does.
+ */
+const nearEnd = (list: HTMLElement | null) =>
+  list && list.scrollHeight > list.clientHeight
+    ? list.scrollTop + list.clientHeight >= list.scrollHeight - 160
+    : window.innerHeight + window.scrollY >= document.body.scrollHeight - 160;
 
 /** «Lån mellom dere» (02): links to the loans, never an action here. */
 function LoansBetween({ loans }: { loans: readonly ChatLoan[] }) {
@@ -330,6 +336,8 @@ function Composer({
         type="submit"
         className={styles.send}
         aria-disabled={blocked || undefined}
+        // The field keeps focus, so a phone's keyboard stays open.
+        onMouseDown={(event) => event.preventDefault()}
       >
         <ChatIcon name="send" />
         <span className="visually-hidden">Send</span>
@@ -390,6 +398,8 @@ function Conversation({
   const [jump, setJump] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const end = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  useScreenFrame(list);
   const opened = useRef(false);
   const shown = useRef(0);
   // Whether the reader was at the newest message before more came.
@@ -455,12 +465,16 @@ function Conversation({
   }, [engine, id, version, shows]);
 
   // Opens at the newest message; new ones keep the reader there if they
-  // were already, or offer the way down instead of moving them.
+  // were already, or offer the way down instead of moving them. Only a
+  // message the reader just wrote takes them down; the history read anew
+  // at each sync leaves them where they are.
   useLayoutEffect(() => {
     if (!history) return;
     const count = history.length;
-    newest.current = history.at(-1)?.id;
-    if (shown.current === 0 || history.at(-1)?.own || atEnd.current) {
+    const last = history.at(-1);
+    const wrote = last?.own === true && last.id !== newest.current;
+    newest.current = last?.id;
+    if (shown.current === 0 || wrote || atEnd.current) {
       end.current?.scrollIntoView({ block: "end" });
       setJump(false);
       readToEnd();
@@ -471,17 +485,27 @@ function Conversation({
   }, [history, readToEnd]);
 
   useEffect(() => {
+    const scroller = list.current;
     const settle = () => {
-      atEnd.current = nearEnd();
+      atEnd.current = nearEnd(scroller);
       if (atEnd.current) {
         setJump(false);
         readToEnd();
       }
     };
+    // A reader at the end stays there when the list gets shorter, as when
+    // a phone's keyboard opens.
+    const resized = new ResizeObserver(() => {
+      if (atEnd.current) end.current?.scrollIntoView({ block: "end" });
+    });
+    if (scroller) resized.observe(scroller);
     window.addEventListener("scroll", settle, { passive: true });
+    scroller?.addEventListener("scroll", settle, { passive: true });
     document.addEventListener("visibilitychange", settle);
     return () => {
+      resized.disconnect();
       window.removeEventListener("scroll", settle);
+      scroller?.removeEventListener("scroll", settle);
       document.removeEventListener("visibilitychange", settle);
     };
   }, [readToEnd]);
@@ -529,18 +553,18 @@ function Conversation({
 
   return (
     <>
-      <header className="page-header">
+      <header className={`page-header ${styles.top}`}>
         <PlaceBar
           place={{ label: info ? name : "Samtale", home: "conversations" }}
         />
         <div className={styles.head}>
           <Picture people={others} />
           <div className={styles.headText}>
-            <p className="page-kind">
-              {logistics
-                ? `Lånelogistikk${loan ? ` · ${loan.title}` : ""}`
-                : "Samtale"}
-            </p>
+            {logistics && (
+              <p className="page-kind">
+                Lånelogistikk{loan ? ` · ${loan.title}` : ""}
+              </p>
+            )}
             <h1>{info ? name : "Samtale"}</h1>
           </div>
           <Link
@@ -553,111 +577,119 @@ function Conversation({
         </div>
       </header>
 
-      {between && between.length > 0 && <LoansBetween loans={between} />}
+      {/* Only this part scrolls while the top and the field stay
+          (`useScreenFrame`). */}
+      <div ref={list} className={`frame-scroll ${styles.scroller}`}>
+        {between && between.length > 0 && <LoansBetween loans={between} />}
 
-      {logistics && info && (
-        <Notice tag="Bare for å avslutte lånet" icon="things">
-          <p>
-            Vanlig chat med {name} er stengt. Her kan dere bare avtale
-            overlevering eller retur{loan ? ` av ${loan.title}` : ""}: tid, sted
-            og hvordan. Korte meldinger, ingen bilder. Ingen av dere kan stenge
-            den. Den lukkes når lånet er avsluttet.
+        {logistics && info && (
+          <Notice tag="Bare for å avslutte lånet" icon="things">
+            <p>
+              Vanlig chat med {name} er stengt. Her kan dere bare avtale
+              overlevering eller retur{loan ? ` av ${loan.title}` : ""}: tid,
+              sted og hvordan. Korte meldinger, ingen bilder. Ingen av dere kan
+              stenge den. Den lukkes når lånet er avsluttet.
+            </p>
+            {info.loanId && (
+              <Link href={loanHref(info.loanId)} className="button-quiet">
+                Gå til lånet
+              </Link>
+            )}
+          </Notice>
+        )}
+
+        {info && !info.open && (
+          <Notice
+            tag={logistics ? "Lukket" : "Stengt"}
+            icon="lock"
+            role="status"
+          >
+            <p>
+              {logistics
+                ? "Samtalen om lånet er lukket. Dere kan ikke sende flere meldinger her."
+                : "Samtalen er stengt. Ingen av dere kan sende nye meldinger her."}
+            </p>
+          </Notice>
+        )}
+
+        {!online && info?.open && (
+          <div className={`${styles.notice} ${styles.noticeRow}`} role="status">
+            <Icon name="offline" />
+            <p>{offlineText}</p>
+          </div>
+        )}
+
+        {status?.problem && (
+          <p className={styles.notice} role="alert">
+            {problems[status.problem]}
           </p>
-          {info.loanId && (
-            <Link href={loanHref(info.loanId)} className="button-quiet">
-              Gå til lånet
-            </Link>
+        )}
+        {status && !status.joined && !status.problem && info?.open && (
+          <p className={styles.notice} role="status">
+            Venter på at en enhet i samtalen legger til denne enheten. Det skjer
+            når den du skriver med, eller en annen av dine enheter, er innom
+            privat chat.
+          </p>
+        )}
+
+        {status?.alone && info?.open && (
+          <p className={styles.notice} role="status">
+            Meldingen sendes når den du skriver med, har slått på privat chat.
+          </p>
+        )}
+
+        {settled &&
+          changed.map((person) => (
+            <KeyChanged
+              key={person.userId}
+              engine={engine}
+              conversationId={id}
+              person={person}
+            />
+          ))}
+
+        {info && status && (
+          <EncryptionLine with={settled ? name : null} elsewhere={elsewhere} />
+        )}
+
+        <section aria-labelledby="meldinger">
+          <h2 id="meldinger" className="visually-hidden">
+            Meldinger
+          </h2>
+          {linkedSince ? (
+            <p className={styles.since}>
+              <Icon name="clock" />
+              Denne enheten ble koblet til {addedAt(linkedSince)}. Meldinger fra
+              før finnes på enhetene som mottok dem.
+            </p>
+          ) : (
+            history?.length === 0 && (
+              <p className="quiet">Ingen meldinger på denne enheten ennå.</p>
+            )
           )}
-        </Notice>
-      )}
+          {history && history.length > 0 && (
+            <Messages
+              history={history}
+              divider={divider}
+              online={online}
+              alone={status?.alone === true}
+              from={elsewhere ? null : from}
+              name={name}
+            />
+          )}
+          <div ref={end} />
+        </section>
 
-      {info && !info.open && (
-        <Notice tag={logistics ? "Lukket" : "Stengt"} icon="lock" role="status">
-          <p>
-            {logistics
-              ? "Samtalen om lånet er lukket. Dere kan ikke sende flere meldinger her."
-              : "Samtalen er stengt. Ingen av dere kan sende nye meldinger her."}
-          </p>
-        </Notice>
-      )}
-
-      {!online && info?.open && (
-        <div className={`${styles.notice} ${styles.noticeRow}`} role="status">
-          <Icon name="offline" />
-          <p>{offlineText}</p>
-        </div>
-      )}
-
-      {status?.problem && (
-        <p className={styles.notice} role="alert">
-          {problems[status.problem]}
-        </p>
-      )}
-      {status && !status.joined && !status.problem && info?.open && (
-        <p className={styles.notice} role="status">
-          Venter på at en enhet i samtalen legger til denne enheten. Det skjer
-          når den du skriver med, eller en annen av dine enheter, er innom
-          privat chat.
-        </p>
-      )}
-
-      {status?.alone && info?.open && (
-        <p className={styles.notice} role="status">
-          Meldingen sendes når den du skriver med, har slått på privat chat.
-        </p>
-      )}
-
-      {settled &&
-        changed.map((person) => (
-          <KeyChanged
-            key={person.userId}
-            engine={engine}
-            conversationId={id}
-            person={person}
-          />
-        ))}
-
-      {info && status && (
-        <EncryptionLine with={settled ? name : null} elsewhere={elsewhere} />
-      )}
-
-      <section aria-labelledby="meldinger">
-        <h2 id="meldinger" className="visually-hidden">
-          Meldinger
-        </h2>
-        {linkedSince ? (
-          <p className={styles.since}>
-            <Icon name="clock" />
-            Denne enheten ble koblet til {addedAt(linkedSince)}. Meldinger fra
-            før finnes på enhetene som mottok dem.
-          </p>
-        ) : (
-          history?.length === 0 && (
-            <p className="quiet">Ingen meldinger på denne enheten ennå.</p>
-          )
+        {jump && (
+          <button
+            type="button"
+            className={styles.jump}
+            onClick={() => end.current?.scrollIntoView({ block: "end" })}
+          >
+            Ny melding <ChatIcon name="down" />
+          </button>
         )}
-        {history && history.length > 0 && (
-          <Messages
-            history={history}
-            divider={divider}
-            online={online}
-            alone={status?.alone === true}
-            from={elsewhere ? null : from}
-            name={name}
-          />
-        )}
-        <div ref={end} />
-      </section>
-
-      {jump && (
-        <button
-          type="button"
-          className={styles.jump}
-          onClick={() => end.current?.scrollIntoView({ block: "end" })}
-        >
-          Ny melding <ChatIcon name="down" />
-        </button>
-      )}
+      </div>
 
       {canWrite && (
         <Composer
@@ -716,7 +748,7 @@ function WideSplit({
           current={id}
         />
       </nav>
-      <div>{conversation}</div>
+      <div className={styles.splitMain}>{conversation}</div>
     </div>
   ) : (
     conversation
