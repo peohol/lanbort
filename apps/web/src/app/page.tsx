@@ -1,4 +1,9 @@
-import { isDomainError, readHome, readNotification } from "@lanbort/domain";
+import {
+  isDomainError,
+  readHome,
+  readNotification,
+  takesNewActivity,
+} from "@lanbort/domain";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Brand } from "@/components/brand";
@@ -90,6 +95,7 @@ export default async function HomePage({
   return (
     <HomeView
       home={home!}
+      mayCreate={takesNewActivity(account.status)}
       steward={
         steward && {
           standing: stewardStanding(steward),

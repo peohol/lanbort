@@ -1,15 +1,3 @@
-/* Mine ting: registering is the area's one primary step, as wide as the
-   column on a phone (Tomat kjerneflyt 2). */
-.register {
-  width: 100%;
-}
-
-@media (min-width: 48rem) {
-  .register {
-    width: auto;
-  }
-}
-
 .more > ul {
   margin-top: var(--space-2);
 }

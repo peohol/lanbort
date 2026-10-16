@@ -13,16 +13,23 @@
   margin-top: calc(var(--gap-page) - var(--gap-block));
 }
 
+/* A section's heading names it plainly, with its icon in tomat as an
+   area's title has, so Home's choices are told at a glance. */
 .heading {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   padding: 0 var(--space-1);
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  color: var(--color-text);
 }
 
 .heading :global(.icon) {
-  width: 1.125rem;
-  height: 1.125rem;
+  width: 1.1em;
+  height: 1.1em;
+  color: var(--color-accent-strong);
+  stroke-width: 2;
 }
 
 .stack {

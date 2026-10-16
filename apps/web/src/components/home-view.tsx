@@ -30,6 +30,7 @@ import {
   stewardHomeTask,
 } from "@/presentation/stewardship";
 import { AreaTitle } from "./area-title";
+import { CreateButton } from "./create-button";
 import { EmptyState } from "./empty-state";
 import { Icon, type IconName } from "./icon";
 import { ContextTag, Tag } from "./tag";
@@ -299,33 +300,54 @@ function Administration({
   );
 }
 
+/**
+ * «Dine miljøer»: each environment as a row, and the ways to more of them:
+ * creating one as the main step, and finding one while the user has none.
+ */
 function Environments({
   environments,
+  mayCreate,
 }: {
   environments: readonly EnvironmentSummary[];
+  mayCreate: boolean;
 }) {
   return (
     <>
-      <ul className={`${styles.list} ${styles.environments}`}>
-        {environments.map((environment) => {
-          const role = roleName(environment.roles);
+      {environments.length > 0 ? (
+        <ul className={`${styles.list} ${styles.environments}`}>
+          {environments.map((environment) => {
+            const role = roleName(environment.roles);
 
-          return (
-            <li key={environment.id}>
-              <Entry
-                href={environmentHref(environment.id)}
-                className={styles.environment}
-              >
-                <strong>{environment.name}</strong>
-                {role && <span className={styles.role}>{role}</span>}
-              </Entry>
-            </li>
-          );
-        })}
-      </ul>
-      <p className="link-row">
-        <Link href={newEnvironmentHref}>Opprett et miljø</Link>
-      </p>
+            return (
+              <li key={environment.id}>
+                <Entry
+                  href={environmentHref(environment.id)}
+                  className={styles.environment}
+                >
+                  <span className={styles.rowIcon}>
+                    <Icon name="environment" />
+                  </span>
+                  <strong>{environment.name}</strong>
+                  {role && <span className={styles.role}>{role}</span>}
+                </Entry>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className={styles.hint}>
+          Du er ikke med i noen miljøer ennå. I et miljø finner du ting å låne
+          av folk i nærheten.
+        </p>
+      )}
+      {mayCreate && (
+        <CreateButton href={newEnvironmentHref}>Opprett et miljø</CreateButton>
+      )}
+      {environments.length === 0 && (
+        <Link className="button button-secondary" href={findEnvironmentsHref}>
+          Finn miljøer
+        </Link>
+      )}
     </>
   );
 }
@@ -376,7 +398,11 @@ function Stewardship({ steward }: { steward: StewardHome }) {
   );
 }
 
-const sectionIcons: Partial<Record<HomeSection, IconName>> = {
+/** Each section's icon beside its heading, so it is told at a glance. */
+const sectionIcons: Record<HomeSection, IconName> = {
+  awaiting_you: "attention",
+  upcoming: "calendar",
+  unresolved: "clock",
   administration: "shield",
 };
 
@@ -384,15 +410,19 @@ const sectionIcons: Partial<Record<HomeSection, IconName>> = {
  * Home (UX-IA-005, UX-IA-016–018, «Hjem og varsler v3»): what waits for
  * the user, what is coming, what is unsettled, their tasks as
  * administrator and their environments, always in that order. Empty
- * sections are left out, so a quiet day shows a quiet Home. Every entry
- * opens the place where the work is done; nothing here is binding.
+ * sections are left out, so a quiet day shows a quiet Home, except
+ * «Dine miljøer», which always holds the way to an environment. Every
+ * entry opens the place where the work is done; nothing here is binding.
  */
 export function HomeView({
   home,
   steward = null,
+  mayCreate,
 }: {
   home: HomeOverview;
   steward?: StewardHome | null;
+  /** Whether the account may start something new (PS-ADM-002). */
+  mayCreate: boolean;
 }) {
   const today = calendarDay();
   const sections = home.sections.filter(({ items }) => items.length > 0);
@@ -405,22 +435,10 @@ export function HomeView({
     <main className={styles.home}>
       <AreaTitle area="home" className={styles.title} />
       {sections.length === 0 && (
-        <EmptyState
-          action={
-            home.environments.length === 0 && (
-              <Link
-                className="button button-secondary"
-                href={findEnvironmentsHref}
-              >
-                Finn miljøer
-              </Link>
-            )
-          }
-        >
+        <EmptyState>
           <strong className={styles.emptyTitle}>Ingenting venter på deg</strong>{" "}
-          {home.environments.length === 0
-            ? "Du er ikke med i noen miljøer ennå. Der finner du ting å låne av folk i nærheten."
-            : "Når noen vil låne av deg, eller noe skal hentes eller leveres, står det her."}
+          Når noen vil låne av deg, eller noe skal hentes eller leveres, står
+          det her.
         </EmptyState>
       )}
       <div className={styles.sections}>
@@ -437,7 +455,7 @@ export function HomeView({
               {stewardFirst && <Stewardship steward={steward} />}
               <section aria-labelledby={`hjem-${section}`}>
                 <h2 id={`hjem-${section}`} className={styles.heading}>
-                  {icon && <Icon name={icon} />}
+                  <Icon name={icon} />
                   {homeSectionHeadings[section](counted(section, items))}
                 </h2>
                 {section === "awaiting_you" ? (
@@ -460,14 +478,16 @@ export function HomeView({
           sections.every(({ section }) => section === "awaiting_you") && (
             <Stewardship steward={steward} />
           )}
-        {home.environments.length > 0 && (
-          <section aria-labelledby="hjem-miljoer">
-            <h2 id="hjem-miljoer" className={styles.heading}>
-              Dine miljøer
-            </h2>
-            <Environments environments={home.environments} />
-          </section>
-        )}
+        <section aria-labelledby="hjem-miljoer">
+          <h2 id="hjem-miljoer" className={styles.heading}>
+            <Icon name="environment" />
+            Dine miljøer
+          </h2>
+          <Environments
+            environments={home.environments}
+            mayCreate={mayCreate}
+          />
+        </section>
       </div>
     </main>
   );
