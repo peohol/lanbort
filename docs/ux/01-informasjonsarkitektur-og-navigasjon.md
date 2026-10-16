@@ -73,7 +73,7 @@ Områdene:
 - **Hjem:** «Venter på deg» med antall, «Kommer», «Uavklart», «Som administrator» med egen oppgavetelling og «Dine miljøer», i den rekkefølgen (UX-IA-016). Det som har et tidspunkt i dag, får fullt kort; resten er rader med handlingsverb, så køen er lett å skanne. Rollen står ved oppgaven og miljøet, ikke i en egen administratorflate (UX-PRIV-005, UX-PRIV-006). Når ingenting venter, er Hjem en rolig tomtilstand uten feed eller forslag (UX-IA-005).
 - **Finn:** søk etter ting eller miljøer, med filtrene «Venner» og område. Treff viser ledighet og kontekst.
 - **Lån:** én liste med filtrene «Alle», «Låner» og «Låner bort», gruppert i «Venter på deg», «Pågår og kommende» og «Venter på andre», med avsluttede lån bak en egen rad (UX-IA-006).
-- **Mine ting:** egne og medeide ting med nåstatus og hvem de er synlige for, «Registrer» og arkiverte ting bak en egen rad.
+- **Mine ting:** egne og medeide ting med nåstatus og hvem de er synlige for, «Registrer en ting» og arkiverte ting bak en egen rad, uten egen overskrift over tingene, siden sidetittelen sier hva de er.
 - **Samtaler:** én privat samtale per person, med de pågående lånene mellom dere (PS-COM-017), lånelogistikk-kanaler etter blokkering, én per lån (PS-COM-007), og hvor mange enheter som kan lese samtalene, med vei til «Mine enheter» i Konto.
 
 ### UX-IA-009 — Detaljer legges i en stabel i området brukeren startet i
@@ -155,7 +155,7 @@ Det skal være åpenbart av siden selv hva slags detalj brukeren er på. Ingen s
 **Forankring:** UX-P04, UX-P08, UX-P16; UX-IA-005
 
 - Rekkefølgen er «Venter på deg» → «Kommer» → «Uavklart» → «Som administrator» → «Dine miljøer».
-- En seksjon uten innhold vises ikke, heller ikke som overskrift.
+- En seksjon uten innhold vises ikke, heller ikke som overskrift. Unntaket er «Dine miljøer», som for en aktiv konto alltid står med hovedknappen «Opprett et miljø», like tydelig som «Registrer en ting» i Mine ting; uten miljøer står også «Finn miljøer». Seksjonsoverskriftene er store og har hvert sitt ikon, «Dine miljøer» miljøikonet, så det er lett å se hvilke valg Hjem gir (Peder 16. oktober 2026).
 - På større skjermer kan seksjonene fordeles over flere kolonner, men lese- og tastaturrekkefølgen følger den faste seksjonsrekkefølgen.
 - «Venter på deg» viser det brukeren selv skal gjøre, med antall.
 - «Kommer» viser avtalte overleveringer og returer der ingen handling er påkrevd ennå.

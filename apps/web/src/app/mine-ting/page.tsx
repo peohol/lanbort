@@ -8,11 +8,10 @@ import {
   takesNewActivity,
 } from "@lanbort/domain";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { ActionButton } from "@/components/action-button";
 import { AreaTitle } from "@/components/area-title";
+import { CreateButton } from "@/components/create-button";
 import { EmptyState } from "@/components/empty-state";
-import { Icon } from "@/components/icon";
 import { PilotObjectPolicy } from "@/components/pilot-object-policy";
 import { Tag } from "@/components/tag";
 import { ThingCard, ThingCards } from "@/components/thing-card";
@@ -65,12 +64,7 @@ export default async function ThingsPage() {
   const archived = objects.filter(({ status }) => status === "archived");
   // Registering is new activity (PS-ADM-002).
   const register = active && (
-    <Link
-      className={`button button-primary ${styles.register}`}
-      href={newObjectHref()}
-    >
-      <Icon name="plus" /> Registrer en ting
-    </Link>
+    <CreateButton href={newObjectHref()}>Registrer en ting</CreateButton>
   );
 
   const card = (object: OwnObject) => {
@@ -143,8 +137,9 @@ export default async function ThingsPage() {
         </section>
       )}
       <section aria-labelledby="ting">
-        <h2 id="ting">
-          Dine ting <span className="count">({current.length})</span>
+        {/* The area's title already says it; the heading is for structure. */}
+        <h2 id="ting" className="visually-hidden">
+          Dine ting
         </h2>
         {current.length === 0 ? (
           <EmptyState>

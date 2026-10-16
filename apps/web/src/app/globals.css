@@ -608,6 +608,18 @@ button[type="submit"]:hover,
   background: var(--color-accent-hover);
 }
 
+/* The step that makes something new (`CreateButton`): as wide as the
+   column on a phone, its own width on a wider screen. */
+.create-button {
+  width: 100%;
+}
+
+@media (min-width: 48rem) {
+  .create-button {
+    width: auto;
+  }
+}
+
 /* A step beside the main one, such as «Foreslå forlengelse»; also a submit
    button that is not the page's main step. */
 .button-secondary,
