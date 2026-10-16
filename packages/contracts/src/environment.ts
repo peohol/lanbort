@@ -281,6 +281,11 @@ export const environmentSchema = z.strictObject({
   requirementsRevision: z.int(),
   /** PS-ENV-011: objects need an administrator's approval to be visible. */
   requiresObjectApproval: z.boolean(),
+  /**
+   * PS-ENV-012: when its winding down became final. A wound-down
+   * environment is an archive for its members: nothing in it changes.
+   */
+  woundDownAt: z.iso.datetime().nullable(),
   requirements: z.array(requirementSchema),
   /**
    * PS-ENV-016: about how many active members, rounded on the server. Null
@@ -316,7 +321,19 @@ export const environmentSummarySchema = z.strictObject({
   roles: z.array(environmentRoleSchema),
   /** PS-ENV-011: new things wait for an administrator's approval. */
   requiresObjectApproval: z.boolean(),
+  /** PS-ENV-012: when it was wound down, if it was; then it is archived. */
+  woundDownAt: z.iso.datetime().nullable(),
 });
+
+/**
+ * Which of the caller's environments to list (PS-ENV-012): those in use
+ * (the default), the archive of wound-down ones, or both.
+ */
+export const ownEnvironmentsIncludeSchema = z.enum([
+  "current",
+  "archived",
+  "all",
+]);
 
 /** What administrators see of a membership to handle it. */
 export const administeredMembershipSchema = z.strictObject({
@@ -411,6 +428,9 @@ export type RequirementDraft = z.infer<typeof requirementDraftSchema>;
 export type RequirementAnswer = z.infer<typeof requirementAnswerSchema>;
 export type Environment = z.infer<typeof environmentSchema>;
 export type EnvironmentSummary = z.infer<typeof environmentSummarySchema>;
+export type OwnEnvironmentsInclude = z.infer<
+  typeof ownEnvironmentsIncludeSchema
+>;
 export type OwnMembership = z.infer<typeof ownMembershipSchema>;
 export type AdministeredMembership = z.infer<
   typeof administeredMembershipSchema

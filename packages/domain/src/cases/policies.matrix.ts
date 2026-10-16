@@ -265,7 +265,11 @@ const environment = (
   type: EnvironmentAccess["environment"]["type"] = "open",
 ): EnvironmentAccess =>
   ({
-    environment: { id: "00000000-0000-4000-8000-0000000000e1", type },
+    environment: {
+      id: "00000000-0000-4000-8000-0000000000e1",
+      type,
+      woundDownAt: null,
+    },
     ownMembership: null,
     viewer,
   }) as unknown as EnvironmentAccess;

@@ -72,13 +72,19 @@ export async function environmentCaseQueueItems(
   return caseQueueHomeItems(environment, queue, actingUserId(actor));
 }
 
-/** The case queues of the environments the caller administers. */
+/**
+ * The case queues of the environments the caller administers. Cases still
+ * open in a wound-down environment are handled to the end (PS-ENV-012).
+ */
 export const caseQueueHomeSource: HomeSource = {
   name: "case_queues",
   async items(reader) {
     const items: HomeItem[] = [];
+    const environments = await reader.query(listOwnEnvironments, {
+      include: "all",
+    });
 
-    for (const environment of await reader.query(listOwnEnvironments, {})) {
+    for (const environment of environments) {
       if (!environment.roles.includes("administrator")) continue;
 
       items.push(...(await environmentCaseQueueItems(reader, environment)));

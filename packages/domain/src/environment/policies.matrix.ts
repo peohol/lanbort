@@ -77,6 +77,7 @@ function access(
       version: 1,
       requirementsRevision: 0,
       requiresObjectApproval: false,
+      woundDownAt: null,
     },
     ownMembership: null,
     viewer: { membership: null, roles: [], restricted: false, ...viewer },
@@ -107,6 +108,12 @@ const member = (
 });
 
 const administrator = member("active", ["owner", "administrator"]);
+
+/** PS-ENV-012: the same, after its winding down became final. */
+const woundDown = (resource: EnvironmentAccess): EnvironmentAccess => ({
+  ...resource,
+  environment: { ...resource.environment, woundDownAt: new Date(0) },
+});
 
 type Case = PolicyCase<EnvironmentAccess, void>;
 
@@ -165,6 +172,11 @@ function administrationCases(): Case[] {
       "forbidden",
     ),
     expectCase("a non-member", access("open"), "forbidden"),
+    expectCase(
+      "an administrator of a wound-down environment",
+      woundDown(access("closed", administrator)),
+      "forbidden",
+    ),
     hiddenFromOutsiders(),
     ...callerCases(access("closed", administrator)),
   ];
@@ -204,6 +216,11 @@ function ownerCases(): Case[] {
         environment: { ...access("hidden").environment, state: "winding_down" },
       },
       "allow",
+    ),
+    expectCase(
+      "the owner of a wound-down environment",
+      woundDown(access("closed", administrator)),
+      "forbidden",
     ),
     expectCase(
       "an administrator who is not owner",
@@ -421,6 +438,11 @@ const ownMembershipCases = (): Case[] => [
     access("open"),
     "not_found",
   ),
+  expectCase(
+    "a member of a wound-down environment",
+    woundDown(access("open", member("active"))),
+    "forbidden",
+  ),
   hiddenFromOutsiders(),
   ...callerCases(access("open", member("active"))),
 ];
@@ -431,6 +453,11 @@ const ownMembershipCases = (): Case[] => [
  */
 const activeMemberCases = (): Case[] => [
   expectCase("an active member", access("closed", member("active")), "allow"),
+  expectCase(
+    "an active member of a wound-down environment",
+    woundDown(access("closed", member("active"))),
+    "forbidden",
+  ),
   expectCase(
     "an active member of a hidden environment",
     access("hidden", member("active")),
@@ -481,6 +508,16 @@ export const environmentMatrices = [
     expectCase(
       "a barred outsider to a hidden environment",
       access("hidden", { restricted: true }),
+      "not_found",
+    ),
+    expectCase(
+      "a member of a wound-down environment, in its archive",
+      woundDown(access("open", member("active"))),
+      "allow",
+    ),
+    expectCase(
+      "an outsider to a wound-down open environment",
+      woundDown(access("open")),
       "not_found",
     ),
     ...callerCases(access("open")),

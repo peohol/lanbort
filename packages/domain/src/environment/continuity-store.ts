@@ -25,6 +25,7 @@ import {
   windDownCancellationDays,
 } from "./model";
 import { endEnvironmentPublications } from "../publications/store";
+import { closeProposal, findOpenProposal } from "./type-change-store";
 
 /**
  * Database access for roles and continuity (WP-22). Callers hold the lock on
@@ -491,6 +492,8 @@ export async function isSoleMember(
  * PS-ENV-012: the environment stops taking anything new. A voluntary winding
  * down can be cancelled until `finalAt`, unless the owner is its only member;
  * an ownerless one has nobody who could. Those are final and settled at once.
+ * A proposed weaker type could never be decided any more (PS-ENV-008), so it
+ * lapses now rather than wait for members' answers that count for nothing.
  */
 export async function startWindDown(
   db: Db,
@@ -526,6 +529,11 @@ export async function startWindDown(
     payload: { reason, finalAt: finalAt.toISOString() },
   });
 
+  const proposal = await findOpenProposal(db, environmentId);
+  if (proposal) {
+    await closeProposal(db, proposal, "lapsed", {}, now, events);
+  }
+
   if (atOnce) {
     await settleWindDown(db, environmentId, id, now, events);
   }
@@ -534,9 +542,10 @@ export async function startWindDown(
 /**
  * Once winding down is final, membership processes that waited for it end
  * neutrally (vision: «avsluttes kontrollert etter sin art»): applications and
- * invitations end, passive members' reactivation requests close, and pending
- * and active publications end (WP-25). Members, roles, history and the
- * objects themselves stay.
+ * invitations end, passive members' reactivation requests close, invitations
+ * to a role lapse, and pending and active publications end (WP-25). Members,
+ * roles, history and the objects themselves stay, as the archive its
+ * members find it in.
  */
 export async function settleWindDown(
   db: Db,
@@ -567,6 +576,14 @@ export async function settleWindDown(
     .returning(["id", "user_id"])
     .execute();
 
+  await closeRoleInvitations(
+    db,
+    await pendingRoleInvitations(db, environmentId),
+    "lapsed",
+    null,
+    now,
+    events,
+  );
   await endEnvironmentPublications(db, environmentId, now, events);
   await db
     .updateTable("app.environment_wind_downs")

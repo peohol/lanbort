@@ -11,8 +11,8 @@ export const metadata: Metadata = { title: "Mitt medlemskap – Lånbort" };
 
 /**
  * «Mitt medlemskap» (Tomat): writing to the administrators, and leaving.
- * Without an active or passive membership, the environment's page is
- * where the user belongs.
+ * Without an active or passive membership, or once the environment is
+ * wound down, the environment's page is where the user belongs.
  */
 export default async function YourMembershipPage({
   params,
@@ -26,7 +26,10 @@ export default async function YourMembershipPage({
   });
   const state = environment.membership?.state;
 
-  if (state !== "active" && state !== "passive") {
+  if (
+    (state !== "active" && state !== "passive") ||
+    environment.woundDownAt !== null
+  ) {
     redirect(environmentHref(environmentId));
   }
 

@@ -34,6 +34,7 @@ const environment = (
   area: null,
   version: 1,
   requirementsRevision: 0,
+  woundDownAt: null,
   requiresObjectApproval: false,
   requirements: [],
   members: null,

@@ -10,7 +10,7 @@ import {
 } from "../authorization/rules";
 import { asHandler, casePolicy } from "../cases/policies";
 import type { EnvironmentAccess } from "../environment/model";
-import { canSeeEnvironment } from "../environment/policies";
+import { canSeeEnvironment, isNotWoundDown } from "../environment/policies";
 import { isActiveMember } from "../publications/policies";
 
 /**
@@ -28,7 +28,7 @@ import { isActiveMember } from "../publications/policies";
 export const reportInEnvironmentPolicy = definePolicy<EnvironmentAccess>({
   action: "case.report_in_environment",
   actor: [requireActiveAccount],
-  resource: [canSeeEnvironment, isActiveMember],
+  resource: [canSeeEnvironment, isNotWoundDown, isActiveMember],
 });
 
 /**

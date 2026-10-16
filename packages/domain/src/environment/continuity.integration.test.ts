@@ -647,8 +647,9 @@ describe("winding down (PS-ENV-012)", () => {
       membership: { state: "active" },
       continuity: { windDown: { cancellable: false } },
     });
-    expect(await read(outsider, environmentId)).toMatchObject({
-      continuity: null,
+    // To outsiders it no longer exists (UX-IA-023).
+    await expect(read(outsider, environmentId)).rejects.toMatchObject({
+      code: "not_found",
     });
     expect(await environmentEvents(environmentId)).toEqual(
       expect.arrayContaining([
@@ -722,9 +723,10 @@ describe("winding down (PS-ENV-012)", () => {
         windDown: { reason: "voluntary", finalAt, cancellable: false },
       },
     });
+    // Wound down: nothing in it changes any more.
     await expect(
       run(cancelEnvironmentWindDown, owner, { environmentId }),
-    ).rejects.toMatchObject({ code: "conflict" });
+    ).rejects.toMatchObject({ code: "forbidden" });
     expect(
       await db
         .selectFrom("app.environment_memberships")
@@ -900,7 +902,10 @@ describe("temporary ownerlessness (PS-ENV-013–014)", () => {
         windDown: { reason: "ownerless", cancellable: false },
       },
     });
-    expect((await read(applicant, environmentId)).membership).toBeNull();
+    // The applicant was never a member, and finds nothing (UX-IA-023).
+    await expect(read(applicant, environmentId)).rejects.toMatchObject({
+      code: "not_found",
+    });
     expect(await depart(owner)).toEqual({ environments: 0 });
   });
 

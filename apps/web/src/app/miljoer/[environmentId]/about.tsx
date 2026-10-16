@@ -16,6 +16,8 @@ import styles from "./environment.module.css";
 export function About({ environment }: { environment: Environment }) {
   const { description, audience, objectFocus, members, location, area } =
     environment;
+  // A wound-down environment takes nobody in and has no members to count.
+  const inUse = environment.woundDownAt === null;
 
   return (
     <section
@@ -24,8 +26,12 @@ export function About({ environment }: { environment: Environment }) {
     >
       <h2 id="om-miljoet">Om miljøet</h2>
       <dl className="facts">
-        <dt>Type</dt>
-        <dd>{environmentTypeExplanations[environment.type]}</dd>
+        {inUse && (
+          <>
+            <dt>Type</dt>
+            <dd>{environmentTypeExplanations[environment.type]}</dd>
+          </>
+        )}
         {description && (
           <>
             <dt>Beskrivelse</dt>
@@ -44,7 +50,7 @@ export function About({ environment }: { environment: Environment }) {
             <dd className="message-text">{objectFocus}</dd>
           </>
         )}
-        {members && (
+        {inUse && members && (
           <>
             <dt>Medlemmer</dt>
             <dd>{describeMembers(members)}</dd>

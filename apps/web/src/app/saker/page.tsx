@@ -44,7 +44,8 @@ export default async function CasesPage({
       (page) => page.items,
       pagesShown(query, listKey),
     ),
-    pageQuery(listOwnEnvironments, {}),
+    // Own cases keep the name of an environment since wound down.
+    pageQuery(listOwnEnvironments, { include: "all" }),
   ]);
   const names = new Map(
     (environments ?? []).map((environment) => [
@@ -52,8 +53,10 @@ export default async function CasesPage({
       environment.name,
     ]),
   );
-  const administered = (environments ?? []).filter((environment) =>
-    environment.roles.includes("administrator"),
+  const administered = (environments ?? []).filter(
+    (environment) =>
+      environment.roles.includes("administrator") &&
+      environment.woundDownAt === null,
   );
   const groups = [
     {
