@@ -34,4 +34,4 @@ Muligheten for redusert pris ved svak økonomi vurderes senere. Ingen inntektsko
 
 ## Før aktivering
 
-Betalingsleverandør, abonnementsvilkår, fornyelse, kansellering, feil, refusjon, angrerett, MVA og håndtering av forsinkede betalingshendelser utredes under [OD-0058](../open-decisions.md#od-0058--praktisk-abonnementshandtering-ved-ordinær-drift). Se [overgangsplan](../implementation/vipps-identitet-og-abonnement.md).
+Betalingsleverandør, abonnementsvilkår, fornyelse, kansellering, feil, refusjon, angrerett, MVA og håndtering av forsinkede betalingshendelser utredes under [OD-0058](../open-decisions.md#od-0058--praktisk-abonnementshåndtering-ved-ordinær-drift). Se [overgangsplan](../implementation/vipps-identitet-og-abonnement.md).

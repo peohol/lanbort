@@ -52,7 +52,7 @@ Migreringen skal bevare venner, miljøer, objekter, lån, medeiere, historikk og
 - Brukeren tilbys **30 kr/mnd.** først når hen vil sende en ny låneforespørsel. Vis totalpris inkludert eventuell MVA. Ingen avgift per lån eller prioritering over andre brukere.
 - Lånerett registreres og håndheves av backend når **nye** forespørsler sendes. Et betalt abonnement kan sies opp; låneretten varer ut betalt periode. Ventende og pågående lån, retur, meldinger som er nødvendige for gjennomføring, saksbehandling og historikk kan ikke opphøre ved abonnementsslutt.
 - Abonnementet må kjøpes aktivt etter tydelig informasjon om pris og vilkår. Pilotbrukere skal ikke automatisk trekkes ved overgang.
-- Valg av leverandør, betalingsoppfølging, oppsigelsesflyt, refusjoner, fornyelser, mva., angrerett og håndtering av betalingsfeil er foreløpig åpne: [OD-0058](../open-decisions.md#od-0058--praktisk-abonnementshandtering-ved-ordinær-drift).
+- Valg av leverandør, betalingsoppfølging, oppsigelsesflyt, refusjoner, fornyelser, mva., angrerett og håndtering av betalingsfeil er foreløpig åpne: [OD-0058](../open-decisions.md#od-0058--praktisk-abonnementshåndtering-ved-ordinær-drift).
 - En prisreduksjon for personer med svak økonomi kan vurderes senere; ingen ny søknads- eller inntektskontroll nå.
 
 Betalingsvarsler fra leverandøren må verifiseres, knyttes til riktig konto og behandles på en måte som tåler duplikater, forsinkelser og forsøk på forfalskning. Klientens visning av en kvittering skal ikke alene utløse lånerett.
