@@ -223,7 +223,7 @@ Det skal være åpenbart av siden selv hva slags detalj brukeren er på. En type
 ### UX-IA-023 — Avviklede miljøer ligger i et arkiv
 **Forankring:** UX-P16; PS-ENV-012; Peder 16. oktober 2026
 
-- Et avviklet miljø vises ikke lenger noe sted i appen der brukeren holder på med noe: ikke under «Dine miljøer», i Finn, i tingenes «Hvor den vises», som felles miljø på en personside, eller som noe som venter på Hjem.
+- Et avviklet miljø vises ikke lenger noe sted i appen der brukeren holder på med noe: ikke under «Dine miljøer», i Finn, i tingenes «Hvor den vises», som felles miljø på en personside, eller blant nye miljøer på Hjem. Unntaket er en åpen sak i miljøets kø: den venter fortsatt på administratorene på Hjem til den er behandlet, som andre saker (PS-ENV-012).
 - De som var medlemmer da miljøet ble avviklet, finner det under «Avviklede miljøer», en stille lenke under «Dine miljøer» på Hjem. Lenken vises bare for den som har et slikt miljø. Arkivet viser navnet, når miljøet ble avviklet og rollen brukeren hadde.
 - Miljøets side er da skrivebeskyttet og uten handlinger: et merke «Avviklet» under tittelen, et statuskort som sier at miljøet ikke er i bruk lenger og når det ble avviklet, og hva miljøet var. Medlemsliste, ting, søk, administrasjon og «Mitt medlemskap» vises ikke. Administratorer får en lenke til miljøets saker, så åpne saker kan behandles ferdig.
 
