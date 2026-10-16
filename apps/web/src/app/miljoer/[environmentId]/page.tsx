@@ -40,6 +40,7 @@ import { FoundThings, Things } from "./member-content";
 import { ForgetParam } from "./forget-param";
 import { Members } from "./members";
 import { Membership } from "./membership";
+import { WoundDownEnvironment } from "./wound-down";
 
 export const metadata: Metadata = { title: "Miljøet – Lånbort" };
 
@@ -54,7 +55,8 @@ const searchParam = "q";
  * medlemskap» a page away. An active membership is the «Medlem» tag under
  * the title; arriving right after joining, the new member is welcomed.
  * What the caller may see is decided by each query's own policy; a hidden
- * environment looks like nothing at all to outsiders (UX-PRIV-002).
+ * environment looks like nothing at all to outsiders (UX-PRIV-002), and so
+ * does a wound-down one, which its members find read-only (UX-IA-023).
  */
 export default async function EnvironmentPage({
   params,
@@ -68,6 +70,16 @@ export default async function EnvironmentPage({
   const environment = await pageQueryOrNotFound(getEnvironment, {
     environmentId,
   });
+
+  if (environment.woundDownAt !== null) {
+    return (
+      <WoundDownEnvironment
+        environment={environment}
+        woundDownAt={environment.woundDownAt}
+      />
+    );
+  }
+
   const step = membershipStep(environment);
   const active = environment.membership?.state === "active";
   const administrator = environment.roles.includes("administrator");

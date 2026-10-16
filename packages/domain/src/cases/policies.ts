@@ -13,7 +13,11 @@ import {
   requireNotInvolved,
 } from "../authorization/rules";
 import type { EnvironmentAccess } from "../environment/model";
-import { canSeeEnvironment, isAdministrator } from "../environment/policies";
+import {
+  canSeeEnvironment,
+  isAdministrator,
+  isNotWoundDown,
+} from "../environment/policies";
 import { platformStewardAccess } from "../platform/policies";
 import type { SocialPair } from "../social/pair";
 import { type CaseRecord, caseKinds, type ParticipantRecord } from "./model";
@@ -170,6 +174,7 @@ export const openEnvironmentContactPolicy =
     actor: [requireActiveAccount],
     resource: [
       (input) => (input.resource.removed ? allow : canSeeEnvironment(input)),
+      isNotWoundDown,
       ({ resource }) =>
         resource.removed || resource.viewer.membership?.state === "active"
           ? allow

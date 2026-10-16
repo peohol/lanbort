@@ -41,7 +41,8 @@ export const homeSources: readonly HomeSource[] = [
 /**
  * Home (UX-IA-005): first what waits for the caller, unsettled loans, the
  * next handover and return days and their administrative tasks; then
- * shortcuts to their own environments. Every part comes from the query of
+ * shortcuts to their own environments, and whether they have an archive of
+ * wound-down ones (PS-ENV-012). Every part comes from the query of
  * the context it leads to, as the caller and as of the same moment, so Home
  * never shows more than that context does. A part the caller may not read
  * (an account that keeps only what its loans need) is simply empty.
@@ -66,17 +67,21 @@ export const readHome = defineQuery({
           }
         }),
       ),
-      reader.ifAllowed(listOwnEnvironments, {}),
+      reader.ifAllowed(listOwnEnvironments, { include: "all" }),
     ]);
+    const memberOf = (environments ?? []).filter(
+      (environment) =>
+        environment.membershipState === "active" ||
+        environment.membershipState === "passive",
+    );
 
     return {
       resource: {
         sections: arrangeHome(items.flat()),
-        environments: (environments ?? []).filter(
-          (environment) =>
-            environment.membershipState === "active" ||
-            environment.membershipState === "passive",
+        environments: memberOf.filter(
+          ({ woundDownAt }) => woundDownAt === null,
         ),
+        hasArchive: memberOf.some(({ woundDownAt }) => woundDownAt !== null),
       },
       context: undefined,
     };

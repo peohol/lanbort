@@ -6,7 +6,11 @@ import type {
 } from "@lanbort/contracts";
 import Link from "next/link";
 import { Fragment, type ReactNode } from "react";
-import { environmentHref, newEnvironmentHref } from "@/navigation/routes";
+import {
+  environmentArchiveHref,
+  environmentHref,
+  newEnvironmentHref,
+} from "@/navigation/routes";
 import { calendarDay } from "@/presentation/dates";
 import { administrationHref } from "@/presentation/environment-admin";
 import { roleName } from "@/presentation/environments";
@@ -307,9 +311,11 @@ function Administration({
 function Environments({
   environments,
   mayCreate,
+  hasArchive,
 }: {
   environments: readonly EnvironmentSummary[];
   mayCreate: boolean;
+  hasArchive: boolean;
 }) {
   return (
     <>
@@ -347,6 +353,12 @@ function Environments({
         <Link className="button button-secondary" href={findEnvironmentsHref}>
           Finn miljøer
         </Link>
+      )}
+      {/* UX-IA-023: the archive, quietly, for those who have one. */}
+      {hasArchive && (
+        <p className="link-row">
+          <Link href={environmentArchiveHref}>Avviklede miljøer</Link>
+        </p>
       )}
     </>
   );
@@ -486,6 +498,7 @@ export function HomeView({
           <Environments
             environments={home.environments}
             mayCreate={mayCreate}
+            hasArchive={home.hasArchive}
           />
         </section>
       </div>

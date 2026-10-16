@@ -13,10 +13,11 @@ import {
 import { personVisibleToActor } from "../people/policies";
 import type { PersonRelation } from "../people/store";
 import type { RoleInvitationRecord } from "./continuity-store";
-import type {
-  EnvironmentAccess,
-  MembershipRecord,
-  OwnEnvironmentRow,
+import {
+  type EnvironmentAccess,
+  isWoundDown,
+  type MembershipRecord,
+  type OwnEnvironmentRow,
 } from "./model";
 
 /** A membership an administrator acts on. */
@@ -28,14 +29,26 @@ export interface AdministeredMembership extends EnvironmentAccess {
  * PS-ENV-001 / PS-NFR-002: open and closed environments can be discovered by
  * every signed-in user. A hidden one exists only for its current members,
  * including invited users; to everyone else it is indistinguishable from an
- * environment that does not exist. This rule comes first in every policy.
+ * environment that does not exist. So is a wound-down one, which stays as an
+ * archive for its members (PS-ENV-012). This rule comes first in every
+ * policy.
  */
 export const canSeeEnvironment: ResourceRule<EnvironmentAccess, void> = ({
   resource,
 }) =>
-  resource.environment.type !== "hidden" || resource.viewer.membership !== null
+  (resource.environment.type !== "hidden" &&
+    !isWoundDown(resource.environment)) ||
+  resource.viewer.membership !== null
     ? allow
     : deny("not_found");
+
+/**
+ * PS-ENV-012: nothing in a wound-down environment changes any more, and
+ * nobody administers it. Its members can only look back at it.
+ */
+export const isNotWoundDown: ResourceRule<EnvironmentAccess, void> = ({
+  resource,
+}) => (isWoundDown(resource.environment) ? deny("forbidden") : allow);
 
 /** The caller has a current membership in the environment. */
 const hasMembership: ResourceRule<EnvironmentAccess, void> = ({ resource }) =>
@@ -78,7 +91,18 @@ const isNotRestricted: ResourceRule<EnvironmentAccess, void> = ({
   resource,
 }) => (resource.viewer.restricted ? deny("forbidden") : allow);
 
-const administration = [canSeeEnvironment, isAdministrator] as const;
+const administration = [
+  canSeeEnvironment,
+  isNotWoundDown,
+  isAdministrator,
+] as const;
+
+/** What a member does in the environment, while it is still in use. */
+const memberAction = [
+  canSeeEnvironment,
+  isNotWoundDown,
+  hasMembership,
+] as const;
 
 export const createEnvironmentPolicy = definePolicy({
   action: "environment.create",
@@ -118,26 +142,26 @@ export const updateRequirementsPolicy = definePolicy<EnvironmentAccess, void>({
 export const joinEnvironmentPolicy = definePolicy<EnvironmentAccess, void>({
   action: "environment_membership.join",
   actor: [requireActiveAccount],
-  resource: [canSeeEnvironment, isNotRestricted],
+  resource: [canSeeEnvironment, isNotWoundDown, isNotRestricted],
 });
 
 /** The member's own answers, invitation and departure. */
 export const submitAnswersPolicy = definePolicy<EnvironmentAccess, void>({
   action: "environment_membership.submit_answers",
   actor: [requireActiveAccount],
-  resource: [canSeeEnvironment, hasMembership],
+  resource: [...memberAction],
 });
 
 export const acceptInvitationPolicy = definePolicy<EnvironmentAccess, void>({
   action: "environment_membership.accept_invitation",
   actor: [requireActiveAccount],
-  resource: [canSeeEnvironment, hasMembership],
+  resource: [...memberAction],
 });
 
 export const leaveEnvironmentPolicy = definePolicy<EnvironmentAccess, void>({
   action: "environment_membership.leave",
   actor: [requireActiveAccount],
-  resource: [canSeeEnvironment, hasMembership],
+  resource: [...memberAction],
 });
 
 export const listMembershipsPolicy = definePolicy<EnvironmentAccess, void>({
@@ -153,7 +177,7 @@ export const listMembershipsPolicy = definePolicy<EnvironmentAccess, void>({
 export const listMembersPolicy = definePolicy<EnvironmentAccess, void>({
   action: "environment_member.list",
   actor: [requireActiveAccount],
-  resource: [canSeeEnvironment, hasMembership, isActiveMember],
+  resource: [...memberAction, isActiveMember],
 });
 
 export const inviteMemberPolicy = definePolicy<EnvironmentAccess, void>({
@@ -282,7 +306,7 @@ export const acceptRoleInvitationPolicy = definePolicy<
 >({
   action: "environment.accept_role_invitation",
   actor: [requireActiveAccount],
-  resource: [canSeeEnvironment, hasMembership, isInvitee],
+  resource: [...memberAction, isInvitee],
 });
 
 export const declineRoleInvitationPolicy = definePolicy<
@@ -291,7 +315,7 @@ export const declineRoleInvitationPolicy = definePolicy<
 >({
   action: "environment.decline_role_invitation",
   actor: [requireActiveAccount],
-  resource: [canSeeEnvironment, hasMembership, isInvitee],
+  resource: [...memberAction, isInvitee],
 });
 
 export const withdrawRoleInvitationPolicy = definePolicy<
@@ -310,20 +334,20 @@ export const withdrawRoleInvitationPolicy = definePolicy<
 export const offerOwnershipPolicy = definePolicy<EnvironmentAccess, void>({
   action: "environment.offer_ownership",
   actor: [requireActiveAccount, requireRecentAuthentication()],
-  resource: [canSeeEnvironment, isOwner],
+  resource: [canSeeEnvironment, isNotWoundDown, isOwner],
 });
 
 /** Only the owner removes another administrator (PS-ENV-003). */
 export const removeAdministratorPolicy = definePolicy<EnvironmentAccess, void>({
   action: "environment.remove_administrator",
   actor: [requireActiveAccount],
-  resource: [canSeeEnvironment, isOwner],
+  resource: [canSeeEnvironment, isNotWoundDown, isOwner],
 });
 
 export const resignAdministratorPolicy = definePolicy<EnvironmentAccess, void>({
   action: "environment.resign_administrator",
   actor: [requireActiveAccount],
-  resource: [canSeeEnvironment, holdsAdministratorRole],
+  resource: [canSeeEnvironment, isNotWoundDown, holdsAdministratorRole],
 });
 
 /** PS-ENV-013: an administrator who can act registers interest. */
@@ -339,20 +363,20 @@ export const withdrawOwnershipClaimPolicy = definePolicy<
 >({
   action: "environment.withdraw_ownership_claim",
   actor: [requireActiveAccount],
-  resource: [canSeeEnvironment, holdsAdministratorRole],
+  resource: [canSeeEnvironment, isNotWoundDown, holdsAdministratorRole],
 });
 
 /** PS-ENV-012: only the owner starts winding down, with a recent proof. */
 export const startWindDownPolicy = definePolicy<EnvironmentAccess, void>({
   action: "environment.start_wind_down",
   actor: [requireActiveAccount, requireRecentAuthentication()],
-  resource: [canSeeEnvironment, isOwner],
+  resource: [canSeeEnvironment, isNotWoundDown, isOwner],
 });
 
 export const cancelWindDownPolicy = definePolicy<EnvironmentAccess, void>({
   action: "environment.cancel_wind_down",
   actor: [requireActiveAccount],
-  resource: [canSeeEnvironment, isOwner],
+  resource: [canSeeEnvironment, isNotWoundDown, isOwner],
 });
 
 /**
@@ -379,7 +403,7 @@ export const withdrawTypeChangePolicy = definePolicy<EnvironmentAccess, void>({
 export const respondToTypeChangePolicy = definePolicy<EnvironmentAccess, void>({
   action: "environment_membership.respond_to_type_change",
   actor: [requireActiveAccount],
-  resource: [canSeeEnvironment, hasMembership, isActiveMember],
+  resource: [...memberAction, isActiveMember],
 });
 
 /** The scheduled job that decides proposals whose deadline has passed. */

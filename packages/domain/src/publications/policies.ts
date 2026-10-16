@@ -9,7 +9,11 @@ import {
   requireNotInvolved,
 } from "../authorization/rules";
 import type { EnvironmentAccess } from "../environment/model";
-import { canSeeEnvironment, isAdministrator } from "../environment/policies";
+import {
+  canSeeEnvironment,
+  isAdministrator,
+  isNotWoundDown,
+} from "../environment/policies";
 import { isObjectOwner, type ObjectResource } from "../objects/policies";
 import type { SocialPair } from "../social/pair";
 import { visiblePair } from "../social/policies";
@@ -87,6 +91,7 @@ function decisionPolicy(action: string) {
     actor: [requireActiveAccount],
     resource: [
       canSeeEnvironment,
+      isNotWoundDown,
       isAdministrator,
       requireNotInvolved(({ resource }) => resource.ownerIds),
     ],
@@ -117,7 +122,7 @@ function administrationPolicy(action: string) {
   return definePolicy<EnvironmentAccess, void>({
     action,
     actor: [requireActiveAccount],
-    resource: [canSeeEnvironment, isAdministrator],
+    resource: [canSeeEnvironment, isNotWoundDown, isAdministrator],
   });
 }
 

@@ -41,6 +41,7 @@ function environment(changes: Partial<Environment> = {}): Environment {
     version: 1,
     requirementsRevision: 0,
     requiresObjectApproval: false,
+    woundDownAt: null,
     requirements: [],
     members: null,
     applicationRejected: false,
