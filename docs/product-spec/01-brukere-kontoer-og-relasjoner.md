@@ -53,6 +53,8 @@ Avsenderen får samme bekreftelse uansett, og ser forespørselen bare som en inv
 
 Det kan bare være én åpen invitasjon per avsender og adresse, antallet per døgn er begrenset, og en invitasjon som trekkes tilbake eller utløper, tar med seg en forespørsel som fortsatt venter. Adressen og invitasjonen slettes 30 dager etter at den er avsluttet.
 
+Etter overgang til Vipps skal en slik invitasjon alltid føre til **Vipps-registrering**, aldri opprettelse med e-postkode. Den inviterte må deretter påvise kontroll over invitasjonsadressen før en ventende venneforespørsel kan knyttes til kontoen, for eksempel gjennom verifisert e-postopplysning fra Vipps eller en særskilt tidsbegrenset bekreftelse av invitasjonen. Dette er ikke en alternativ måte å registrere seg på. Personvern- og blokkeringreglene over gjelder uendret.
+
 ### PS-USR-014 — Venneforespørsel med QR-kode
 **Forankring:** [Vennskap](../vision/02-brukere-roller-og-relasjoner.md); PS-USR-003, PS-USR-006, PS-USR-012
 

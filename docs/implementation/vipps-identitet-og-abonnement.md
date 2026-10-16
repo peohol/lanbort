@@ -24,6 +24,10 @@ Identitet er obligatorisk for **alle**; abonnement er bare nødvendig for å sta
 - Vipps oppgir at navn og fødselsdato verifiseres mot Folkeregisteret for aktuelle scopes, men at **Vipps Login ikke er en elektronisk ID**. Unngå å markedsføre løsningen som BankID-ekvivalent eller en garanti for brukeratferd. [Vipps user information](https://developer.vippsmobilepay.com/docs/APIs/login-api/api-guide/user-info/) og [Vipps Login API](https://developer.vippsmobilepay.com/api/login).
 - Minimer logger, oppbevaring og visning av personopplysninger. Vurder vilkår, GDPR, personvern og konsekvensene for personer uten Vipps før bred lansering. Dette skaper ingen alternativ registreringsvei.
 
+## Invitasjoner fra eksisterende medlemmer
+
+Invitasjoner og venneforespørsler sendt til en e-postadresse må fortsatt fungere etter at nyregistrering er stengt for e-postkode. En ny person følger Vipps-registrering før invitasjonen knyttes til vedkommendes konto. Kontroll over invitasjonsadressen må bekreftes separat, for eksempel med en verifisert e-postopplysning fra Vipps eller en avgrenset invitasjonsbekreftelse. Invitasjonslenken er **ikke en alternativ kontoopprettelse**, og den må ikke røpe om en adresse har konto, ble blokkert eller avslo en forespørsel (PS-USR-013). Piloten beholder dagens e-postflyt.
+
 ## Nye enheter og lokal innlogging
 
 **Første gang på en ny eller ikke lenger godkjent enhet/nettleserinstallasjon skal alltid starte med Vipps**, selv om brukeren har en gyldig passkey som er synkronisert mellom egne telefoner og PC-er.
