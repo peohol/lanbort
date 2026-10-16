@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { areaOf, areas, layerOf } from "./areas";
 import { chatDevicesHref, isChatPage } from "./chat";
+import { needsOwnDocument } from "./headers";
 import { hrefFor } from "./targets";
 
 const id = "00000000-0000-4000-8000-000000000001";
@@ -61,5 +62,22 @@ describe("the chat pages (ADR-0010 §13)", () => {
     for (const path of ["/konto", "/konto/venner", "/samtalerx", "/"]) {
       expect(isChatPage(path)).toBe(false);
     }
+  });
+});
+
+describe("pages loaded as a new document (ADR-0010 §13)", () => {
+  it("are those across the chat pages' headers, outside the layers", () => {
+    expect(needsOwnDocument("/samtaler", "/mine-ting")).toBe(true);
+    expect(needsOwnDocument("/samtaler/abc", "/")).toBe(true);
+    expect(needsOwnDocument("/", "/samtaler")).toBe(true);
+    expect(needsOwnDocument("/ting/abc", "/samtaler/abc")).toBe(true);
+  });
+
+  it("are not those with the same headers, or opened in a layer", () => {
+    expect(needsOwnDocument("/lan", "/mine-ting")).toBe(false);
+    expect(needsOwnDocument("/samtaler/abc", "/samtaler")).toBe(false);
+    // A layer keeps the page under it; Mine enheter is reloaded by chat.
+    expect(needsOwnDocument("/konto", "/samtaler")).toBe(false);
+    expect(needsOwnDocument(chatDevicesHref, "/")).toBe(false);
   });
 });

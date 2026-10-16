@@ -19,6 +19,8 @@ export type ApiResult<T> =
 export interface SendOptions {
   readonly idempotencyKey?: string;
   readonly method?: "POST" | "PATCH" | "DELETE";
+  /** Sent through even if the page is left meanwhile. */
+  readonly keepalive?: boolean;
 }
 
 /**
@@ -48,6 +50,7 @@ export async function postJson<T = unknown>(
     method: options.method ?? "POST",
     headers: { "content-type": "application/json", ...keyHeader(options) },
     body: JSON.stringify(body ?? {}),
+    keepalive: options.keepalive ?? false,
   });
 }
 

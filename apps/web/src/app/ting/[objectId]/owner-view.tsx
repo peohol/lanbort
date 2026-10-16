@@ -77,11 +77,6 @@ import { pageQuery } from "@/server/session";
 import styles from "./owner-view.module.css";
 import { QuestionList, questionsId } from "./questions";
 
-/*
- * Links to an environment's page (WP-84) are not prefetched: that page is
- * built alongside this one.
- */
-
 /** What every part of the owners' view knows. */
 interface Owned {
   readonly object: OwnObject;
@@ -522,9 +517,7 @@ function WhereShownSection({
             <li key={key}>
               <span className={styles.place} id={`hvor-${key}`}>
                 {environment ? (
-                  <Link href={environmentHref(environment.id)} prefetch={false}>
-                    {name}
-                  </Link>
+                  <Link href={environmentHref(environment.id)}>{name}</Link>
                 ) : (
                   name
                 )}

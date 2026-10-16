@@ -2,30 +2,49 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { layerOf } from "@/navigation/areas";
-import { isChatPage } from "@/navigation/chat";
-import { loadedPath } from "@/navigation/headers";
+import { needsOwnDocument } from "@/navigation/headers";
+import { followedLink, replacesPage } from "@/navigation/links";
+import { expectNewDocument } from "./navigation-stack";
 
 /**
- * A document keeps the security headers it was loaded with (ADR-0010 §13).
- * Chat pages have stricter ones than the rest of the app, so going between
- * them inside the app loads the page anew: chat's keys are left behind in
- * the old document, and the map and location work again outside chat.
- * Konto and Varsler open as a layer over the page below, which keeps its
- * headers, so they are no such step. Mine enheter, the chat page in Konto,
- * is loaded anew by chat itself (`ChatProvider`).
+ * A document keeps the security headers it was loaded with (ADR-0010 §13),
+ * so going between chat pages and the rest of the app loads the page anew
+ * (`needsOwnDocument`): chat's keys are left behind in the old document,
+ * and the map and location work again outside chat.
+ *
+ * A link there is followed as a new document at once, instead of first
+ * inside this one: the link's own handlers still run, such as marking a
+ * notification read, and Next.js leaves a click that is already prevented
+ * alone. Anything else that reaches such a page inside the app, such as
+ * the browser's back, loads it anew when it is shown.
  */
 export function HeaderBoundary() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (
-      layerOf(pathname) === null &&
-      isChatPage(pathname) !== isChatPage(loadedPath())
-    ) {
-      location.reload();
-    }
+    if (needsOwnDocument(pathname)) location.reload();
   }, [pathname]);
+
+  useEffect(() => {
+    function onClick(event: MouseEvent) {
+      const link = followedLink(event);
+      if (!link || !needsOwnDocument(link.pathname)) return;
+
+      event.preventDefault();
+      const { href, pathname, search } = link;
+      const replace = replacesPage(link);
+      setTimeout(() => {
+        expectNewDocument(`${pathname}${search}`);
+        if (replace) location.replace(href);
+        else location.assign(href);
+      });
+    }
+
+    // Before the page's own handlers, which see the click as prevented.
+    window.addEventListener("click", onClick, { capture: true });
+    return () =>
+      window.removeEventListener("click", onClick, { capture: true });
+  }, []);
 
   return null;
 }

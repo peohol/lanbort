@@ -11,6 +11,7 @@ import {
   useRef,
 } from "react";
 import { type LayerId, layerById } from "@/navigation/areas";
+import { followedLink } from "@/navigation/links";
 import { accountLayerHref } from "@/navigation/routes";
 import { Icon } from "./icon";
 import { closeLayer, scrollFor } from "./navigation-stack";
@@ -112,21 +113,11 @@ export function Layer({
   }, [pathname]);
 
   // A plain click on a link stays in the layer where the page opens in it,
-  // and leaves the page under the layer where it was.
+  // and leaves the page under the layer where it was. A link to a page
+  // loaded as a new document is already on its way (`HeaderBoundary`).
   function onClickCapture(event: MouseEvent) {
-    const link = (event.target as Element).closest("a[href]");
-    if (
-      !(link instanceof HTMLAnchorElement) ||
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey ||
-      link.target ||
-      link.origin !== location.origin
-    ) {
-      return;
-    }
+    const link = followedLink(event.nativeEvent);
+    if (!link || event.defaultPrevented) return;
 
     const address = `${link.pathname}${link.search}${link.hash}`;
     const href = within[layer](address) ?? address;

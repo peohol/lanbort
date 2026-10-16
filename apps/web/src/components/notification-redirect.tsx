@@ -45,7 +45,12 @@ export function NotificationRedirect({
     <main>
       <h1>Åpner varselet</h1>
       <p className="link-row">
-        <Link href={href} replace onClick={() => expectDirectEntry("epost")}>
+        <Link
+          href={href}
+          replace
+          data-history="replace"
+          onClick={() => expectDirectEntry("epost")}
+        >
           Gå videre
         </Link>
       </p>

@@ -83,6 +83,41 @@ function historyAddress(history: NavigationHistory, index: number) {
   return `${pathname}${search}`;
 }
 
+const here = () => `${location.pathname}${location.search}`;
+
+/**
+ * How a page loaded as a new document (`HeaderBoundary`) arrives: as it
+ * would have inside the app, not as an entry from outside it.
+ */
+const arrivalKey = "lanbort.navigation.arrival";
+
+/** The next page, at `href`, is loaded as a new document. */
+export function expectNewDocument(href: string) {
+  const { how, via } = next.seen ? following() : next;
+  try {
+    sessionStorage.setItem(arrivalKey, JSON.stringify({ href, how, via }));
+  } catch {
+    // Without storage the page arrives as a direct entry.
+  }
+}
+
+/** The arrival announced for this document, used up once read. */
+function carriedArrival(): typeof next | null {
+  try {
+    const stored = sessionStorage.getItem(arrivalKey);
+    sessionStorage.removeItem(arrivalKey);
+    const arrival = stored
+      ? (JSON.parse(stored) as { href: string } & Omit<typeof next, "seen">)
+      : null;
+
+    return arrival?.href === here()
+      ? { how: arrival.how, via: arrival.via, seen: false }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 if (typeof window !== "undefined") {
   try {
     const stored = sessionStorage.getItem(storageKey);
@@ -94,14 +129,11 @@ if (typeof window !== "undefined") {
   const [load] = performance.getEntriesByType(
     "navigation",
   ) as PerformanceNavigationTiming[];
-  next = {
-    how:
-      load?.type === "reload" || load?.type === "back_forward"
-        ? "history"
-        : "direct",
-    via: null,
-    seen: false,
-  };
+  const carried = carriedArrival();
+  next =
+    load?.type === "reload" || load?.type === "back_forward"
+      ? { how: "history", via: null, seen: false }
+      : (carried ?? { how: "direct", via: null, seen: false });
 
   window.addEventListener("popstate", () => {
     next = { how: "history", via: null, seen: false };
@@ -124,8 +156,6 @@ function take() {
   next = following();
   return arrival;
 }
-
-const here = () => `${location.pathname}${location.search}`;
 
 /** The address now, unless it is in a layer: then the screen under it. */
 const outsideNow = () =>
