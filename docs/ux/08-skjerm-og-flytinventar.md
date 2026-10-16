@@ -174,9 +174,18 @@ Ordinær bruker omfatter låntaker, utlåner, eier og medeier av ting, ansvarlig
 #### Miljøets side
 
 - **Oppgave:** forstå et miljø før innmelding, bruke det som medlem og håndtere egne medlems- og rollevalg.
-- **Tilstander:** åpent (krav, regler, bli med); lukket (begrenset forhåndsvisning, søk); skjult (bare for den som er invitert eller medlem); søknad venter; aktivt medlem (tingene i miljøet, «Registrer en ting her», medlemsliste, kontakt administratorene, forlat miljøet); egen ventende rolleinvitasjon (administrator eller eierskap: godta eller avslå); passivt medlem forklart; under avvikling; ingen administrator kan behandle henvendelser nå.
+- **Tilstander:** åpent (krav, regler, bli med); lukket (begrenset forhåndsvisning, søk); skjult (bare for den som er invitert eller medlem); søknad venter; aktivt medlem (tingene i miljøet, «Registrer en ting her», medlemsliste, kontakt administratorene, forlat miljøet); egen ventende rolleinvitasjon (administrator eller eierskap: godta eller avslå); passivt medlem forklart; under avvikling; avviklet (skrivebeskyttet, uten handlinger, bare for dem som var medlemmer); ingen administrator kan behandle henvendelser nå.
 - **Ser / handler:** innloggede innenfor det typen tillater; medlemmer ser og bruker innholdet, ser medlemslisten og ser hvem som eier tingene (PS-ENV-015). Mottakeren av en rolleinvitasjon svarer som medlem på miljøets side før en eventuell ny rolle blir aktiv.
-- **Regler:** UX-IA-004, UX-IA-010, UX-JRN-002, UX-PRIV-002, UX-PRIV-003, UX-EXC-009, PS-ENV-001, PS-ENV-003, PS-ENV-004, PS-ENV-012, PS-ENV-014, PS-NFR-002.
+- **Regler:** UX-IA-004, UX-IA-010, UX-IA-023, UX-JRN-002, UX-PRIV-002, UX-PRIV-003, UX-EXC-009, PS-ENV-001, PS-ENV-003, PS-ENV-004, PS-ENV-012, PS-ENV-014, PS-NFR-002.
+- **Forløp:** normal.
+- **UI-pakke:** WP-84.
+
+#### Avviklede miljøer
+
+- **Oppgave:** finne igjen miljøer brukeren var med i da de ble avviklet.
+- **Tilstander:** liste med navn, når miljøet ble avviklet og brukerens rolle; tom.
+- **Ser / handler:** bare den som var aktivt eller passivt medlem da avviklingen ble endelig. Lenken under «Dine miljøer» på Hjem vises bare når det finnes slike miljøer.
+- **Regler:** UX-IA-023, PS-ENV-012.
 - **Forløp:** normal.
 - **UI-pakke:** WP-84.
 

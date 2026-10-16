@@ -6,7 +6,11 @@ import type {
 } from "@lanbort/contracts";
 import Link from "next/link";
 import { Fragment, type ReactNode } from "react";
-import { environmentHref, newEnvironmentHref } from "@/navigation/routes";
+import {
+  environmentArchiveHref,
+  environmentHref,
+  newEnvironmentHref,
+} from "@/navigation/routes";
 import { calendarDay } from "@/presentation/dates";
 import { administrationHref } from "@/presentation/environment-admin";
 import { roleName } from "@/presentation/environments";
@@ -301,31 +305,41 @@ function Administration({
 
 function Environments({
   environments,
+  hasArchive,
 }: {
   environments: readonly EnvironmentSummary[];
+  hasArchive: boolean;
 }) {
   return (
     <>
-      <ul className={`${styles.list} ${styles.environments}`}>
-        {environments.map((environment) => {
-          const role = roleName(environment.roles);
+      {environments.length > 0 && (
+        <ul className={`${styles.list} ${styles.environments}`}>
+          {environments.map((environment) => {
+            const role = roleName(environment.roles);
 
-          return (
-            <li key={environment.id}>
-              <Entry
-                href={environmentHref(environment.id)}
-                className={styles.environment}
-              >
-                <strong>{environment.name}</strong>
-                {role && <span className={styles.role}>{role}</span>}
-              </Entry>
-            </li>
-          );
-        })}
-      </ul>
+            return (
+              <li key={environment.id}>
+                <Entry
+                  href={environmentHref(environment.id)}
+                  className={styles.environment}
+                >
+                  <strong>{environment.name}</strong>
+                  {role && <span className={styles.role}>{role}</span>}
+                </Entry>
+              </li>
+            );
+          })}
+        </ul>
+      )}
       <p className="link-row">
         <Link href={newEnvironmentHref}>Opprett et miljø</Link>
       </p>
+      {/* UX-IA-023: the archive, quietly, for those who have one. */}
+      {hasArchive && (
+        <p className="link-row">
+          <Link href={environmentArchiveHref}>Avviklede miljøer</Link>
+        </p>
+      )}
     </>
   );
 }
@@ -460,12 +474,15 @@ export function HomeView({
           sections.every(({ section }) => section === "awaiting_you") && (
             <Stewardship steward={steward} />
           )}
-        {home.environments.length > 0 && (
+        {(home.environments.length > 0 || home.hasArchive) && (
           <section aria-labelledby="hjem-miljoer">
             <h2 id="hjem-miljoer" className={styles.heading}>
               Dine miljøer
             </h2>
-            <Environments environments={home.environments} />
+            <Environments
+              environments={home.environments}
+              hasArchive={home.hasArchive}
+            />
           </section>
         )}
       </div>

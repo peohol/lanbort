@@ -51,6 +51,7 @@ function access(
       version: 1,
       requirementsRevision: 0,
       requiresObjectApproval: false,
+      woundDownAt: null,
     },
     ownMembership: null,
     viewer: { membership: null, roles: [], restricted: false, ...viewer },

@@ -9,7 +9,7 @@ import type {
   RequirementKind,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
-import type { Kysely } from "kysely";
+import { type Expression, type Kysely, sql } from "kysely";
 import type { Actor } from "../actor";
 import type { EventRecorder } from "../events/recorder";
 import { membershipPassivated } from "./events";
@@ -34,6 +34,22 @@ import {
  * and lock what they change; queries pass the pool.
  */
 type Db = Kysely<Database>;
+
+/**
+ * SQL: when the environment's winding down was settled as final
+ * (PS-ENV-012), null while it is not. There is at most one such wind-down.
+ */
+export const woundDownAt = (environmentId: Expression<string>) =>
+  sql<Date | null>`(
+    select wind_down.settled_at
+    from app.environment_wind_downs as wind_down
+    where wind_down.environment_id = ${environmentId}
+      and wind_down.outcome = 'finalized'
+  )`;
+
+/** SQL: the environment has not been wound down. */
+export const notWoundDown = (environmentId: Expression<string>) =>
+  sql<boolean>`${woundDownAt(environmentId)} is null`;
 
 const environmentColumns = [
   "id",
@@ -60,6 +76,7 @@ export async function findEnvironment(
   let query = db
     .selectFrom("app.environments")
     .select(environmentColumns)
+    .select(woundDownAt(sql.ref("app.environments.id")).as("wound_down_at"))
     .where("id", "=", environmentId);
 
   if (options.lock) {
@@ -82,6 +99,7 @@ export async function findEnvironment(
         version: row.version,
         requirementsRevision: row.requirements_revision,
         requiresObjectApproval: row.requires_object_approval,
+        woundDownAt: row.wound_down_at,
       }
     : null;
 }

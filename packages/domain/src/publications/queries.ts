@@ -30,7 +30,11 @@ import {
   toPosition,
   widenedAfterCreation,
 } from "../environment/privacy";
-import { loadEnvironmentAccess, loadUserAccess } from "../environment/store";
+import {
+  loadEnvironmentAccess,
+  loadUserAccess,
+  notWoundDown,
+} from "../environment/store";
 import {
   concealedHistory,
   createdOutside,
@@ -239,6 +243,9 @@ export const listObjectPublications = defineQuery({
           "publication.position",
         ])
         .where("publication.object_id", "=", object.objectId)
+        // PS-ENV-012: a wound-down environment is no place to show it any
+        // more, and its members find it in their archive.
+        .where(notWoundDown(sql.ref("environment.id")))
         .orderBy("publication.environment_id")
         .orderBy("publication.created_at", "desc")
         .orderBy("publication.id", "desc")

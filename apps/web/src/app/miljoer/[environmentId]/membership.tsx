@@ -34,6 +34,7 @@ import { InformationQuestion } from "./information-question";
 const leavePath = "/api/environments/membership/leave";
 
 const stepTones: Record<MembershipStep["kind"], Tone> = {
+  wound_down: "neutral",
   closed_to_new: "neutral",
   join: "neutral",
   apply: "neutral",

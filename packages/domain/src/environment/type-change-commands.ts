@@ -367,9 +367,11 @@ async function conclude(
 const typeChangeBatchSize = 100;
 
 /**
- * The scheduled job that decides proposals whose deadline has passed. Safe to
- * run repeatedly and concurrently: environments another run or a command
- * holds are skipped, and everything is re-checked under the lock.
+ * The scheduled job that decides proposals whose deadline has passed, and
+ * lapses those in an environment that no longer takes anything new, which
+ * could never be decided. Safe to run repeatedly and concurrently:
+ * environments another run or a command holds are skipped, and everything
+ * is re-checked under the lock.
  */
 export const concludeTypeChanges = defineCommand({
   name: "environment.conclude_type_changes",
@@ -385,11 +387,21 @@ export const concludeTypeChanges = defineCommand({
   execute: async ({ tx, events, now }) => {
     const result = { adopted: 0, rejected: 0, lapsed: 0 };
     const due = await tx
-      .selectFrom("app.environment_type_proposals")
-      .select("environment_id")
-      .where("closed_at", "is", null)
-      .where("deadline", "<=", now)
-      .orderBy("deadline")
+      .selectFrom("app.environment_type_proposals as proposal")
+      .innerJoin(
+        "app.environments as environment",
+        "environment.id",
+        "proposal.environment_id",
+      )
+      .select("proposal.environment_id")
+      .where("proposal.closed_at", "is", null)
+      .where((eb) =>
+        eb.or([
+          eb("proposal.deadline", "<=", now),
+          eb("environment.state", "<>", "active"),
+        ]),
+      )
+      .orderBy("proposal.deadline")
       .limit(typeChangeBatchSize)
       .execute();
 
@@ -397,7 +409,13 @@ export const concludeTypeChanges = defineCommand({
       if (!(await tryLockEnvironment(tx, environmentId))) continue;
 
       const proposal = await findOpenProposal(tx, environmentId);
-      if (!proposal || proposal.deadline.getTime() > now.getTime()) continue;
+      if (
+        !proposal ||
+        (proposal.deadline.getTime() > now.getTime() &&
+          (await findEnvironment(tx, environmentId))?.state === "active")
+      ) {
+        continue;
+      }
 
       result[await conclude(tx, proposal, now, events)] += 1;
     }

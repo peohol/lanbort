@@ -105,6 +105,8 @@ export const requirementKindNames: Record<RequirementKind, string> = {
  * never disagree.
  */
 export type MembershipStep =
+  /** Wound down: an archive for its members, where nothing changes. */
+  | { readonly kind: "wound_down" }
   /** Nobody takes new members while it winds down (PS-ENV-012). */
   | { readonly kind: "closed_to_new" }
   | { readonly kind: "join" }
@@ -127,6 +129,8 @@ export type MembershipStep =
 export function membershipStep(environment: Environment): MembershipStep {
   const { membership } = environment;
   const takesMembers = environment.state === "active";
+
+  if (environment.woundDownAt !== null) return { kind: "wound_down" };
 
   if (!membership) {
     if (!takesMembers) return { kind: "closed_to_new" };
@@ -198,6 +202,8 @@ export function describeMembership(
   step: MembershipStep,
 ): string {
   switch (step.kind) {
+    case "wound_down":
+      return "Miljøet er avviklet. Det er ikke i bruk lenger, og ingenting her kan endres.";
     case "closed_to_new":
       return "Miljøet avvikles og tar ikke inn nye medlemmer.";
     case "join":
@@ -244,6 +250,8 @@ export function membershipLabel(
   step: MembershipStep,
 ): string {
   switch (step.kind) {
+    case "wound_down":
+      return "Avviklet";
     case "closed_to_new":
       return "Avvikles";
     case "apply":

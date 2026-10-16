@@ -12,7 +12,10 @@ import type {
   OwnMembership,
   TypeChangeProposal,
 } from "@lanbort/contracts";
-import { socialTargetSchema } from "@lanbort/contracts";
+import {
+  ownEnvironmentsIncludeSchema,
+  socialTargetSchema,
+} from "@lanbort/contracts";
 import { sql } from "kysely";
 import { z } from "zod";
 import { evaluate } from "../authorization/policy";
@@ -62,6 +65,7 @@ import {
   currentRequirements,
   listCurrentMemberships,
   loadEnvironmentAccess,
+  woundDownAt,
 } from "./store";
 import {
   concealedHistory,
@@ -247,6 +251,7 @@ export const getEnvironment = defineQuery({
       version: environment.version,
       requirementsRevision: environment.requirementsRevision,
       requiresObjectApproval: environment.requiresObjectApproval,
+      woundDownAt: environment.woundDownAt?.toISOString() ?? null,
       requirements: resource.requirements.map(({ id, kind, text }) => ({
         id,
         kind,
@@ -350,17 +355,27 @@ async function hasOpenClaim(
   return row !== undefined;
 }
 
-/** The caller's own current memberships, including pending invitations. */
+/**
+ * The caller's own current memberships, including pending invitations.
+ * PS-ENV-012: a wound-down environment keeps its members' memberships and
+ * roles for history, but leaves the lists of environments in use for their
+ * archive (`include`). What still goes on from it, loans and cases, is
+ * found in their own places.
+ */
 export const listOwnEnvironments = defineQuery({
   name: "environment.list_own",
-  input: z.strictObject({}),
+  input: z.strictObject({
+    include: ownEnvironmentsIncludeSchema.optional(),
+  }),
   policy: listOwnEnvironmentsPolicy,
-  load: async ({ db, actor, now }) => {
+  load: async ({ db, actor, input }) => {
     if (actor.kind !== "user") {
       return null;
     }
 
-    const rows = await db
+    const include = input.include ?? "current";
+    const woundDown = woundDownAt(sql.ref("environment.id"));
+    let query = db
       .selectFrom("app.environment_memberships as membership")
       .innerJoin(
         "app.environments as environment",
@@ -374,60 +389,20 @@ export const listOwnEnvironments = defineQuery({
         "membership.state",
         "membership.transition_deadline as transitionDeadline",
         "environment.requires_object_approval as requiresObjectApproval",
+        woundDown.as("woundDownAt"),
       ])
       .where("membership.user_id", "=", actor.userId)
-      .where("membership.state", "<>", "ended")
-      // Final winding down deliberately retains memberships and roles for
-      // history. Hide the environment from current lists only when there is
-      // no loan, review, case, or unresolved object-control task left.
-      .where(({ or, not, exists, selectFrom }) =>
-        or([
-          not(
-            exists(
-              selectFrom("app.environment_wind_downs as windDown")
-                .select("windDown.id")
-                .whereRef("windDown.environment_id", "=", "environment.id")
-                .where("windDown.outcome", "=", "finalized"),
-            ),
-          ),
-          exists(
-            selectFrom("app.loan_requests as request")
-              .innerJoin("app.loans as loan", "loan.request_id", "request.id")
-              .leftJoin(
-                "app.loan_review_periods as review",
-                "review.loan_id",
-                "loan.id",
-              )
-              .leftJoin(
-                "app.loan_control_confirmations as control",
-                "control.loan_id",
-                "loan.id",
-              )
-              .select("loan.id")
-              .whereRef("request.environment_id", "=", "environment.id")
-              .where("request.status", "=", "approved")
-              .where((eb) =>
-                eb.or([
-                  eb("loan.status", "<>", "ended"),
-                  eb.and([
-                    eb("review.status", "=", "open"),
-                    eb("review.due_at", ">", now),
-                  ]),
-                  eb.and([
-                    eb("loan.end_reason", "=", "unresolved"),
-                    eb("control.loan_id", "is", null),
-                  ]),
-                ]),
-              ),
-          ),
-          exists(
-            selectFrom("app.cases as environmentCase")
-              .select("environmentCase.id")
-              .whereRef("environmentCase.environment_id", "=", "environment.id")
-              .where("environmentCase.status", "=", "open"),
-          ),
-        ]),
-      )
+      .where("membership.state", "<>", "ended");
+
+    if (include !== "all") {
+      query = query.where(
+        woundDown,
+        include === "current" ? "is" : "is not",
+        null,
+      );
+    }
+
+    const rows = await query
       .orderBy("environment.name")
       .orderBy("environment.id")
       .execute();
@@ -459,6 +434,7 @@ export const listOwnEnvironments = defineQuery({
       membershipState: effectiveState(row, now),
       roles: [...row.roles],
       requiresObjectApproval: row.requiresObjectApproval,
+      woundDownAt: row.woundDownAt?.toISOString() ?? null,
     })),
 });
 

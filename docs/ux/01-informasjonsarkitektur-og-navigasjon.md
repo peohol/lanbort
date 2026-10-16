@@ -1,6 +1,6 @@
 # Informasjonsarkitektur og navigasjon
 
-> **Status:** UX-modell v0.1. Skjermstrukturen og navigasjonen er låst i fase 2 av UI-designplanen, 7. oktober 2026 (UX-IA-009–015). Reglene for Hjem og varsler ble supplert 8. oktober 2026 (UX-IA-016–019), og hovedmenyens merker 16. oktober 2026 (UX-IA-022).
+> **Status:** UX-modell v0.1. Skjermstrukturen og navigasjonen er låst i fase 2 av UI-designplanen, 7. oktober 2026 (UX-IA-009–015). Reglene for Hjem og varsler ble supplert 8. oktober 2026 (UX-IA-016–019), hovedmenyens merker 16. oktober 2026 (UX-IA-022) og arkivet for avviklede miljøer samme dag (UX-IA-023).
 
 ## Overordnet modell
 
@@ -219,6 +219,13 @@ Det skal være åpenbart av siden selv hva slags detalj brukeren er på. Ingen s
   - **Finn** har ikke merke: der skjer ingenting for én bruker.
 - Samme hendelse kan gi merke i flere områder, for eksempel en ny låneforespørsel på Hjem og i Lån. Et varsel brukeren allerede har åpnet eller markert som lest, er ikke nytt noe sted.
 - Merket er en påminnelse, ikke en oppgaveliste: det som venter på brukeren, står fortsatt på Hjem til det er håndtert (UX-IA-019).
+
+### UX-IA-023 — Avviklede miljøer ligger i et arkiv
+**Forankring:** UX-P16; PS-ENV-012; Peder 16. oktober 2026
+
+- Et avviklet miljø vises ikke lenger noe sted i appen der brukeren holder på med noe: ikke under «Dine miljøer», i Finn, i tingenes «Hvor den vises», som felles miljø på en personside, eller blant nye miljøer på Hjem. Unntaket er en åpen sak i miljøets kø: den venter fortsatt på administratorene på Hjem til den er behandlet, som andre saker (PS-ENV-012).
+- De som var medlemmer da miljøet ble avviklet, finner det under «Avviklede miljøer», en stille lenke under «Dine miljøer» på Hjem. Lenken vises bare for den som har et slikt miljø. Arkivet viser navnet, når miljøet ble avviklet og rollen brukeren hadde.
+- Miljøets side er da skrivebeskyttet og uten handlinger: et merke «Avviklet» under tittelen, et statuskort som sier at miljøet ikke er i bruk lenger og når det ble avviklet, og hva miljøet var. Medlemsliste, ting, søk, administrasjon og «Mitt medlemskap» vises ikke. Administratorer får en lenke til miljøets saker, så åpne saker kan behandles ferdig.
 
 ### Krav som ikke endrer strukturen
 

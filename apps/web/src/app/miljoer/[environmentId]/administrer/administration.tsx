@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Tag } from "@/components/tag";
+import { environmentHref } from "@/navigation/routes";
 import {
   type AdministrationPage,
   administrationPageHref,
@@ -31,6 +32,11 @@ export async function loadAdministration(params: AdministrationParams) {
 
   if (environment.roles.length === 0) {
     notFound();
+  }
+
+  // Nobody administers a wound-down environment (PS-ENV-012).
+  if (environment.woundDownAt !== null) {
+    redirect(environmentHref(environment.id));
   }
 
   return { account, environment };

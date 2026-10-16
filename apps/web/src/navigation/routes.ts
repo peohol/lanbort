@@ -84,6 +84,9 @@ export const loanRequestHref = (id: string) => `/lan/foresporsel/${id}`;
 
 export const environmentHref = (id: string) => `/miljoer/${id}`;
 
+/** The user's wound-down environments, their archive (UX-IA-023). */
+export const environmentArchiveHref = "/miljoer/avviklede";
+
 export const environmentAdminHref = (id: string) =>
   `${environmentHref(id)}/administrer`;
 

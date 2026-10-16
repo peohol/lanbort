@@ -1016,15 +1016,27 @@ describe("proposals", () => {
     ).rejects.toMatchObject({ code: "conflict" });
   });
 
-  it("lapse when the environment winds down", async () => {
+  it("lapse as soon as the environment winds down", async () => {
     const owner = await user();
     const environmentId = await environment(owner, "hidden");
+    const other = await member(environmentId, owner);
     const proposalId = await proposeVote(owner, environmentId);
     await respond(owner, environmentId, proposalId, true);
     await output(startEnvironmentWindDown, owner, {
       environmentId,
-      atOnce: true,
+      atOnce: false,
     });
+
+    // PS-ENV-012: it could never be decided, so nobody is asked any more.
+    expect((await proposalOutcome(proposalId)).outcome).toBe("lapsed");
+    expect((await read(other, environmentId)).typeChange).toBeNull();
+    await expect(
+      run(respondToTypeChange, other, {
+        environmentId,
+        proposalId,
+        support: false,
+      }),
+    ).rejects.toMatchObject({ code: "conflict" });
 
     // A winding-down environment starts nothing new.
     await expect(
@@ -1034,11 +1046,25 @@ describe("proposals", () => {
         type: "closed",
       }),
     ).rejects.toMatchObject({ code: "conflict" });
+    expect(await history(environmentId)).toEqual(["hidden"]);
+  });
 
-    passDays(testVoteDays);
+  it("left open in a winding-down environment lapse at the next run", async () => {
+    const owner = await user();
+    const environmentId = await environment(owner, "hidden");
+    await output(startEnvironmentWindDown, owner, {
+      environmentId,
+      atOnce: true,
+    });
+    // As one could be before proposals lapsed with the winding down.
+    const proposalId = await startTestVote(db, {
+      environmentId,
+      proposedByUserId: owner.userId,
+      at: clock,
+    });
+
     await conclude();
     expect((await proposalOutcome(proposalId)).outcome).toBe("lapsed");
-    expect(await history(environmentId)).toEqual(["hidden"]);
   });
 });
 
