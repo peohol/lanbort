@@ -540,9 +540,11 @@ function Conversation({
   const others = info?.others ?? [];
   const name = nameOf(others) || "den du skriver med";
   const title = info ? name : "Samtale";
-  // The page of the one the conversation is with (UX-IA-020).
+  // The page of the one the conversation is with (UX-IA-020), while they
+  // may see it (`profileId`, as under «Om samtalen»).
   const [only, ...more] = others;
-  const page = only && more.length === 0 ? personHref(only.userId) : null;
+  const page =
+    only?.profileId && more.length === 0 ? personHref(only.profileId) : null;
   const logistics = info?.kind === "loan_logistics";
   const loan = logistics ? loanOf(loans, info.loanId) : undefined;
   const between = !logistics && others[0] ? loans[others[0].userId] : undefined;
