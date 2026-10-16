@@ -24,7 +24,7 @@ import { PlaceBar } from "@/components/place-bar";
 import { Icon } from "@/components/icon";
 import { useScreenFrame } from "@/components/screen-frame";
 import { chatAboutHref, chatHref } from "@/navigation/chat";
-import { loanHref } from "@/navigation/routes";
+import { loanHref, personHref } from "@/navigation/routes";
 import { ChatApiError, chatApi } from "./api";
 import styles from "./chat.module.css";
 import { ConversationRows, loanOf, nameOf, Picture } from "./chat-home";
@@ -539,6 +539,12 @@ function Conversation({
 
   const others = info?.others ?? [];
   const name = nameOf(others) || "den du skriver med";
+  const title = info ? name : "Samtale";
+  // The page of the one the conversation is with (UX-IA-020), while they
+  // may see it (`profileId`, as under «Om samtalen»).
+  const [only, ...more] = others;
+  const page =
+    only?.profileId && more.length === 0 ? personHref(only.profileId) : null;
   const logistics = info?.kind === "loan_logistics";
   const loan = logistics ? loanOf(loans, info.loanId) : undefined;
   const between = !logistics && others[0] ? loans[others[0].userId] : undefined;
@@ -562,9 +568,7 @@ function Conversation({
   return (
     <>
       <header className="page-header">
-        <PlaceBar
-          place={{ label: info ? name : "Samtale", home: "conversations" }}
-        />
+        <PlaceBar place={{ label: title, home: "conversations" }} />
       </header>
 
       {/* Only this part scrolls; who the conversation is with and the field
@@ -572,14 +576,35 @@ function Conversation({
           them (`useScreenFrame`). */}
       <div ref={list} className={`frame-scroll ${styles.scroller}`}>
         <div className={`frame-top ${styles.head}`}>
-          <Picture people={others} />
+          {/* The picture leads where the name does, so it is not a second
+              stop for the keyboard. */}
+          {page ? (
+            <Link
+              href={page}
+              className={styles.headPicture}
+              tabIndex={-1}
+              aria-hidden
+            >
+              <Picture people={others} />
+            </Link>
+          ) : (
+            <Picture people={others} />
+          )}
           <div className={styles.headText}>
             {logistics && (
               <p className="page-kind">
                 Lånelogistikk{loan ? ` · ${loan.title}` : ""}
               </p>
             )}
-            <h1>{info ? name : "Samtale"}</h1>
+            <h1>
+              {page ? (
+                <Link href={page} className={styles.headName}>
+                  {title}
+                </Link>
+              ) : (
+                title
+              )}
+            </h1>
           </div>
           <Link
             href={chatAboutHref(id)}

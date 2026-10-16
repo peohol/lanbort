@@ -200,6 +200,23 @@
   margin: 0;
 }
 
+/* The picture and the name lead to the person's page. */
+.headPicture {
+  display: inline-flex;
+  flex: none;
+  border-radius: 50%;
+  text-decoration: none;
+}
+
+.headName {
+  color: inherit;
+  text-decoration: none;
+}
+
+.headName:hover {
+  text-decoration: underline;
+}
+
 .moreLink {
   display: inline-flex;
   flex: none;
