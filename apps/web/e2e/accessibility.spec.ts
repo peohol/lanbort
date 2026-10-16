@@ -422,6 +422,8 @@ async function keyboardProblems(page: Page) {
     ].filter(
       (element) =>
         !(element as HTMLButtonElement).disabled &&
+        // What waits behind a layer is reached once it closes.
+        !element.closest("[inert]") &&
         // What a closed «Flere valg» holds is reached once it is opened.
         !element.closest("details:not([open]) > :not(summary)") &&
         element.getClientRects().length > 0 &&
@@ -550,9 +552,10 @@ for (const { name, path } of pages) {
     const covered = await page.evaluate(() => {
       window.scrollTo(0, document.documentElement.scrollHeight);
       const content = document.querySelector("main")!.getBoundingClientRect();
-      const navigation = document
-        .querySelector(".main-navigation")!
-        .getBoundingClientRect();
+      const bar = document.querySelector(".main-navigation")!;
+      // Behind a layer, the navigation covers nothing.
+      if (bar.closest("[inert]")) return 0;
+      const navigation = bar.getBoundingClientRect();
       return content.bottom > navigation.top + 1 && navigation.top > 0
         ? content.bottom - navigation.top
         : 0;
