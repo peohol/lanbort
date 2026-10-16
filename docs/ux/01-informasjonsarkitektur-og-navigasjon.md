@@ -155,7 +155,7 @@ Det skal være åpenbart av siden selv hva slags detalj brukeren er på. En type
 **Forankring:** UX-P04, UX-P08, UX-P16; UX-IA-005
 
 - Rekkefølgen er «Venter på deg» → «Kommer» → «Uavklart» → «Som administrator» → «Dine miljøer».
-- En seksjon uten innhold vises ikke, heller ikke som overskrift. Unntaket er «Dine miljøer», som alltid står med hovedknappen «Opprett et miljø», like tydelig som «Registrer en ting» i Mine ting; uten miljøer står også «Finn miljøer». Seksjonsoverskriftene er store og har hvert sitt ikon, «Dine miljøer» miljøikonet, så det er lett å se hvilke valg Hjem gir (Peder 16. oktober 2026).
+- En seksjon uten innhold vises ikke, heller ikke som overskrift. Unntaket er «Dine miljøer», som for en aktiv konto alltid står med hovedknappen «Opprett et miljø», like tydelig som «Registrer en ting» i Mine ting; uten miljøer står også «Finn miljøer». Seksjonsoverskriftene er store og har hvert sitt ikon, «Dine miljøer» miljøikonet, så det er lett å se hvilke valg Hjem gir (Peder 16. oktober 2026).
 - På større skjermer kan seksjonene fordeles over flere kolonner, men lese- og tastaturrekkefølgen følger den faste seksjonsrekkefølgen.
 - «Venter på deg» viser det brukeren selv skal gjøre, med antall.
 - «Kommer» viser avtalte overleveringer og returer der ingen handling er påkrevd ennå.

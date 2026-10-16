@@ -310,11 +310,11 @@ function Administration({
  */
 function Environments({
   environments,
-  mayCreate,
+  active,
   hasArchive,
 }: {
   environments: readonly EnvironmentSummary[];
-  mayCreate: boolean;
+  active: boolean;
   hasArchive: boolean;
 }) {
   return (
@@ -346,10 +346,11 @@ function Environments({
           av folk i nærheten.
         </p>
       )}
-      {mayCreate && (
+      {/* Creating and finding both start something new (PS-ADM-002). */}
+      {active && (
         <CreateButton href={newEnvironmentHref}>Opprett et miljø</CreateButton>
       )}
-      {environments.length === 0 && (
+      {active && environments.length === 0 && (
         <Link className="button button-secondary" href={findEnvironmentsHref}>
           Finn miljøer
         </Link>
@@ -423,18 +424,19 @@ const sectionIcons: Record<HomeSection, IconName> = {
  * the user, what is coming, what is unsettled, their tasks as
  * administrator and their environments, always in that order. Empty
  * sections are left out, so a quiet day shows a quiet Home, except
- * «Dine miljøer», which always holds the way to an environment. Every
+ * «Dine miljøer», which holds the way to an environment for an active
+ * account. Every
  * entry opens the place where the work is done; nothing here is binding.
  */
 export function HomeView({
   home,
   steward = null,
-  mayCreate,
+  active,
 }: {
   home: HomeOverview;
   steward?: StewardHome | null;
   /** Whether the account may start something new (PS-ADM-002). */
-  mayCreate: boolean;
+  active: boolean;
 }) {
   const today = calendarDay();
   const sections = home.sections.filter(({ items }) => items.length > 0);
@@ -490,17 +492,20 @@ export function HomeView({
           sections.every(({ section }) => section === "awaiting_you") && (
             <Stewardship steward={steward} />
           )}
-        <section aria-labelledby="hjem-miljoer">
-          <h2 id="hjem-miljoer" className={styles.heading}>
-            <Icon name="environment" />
-            Dine miljøer
-          </h2>
-          <Environments
-            environments={home.environments}
-            mayCreate={mayCreate}
-            hasArchive={home.hasArchive}
-          />
-        </section>
+        {/* Always there for an active account, as the way to an environment. */}
+        {(active || home.environments.length > 0 || home.hasArchive) && (
+          <section aria-labelledby="hjem-miljoer">
+            <h2 id="hjem-miljoer" className={styles.heading}>
+              <Icon name="environment" />
+              Dine miljøer
+            </h2>
+            <Environments
+              environments={home.environments}
+              active={active}
+              hasArchive={home.hasArchive}
+            />
+          </section>
+        )}
       </div>
     </main>
   );

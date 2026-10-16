@@ -95,7 +95,7 @@ export default async function HomePage({
   return (
     <HomeView
       home={home!}
-      mayCreate={takesNewActivity(account.status)}
+      active={takesNewActivity(account.status)}
       steward={
         steward && {
           standing: stewardStanding(steward),
