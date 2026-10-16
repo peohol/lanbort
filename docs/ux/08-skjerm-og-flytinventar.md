@@ -40,9 +40,9 @@ Disse tilstandene og mønstrene gjelder alle flater nedenfor og gjentas ikke for
 ### App-skall og navigasjon
 
 - **Oppgave:** orientere seg og nå de fem områdene, varslene og kontoen.
-- **Tilstander:** aktivt område; uleste varsler; ikke innlogget.
+- **Tilstander:** aktivt område; uleste varsler; nytt i et område siden sist; ikke innlogget.
 - **Ser / handler:** alle innloggede.
-- **Regler:** UX-IA-001, UX-IA-002, UX-IA-003, UX-IA-009, UX-IA-010, UX-IA-015, UX-IA-019, UX-A11Y-001, UX-P12.
+- **Regler:** UX-IA-001, UX-IA-002, UX-IA-003, UX-IA-009, UX-IA-010, UX-IA-015, UX-IA-019, UX-IA-022, UX-A11Y-001, UX-P12.
 - **Forløp:** normal.
 - **UI-pakke:** WP-80.
 

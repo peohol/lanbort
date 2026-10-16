@@ -1,6 +1,6 @@
 # Informasjonsarkitektur og navigasjon
 
-> **Status:** UX-modell v0.1. Skjermstrukturen og navigasjonen er låst i fase 2 av UI-designplanen, 7. oktober 2026 (UX-IA-009–015). Reglene for Hjem og varsler ble supplert 8. oktober 2026 (UX-IA-016–019).
+> **Status:** UX-modell v0.1. Skjermstrukturen og navigasjonen er låst i fase 2 av UI-designplanen, 7. oktober 2026 (UX-IA-009–015). Reglene for Hjem og varsler ble supplert 8. oktober 2026 (UX-IA-016–019), og hovedmenyens merker 16. oktober 2026 (UX-IA-022).
 
 ## Overordnet modell
 
@@ -180,7 +180,7 @@ Det skal være åpenbart av siden selv hva slags detalj brukeren er på. En type
 ### UX-IA-019 — Lest er ikke det samme som håndtert
 **Forankring:** UX-P08; PS-COM-002, PS-COM-003
 
-- Varselindikatoren viser antall uleste varsler, og tallet er det samme i alle områder. Bunnmenyen har ingen varseltall eller varselprikk.
+- Varselindikatoren viser antall uleste varsler, og tallet er det samme i alle områder. Hovedmenyen viser ikke dette tallet; den viser hva som er nytt i hvert område (UX-IA-022).
 - Et varsel markeres som lest når brukeren åpner det eller velger «Marker som lest», uavhengig av om oppgaven er fullført.
 - En oppgave forsvinner fra Hjem først når den er håndtert og serveren har bekreftet den nye tilstanden.
 - Er handlingen allerede gjort et annet sted, viser varselet utfallet (for eksempel «Du godtok forespørselen») og oppfordrer ikke til handlingen igjen.
@@ -205,6 +205,20 @@ Det skal være åpenbart av siden selv hva slags detalj brukeren er på. En type
 - Der brukeren finner ting, kan listen avgrenses til én eller flere kategorier og til «Ledig nå» eller «Ledig snart» (ledig nå eller innen 14 dager). Et valg vises bare når det ville endret listen. Valgene står i adressen, så de er der fortsatt når brukeren går tilbake fra en ting.
 - En liste viser opptil 200 ting, de nyeste. Har miljøet flere, sier listen det og viser til søket.
 - Mine ting grupperes på samme måte, men kortene der viser hvor tingen vises og eierens egen status.
+
+### UX-IA-022 — Hovedmenyen viser hva som er nytt siden sist
+**Forankring:** UX-P08, UX-P16; UX-IA-005, UX-IA-019; Peder 16. oktober 2026
+
+- Et menyvalg har et merke med antall når noe har skjedd i området siden brukeren sist åpnet områdets egen side. Merket står ved ikonet, er det samme på mobil og større skjerm, og antallet står også i lenkens navn («Samtaler, 2 nye»).
+- Merket nullstilles når brukeren åpner området fra menyen, også om ingenting er lest eller håndtert. Det er likt på alle brukerens enheter.
+- Det som telles, er det et varsel gjelder, og bare der områdets egen side viser det:
+  - **Hjem:** ting som venter på brukeren eller kommer neste, saker som venter i køen til miljøer brukeren administrerer, og nye miljøer brukeren er blitt medlem av.
+  - **Lån:** lån og forespørsler det har skjedd noe med, hvert lån én gang fra forespørselen til anmeldelsene.
+  - **Mine ting:** invitasjoner til å bli medeier.
+  - **Samtaler:** samtaler med nye meldinger. En dempet samtale, eller nye meldinger brukeren har valgt å ikke få varsel om i appen, gir ikke merke.
+  - **Finn** har ikke merke: der skjer ingenting for én bruker.
+- Samme hendelse kan gi merke i flere områder, for eksempel en ny låneforespørsel på Hjem og i Lån. Et varsel brukeren allerede har åpnet eller markert som lest, er ikke nytt noe sted.
+- Merket er en påminnelse, ikke en oppgaveliste: det som venter på brukeren, står fortsatt på Hjem til det er håndtert (UX-IA-019).
 
 ### Krav som ikke endrer strukturen
 

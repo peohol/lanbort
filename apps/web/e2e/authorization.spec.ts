@@ -146,6 +146,7 @@ const namesNoResource = new Set([
   "loans",
   "loans/co-owner",
   "notifications",
+  "notifications/attention",
   "notifications/preferences",
   "notifications/unread",
   "object-categories",

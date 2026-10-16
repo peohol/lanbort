@@ -7,6 +7,7 @@ import {
   deliverNotificationEmailsPolicy,
   listNotificationsPolicy,
   markAllNotificationsReadPolicy,
+  markAreaSeenPolicy,
   markNotificationsReadPolicy,
   type NotificationsResource,
   notificationCaseQueueProcess,
@@ -124,6 +125,7 @@ const jobMatrix = (policy: Policy<void, void>, process: string) =>
 
 export const notificationMatrices = [
   ownMatrix(listNotificationsPolicy),
+  ownMatrix(markAreaSeenPolicy),
   ownMatrix(readNotificationPreferencesPolicy),
   ownMatrix(setNotificationPreferencePolicy),
   notificationsMatrix(markNotificationsReadPolicy),

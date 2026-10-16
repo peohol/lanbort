@@ -33,6 +33,7 @@ const deletedAccountRemnants = [
     "notification_preferences",
     sql`app.notification_preferences where user_id = account.id`,
   ],
+  ["area_visits", sql`app.area_visits where user_id = account.id`],
   [
     "object_subscriptions",
     sql`app.object_subscriptions where user_id = account.id`,

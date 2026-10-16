@@ -367,7 +367,12 @@ a {
   fill: currentColor;
 }
 
-:is(.area-title, [aria-current="page"]) > .icon {
+:is(
+    .area-title,
+    [aria-current="page"],
+    [aria-current="page"] > .navigation-icon
+  )
+  > .icon {
   --icon-soft: var(--color-accent-soft);
   --icon-accent: var(--color-accent);
   --icon-light: var(--color-surface);
@@ -1122,6 +1127,36 @@ button:disabled,
 
 .main-navigation a[aria-current="page"] .icon {
   stroke-width: 2.1;
+}
+
+/* UX-IA-022: how much is new in an area, at the icon's upper corner on
+   every screen size. The number is in the link's name too; a ring in the
+   page's colour keeps it apart from the icon. */
+.navigation-icon {
+  position: relative;
+  display: inline-flex;
+}
+
+.navigation-badge {
+  position: absolute;
+  top: -0.375rem;
+  left: calc(100% - 0.625rem);
+  min-width: 1.125rem;
+  padding: 0 0.3125rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.125rem;
+  text-align: center;
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-page);
+}
+
+@media (forced-colors: active) {
+  .navigation-badge {
+    border: 1px solid CanvasText;
+  }
 }
 
 .app-content {

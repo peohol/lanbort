@@ -1,5 +1,7 @@
 import {
+  attentionSchema,
   markAllNotificationsReadSchema,
+  markAreaSeenSchema,
   markNotificationsReadSchema,
   type NotificationPreferences,
   notificationPreferencesSchema,
@@ -10,12 +12,15 @@ import {
 import { sql } from "kysely";
 import { defineCommand } from "../commands/command";
 import { actingUserId } from "../objects/state";
+import { recordAreaVisit } from "./area-news";
 import { presentPreferences } from "./model";
 import {
   markAllNotificationsReadPolicy,
+  markAreaSeenPolicy,
   markNotificationsReadPolicy,
   setNotificationPreferencePolicy,
 } from "./policies";
+import { loadAttention } from "./queries";
 import { countUnread, loadPreferences } from "./store";
 
 /**
@@ -98,6 +103,27 @@ export const markAllNotificationsRead = defineCommand({
       .execute();
 
     return { unreadCount: await countUnread(tx, userId) };
+  },
+});
+
+/**
+ * UX-IA-022: the caller opened an area's own page, so what happened there
+ * is no longer news; the badge in the main navigation starts over. It reads
+ * nothing and marks no notification as read: the bell keeps its number.
+ */
+export const markAreaSeen = defineCommand({
+  name: "notification.mark_area_seen",
+  input: markAreaSeenSchema,
+  output: attentionSchema,
+  policy: markAreaSeenPolicy,
+  idempotency: "none",
+  load: async () => ({ resource: undefined, context: undefined }),
+  execute: async ({ tx, actor, input, now }) => {
+    const userId = actingUserId(actor);
+
+    await recordAreaVisit(tx, userId, input.area, now);
+
+    return loadAttention(tx, userId);
   },
 });
 

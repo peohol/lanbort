@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { preload } from "react-dom";
-import { countUnreadNotifications } from "@lanbort/domain";
+import { noAttention } from "@lanbort/contracts";
+import { readAttention } from "@lanbort/domain";
 import { Announcer } from "@/components/announcer";
 import { AppShell } from "@/components/app-shell";
+import { AttentionProvider } from "@/components/attention";
 import { HeaderBoundary } from "@/components/header-boundary";
 import { NavigationProgress } from "@/components/navigation-progress";
 import { NetworkStatus } from "@/components/network-status";
@@ -42,8 +44,8 @@ export default async function RootLayout({
   // cases and notifications to see to (PS-ADM-002).
   const signedIn =
     account !== null && account.status !== "pending_registration";
-  const [unread, theme] = await Promise.all([
-    signedIn ? pageQuery(countUnreadNotifications, {}) : null,
+  const [attention, theme] = await Promise.all([
+    signedIn ? pageQuery(readAttention, {}) : null,
     readTheme(),
   ]);
 
@@ -55,14 +57,15 @@ export default async function RootLayout({
         <NavigationProgress />
         <NetworkStatus />
         {signedIn ? (
-          <AppShell
-            realName={account.realName ?? ""}
-            pictureId={account.picture.pictureId}
-            unread={unread?.unreadCount ?? 0}
-            notice={restingNotice(account.status)}
-          >
-            {children}
-          </AppShell>
+          <AttentionProvider initial={attention ?? noAttention}>
+            <AppShell
+              realName={account.realName ?? ""}
+              pictureId={account.picture.pictureId}
+              notice={restingNotice(account.status)}
+            >
+              {children}
+            </AppShell>
+          </AttentionProvider>
         ) : (
           children
         )}
