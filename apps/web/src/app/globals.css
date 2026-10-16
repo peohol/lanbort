@@ -1384,6 +1384,69 @@ button:disabled,
   }
 }
 
+/* Where the app's bar holds the page's first row, the part that scrolls
+   reaches up under it, and what the page keeps at the top is one bar with
+   it: it reaches up behind the app's bar, which shows it through instead
+   of laying a second bar over it (UX-A11Y-010). */
+:root[data-frame][data-bar="pinned"]
+  .app-content
+  > main:first-child:has(
+    > .page-header:first-child > :is(.place-bar, h1):first-child
+  )
+  > .frame-scroll:has(> .frame-top) {
+  margin-top: calc(-1 * var(--header-covers, var(--header-height)));
+}
+
+:root[data-frame][data-bar="pinned"]
+  .app-content
+  > main:first-child
+  > .page-header:first-child:has(+ .frame-scroll > .frame-top) {
+  margin-bottom: 0;
+}
+
+:root[data-frame][data-bar="pinned"]
+  .app-content
+  > main:first-child
+  > .frame-scroll
+  > .frame-top {
+  border-top: var(--header-covers, var(--header-height)) solid transparent;
+}
+
+:root[data-frame][data-bar="pinned"]:has(
+    .app-content > main:first-child > .frame-scroll > .frame-top
+  )
+  .app-header {
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  animation: none;
+}
+
+/* The same at the bottom of a phone: what the page keeps at the bottom
+   reaches down behind the areas, as one bar with them. */
+@media (max-width: 47.99rem) {
+  :root[data-frame] .app-content:has(> main > .frame-scroll > .frame-bottom) {
+    padding-bottom: 0;
+  }
+
+  :root[data-frame] .app-content > main > .frame-scroll:has(> .frame-bottom) {
+    margin-bottom: calc(-1 * var(--nav-covers, var(--nav-height)));
+  }
+
+  :root[data-frame] .app-content > main > .frame-scroll > .frame-bottom {
+    border-bottom: var(--nav-covers, var(--nav-height)) solid transparent;
+  }
+
+  :root[data-frame]:has(.app-content > main > .frame-scroll > .frame-bottom)
+    .main-navigation {
+    border-top-color: transparent;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 /* Page header (PageHeader): the way back, what kind of page it is, the
    title, the context it belongs to (UX-PRIV-003, UX-IA-015) and a lead. */
 .page-header h1 {

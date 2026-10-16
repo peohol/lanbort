@@ -50,7 +50,7 @@ Offline/venter/feil/synkronisert skal uttrykkes med tekstlig status og relevante
 ### UX-A11Y-010 — Det som står fast, ser likt ut, og innholdet ruller under det
 **Forankring:** UX-P10; UX-A11Y-001
 
-Alt som står fast mens innholdet ruller, har samme svakt gjennomskinnelige og uskarpe bakgrunn: appens toppfelt og bunnmeny, toppfeltet i et lag og det en side holder fast øverst eller nederst, som samtalens topp og skrivefelt. Innholdet ruller under det, og kanten mot innholdet vises når noe ligger under. Lesbarheten går foran: med redusert gjennomsiktighet eller tvungne farger er bakgrunnen tett.
+Alt som står fast mens innholdet ruller, har samme svakt gjennomskinnelige og uskarpe bakgrunn: appens toppfelt og bunnmeny, toppfeltet i et lag og det en side holder fast øverst eller nederst, som samtalens topp og skrivefelt. Innholdet ruller under det, og kanten mot innholdet vises når noe ligger under. Det en side holder fast inntil appens toppfelt eller bunnmeny, er ett felt med dem, ikke to lag oppå hverandre. Lesbarheten går foran: med redusert gjennomsiktighet eller tvungne farger er bakgrunnen tett.
 
 ## Responsiv modell
 
