@@ -88,6 +88,15 @@ const nearEnd = (list: HTMLElement | null) =>
     ? list.scrollTop + list.clientHeight >= list.scrollHeight - 160
     : window.innerHeight + window.scrollY >= document.body.scrollHeight - 160;
 
+/**
+ * Takes the reader to the newest message, wherever the list scrolls: to its
+ * very end, so what stays in place at the bottom covers none of it.
+ */
+const toEnd = (list: HTMLElement | null) =>
+  list && list.scrollHeight > list.clientHeight
+    ? list.scrollTo({ top: list.scrollHeight })
+    : window.scrollTo({ top: document.documentElement.scrollHeight });
+
 /** «Lån mellom dere» (02): links to the loans, never an action here. */
 function LoansBetween({ loans }: { loans: readonly ChatLoan[] }) {
   const shown = cameFromFirst(loans, useStack()?.entries ?? []);
@@ -312,7 +321,7 @@ function Composer({
 
   return (
     <form
-      className={`${styles.composer} bar-surface`}
+      className={styles.composer}
       onSubmit={(event) => void send(event)}
       aria-busy={busy}
     >
@@ -397,7 +406,6 @@ function Conversation({
   }>();
   const [jump, setJump] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const end = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLDivElement>(null);
   useScreenFrame(list);
   const opened = useRef(false);
@@ -475,7 +483,7 @@ function Conversation({
     const wrote = last?.own === true && last.id !== newest.current;
     newest.current = last?.id;
     if (shown.current === 0 || wrote || atEnd.current) {
-      end.current?.scrollIntoView({ block: "end" });
+      toEnd(list.current);
       setJump(false);
       readToEnd();
     } else if (count > shown.current) {
@@ -496,7 +504,7 @@ function Conversation({
     // A reader at the end stays there when the list gets shorter, as when
     // a phone's keyboard opens.
     const resized = new ResizeObserver(() => {
-      if (atEnd.current) end.current?.scrollIntoView({ block: "end" });
+      if (atEnd.current) toEnd(scroller);
     });
     if (scroller) resized.observe(scroller);
     window.addEventListener("scroll", settle, { passive: true });
@@ -553,11 +561,17 @@ function Conversation({
 
   return (
     <>
-      <header className={`page-header ${styles.top}`}>
+      <header className="page-header">
         <PlaceBar
           place={{ label: info ? name : "Samtale", home: "conversations" }}
         />
-        <div className={styles.head}>
+      </header>
+
+      {/* Only this part scrolls; who the conversation is with and the field
+          to write in stay at its top and bottom while the messages go under
+          them (`useScreenFrame`). */}
+      <div ref={list} className={`frame-scroll ${styles.scroller}`}>
+        <div className={`frame-top ${styles.head}`}>
           <Picture people={others} />
           <div className={styles.headText}>
             {logistics && (
@@ -575,11 +589,7 @@ function Conversation({
             <ChatIcon name="more" />
           </Link>
         </div>
-      </header>
 
-      {/* Only this part scrolls while the top and the field stay
-          (`useScreenFrame`). */}
-      <div ref={list} className={`frame-scroll ${styles.scroller}`}>
         {between && between.length > 0 && <LoansBetween loans={between} />}
 
         {logistics && info && (
@@ -677,27 +687,29 @@ function Conversation({
               name={name}
             />
           )}
-          <div ref={end} />
         </section>
 
-        {jump && (
-          <button
-            type="button"
-            className={styles.jump}
-            onClick={() => end.current?.scrollIntoView({ block: "end" })}
-          >
-            Ny melding <ChatIcon name="down" />
-          </button>
-        )}
+        <div className={`frame-bottom bar-surface ${styles.foot}`}>
+          {jump && (
+            <button
+              type="button"
+              className={styles.jump}
+              onClick={() => toEnd(list.current)}
+            >
+              Ny melding <ChatIcon name="down" />
+            </button>
+          )}
+          {canWrite && (
+            <Composer
+              logistics={logistics}
+              disabledText={
+                changed.length > 0 ? "Godta først for å skrive" : null
+              }
+              onSend={send}
+            />
+          )}
+        </div>
       </div>
-
-      {canWrite && (
-        <Composer
-          logistics={logistics}
-          disabledText={changed.length > 0 ? "Godta først for å skrive" : null}
-          onSend={send}
-        />
-      )}
       <ErrorText>{error}</ErrorText>
     </>
   );
