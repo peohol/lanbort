@@ -35,6 +35,8 @@ export interface EnvironmentRecord {
   readonly requirementsRevision: number;
   /** PS-ENV-011: objects need an administrator's approval (WP-25). */
   readonly requiresObjectApproval: boolean;
+  /** PS-ENV-012: when its winding down was settled as final, if it was. */
+  readonly woundDownAt: Date | null;
 }
 
 /** An approximate area as stored: all three columns, or none (WP-62). */
@@ -257,6 +259,7 @@ export interface OwnEnvironmentRow {
   readonly transitionDeadline: Date | null;
   readonly roles: readonly EnvironmentRole[];
   readonly requiresObjectApproval: boolean;
+  readonly woundDownAt: Date | null;
 }
 
 /** What environment policies decide on, loaded inside the command. */
@@ -291,6 +294,15 @@ export function acceptsNewActivity(
 ): boolean {
   return environment.state === "active";
 }
+
+/**
+ * PS-ENV-012: a wound-down environment is an archive for those who were
+ * members when it ended. Nothing in it changes any more, and to everyone
+ * else it is as if it did not exist.
+ */
+export const isWoundDown = (
+  environment: Pick<EnvironmentRecord, "woundDownAt">,
+): boolean => environment.woundDownAt !== null;
 
 export interface OwnershipVacancyRecord {
   readonly id: string;

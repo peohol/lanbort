@@ -1,6 +1,7 @@
 import type { ProfilePictureVisibility } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
 import { type Kysely, sql } from "kysely";
+import { notWoundDown } from "../environment/store";
 import {
   type OpenFriendship,
   requestHeldBack,
@@ -167,7 +168,9 @@ export async function loadPeople(
 
 /**
  * The environments `viewerId` and `userId` are both active members of now,
- * by name: those where each is in the other's member list (WP-84).
+ * by name: those where each is in the other's member list (WP-84). A
+ * wound-down one is only in its members' archive (PS-ENV-012), so it is not
+ * named here, though its members still know each other through it.
  */
 export function loadSharedEnvironments(
   db: Db,
@@ -192,6 +195,7 @@ export function loadSharedEnvironments(
     .where("theirs.user_id", "=", userId)
     .where(activeMember("own", now))
     .where(activeMember("theirs", now))
+    .where(notWoundDown(sql.ref("environment.id")))
     .orderBy("environment.name")
     .orderBy("environment.id")
     .execute();

@@ -763,6 +763,7 @@ describe("hidden environments (PS-NFR-002)", () => {
         membershipState: "pending",
         roles: [],
         requiresObjectApproval: false,
+        woundDownAt: null,
       },
     ]);
 

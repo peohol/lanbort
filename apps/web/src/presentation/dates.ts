@@ -64,6 +64,18 @@ export function formatShortTime(at: string): string {
   return shortTimeFormat.format(new Date(at));
 }
 
+const dateFormat = new Intl.DateTimeFormat("nb-NO", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: productTimeZone,
+});
+
+/** The day of a moment, for what lies further back: «13. oktober 2026». */
+export function formatDate(at: string): string {
+  return dateFormat.format(new Date(at));
+}
+
 const clockFormat = new Intl.DateTimeFormat("nb-NO", {
   hour: "2-digit",
   minute: "2-digit",

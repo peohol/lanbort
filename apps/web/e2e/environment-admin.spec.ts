@@ -499,7 +499,8 @@ test("an administrator invites someone from a shared environment from that perso
 /**
  * PS-ENV-012: an owner who is the only member winds the environment down
  * for good at once. The consequence view says so before the code is asked
- * for, and there is nothing to cancel afterwards.
+ * for, and there is nothing to cancel afterwards. The environment is then
+ * only in the owner's archive (UX-IA-023): read-only, with nothing to do.
  */
 test("an owner who is the only member winds the environment down at once", async ({
   page,
@@ -539,5 +540,26 @@ test("an owner who is the only member winds the environment down at once", async
   await expect(
     page.getByRole("button", { name: "Fortsett miljøet" }),
   ).toHaveCount(0);
+
+  // The administration is gone; the environment's page has nothing to do.
+  await expect(page).toHaveURL(new RegExp(`/miljoer/${environmentId}$`));
+  const main = page.getByRole("main");
+  await expect(main.getByRole("button")).toHaveCount(0);
+  await expect(main.getByRole("link", { name: "Mitt medlemskap" })).toHaveCount(
+    0,
+  );
+  await expect(main.getByRole("searchbox")).toHaveCount(0);
+  expect(await axeViolations(page)).toEqual([]);
+
+  // It has left «Dine miljøer» for the archive, found from Home.
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: name })).toHaveCount(0);
+  await page.getByRole("link", { name: "Avviklede miljøer" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Avviklede miljøer" }),
+  ).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+  await page.getByRole("link", { name: new RegExp(name) }).click();
+  await expect(page.getByText("Miljøet er avviklet")).toBeVisible();
   expect(problems).toEqual([]);
 });

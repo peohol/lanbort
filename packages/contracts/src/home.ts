@@ -115,6 +115,8 @@ export const homeOverviewSchema = z.strictObject({
   ),
   /** Secondary: shortcuts to the user's own environments (UX-IA-004). */
   environments: z.array(environmentSummarySchema),
+  /** The user was a member of environments since wound down (PS-ENV-012). */
+  hasArchive: z.boolean(),
 });
 
 export type HomeItem = z.infer<typeof homeItemSchema>;
