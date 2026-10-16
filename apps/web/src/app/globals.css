@@ -1328,12 +1328,25 @@ button:disabled,
    (`.frame-bottom`) is a bar across it that what scrolls goes under, with
    the same edge as the app's bar once something lies under it. */
 :root[data-frame] .frame-scroll {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   min-height: 0;
   margin-inline: calc(-1 * var(--gutter));
   padding-inline: var(--gutter);
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+/* Its blocks keep their height and the frame's width; with too little to
+   fill the frame, what stays at the bottom is at the bottom all the same. */
+:root[data-frame] .frame-scroll > * {
+  flex: none;
+  min-width: 0;
+}
+
+:root[data-frame] .frame-scroll > .frame-bottom {
+  margin-top: auto;
 }
 
 :root[data-frame] :is(.frame-top, .frame-bottom) {
