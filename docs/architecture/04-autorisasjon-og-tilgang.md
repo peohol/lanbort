@@ -52,7 +52,18 @@ Inntil OD-0003 er avgjort finnes ingen representative grant, og ingen kodevei gi
 - vanlige brukere skal ikke ha et generelt krav om MFA i pilotmodellen; verifisert e-post er den etablerte basisen for konto og innlogging
 - handlinger som plattformforvalter skal kreve et sterkere autentiseringsnivå enn vanlig innlogging; mekanismen er passkey/WebAuthn som andre faktor ([ADR-0011](decisions/ADR-0011-webauthn-for-plattformforvaltere.md)), der fysisk sikkerhetsnøkkel støttes, men ikke kreves
 - tilgangsgrensen er fail closed: privilegerte plattformforvalterhandlinger avvises uansett hva identitetsleverandøren rapporterer, med mindre forvalteren nettopp har bekreftet sesjonen med en av sine egne passkeys og har minst to (OD-0023); i et miljø der forvaltere ikke er slått på (`PLATFORM_STEWARDS_ENABLED`), avvises de alltid. Mekanismen må være verifisert der før slike handlinger tas i reell bruk (produksjon eller pilot med reelle brukere)
-- bare WebAuthn godtas som sterkere: TOTP/autentiseringsapp, SMS/telefon, gjenopprettingskoder, ny e-postkode og Vipps gir ikke sterkere autentisering og skal ikke innføres som standard eller krav uten en ny eksplisitt beslutning
+- for **privilegert forvaltertilgang** godtas bare WebAuthn som sterkere bekreftelse: TOTP/autentiseringsapp, SMS/telefon, gjenopprettingskoder, ny e-postkode og Vipps gir ikke slik ekstra autorisasjon. Dette er atskilt fra den senere vedtatte Vipps-registreringen for vanlige brukere
 - støtte for sterkere autentisering hos miljøadministratorer kan vurderes senere, men skal ikke gjøres obligatorisk uten en egen beslutning
 
-En framtidig overgang til eller supplering med en ekstern identitetsleverandør, herunder Vipps Login for norske brukere, er ikke del av pilotens nåværende innloggingsmodell. Muligheten skal utredes separat i OD-0011.
+## Målmodell etter pilot: Vipps og passkeys
+
+Pilotens innlogging med e-postkode videreføres uendret. For ordinær drift er Vipps Logg inn eneste registreringsvei og kreves ved **første innlogging på hver ny enhet**. Senere kan godkjente enheter bruke passkey/WebAuthn.
+
+- Vipps-identiteten valideres på serveren og kobles til en leverandørspesifikk bruker-ID, aldri bare navn eller e-post. Det verifiserte navnet er ikke brukerredigerbart.
+- Godkjent innloggingsenhet er en egen, serverstyrt og tilbakekallbar tillitsstatus. At en passkey er sky-synkronisert til en annen enhet, kan ikke omgå Vipps. Nettleserfingeravtrykk alene er ikke tilstrekkelig.
+- Lokal biometri eller PIN kan låse opp passkey, men er ikke alene en serverautentisering.
+- Vipps og ordinære passkeys gir ingen automatisk adgang til private E2EE-nøkler. Chatenhetene følger [ADR-0010](decisions/ADR-0010-e2ee-protokoll-enheter-og-recovery.md).
+- Plattformforvalternes separate og ferske WebAuthn-bekreftelse følger fortsatt [ADR-0011](decisions/ADR-0011-webauthn-for-plattformforvaltere.md). Vipps eller en vanlig bruker-passkey gir ikke denne myndigheten.
+- Ingen ordinær fallback via e-postkode, passord eller support etter overgangen. Manglende bevis fører til avslag.
+
+Utforming og recovery avklares i [OD-0057](../open-decisions.md#od-0057--enhetsgodkjenning-og-gjenoppretting-med-vipps) og [planen](../implementation/vipps-identitet-og-abonnement.md). Betalt lånerett er en separat backend-policy etter [PS-PAY-003](../product-spec/09-medlemskap-og-laneabonnement.md), ikke en følge av å være innlogget.

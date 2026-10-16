@@ -66,3 +66,7 @@ SQL-first migrasjoner beholder PostgreSQL som reell sannhetskilde og gjør spesi
 - Kritiske domeneoperasjoner skal ikke implementeres som direkte klientkall mot Data API.
 - Supabase- og auth-avhengigheter isoleres bak små adaptere slik at leverandørbytte forblir mulig.
 - Database-reset fra tom tilstand skal være en obligatorisk CI-test.
+
+## Senere vedtatt målmodell (16. oktober 2026)
+
+ADR-en gjelder fortsatt pilotens Supabase Auth og e-postkode. Etter piloten er Vipps vedtatt som **eneste** ordinære registreringsmetode og første innlogging på ny enhet; passkeys brukes på allerede godkjente enheter. Dette er en framtidig produktbeslutning, ikke en teknisk implementasjon eller endring i piloten. Hvordan dette bygges på Supabase og hvordan enheter bindes sikkert skal dokumenteres særskilt etter [OD-0057](../../open-decisions.md#od-0057--enhetsgodkjenning-og-gjenoppretting-med-vipps). Se [PS-USR-016–019](../../product-spec/01-brukere-kontoer-og-relasjoner.md#ps-usr-016--bare-vipps-kan-registrere-ordinære-kontoer).

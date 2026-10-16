@@ -4,7 +4,7 @@
 
 Disse prinsippene er en kortfattet inngang til den fullstendige visjonen. Ved behov for presisjon gjelder de tematiske dokumentene i denne mappen.
 
-1. **VP-01 — Gratis deling er kjernen.** Lånbort skal fasilitere utlån, ikke salg, utleie eller betaling mellom brukere.
+1. **VP-01 — Gratis deling er kjernen.** Medlemskap og det å låne bort ting skal være gratis. Utlån mellom brukere skal aldri koste penger, og Lånbort skal ikke formidle leie eller betaling mellom dem. Etter piloten kan plattformen kreve et fast abonnement for å få be om å låne ting.
 
 2. **VP-02 — Normalforløpet skal være enkelt.** Robust håndtering av sjeldne unntak skal i størst mulig grad ligge i bakgrunnen og bare bli synlig når den faktisk er relevant.
 

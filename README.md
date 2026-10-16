@@ -1,6 +1,6 @@
 # lanbort
 
-En gratis app der man kan låne bort ting til andre.
+En app for gratis deling av ting. Medlemskap og utlån er gratis; et låneabonnement på 30 kr/mnd. planlegges etter piloten.
 
 ## Produktgrunnlag
 
@@ -27,6 +27,7 @@ Planleggingsløpet fra visjon til byggbar spesifikasjon ble fullført 1. oktober
 - [Implementeringsplan](docs/implementation/README.md)
 - [Kodeagent-arbeidspakker](docs/implementation/work-packages.md)
 - [Kvalitetsporter](docs/implementation/quality-gates.md)
+- [Plan: Vipps, nye enheter og låneabonnement](docs/implementation/vipps-identitet-og-abonnement.md)
 
 Fase 0–7 og brukerflaten (Fase 8) er levert, og Port D for den lukkede piloten er oppfylt. Privat chat er på for de inviterte i den lukkede piloten (OD-0056). Plattformforvaltning er bygget, men står av i produksjon til sin port. Hva som er ferdig, hva som står av, og hva som gjenstår før Port C og Port E, står i [kvalitetsportene](docs/implementation/quality-gates.md#status-15-oktober-2026).
 
