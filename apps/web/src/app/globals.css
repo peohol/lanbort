@@ -279,7 +279,11 @@
   }
 }
 
-.bar-surface {
+/* Everything that stays in place while what is under it scrolls is such a
+   bar (UX-A11Y-010): the app's bar and areas, a layer's bar, and what a page keeps at
+   the top or bottom of the part that scrolls (`.frame-top`,
+   `.frame-bottom`). */
+:is(.bar-surface, :root[data-frame] :is(.frame-top, .frame-bottom)) {
   background: var(--color-bar);
   -webkit-backdrop-filter: var(--bar-filter);
   backdrop-filter: var(--bar-filter);
@@ -936,14 +940,16 @@ button:disabled,
   }
 }
 
+/* The edge is below a bar at the top, above one at the bottom
+   (`--bar-side`). */
 @keyframes bar-edge {
   from {
-    box-shadow: 0 1px 0 transparent;
+    box-shadow: 0 var(--bar-side, 1px) 0 transparent;
     background-color: var(--color-page);
   }
 
   to {
-    box-shadow: 0 1px 0 var(--color-border);
+    box-shadow: 0 var(--bar-side, 1px) 0 var(--color-border);
     background-color: var(--color-bar);
   }
 }
@@ -1318,15 +1324,51 @@ button:disabled,
 }
 
 /* The part that scrolls reaches the screen's edges, so a finger scrolls it
-   there too, and shows where what scrolls goes under. */
+   there too. What the page keeps at its top (`.frame-top`) or bottom
+   (`.frame-bottom`) is a bar across it that what scrolls goes under, with
+   the same edge as the app's bar once something lies under it. */
 :root[data-frame] .frame-scroll {
   flex: 1;
   min-height: 0;
   margin-inline: calc(-1 * var(--gutter));
-  padding: var(--space-3) var(--gutter);
+  padding-inline: var(--gutter);
   overflow-y: auto;
   overscroll-behavior: contain;
-  border-block: 1px solid var(--color-border);
+}
+
+:root[data-frame] :is(.frame-top, .frame-bottom) {
+  position: sticky;
+  z-index: 4;
+  margin-inline: calc(-1 * var(--gutter));
+  padding-inline: var(--gutter);
+}
+
+:root[data-frame] .frame-top {
+  top: 0;
+}
+
+:root[data-frame] .frame-bottom {
+  --bar-side: -1px;
+  bottom: 0;
+}
+
+@supports (animation-timeline: scroll()) {
+  :root[data-frame] :is(.frame-top, .frame-bottom) {
+    animation: bar-edge linear both;
+    animation-timeline: scroll();
+    animation-range: 0 var(--space-2);
+  }
+
+  :root[data-frame] .frame-bottom {
+    animation-direction: reverse;
+    animation-range: calc(100% - var(--space-2)) 100%;
+  }
+}
+
+@supports not (animation-timeline: scroll()) {
+  :root[data-frame] :is(.frame-top, .frame-bottom) {
+    box-shadow: 0 var(--bar-side, 1px) 0 var(--color-border);
+  }
 }
 
 /* Page header (PageHeader): the way back, what kind of page it is, the

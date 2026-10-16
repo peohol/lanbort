@@ -176,16 +176,14 @@
   padding: var(--pad-row);
 }
 
-/* The conversation (02): its top and the field to write in stay where
-   they are while the messages between them scroll (`useScreenFrame`). */
-.top {
-  flex: none;
-}
-
+/* The conversation (02): who it is with stays at the top and the field to
+   write in at the bottom, while the messages scroll under them
+   (`useScreenFrame`, `.frame-top`, `.frame-bottom`). */
 .head {
   display: flex;
   align-items: center;
   gap: var(--gap-row);
+  padding-block: var(--space-3);
 }
 
 .headText {
@@ -224,18 +222,12 @@
   gap: var(--gap-block);
 }
 
-:global(:root[data-frame]) .top {
-  margin-bottom: 0;
-  padding-bottom: var(--space-3);
-}
-
-:global(:root[data-frame]) .composer {
-  position: static;
-  flex: none;
-}
-
-:global(:root[data-frame]) .jump {
-  bottom: var(--space-2);
+/* The field to write in, kept in view above the areas on a phone, with
+   the way down to a new message just above it. */
+.foot {
+  position: sticky;
+  bottom: calc(var(--nav-covers, var(--nav-height)) + var(--space-2));
+  z-index: 4;
 }
 
 /* While writing on a touch screen the keyboard takes the bottom, so the
@@ -467,11 +459,7 @@
   color: var(--color-accent-strong);
 }
 
-/* The field to write in, kept in view above the areas on a phone. */
 .composer {
-  position: sticky;
-  bottom: calc(var(--nav-covers, var(--nav-height)) + var(--space-2));
-  z-index: 4;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
@@ -508,10 +496,11 @@
 }
 
 .jump {
-  position: sticky;
-  bottom: calc(var(--nav-covers, var(--nav-height)) + 5rem);
-  justify-self: center;
-  z-index: 4;
+  position: absolute;
+  bottom: calc(100% + var(--space-2));
+  left: 50%;
+  translate: -50% 0;
+  white-space: nowrap;
   color: var(--color-on-accent);
   background: var(--color-info-strong);
   box-shadow: var(--shadow-raised);
@@ -812,11 +801,7 @@
 }
 
 @media (min-width: 48rem) {
-  .composer {
+  .foot {
     bottom: var(--space-2);
-  }
-
-  .jump {
-    bottom: 5rem;
   }
 }
