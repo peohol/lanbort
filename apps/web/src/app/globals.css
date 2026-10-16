@@ -1128,6 +1128,43 @@ button:disabled,
   outline: none;
 }
 
+/*
+ * While a followed link's page is on its way (NavigationProgress): a bar
+ * runs along the top at once, and the page under it dims if the wait is
+ * noticeable.
+ */
+.navigation-progress {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 30;
+  height: 3px;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.navigation-progress[data-active] {
+  opacity: 1;
+  animation: navigation-progress 10s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes navigation-progress {
+  from {
+    transform: scaleX(0.08);
+  }
+
+  to {
+    transform: scaleX(0.95);
+  }
+}
+
+.app-content[aria-busy="true"] {
+  opacity: 0.6;
+  transition: opacity 0.2s ease 0.25s;
+}
+
 .app-content > main {
   padding: var(--space-2) 0 0;
 }
