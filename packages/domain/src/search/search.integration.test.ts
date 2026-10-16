@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { type CreateEnvironment, searchResultLimit } from "@lanbort/contracts";
+import { sql } from "kysely";
 import { afterAll, describe, expect, it } from "vitest";
 import { type Actor, systemActor, type UserActor } from "../actor";
 import {
@@ -8,6 +9,7 @@ import {
   executeCommand,
 } from "../commands/command";
 import { executeQuery } from "../commands/query";
+import { EventRecorder } from "../events/recorder";
 import { startEnvironmentWindDown } from "../environment/continuity-commands";
 import {
   createEnvironment,
@@ -25,7 +27,8 @@ import { getEnvironment, listMemberships } from "../environment/queries";
 import { changeEnvironmentType } from "../environment/type-change-commands";
 import { addDays, calendarDate } from "../objects/availability";
 import { archiveObject, createObject, updateObject } from "../objects/commands";
-import { consentToObjectDeletion } from "../objects/deletion";
+import { consentToObjectDeletion, deleteObject } from "../objects/deletion";
+import { loadLockedObject } from "../objects/state";
 import { ConsumerRegistry } from "../outbox/consumer";
 import { processOutboxBatch } from "../outbox/worker";
 import { publishObject, withdrawPublication } from "../publications/commands";
@@ -153,6 +156,22 @@ const environmentsFound = async (actor: UserActor, input: object) =>
   (
     await executeQuery(domain, searchEnvironments, { actor, input })
   ).environments.map((environment) => environment.id);
+
+/** Waits until a statement naming `name` waits for a row another transaction holds. */
+async function untilWaitingForRow(name: string) {
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    const { rows } = await sql<{ waiting: number }>`
+      select count(*)::int as waiting from pg_stat_activity
+      where wait_event_type = 'Lock'
+        and wait_event in ('transactionid', 'tuple')
+        and position(${name} in query) > 0
+    `.execute(db);
+    if (rows[0]!.waiting > 0) return;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+
+  throw new Error(`${name} never waited for the row`);
+}
 
 const indexedObject = async (objectId: string) =>
   (await db
@@ -829,6 +848,33 @@ describe("search index reconciliation", () => {
       .execute();
     await reconcile();
     expect(await indexedObject(restored), "rebuilt from the core").toBe(true);
+  });
+
+  it("leaves out a thing deleted while it rebuilds the index", async () => {
+    const { environmentId, owner } = await setting();
+    const objectId = await create(owner, { title: word() });
+    await publish(owner, objectId, environmentId);
+    await indexed();
+    // Missing from the index, so the rebuild has it to write.
+    await db
+      .deleteFrom("app.search_objects")
+      .where("object_id", "=", objectId)
+      .execute();
+
+    // The thing is deleted after the rebuild has read it, and before the
+    // rebuild has written it.
+    let rebuilt: Promise<unknown> = Promise.resolve();
+    await db.transaction().execute(async (tx) => {
+      const object = await loadLockedObject(tx, objectId);
+      await deleteObject(tx, object!.resource, new EventRecorder(), clock);
+      rebuilt = run(reconcileSearchIndex, systemActor(searchIndexProcess), {});
+      await untilWaitingForRow("app.reconcile_search_index");
+    });
+
+    await expect(rebuilt).resolves.toMatchObject({
+      changed: expect.any(Number),
+    });
+    expect(await indexedObject(objectId)).toBe(false);
   });
 
   it("is only for the scheduled job", async () => {
