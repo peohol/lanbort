@@ -1504,7 +1504,13 @@ test("Mine enheter opens from Konto over Samtaler, in place of the layer", async
     ada.page.getByRole("heading", { name: "Mine enheter" }),
   ).toBeVisible();
   await expect(ada.page.getByText("Denne enheten").first()).toBeVisible();
-  await ada.page.getByRole("link", { name: "Konto" }).click();
+  // It lies in the same panel as Konto's other pages, over the app's frame,
+  // which waits behind it (UX-IA-020).
+  const panel = await ada.page.locator(".layer").boundingBox();
+  expect(panel!.x).toBeGreaterThan(0);
+  await expect(ada.page.locator(".main-navigation")).toBeVisible();
+  await expect(ada.page.locator(".main-navigation")).toHaveAttribute("inert");
+  await ada.page.getByRole("link", { name: "Konto", exact: true }).click();
   await expect(ada.page).toHaveURL(/\/konto$/);
   await ada.context.close();
 });

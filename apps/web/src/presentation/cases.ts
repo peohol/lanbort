@@ -143,14 +143,6 @@ export const aboutCase = (c: Case): About => ({
   title: c.loanTitle ?? c.objectTitle,
 });
 
-/** The kind above the title (UX-IA-015): «Rapport», «Mekling om et lån». */
-export const caseKindTitle: Record<CaseKind, string> = {
-  ...caseKindLabels,
-  environment_report: "Rapport",
-  platform_report: "Rapport",
-  unavailability_report: "Melding",
-};
-
 /** Who opened the case, by name, for its handlers. */
 export const openerOf = (c: Pick<Case, "participants" | "people">) => {
   const opener = c.participants.find(

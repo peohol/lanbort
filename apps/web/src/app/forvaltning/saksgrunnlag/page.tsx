@@ -24,7 +24,6 @@ export default async function InquiryPage() {
     <main>
       <PageHeader
         title="Åpne saksgrunnlag"
-        kind="Lånbort"
         back={{ href: stewardshipHref, label: "Forvaltning" }}
       />
       <StewardRole steward={steward} />

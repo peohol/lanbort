@@ -4,7 +4,7 @@ import { PlaceBar, TaskBar } from "./place-bar";
 
 /**
  * The top of a page (WP-80, UX-IA-015): the way back along the navigation
- * stack, what kind of page it is («Ting», «Person»), its title, the context
+ * stack, its title, the context
  * it is seen in (UX-PRIV-003, as `ContextTag`s) and a short lead. Areas'
  * own pages need no way back; detail pages say where they belong, and a
  * form says where it was started from and becomes a bounded task.
@@ -12,7 +12,6 @@ import { PlaceBar, TaskBar } from "./place-bar";
 export function PageHeader({
   title,
   label = typeof title === "string" ? title : undefined,
-  kind,
   icon,
   picture,
   back,
@@ -26,8 +25,6 @@ export function PageHeader({
   title: ReactNode;
   /** The page's name in the way back to it, when the title is not text. */
   label?: string | undefined;
-  /** The type of a detail, such as «Lån» or «Person» (UX-IA-015). */
-  kind?: string;
   /** An icon beside the title, drawn as an area's title draws its own. */
   icon?: ReactNode;
   /** The picture of the person the page is about, beside its title. */
@@ -57,13 +54,10 @@ export function PageHeader({
   const homeArea = home ?? backArea ?? "home";
   const container = back && !backArea ? back : undefined;
   const heading = (
-    <>
-      {kind && <p className="page-kind">{kind}</p>}
-      <h1 className={icon ? "area-title" : undefined}>
-        {icon}
-        {title}
-      </h1>
-    </>
+    <h1 className={icon ? "area-title" : undefined}>
+      {icon}
+      {title}
+    </h1>
   );
 
   return (

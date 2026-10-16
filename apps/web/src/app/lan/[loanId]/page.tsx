@@ -526,7 +526,6 @@ export default async function LoanPage({
   return (
     <main className="main-wide">
       <PageHeader
-        kind="Lån"
         picture={
           <ThingThumbnail
             image={firstImage(loan.images, (imageId) =>

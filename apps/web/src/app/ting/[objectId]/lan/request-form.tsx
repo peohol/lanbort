@@ -156,7 +156,6 @@ export function RequestForm({
   return (
     <>
       <PageHeader
-        kind={`Be om å låne · ${reviewing ? "2 av 2" : "1 av 2"}`}
         title={
           <span ref={heading} tabIndex={-1}>
             {reviewing ? "Se over og send" : `Når vil du låne ${title}?`}

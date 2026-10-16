@@ -218,7 +218,6 @@ export default async function LoanRequestPage({
   return (
     <main>
       <PageHeader
-        kind="Forespørsel"
         picture={
           <ThingThumbnail
             image={firstImage(request.images, (imageId) =>

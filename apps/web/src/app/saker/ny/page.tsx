@@ -212,7 +212,6 @@ export default async function NewCasePage({
       <main>
         <PageHeader
           title={title}
-          kind="Rapport"
           back={{ href: casesHref, label: "Saker" }}
           task
         />
@@ -225,7 +224,6 @@ export default async function NewCasePage({
     <main>
       <PageHeader
         title={title}
-        kind={contact ? "Henvendelse" : "Rapport"}
         back={{ href: casesHref, label: "Saker" }}
         task
         context={context}

@@ -42,7 +42,6 @@ export default async function UnavailabilityReportPage({
     <main>
       <PageHeader
         title={`Si fra om ${name}`}
-        kind="Melding til Lånbort"
         back={{ href: personHref(userId), label: name }}
         task
       >

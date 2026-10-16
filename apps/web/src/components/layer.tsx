@@ -37,8 +37,9 @@ const within: Record<LayerId, (href: string) => string | null> = {
  * Opened from the app, the layer lies `over` the screen, which is kept as
  * it was and shut off from the keyboard and assistive technology until the
  * layer closes; focus then returns to what opened it. Reached from outside,
- * the layer is the page itself, with nothing under it: on a larger screen
- * a column of the same width in the middle, not a panel over an empty page.
+ * as Mine enheter always is (it loads anew, ADR-0010 §13), the layer is the
+ * page itself, but looks the same: over the app's own frame, which is shut
+ * off the same way.
  */
 export function Layer({
   layer,
@@ -98,6 +99,35 @@ export function Layer({
     };
   }, [over, href]);
 
+  useEffect(() => {
+    const shell = panel.current?.closest(".app-shell");
+    if (over || !shell) return;
+
+    // The frame the page lies in: everything in it but the way to the
+    // panel, and the backdrop that closes it.
+    const shut: Element[] = [];
+    for (
+      let node: Element | null = panel.current;
+      node && node !== shell;
+      node = node.parentElement
+    ) {
+      for (const other of node.parentElement?.children ?? []) {
+        if (
+          other !== node &&
+          !other.matches(".layer-backdrop") &&
+          !other.hasAttribute("inert")
+        ) {
+          other.setAttribute("inert", "");
+          shut.push(other);
+        }
+      }
+    }
+
+    return () => {
+      for (const each of shut) each.removeAttribute("inert");
+    };
+  }, [over]);
+
   // Each page opened in the layer is read from its title; a layer reached
   // from outside starts where any page does.
   const opened = useRef(over);
@@ -131,13 +161,10 @@ export function Layer({
 
   return (
     <LayerContext value={layer}>
-      {over && (
-        <div className="layer-backdrop" aria-hidden="true" onClick={close} />
-      )}
+      <div className="layer-backdrop" aria-hidden="true" onClick={close} />
       <div
         ref={panel}
         className="layer"
-        data-page={over ? undefined : ""}
         {...(over && {
           role: "dialog",
           "aria-modal": true,

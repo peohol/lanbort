@@ -196,10 +196,6 @@
   font-size: var(--text-xl);
 }
 
-.headText :global(.page-kind) {
-  margin: 0;
-}
-
 /* The picture and the name lead to the person's page. */
 .headPicture {
   display: inline-flex;

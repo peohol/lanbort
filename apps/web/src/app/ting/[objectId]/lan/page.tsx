@@ -72,7 +72,6 @@ export default async function RequestPage({
       ) : (
         <>
           <PageHeader
-            kind="Be om å låne"
             title={object.title}
             back={{ href: back, label: object.title }}
             home="find"

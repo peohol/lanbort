@@ -139,7 +139,7 @@ Et skjema som sendes inn, for eksempel låneforespørselen, skjuler områdene og
 ### UX-IA-014 — Forespørsel og lån er ett forløp på én side
 **Forankring:** UX-P02, UX-P04, UX-P16; PS-LOAN-001
 
-- Steglinjen viser hele forløpet i fem steg: Forespurt, Reservert, Utlånt, Retur og Gjennomført. Forespørselen er første steg i samme forløp, og etter godkjenning skifter typeetiketten fra «Forespørsel» til «Lån» på samme side.
+- Steglinjen viser hele forløpet i fem steg: Forespurt, Reservert, Utlånt, Retur og Gjennomført. Forespørselen er første steg i samme forløp, og etter godkjenning går den over i lånet på samme side; steglinjen viser hvor i forløpet det er.
 - «Nå»-kortet dominerer og bærer neste steg (UX-INT-001). Tidligere og kommende steg er én linje hver og kan åpnes (UX-IA-008).
 - Under «Nå» ligger avtalen, motparten, samtalen, tidslinjen og «Flere valg». Samtalen er ikke en fane i lånet; lånet og samtalen lenker til hverandre.
 - Et avvik overtar samme side og samme «Nå»-kort, og steget får et nøytralt avklaringsnavn, for eksempel «Overlevering avklares» (UX-EXC-001, UX-EXC-002).
@@ -147,7 +147,7 @@ Et skjema som sendes inn, for eksempel låneforespørselen, skjuler områdene og
 ### UX-IA-015 — Detaljer viser bare kontekst som har praktisk betydning
 **Forankring:** UX-P11, UX-P13; PS-DOM-005, PS-DOM-007
 
-Det skal være åpenbart av siden selv hva slags detalj brukeren er på. En typeetikett over tittelen brukes bare når den sier noe tittelen ikke sier, som «Forespørsel» eller «Lån» på samme side (UX-IA-014) eller hva slags sak det er, ikke «Ting», «Person» eller «Miljø». Hvor brukeren kom fra, vises i brødsmulene (UX-IA-009), ikke som merke eller forklaring på siden: en ting nådd fra et miljø har miljøet i brødsmulene, og ingen linje forklarer hvorfor brukeren ser den. Kontekstmerker («Via Borettslaget Lia», «Direkte mellom venner») og roller («Du handler som administrator») vises der konteksten avgjør hva brukeren kan gjøre eller hvilke regler som gjelder, som på forespørselens og lånets side (UX-PRIV-003). Brødsmuler og kontekstmerker erstatter en vedvarende kontekstlinse, så ingen skjult filtertilstand avgjør hva brukeren ser. Besluttet av Peder 15. oktober 2026 for å fjerne systeminformasjon uten praktisk betydning.
+Det skal være åpenbart av siden selv hva slags detalj brukeren er på. Ingen side har en typeetikett eller annen liten tekst over tittelen («Lån», «Ting», «Rapport»); det som trengs, står i tittelen, steglinjen eller et kontekstmerke (besluttet av Peder 16. oktober 2026). Hvor brukeren kom fra, vises i brødsmulene (UX-IA-009), ikke som merke eller forklaring på siden: en ting nådd fra et miljø har miljøet i brødsmulene, og ingen linje forklarer hvorfor brukeren ser den. Kontekstmerker («Via Borettslaget Lia», «Direkte mellom venner») og roller («Du handler som administrator») vises der konteksten avgjør hva brukeren kan gjøre eller hvilke regler som gjelder, som på forespørselens og lånets side (UX-PRIV-003). Brødsmuler og kontekstmerker erstatter en vedvarende kontekstlinse, så ingen skjult filtertilstand avgjør hva brukeren ser. Besluttet av Peder 15. oktober 2026 for å fjerne systeminformasjon uten praktisk betydning.
 
 **Designreferanse for Hjem og varsler:** [Lånbort – Hjem og varsler v3](../../design/L%C3%A5nbort%20-%20Hjem%20og%20varsler%20v3.html). Besluttet 8. oktober 2026; navn og datoer i referansen er eksempler. Ved tvil gjelder reglene nedenfor.
 
@@ -195,7 +195,7 @@ Det skal være åpenbart av siden selv hva slags detalj brukeren er på. En type
 - Mine enheter og stegene derfra er sider i privat chat med egne sikkerhetsregler (ADR-0010 punkt 13). De lastes derfor på nytt når de åpnes, og skjermen under lastes på nytt når de lukkes.
 - «Lukk» finnes på alle nivåer i Konto og returnerer til nøyaktig skjermen brukeren kom fra, inkludert område, stabel, filter, utfylte felt og rulleposisjon, som når varslingssenteret lukkes (UX-IA-011).
 - Konto er ikke et steg i områdets stabel, og varselindikatoren vises ikke i Konto. Områdene og varslene nås igjen med «Lukk».
-- Utformingen på større skjerm avgjøres i den visuelle retningen; navigasjonsreglene over gjelder uendret.
+- På større skjerm er Konto et panel over skjermen brukeren var på. Alle sider i Konto, også Mine enheter, vises i det samme panelet. Åpnes Konto utenfra (lenke, ny fane), eller lastes siden på nytt som Mine enheter gjør, ligger panelet over appens egen ramme med områdene, ikke som en egen smal side (besluttet av Peder 16. oktober 2026). Navigasjonsreglene over gjelder uendret.
 
 ### UX-IA-021 — Ting vises likt overalt, gruppert etter kategori
 **Forankring:** UX-P04, UX-P16; PS-OBJ-006, PS-OBJ-020; Peder 15. oktober 2026

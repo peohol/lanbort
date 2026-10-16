@@ -12,7 +12,6 @@ export function CanonicalStewardshipNotice({
     <main>
       <PageHeader
         title="Forvalterfunksjon"
-        kind="Lånbort"
         home="home"
         {...(back ? { back } : {})}
       />

@@ -48,7 +48,6 @@ export default async function PlatformQueuePage({
     <>
       <PageHeader
         title="Plattformkøen"
-        kind="Lånbort"
         back={{ href: stewardshipHref, label: "Forvaltning" }}
       />
       <StewardRole steward={steward} />

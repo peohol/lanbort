@@ -61,7 +61,6 @@ export default async function InterventionPage({
     <main>
       <PageHeader
         title={flow.label}
-        kind={title}
         back={{ href: interventionHref(caseId), label: "Velg inngrep" }}
         task
       />

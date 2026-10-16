@@ -44,7 +44,7 @@ export default async function NewPasskeyPage() {
         </StatusCard>
       ) : count === 0 ? (
         <>
-          <p className="page-kind">Steg 1 av 2: Første passkey</p>
+          <h2>Steg 1 av 2: Første passkey</h2>
           <p>
             Som plattformforvalter bekrefter du med passkey i tillegg til
             e-postkoden. Rollen virker når du har to.
@@ -59,7 +59,7 @@ export default async function NewPasskeyPage() {
         </>
       ) : settingUp ? (
         <>
-          <p className="page-kind">Steg 2 av 2: Andre passkey</p>
+          <h2>Steg 2 av 2: Andre passkey</h2>
           <StatusCard
             label="Den første er lagt til"
             tone="positive"
