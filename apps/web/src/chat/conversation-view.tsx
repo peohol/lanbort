@@ -591,11 +591,6 @@ function Conversation({
             <Picture people={others} />
           )}
           <div className={styles.headText}>
-            {logistics && (
-              <p className="page-kind">
-                Lånelogistikk{loan ? ` · ${loan.title}` : ""}
-              </p>
-            )}
             <h1>
               {page ? (
                 <Link href={page} className={styles.headName}>

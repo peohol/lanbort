@@ -162,7 +162,6 @@ export function ReviewsOnly({
   return (
     <main>
       <PageHeader
-        kind="Lån"
         title={partyTitle(reviews.role, reviews.title, other)}
         back={{ href: loansHref, label: "Lån" }}
       >

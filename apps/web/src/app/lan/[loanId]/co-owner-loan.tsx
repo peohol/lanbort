@@ -2,6 +2,7 @@ import type { CoOwnerLoanView } from "@lanbort/contracts";
 import type { ReactNode } from "react";
 import { PageHeader } from "@/components/page-header";
 import { StatusCard } from "@/components/status-card";
+import { Tag } from "@/components/tag";
 import { loansHref } from "@/navigation/areas";
 import { calendarDay, formatPeriod } from "@/presentation/dates";
 import {
@@ -37,7 +38,6 @@ export function CoOwnerLoan({
   return (
     <main>
       <PageHeader
-        kind="Lån · Du er medeier"
         picture={
           <ThingThumbnail
             image={firstImage(view.images, (imageId) =>
@@ -49,6 +49,7 @@ export function CoOwnerLoan({
         }
         title={coOwnerLoanTitle(view)}
         back={{ href: loansHref, label: "Lån" }}
+        context={<Tag icon="crown">Du er medeier</Tag>}
       />
       <Progress progress={coOwnerProgress(view)} />
       <div className={styles.column}>

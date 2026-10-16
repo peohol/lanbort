@@ -37,7 +37,6 @@ export default async function ChooseInterventionPage({
     <main>
       <PageHeader
         title="Velg inngrep"
-        kind={title}
         back={{ href: caseHref(caseId), label: "Saken" }}
         task
       />

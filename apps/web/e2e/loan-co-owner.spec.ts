@@ -53,7 +53,7 @@ test("a co-owner offered the lender's role sees the loan as a co-owner", async (
   });
 
   await page.goto(`/lan/${loanId}`);
-  await expect(page.getByText("Lån · Du er medeier")).toBeVisible();
+  await expect(page.getByText("Du er medeier")).toBeVisible();
   await expect(
     page.getByRole("heading", { level: 1, name: "Stige til Ola Hansen" }),
   ).toBeVisible();

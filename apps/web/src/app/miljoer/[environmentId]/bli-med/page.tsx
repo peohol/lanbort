@@ -38,8 +38,7 @@ export default async function JoinEnvironmentPage({
   return (
     <main>
       <PageHeader
-        title={environment.name}
-        kind={command.heading}
+        title={`${command.heading} i ${environment.name}`}
         back={{ href: environmentHref(environmentId), label: environment.name }}
         home={environmentHome(environment)}
         task

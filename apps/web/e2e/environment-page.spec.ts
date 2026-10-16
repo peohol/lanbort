@@ -95,7 +95,9 @@ test("an environment is created, applied to, used and left in the browser", asyn
   // Applying is a task of its own, and the page shows what was sent.
   await bo.page.getByRole("link", { name: "Søk om å bli med" }).click();
   await expect(bo.page).toHaveURL(`/miljoer/${environmentId}/bli-med`);
-  await expect(bo.page.getByRole("heading", { level: 1 })).toHaveText(name);
+  await expect(bo.page.getByRole("heading", { level: 1 })).toHaveText(
+    `Søk om å bli med i ${name}`,
+  );
   await expect(bo.page.getByRole("link", { name: "Avbryt" })).toBeVisible();
   await expect(
     bo.page.getByText(/Administratorene ser navnet ditt og svarene over/),

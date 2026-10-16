@@ -111,7 +111,9 @@ test("a friend code shows only a name until a request is sent", async ({
     .getByLabel("Kode", { exact: true })
     .fill(shown.toLowerCase().replace(" ", "-"));
   await bo.page.getByRole("button", { name: "Finn personen" }).click();
-  await expect(bo.page.getByRole("listitem")).toContainText("Anna Berg");
+  await expect(bo.page.getByRole("main").getByRole("listitem")).toContainText(
+    "Anna Berg",
+  );
   await expect(
     bo.page.getByRole("status").filter({ hasText: "Som venner kan dere" }),
   ).toBeVisible();
@@ -136,7 +138,9 @@ test("a friend code shows only a name until a request is sent", async ({
   const code = shown.replace(" ", "");
   await bo.page.goto("/konto/venner");
   await bo.page.goto(`/konto/venner/skann#${code}`);
-  await expect(bo.page.getByRole("listitem")).toContainText("Anna Berg");
+  await expect(bo.page.getByRole("main").getByRole("listitem")).toContainText(
+    "Anna Berg",
+  );
   expect(new URL(bo.page.url()).hash).toBe("");
 
   // A new code replaces the old one.

@@ -262,8 +262,9 @@
 /* Bars that the page scrolls under, as the header with the title, the way
    back and the account, and the areas at the bottom of a phone: what lies
    beneath only just shows through, blurred, so their own text reads as on
-   the page. Opaque where the browser cannot blur, where the device asks
-   for less transparency, and in forced colours. */
+   the page. The same also where the device asks for less transparency
+   (Peder, 16 October 2026): the bars read as well, and every screen looks
+   alike. Opaque where the browser cannot blur, and in forced colours. */
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))
   and (color: color-mix(in srgb, red, blue)) {
   :root {
@@ -272,7 +273,7 @@
   }
 }
 
-@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+@media (forced-colors: active) {
   :root {
     --color-bar: var(--color-page);
     --bar-filter: none;
@@ -1482,23 +1483,14 @@ button:disabled,
   }
 }
 
-/* Page header (PageHeader): the way back, what kind of page it is, the
-   title, the context it belongs to (UX-PRIV-003, UX-IA-015) and a lead. */
+/* Page header (PageHeader): the way back, the title, the context it
+   belongs to (UX-PRIV-003, UX-IA-015) and a lead. */
 .page-header h1 {
   margin-bottom: var(--space-2);
 }
 
 .page-header > :last-child {
   margin-bottom: 0;
-}
-
-.page-kind {
-  margin: 0 0 var(--space-1);
-  font-size: var(--text-xs);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--color-muted);
 }
 
 /* The way back: a small round button that names where it leads. */
@@ -1756,14 +1748,7 @@ button:disabled,
 
 /* A layer opened from a layer reached from outside (a link in a reloaded
    Konto) replaces it rather than lying on top of it. */
-body:has(> .layer) .app-shell .layer {
-  display: none;
-}
-
-/* Konto reached from outside is the page itself: nothing beside it, and
-   nothing to skip past. */
-.app-shell:has(.layer)
-  :is(.skip-link, .brand, .main-navigation, .header-actions) {
+body:has(> .layer) .app-shell :is(.layer, .layer-backdrop) {
   display: none;
 }
 
@@ -1785,20 +1770,6 @@ body:has(> .layer) .app-shell .layer {
 
   .layer-content main {
     width: calc(100% - 2 * var(--gutter));
-  }
-
-  /* Reached from outside, the layer is the page: the panel's column in the
-     middle, with no screen to lie over (`Layer`). */
-  .layer[data-page] {
-    left: 0;
-    width: auto;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .layer[data-page] > * {
-    width: min(34rem, 100%);
-    margin-inline: auto;
   }
 
   /* In a layer, the way back is one step on every screen. */

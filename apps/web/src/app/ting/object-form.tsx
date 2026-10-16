@@ -545,7 +545,6 @@ export function ObjectForm(props: ObjectFormProps) {
   const header = (
     <PageHeader
       title={questions[step][props.mode]}
-      kind={editing ? "Rediger tingen" : "Registrer en ting"}
       back={from}
       {...(from.home && { home: from.home })}
       task

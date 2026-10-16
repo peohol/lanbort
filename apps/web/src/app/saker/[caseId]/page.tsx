@@ -20,7 +20,6 @@ import { platformQueueHref } from "@/navigation/stewardship";
 import {
   aboutCase,
   caseImageHref,
-  caseKindTitle,
   caseTitle,
   describeHandling,
   loanClarifiedText,
@@ -358,7 +357,6 @@ export default async function CasePage({
           handler: asHandler,
           opener: openerOf(c),
         })}
-        kind={caseKindTitle[c.kind]}
         // The thing it names, with its picture (PS-OBJ-021).
         picture={
           (c.loanTitle ?? c.objectTitle) !== null && (
@@ -485,7 +483,6 @@ async function ConfirmFirst({ caseId }: { caseId: string }) {
     <main>
       <PageHeader
         title="Plattformsak"
-        kind="Lånbort"
         back={{ href: platformQueueHref(), label: "Plattformkøen" }}
       />
       <StewardRole steward={steward} />

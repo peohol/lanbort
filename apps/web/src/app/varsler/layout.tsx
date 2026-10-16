@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Layer } from "@/components/layer";
 
-/** Varsler reached from outside: the layer with nothing under it. */
+/** Varsler reached from outside: the layer over the app's own frame. */
 export default function NotificationsLayout({
   children,
 }: {

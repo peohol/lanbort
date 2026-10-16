@@ -95,15 +95,13 @@ export function measureNoticeEffect(
 }
 
 /** What the page is about: the thing, the review or the environment. */
-export function measureNoticeSubject(
+export function measureNoticeTitle(
   notice: MeasureNotice,
   environment: string | null,
-): { title: string; kind: string } {
-  if (notice.kind === "membership_ended") {
-    return { title: environment ?? "Miljøet", kind: "Miljø" };
-  }
+): string {
+  if (notice.kind === "membership_ended") return environment ?? "Miljøet";
 
   return notice.objectId === null
-    ? { title: "Anmeldelsen din", kind: "Anmeldelse" }
-    : { title: notice.objectTitle ?? "Tingen din", kind: "Ting" };
+    ? "Anmeldelsen din"
+    : (notice.objectTitle ?? "Tingen din");
 }

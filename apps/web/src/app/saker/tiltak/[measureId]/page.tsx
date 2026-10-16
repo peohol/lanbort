@@ -11,7 +11,7 @@ import {
   measureNoticeEffect,
   measureNoticeHeading,
   measureNoticeLabel,
-  measureNoticeSubject,
+  measureNoticeTitle,
 } from "@/presentation/measure-notice";
 import { pageQueryOrNotFound, requirePageAccount } from "@/server/session";
 import styles from "../../cases.module.css";
@@ -40,15 +40,13 @@ export default async function MeasureNoticePage({
   // A former member may no longer see the environment, but knew its name.
   const environment =
     notice.environmentName ?? (await environmentName(notice.environmentId));
-  const subject = measureNoticeSubject(notice, environment);
   const lifted = liftingMeasureKinds.has(notice.kind);
   const reassessment = !lifted && notice.scope;
 
   return (
     <main>
       <PageHeader
-        title={subject.title}
-        kind={subject.kind}
+        title={measureNoticeTitle(notice, environment)}
         back={{ href: notificationsHref, label: "Varsler" }}
       />
       <StatusCard

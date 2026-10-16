@@ -36,7 +36,7 @@ export default async function StewardshipPage() {
 
   return (
     <main>
-      <PageHeader title="Forvaltning" kind="Lånbort" home="home" />
+      <PageHeader title="Forvaltning" home="home" />
       <StewardRole steward={steward} />
       <StewardStatus
         steward={steward}

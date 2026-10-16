@@ -77,7 +77,6 @@ export default async function EnvironmentCasesPage({
     <main>
       <PageHeader
         title="Saker"
-        kind="Miljø"
         back={{ href: casesHref, label: "Saker" }}
         context={
           <ContextTag label="Miljø" icon="environment">

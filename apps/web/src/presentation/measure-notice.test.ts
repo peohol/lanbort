@@ -4,7 +4,7 @@ import {
   measureNoticeEffect,
   measureNoticeHeading,
   measureNoticeLabel,
-  measureNoticeSubject,
+  measureNoticeTitle,
 } from "./measure-notice";
 
 const notice = (overrides: Partial<MeasureNotice>): MeasureNotice => ({
@@ -67,10 +67,9 @@ describe("the notice to whoever a measure hits (PS-TRUST-018)", () => {
       objectTitle: null,
     });
 
-    expect(measureNoticeSubject(removed, "Borettslaget Lia")).toEqual({
-      title: "Borettslaget Lia",
-      kind: "Miljø",
-    });
+    expect(measureNoticeTitle(removed, "Borettslaget Lia")).toBe(
+      "Borettslaget Lia",
+    );
     expect(measureNoticeHeading(removed, "Borettslaget Lia")).toBe(
       "Medlemskapet ditt i Borettslaget Lia er avsluttet",
     );
@@ -80,12 +79,9 @@ describe("the notice to whoever a measure hits (PS-TRUST-018)", () => {
   });
 
   it("keeps the review and the thing as the page's subject", () => {
-    expect(measureNoticeSubject(notice({}), null)).toEqual({
-      title: "Gassflaske 11 kg",
-      kind: "Ting",
-    });
+    expect(measureNoticeTitle(notice({}), null)).toBe("Gassflaske 11 kg");
     expect(
-      measureNoticeSubject(notice({ objectId: null, objectTitle: null }), null),
-    ).toEqual({ title: "Anmeldelsen din", kind: "Anmeldelse" });
+      measureNoticeTitle(notice({ objectId: null, objectTitle: null }), null),
+    ).toBe("Anmeldelsen din");
   });
 });

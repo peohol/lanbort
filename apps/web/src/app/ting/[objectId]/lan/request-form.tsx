@@ -16,6 +16,7 @@ import { describedBy, Field } from "@/components/field";
 import { Icon } from "@/components/icon";
 import { OwnerNames } from "@/components/owner-names";
 import { PageHeader } from "@/components/page-header";
+import { Stepper } from "@/components/stepper";
 import { useCommand } from "@/components/use-command";
 import { Choice } from "@/app/lan/_parts/choice";
 import styles from "@/app/lan/_parts/loan.module.css";
@@ -27,6 +28,9 @@ import {
   responsibilityDeclaration,
 } from "@/presentation/loan-requests";
 import { formatDesiredPeriod } from "@/presentation/loans";
+
+/** The request's two steps (UX-IA-013). */
+const requestSteps = ["Periode", "Se over og send"];
 
 const startChoices = [
   { value: "date", label: "Velg dag" },
@@ -156,7 +160,6 @@ export function RequestForm({
   return (
     <>
       <PageHeader
-        kind={`Be om å låne · ${reviewing ? "2 av 2" : "1 av 2"}`}
         title={
           <span ref={heading} tabIndex={-1}>
             {reviewing ? "Se over og send" : `Når vil du låne ${title}?`}
@@ -169,6 +172,7 @@ export function RequestForm({
       >
         {reviewing ? undefined : availability}
       </PageHeader>
+      <Stepper steps={requestSteps} current={reviewing ? 1 : 0} />
       {reviewing && (
         <p>
           <button
