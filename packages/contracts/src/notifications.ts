@@ -251,6 +251,84 @@ export const notificationReadResultSchema = z.strictObject({
   unreadCount: z.int().nonnegative(),
 });
 
+/**
+ * UX-IA-022: the areas of the main navigation that show how much has
+ * happened there since the user last opened them, by the area's id in the
+ * navigation. Finn has none: nothing happens there for one user.
+ */
+export const newsAreas = ["home", "loans", "things", "conversations"] as const;
+export const newsAreaSchema = z.enum(newsAreas);
+export type NewsArea = z.infer<typeof newsAreaSchema>;
+
+export const isNewsArea = (id: string): id is NewsArea =>
+  (newsAreas as readonly string[]).includes(id);
+
+/** Every kind about a loan or a request for one, also its reviews. */
+const loanKinds = (Object.keys(notificationKinds) as NotificationKind[]).filter(
+  (kind) => /^loan(_request|_review)?\./.test(kind),
+);
+
+/**
+ * The notifications that are news in each area: those whose subject the
+ * area's own page shows. Lån shows every loan and request; Home only what
+ * waits on the user or comes up next (UX-IA-005), and the user's
+ * environments; Mine ting the invitations to co-own; Samtaler the
+ * conversations. A notification can be news in more than one area.
+ */
+export const newsAreaKinds: Record<NewsArea, readonly NotificationKind[]> = {
+  home: [
+    "loan_request.received",
+    "loan_request.terms_confirmed",
+    "loan_request.terms_changed",
+    "loan.approved",
+    "loan.amendment_proposed",
+    "loan.handover_day_passed",
+    "loan.handover_reported",
+    "loan.return_due",
+    "loan.return_day_passed",
+    "loan.return_reported",
+    "loan.possession_uncertain",
+    "loan.ended_unresolved",
+    "loan.responsibility_offered",
+    "loan.responsibility_consent_requested",
+    "social.friend_request",
+    "environment.membership_invited",
+    "environment.membership_review_requested",
+    "environment.membership_information_requested",
+    "environment.membership_approved",
+    "environment.role_invited",
+    "environment.type_change_proposed",
+    "environment.requirements_changed",
+    "object.co_owner_invited",
+  ],
+  loans: loanKinds,
+  things: ["object.co_owner_invited"],
+  conversations: ["chat.new_messages"],
+};
+
+/** How many things are new in each area, by the area's id. */
+export const areaNewsSchema = z.record(newsAreaSchema, z.int().nonnegative());
+export type AreaNews = z.infer<typeof areaNewsSchema>;
+
+/**
+ * What the frame of every page shows: the unread notifications beside the
+ * bell (UX-IA-019) and what is new in each area (UX-IA-022).
+ */
+export const attentionSchema = z.strictObject({
+  unreadCount: z.int().nonnegative(),
+  news: areaNewsSchema,
+});
+export type Attention = z.infer<typeof attentionSchema>;
+
+/** Nothing unread and nothing new, until the frame has read it. */
+export const noAttention: Attention = {
+  unreadCount: 0,
+  news: Object.fromEntries(newsAreas.map((area) => [area, 0])) as AreaNews,
+};
+
+/** The user opened an area's own page: what was there is no longer new. */
+export const markAreaSeenSchema = z.strictObject({ area: newsAreaSchema });
+
 interface ChannelRule {
   /** Whether the user may turn the channel on or off for the level. */
   readonly configurable: boolean;

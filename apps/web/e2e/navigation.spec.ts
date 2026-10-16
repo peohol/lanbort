@@ -130,6 +130,41 @@ test("the five areas are the main navigation, and the current one is marked", as
   expect(problems).toEqual([]);
 });
 
+test("an area with something new since it was last opened has a badge, until it is opened", async ({
+  page,
+  playwright,
+  baseURL,
+}) => {
+  const problems = collectBrowserProblems(page);
+  await befriended(page, await otherUser(playwright, baseURL!));
+  await untilNotified(page.request);
+  const home = mainNavigation(page).getByRole("link", { name: /^Hjem/ });
+
+  // The friend request is new on Home, in words and as a number by the icon
+  // (UX-IA-022), while the bell still counts it as unread.
+  await page.goto("/finn");
+  await expect(home).toHaveAccessibleName(/^Hjem\s*, 1 ny$/);
+  await expect(home.locator(".navigation-badge")).toHaveText("1");
+  await expect(
+    mainNavigation(page).getByRole("link", { name: /^Lån/ }),
+  ).toHaveAccessibleName("Lån");
+
+  // Opening Home is enough: nothing has to be read or answered.
+  await home.click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hjem");
+  await expect(home).toHaveAccessibleName("Hjem");
+  await expect(
+    page.getByRole("link", { name: "Varsler, 1 uleste" }),
+  ).toBeVisible();
+
+  // The server remembers it, so it stays so elsewhere and on other devices.
+  await page.goto("/finn");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Finn");
+  await expect(home).toHaveAccessibleName("Hjem");
+  await expect(home.locator(".navigation-badge")).toHaveCount(0);
+  expect(problems).toEqual([]);
+});
+
 test("Konto is a layer with its own stack, and Lukk returns to exactly the screen under it", async ({
   page,
   playwright,
@@ -511,6 +546,7 @@ test("the areas need a signed-in user", async ({ page, request }) => {
     "/api/home",
     "/api/loans?state=current",
     "/api/notifications/unread",
+    "/api/notifications/attention",
   ]) {
     expect((await request.get(path)).status()).toBe(401);
   }

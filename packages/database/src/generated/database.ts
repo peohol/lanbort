@@ -70,6 +70,13 @@ export interface AppAccountStatusChanges {
   user_id: string;
 }
 
+export interface AppAreaVisits {
+  area: string;
+  seen_through: Int8;
+  user_id: string;
+  visited_at: Generated<Timestamp>;
+}
+
 export interface AppAuditEvents {
   actor_process: string | null;
   actor_type: string;
@@ -1128,6 +1135,7 @@ export interface DB {
   "app.account_links": AppAccountLinks;
   "app.account_object_transfers": AppAccountObjectTransfers;
   "app.account_status_changes": AppAccountStatusChanges;
+  "app.area_visits": AppAreaVisits;
   "app.audit_events": AppAuditEvents;
   "app.auth_identities": AppAuthIdentities;
   "app.case_action_notices": AppCaseActionNotices;

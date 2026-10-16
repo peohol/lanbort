@@ -252,9 +252,10 @@ const platformRolesStep: AccountDeletionStep = {
 /**
  * PS-ADM-006: the profile (its picture went in the step before), verified
  * contact addresses, stored command results, and the account's own
- * notifications, their waiting e-mails and its preferences go. What remains of the account is its internal id, its state and
- * the records of its changes, so shared history (loans, requests, events)
- * keeps its references but shows no name. How long the remaining history is
+ * notifications, their waiting e-mails, its preferences and when it last
+ * opened each area (UX-IA-022) go. What remains of the account is its
+ * internal id, its state and the records of its changes, so shared history
+ * (loans, requests, events) keeps its references but shows no name. How long the remaining history is
  * kept is not decided (OD-0002), so nothing here removes it.
  */
 const personalDataStep: AccountDeletionStep = {
@@ -287,6 +288,10 @@ const personalDataStep: AccountDeletionStep = {
       .execute();
     await db
       .deleteFrom("app.notification_preferences")
+      .where("user_id", "=", userId)
+      .execute();
+    await db
+      .deleteFrom("app.area_visits")
       .where("user_id", "=", userId)
       .execute();
   },

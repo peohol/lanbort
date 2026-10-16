@@ -38,6 +38,8 @@ const ownPolicy = (action: string) =>
 
 export const listNotificationsPolicy = ownPolicy("notification.list");
 
+export const markAreaSeenPolicy = ownPolicy("notification.mark_area_seen");
+
 export const readNotificationPreferencesPolicy = ownPolicy(
   "notification.read_preferences",
 );
@@ -94,6 +96,7 @@ export const notificationPolicies = [
   listNotificationsPolicy,
   readNotificationPreferencesPolicy,
   setNotificationPreferencePolicy,
+  markAreaSeenPolicy,
   markNotificationsReadPolicy,
   markAllNotificationsReadPolicy,
   readNotificationPolicy,

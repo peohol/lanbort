@@ -333,6 +333,10 @@ describe("deleting an account (PS-ADM-005–006)", () => {
         enabled: true,
       })
       .execute();
+    await db
+      .insertInto("app.area_visits")
+      .values({ user_id: leaving.userId, area: "loans", seen_through: "0" })
+      .execute();
     await recordNotifications(db, "test", kit.now(), [
       {
         recipientId: leaving.userId,
@@ -368,6 +372,13 @@ describe("deleting an account (PS-ADM-005–006)", () => {
     expect(
       await db
         .selectFrom("app.notification_preferences")
+        .select("user_id")
+        .where("user_id", "=", leaving.userId)
+        .execute(),
+    ).toEqual([]);
+    expect(
+      await db
+        .selectFrom("app.area_visits")
         .select("user_id")
         .where("user_id", "=", leaving.userId)
         .execute(),

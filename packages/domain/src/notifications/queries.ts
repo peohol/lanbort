@@ -1,4 +1,5 @@
 import {
+  type Attention,
   type Notification,
   type NotificationKind,
   type NotificationList,
@@ -14,6 +15,7 @@ import { type Kysely, sql } from "kysely";
 import { z } from "zod";
 import { defineQuery } from "../commands/query";
 import { actingUserId, inSnapshot } from "../objects/state";
+import { loadAreaNews } from "./area-news";
 import { presentPreferences } from "./model";
 import {
   listNotificationsPolicy,
@@ -151,6 +153,35 @@ export const countUnreadNotifications = defineQuery({
   present: ({ resource }): NotificationReadResult => ({
     unreadCount: resource,
   }),
+});
+
+/** What the frame of every page shows: unread notifications and news. */
+export async function loadAttention(
+  db: Db,
+  userId: string,
+): Promise<Attention> {
+  const [unreadCount, news] = await Promise.all([
+    countUnread(db, userId),
+    loadAreaNews(db, userId),
+  ]);
+
+  return { unreadCount, news };
+}
+
+/**
+ * The bell's number and what is new in each area of the main navigation
+ * (UX-IA-019, UX-IA-022), read together for every page. Part of reading
+ * the notification centre.
+ */
+export const readAttention = defineQuery({
+  name: "notification.read_attention",
+  input: z.strictObject({}),
+  policy: listNotificationsPolicy,
+  load: async ({ db, actor }) => ({
+    resource: await loadAttention(db, actingUserId(actor)),
+    context: undefined,
+  }),
+  present: ({ resource }): Attention => resource,
 });
 
 /** How the caller is told, per level and channel (PS-COM-003). */
