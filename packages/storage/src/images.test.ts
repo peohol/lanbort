@@ -1,6 +1,11 @@
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import { normalizeImage, storedImageMaxSide } from "./images";
+import {
+  normalizeImage,
+  storedImageMaxSide,
+  thumbnailImage,
+  thumbnailSide,
+} from "./images";
 
 const photo = (width: number, height: number) =>
   sharp({
@@ -97,5 +102,67 @@ describe("normalizeImage (PS-OBJ-002, malicious uploads)", () => {
       .toBuffer();
 
     expect(await normalizeImage(huge)).toBeNull();
+  });
+});
+
+describe("thumbnailImage (PS-OBJ-021)", () => {
+  // Noise at the thumbnail's own size compresses worst of all, so a real
+  // photo is no larger.
+  const noisy = () =>
+    sharp({
+      create: {
+        width: thumbnailSide,
+        height: thumbnailSide,
+        channels: 3,
+        background: "#000000",
+        noise: { type: "gaussian", mean: 128, sigma: 60 },
+      },
+    })
+      .webp()
+      .toBuffer();
+
+  it("is a small square WebP of a few kilobytes", async () => {
+    const thumbnail = await thumbnailImage(await noisy(), null);
+
+    expect(thumbnail).toMatchObject({
+      contentType: "image/webp",
+      width: thumbnailSide,
+      height: thumbnailSide,
+    });
+    expect(thumbnail!.bytes.byteLength).toBeLessThan(6144);
+    expect((await sharp(thumbnail!.bytes).metadata()).format).toBe("webp");
+  });
+
+  it("shows the chosen square of the picture", async () => {
+    const halves = await sharp({
+      create: { width: 200, height: 100, channels: 3, background: "#ff0000" },
+    })
+      .composite([
+        {
+          input: await photo(100, 100).png().toBuffer(),
+          left: 100,
+          top: 0,
+        },
+      ])
+      .png()
+      .toBuffer();
+
+    const right = await thumbnailImage(halves, {
+      left: 100,
+      top: 0,
+      side: 100,
+    });
+    const { dominant } = await sharp(right!.bytes).stats();
+
+    expect(dominant.b).toBeGreaterThan(dominant.r);
+  });
+
+  it("refuses what is not a picture, or a square outside it", async () => {
+    const small = await photo(50, 50).webp().toBuffer();
+
+    expect(await thumbnailImage(Buffer.from("not an image"), null)).toBeNull();
+    expect(
+      await thumbnailImage(small, { left: 20, top: 20, side: 40 }),
+    ).toBeNull();
   });
 });

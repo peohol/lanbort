@@ -11,3 +11,4 @@ export * from "./co-owners";
 export * from "./restrictions";
 export * from "./history";
 export * from "./deletion";
+export * from "./thumbnails";

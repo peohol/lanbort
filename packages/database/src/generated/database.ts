@@ -1106,6 +1106,20 @@ export interface AppStewardPasskeys {
   user_id: string;
 }
 
+export interface AppThingThumbnails {
+  bytes: Buffer;
+  crop_left: number | null;
+  crop_side: number | null;
+  crop_top: number | null;
+  id: Generated<string>;
+  image_id: string;
+  loan_id: string | null;
+  made_at: Generated<Timestamp>;
+  object_id: string | null;
+  request_id: string | null;
+  side: number;
+}
+
 export interface AppUserBlocks {
   blocked_id: string;
   blocker_id: string;
@@ -1228,6 +1242,7 @@ export interface DB {
   "app.steward_enrollment_codes": AppStewardEnrollmentCodes;
   "app.steward_passkey_challenges": AppStewardPasskeyChallenges;
   "app.steward_passkeys": AppStewardPasskeys;
+  "app.thing_thumbnails": AppThingThumbnails;
   "app.user_blocks": AppUserBlocks;
   "app.users": AppUsers;
   "app.verified_contacts": AppVerifiedContacts;

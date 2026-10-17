@@ -21,6 +21,7 @@ import {
   withdrawObjectDeletionConsentPolicy,
 } from "./policies";
 import { actingUserId, loadLockedObject, type ObjectState } from "./state";
+import { keepThumbnail } from "./thumbnails";
 
 const objectReference = z.strictObject({ objectId: objectIdSchema });
 
@@ -36,6 +37,7 @@ const objectRowTables = [
   "app.object_freezes",
   "app.object_revisions",
   "app.object_images",
+  "app.thing_thumbnails",
   "app.object_availability_intervals",
   "app.object_owners",
 ] as const;
@@ -43,7 +45,7 @@ const objectRowTables = [
 /**
  * Removes the object with its content and history rows. The append-only
  * events keep ids only, and the image files are deleted after commit like
- * removed images (outbox).
+ * removed images (outbox). Its loans and requests keep its thumbnail.
  */
 export async function deleteObject(
   tx: Kysely<Database>,
@@ -53,6 +55,7 @@ export async function deleteObject(
 ): Promise<void> {
   // Loan requests outlive the object as the parties' history: open ones end
   // neutrally, and all of them let go of the rows deleted below.
+  await keepThumbnail(tx, object.objectId);
   await sql`select app.release_loan_requests(${object.objectId}, ${now})`.execute(
     tx,
   );

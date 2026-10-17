@@ -528,8 +528,15 @@ export const cropObjectImage = defineCommand({
   },
 });
 
-/** Where one image's file is kept, and its type. */
-export interface ImageFile {
+/**
+ * Where one image's file is kept, and its type; or, for a thumbnail kept in
+ * the database (`thingImageFile`), its bytes.
+ */
+export type ImageFile =
+  | StoredImageFile
+  | { readonly bytes: Uint8Array; readonly contentType: string };
+
+export interface StoredImageFile {
   readonly key: string;
   readonly contentType: string;
 }
@@ -539,7 +546,7 @@ export async function findImageFile(
   db: Kysely<Database>,
   objectId: string,
   imageId: string,
-): Promise<ImageFile | null> {
+): Promise<StoredImageFile | null> {
   const image = await db
     .selectFrom("app.object_images")
     .select(["id", "content_type"])
@@ -598,7 +605,7 @@ export async function readImageFile<I, R, C>(
   request: { actor: Actor; input: unknown },
 ): Promise<{ bytes: Uint8Array; contentType: string }> {
   const file = await executeQuery(domain, query, request);
-  const bytes = await store.get(file.key);
+  const bytes = "bytes" in file ? file.bytes : await store.get(file.key);
 
   if (!bytes) {
     throw new DomainError("not_found", "Image file is missing");

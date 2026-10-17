@@ -32,6 +32,7 @@ import {
   loadObjectState,
   presentImage,
 } from "../objects/state";
+import { thingImages } from "../objects/thumbnails";
 import { linkIn, noPersonLinks, personLinks } from "../people/queries";
 import { shownOwners } from "../publications/owners";
 import { assessOrigin } from "./access";
@@ -264,7 +265,7 @@ async function describeObject(db: Db, request: LoanRequestRecord, now: Date) {
     return {
       ...presentedStatus(request, openStanding),
       object: null,
-      images: [],
+      images: await thingImages(db, null, { requestId: request.id }),
       confirmedTerms: null,
       pendingTerms: null,
       ownerIds: request.formerOwnerIds ?? [],
@@ -615,7 +616,7 @@ async function loadLoanDetail(
         );
   const coOwnerNames = await realNames(db, coOwnerIds);
   const mediations = await loadMediations(db, loan.id);
-  const images = await currentImages(db, loan.objectId);
+  const images = await thingImages(db, loan.objectId, { loanId: loan.id });
   const request = await findLoanRequest(db, loan.requestId);
   const origin: LoanOrigin = request
     ? await describeOrigin(db, viewer, request, now)

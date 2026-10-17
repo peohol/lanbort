@@ -15,6 +15,7 @@
 | --- | --- | --- |
 | Konto, profil, e-postadresse, profilbilde, varslingsvalg, chatenheter og -nøkler | Så lenge kontoen finnes | Med en gang kontoen slettes (`accountDeletionSteps`); innloggingsidentiteten kort etter (outbox) |
 | Ting og bilder av dem | Til eieren sletter tingen eller kontoen | Tingslettingen og kontoslettingen; bildefilen kort etter (outbox) |
+| Miniatyrbilde av en slettet ting, hos lånene og forespørslene om den (PS-OBJ-021) | Gjennom piloten, til eieren sletter kontoen | Kontoslettingen |
 | Svar på et miljøs krav for å bli med | Til 90 dager etter at medlemskapet er avsluttet | Slettejobben |
 | Lån, avtaler, overlevering, retur, skader og anmeldelser | Gjennom piloten | Står med bare intern ID når en part sletter kontoen |
 | Saker, moderering og chatmeldinger som en part har lagt fram i en sak | Gjennom piloten | Bare de som behandler saken, ser dem |

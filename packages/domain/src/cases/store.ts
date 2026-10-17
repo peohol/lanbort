@@ -14,6 +14,7 @@ import { type Kysely, sql } from "kysely";
 import { presentedLoanStatus } from "../loans/model";
 import { findLoan } from "../loans/reservations";
 import { calendarDate } from "../objects/availability";
+import type { ThumbnailHolder } from "../objects/thumbnails";
 import type {
   ActionRecord,
   CaseRecord,
@@ -868,6 +869,11 @@ export async function caseObjectId(
 
   return loan?.object_id ?? null;
 }
+
+/** A case about a loan shows the thumbnail the loan kept of its thing. */
+export const caseThumbnailHolder = (
+  c: Pick<CaseRecord, "loanId">,
+): ThumbnailHolder => (c.loanId === null ? null : { loanId: c.loanId });
 
 /**
  * What the case is about, by name: the loan's title in its current

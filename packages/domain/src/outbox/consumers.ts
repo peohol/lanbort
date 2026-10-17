@@ -9,6 +9,7 @@ import type { DomainContext } from "../commands/command";
 import type { NotificationEmailServices } from "../notifications/delivery";
 import { notificationGenerator } from "../notifications/generator";
 import { type ImageStore, objectImageFileCleanup } from "../objects/images";
+import { type ThumbnailMaker, thingThumbnails } from "../objects/thumbnails";
 import { profilePictureFileCleanup } from "../people/pictures";
 import { searchIndexer } from "../search/indexer";
 import {
@@ -25,6 +26,8 @@ export interface OutboxConsumerDependencies {
   readonly imageStore: () => ImageStore | undefined;
   /** The same for profile pictures, which have their own private bucket. */
   readonly pictureStore: () => ImageStore | undefined;
+  /** Makes things' thumbnails; undefined the same way as the image store. */
+  readonly thumbnails: () => ThumbnailMaker | undefined;
   /** Undefined where no provider key is configured; deliveries are retried. */
   readonly identities: () => IdentityProviderAdmin | undefined;
   /**
@@ -36,7 +39,7 @@ export interface OutboxConsumerDependencies {
 
 /**
  * Every side effect that runs from the outbox (ADR-0004, ADR-0008): image
- * and profile picture file cleanup, the in-app notifications (WP-40), telling object subscribers
+ * and profile picture file cleanup, things' thumbnails (PS-OBJ-021), the in-app notifications (WP-40), telling object subscribers
  * when an object has become available (WP-63), the derived search index
  * (WP-61), removing a deleted account's sign-in identity (WP-53),
  * ending the sign-in sessions of revoked chat devices (WP-43), and inviting
@@ -52,6 +55,7 @@ export function outboxConsumers({
   domain,
   imageStore,
   pictureStore,
+  thumbnails,
   identities,
   emails,
 }: OutboxConsumerDependencies): ConsumerRegistry {
@@ -59,6 +63,7 @@ export function outboxConsumers({
 
   return new ConsumerRegistry([
     objectImageFileCleanup({ store: imageStore, db }),
+    thingThumbnails({ store: imageStore, thumbnails, db }),
     profilePictureFileCleanup({ store: pictureStore, db }),
     notificationGenerator({ db }),
     objectAvailabilityWatcher({ db }),
