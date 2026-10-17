@@ -66,3 +66,54 @@ export async function normalizeImage(
     return null;
   }
 }
+
+/**
+ * Side of a thing's thumbnail, in pixels: enough to recognise the thing in
+ * its place beside a title, and a few kilobytes at most.
+ */
+export const thumbnailSide = 96;
+
+/** The square part of a stored picture, in its pixels. */
+export interface ThumbnailSquare {
+  readonly left: number;
+  readonly top: number;
+  readonly side: number;
+}
+
+/**
+ * A small, rough WebP copy of `square` of a stored picture, or of its
+ * middle without one (PS-OBJ-021). Stored pictures are already upright and
+ * without metadata ({@link normalizeImage}). Null for anything else.
+ */
+export async function thumbnailImage(
+  bytes: Uint8Array,
+  square: ThumbnailSquare | null,
+): Promise<NormalizedImage | null> {
+  try {
+    const input = sharp(bytes, {
+      limitInputPixels: maxInputPixels,
+      failOn: "error",
+    });
+    const cut = square
+      ? input.extract({
+          left: square.left,
+          top: square.top,
+          width: square.side,
+          height: square.side,
+        })
+      : input;
+    const { data, info } = await cut
+      .resize({ width: thumbnailSide, height: thumbnailSide, fit: "cover" })
+      .webp({ quality: 40, effort: 6, smartSubsample: true })
+      .toBuffer({ resolveWithObject: true });
+
+    return {
+      bytes: new Uint8Array(data),
+      contentType: "image/webp",
+      width: info.width,
+      height: info.height,
+    };
+  } catch {
+    return null;
+  }
+}

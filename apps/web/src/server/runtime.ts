@@ -17,7 +17,11 @@ import {
   stewardPasskeyCommands,
 } from "@lanbort/domain";
 import { accountInviters, platformStewardsEnabled, serverEnv } from "./env";
-import { objectImageServices, profilePictureServices } from "./images";
+import {
+  objectImageServices,
+  profilePictureServices,
+  thumbnailImage,
+} from "./images";
 import { notificationEmailServices } from "./notification-emails";
 
 /**
@@ -61,6 +65,7 @@ const consumers = outboxConsumers({
   domain: () => runtime.domain(),
   imageStore: () => objectImageServices()?.store,
   pictureStore: () => profilePictureServices()?.store,
+  thumbnails: () => thumbnailImage,
   identities: identityAdmin,
   emails: notificationEmailServices,
 });

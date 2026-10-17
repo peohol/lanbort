@@ -326,6 +326,7 @@ export const caseSchema = z.strictObject({
   /**
    * The pictures of the thing the case names, a mediated loan's or a
    * reported object's: whoever reads its name sees them (PS-OBJ-021).
+   * Once a mediated loan's thing is deleted, the thumbnail the loan kept.
    */
   images: z.array(objectImageSchema),
   /** The mediated loan, for a mediation while the loan exists. */

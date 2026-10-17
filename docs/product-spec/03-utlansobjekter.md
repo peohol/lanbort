@@ -48,7 +48,7 @@ Som en miljøpublisering endrer valget ikke objektet selv. Det følger de samme 
 ### PS-OBJ-021 — Den som ser tingens navn, ser også bildene
 **Forankring:** PS-OBJ-001; avklarer OD-0049 (produkteier, 10. oktober 2026)
 
-Alle som får se navnet på en ting, skal også kunne se bildene av den, slik de er nå. Det gjelder også gjennom et lån eller en låneforespørsel: partene ser tingens bilder så lenge de ser lånet eller forespørselen, også etter at det er avsluttet, og selv om de ikke lenger finner tingen der forespørselen kom fra. Bildene er ikke en del av avtalen (PS-OBJ-012); en slettet ting har ingen bilder.
+Alle som får se navnet på en ting, skal også kunne se bildene av den, slik de er nå. Det gjelder også gjennom et lån eller en låneforespørsel: partene ser tingens bilder så lenge de ser lånet eller forespørselen, også etter at det er avsluttet, og selv om de ikke lenger finner tingen der forespørselen kom fra. Bildene er ikke en del av avtalen (PS-OBJ-012). Når tingen slettes, går bildene, men lånene og forespørslene beholder et lite, grovt miniatyrbilde av hovedbildet slik det sist ble vist på kortet, så partene fortsatt ser hva som ble lånt (produkteier, 17. oktober 2026). Miniatyrbildet går når eieren sletter kontoen sin.
 
 ### PS-OBJ-007 — Medeierskap krever aksept
 **Forankring:** [Medeierskap](../vision/04-utlansobjekter.md)

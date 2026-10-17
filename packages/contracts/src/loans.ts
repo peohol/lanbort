@@ -282,7 +282,8 @@ export const loanRequestSchema = z.strictObject({
   /**
    * The thing's pictures as they are now, not as agreed: whoever sees the
    * thing's name sees its pictures (PS-OBJ-021). Read through
-   * `loan_request.read_image`; empty once the object is deleted.
+   * `loan_request.read_image`; once the object is deleted, only the
+   * square thumbnail the request kept of it, if any.
    */
   images: z.array(objectImageSchema),
   confirmedTerms: termsSchema.nullable(),
@@ -772,7 +773,8 @@ export const loanSchema = z.strictObject({
   /**
    * The thing's pictures as they are now, not as agreed: whoever sees the
    * thing's name sees its pictures (PS-OBJ-021). Read through
-   * `loan.read_image`; empty once the object is deleted.
+   * `loan.read_image`; once the object is deleted, only the square thumbnail
+   * the loan kept of it, if any.
    */
   images: z.array(objectImageSchema),
   role: loanRequestRoleSchema,

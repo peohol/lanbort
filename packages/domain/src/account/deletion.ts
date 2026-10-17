@@ -31,6 +31,7 @@ import {
 } from "../objects/commitments";
 import { deleteObject } from "../objects/deletion";
 import { loadObjectState } from "../objects/state";
+import { removeKeptThumbnails } from "../objects/thumbnails";
 import { defineConsumer, OutboxDeliveryError } from "../outbox/consumer";
 import { profilePictureDeletionStep } from "../people/pictures";
 import { platformRoleRevoked } from "../platform/events";
@@ -81,7 +82,8 @@ function conflict(message: string): never {
 /**
  * Objects: one the account owns alone is deleted with its content
  * (PS-OBJ-011); from a shared one the account leaves, and the other owners
- * keep it (PS-OBJ-008). Neither can carry a commitment of the account any
+ * keep it (PS-OBJ-008). The thumbnails its deleted things left with their
+ * loans and requests go too. Neither can carry a commitment of the account any
  * more, since its loans bind it; the check is repeated under the object's
  * lock anyway.
  */
@@ -122,6 +124,8 @@ function objectsStep(
           await removeOwner(db, object, userId, events, now);
         }
       }
+
+      await removeKeptThumbnails(db, userId);
     },
   };
 }

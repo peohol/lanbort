@@ -3,7 +3,7 @@ import type { ImageProcessor, ImageServices } from "@lanbort/domain";
 import { createSupabaseFileStore, normalizeImage } from "@lanbort/storage";
 import { serverEnv } from "./env";
 
-export { heifToJpeg } from "@lanbort/storage";
+export { heifToJpeg, thumbnailImage } from "@lanbort/storage";
 
 const services = new Map<string, ImageServices>();
 

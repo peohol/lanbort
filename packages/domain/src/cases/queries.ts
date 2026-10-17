@@ -17,8 +17,8 @@ import { rateLimits } from "../abuse/rate-limits";
 import { realNames } from "../account/store";
 import { defineQuery } from "../commands/query";
 import { loadEnvironmentAccess } from "../environment/store";
-import { findImageFile } from "../objects/images";
-import { actingUserId, currentImages, inSnapshot } from "../objects/state";
+import { thingImages, thingImageFile } from "../objects/thumbnails";
+import { actingUserId, inSnapshot } from "../objects/state";
 import { loadCase, loadUnavailabilityTarget } from "./commands";
 import {
   type ActionRecord,
@@ -46,6 +46,7 @@ import {
   listCases,
   loadActions,
   caseObjectId,
+  caseThumbnailHolder,
   loadCaseTitles,
   loadEntries,
   loadHandlingState,
@@ -149,7 +150,11 @@ export const readCase = defineQuery({
           actions,
           handling,
           titles: await loadCaseTitles(tx, c),
-          images: await currentImages(tx, await caseObjectId(tx, c)),
+          images: await thingImages(
+            tx,
+            await caseObjectId(tx, c),
+            caseThumbnailHolder(c),
+          ),
           loanStatus:
             c.kind === "loan_mediation" && c.loanId !== null
               ? ((await loadLoanStatuses(tx, [c.loanId], now)).get(c.loanId) ??
@@ -259,8 +264,8 @@ export const readCase = defineQuery({
 
 /**
  * PS-OBJ-021: whoever reads the case sees the pictures of the thing it
- * names, as they are now: its participants and its handlers, with the same
- * access as to the case.
+ * names, as they are now, or the thumbnail its loan kept of it: its
+ * participants and its handlers, with the same access as to the case.
  */
 export const caseImageFile = defineQuery({
   name: "case.read_image",
@@ -269,18 +274,21 @@ export const caseImageFile = defineQuery({
   load: ({ db, actor, input, now }) =>
     inSnapshot(db, async (tx) => {
       const loaded = await loadCase(tx, actor, input.caseId, now);
-      const objectId = loaded && (await caseObjectId(tx, loaded.resource.case));
+      const c = loaded?.resource.case;
       const file =
-        objectId && (await findImageFile(tx, objectId, input.imageId));
+        c &&
+        (await thingImageFile(
+          tx,
+          await caseObjectId(tx, c),
+          caseThumbnailHolder(c),
+          input.imageId,
+        ));
 
       return loaded && file
-        ? { resource: { ...loaded.resource, ...file }, context: undefined }
+        ? { resource: { ...loaded.resource, file }, context: undefined }
         : null;
     }),
-  present: ({ resource }) => ({
-    key: resource.key,
-    contentType: resource.contentType,
-  }),
+  present: ({ resource }) => resource.file,
 });
 
 /** The name of each user the view names, and of nobody else. */
