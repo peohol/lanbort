@@ -427,14 +427,14 @@
   border-radius: var(--radius-m);
   /* The corner nearest the one who wrote it is sharper, like a speech
      bubble's tail. */
-  border-end-start-radius: var(--radius-s);
+  border-end-start-radius: var(--radius-xs);
   box-shadow: var(--shadow-low);
 }
 
 .own .bubble {
   background: var(--color-accent-soft);
   border-end-start-radius: var(--radius-m);
-  border-end-end-radius: var(--radius-s);
+  border-end-end-radius: var(--radius-xs);
 }
 
 /* Waiting to be sent: a dashed edge, an icon and words, never colour
