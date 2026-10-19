@@ -142,6 +142,7 @@
   --pad-control: 1.25rem; /* either side of a button's label */
   --pad-inset: var(--space-1); /* a field's edge to a button inside it */
 
+  --radius-xs: 0.25rem;
   --radius-s: 0.5rem;
   --radius-field: 0.875rem;
   --radius-m: 1.125rem;

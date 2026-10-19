@@ -425,12 +425,16 @@
   overflow-wrap: anywhere;
   background: var(--color-surface);
   border-radius: var(--radius-m);
+  /* The corner nearest the one who wrote it is sharper, like a speech
+     bubble's tail. */
+  border-end-start-radius: var(--radius-xs);
   box-shadow: var(--shadow-low);
 }
 
 .own .bubble {
   background: var(--color-accent-soft);
-  box-shadow: none;
+  border-end-start-radius: var(--radius-m);
+  border-end-end-radius: var(--radius-xs);
 }
 
 /* Waiting to be sent: a dashed edge, an icon and words, never colour
@@ -506,6 +510,12 @@
   color: var(--color-muted);
   background: var(--color-sunken);
   opacity: 1;
+}
+
+/* Hovered, it is filled whether or not there is anything to send, so the
+   arrow takes the colour drawn on the fill. */
+.send:hover {
+  color: var(--color-on-accent);
 }
 
 .jump {
