@@ -8,16 +8,16 @@
 - Testeren skal kunne registrere et testresultat fra mobil på få trykk uten GitHub-konto og uten kode- eller filredigering.
 - **Fremdrift lagres som strukturerte private data i Supabase**, ikke ved å endre Markdown, offentlige GitHub-issues, chatmeldinger eller appens ordinære låneposter.
 - Løsningen skal ikke kreve nye betalte tjenester. Gjenbruk Next.js, Supabase, gjeldende innlogging, UI-komponenter, logging og backup.
-- En pilotflate er et internt arbeidsverktøy, ikke en funksjon i ordinær Lånbort, og må ikke åpne funksjoner som er deaktivert i pilot (plattformforvaltning, Vipps, betaling).
+- Pilotflatene er adskilte arbeidsverktøy, ikke funksjoner i ordinær Lånbort, og må ikke åpne funksjoner som er deaktivert i pilot (plattformforvaltning, Vipps, betaling).
 
 ## Tilgang, URL og livssyklus
 
 En egen intern rute, eksempelvis `/pilot`, uten plass i ordinær hovednavigasjon. Ikke stole på skjult URL: hver sidelesning og hver API-handling må avvise uvedkommende på serversiden, uavhengig av knapper. Benytt eksisterende `route.user`-grense og domeneautorisering for operasjoner, med databasekontroll som ekstra sperre.
 
 - Egen, minste-privilegium **pilotansvarlig**-rettighet. Innledningsvis kun produkteierens konto, via eksplisitt konfigurert tilgang; ikke gjenbruk plattformforvalterrollen eller slå på `PLATFORM_STEWARDS_ENABLED`.
-- Vanlige brukere ser ingen testresultater og kan ikke legge inn eller endre administrativ teststatus, heller ikke gjennom direkte API-kall.
+- Andre brukere enn eksplisitt inviterte pilotdeltakere får ingen pilotfunksjoner. Pilotdeltakere kan **bare se egne tildelte oppgaver og sende egne tilbakemeldinger**, ikke hele testjournalen. Pilotansvarlig avgjør hva som er offisielt Bestått/Feilet.
 - Funksjonen er av som standard og aktiveres bevisst under piloten. Avsluttet kampanje er som hovedregel skrivebeskyttet.
-- Vurder om testledere senere kan ha avgrensede rettigheter. Ikke gi andre deltakere administrativ innsikt bare for å avgi tilbakemelding.
+- Testlederrettigheter og deltakertilgang er to forskjellige roller. Ingen deltakere får administrativ innsikt ved å rapportere fra et oppgavekort.
 
 ## Skjermbilder / visninger
 
@@ -38,6 +38,12 @@ Ved registrering: dato/klokkeslett (automatisk), appversjon/deploy, testrolle/te
 
 En ny test av samme scenario oppretter en **ny kjøring**, ikke overskriving av tidligere observasjon. Status på forsiden er siste gyldige kjøring og retest-regler, med mulighet til å vise historikken. Etter kodeendring kan relevant test manuelt markeres «Må testes igjen».
 
+### 3. Deltakerens «Mine pilotoppgaver»
+
+Deltakere som uttrykkelig er tildelt tester, kan åpne en enkel, adskilt side med **egne** oppgaver, uten GitHub-konto. Hvert oppgavekort viser et kort **brukermål**, for eksempel «Finn en ting du vil låne», ikke en avslørende klikkoppskrift. Etter oppgaven kan deltakeren velge «Fikk det til», «Stoppet opp / fikk det ikke til» eller «Trenger hjelp», samt gi en frivillig kort kommentar. Dette registreres som **selvrapportert observasjon**, ikke automatisk «Bestått» i den offisielle matrisen.
+
+I den tidlige, uveiledede brukertesten kan testlederen gi oppgavene muntlig og først vise rapporteringsflaten etter observasjonen, slik at grensesnittet ikke lærer deltakeren hvordan Lånbort skal brukes. Ingen deltakere får lese andres oppgaver, identitet, resultater eller avvik.
+
 ### 3. Gjennomføring per fase
 
 Vis faste milepæler fra [testplanen](pilot-testplan.md) og hvilke B/O/U-tester som må være gjennomført for å starte neste fase. Ikke tillat at «grønn CI» automatisk markeres som «manuelt bestått». Lag en kort, sanert/aggregert ukesstatus uten deltakerdata.
@@ -53,8 +59,9 @@ Lag et lite, separat pilotdomene med databasemigrasjon og tester. Et mulig minst
 1. **Pilotkampanje:** stabil ID, navn, datoer, fase, status, kildeversjon av testkatalogen.
 2. **Testkatalog:** faste ID-er med prioritet, område, handling, forventet resultat og revisjon. Bevar testdefinisjonen som var gjeldende da kjøringen ble gjort, eller referer til uforanderlig katalogrevisjon.
 3. **Testkjøring:** unik ID, kampanje, testcase-ID/revisjon, tidspunkt, app/deploy-versjon, status, testerpseudonym, device/browser, hjelp nødvendig, kort merknad og lenke til privat avvik.
-4. **Revisjonshendelser:** append-only hvem registrerte/endres, hva som ble endret, og når. Ingen stille omskriving.
-5. **Avviksreferanser:** alvorlighetsgrad, status, testcase-ID-er, sanert problemtekst, eventuelt intern privat lenke.
+4. **Testoppgave og deltakertilbakemelding:** valgfri tildeling til pilotdeltaker, kort oppgavemål og selvrapportert utfall som skilles tydelig fra offisiell teststatus. Ingen bredere adgang til appdata følger med tildelingen.
+5. **Revisjonshendelser:** append-only hvem registrerte/endres, hva som ble endret, og når. Ingen stille omskriving.
+6. **Avviksreferanser:** alvorlighetsgrad, status, testcase-ID-er, sanert problemtekst, eventuelt intern privat lenke.
 
 Hold en **énkildemodell for testdefinisjonene**: ved implementering flyttes de 98 ID-ene til en maskinlesbar katalog i repoet som også genererer/validerer Markdown-matrisen i CI, eller brukes en tilsvarende CI-verifisert byggeprosess. Ikke vedlikehold separate definisjoner for appen og dokumentet manuelt. Versjonér katalogen slik at endret ordlyd ikke omskriver tidligere testresultater. Ikke gjenbruk slettede ID-er.
 
@@ -73,6 +80,7 @@ Resultatjournalen må ikke gi den interne testrollen ekstra adgang til vanlige b
 ## Test for funksjonen selv
 
 - Uvedkommende konto får ingen pilotflate via direkte URL, API eller eksport.
+- Pilotdeltaker ser bare egne tildelte oppgaver og kan ikke endre administrativ teststatus eller lese andres tilbakemeldinger.
 - Ingen pilotflate tilbys dersom tilgangsflagget er av.
 - Autorisert pilotansvarlig kan registrere samme case flere ganger og se korrekt historikk; samtidig registrering gir ingen tap.
 - Ugyldige statusoverganger, lange merknader og forsøk på å legge inn andres testresultater avvises eller håndteres med trygge begrensninger.
@@ -88,6 +96,6 @@ Resultatjournalen må ikke gi den interne testrollen ekstra adgang til vanlige b
 3. Bygg rollebeskyttet `/pilot`, API og Supabase-modell med les/skriv-historikk og enkel oversikt.
 4. Sikkerhets-/autorisasjonstester og mobiltest; ingen kode publiseres med rød CI.
 5. Aktiver kun for produkteier, prøv tre testcase-endringer og eksport; deretter start pilot.
-6. Vurder senere frivillig deltakerflate for å gi tilbakemelding, men ikke la oppgaveinstrukser farge første UX-observasjon.
+6. Prøv også en minimal deltakerflate med egne oppgaver og selvrapportering, uten å la den farge første uveiledede UX-observasjon.
 
 Dette er **ikke** en bestilling på et stort analyseverktøy eller egen tjeneste. Lever helst en enkel, pålitelig pilotflate som er lett å deaktivere etter evalueringen.
