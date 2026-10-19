@@ -6,6 +6,7 @@
 
 - [Gjennomføringsplan, privat rapportering og kvalitetsporter for pilot](pilot-testplan.md)
 - [Manuell testmatrise med faste test-ID-er](pilot-testmatrise.md)
+- [Internt pilotdashboard: UI, tilgang og privat testjournal](pilot-ui.md)
 
 **Personopplysninger og faktiske testresultater lagres ikke i dette offentlige repoet.** Bruk privat pilotjournal med minste mulige tilgang, som beskrevet i gjennomføringsplanen.
 
