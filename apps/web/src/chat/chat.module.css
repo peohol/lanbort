@@ -506,16 +506,13 @@
   padding: 0;
 }
 
-.send[aria-disabled="true"] {
+/* With nothing to send it stays grey, hovered too: it fills only when a
+   press would send something. */
+.send[aria-disabled="true"],
+.send[aria-disabled="true"]:hover {
   color: var(--color-muted);
   background: var(--color-sunken);
   opacity: 1;
-}
-
-/* Hovered, it is filled whether or not there is anything to send, so the
-   arrow takes the colour drawn on the fill. */
-.send:hover {
-  color: var(--color-on-accent);
 }
 
 .jump {
