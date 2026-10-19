@@ -19,7 +19,7 @@ Målet er å undersøke om vanlige brukere klarer å låne og låne bort ting ut
 
 Kode-repoet `peohol/lanbort` er offentlig. Her lagres bare **generiske** testbeskrivelser, ID-er, metode, beslutninger og eventuelt **anonymiserte summeringer**. Dette dokumentet og testmatrisen inneholder ingen faktiske pilotdata.
 
-Opprett en **privat GitHub Project-oversikt** for pilotarbeidet, med private utkastskort, ett per testcase-ID. Alternativt en egen privat pilot-repo for journal og problemer som krever adgangsstyrte issues, gjerne koblet til et privat Project. **Et offentlig GitHub-issue forblir offentlig selv om det vises på et privat Project.** Ikke lagre sensitivt innhold i offentlige issues, PR-er, Actions-logger eller commit-meldinger.
+Bygg og bruk en **egen, rollebeskyttet pilotflate i Lånbort** (se [UI-spesifikasjonen](pilot-ui.md)), og lagre faktiske resultater i separate private Supabase-tabeller. Deltakerne og pilotansvarlig skal ikke måtte redigere filer i GitHub eller føre testjournal i chat. Et privat GitHub Project kan eventuelt brukes som sekundær prosjektplan, men **ikke som primær testjournal**. Et offentlig GitHub-issue forblir offentlig selv om det ligger i et privat Project. Ikke lagre sensitivt innhold i offentlige issues, PR-er, Actions-logger eller commit-meldinger.
 
 Anbefalte felt for hver testutførelse i den private journalen:
 
@@ -103,7 +103,7 @@ Store funksjons- og designendringer utsettes som hovedregel til etter piloten. A
 
 Behold `peohol/lanbort` offentlig inntil en egen gjennomgang eventuelt gir en annen begrunnelse. Offentlig kildekode er ikke en erstatning for sikkerhet, og privat kildekode er ikke et vern for deltakerjournaler. Kildekode som tidligere var offentlig, kan finnes andre steder. Endret repo-synlighet kan påvirke eksterne sårbarhetsrapporter og enkelte GitHub-sikkerhetsfunksjoner.
 
-**Start med privat GitHub Project, ikke et spesialbygd pilot-UI.** Et eget administrasjonsgrensesnitt ville kreve nye API-er, tilgangsregler og vedlikehold midt i piloten. Dersom systematisk deltakerrapportering senere viser seg vanskelig, vurder en isolert, minimalistisk rapporteringsflate med minst mulig persondata og eksplisitt rollebasert tilgang. Ingen slik løsning eller repo-synlighetsendring er autorisert gjennom denne dokumentasjonsplanen.
+**Bygg en liten, separat pilotflate innenfor den eksisterende Lånbort-appen før hele panelet inviteres.** Den skal være tilgjengelig bare for pilotansvarlig, bruke eksisterende innlogging og sikkerhetsmønstre, gi ett-trykks statusoppdateringer og vise fremdrift fra de 98 faste testcase-ID-ene. Bruk Supabase til en append-only resultatjournal, uten skrivearbeid i GitHubs tekstredigerer. Se [pilot-ui.md](pilot-ui.md) for nødvendig funksjonalitet og sikkerhetskontroller. Ikke bygg en egen tjeneste eller generelt administratorrammeverk. Ingen slik løsning eller repo-synlighetsendring er implementert av dokumentasjonsplanen.
 
 ## Referanser
 
