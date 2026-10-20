@@ -10,6 +10,7 @@ import { notificationPolicies } from "./notifications/policies";
 import { objectPolicies } from "./objects/policies";
 import { processOutboxPolicy } from "./outbox/policy";
 import { peoplePolicies } from "./people/policies";
+import { pilotPolicies } from "./pilot/policies";
 import { platformPolicies } from "./platform/policies";
 import { publicationPolicies } from "./publications/policies";
 import { questionPolicies } from "./questions/policies";
@@ -46,5 +47,6 @@ export const allPolicies: readonly Policy<never, never>[] = [
   ...restorePolicies,
   ...retentionPolicies,
   ...chatPolicies,
+  ...pilotPolicies,
   processOutboxPolicy,
 ];

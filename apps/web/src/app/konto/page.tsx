@@ -15,6 +15,7 @@ import { ProfilePicture } from "@/components/profile-picture";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Tag } from "@/components/tag";
 import { chatDevicesHref, chatSignOutHref } from "@/navigation/chat";
+import { pilotHref, pilotTasksHref } from "@/navigation/pilot";
 import {
   accountStateHref,
   appearanceHref,
@@ -29,6 +30,7 @@ import {
 import { accountStatusLabel } from "@/presentation/account";
 import { themeLabels } from "@/presentation/theme";
 import { chatEnabled } from "@/server/chat-enabled";
+import { getPilotRole } from "@/server/pilot";
 import {
   pageQuery,
   pageQueryIfAllowed,
@@ -98,10 +100,11 @@ function SignOutRow({ chat, userId }: { chat: boolean; userId: string }) {
 export default async function AccountPage() {
   const account = await requirePageAccount();
   const active = takesNewActivity(account.status);
-  const [social, devices, theme] = await Promise.all([
+  const [social, devices, theme, pilot] = await Promise.all([
     active ? pageQuery(getSocialOverview, {}) : null,
     ownChatDevices(),
     readTheme(),
+    getPilotRole(),
   ]);
   const waiting = social?.incomingRequests.length ?? 0;
 
@@ -157,6 +160,13 @@ export default async function AccountPage() {
         <h2 id="annet">Annet</h2>
         <MenuList label="annet">
           <MenuRow href={casesHref} icon="shield" label="Saker" />
+          {pilot && (
+            <MenuRow
+              href={pilot.role === "lead" ? pilotHref : pilotTasksHref}
+              icon="flag"
+              label={pilot.role === "lead" ? "Pilot" : "Mine pilotoppgaver"}
+            />
+          )}
           <MenuRow
             href={notificationChoicesHref}
             icon="bell"

@@ -972,6 +972,107 @@ export interface AppOutboxMessages {
   status: Generated<string>;
 }
 
+export interface AppPilotAssignments {
+  assigned_at: Timestamp;
+  assigned_by: string;
+  campaign_id: string;
+  goal: string;
+  id: Generated<string>;
+  participant_id: string;
+  test_id: string;
+  withdrawn_at: Timestamp | null;
+  withdrawn_by: string | null;
+}
+
+export interface AppPilotAudit {
+  action: string;
+  actor_process: string | null;
+  actor_user_id: string | null;
+  at: Generated<Timestamp>;
+  campaign_id: string | null;
+  details: Generated<Json>;
+  id: Generated<string>;
+  position: Generated<Int8>;
+  subject_id: string | null;
+}
+
+export interface AppPilotCampaigns {
+  closed_at: Timestamp | null;
+  closed_by: string | null;
+  id: Generated<string>;
+  name: string;
+  phase: Generated<number>;
+  started_at: Timestamp;
+  started_by: string;
+}
+
+export interface AppPilotCaseRevisions {
+  action: string;
+  expected: string;
+  first_used_at: Generated<Timestamp>;
+  priority: string;
+  revision: string;
+  test_id: string;
+}
+
+export interface AppPilotDefects {
+  campaign_id: string;
+  created_at: Timestamp;
+  created_by: string;
+  description: string | null;
+  id: Generated<string>;
+  link: string | null;
+  number: number;
+  severity: string;
+  status: Generated<string>;
+  title: string;
+  updated_at: Timestamp;
+}
+
+export interface AppPilotFeedback {
+  assignment_id: string;
+  comment: string | null;
+  id: Generated<string>;
+  outcome: string;
+  reported_at: Timestamp;
+}
+
+export interface AppPilotLeads {
+  grant_reason: string;
+  granted_at: Generated<Timestamp>;
+  id: Generated<string>;
+  revoked_at: Timestamp | null;
+  user_id: string;
+}
+
+export interface AppPilotParticipants {
+  added_at: Timestamp;
+  added_by: string;
+  id: Generated<string>;
+  pseudonym: string;
+  removed_at: Timestamp | null;
+  removed_by: string | null;
+  user_id: string | null;
+}
+
+export interface AppPilotRuns {
+  app_version: string;
+  campaign_id: string;
+  defect_id: string | null;
+  device: string | null;
+  environment: string | null;
+  helped: boolean | null;
+  id: Generated<string>;
+  note: string | null;
+  platform: string | null;
+  recorded_at: Timestamp;
+  recorded_by: string;
+  revision: string;
+  status: string;
+  test_id: string;
+  tester_id: string | null;
+}
+
 export interface AppPlatformInterventions {
   basis: string;
   case_id: string;
@@ -1228,6 +1329,15 @@ export interface DB {
   "app.object_subscriptions": AppObjectSubscriptions;
   "app.objects": AppObjects;
   "app.outbox_messages": AppOutboxMessages;
+  "app.pilot_assignments": AppPilotAssignments;
+  "app.pilot_audit": AppPilotAudit;
+  "app.pilot_campaigns": AppPilotCampaigns;
+  "app.pilot_case_revisions": AppPilotCaseRevisions;
+  "app.pilot_defects": AppPilotDefects;
+  "app.pilot_feedback": AppPilotFeedback;
+  "app.pilot_leads": AppPilotLeads;
+  "app.pilot_participants": AppPilotParticipants;
+  "app.pilot_runs": AppPilotRuns;
   "app.platform_interventions": AppPlatformInterventions;
   "app.platform_role_grants": AppPlatformRoleGrants;
   "app.profile_pictures": AppProfilePictures;
