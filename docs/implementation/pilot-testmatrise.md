@@ -112,7 +112,7 @@ Den private journalen har én post per ID per testgjennomføring, med status, ti
 - Konto A og tilgang til e-posten til Konto A.
 - Den uinviterte adressen fra A02 (eller en annen adresse uten konto) til sammenligning.
 - En privat nettleserfane der du ikke er logget inn.
-- Avsett ca. 20 minutter: en kode varer i 10 minutter. Det går bare an å be om en ny kode én gang i minuttet, og høyst 5 koder per time. Får du «Det har vært for mange forsøk. Vent litt og prøv igjen.», vent 15 minutter og fortsett.
+- Avsett ca. 20 minutter: en kode varer i 10 minutter. Det går bare an å be om en ny kode én gang i minuttet, og høyst 5 koder per time. Får du «Det har vært for mange forsøk. Vent litt og prøv igjen.» når du trykker «Bekreft», vent 15 minutter og fortsett. Får du den når du ber om en kode, har adressen fått 5 koder den siste timen: vent til det har gått en time siden den første, eller fortsett med en annen testkonto.
 
 **Slik gjør du det**
 
