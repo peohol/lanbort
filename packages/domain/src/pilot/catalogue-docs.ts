@@ -1,4 +1,9 @@
-import { pilotAreas, pilotCases, pilotPhases } from "@lanbort/contracts";
+import {
+  type PilotCase,
+  pilotAreas,
+  pilotCases,
+  pilotPhases,
+} from "@lanbort/contracts";
 
 /**
  * The tables the pilot's documents show, made from the catalogue so the
@@ -10,7 +15,36 @@ const cell = (text: string) => text.replaceAll("|", "\\|");
 
 const row = (cells: readonly string[]) => `| ${cells.map(cell).join(" | ")} |`;
 
-/** The test points, one table per area, as in `pilot-testmatrise.md`. */
+const list = (items: readonly string[], numbered = false) =>
+  items.map((item, index) => `${numbered ? `${index + 1}.` : "-"} ${item}`);
+
+/** One test's instructions, as its card in the pilot shows them. */
+function pilotTestDetails(test: PilotCase): string {
+  return [
+    `### ${test.id} – ${test.action}`,
+    "",
+    `**Prioritet:** ${test.priority} · **Fase:** ${test.phase}`,
+    "",
+    `**Forventet resultat:** ${test.expected}`,
+    "",
+    "**Før du starter**",
+    "",
+    ...list(test.prepare),
+    "",
+    "**Slik gjør du det**",
+    "",
+    ...list(test.steps, true),
+    "",
+    "**Testen er bestått når**",
+    "",
+    ...list(test.passWhen),
+  ].join("\n");
+}
+
+/**
+ * The test points, as in `pilot-testmatrise.md`: per area a table to look
+ * them up in, then each test's instructions in full.
+ */
 export function pilotTestTables(): string {
   return pilotAreas
     .map((area) => {
@@ -30,6 +64,8 @@ export function pilotTestTables(): string {
             test.expected,
           ]),
         ),
+        "",
+        tests.map(pilotTestDetails).join("\n\n"),
       ].join("\n");
     })
     .join("\n\n");

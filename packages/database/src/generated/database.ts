@@ -1010,8 +1010,11 @@ export interface AppPilotCaseRevisions {
   action: string;
   expected: string;
   first_used_at: Generated<Timestamp>;
+  pass_when: Generated<string[]>;
+  prepare: Generated<string[]>;
   priority: string;
   revision: string;
+  steps: Generated<string[]>;
   test_id: string;
 }
 

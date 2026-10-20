@@ -181,6 +181,9 @@ export const readPilotTest = defineQuery({
             "run.revision",
             "wording.action",
             "wording.expected",
+            "wording.prepare",
+            "wording.steps",
+            "wording.pass_when",
             "run.app_version",
             "run.environment",
             "run.device",
@@ -240,6 +243,13 @@ export const readPilotTest = defineQuery({
 
       return {
         test: tests.find((each) => each.id === test.id)!,
+        wording: {
+          action: test.action,
+          expected: test.expected,
+          prepare: [...test.prepare],
+          steps: [...test.steps],
+          passWhen: [...test.passWhen],
+        },
         campaign: campaign ? presentCampaign(campaign) : null,
         runs: runs.map((run) => ({
           id: run.id,
@@ -249,7 +259,13 @@ export const readPilotTest = defineQuery({
           earlierWording:
             run.revision === revision
               ? null
-              : { action: run.action, expected: run.expected },
+              : {
+                  action: run.action,
+                  expected: run.expected,
+                  prepare: run.prepare,
+                  steps: run.steps,
+                  passWhen: run.pass_when,
+                },
           appVersion: run.app_version,
           environment: run.environment as PilotEnvironment | null,
           device: run.device as PilotDevice | null,

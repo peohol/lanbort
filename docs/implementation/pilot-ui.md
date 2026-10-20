@@ -35,7 +35,7 @@ Pilotansvarlig finner «Pilot» under Konto → Annet. Deltakere finner «Mine p
 
 ### Testkatalogen
 
-De 98 testene står i én kilde, `packages/contracts/src/pilot-catalogue.ts`, som appen bruker direkte. Tabellene i [testmatrisen](pilot-testmatrise.md) og fasetabellen i [testplanen](pilot-testplan.md) lages fra den med `pnpm pilot:docs`, og CI stopper hvis de ikke stemmer. En test-ID gjenbrukes aldri. Endret ordlyd lagres som en ny revisjon første gang den brukes, så tidligere resultater beholder ordlyden de ble testet mot.
+De 98 testene står i én kilde, `packages/contracts/src/pilot-cases.ts` (med områder og faser i `pilot-catalogue.ts`), som appen bruker direkte. Hver test har en kort tittel, forventet resultat i klart språk, hva som må være klart før du starter, stegene i rekkefølge og hva som må ses for at testen er bestått. Tabellene og instruksene i [testmatrisen](pilot-testmatrise.md) og fasetabellen i [testplanen](pilot-testplan.md) lages fra den med `pnpm pilot:docs`, og CI stopper hvis de ikke stemmer. En test-ID gjenbrukes aldri. Endret ordlyd lagres som en ny revisjon første gang den brukes, så tidligere resultater beholder ordlyden de ble testet mot.
 
 ### Data og sikkerhet
 
