@@ -32,7 +32,7 @@
 | Fartsgrensetellere (bare nøkkelhasher) | Til de utløper | Hver bruk og slettejobben |
 | Pilotjournalen: resultater, avvik, oppgaver og hendelseslogg under pseudonym ([pilot-ui.md](pilot-ui.md)) | Gjennom piloten | Står uten kobling til noen konto når koblingen er slettet |
 | Deltakernes kommentarer i pilotjournalen | Til 90 dager etter at kampanjen er avsluttet | Slettejobben |
-| Koblingen fra pilotpseudonym til konto (navnet hentes bare gjennom den) | Til 90 dager etter at deltakeren er fjernet, eller etter at den siste kampanjen er avsluttet; med en gang kontoen slettes | Slettejobben og kontoslettingen |
+| Koblingen fra pilotpseudonym til konto (navnet hentes bare gjennom den) | Til 90 dager etter at deltakeren er fjernet, eller når ingen kampanje har vært åpen de siste 90 dagene og deltakeren ble lagt til før det; med en gang kontoen slettes | Slettejobben og kontoslettingen |
 | Backuper | 7 dager | Supabase og den egne backupen sletter eldre selv |
 
 Slettejobben er `/api/internal/retention` (`data.purge_expired`), som kjører hver natt. Tidene står ett sted i koden: `pilotRetention` i `packages/domain/src/retention/model.ts`.

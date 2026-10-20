@@ -28,6 +28,7 @@ import {
 } from "./commands";
 import { exportPilot } from "./export";
 import { purgePilotLinks } from "./maintenance";
+import { nextPseudonym } from "./model";
 import {
   readPilotRole,
   readPilotTasks,
@@ -540,6 +541,30 @@ describe("a closed campaign", () => {
         .where("action", "=", "exported")
         .execute(),
     ).toHaveLength(2);
+
+    // A new campaign leaves this one to export by its id.
+    const { id: next } = await run(startPilotCampaign, boss, {
+      name: "Neste",
+    });
+    expect((await read(readPilotWorkspace, boss)).earlierCampaigns).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: campaignId })]),
+    );
+    expect(await run(exportPilot, boss, { kind: "results" })).toMatchObject({
+      campaign: { id: next },
+      runs: [],
+    });
+    expect(
+      await run(exportPilot, boss, { kind: "results", campaignId }),
+    ).toMatchObject({
+      campaign: { id: campaignId },
+      runs: [expect.objectContaining({ testId: "L01" })],
+    });
+    expect(
+      await refusal(
+        run(exportPilot, boss, { kind: "summary", campaignId: randomUUID() }),
+      ),
+    ).toBe("not_found");
+    await run(closePilotCampaign, boss, { campaignId: next });
   });
 });
 
@@ -832,5 +857,51 @@ describe("what the pilot journal keeps (retention.md)", () => {
     expect(await comment()).toEqual({ comment: null });
     expect(await link()).toEqual({ user_id: null });
     expect(await refusal(read(readPilotTasks, tester.actor))).toBe("not_found");
+  });
+
+  it("keeps a participant who joined after the last campaign until their own time is up", async () => {
+    const boss = await lead();
+    const { id: campaignId } = await run(startPilotCampaign, boss, {
+      name: "Før de kom",
+    });
+    await run(closePilotCampaign, boss, { campaignId });
+    const later = await user();
+    const { id } = await admin
+      .insertInto("app.pilot_participants")
+      .values({
+        user_id: later.userId,
+        pseudonym: nextPseudonym(
+          (
+            await admin
+              .selectFrom("app.pilot_participants")
+              .select("pseudonym")
+              .execute()
+          ).map((row) => row.pseudonym),
+        ),
+        added_at: new Date(kit.now().getTime() + 60 * day),
+        added_by: boss.userId,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    const link = () =>
+      db
+        .selectFrom("app.pilot_participants")
+        .select("user_id")
+        .where("id", "=", id)
+        .executeTakeFirstOrThrow();
+
+    await purgePilotLinks(
+      db,
+      new Date(kit.now().getTime() + 91 * day),
+      90 * day,
+    );
+    expect(await link()).toEqual({ user_id: later.userId });
+
+    await purgePilotLinks(
+      db,
+      new Date(kit.now().getTime() + 151 * day),
+      90 * day,
+    );
+    expect(await link()).toEqual({ user_id: null });
   });
 });

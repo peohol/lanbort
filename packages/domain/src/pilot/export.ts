@@ -18,7 +18,7 @@ import { defineCommand } from "../commands/command";
 import { loadDefects, loadStandings } from "./journal";
 import { exportPilotPolicy } from "./policies";
 import {
-  loadCurrentCampaign,
+  loadChosenCampaign,
   loadPilotViewer,
   presentCampaign,
   recordPilotAudit,
@@ -27,7 +27,7 @@ import {
 /**
  * The journal taken out (pilot-ui.md «Avslutning og eksport»), for the lead
  * only and recorded each time: `results` is every run, defect and task of
- * the current campaign, with pseudonyms; `summary` is counts only, without
+ * the current campaign, or an earlier one, with pseudonyms; `summary` is counts only, without
  * any pseudonym, note or comment, fit for a report. Never sent anywhere by
  * the app: the lead downloads it.
  */
@@ -44,7 +44,7 @@ export const exportPilot = defineCommand({
     context: undefined,
   }),
   execute: async ({ tx, actor, input, now }): Promise<PilotExport> => {
-    const row = await loadCurrentCampaign(tx);
+    const row = await loadChosenCampaign(tx, input.campaignId);
     const campaign = row ? presentCampaign(row) : null;
     const defects = campaign ? await loadDefects(tx, campaign.id) : [];
 

@@ -216,6 +216,8 @@ export type PilotExportKind = z.infer<typeof pilotExportKindSchema>;
 
 export const pilotExportInputSchema = z.strictObject({
   kind: pilotExportKindSchema,
+  /** An earlier campaign; the current one when left out. */
+  campaignId: z.uuid().optional(),
 });
 
 /** How an export is downloaded: a spreadsheet holds the runs only. */
@@ -329,6 +331,8 @@ export type PilotParticipant = z.infer<typeof pilotParticipantSchema>;
 
 export const pilotWorkspaceSchema = z.strictObject({
   campaign: pilotCampaignSchema.nullable(),
+  /** The closed campaigns before it, newest first, kept for export. */
+  earlierCampaigns: z.array(pilotCampaignSchema),
   tests: z.array(pilotTestSummarySchema),
   progress: pilotProgressSchema,
   defects: z.array(pilotDefectSchema),

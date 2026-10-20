@@ -24,16 +24,21 @@ const exports: readonly {
 
 /**
  * The journal downloaded to this device (pilot-ui.md «Avslutning og
- * eksport»), never sent anywhere else. Each download is recorded.
+ * eksport»), never sent anywhere else. Each download is recorded. Of the
+ * current campaign, or of the earlier one `campaignId` names.
  */
-export function ExportButtons() {
+export function ExportButtons({ campaignId }: { campaignId?: string }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [failure, setFailure] = useState<ApiFailureCode | null>(null);
 
   async function download(kind: PilotExportKind, format: PilotExportFormat) {
     setBusy(`${kind}-${format}`);
     setFailure(null);
-    const result = await postForFile("/api/pilot/export", { kind, format });
+    const result = await postForFile("/api/pilot/export", {
+      kind,
+      format,
+      campaignId,
+    });
     setBusy(null);
 
     if (!result.ok) {

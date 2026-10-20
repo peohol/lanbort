@@ -69,9 +69,9 @@ export const pilotAccountDeletionStep: AccountDeletionStep = {
 /**
  * What the pilot journal no longer keeps (docs/implementation/retention.md):
  * `afterMs` after its campaign closed, the comments participants wrote; and
- * once no campaign is open and the last closed that long ago, or a
- * participant left that long ago, the link from pseudonym to account. The
- * results stay under pseudonyms.
+ * the link from pseudonym to account once the participant left that long
+ * ago, or joined that long ago while no campaign is open and none closed
+ * within that time. The results stay under pseudonyms.
  */
 export async function purgePilotLinks(db: Db, now: Date, afterMs: number) {
   const cutoff = new Date(now.getTime() - afterMs);
@@ -95,17 +95,23 @@ export async function purgePilotLinks(db: Db, now: Date, afterMs: number) {
       fn.max("closed_at").as("last_closed"),
     ])
     .executeTakeFirstOrThrow();
-  const pilotOver =
-    Number(campaigns.all) > 0 &&
+  // Nothing open, and nothing closed within the time: a participant who
+  // has waited that long since joining has no pilot left to take part in.
+  const quiet =
     campaigns.all === campaigns.closed &&
-    campaigns.last_closed !== null &&
-    new Date(campaigns.last_closed) < cutoff;
+    (campaigns.last_closed === null ||
+      new Date(campaigns.last_closed) < cutoff);
 
   const unlinked = await db
     .updateTable("app.pilot_participants")
     .set({ removed_at: sql`coalesce(removed_at, ${now})`, user_id: null })
     .where("user_id", "is not", null)
-    .where((eb) => (pilotOver ? eb.lit(true) : eb("removed_at", "<", cutoff)))
+    .where((eb) =>
+      eb.or([
+        eb("removed_at", "<", cutoff),
+        ...(quiet ? [eb("added_at", "<", cutoff)] : []),
+      ]),
+    )
     .executeTakeFirst();
 
   return { links: Number(unlinked.numUpdatedRows), comments };

@@ -25,7 +25,12 @@ import {
   readPilotTestPolicy,
   readPilotWorkspacePolicy,
 } from "./policies";
-import { loadCurrentCampaign, loadPilotViewer, presentCampaign } from "./store";
+import {
+  loadCampaigns,
+  loadCurrentCampaign,
+  loadPilotViewer,
+  presentCampaign,
+} from "./store";
 
 type Db = Kysely<Database>;
 
@@ -82,7 +87,7 @@ export const readPilotWorkspace = defineQuery({
   policy: readPilotWorkspacePolicy,
   load: ({ db, actor }) =>
     scoped(db, actor, asLead, async (): Promise<PilotWorkspace> => {
-      const campaign = await loadCurrentCampaign(db);
+      const [campaign, ...earlier] = await loadCampaigns(db).execute();
       const defects = campaign ? await loadDefects(db, campaign.id) : [];
       const [standings, participants] = await Promise.all([
         loadStandings(db, campaign?.id ?? null, defects),
@@ -123,6 +128,7 @@ export const readPilotWorkspace = defineQuery({
 
       return {
         campaign: campaign ? presentCampaign(campaign) : null,
+        earlierCampaigns: earlier.map(presentCampaign),
         ...standings,
         defects,
         participants: participants.map((participant) => ({

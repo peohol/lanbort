@@ -10,6 +10,7 @@ import { readPilotWorkspace } from "@lanbort/domain";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
 import { pilotHref } from "@/navigation/pilot";
+import { formatShortTime } from "@/presentation/dates";
 import {
   pilotAreaName,
   pilotDefectStatusLabels,
@@ -80,7 +81,7 @@ function CountsTable({
  */
 export default async function PilotReportPage() {
   await requirePilotLead();
-  const { progress, defects } = await pageQueryOrNotFound(
+  const { progress, defects, earlierCampaigns } = await pageQueryOrNotFound(
     readPilotWorkspace,
     {},
   );
@@ -176,6 +177,24 @@ export default async function PilotReportPage() {
           tall og passer i en ukesstatus.
         </p>
         <ExportButtons />
+        {earlierCampaigns.length > 0 && (
+          <details>
+            <summary>Tidligere kampanjer ({earlierCampaigns.length})</summary>
+            <ul className={styles.history}>
+              {earlierCampaigns.map((campaign) => (
+                <li key={campaign.id} className="card">
+                  <h3>{campaign.name}</h3>
+                  <p className={styles.meta}>
+                    {formatShortTime(campaign.startedAt)}
+                    {campaign.closedAt &&
+                      ` – ${formatShortTime(campaign.closedAt)}`}
+                  </p>
+                  <ExportButtons campaignId={campaign.id} />
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
       </section>
     </main>
   );

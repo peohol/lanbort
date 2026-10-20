@@ -26,7 +26,8 @@ export const pilotRetention = {
   /**
    * The pilot journal (pilot-ui.md): participants' comments, from when
    * their campaign closed, and the link from a pseudonym to an account,
-   * from when the participant left or the last campaign closed.
+   * from when the participant left, or joined, while no campaign has been
+   * open for as long.
    */
   pilotLinksMs: 90 * day,
 } as const;
