@@ -9,7 +9,16 @@ import { DomainError } from "../errors";
  */
 export function pilotCaseRevision(test: PilotCase): string {
   return createHash("sha256")
-    .update(JSON.stringify([test.priority, test.action, test.expected]))
+    .update(
+      JSON.stringify([
+        test.priority,
+        test.action,
+        test.expected,
+        test.prepare,
+        test.steps,
+        test.passWhen,
+      ]),
+    )
     .digest("hex")
     .slice(0, 12);
 }

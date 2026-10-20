@@ -26,6 +26,7 @@ import {
   startPilotCampaign,
   withdrawPilotTask,
 } from "./commands";
+import { pilotCase, pilotCaseRevision } from "./catalogue";
 import { exportPilot } from "./export";
 import { purgePilotLinks } from "./maintenance";
 import { nextPseudonym } from "./model";
@@ -255,6 +256,30 @@ describe("the lead's campaign", () => {
     expect((await runsOf("A01"))[1]).toMatchObject({
       tester: tester.pseudonym,
       helped: true,
+    });
+
+    // The card tells the tester everything, and a run keeps all of it.
+    const a02 = pilotCase("A02");
+    expect(
+      (await read(readPilotTest, boss, { testId: "A02" })).wording,
+    ).toEqual({
+      action: a02.action,
+      expected: a02.expected,
+      prepare: a02.prepare,
+      steps: a02.steps,
+      passWhen: a02.passWhen,
+    });
+    expect(
+      await db
+        .selectFrom("app.pilot_case_revisions")
+        .select(["prepare", "steps", "pass_when"])
+        .where("test_id", "=", "A02")
+        .where("revision", "=", pilotCaseRevision(a02))
+        .executeTakeFirstOrThrow(),
+    ).toEqual({
+      prepare: a02.prepare,
+      steps: a02.steps,
+      pass_when: a02.passWhen,
     });
 
     await run(changePilotDefect, boss, {

@@ -25,6 +25,7 @@ import { requirePilotLead } from "@/server/pilot";
 import { pageQueryOrNotFound } from "@/server/session";
 import styles from "../../pilot.module.css";
 import { RunForm } from "./run-form";
+import { PilotWording } from "./wording";
 
 export const metadata: Metadata = { title: "Pilottest – Lånbort" };
 
@@ -57,10 +58,6 @@ export default async function PilotTestPage({
 
       <section className="card" aria-label="Testen">
         <dl className="facts">
-          <dt>Gjør</dt>
-          <dd>{test.action}</dd>
-          <dt>Forventet</dt>
-          <dd>{test.expected}</dd>
           <dt>Område</dt>
           <dd>{pilotAreaName(test.area)}</dd>
           <dt>Prioritet</dt>
@@ -70,6 +67,7 @@ export default async function PilotTestPage({
           <dt>Fase</dt>
           <dd>{pilotPhaseName(test.phase)}</dd>
         </dl>
+        <PilotWording wording={detail.wording} heading="h2" />
       </section>
 
       {open ? (
@@ -196,12 +194,8 @@ export default async function PilotTestPage({
               {run.earlierWording && (
                 <details>
                   <summary>Testet med tidligere ordlyd</summary>
-                  <dl className="facts">
-                    <dt>Gjør</dt>
-                    <dd>{run.earlierWording.action}</dd>
-                    <dt>Forventet</dt>
-                    <dd>{run.earlierWording.expected}</dd>
-                  </dl>
+                  <p>{run.earlierWording.action}</p>
+                  <PilotWording wording={run.earlierWording} heading="h3" />
                 </details>
               )}
             </li>

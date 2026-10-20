@@ -134,6 +134,25 @@
   gap: var(--space-2);
 }
 
+/* A test's instructions: short headings over the lists they name. */
+.wording {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.wording :is(h2, h3) {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-m);
+}
+
+.wording :is(p, ol, ul) {
+  margin: 0;
+}
+
+.wording li + li {
+  margin-top: var(--space-1);
+}
+
 .meta {
   margin: 0;
   font-size: var(--text-s);

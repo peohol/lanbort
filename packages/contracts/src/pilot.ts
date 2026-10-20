@@ -349,15 +349,22 @@ export const pilotDefectRefSummarySchema = z.strictObject({
 });
 export type PilotDefectRefSummary = z.infer<typeof pilotDefectRefSummarySchema>;
 
+/** A test's wording as a run was tried against it (`PilotWording`). */
+export const pilotWordingSchema = z.strictObject({
+  action: z.string(),
+  expected: z.string(),
+  prepare: z.array(z.string()),
+  steps: z.array(z.string()),
+  passWhen: z.array(z.string()),
+});
+
 export const pilotRunSchema = z.strictObject({
   id: z.uuid(),
   campaignId: z.uuid(),
   recordedAt: z.iso.datetime(),
   status: pilotRunStatusSchema,
   /** The test's wording when it was run, when it differs from today's. */
-  earlierWording: z
-    .strictObject({ action: z.string(), expected: z.string() })
-    .nullable(),
+  earlierWording: pilotWordingSchema.nullable(),
   appVersion: z.string(),
   /** Null for a test only sent back to be tried again. */
   environment: pilotEnvironmentSchema.nullable(),
@@ -391,6 +398,8 @@ export type PilotAssignment = z.infer<typeof pilotAssignmentSchema>;
 
 export const pilotTestDetailSchema = z.strictObject({
   test: pilotTestSummarySchema,
+  /** What the tester is told today, in full. */
+  wording: pilotWordingSchema,
   campaign: pilotCampaignSchema.nullable(),
   /** Newest first, from every campaign. */
   runs: z.array(pilotRunSchema),

@@ -108,6 +108,9 @@ export async function keepRevision(
       priority: test.priority,
       action: test.action,
       expected: test.expected,
+      prepare: [...test.prepare],
+      steps: [...test.steps],
+      pass_when: [...test.passWhen],
       first_used_at: now,
     })
     .onConflict((conflict) => conflict.doNothing())

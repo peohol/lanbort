@@ -150,6 +150,16 @@ test("the pilot lead runs the pilot from a phone, and a participant sees only th
   await noAccessibilityProblems(lead.page);
 
   await lead.page.goto("/pilot/tester/T01");
+  for (const part of [
+    "Før du starter",
+    "Slik gjør du det",
+    "Testen er bestått når",
+  ]) {
+    await expect(
+      lead.page.getByRole("heading", { name: part, exact: true }),
+    ).toBeVisible();
+  }
+  await noAccessibilityProblems(lead.page);
   await lead.page.getByText("Gi oppgaven til en deltaker").click();
   await lead.page
     .getByLabel("Deltaker", { exact: true })

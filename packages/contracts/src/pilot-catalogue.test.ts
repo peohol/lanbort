@@ -39,6 +39,33 @@ describe("the pilot catalogue", () => {
     }
   });
 
+  it("tells the tester what to have ready, every step and when it passed", () => {
+    for (const test of pilotCases) {
+      expect(test.prepare.length, test.id).toBeGreaterThan(0);
+      expect(test.steps.length, test.id).toBeGreaterThanOrEqual(3);
+      expect(test.passWhen.length, test.id).toBeGreaterThanOrEqual(2);
+
+      for (const line of [...test.prepare, ...test.steps, ...test.passWhen]) {
+        expect(line.trim(), test.id).toBe(line);
+        expect(line, test.id).not.toBe("");
+      }
+    }
+  });
+
+  it("keeps the instructions within what a revision can store", () => {
+    for (const test of pilotCases) {
+      expect(test.action.length, test.id).toBeLessThanOrEqual(500);
+      expect(test.expected.length, test.id).toBeLessThanOrEqual(500);
+      expect(test.prepare.length, test.id).toBeLessThanOrEqual(20);
+      expect(test.steps.length, test.id).toBeLessThanOrEqual(40);
+      expect(test.passWhen.length, test.id).toBeLessThanOrEqual(20);
+      expect(
+        [...test.prepare, ...test.steps, ...test.passWhen].join("").length,
+        test.id,
+      ).toBeLessThanOrEqual(20_000);
+    }
+  });
+
   it("tries every basis test before the user test phase", () => {
     const userPhase = Math.min(
       ...pilotCases
