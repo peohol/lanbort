@@ -36,3 +36,4 @@ export * from "./outbox/policy";
 export * from "./policies";
 export * from "./restore";
 export * from "./retention";
+export * from "./pilot";

@@ -28,7 +28,8 @@
     "ops:platform-role": "pnpm --filter @lanbort/ops --silent platform-role",
     "ops:restore": "pnpm --filter @lanbort/ops --silent restore",
     "ops:storage": "pnpm --filter @lanbort/ops --silent storage",
-    "ops:steward-passkeys": "pnpm --filter @lanbort/ops --silent steward-passkeys"
+    "ops:steward-passkeys": "pnpm --filter @lanbort/ops --silent steward-passkeys",
+    "pilot:docs": "PILOT_DOCS=write pnpm --filter @lanbort/domain exec vitest run src/pilot/catalogue-docs.test.ts && prettier --write docs/implementation/pilot-*.md"
   },
   "devDependencies": {
     "@types/node": "24.19.0",

@@ -48,6 +48,21 @@ import { readTrustProfile } from "../trust/queries";
 import { openPlatformInquiry } from "../platform/intervention-commands";
 import { lookUpPlatformSubject } from "../platform/lookup";
 import { removeStewardPasskey } from "../platform/passkey-commands";
+import {
+  addPilotParticipant,
+  assignPilotTask,
+  changePilotDefect,
+  changePilotPhase,
+  closePilotCampaign,
+  exportPilot,
+  recordPilotRun,
+  removePilotParticipant,
+  reportPilotDefect,
+  reportPilotTask,
+  requestPilotRetest,
+  startPilotCampaign,
+  withdrawPilotTask,
+} from "../pilot";
 import { testPasskeyCommands } from "../testing/stewards";
 import { rateLimits } from "./rate-limits";
 
@@ -88,6 +103,7 @@ const limited = {
     getSocialRelation,
     previewLoanRequest,
     lookUpPlatformSubject,
+    addPilotParticipant,
   ],
   chatMessages: [sendChatMessage, submitChatCommit],
   chatKeys: [
@@ -101,6 +117,20 @@ const limited = {
   chatLabels: [labelChatDevice, describeChatDevice],
   chatResets: [resetChatAccount],
   passkeys: [...Object.values(testPasskeyCommands), removeStewardPasskey],
+  pilot: [
+    startPilotCampaign,
+    changePilotPhase,
+    closePilotCampaign,
+    recordPilotRun,
+    requestPilotRetest,
+    reportPilotDefect,
+    changePilotDefect,
+    removePilotParticipant,
+    assignPilotTask,
+    withdrawPilotTask,
+    reportPilotTask,
+    exportPilot,
+  ],
 } as const;
 
 describe("rate limits", () => {

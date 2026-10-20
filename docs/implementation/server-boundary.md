@@ -319,6 +319,18 @@ Serveren er bare leveringstjenesten for ende-til-ende-kryptert chat ([ADR-0010](
 - **Saker bare Lånbort behandler, skjult til OD-0023:** «Si fra om mulig dødsfall» (PS-COM-015) på personens side og lånets side, skjemaet på `/saker/mulig-dodsfall/<person>` og `POST /api/cases/unavailability-reports` finnes bare med `PLATFORM_STEWARDS_ENABLED=true` (`platformStewardsEnabled`, og `stewardsOnly` på API-ruten, som ellers svarer `not_found`). Den er satt lokalt og i CI, ikke i et hostet miljø før plattformforvalterne kan logge inn og behandle saker. Sidene tilbyr valget bare der meldingen kan sendes: spørringen `case.read_unavailability_target` bruker den samme regelen som kommandoen (konkret relasjon, ingen blokkering, ikke om seg selv), så et lån som har overlevd en blokkering, ikke leder til en side som ikke finnes.
 - **Klienten** (`apps/web/src/chat`): bare filer som starter med `"use client"` importerer `@lanbort/e2ee`. Alt enheten vet, ligger i IndexedDB, kryptert med en AES-GCM-nøkkel som ikke kan eksporteres. `ChatEngine` gjør én tilstandsendring om gangen og lagrer ny gruppetilstand før chifferteksten sendes, så ingen nøkkel brukes to ganger. Én fane per nettleser kjører chatten (Web Locks). Chatsidene får egne sikkerhetshoder fra `proxy.ts`: CSP med nonce og uten `'unsafe-inline'` for skript, og kamera bare på godkjenningssiden (og skanning av QR-koder for vennskap, `usesCamera`). En side nådd ved navigasjon inne i appen lastes på nytt, fordi den ellers kjører under den første sidens hoder.
 
+## Pilotjournalen
+
+Den lukkede pilotens testjournal ([pilot-ui.md](pilot-ui.md)) er et eget domene (`packages/domain/src/pilot`) med egne tabeller (`app.pilot_*`) som ingen annen del av appen leser.
+
+- **Bryteren:** `/pilot` og `/api/pilot` finnes bare med `PILOT_ENABLED=true` (`pilotEnabled`; `pilotOnly` på hver API-rute, ellers `not_found`). Nye pilotruter MÅ pakkes i `pilotOnly`, og sidene bruker `requirePilotRole`/`requirePilotLead`, som svarer «finnes ikke» uten rolle.
+- **Roller:** pilotansvarlig står i `app.pilot_leads` og gis og tas bare av databasens eier (`app.grant_pilot_lead`, `app.revoke_pilot_lead`); appens databaserolle kan verken legge til eller endre den. Deltakere (`app.pilot_participants`) legges til av pilotansvarlig og vises overalt med pseudonym. Policyene i `pilot/policies.ts` bestemmer hvem som kan hva: alt utenom egne oppgaver krever pilotansvarlig, og en deltaker leser og rapporterer bare på egne, åpne oppgaver. Andre ser `not_found`.
+- **Databasen som ekstra sperre:** utløsere avviser skriving fra andre enn aktiv pilotansvarlig, skriving i en avsluttet kampanje, endring av resultater, ordlydsrevisjoner, deltakerrapporter og hendelsesloggen, og all sletting. Av et avvik kan bare alvorlighet og status endres. `0063_pilot_journal.test.sql` prøver dem.
+- **Sporbarhet:** tidspunkt og appversjon (`VERCEL_GIT_COMMIT_SHA`) settes av serveren. Hver handling, også eksport, føres i `app.pilot_audit` med bare handling, tidspunkt og ID-er. Fritekst logges aldri.
+- **Eksport** (`pilot.export`) er en POST-kommando for pilotansvarlig, med pseudonymer i stedet for personer.
+- **Fartsgrense:** `pilot` for alle pilotoperasjoner.
+- **Probene:** `pilot.integration.test.ts` prøver hver pilotoperasjon som utenforstående, tidligere deltaker og deltaker, og feiler hvis en ny operasjon mangler probe.
+
 ## Vennskap og blokkering
 
 - Sosiale kommandoer navngir bare den andre brukeren. Den som kaller er alltid den ene parten, så ingen input kan nå andres relasjoner. Alle endringer for samme par låses mot hverandre i databasen.

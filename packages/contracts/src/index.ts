@@ -23,3 +23,5 @@ export * from "./moderation";
 export * from "./search";
 export * from "./chat";
 export * from "./interventions";
+export * from "./pilot-catalogue";
+export * from "./pilot";

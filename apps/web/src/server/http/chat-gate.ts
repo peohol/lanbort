@@ -1,5 +1,5 @@
 import { chatEnabled } from "../chat-enabled";
-import { platformStewardsEnabled } from "../env";
+import { pilotEnabled, platformStewardsEnabled } from "../env";
 import { errorResponse } from "./errors";
 import { boundaryOf, type RouteHandler, routeBoundary } from "./route";
 
@@ -35,3 +35,7 @@ export const chatOnly = (handler: RouteHandler) =>
  */
 export const stewardsOnly = (handler: RouteHandler) =>
   onlyWhile(platformStewardsEnabled, handler);
+
+/** The closed pilot's workspace, while it runs (`PILOT_ENABLED`). */
+export const pilotOnly = (handler: RouteHandler) =>
+  onlyWhile(pilotEnabled, handler);

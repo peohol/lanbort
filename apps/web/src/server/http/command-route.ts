@@ -9,17 +9,22 @@ import { route } from "./route";
 
 /**
  * A signed-in user's command with the JSON body and the path's dynamic
- * segments as input; the path wins. The command's own policy decides; the
- * route only passes the request through.
+ * segments as input; the path wins, and what the server adds (`serverInput`)
+ * wins over both. The command's own policy decides; the route only passes
+ * the request through.
  */
 export function userCommandRoute<I, R, C, O>(
   command: CommandDefinition<I, R, C, O>,
+  serverInput: () => Readonly<Record<string, unknown>> = () => ({}),
 ) {
   return route.user(async ({ request, requestId, params, actor, domain }) =>
     commandResponse(
       await executeCommand(domain, command, {
         actor,
-        input: await readJsonWithParams(request, params),
+        input: await readJsonWithParams(request, {
+          ...params,
+          ...serverInput(),
+        }),
         idempotencyKey: idempotencyKeyOf(request),
         correlationId: requestId,
       }),

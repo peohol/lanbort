@@ -34,6 +34,7 @@ import { loadObjectState } from "../objects/state";
 import { removeKeptThumbnails } from "../objects/thumbnails";
 import { defineConsumer, OutboxDeliveryError } from "../outbox/consumer";
 import { profilePictureDeletionStep } from "../people/pictures";
+import { pilotAccountDeletionStep } from "../pilot/maintenance";
 import { platformRoleRevoked } from "../platform/events";
 import { endStewardPasskeys } from "../platform/passkeys";
 import { intervene } from "../platform/interventions";
@@ -313,6 +314,7 @@ export const accountDeletionSteps: readonly AccountDeletionStep[] = [
   subscriptionsStep,
   chatAccountDeletionStep,
   profilePictureDeletionStep,
+  pilotAccountDeletionStep,
   personalDataStep,
 ];
 

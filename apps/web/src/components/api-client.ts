@@ -113,10 +113,48 @@ async function request<T>(
     return { ok: true, data: json as T };
   }
 
+  return { ok: false, code: failureCode(json) };
+}
+
+function failureCode(json: unknown): ApiErrorCode {
   const parsed = apiErrorSchema.safeParse(json);
 
-  return {
-    ok: false,
-    code: parsed.success ? parsed.data.error.code : "internal_error",
-  };
+  return parsed.success ? parsed.data.error.code : "internal_error";
+}
+
+/**
+ * A file the API hands over for a command, such as an export, with the
+ * name it gives the file.
+ */
+export async function postForFile(
+  path: string,
+  body: unknown,
+): Promise<ApiResult<{ file: Blob; name: string }>> {
+  try {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body ?? {}),
+      signal: AbortSignal.timeout(fileAnswerWithinMs),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+
+      try {
+        return { ok: false, code: failureCode(JSON.parse(text)) };
+      } catch {
+        return { ok: false, code: nonJsonErrorCode(response.status) };
+      }
+    }
+
+    const name =
+      /filename="([^"]+)"/.exec(
+        response.headers.get("content-disposition") ?? "",
+      )?.[1] ?? "lanbort";
+
+    return { ok: true, data: { file: await response.blob(), name } };
+  } catch {
+    return { ok: false, code: "network" };
+  }
 }

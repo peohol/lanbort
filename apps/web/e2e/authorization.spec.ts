@@ -153,6 +153,11 @@ const namesNoResource = new Set([
   "objects",
   "object-invitations",
   "object-subscriptions",
+  // The closed pilot's journal: its lead's and participants' only, with
+  // its own sweep in `pilot.spec` and `pilot.integration.test`.
+  "pilot",
+  "pilot/tasks",
+  "pilot/tests/[testId]",
   "places",
   "search/environments",
   "social",

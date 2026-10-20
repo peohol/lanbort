@@ -51,6 +51,11 @@ const serverEnvSchema = z.object({
    * the product owner's. Nobody unless set.
    */
   PILOT_INVITERS: z.string().optional(),
+  /**
+   * The closed pilot's own workspace (docs/implementation/pilot-ui.md):
+   * off unless exactly `true`, and then only for its lead and participants.
+   */
+  PILOT_ENABLED: z.string().optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -64,6 +69,20 @@ let cached: ServerEnv | undefined;
  */
 export const platformStewardsEnabled = () =>
   process.env.PLATFORM_STEWARDS_ENABLED === "true";
+
+/**
+ * Whether the pilot's workspace exists in this deployment (`PILOT_ENABLED`).
+ * Turned off, every pilot page and route answers as if it did not exist,
+ * and the rest of the app is untouched.
+ */
+export const pilotEnabled = () => process.env.PILOT_ENABLED === "true";
+
+/**
+ * The version of the app this server runs, as the pilot records it with
+ * each result: the deployment's commit, shortened, or `lokal`.
+ */
+export const appVersion = () =>
+  process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || "lokal";
 
 /**
  * Who may invite people without an account to Lånbort (PS-USR-015), from

@@ -2,6 +2,14 @@
 
 > **Status (15. oktober 2026):** Første implementeringsplan basert på validert produktspesifikasjon v0.1, UX-modell v0.1 og systemarkitektur v0.1. Fase 0–7 er levert, sammen med brukerflaten (Fase 8 i [arbeidspakkene](work-packages.md#fase-8)). Privat chat er på for de inviterte i den lukkede piloten (OD-0056). Plattformforvaltning er bygget, men står av i produksjon til sin port. Hvor hver kvalitetsport står, står i [kvalitetsportene](quality-gates.md#status-15-oktober-2026).
 
+## Lukket pilot
+
+- [Gjennomføringsplan, privat rapportering og kvalitetsporter for pilot](pilot-testplan.md)
+- [Manuell testmatrise med faste test-ID-er](pilot-testmatrise.md)
+- [Internt pilotdashboard: UI, tilgang og privat testjournal](pilot-ui.md)
+
+**Personopplysninger og faktiske testresultater lagres ikke i dette offentlige repoet.** Bruk privat pilotjournal med minste mulige tilgang, som beskrevet i gjennomføringsplanen.
+
 ## Prinsipp
 
 Implementeringen skal bygges **vertikalt og testbart**, men uten at kodeagentene tar nye produkt- eller arkitekturbeslutninger på egen hånd.

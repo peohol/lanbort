@@ -1,6 +1,7 @@
 import { sql } from "kysely";
 import { z } from "zod";
 import { defineCommand } from "../commands/command";
+import { purgePilotLinks } from "../pilot/maintenance";
 import { pilotRetention } from "./model";
 import { purgeExpiredDataPolicy } from "./policies";
 
@@ -31,6 +32,8 @@ export const purgeExpiredData = defineCommand({
     friendInvitations: countSchema,
     friendCodes: countSchema,
     rateLimits: countSchema,
+    pilotLinks: countSchema,
+    pilotComments: countSchema,
   }),
   policy: purgeExpiredDataPolicy,
   idempotency: "none",
@@ -55,6 +58,7 @@ export const purgeExpiredData = defineCommand({
         ))`,
       );
 
+    const pilot = await purgePilotLinks(tx, now, pilotRetention.pilotLinksMs);
     const emailDeliveries = await deleted(
       tx
         .deleteFrom("app.notification_deliveries")
@@ -128,6 +132,8 @@ export const purgeExpiredData = defineCommand({
           `.execute(tx)
         ).numAffectedRows ?? 0,
       ),
+      pilotLinks: pilot.links,
+      pilotComments: pilot.comments,
     };
   },
 });

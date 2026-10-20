@@ -1100,6 +1100,9 @@ function ownInputs(operation: Operation, world: World): object[] {
     // A friend code is shown face to face, never part of a world.
     case "friend_code.read":
       return [{ code: "0000000000" }];
+    // The pilot's own journal has its sweep in `pilot.integration.test.ts`.
+    case "pilot.read_test":
+      return [{ testId: "A01" }];
     default:
       return operation.inputKeys.has("userId")
         ? people.map(({ userId }) => ({ userId }))

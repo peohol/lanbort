@@ -68,6 +68,11 @@ export const rateLimits = {
    * Each is re-encoded on the server, so automated uploads cost the most.
    */
   uploads: rule("uploads", 200, hours),
+  /**
+   * The closed pilot's journal (pilot-ui.md): runs, defects, tasks and the
+   * participants' reports. Generous for a lead registering on the go.
+   */
+  pilot: rule("pilot", 600, hours),
   /** Place names from the external place search. */
   placeSearch: rule("place_search", 30, 5 * minutes),
   /** E-mail codes sent to one address, for sign-in and re-authentication. */

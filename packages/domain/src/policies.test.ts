@@ -17,6 +17,7 @@ import {
 import { objectMatrices } from "./objects/policies.matrix";
 import { outboxMatrices } from "./outbox/policy.matrix";
 import { peopleMatrices } from "./people/policies.matrix";
+import { pilotMatrices } from "./pilot/policies.matrix";
 import { platformMatrices } from "./platform/policies.matrix";
 import { allPolicies } from "./policies";
 import { publicationMatrices } from "./publications/policies.matrix";
@@ -55,6 +56,7 @@ const matrices: readonly PolicyMatrix<never, never>[] = [
   ...restoreMatrices,
   ...retentionMatrices,
   ...chatMatrices,
+  ...pilotMatrices,
 ] as never;
 
 describe("policy coverage", () => {

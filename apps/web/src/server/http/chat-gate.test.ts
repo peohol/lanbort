@@ -13,7 +13,7 @@ vi.mock("../new-accounts", () => ({
 }));
 
 const { createRouteFactory, boundaryOf } = await import("./route");
-const { chatOnly, stewardsOnly } = await import("./chat-gate");
+const { chatOnly, pilotOnly, stewardsOnly } = await import("./chat-gate");
 
 const route = createRouteFactory({
   domain: () => ({ db: {} as never, consumers: new ConsumerRegistry() }),
@@ -30,6 +30,7 @@ describe.each([
     flag: "PLATFORM_STEWARDS_ENABLED",
     what: "platform stewards (ADR-0011)",
   },
+  { gate: pilotOnly, flag: "PILOT_ENABLED", what: "the pilot workspace" },
 ])("$what gate", ({ gate, flag }) => {
   const handler = gate(
     route.public(async () => Response.json({ reached: true })),
