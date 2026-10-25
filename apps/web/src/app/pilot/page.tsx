@@ -242,7 +242,7 @@ export default async function PilotOverviewPage({
         {shown.length > 0 ? (
           <PhaseTestList
             tests={shown}
-            currentPhase={campaign?.phase ?? 0}
+            currentPhase={campaign?.phase ?? null}
             campaignId={open ? campaign.id : null}
             expandMatches={filtered}
             showClosingPhase={!filtered}
