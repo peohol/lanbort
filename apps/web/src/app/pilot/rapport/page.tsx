@@ -2,7 +2,6 @@ import {
   type PilotCounts,
   type PilotPriority,
   pilotDefectStatusSchema,
-  pilotPriorityNames,
   pilotSeveritySchema,
   pilotTestStatusSchema,
 } from "@lanbort/contracts";
@@ -15,6 +14,7 @@ import {
   pilotAreaName,
   pilotDefectStatusLabels,
   pilotPhaseName,
+  pilotTaskKinds,
   pilotStatusLabels,
 } from "@/presentation/pilot";
 import { requirePilotLead } from "@/server/pilot";
@@ -94,7 +94,7 @@ export default async function PilotReportPage() {
       <section aria-labelledby="statistikk">
         <h2 id="statistikk">Fremdrift</h2>
         <CountsTable
-          caption="Alle tester"
+          caption="Alle oppgaver"
           groups={[
             {
               key: "all",
@@ -112,17 +112,17 @@ export default async function PilotReportPage() {
           }))}
         />
         <CountsTable
-          caption="Etter område"
+          caption="Etter tema"
           groups={progress.byArea.map((group) => ({
             ...group,
-            label: `${group.key} – ${pilotAreaName(group.key)}`,
+            label: pilotAreaName(group.key),
           }))}
         />
         <CountsTable
-          caption="Etter prioritet"
+          caption="Etter oppgavetype"
           groups={progress.byPriority.map((group) => ({
             ...group,
-            label: `${group.key} – ${pilotPriorityNames[group.key as PilotPriority]}`,
+            label: pilotTaskKinds[group.key as PilotPriority],
           }))}
         />
       </section>
