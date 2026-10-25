@@ -86,7 +86,8 @@ export default async function PilotCampaignPage() {
           {pilotPhases.map((phase) => {
             const gate = progress.gates[phase.number]!;
             const current = campaign?.phase === phase.number;
-            const next = open && campaign?.phase === phase.number - 1;
+            const canContinue =
+              open && current && phase.number < pilotPhases.length - 1;
 
             return (
               <li key={phase.number} className="card">
@@ -102,18 +103,18 @@ export default async function PilotCampaignPage() {
                     {gate.open ? "Oppfylt" : "Ikke oppfylt"}
                   </Tag>
                 </p>
-                {next && campaign && (
+                {canContinue && campaign && (
                   <div className="actions">
                     {currentGate?.open ? (
                       <ActionButton
-                        label={`Gå videre til fase ${phase.number}`}
+                        label={`Gå videre til fase ${phase.number + 1}`}
                         path={`/api/pilot/campaigns/${campaign.id}/phase`}
-                        body={{ phase: phase.number }}
+                        body={{ phase: phase.number + 1 }}
                       />
                     ) : (
                       <>
                         <button type="button" disabled>
-                          Gå videre til fase {phase.number}
+                          Gå videre til fase {phase.number + 1}
                         </button>
                         <p className={styles.meta}>
                           Først må kontrollene i denne fasen være gjennomført,
