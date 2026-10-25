@@ -25,8 +25,8 @@
 
 Pilotansvarlig finner «Pilot» under Konto → Annet. Deltakere finner «Mine pilotoppgaver» samme sted.
 
-- **Kampanje:** start piloten («Lukket pilot»), se hvilke tester som stopper neste fase, flytt til neste fase og avslutt. En avsluttet kampanje kan leses, ikke endres. En ny kampanje kan startes etterpå.
-- **Oversikt:** fremdrift etter status, prioritet og område, varsel om alvorlige åpne feil (P0/P1), og listen over tester med søk og filtre for område, fase, prioritet, status og deltaker. «Neste tester» viser B før O før U. «Bestått» kan registreres med ett trykk fra listen.
+- **Kampanje:** start piloten («Lukket pilot»), se hvilke tester som stopper neste fase, gå videre til neste fase når kravene er oppfylt, og avslutt. En avsluttet kampanje kan leses, ikke endres. En ny kampanje kan startes etterpå.
+- **Oversikt:** fremdrift etter status og fase, med detaljert fremdrift etter tema og oppgavetype ved behov, og varsel om alvorlige åpne feil (P0/P1). Testene grupperes som standard etter **fase → tema → oppgavetype** med overskrift, kort forklaring og sammenleggbare oppgavelister. Den aktive fasen er åpen som standard; framtidige faser kan åpnes ved behov. Bruk naturlige norske navn, ikke interne bokstavkoder, i overskrifter, filtre og oppgavekort. Filtrering og søk skal virke på tvers av gruppene, også ved søk på test-ID. Oppgaver som gjenstår sorteres fasevis, ikke som én sammenhengende prioritert liste. «Bestått» kan registreres med ett trykk fra listen.
 - **Testkortet:** hva som skal prøves og forventes, et skjema for nytt resultat (status, feil med alvorlighet og privat lenke, merknad, tester, enhet, miljø, om det trengtes hjelp), oppgaver til deltakere og hele historikken. Tidspunkt og appversjon settes av serveren. Et nytt resultat legges til; ingenting skrives over, og et resultat registrert mot tidligere ordlyd viser den ordlyden.
 - **Feil:** alle avvik med alvorlighet og status, endring av dem, og «Be om ny test», som markerer testene feilen gjelder som «Må testes på nytt».
 - **Deltakere:** legg til og fjern deltakere, og se testene deres.
@@ -67,14 +67,14 @@ En egen intern rute, eksempelvis `/pilot`, uten plass i ordinær hovednavigasjon
 
 Vis tydelig kampanjestatus, pågående fase, `Bestått / Feilet / Blokkert / Ikke testet / Må testes igjen / Ikke relevant`, og fremdrift per funksjonsområde. Vis separate tellere for basis-, ordinære og utvidede scenarioer. Tell **ikke relevant** separat, ikke som bestått.
 
-- Søk etter test-ID eller beskrivelse, filtrer på område, fase, prioritet, tildelt tester og status.
+- Søk etter test-ID eller beskrivelse, filtrer på tema, fase, oppgavetype, tildelt deltaker og status. Vis fasene samlet med korte beskrivelser, og gruppér oppgavene under norske temaoverskrifter.
 - Velg «Neste tester» (uprovde B/O først), «Feilet», «Må testes igjen», «Blokkert» eller «Alt».
 - Tydelig indikator for alvorlige åpne feil og oppgaver som stopper neste pilotfase.
 - Responsivt, mobilvennlig grensesnitt med tilgjengelighet i tråd med resten av Lånbort.
 
 ### 2. Ett testkort, få trykk
 
-Hvert kort viser ID, hva som skal prøves, forventet resultat, relevante forutsetninger og siste resultat. Knappene er eksempelvis **Bestått**, **Feilet**, **Blokkert**, **Må testes igjen**, **Ikke relevant**; resultatet må også kunne registreres fra detaljvisningen på mobil.
+Hvert kort viser hva som skal prøves, forventet resultat, relevante forutsetninger og siste resultat. Test-ID og interne kodeverdier brukes til sporbarhet i systemet, ikke som synlig oppgavetittel. Knappene er eksempelvis **Bestått**, **Feilet**, **Blokkert**, **Må testes igjen**, **Ikke relevant**; resultatet må også kunne registreres fra detaljvisningen på mobil.
 
 Ved registrering: dato/klokkeslett (automatisk), appversjon/deploy, testrolle/testerpseudonym, enhetskategori/nettleser, om hjelp var nødvendig, og en valgfri kort merknad. **Feilet** skal be om en kort konkret feilbeskrivelse og alvorlighetsgrad; **Ikke relevant** eller **Blokkert** krever begrunnelse. Mulighet for lenke til en **privat** avviksrapport, ikke som standard offentlig issue.
 
@@ -88,7 +88,7 @@ I den tidlige, uveiledede brukertesten kan testlederen gi oppgavene muntlig og f
 
 ### 3. Gjennomføring per fase
 
-Vis faste milepæler fra [testplanen](pilot-testplan.md) og hvilke B/O/U-tester som må være gjennomført for å starte neste fase. Ikke tillat at «grønn CI» automatisk markeres som «manuelt bestått». Lag en kort, sanert/aggregert ukesstatus uten deltakerdata.
+Vis faste milepæler fra [testplanen](pilot-testplan.md) og hvilke krav som må være oppfylt før man går videre. Knappen skal hete **«Gå videre til fase N»**, bare vises for neste fase og være deaktivert til den aktuelle faseporten er oppfylt. Den samme regelen må håndheves på serveren, også ved direkte API-kall. Ikke tillat at «grønn CI» automatisk markeres som «manuelt bestått». Lag en kort, sanert/aggregert ukesstatus uten deltakerdata.
 
 ### 4. Avslutning og eksport
 
