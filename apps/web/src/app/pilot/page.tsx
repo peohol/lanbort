@@ -61,11 +61,11 @@ export default async function PilotOverviewPage({
     filter.view !== "next" ||
     Boolean(
       filter.q ||
-        filter.area ||
-        filter.phase ||
-        filter.priority ||
-        filter.status ||
-        filter.tester,
+      filter.area ||
+      filter.phase ||
+      filter.priority ||
+      filter.status ||
+      filter.tester,
     );
 
   return (
@@ -121,14 +121,11 @@ export default async function PilotOverviewPage({
             <ul>
               {gate.basisNotPassed.length > 0 && (
                 <li>
-                  {gate.basisNotPassed.length} viktige oppgaver mangler å
-                  bestås
+                  {gate.basisNotPassed.length} viktige oppgaver mangler å bestås
                 </li>
               )}
               {gate.untried.length > 0 && (
-                <li>
-                  {gate.untried.length} andre oppgaver er ikke prøvd ennå
-                </li>
+                <li>{gate.untried.length} andre oppgaver er ikke prøvd ennå</li>
               )}
               {gate.blockingDefects > 0 && (
                 <li>{gate.blockingDefects} P0/P1-feil er ikke løst</li>
