@@ -7,6 +7,8 @@ import { describe, expect, it } from "vitest";
 import {
   deviceOf,
   filterPilotTests,
+  groupPilotTests,
+  pilotFilterChoices,
   pilotFilterOf,
   pilotRunsCsv,
   pilotViewHref,
@@ -32,6 +34,33 @@ describe("the pilot overview's filters", () => {
     expect(shown.map((test) => test.id)).toContain("M01");
     expect(shown[0]!.priority).toBe("B");
     expect(shown.at(-1)!.priority).toBe("U");
+    // Phase order matters more than priority across different phases.
+    expect(shown.findIndex((test) => test.id === "S02")).toBeLessThan(
+      shown.findIndex((test) => test.id === "A03"),
+    );
+  });
+
+  it("groups the entire pilot in phases, themes and readable task kinds", () => {
+    const grouped = groupPilotTests(tests);
+    const ids = grouped.flatMap((phase) =>
+      phase.areas.flatMap((area) =>
+        area.kinds.flatMap((kind) => kind.tests.map((test) => test.id)),
+      ),
+    );
+
+    expect(grouped).toHaveLength(6);
+    expect(grouped[0]!.phase.name).toBe("Klargjøring");
+    expect(grouped[5]!.total).toBe(0);
+    expect(ids).toHaveLength(98);
+    expect(new Set(ids).size).toBe(98);
+    expect(grouped[0]!.areas[0]!.area.name).toBe(
+      "Konto, innlogging og vennskap",
+    );
+    expect(grouped[0]!.areas[0]!.kinds[0]!.label).toBe("Viktige oppgaver");
+    expect(pilotFilterChoices.area[0]!.label).toBe(
+      "Konto, innlogging og vennskap",
+    );
+    expect(pilotFilterChoices.priority[0]!.label).toBe("Viktige oppgaver");
   });
 
   it("searches ids and wording, and narrows by each choice", () => {
