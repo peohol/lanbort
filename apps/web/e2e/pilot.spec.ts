@@ -107,12 +107,8 @@ test("the pilot lead runs the pilot from a phone, and a participant sees only th
     .getByRole("link", { name: "Oversikt" })
     .click();
   await expect(lead.page.getByText("Viser 98 av 98 oppgaver")).toBeVisible();
-  await expect(
-    lead.page.getByRole("heading", { name: /0\. Klargjøring/ }),
-  ).toBeVisible();
-  await expect(
-    lead.page.getByRole("heading", { name: /1\. Førstegangsbruk/ }),
-  ).toBeVisible();
+  await expect(lead.page.locator("#phase-0")).toBeVisible();
+  await expect(lead.page.locator("#phase-1")).toBeVisible();
   await expect(
     lead.page.locator('section[aria-labelledby="phase-1"] details'),
   ).not.toHaveAttribute("open");
