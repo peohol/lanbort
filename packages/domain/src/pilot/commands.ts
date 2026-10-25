@@ -23,6 +23,7 @@ import { rateLimits } from "../abuse/rate-limits";
 import { defineCommand } from "../commands/command";
 import { DomainError } from "../errors";
 import { pilotCase } from "./catalogue";
+import { loadDefects, loadStandings } from "./journal";
 import { nextPseudonym } from "./model";
 import {
   addPilotParticipantPolicy,
@@ -214,6 +215,24 @@ export const changePilotPhase = defineCommand({
       .select("phase")
       .where("id", "=", input.campaignId)
       .executeTakeFirstOrThrow();
+
+    if (input.phase !== from + 1) {
+      throw new DomainError(
+        "invalid_input",
+        "A pilot campaign can only continue to its next phase",
+      );
+    }
+
+    const defects = await loadDefects(tx, input.campaignId);
+    const { progress } = await loadStandings(tx, input.campaignId, defects);
+
+    if (!progress.gates[from]?.open) {
+      throw new DomainError(
+        "conflict",
+        "The current phase is not ready to finish",
+      );
+    }
+
     await tx
       .updateTable("app.pilot_campaigns")
       .set({ phase: input.phase })

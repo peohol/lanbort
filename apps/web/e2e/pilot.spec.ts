@@ -96,6 +96,9 @@ test("the pilot lead runs the pilot from a phone, and a participant sees only th
     .click();
   await lead.page.getByRole("button", { name: "Start kampanjen" }).click();
   await expect(lead.page.getByText("Pågår")).toBeVisible();
+  await expect(
+    lead.page.getByRole("button", { name: "Gå videre til fase 1" }),
+  ).toBeDisabled();
   await noAccessibilityProblems(lead.page);
 
   // One tap passes the first of the next tests.
@@ -103,21 +106,29 @@ test("the pilot lead runs the pilot from a phone, and a participant sees only th
     .getByRole("navigation", { name: "Piloten" })
     .getByRole("link", { name: "Oversikt" })
     .click();
-  await expect(lead.page.getByText("Viser 98 av 98 tester")).toBeVisible();
+  await expect(lead.page.getByText("Viser 98 av 98 oppgaver")).toBeVisible();
+  await expect(lead.page.locator("#phase-0")).toBeVisible();
+  await expect(lead.page.locator("#phase-1")).toBeVisible();
+  await expect(
+    lead.page.locator('section[aria-labelledby="phase-1"] details'),
+  ).not.toHaveAttribute("open");
+  await expect(
+    lead.page.getByRole("heading", { name: "Konto, innlogging og vennskap" }),
+  ).toBeVisible();
   await noAccessibilityProblems(lead.page);
   await lead.page
-    .getByRole("button", { name: "Registrer A01 som bestått" })
+    .getByRole("button", { name: "Registrer D10 som bestått" })
     .click();
-  await expect(lead.page.getByText("Viser 97 av 98 tester")).toBeVisible();
+  await expect(lead.page.getByText("Viser 97 av 98 oppgaver")).toBeVisible();
 
   // A failure on the test's own page, with its defect.
   const defect = `Koden kom ikke ${uniqueWord()}`;
   const note = `Ingen e-post ${uniqueWord()}`;
   await lead.page.getByRole("searchbox", { name: "Søk" }).fill("A02");
   await lead.page.getByRole("button", { name: "Vis" }).click();
-  await lead.page.getByRole("link", { name: /^A02 / }).click();
+  await lead.page.locator('a[href="/pilot/tester/A02"]').click();
   await expect(lead.page.getByRole("heading", { level: 1 })).toHaveText(
-    /^A02 /,
+    "Prøv å lage konto med en e-postadresse som ikke er invitert",
   );
   await lead.page.getByRole("radio", { name: "Feilet" }).check();
   await lead.page.getByLabel("Hva er feil, kort").fill(defect);

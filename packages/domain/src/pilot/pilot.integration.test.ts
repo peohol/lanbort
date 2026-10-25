@@ -292,7 +292,26 @@ describe("the lead's campaign", () => {
       title: "Teksten er for liten",
       severity: "P3",
     });
+
+    // A label or a direct API call cannot skip phases or bypass the gate.
+    expect(
+      await refusal(run(changePilotPhase, boss, { campaignId, phase: 2 })),
+    ).toBe("invalid_input");
+    expect(
+      await refusal(run(changePilotPhase, boss, { campaignId, phase: 1 })),
+    ).toBe("conflict");
+
+    // All four phase-0 checks must have real recorded results.
+    for (const testId of ["A02", "D10", "S02", "S09"]) {
+      await run(recordPilotRun, boss, runInput(campaignId, testId));
+    }
     await run(changePilotPhase, boss, { campaignId, phase: 1 });
+    expect(
+      await refusal(run(changePilotPhase, boss, { campaignId, phase: 0 })),
+    ).toBe("invalid_input");
+    expect(
+      await refusal(run(changePilotPhase, boss, { campaignId, phase: 3 })),
+    ).toBe("invalid_input");
 
     workspace = await read(readPilotWorkspace, boss);
     expect(workspace.campaign!.phase).toBe(1);
@@ -316,6 +335,10 @@ describe("the lead's campaign", () => {
       "retest_requested",
       "defect_changed",
       "defect_reported",
+      "run_recorded",
+      "run_recorded",
+      "run_recorded",
+      "run_recorded",
       "phase_changed",
     ]);
     expect(JSON.stringify(audit)).not.toMatch(/Koden|Samme feil|Ingen kode/);
@@ -658,13 +681,15 @@ describe("a deleted account", () => {
     });
 
     await run(deleteOwnAccount, boss, {});
-    expect(
-      await db
-        .selectFrom("app.pilot_leads")
-        .select("revoked_at")
-        .where("user_id", "=", boss.userId)
-        .executeTakeFirstOrThrow(),
-    ).toEqual({ revoked_at: expect.any(Date) });
+    const revoked = await db
+      .selectFrom("app.pilot_leads")
+      .select(["granted_at", "revoked_at"])
+      .where("user_id", "=", boss.userId)
+      .executeTakeFirstOrThrow();
+    expect(revoked.revoked_at).toEqual(expect.any(Date));
+    expect(revoked.revoked_at!.getTime()).toBeGreaterThanOrEqual(
+      revoked.granted_at.getTime(),
+    );
     await admin
       .updateTable("app.pilot_campaigns")
       .set({

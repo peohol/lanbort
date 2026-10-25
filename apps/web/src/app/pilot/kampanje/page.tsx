@@ -17,9 +17,9 @@ import styles from "../pilot.module.css";
 export const metadata: Metadata = { title: "Pilotkampanje – Lånbort" };
 
 /**
- * The campaign (pilot-ui.md «Livssyklus»): start it, move it from phase to
- * phase as the gates allow, and close it, after which it is read-only. The
- * lead decides; the gates only show what is left.
+ * The campaign (pilot-ui.md «Livssyklus»): start it, continue to the next
+ * phase only when the current phase is ready, and close it. The lead decides
+ * when to continue; phases cannot be skipped or revisited.
  */
 export default async function PilotCampaignPage() {
   await requirePilotLead();
@@ -28,6 +28,7 @@ export default async function PilotCampaignPage() {
     {},
   );
   const open = campaign !== null && campaign.closedAt === null;
+  const currentGate = campaign && progress.gates[campaign.phase];
 
   return (
     <main>
@@ -85,6 +86,8 @@ export default async function PilotCampaignPage() {
           {pilotPhases.map((phase) => {
             const gate = progress.gates[phase.number]!;
             const current = campaign?.phase === phase.number;
+            const canContinue =
+              open && current && phase.number < pilotPhases.length - 1;
 
             return (
               <li key={phase.number} className="card">
@@ -100,13 +103,25 @@ export default async function PilotCampaignPage() {
                     {gate.open ? "Oppfylt" : "Ikke oppfylt"}
                   </Tag>
                 </p>
-                {open && !current && (
+                {canContinue && campaign && (
                   <div className="actions">
-                    <ActionButton
-                      label={`Flytt til fase ${phase.number}`}
-                      path={`/api/pilot/campaigns/${campaign.id}/phase`}
-                      body={{ phase: phase.number }}
-                    />
+                    {currentGate?.open ? (
+                      <ActionButton
+                        label={`Gå videre til fase ${phase.number + 1}`}
+                        path={`/api/pilot/campaigns/${campaign.id}/phase`}
+                        body={{ phase: phase.number + 1 }}
+                      />
+                    ) : (
+                      <>
+                        <button type="button" disabled>
+                          Gå videre til fase {phase.number + 1}
+                        </button>
+                        <p className={styles.meta}>
+                          Først må kontrollene i denne fasen være gjennomført,
+                          og alvorlige feil være avklart.
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
               </li>

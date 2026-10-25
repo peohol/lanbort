@@ -1,5 +1,6 @@
 import {
   type PilotDefect,
+  type PilotPriority,
   type PilotDefectStatus,
   type PilotDevice,
   type PilotEnvironment,
@@ -12,7 +13,6 @@ import {
   pilotAreas,
   pilotPhases,
   pilotPriorities,
-  pilotPriorityNames,
   pilotTestStatusSchema,
 } from "@lanbort/contracts";
 import type { Tone } from "@/components/tag";
@@ -97,6 +97,53 @@ export const pilotAreaName = (code: string) =>
 export const pilotPhaseName = (phase: number) =>
   `${phase}. ${pilotPhases.find((each) => each.number === phase)?.name ?? ""}`;
 
+/** The human purpose of each phase, not its technical acceptance checklist. */
+export const pilotPhaseIntroductions: Readonly<Record<number, string>> = {
+  0: "Vi gjør klart for en trygg og pålitelig test med ekte brukere.",
+  1: "Et par nye brukere prøver Lånbort uten veiledning, slik at vi ser hva som er lett og vanskelig.",
+  2: "Flere blir med. Vi prøver vennskap, miljøer og hvordan man legger ut og finner ting.",
+  3: "Vi låner og låner bort ting i virkeligheten, fra første forespørsel til tilbakelevering.",
+  4: "Vi prøver situasjoner som ikke alltid går etter planen, og ser hvordan appen hjelper oss videre.",
+  5: "Deltakerne bruker Lånbort mer på egen hånd, og vi samler erfaringene før vi går videre.",
+};
+
+/** Internal priorities stay in the catalogue, not in task cards. */
+export const pilotTaskKinds: Readonly<Record<PilotPriority, string>> = {
+  B: "Viktige oppgaver",
+  O: "Vanlige oppgaver",
+  U: "Særskilte situasjoner",
+};
+
+/** One natural reading order: phase, then theme, then kind of task. */
+export function groupPilotTests(tests: readonly PilotTestSummary[]) {
+  return pilotPhases.map((phase) => {
+    const inPhase = tests.filter((test) => test.phase === phase.number);
+
+    return {
+      phase,
+      total: inPhase.length,
+      passed: inPhase.filter((test) => test.status === "passed").length,
+      areas: pilotAreas
+        .map((area) => ({
+          area,
+          kinds: pilotPriorities
+            .map((priority) => ({
+              priority,
+              label: pilotTaskKinds[priority],
+              tests: inPhase
+                .filter(
+                  (test) =>
+                    test.area === area.code && test.priority === priority,
+                )
+                .sort((a, b) => a.id.localeCompare(b.id)),
+            }))
+            .filter((kind) => kind.tests.length > 0),
+        }))
+        .filter((area) => area.kinds.length > 0),
+    };
+  });
+}
+
 /** The device a browser runs on, as well as its user agent tells. */
 export function deviceOf(userAgent: string): PilotDevice {
   if (/iPad|Tablet|Android(?!.*Mobile)/i.test(userAgent)) return "tablet";
@@ -132,7 +179,7 @@ export function platformOf(userAgent: string): string {
 
 /** The ready-made views of the overview (pilot-ui.md «Pilotoversikt»). */
 export const pilotViews = {
-  next: { label: "Neste tester" },
+  next: { label: "Gjenstående oppgaver" },
   failed: { label: "Feilet" },
   retest: { label: "Må testes på nytt" },
   blocked: { label: "Blokkert" },
@@ -203,8 +250,8 @@ const viewHolds: Record<PilotView, (test: PilotTestSummary) => boolean> = {
 const normalized = (text: string) => text.toLocaleLowerCase("nb");
 
 /**
- * The tests the filter shows. «Neste tester» puts the basis tests first,
- * then the ordinary and the extended ones, each by phase.
+ * The tests the filter shows. Next tasks follow the pilot phases first,
+ * then the kind of task within each phase.
  */
 export function filterPilotTests(
   tests: readonly PilotTestSummary[],
@@ -226,9 +273,9 @@ export function filterPilotTests(
   return filter.view === "next"
     ? shown.sort(
         (a, b) =>
+          a.phase - b.phase ||
           pilotPriorities.indexOf(a.priority) -
             pilotPriorities.indexOf(b.priority) ||
-          a.phase - b.phase ||
           a.id.localeCompare(b.id),
       )
     : shown;
@@ -238,7 +285,7 @@ export function filterPilotTests(
 export const pilotFilterChoices = {
   area: pilotAreas.map((area) => ({
     value: area.code,
-    label: `${area.code} – ${area.name}`,
+    label: area.name,
   })),
   phase: pilotPhases.map((phase) => ({
     value: String(phase.number),
@@ -246,7 +293,7 @@ export const pilotFilterChoices = {
   })),
   priority: pilotPriorities.map((priority) => ({
     value: priority,
-    label: `${priority} – ${pilotPriorityNames[priority]}`,
+    label: pilotTaskKinds[priority],
   })),
   status: pilotTestStatusSchema.options.map((status) => ({
     value: status,

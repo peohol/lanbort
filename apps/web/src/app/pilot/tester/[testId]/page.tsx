@@ -1,4 +1,3 @@
-import { pilotPriorityNames } from "@lanbort/contracts";
 import { readPilotTest } from "@lanbort/domain";
 import type { Metadata } from "next";
 import { ActionButton } from "@/components/action-button";
@@ -17,6 +16,7 @@ import {
   pilotOutcomeLabels,
   pilotOutcomeTones,
   pilotPhaseName,
+  pilotTaskKinds,
   pilotSeverityLabels,
   pilotStatusLabels,
   pilotStatusTones,
@@ -48,7 +48,7 @@ export default async function PilotTestPage({
   return (
     <main>
       <PageHeader
-        title={`${test.id} ${test.action}`}
+        title={test.action}
         back={{ href: pilotHref, label: "Pilot" }}
       >
         <Tag tone={pilotStatusTones[test.status]}>
@@ -60,10 +60,8 @@ export default async function PilotTestPage({
         <dl className="facts">
           <dt>Område</dt>
           <dd>{pilotAreaName(test.area)}</dd>
-          <dt>Prioritet</dt>
-          <dd>
-            {test.priority} – {pilotPriorityNames[test.priority]}
-          </dd>
+          <dt>Type oppgave</dt>
+          <dd>{pilotTaskKinds[test.priority]}</dd>
           <dt>Fase</dt>
           <dd>{pilotPhaseName(test.phase)}</dd>
         </dl>

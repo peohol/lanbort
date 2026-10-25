@@ -189,3 +189,93 @@
   text-align: left;
   white-space: normal;
 }
+
+/* A pilot is a journey through phases, not a flat list of test codes. */
+.phaseGroups {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.phasePanel {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-l);
+  background: var(--color-surface);
+}
+
+.phaseIntro {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.phaseIntro :is(h3, p) {
+  margin: 0;
+}
+
+.phaseIntro h3 {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.phaseDisclosure {
+  min-width: 0;
+}
+
+.phaseDisclosure summary,
+.progressDetails summary {
+  cursor: pointer;
+  color: var(--color-link);
+  font-weight: 700;
+  padding: var(--space-2) 0;
+}
+
+.phaseDisclosure summary:focus-visible,
+.progressDetails summary:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-s);
+}
+
+.phaseContents {
+  display: grid;
+  gap: var(--space-5);
+  padding-top: var(--space-3);
+}
+
+.phaseArea {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.phaseArea h4,
+.phaseKind h5 {
+  margin: 0;
+}
+
+.phaseArea h4 {
+  font-size: var(--text-m);
+}
+
+.phaseKind {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.phaseKind h5 {
+  font-size: var(--text-s);
+  color: var(--color-muted);
+}
+
+.progressDetails {
+  margin-top: var(--space-3);
+}
+
+.progressDetails h4 {
+  margin: var(--space-3) 0 var(--space-2);
+}
