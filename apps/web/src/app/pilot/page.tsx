@@ -1,16 +1,10 @@
-import {
-  type PilotPriority,
-  pilotPhases,
-  pilotPriorityNames,
-  pilotTestStatusSchema,
-} from "@lanbort/contracts";
+import { pilotPhases, pilotTestStatusSchema } from "@lanbort/contracts";
 import { readPilotWorkspace } from "@lanbort/domain";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { EmptyState } from "@/components/empty-state";
 import { Field } from "@/components/field";
-import { MenuList, MenuRow } from "@/components/menu-list";
 import { PageHeader } from "@/components/page-header";
 import { Tag } from "@/components/tag";
 import type { SearchParams } from "@/navigation/list-pages";
@@ -18,7 +12,6 @@ import {
   pilotCampaignHref,
   pilotDefectsHref,
   pilotTasksHref,
-  pilotTestHref,
 } from "@/navigation/pilot";
 import {
   blockingDefects,
@@ -27,6 +20,7 @@ import {
   pilotFilterChoices,
   pilotFilterOf,
   pilotPhaseName,
+  pilotTaskKinds,
   pilotSeverityLabels,
   pilotStatusLabels,
   pilotStatusTones,
@@ -39,15 +33,15 @@ import { pageQueryOrNotFound } from "@/server/session";
 import { PilotNav } from "./pilot-nav";
 import styles from "./pilot.module.css";
 import { ProgressBars } from "./progress-bars";
-import { QuickPass } from "./quick-pass";
+import { PhaseTestList } from "./phase-test-list";
 
 export const metadata: Metadata = { title: "Pilot – Lånbort" };
 
 /**
  * «Pilotoversikt» (pilot-ui.md): the campaign and its phase, what stops the
  * next phase, progress by priority and area, and every test with its
- * standing, to search, narrow down and record from. A participant has only
- * their own tasks.
+ * standing, to search, narrow down and record from. The default display
+ * follows the pilot phases and user tasks, not catalogue codes.
  */
 export default async function PilotOverviewPage({
   searchParams,
@@ -63,6 +57,16 @@ export default async function PilotOverviewPage({
   const blocking = blockingDefects(defects);
   const gate = campaign && progress.gates[campaign.phase];
   const open = campaign !== null && campaign.closedAt === null;
+  const filtered =
+    filter.view !== "next" ||
+    Boolean(
+      filter.q ||
+        filter.area ||
+        filter.phase ||
+        filter.priority ||
+        filter.status ||
+        filter.tester,
+    );
 
   return (
     <main>
@@ -117,14 +121,13 @@ export default async function PilotOverviewPage({
             <ul>
               {gate.basisNotPassed.length > 0 && (
                 <li>
-                  {gate.basisNotPassed.length} basistester er ikke bestått:{" "}
-                  {gate.basisNotPassed.join(", ")}
+                  {gate.basisNotPassed.length} viktige oppgaver mangler å
+                  bestås
                 </li>
               )}
               {gate.untried.length > 0 && (
                 <li>
-                  {gate.untried.length} andre tester er ikke prøvd:{" "}
-                  {gate.untried.join(", ")}
+                  {gate.untried.length} andre oppgaver er ikke prøvd ennå
                 </li>
               )}
               {gate.blockingDefects > 0 && (
@@ -146,24 +149,34 @@ export default async function PilotOverviewPage({
             </li>
           ))}
         </ul>
-        <h3>Etter prioritet</h3>
+        <h3>Etter fase</h3>
         <ProgressBars
-          groups={progress.byPriority.map((group) => ({
+          groups={progress.byPhase.map((group) => ({
             ...group,
-            label: `${group.key} – ${pilotPriorityNames[group.key as PilotPriority]}`,
+            label: pilotPhaseName(Number(group.key)),
           }))}
         />
-        <h3>Etter område</h3>
-        <ProgressBars
-          groups={progress.byArea.map((group) => ({
-            ...group,
-            label: `${group.key} – ${pilotAreaName(group.key)}`,
-          }))}
-        />
+        <details className={styles.progressDetails}>
+          <summary>Se mer fremdrift etter tema og type oppgave</summary>
+          <h4>Type oppgave</h4>
+          <ProgressBars
+            groups={progress.byPriority.map((group) => ({
+              ...group,
+              label: pilotTaskKinds[group.key as keyof typeof pilotTaskKinds],
+            }))}
+          />
+          <h4>Tema</h4>
+          <ProgressBars
+            groups={progress.byArea.map((group) => ({
+              ...group,
+              label: pilotAreaName(group.key),
+            }))}
+          />
+        </details>
       </section>
 
       <section aria-labelledby="tester">
-        <h2 id="tester">Tester</h2>
+        <h2 id="tester">Oppgaver i piloten</h2>
         <nav aria-label="Utvalg" className="filters">
           {(Object.keys(pilotViews) as PilotView[]).map((view) => (
             <Link
@@ -188,18 +201,18 @@ export default async function PilotOverviewPage({
           </Field>
           {(
             [
-              ["omrade", "Område", pilotFilterChoices.area, filter.area],
+              ["omrade", "Tema", pilotFilterChoices.area, filter.area],
               ["fase", "Fase", pilotFilterChoices.phase, filter.phase],
               [
                 "prioritet",
-                "Prioritet",
+                "Type oppgave",
                 pilotFilterChoices.priority,
                 filter.priority,
               ],
               ["status", "Status", pilotFilterChoices.status, filter.status],
               [
                 "tester",
-                "Tester",
+                "Deltaker",
                 participants.map((participant) => ({
                   value: participant.pseudonym,
                   label: participant.pseudonym,
@@ -224,38 +237,19 @@ export default async function PilotOverviewPage({
           </div>
         </form>
         <p role="status">
-          Viser {shown.length} av {workspace.tests.length} tester
+          Viser {shown.length} av {workspace.tests.length} oppgaver
         </p>
         {shown.length > 0 ? (
-          <MenuList>
-            {shown.map((test) => (
-              <MenuRow
-                key={test.id}
-                href={pilotTestHref(test.id)}
-                label={`${test.id} ${test.action}`}
-                detail={
-                  <>
-                    <Tag tone={pilotStatusTones[test.status]}>
-                      {pilotStatusLabels[test.status]}
-                    </Tag>{" "}
-                    {test.priority} · fase {test.phase}
-                    {test.assignees.length > 0 &&
-                      ` · ${test.assignees.join(", ")}`}
-                    {test.openDefects > 0 && ` · ${test.openDefects} åpne feil`}
-                  </>
-                }
-                actions={
-                  open &&
-                  test.status !== "passed" && (
-                    <QuickPass campaignId={campaign.id} testId={test.id} />
-                  )
-                }
-              />
-            ))}
-          </MenuList>
+          <PhaseTestList
+            tests={shown}
+            currentPhase={campaign?.phase ?? 0}
+            campaignId={open ? campaign.id : null}
+            expandMatches={filtered}
+            showClosingPhase={!filtered}
+          />
         ) : (
-          <EmptyState>Ingen tester passer med dette utvalget.</EmptyState>
-        )}
+          <EmptyState>Ingen oppgaver passer med dette utvalget.</EmptyState>
+        )
       </section>
     </main>
   );
