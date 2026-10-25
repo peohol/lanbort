@@ -1,4 +1,3 @@
-
 import { readPilotTest } from "@lanbort/domain";
 import type { Metadata } from "next";
 import { ActionButton } from "@/components/action-button";
