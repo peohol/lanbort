@@ -30,6 +30,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Show temporary Prettier formatting patch
+        run: |
+          pnpm exec prettier --write apps/web/e2e/pilot.spec.ts apps/web/src/app/pilot/page.tsx apps/web/src/app/pilot/phase-test-list.tsx 'apps/web/src/app/pilot/tester/[testId]/page.tsx'
+          git diff -- apps/web/e2e/pilot.spec.ts apps/web/src/app/pilot/page.tsx apps/web/src/app/pilot/phase-test-list.tsx 'apps/web/src/app/pilot/tester/[testId]/page.tsx'
+
       - name: Run quality checks
         run: pnpm check
 
