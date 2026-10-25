@@ -32,7 +32,7 @@ export const pilotAccountDeletionStep: AccountDeletionStep = {
   async run(db, userId, now) {
     await db
       .updateTable("app.pilot_leads")
-      .set({ revoked_at: now })
+      .set({ revoked_at: sql`greatest(${now}, granted_at)` })
       .where("user_id", "=", userId)
       .where("revoked_at", "is", null)
       .execute();
