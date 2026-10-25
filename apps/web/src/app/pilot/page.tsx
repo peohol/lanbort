@@ -249,7 +249,7 @@ export default async function PilotOverviewPage({
           />
         ) : (
           <EmptyState>Ingen oppgaver passer med dette utvalget.</EmptyState>
-        )
+        )}
       </section>
     </main>
   );
