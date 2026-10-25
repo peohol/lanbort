@@ -88,7 +88,10 @@ export function PhaseTestList({
                           const showKindTitle = area.kinds.length > 1;
 
                           return (
-                            <div key={kind.priority} className={styles.phaseKind}>
+                            <div
+                              key={kind.priority}
+                              className={styles.phaseKind}
+                            >
                               {showKindTitle && (
                                 <h5 id={kindId}>{kind.label}</h5>
                               )}
@@ -100,7 +103,9 @@ export function PhaseTestList({
                                     label={test.action}
                                     detail={
                                       <>
-                                        <Tag tone={pilotStatusTones[test.status]}>
+                                        <Tag
+                                          tone={pilotStatusTones[test.status]}
+                                        >
                                           {pilotStatusLabels[test.status]}
                                         </Tag>
                                         {test.assignees.length > 0 &&
