@@ -681,13 +681,15 @@ describe("a deleted account", () => {
     });
 
     await run(deleteOwnAccount, boss, {});
-    expect(
-      await db
-        .selectFrom("app.pilot_leads")
-        .select("revoked_at")
-        .where("user_id", "=", boss.userId)
-        .executeTakeFirstOrThrow(),
-    ).toEqual({ revoked_at: expect.any(Date) });
+    const revoked = await db
+      .selectFrom("app.pilot_leads")
+      .select(["granted_at", "revoked_at"])
+      .where("user_id", "=", boss.userId)
+      .executeTakeFirstOrThrow();
+    expect(revoked.revoked_at).toEqual(expect.any(Date));
+    expect(revoked.revoked_at!.getTime()).toBeGreaterThanOrEqual(
+      revoked.granted_at.getTime(),
+    );
     await admin
       .updateTable("app.pilot_campaigns")
       .set({
