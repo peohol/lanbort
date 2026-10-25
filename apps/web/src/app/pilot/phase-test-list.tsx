@@ -1,5 +1,4 @@
-import { pilotPhases } from "@lanbort/contracts";
-import type { PilotTestSummary } from "@lanbort/contracts";
+import { pilotPhases, type PilotTestSummary } from "@lanbort/contracts";
 import { MenuList, MenuRow } from "@/components/menu-list";
 import { Tag } from "@/components/tag";
 import { pilotTestHref } from "@/navigation/pilot";
@@ -41,6 +40,7 @@ export function PhaseTestList({
     <div className={styles.phaseGroups}>
       {phases.map((group) => {
         const current = group.phase.number === currentPhase;
+        const defaultOpen = group.phase.number === (currentPhase ?? 0);
 
         return (
           <section
@@ -69,7 +69,7 @@ export function PhaseTestList({
             ) : (
               <details
                 className={styles.phaseDisclosure}
-                open={expandMatches || current}
+                open={expandMatches || defaultOpen}
               >
                 <summary>Oppgaver i denne fasen ({group.total})</summary>
                 <div className={styles.phaseContents}>
