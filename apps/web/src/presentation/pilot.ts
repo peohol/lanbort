@@ -144,6 +144,35 @@ export function groupPilotTests(tests: readonly PilotTestSummary[]) {
   });
 }
 
+/** The empty default view is still a phase overview once a campaign exists. */
+export function showPilotPhaseOverview(
+  shownTasks: number,
+  unfiltered: boolean,
+  hasCampaign: boolean,
+): boolean {
+  return shownTasks > 0 || (unfiltered && hasCampaign);
+}
+
+/** Keep the current phase visible even after its last task was completed.
+ * The closing phase contains no test cases, but still explains what happens
+ * after the structured testing is finished. Empty phases are excluded when
+ * a user has selected a filter, even if one of them is the current phase.
+ */
+export function visiblePilotPhaseGroups(
+  tests: readonly PilotTestSummary[],
+  currentPhase: number | null,
+  showEmptyPhases: boolean,
+) {
+  const closingPhase = pilotPhases[pilotPhases.length - 1]!.number;
+  return groupPilotTests(tests).filter(
+    (group) =>
+      group.total > 0 ||
+      (showEmptyPhases &&
+        (group.phase.number === currentPhase ||
+          group.phase.number === closingPhase)),
+  );
+}
+
 /** The device a browser runs on, as well as its user agent tells. */
 export function deviceOf(userAgent: string): PilotDevice {
   if (/iPad|Tablet|Android(?!.*Mobile)/i.test(userAgent)) return "tablet";

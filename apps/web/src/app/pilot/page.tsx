@@ -20,6 +20,7 @@ import {
   pilotFilterChoices,
   pilotFilterOf,
   pilotPhaseName,
+  showPilotPhaseOverview,
   pilotTaskKinds,
   pilotSeverityLabels,
   pilotStatusLabels,
@@ -236,13 +237,13 @@ export default async function PilotOverviewPage({
         <p role="status">
           Viser {shown.length} av {workspace.tests.length} oppgaver
         </p>
-        {shown.length > 0 ? (
+        {showPilotPhaseOverview(shown.length, !filtered, campaign !== null) ? (
           <PhaseTestList
             tests={shown}
             currentPhase={campaign?.phase ?? null}
             campaignId={open ? campaign.id : null}
             expandMatches={filtered}
-            showClosingPhase={!filtered}
+            showEmptyPhases={!filtered}
           />
         ) : (
           <EmptyState>Ingen oppgaver passer med dette utvalget.</EmptyState>
