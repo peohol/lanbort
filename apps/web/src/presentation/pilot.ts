@@ -144,6 +144,15 @@ export function groupPilotTests(tests: readonly PilotTestSummary[]) {
   });
 }
 
+/** The empty default view is still a phase overview once a campaign exists. */
+export function showPilotPhaseOverview(
+  shownTasks: number,
+  unfiltered: boolean,
+  hasCampaign: boolean,
+): boolean {
+  return shownTasks > 0 || (unfiltered && hasCampaign);
+}
+
 /** Keep the current phase visible even after its last task was completed.
  * The closing phase contains no test cases, but still explains what happens
  * after the structured testing is finished.
