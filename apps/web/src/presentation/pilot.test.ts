@@ -88,6 +88,15 @@ describe("the pilot overview's filters", () => {
       ),
     ).toEqual([4, 5]);
     expect(visiblePilotPhaseGroups(remaining, null, false)).toEqual([]);
+
+    const inPhaseTwo = tests.filter((test) => test.phase === 2);
+    expect(inPhaseTwo.length).toBeGreaterThan(0);
+    expect(
+      visiblePilotPhaseGroups(inPhaseTwo, 4, false).map(
+        (group) => group.phase.number,
+      ),
+    ).toEqual([2]);
+    expect(visiblePilotPhaseGroups(remaining, 4, false)).toEqual([]);
   });
 
   it("searches ids and wording, and narrows by each choice", () => {
