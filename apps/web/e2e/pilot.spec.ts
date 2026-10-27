@@ -283,6 +283,9 @@ test("the pilot lead runs the pilot from a phone, and a participant sees only th
         priority: test.priority,
         action: test.action,
         expected: test.expected,
+        prepare: [...test.prepare],
+        steps: [...test.steps],
+        pass_when: [...test.passWhen],
       })),
     )
     .onConflict((conflict) =>
