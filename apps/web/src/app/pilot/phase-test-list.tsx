@@ -1,4 +1,4 @@
-import type { PilotTestSummary } from "@lanbort/contracts";
+import { pilotPhases, type PilotTestSummary } from "@lanbort/contracts";
 import { MenuList, MenuRow } from "@/components/menu-list";
 import { Tag } from "@/components/tag";
 import { pilotTestHref } from "@/navigation/pilot";
@@ -30,6 +30,7 @@ export function PhaseTestList({
   showEmptyPhases: boolean;
 }) {
   const phases = visiblePilotPhaseGroups(tests, currentPhase, showEmptyPhases);
+  const closingPhase = pilotPhases[pilotPhases.length - 1]!.number;
 
   return (
     <div className={styles.phaseGroups}>
@@ -58,8 +59,9 @@ export function PhaseTestList({
 
             {group.total === 0 ? (
               <p className={styles.meta}>
-                Her følger vi med på bruken og samler erfaringer. Ingen faste
-                testoppgaver er lagt til denne fasen.
+                {current && group.phase.number !== closingPhase
+                  ? "Alle oppgavene i denne fasen har et registrert resultat. Du finner dem under «Alt»."
+                  : "Her følger vi med på bruken og samler erfaringer. Ingen faste testoppgaver er lagt til denne fasen."}
               </p>
             ) : (
               <details
