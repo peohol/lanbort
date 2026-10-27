@@ -155,19 +155,21 @@ export function showPilotPhaseOverview(
 
 /** Keep the current phase visible even after its last task was completed.
  * The closing phase contains no test cases, but still explains what happens
- * after the structured testing is finished.
+ * after the structured testing is finished. Empty phases are excluded when
+ * a user has selected a filter, even if one of them is the current phase.
  */
 export function visiblePilotPhaseGroups(
   tests: readonly PilotTestSummary[],
   currentPhase: number | null,
-  showClosingPhase: boolean,
+  showEmptyPhases: boolean,
 ) {
   const closingPhase = pilotPhases[pilotPhases.length - 1]!.number;
   return groupPilotTests(tests).filter(
     (group) =>
       group.total > 0 ||
-      group.phase.number === currentPhase ||
-      (showClosingPhase && group.phase.number === closingPhase),
+      (showEmptyPhases &&
+        (group.phase.number === currentPhase ||
+          group.phase.number === closingPhase)),
   );
 }
 
