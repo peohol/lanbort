@@ -243,7 +243,7 @@ export default async function PilotOverviewPage({
             currentPhase={campaign?.phase ?? null}
             campaignId={open ? campaign.id : null}
             expandMatches={filtered}
-            showClosingPhase={!filtered}
+            showEmptyPhases={!filtered}
           />
         ) : (
           <EmptyState>Ingen oppgaver passer med dette utvalget.</EmptyState>
