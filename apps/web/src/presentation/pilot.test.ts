@@ -8,6 +8,7 @@ import {
   deviceOf,
   filterPilotTests,
   groupPilotTests,
+  visiblePilotPhaseGroups,
   pilotFilterChoices,
   pilotFilterOf,
   pilotRunsCsv,
@@ -61,6 +62,27 @@ describe("the pilot overview's filters", () => {
       "Konto, innlogging og vennskap",
     );
     expect(pilotFilterChoices.priority[0]!.label).toBe("Viktige oppgaver");
+  });
+
+  it("keeps the closing phase visible when every test is already done", () => {
+    const completed = tests.map((test) => ({
+      ...test,
+      status: "passed" as const,
+    }));
+    const remaining = filterPilotTests(completed, pilotFilterOf({}));
+
+    expect(remaining).toHaveLength(0);
+    expect(
+      visiblePilotPhaseGroups(remaining, 5, true).map(
+        (group) => group.phase.number,
+      ),
+    ).toEqual([5]);
+    expect(
+      visiblePilotPhaseGroups(remaining, 4, true).map(
+        (group) => group.phase.number,
+      ),
+    ).toEqual([4, 5]);
+    expect(visiblePilotPhaseGroups(remaining, null, false)).toEqual([]);
   });
 
   it("searches ids and wording, and narrows by each choice", () => {
