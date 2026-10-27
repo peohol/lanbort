@@ -1,9 +1,9 @@
-import { pilotPhases, type PilotTestSummary } from "@lanbort/contracts";
+import type { PilotTestSummary } from "@lanbort/contracts";
 import { MenuList, MenuRow } from "@/components/menu-list";
 import { Tag } from "@/components/tag";
 import { pilotTestHref } from "@/navigation/pilot";
 import {
-  groupPilotTests,
+  visiblePilotPhaseGroups,
   pilotPhaseIntroductions,
   pilotStatusLabels,
   pilotStatusTones,
@@ -29,11 +29,10 @@ export function PhaseTestList({
   expandMatches: boolean;
   showClosingPhase: boolean;
 }) {
-  const phases = groupPilotTests(tests).filter(
-    (group) =>
-      group.total > 0 ||
-      (showClosingPhase &&
-        group.phase.number === pilotPhases[pilotPhases.length - 1]!.number),
+  const phases = visiblePilotPhaseGroups(
+    tests,
+    currentPhase,
+    showClosingPhase,
   );
 
   return (
