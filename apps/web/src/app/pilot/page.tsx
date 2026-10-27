@@ -236,7 +236,7 @@ export default async function PilotOverviewPage({
         <p role="status">
           Viser {shown.length} av {workspace.tests.length} oppgaver
         </p>
-        {shown.length > 0 ? (
+        {shown.length > 0 || (!filtered && campaign !== null) ? (
           <PhaseTestList
             tests={shown}
             currentPhase={campaign?.phase ?? null}
