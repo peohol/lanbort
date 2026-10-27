@@ -29,11 +29,7 @@ export function PhaseTestList({
   expandMatches: boolean;
   showClosingPhase: boolean;
 }) {
-  const phases = visiblePilotPhaseGroups(
-    tests,
-    currentPhase,
-    showClosingPhase,
-  );
+  const phases = visiblePilotPhaseGroups(tests, currentPhase, showClosingPhase);
 
   return (
     <div className={styles.phaseGroups}>
