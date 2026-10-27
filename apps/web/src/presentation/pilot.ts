@@ -144,6 +144,24 @@ export function groupPilotTests(tests: readonly PilotTestSummary[]) {
   });
 }
 
+/** Keep the current phase visible even after its last task was completed.
+ * The closing phase contains no test cases, but still explains what happens
+ * after the structured testing is finished.
+ */
+export function visiblePilotPhaseGroups(
+  tests: readonly PilotTestSummary[],
+  currentPhase: number | null,
+  showClosingPhase: boolean,
+) {
+  const closingPhase = pilotPhases[pilotPhases.length - 1]!.number;
+  return groupPilotTests(tests).filter(
+    (group) =>
+      group.total > 0 ||
+      group.phase.number === currentPhase ||
+      (showClosingPhase && group.phase.number === closingPhase),
+  );
+}
+
 /** The device a browser runs on, as well as its user agent tells. */
 export function deviceOf(userAgent: string): PilotDevice {
   if (/iPad|Tablet|Android(?!.*Mobile)/i.test(userAgent)) return "tablet";
