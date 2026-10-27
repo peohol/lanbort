@@ -313,9 +313,7 @@ test("the pilot lead runs the pilot from a phone, and a participant sees only th
     .execute();
 
   await lead.page.goto("/pilot");
-  await expect(
-    lead.page.getByText("Viser 0 av 98 oppgaver"),
-  ).toBeVisible();
+  await expect(lead.page.getByText("Viser 0 av 98 oppgaver")).toBeVisible();
   await expect(lead.page.locator("#phase-5")).toContainText(
     "Selvstendig bruk og avslutning",
   );
