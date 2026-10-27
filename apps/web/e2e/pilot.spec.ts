@@ -308,6 +308,19 @@ test("the pilot lead runs the pilot from a phone, and a participant sees only th
     .execute();
   await after
     .updateTable("app.pilot_campaigns")
+    .set({ phase: 4 })
+    .where("id", "=", campaignId as string)
+    .execute();
+  await lead.page.goto("/pilot");
+  await expect(
+    lead.page.locator('section[aria-labelledby="phase-4"]'),
+  ).toContainText("Alle oppgavene i denne fasen har et registrert resultat.");
+  await lead.page.goto("/pilot?vis=all&fase=2");
+  await expect(lead.page.locator("#phase-2")).toBeVisible();
+  await expect(lead.page.locator("#phase-4")).toHaveCount(0);
+
+  await after
+    .updateTable("app.pilot_campaigns")
     .set({ phase: 5 })
     .where("id", "=", campaignId as string)
     .execute();
