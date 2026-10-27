@@ -13,6 +13,7 @@ import {
   pilotFilterOf,
   pilotRunsCsv,
   pilotViewHref,
+  showPilotPhaseOverview,
   platformOf,
 } from "./pilot";
 
@@ -72,6 +73,10 @@ describe("the pilot overview's filters", () => {
     const remaining = filterPilotTests(completed, pilotFilterOf({}));
 
     expect(remaining).toHaveLength(0);
+    expect(showPilotPhaseOverview(remaining.length, true, true)).toBe(true);
+    expect(showPilotPhaseOverview(remaining.length, false, true)).toBe(false);
+    expect(showPilotPhaseOverview(remaining.length, true, false)).toBe(false);
+    expect(showPilotPhaseOverview(2, false, false)).toBe(true);
     expect(
       visiblePilotPhaseGroups(remaining, 5, true).map(
         (group) => group.phase.number,
