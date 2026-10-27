@@ -21,15 +21,15 @@ export function PhaseTestList({
   currentPhase,
   campaignId,
   expandMatches,
-  showClosingPhase,
+  showEmptyPhases,
 }: {
   tests: readonly PilotTestSummary[];
   currentPhase: number | null;
   campaignId: string | null;
   expandMatches: boolean;
-  showClosingPhase: boolean;
+  showEmptyPhases: boolean;
 }) {
-  const phases = visiblePilotPhaseGroups(tests, currentPhase, showClosingPhase);
+  const phases = visiblePilotPhaseGroups(tests, currentPhase, showEmptyPhases);
 
   return (
     <div className={styles.phaseGroups}>
