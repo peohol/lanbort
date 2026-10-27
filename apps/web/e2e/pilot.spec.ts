@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createDatabase } from "@lanbort/database";
+import { pilotCases } from "@lanbort/contracts";
+import { pilotCaseRevision } from "@lanbort/domain";
 import { type Browser, expect, type Page, test } from "@playwright/test";
 import {
   axeViolations,
@@ -258,13 +260,72 @@ test("the pilot lead runs the pilot from a phone, and a participant sees only th
   await expect(
     lead.page.getByRole("button", { name: "Lagre resultat" }),
   ).toHaveCount(0);
-  await postCommand(lead.page.request, "/api/pilot/campaigns", {
+  const next = await postCommand(lead.page.request, "/api/pilot/campaigns", {
     name: "Neste",
   });
+  const { id: campaignId } = await next.json();
+
+  // An isolated campaign at its conclusion: all 98 tests have a result, so
+  // the default "remaining tasks" view is empty. Its phase must still show.
+  const after = owner();
+  const { user_id: leadId } = await after
+    .selectFrom("app.verified_contacts")
+    .select("user_id")
+    .where("kind", "=", "email")
+    .where("address", "=", lead.email)
+    .executeTakeFirstOrThrow();
+  await after
+    .insertInto("app.pilot_case_revisions")
+    .values(
+      pilotCases.map((test) => ({
+        test_id: test.id,
+        revision: pilotCaseRevision(test),
+        priority: test.priority,
+        action: test.action,
+        expected: test.expected,
+      })),
+    )
+    .onConflict((conflict) =>
+      conflict.columns(["test_id", "revision"]).doNothing(),
+    )
+    .execute();
+  await after
+    .insertInto("app.pilot_runs")
+    .values(
+      pilotCases.map((test) => ({
+        campaign_id: campaignId as string,
+        test_id: test.id,
+        revision: pilotCaseRevision(test),
+        status: "passed" as const,
+        recorded_at: new Date(),
+        recorded_by: leadId,
+        app_version: "e2e",
+        environment: "isolated" as const,
+        device: "mobile" as const,
+        helped: false,
+      })),
+    )
+    .execute();
+  await after
+    .updateTable("app.pilot_campaigns")
+    .set({ phase: 5 })
+    .where("id", "=", campaignId as string)
+    .execute();
+
+  await lead.page.goto("/pilot");
+  await expect(
+    lead.page.getByText("Viser 0 av 98 oppgaver"),
+  ).toBeVisible();
+  await expect(lead.page.locator("#phase-5")).toContainText(
+    "Selvstendig bruk og avslutning",
+  );
+  await expect(lead.page.locator("#phase-5")).toContainText("Nå");
+  await expect(
+    lead.page.getByText("Ingen oppgaver passer med dette utvalget."),
+  ).toHaveCount(0);
   expect(problems).toEqual([]);
 
   // Leave nothing open for the next run.
-  const after = owner();
   await after
     .updateTable("app.pilot_campaigns")
     .set((eb) => ({
