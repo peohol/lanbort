@@ -850,6 +850,88 @@ describe("the readiness checks that read the database", () => {
     expect(sender.attempts).toHaveLength(4);
     expect(await sent()).toHaveLength(4);
   });
+  it("says what fixes e-mail that is refused or stuck", async () => {
+    // A week of its own, in a transaction that is rolled back, so no other
+    // test sees these deliveries.
+    const now = new Date("2001-01-08T12:00:00Z");
+    const ago = (hours: number) => new Date(now.getTime() - hours * 3_600_000);
+    const recipient = await user();
+    const rolledBack = new Error("rolled back");
+    const found: Awaited<ReturnType<typeof checkNotificationEmail>>[] = [];
+
+    await db
+      .transaction()
+      .execute(async (tx) => {
+        const delivery = async (
+          values: Record<string, unknown>,
+          createdAt: Date,
+        ) => {
+          const { id } = await tx
+            .insertInto("app.notifications")
+            .values({
+              recipient_id: recipient.userId,
+              kind: "loan.approved",
+              level: "required",
+              target_type: "loan",
+              target_id: randomUUID(),
+              source_key: `test:${randomUUID()}`,
+              occurred_at: createdAt,
+            })
+            .returning("id")
+            .executeTakeFirstOrThrow();
+          await tx
+            .deleteFrom("app.notification_deliveries")
+            .where("notification_id", "=", id)
+            .execute();
+          await tx
+            .insertInto("app.notification_deliveries")
+            .values({
+              notification_id: id,
+              channel: "email",
+              created_at: createdAt,
+              ...values,
+            })
+            .execute();
+        };
+        const email = {
+          sender: new MemoryEmailSender(),
+          campaignId: randomUUID(),
+          recipientId: recipient.userId,
+        };
+
+        await delivery(
+          { status: "dead", code: "not_authorized", finished_at: ago(30) },
+          ago(33),
+        );
+        found.push(await checkNotificationEmail(tx, now, email));
+
+        // Still being tried after the newest refusal: both are told, with
+        // what the newest failure says fixes it.
+        await delivery(
+          { status: "pending", code: "invalid_key", available_at: ago(2) },
+          ago(3),
+        );
+        found.push(await checkNotificationEmail(tx, now, email));
+
+        throw rolledBack;
+      })
+      .catch((error: unknown) => {
+        if (error !== rolledBack) throw error;
+      });
+
+    expect(found).toMatchObject([
+      {
+        status: "failed",
+        summary: `1 e-postvarsler ble avvist eller gitt opp de siste sju dagene. ${emailFailure("not_authorized")}`,
+        details: expect.arrayContaining(["Siste feil: not_authorized."]),
+      },
+      {
+        status: "failed",
+        summary: `1 e-postvarsler har ventet i køen i over en time. ${emailFailure("invalid_key")}`,
+        details: expect.arrayContaining(["Siste feil: invalid_key."]),
+      },
+    ]);
+  });
 });
 
 describe("a run of the automatic checks", () => {

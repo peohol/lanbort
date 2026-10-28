@@ -166,6 +166,8 @@ describe("a refused e-mail", () => {
     expect(emailFailure("invalid_key")).toContain("RESEND_API_KEY");
     expect(emailFailure("not_authorized")).toContain("«Domains» i Resend");
     expect(emailFailure("rate_limited")).toContain("igjen om en stund");
+    expect(emailFailure("suspended_key")).toContain("brukerstøtten");
+    expect(emailFailure("quota_exceeded")).toContain("«Usage» i Resend");
     expect(emailFailure("something_new")).toContain("«Logs» i Resend");
     expect(emailFailure(null)).toContain("«Logs» i Resend");
 
@@ -175,6 +177,8 @@ describe("a refused e-mail", () => {
     for (const code of [
       "invalid_key",
       "not_authorized",
+      "suspended_key",
+      "quota_exceeded",
       "rate_limited",
       "provider_unavailable",
       "provider_unreachable",

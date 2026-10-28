@@ -523,6 +523,10 @@ const later = "Kontroller igjen om en stund.";
 const emailFailures: Readonly<Record<string, string>> = {
   invalid_key: `Resend godtar ikke nøkkelen Lånbort sender med. ${newKey}`,
   not_authorized: `Resend nekter Lånbort å sende. Se under «Domains» i Resend at domenet er godkjent. Er det det, er nøkkelen slått av: ${newKey}`,
+  suspended_key:
+    "Resend har sperret nøkkelen Lånbort sender med. Kontakt brukerstøtten til Resend.",
+  quota_exceeded:
+    "Kvoten for sending i Resend er brukt opp for i dag eller denne måneden. Se under «Usage» i Resend når den fylles på igjen.",
   rate_limited: `Resend tar ikke imot flere meldinger akkurat nå. ${later}`,
   provider_unavailable: `Resend var nede. ${later}`,
   provider_unreachable: `Lånbort nådde ikke Resend. ${later}`,
@@ -570,19 +574,32 @@ export async function checkNotificationEmail(
   const sent = Number(counts.sent);
   const dead = Number(counts.dead);
   const stuck = Number(counts.stuck);
-  // Why the newest one was refused, to say what fixes it.
+  // Why the newest of them failed, refused or still being tried, to say
+  // what fixes it.
   const refused =
-    dead > 0
+    dead > 0 || stuck > 0
       ? await db
           .selectFrom("app.notification_deliveries")
           .select("code")
-          .where("status", "=", "dead")
-          .where("finished_at", ">=", since)
-          .where("finished_at", "<=", now)
-          .orderBy("finished_at", "desc")
+          .where("code", "is not", null)
+          .where(({ and, eb, or }) =>
+            or([
+              and([
+                eb("status", "=", "dead"),
+                eb("finished_at", ">=", since),
+                eb("finished_at", "<=", now),
+              ]),
+              and([
+                eb("status", "=", "pending"),
+                eb("available_at", "<", new Date(now.getTime() - hour)),
+              ]),
+            ]),
+          )
+          .orderBy("created_at", "desc")
           .limit(1)
           .executeTakeFirst()
       : undefined;
+  const fix = refused?.code ? ` ${emailFailure(refused.code)}` : "";
   const details = [
     email
       ? "E-postutsendingen er satt opp (nøkkel, avsender og adresse for lenker)."
@@ -605,12 +622,9 @@ export async function checkNotificationEmail(
       "email",
       "failed",
       stuck > 0
-        ? `${stuck} e-postvarsler har ventet i køen i over en time.`
-        : `${dead} e-postvarsler ble avvist eller gitt opp de siste sju dagene. ${emailFailure(refused?.code ?? null)}`,
-      [
-        ...details,
-        ...(refused?.code ? [`Siste avvisning: ${refused.code}.`] : []),
-      ],
+        ? `${stuck} e-postvarsler har ventet i køen i over en time.${fix}`
+        : `${dead} e-postvarsler ble avvist eller gitt opp de siste sju dagene.${fix}`,
+      [...details, ...(refused?.code ? [`Siste feil: ${refused.code}.`] : [])],
     );
   }
 

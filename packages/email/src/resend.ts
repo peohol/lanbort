@@ -23,7 +23,10 @@ function failureOf(status: number, name: unknown): EmailSendError {
   }
 
   if (status === 429) {
-    return new EmailSendError("rate_limited", true);
+    // A used-up daily or monthly quota lasts longer than a burst of requests.
+    return name === "daily_quota_exceeded" || name === "monthly_quota_exceeded"
+      ? new EmailSendError("quota_exceeded", true)
+      : new EmailSendError("rate_limited", true);
   }
 
   if (status >= 500) {
@@ -38,7 +41,9 @@ function failureOf(status: number, name: unknown): EmailSendError {
   }
 
   if (status === 403) {
-    return new EmailSendError("not_authorized", true);
+    return name === "suspended_api_key"
+      ? new EmailSendError("suspended_key", true)
+      : new EmailSendError("not_authorized", true);
   }
 
   return new EmailSendError("rejected", false);
