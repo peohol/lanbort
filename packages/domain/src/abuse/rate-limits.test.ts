@@ -53,7 +53,10 @@ import {
   assignPilotTask,
   changePilotDefect,
   changePilotPhase,
+  checkPilotReadiness,
+  preparePilotReadinessCheck,
   closePilotCampaign,
+  confirmPilotRequirement,
   exportPilot,
   recordPilotRun,
   removePilotParticipant,
@@ -61,6 +64,7 @@ import {
   reportPilotTask,
   requestPilotRetest,
   startPilotCampaign,
+  withdrawPilotConfirmation,
   withdrawPilotTask,
 } from "../pilot";
 import { testPasskeyCommands } from "../testing/stewards";
@@ -120,6 +124,9 @@ const limited = {
   pilot: [
     startPilotCampaign,
     changePilotPhase,
+    checkPilotReadiness,
+    confirmPilotRequirement,
+    withdrawPilotConfirmation,
     closePilotCampaign,
     recordPilotRun,
     requestPilotRetest,
@@ -131,6 +138,7 @@ const limited = {
     reportPilotTask,
     exportPilot,
   ],
+  pilotChecks: [preparePilotReadinessCheck],
 } as const;
 
 describe("rate limits", () => {

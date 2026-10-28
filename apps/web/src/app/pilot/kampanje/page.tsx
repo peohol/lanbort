@@ -1,16 +1,18 @@
 import { pilotCatalogueVersion, pilotPhases } from "@lanbort/contracts";
 import { readPilotWorkspace } from "@lanbort/domain";
 import type { Metadata } from "next";
-import { ActionButton } from "@/components/action-button";
+import Link from "next/link";
 import { CommandForm } from "@/components/command-form";
 import { ConfirmAction } from "@/components/confirm-action";
 import { Field } from "@/components/field";
 import { PageHeader } from "@/components/page-header";
 import { Tag } from "@/components/tag";
-import { pilotHref } from "@/navigation/pilot";
+import { pilotHref, pilotReadinessHref } from "@/navigation/pilot";
 import { formatShortTime } from "@/presentation/dates";
+import { pilotReadinessOf } from "@/presentation/pilot";
 import { requirePilotLead } from "@/server/pilot";
 import { pageQueryOrNotFound } from "@/server/session";
+import { ContinuePhase } from "../continue-phase";
 import { PilotNav } from "../pilot-nav";
 import styles from "../pilot.module.css";
 
@@ -23,12 +25,11 @@ export const metadata: Metadata = { title: "Pilotkampanje – Lånbort" };
  */
 export default async function PilotCampaignPage() {
   await requirePilotLead();
-  const { campaign, progress } = await pageQueryOrNotFound(
+  const { campaign, progress, readiness } = await pageQueryOrNotFound(
     readPilotWorkspace,
     {},
   );
   const open = campaign !== null && campaign.closedAt === null;
-  const currentGate = campaign && progress.gates[campaign.phase];
 
   return (
     <main>
@@ -85,9 +86,9 @@ export default async function PilotCampaignPage() {
         <ol className={styles.history}>
           {pilotPhases.map((phase) => {
             const gate = progress.gates[phase.number]!;
+            const checklist = pilotReadinessOf(readiness, phase.number);
+            const met = gate.open && (checklist?.ready ?? true);
             const current = campaign?.phase === phase.number;
-            const canContinue =
-              open && current && phase.number < pilotPhases.length - 1;
 
             return (
               <li key={phase.number} className="card">
@@ -99,30 +100,23 @@ export default async function PilotCampaignPage() {
                 <p>{phase.tasks}</p>
                 <p>
                   <strong>Port:</strong> {phase.gate}{" "}
-                  <Tag tone={gate.open ? "positive" : "waiting"}>
-                    {gate.open ? "Oppfylt" : "Ikke oppfylt"}
+                  <Tag tone={met ? "positive" : "waiting"}>
+                    {met ? "Oppfylt" : "Ikke oppfylt"}
                   </Tag>
                 </p>
-                {canContinue && campaign && (
-                  <div className="actions">
-                    {currentGate?.open ? (
-                      <ActionButton
-                        label={`Gå videre til fase ${phase.number + 1}`}
-                        path={`/api/pilot/campaigns/${campaign.id}/phase`}
-                        body={{ phase: phase.number + 1 }}
-                      />
-                    ) : (
-                      <>
-                        <button type="button" disabled>
-                          Gå videre til fase {phase.number + 1}
-                        </button>
-                        <p className={styles.meta}>
-                          Først må kontrollene i denne fasen være gjennomført,
-                          og alvorlige feil være avklart.
-                        </p>
-                      </>
-                    )}
-                  </div>
+                {checklist && (
+                  <p>
+                    <Link href={pilotReadinessHref}>
+                      Sjekkliste for {phase.name.toLowerCase()}
+                    </Link>
+                  </p>
+                )}
+                {open && current && (
+                  <ContinuePhase
+                    campaign={campaign}
+                    gate={gate}
+                    readiness={checklist}
+                  />
                 )}
               </li>
             );

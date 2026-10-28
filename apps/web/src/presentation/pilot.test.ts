@@ -11,6 +11,7 @@ import {
   visiblePilotPhaseGroups,
   pilotFilterChoices,
   pilotFilterOf,
+  pilotPhaseBlockers,
   pilotRunsCsv,
   pilotViewHref,
   showPilotPhaseOverview,
@@ -181,5 +182,72 @@ describe("the results as a spreadsheet", () => {
     expect(row).toContain('"Feilet"');
     expect(row).toContain('"F-3"');
     expect(row).toContain('"Ja"');
+  });
+});
+
+describe("what stops a phase from ending", () => {
+  const gate = {
+    phase: 0,
+    basisNotPassed: ["A02"],
+    untried: [],
+    blockingDefects: 0,
+    open: false,
+  };
+  const standing = (id: string, status: string, stale = false) => ({
+    id,
+    status: status as "passed",
+    summary: null,
+    details: [],
+    links: [],
+    at: null,
+    by: null,
+    note: null,
+    stale,
+  });
+
+  it("names the tests once, and the checklist's own requirements", () => {
+    expect(
+      pilotPhaseBlockers(gate, {
+        phase: 0,
+        checkedAt: null,
+        approvedAt: null,
+        ready: false,
+        requirements: [
+          standing("phase-tests", "unchecked"),
+          standing("ci", "failed"),
+          standing("deploy", "unchecked"),
+          standing("consent", "needs_confirmation"),
+          standing("backup", "needs_confirmation"),
+        ],
+      }),
+    ).toEqual([
+      "1 viktige oppgaver mangler å bestås",
+      "1 krav i sjekklisten har feilet",
+      "1 krav i sjekklisten er ikke kontrollert",
+      "2 krav venter på at du bekrefter dem",
+    ]);
+  });
+
+  it("asks for the checks again when they are only too old", () => {
+    expect(
+      pilotPhaseBlockers(
+        { ...gate, basisNotPassed: [], open: true },
+        {
+          phase: 0,
+          checkedAt: null,
+          approvedAt: null,
+          ready: false,
+          requirements: [standing("ci", "unchecked", true)],
+        },
+      ),
+    ).toEqual([
+      "1 automatiske kontroller er over en time gamle og må kjøres på nytt",
+    ]);
+  });
+
+  it("is nothing for an open gate without a checklist", () => {
+    expect(
+      pilotPhaseBlockers({ ...gate, basisNotPassed: [], open: true }, null),
+    ).toEqual([]);
   });
 });

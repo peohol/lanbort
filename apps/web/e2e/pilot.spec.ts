@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createDatabase } from "@lanbort/database";
-import { pilotCases } from "@lanbort/contracts";
+import { pilotCases, pilotRequirementsOf } from "@lanbort/contracts";
 import { pilotCaseRevision } from "@lanbort/domain";
 import { type Browser, expect, type Page, test } from "@playwright/test";
 import {
@@ -349,4 +349,190 @@ test("the pilot lead runs the pilot from a phone, and a participant sees only th
     .where("closed_at", "is", null)
     .execute();
   await after.destroy();
+});
+
+test("phase 0 is a checklist: checked by the server, confirmed by the lead, and enforced", async ({
+  browser,
+  baseURL,
+}) => {
+  test.setTimeout(120_000);
+  const lead = await signedIn(browser, baseURL!, "Lise Leder");
+  const outsider = await signedIn(browser, baseURL!, "Otto Utenfor");
+  const problems = collectBrowserProblems(lead.page);
+  const db = owner();
+  await db
+    .selectNoFrom((eb) =>
+      eb
+        .fn("app.grant_pilot_lead", [eb.val(lead.email), eb.val("E2E")])
+        .as("id"),
+    )
+    .execute();
+  const started = await postCommand(lead.page.request, "/api/pilot/campaigns", {
+    name: "Klargjøring",
+  });
+  const { id: campaignId } = (await started.json()) as { id: string };
+
+  // The overview leads to the checklist.
+  await lead.page.goto("/pilot");
+  await lead.page
+    .getByRole("link", { name: "Åpne sjekklisten for klargjøring" })
+    .click();
+  await expect(lead.page.getByRole("heading", { level: 1 })).toHaveText(
+    "Klargjøring",
+  );
+  const requirement = (title: string) =>
+    lead.page.getByRole("listitem").filter({
+      has: lead.page.getByRole("heading", { name: title }),
+    });
+
+  // Nothing passes before it is checked or confirmed.
+  await expect(requirement("Databasen er oppdatert")).toContainText(
+    "Ikke kontrollert",
+  );
+  await expect(
+    requirement("Deltakerne er informert og har sagt ja"),
+  ).toContainText("Krever manuell bekreftelse");
+  await expect(lead.page.getByText("Ikke klar ennå")).toBeVisible();
+  await noAccessibilityProblems(lead.page);
+
+  // The server runs its checks; here, outside production, it says what it
+  // could not check and what it found.
+  await lead.page.getByRole("button", { name: "Kontroller nå" }).click();
+  await expect(requirement("Databasen er oppdatert")).toContainText("Bestått");
+  await expect(requirement("Pilotjournalen er privat")).toContainText(
+    "Bestått",
+  );
+  // Locally anyone may make an account, and it says so.
+  await expect(requirement("Bare inviterte kan lage konto")).toContainText(
+    "Feilet",
+  );
+  await expect(requirement("De automatiske testene er grønne")).toContainText(
+    "Kontrolleres bare i den publiserte appen",
+  );
+  await requirement("Databasen er oppdatert").getByText("Vis detaljer").click();
+  await expect(requirement("Databasen er oppdatert")).toContainText(
+    "Lånbort sammenligner databaseendringene",
+  );
+  await expect(requirement("Databasen er oppdatert")).toContainText(
+    /Bygget med \d+ databaseendringer/,
+  );
+
+  // A manual requirement: confirmed with how, by whom and when; and taken back.
+  const consent = requirement("Deltakerne er informert og har sagt ja");
+  await consent
+    .getByLabel("Hvordan kontrollerte du det?")
+    .fill("Informasjonsskriv sendt, ja på e-post");
+  await consent.getByRole("button", { name: "Bekreft", exact: true }).click();
+  await expect(consent).toContainText("Bestått");
+  await expect(consent).toContainText("Bekreftet av Lise Leder");
+  await consent.getByText("Vis detaljer").click();
+  await expect(consent).toContainText("Informasjonsskriv sendt, ja på e-post");
+  await noAccessibilityProblems(lead.page);
+  await consent
+    .getByRole("button", { name: "Trekk tilbake bekreftelsen" })
+    .click();
+  await expect(consent).toContainText("Krever manuell bekreftelse");
+
+  // Not ready: the button is off, and the server refuses it anyway.
+  await expect(
+    lead.page.getByRole("button", { name: "Gå videre til fase 1" }),
+  ).toBeDisabled();
+  await expect(
+    lead.page.getByText("Dette må være på plass først:"),
+  ).toBeVisible();
+  const early = await lead.page.request.post(
+    `/api/pilot/campaigns/${campaignId}/phase`,
+    { data: { phase: 1 }, headers: { "Idempotency-Key": randomUUID() } },
+  );
+  expect(early.status()).toBe(409);
+
+  // Everything else holds, as production's checks would find it: the
+  // phase's tests pass, the other manual requirements are confirmed, and
+  // the automatic checks passed just now.
+  for (const testId of ["A02", "D10", "S02", "S09"]) {
+    await postCommand(lead.page.request, "/api/pilot/runs", {
+      campaignId,
+      testId,
+      status: "passed",
+      environment: "isolated",
+      device: "mobile",
+      helped: false,
+      testerId: null,
+    });
+  }
+  for (const requirementId of [
+    "backup",
+    "security-channel",
+    "feedback-channel",
+    "consent",
+  ]) {
+    await postCommand(
+      lead.page.request,
+      `/api/pilot/campaigns/${campaignId}/requirements/${requirementId}/confirm`,
+      { note: "Kontrollert" },
+    );
+  }
+  const { user_id: leadId } = await db
+    .selectFrom("app.verified_contacts")
+    .select("user_id")
+    .where("kind", "=", "email")
+    .where("address", "=", lead.email)
+    .executeTakeFirstOrThrow();
+  await db
+    .insertInto("app.pilot_readiness_checks")
+    .values(
+      pilotRequirementsOf(0)
+        .filter((each) => each.check === "automatic")
+        .map((each) => ({
+          campaign_id: campaignId,
+          requirement_id: each.id,
+          status: "passed",
+          summary: "Bestått i produksjon",
+          recorded_at: new Date(),
+          recorded_by: leadId,
+        })),
+    )
+    .execute();
+
+  await lead.page.reload();
+  await expect(lead.page.getByText("Alle krav er bestått")).toBeVisible();
+  await lead.page.getByRole("button", { name: "Gå videre til fase 1" }).click();
+  await expect(
+    lead.page.getByText(
+      /da piloten gikk videre til fase 1\. Sjekklisten står slik den var da\./,
+    ),
+  ).toBeVisible();
+  await expect(lead.page.getByText("Godkjent", { exact: true })).toBeVisible();
+  await expect(
+    lead.page.getByRole("button", { name: "Bekreft", exact: true }),
+  ).toHaveCount(0);
+  await lead.page.goto("/pilot");
+  await expect(
+    lead.page.getByText(/· Fase 1\. Førstegangsbruk · Pågår/),
+  ).toBeVisible();
+
+  // Anyone else finds neither the page nor its actions.
+  expect((await outsider.page.goto("/pilot/klargjoring"))?.status()).toBe(404);
+  for (const path of [
+    `/api/pilot/campaigns/${campaignId}/readiness`,
+    `/api/pilot/campaigns/${campaignId}/requirements/consent/confirm`,
+    `/api/pilot/campaigns/${campaignId}/requirements/consent/withdraw`,
+  ]) {
+    const response = await outsider.page.request.post(path, {
+      data: { note: "Kapret" },
+      headers: { "Idempotency-Key": randomUUID() },
+    });
+    expect(response.status(), path).toBe(404);
+  }
+  expect(problems).toEqual([]);
+
+  await db
+    .updateTable("app.pilot_campaigns")
+    .set((eb) => ({
+      closed_at: eb.fn("greatest", [eb.fn("now"), eb.ref("started_at")]),
+      closed_by: eb.ref("started_by"),
+    }))
+    .where("closed_at", "is", null)
+    .execute();
+  await db.destroy();
 });

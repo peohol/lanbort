@@ -17,6 +17,9 @@ export const pilotCampaignHref = `${pilotHref}/kampanje`;
 
 export const pilotTasksHref = `${pilotHref}/oppgaver`;
 
+/** A phase's readiness checklist; only the first phase has one so far. */
+export const pilotReadinessHref = `${pilotHref}/klargjoring`;
+
 /** The lead's pages, in the order the pilot's own menu shows them. */
 export const pilotLeadPages = [
   { href: pilotHref, label: "Oversikt" },

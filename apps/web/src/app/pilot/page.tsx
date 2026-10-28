@@ -11,6 +11,7 @@ import type { SearchParams } from "@/navigation/list-pages";
 import {
   pilotCampaignHref,
   pilotDefectsHref,
+  pilotReadinessHref,
   pilotTasksHref,
 } from "@/navigation/pilot";
 import {
@@ -19,7 +20,10 @@ import {
   pilotAreaName,
   pilotFilterChoices,
   pilotFilterOf,
+  pilotPhaseBlockers,
   pilotPhaseName,
+  pilotReadinessOf,
+  pilotRequirementStatusLabels,
   showPilotPhaseOverview,
   pilotTaskKinds,
   pilotSeverityLabels,
@@ -52,11 +56,13 @@ export default async function PilotOverviewPage({
   if ((await requirePilotRole()).role !== "lead") redirect(pilotTasksHref);
 
   const workspace = await pageQueryOrNotFound(readPilotWorkspace, {});
-  const { campaign, progress, defects, participants } = workspace;
+  const { campaign, progress, defects, participants, readiness } = workspace;
   const filter = pilotFilterOf(await searchParams);
   const shown = filterPilotTests(workspace.tests, filter);
   const blocking = blockingDefects(defects);
   const gate = campaign && progress.gates[campaign.phase];
+  const checklist = campaign && pilotReadinessOf(readiness, campaign.phase);
+  const blockers = gate ? pilotPhaseBlockers(gate, checklist) : [];
   const open = campaign !== null && campaign.closedAt === null;
   const filtered =
     filter.view !== "next" ||
@@ -113,25 +119,33 @@ export default async function PilotOverviewPage({
         <section className="card" aria-labelledby="port">
           <h2 id="port">
             Port etter fase {pilotPhaseName(gate.phase)}{" "}
-            <Tag tone={gate.open ? "positive" : "waiting"}>
-              {gate.open ? "Klar for neste fase" : "Ikke klar ennå"}
+            <Tag tone={blockers.length === 0 ? "positive" : "waiting"}>
+              {blockers.length === 0 ? "Klar for neste fase" : "Ikke klar ennå"}
             </Tag>
           </h2>
           <p>{pilotPhases[gate.phase]!.gate}</p>
-          {!gate.open && (
+          {blockers.length > 0 && (
             <ul>
-              {gate.basisNotPassed.length > 0 && (
-                <li>
-                  {gate.basisNotPassed.length} viktige oppgaver mangler å bestås
-                </li>
-              )}
-              {gate.untried.length > 0 && (
-                <li>{gate.untried.length} andre oppgaver er ikke prøvd ennå</li>
-              )}
-              {gate.blockingDefects > 0 && (
-                <li>{gate.blockingDefects} P0/P1-feil er ikke løst</li>
-              )}
+              {blockers.map((blocker) => (
+                <li key={blocker}>{blocker}</li>
+              ))}
             </ul>
+          )}
+          {checklist && (
+            <p>
+              <Link href={pilotReadinessHref}>
+                Åpne sjekklisten for{" "}
+                {pilotPhases[gate.phase]!.name.toLowerCase()}
+              </Link>{" "}
+              (
+              {
+                checklist.requirements.filter(
+                  (requirement) => requirement.status === "passed",
+                ).length
+              }{" "}
+              av {checklist.requirements.length} krav{" "}
+              {pilotRequirementStatusLabels.passed.toLowerCase()})
+            </p>
           )}
         </section>
       )}

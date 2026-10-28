@@ -73,6 +73,11 @@ export const rateLimits = {
    * participants' reports. Generous for a lead registering on the go.
    */
   pilot: rule("pilot", 600, hours),
+  /**
+   * Runs of the pilot's automatic readiness checks, which ask GitHub and
+   * may send the lead a test e-mail: a few an hour is plenty.
+   */
+  pilotChecks: rule("pilot_checks", 30, hours),
   /** Place names from the external place search. */
   placeSearch: rule("place_search", 30, 5 * minutes),
   /** E-mail codes sent to one address, for sign-in and re-authentication. */

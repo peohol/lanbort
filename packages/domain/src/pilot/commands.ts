@@ -1,8 +1,11 @@
 import {
+  type PilotCheckResult,
   pilotAssignmentInputSchema,
   pilotAssignmentRefSchema,
   pilotCampaignInputSchema,
   pilotCampaignRefSchema,
+  pilotConfirmationInputSchema,
+  pilotConfirmationRefSchema,
   pilotDefectChangeSchema,
   pilotDefectInputSchema,
   pilotIdOutputSchema,
@@ -10,6 +13,8 @@ import {
   pilotParticipantOutputSchema,
   pilotParticipantRefSchema,
   pilotPhaseChangeSchema,
+  pilotReadinessCheckSchema,
+  pilotRequirementsOf,
   pilotRetestInputSchema,
   pilotRetestOutputSchema,
   pilotRunInputSchema,
@@ -20,23 +25,31 @@ import type { Database } from "@lanbort/database";
 import { type Kysely, sql, type Transaction } from "kysely";
 import type { Actor } from "../actor";
 import { rateLimits } from "../abuse/rate-limits";
-import { defineCommand } from "../commands/command";
+import {
+  defineCommand,
+  type DomainContext,
+  executeCommand,
+} from "../commands/command";
 import { DomainError } from "../errors";
 import { pilotCase } from "./catalogue";
-import { loadDefects, loadStandings } from "./journal";
+import { loadCampaignReadiness, recordReadinessApproval } from "./readiness";
 import { nextPseudonym } from "./model";
 import {
   addPilotParticipantPolicy,
   assignPilotTaskPolicy,
   changePilotDefectPolicy,
   changePilotPhasePolicy,
+  checkPilotReadinessPolicy,
+  preparePilotReadinessCheckPolicy,
   closePilotCampaignPolicy,
+  confirmPilotRequirementPolicy,
   recordPilotRunPolicy,
   removePilotParticipantPolicy,
   reportPilotDefectPolicy,
   reportPilotTaskPolicy,
   requestPilotRetestPolicy,
   startPilotCampaignPolicy,
+  withdrawPilotConfirmationPolicy,
   withdrawPilotTaskPolicy,
 } from "./policies";
 import { keepRevision, loadPilotViewer, recordPilotAudit } from "./store";
@@ -223,13 +236,30 @@ export const changePilotPhase = defineCommand({
       );
     }
 
-    const defects = await loadDefects(tx, input.campaignId);
-    const { progress } = await loadStandings(tx, input.campaignId, defects);
+    // Its tests and defects, and every requirement of its checklist, hold
+    // now: automatic checks within the hour, manual ones confirmed.
+    const { progress, readiness } = await loadCampaignReadiness(
+      tx,
+      input.campaignId,
+      now,
+    );
+    const checklist = readiness.find((each) => each.phase === from);
 
-    if (!progress.gates[from]?.open) {
+    if (!progress.gates[from]?.open || (checklist && !checklist.ready)) {
       throw new DomainError(
         "conflict",
         "The current phase is not ready to finish",
+      );
+    }
+
+    // Kept as approved now: later it would no longer stand as it does.
+    if (checklist) {
+      await recordReadinessApproval(
+        tx,
+        input.campaignId,
+        checklist,
+        userOf(actor),
+        now,
       );
     }
 
@@ -244,6 +274,268 @@ export const changePilotPhase = defineCommand({
     });
 
     return { id: input.campaignId };
+  },
+});
+
+/** The campaign's phase, which only its checklist is open for. */
+async function phaseOf(tx: Tx, campaignId: string) {
+  const { phase } = await tx
+    .selectFrom("app.pilot_campaigns")
+    .select("phase")
+    .where("id", "=", campaignId)
+    .executeTakeFirstOrThrow();
+
+  return phase;
+}
+
+/** A requirement of the campaign's current phase, checked as `check`. */
+function requirementOf(phase: number, requirementId: string, check: string) {
+  const requirement = pilotRequirementsOf(phase).find(
+    (each) => each.id === requirementId,
+  );
+
+  if (!requirement) {
+    throw new DomainError(
+      "conflict",
+      "The requirement is not on the current phase's checklist",
+    );
+  }
+
+  if (requirement.check !== check) {
+    throw new DomainError("invalid_input", `Not a ${check} requirement`, [
+      "requirementId",
+    ]);
+  }
+
+  return requirement;
+}
+
+/**
+ * Records what the server's automatic checks found for the current phase's
+ * checklist (pilot-ui.md «Gjennomføring per fase»). Only the server runs
+ * the checks and fills in `results` (`/api/pilot/campaigns/{id}/readiness`);
+ * every automatic requirement of the phase must be in them. Running them
+ * again adds another record, so retrying is harmless.
+ */
+/**
+ * Clears the way for a run of the automatic checks, before the server asks
+ * anything outside: only the lead, only for the open campaign's current
+ * phase, and only within its own budget, since the checks ask GitHub and
+ * may send the lead a test e-mail. Changes nothing.
+ */
+export const preparePilotReadinessCheck = defineCommand({
+  name: "pilot.prepare_readiness_check",
+  input: pilotCampaignRefSchema,
+  output: pilotIdOutputSchema,
+  policy: preparePilotReadinessCheckPolicy,
+  idempotency: "none",
+  rateLimit: rateLimits.pilotChecks,
+  load: ({ tx, actor, input }) =>
+    campaignScope(tx, actor, input.campaignId, "share"),
+  execute: async ({ tx, input, resource }) => {
+    requireOpen(resource.campaign);
+    automaticRequirementsOf(await phaseOf(tx, input.campaignId));
+
+    return { id: input.campaignId };
+  },
+});
+
+/**
+ * One run of the automatic checks, in the order that keeps everything
+ * outside behind the lead's own budget: `preparePilotReadinessCheck` first,
+ * then `run` (which asks GitHub and may send a test e-mail), then what it
+ * found recorded with `checkPilotReadiness`. A run that is refused never
+ * reaches `run`.
+ */
+export async function runPilotReadinessCheck(
+  domain: DomainContext,
+  request: { actor: Actor; campaignId: unknown; correlationId?: string },
+  run: (campaignId: string) => Promise<PilotCheckResult[]>,
+) {
+  const { actor, correlationId } = request;
+  const {
+    output: { id: campaignId },
+  } = await executeCommand(domain, preparePilotReadinessCheck, {
+    actor,
+    input: { campaignId: request.campaignId },
+    correlationId,
+  });
+
+  return executeCommand(domain, checkPilotReadiness, {
+    actor,
+    input: { campaignId, results: await run(campaignId) },
+    correlationId,
+  });
+}
+
+/** The automatic requirements of a phase; one without any has no checks. */
+function automaticRequirementsOf(phase: number) {
+  const automatic = pilotRequirementsOf(phase).filter(
+    (requirement) => requirement.check === "automatic",
+  );
+
+  if (automatic.length === 0) {
+    throw new DomainError("conflict", "The phase has nothing to check");
+  }
+
+  return automatic;
+}
+
+export const checkPilotReadiness = defineCommand({
+  name: "pilot.check_readiness",
+  input: pilotReadinessCheckSchema,
+  output: pilotIdOutputSchema,
+  policy: checkPilotReadinessPolicy,
+  idempotency: "none",
+  rateLimit: rateLimits.pilot,
+  // One run records at a time, so the run written last is the newest.
+  load: ({ tx, actor, input }) =>
+    campaignScope(tx, actor, input.campaignId, "update"),
+  execute: async ({ tx, actor, input, resource, now }) => {
+    requireOpen(resource.campaign);
+    const phase = await phaseOf(tx, input.campaignId);
+    const automatic = automaticRequirementsOf(phase);
+    const ids = input.results.map((each) => each.requirementId);
+
+    if (
+      new Set(ids).size !== ids.length ||
+      automatic.some((requirement) => !ids.includes(requirement.id))
+    ) {
+      throw new DomainError(
+        "invalid_input",
+        "Every automatic requirement of the phase is checked, once",
+        ["results"],
+      );
+    }
+
+    const results = input.results.filter((each) =>
+      automatic.some((requirement) => requirement.id === each.requirementId),
+    );
+
+    await tx
+      .insertInto("app.pilot_readiness_checks")
+      .values(
+        results.map((each) => ({
+          campaign_id: input.campaignId,
+          requirement_id: each.requirementId,
+          status: each.status,
+          summary: each.summary,
+          details: each.details,
+          links: JSON.stringify(each.links),
+          recorded_at: now,
+          recorded_by: userOf(actor),
+        })),
+      )
+      .execute();
+    await recordPilotAudit(tx, actor, "readiness_checked", now, {
+      campaignId: input.campaignId,
+      details: {
+        phase,
+        ...Object.fromEntries(
+          (["passed", "failed", "unchecked"] as const).map((status) => [
+            status,
+            results
+              .filter((each) => each.status === status)
+              .map((each) => each.requirementId),
+          ]),
+        ),
+      },
+    });
+
+    return { id: input.campaignId };
+  },
+});
+
+/**
+ * The lead confirms a requirement of the current phase that only a person
+ * can check, saying how it was checked; who and when are the server's.
+ */
+export const confirmPilotRequirement = defineCommand({
+  name: "pilot.confirm_requirement",
+  input: pilotConfirmationInputSchema,
+  output: pilotIdOutputSchema,
+  policy: confirmPilotRequirementPolicy,
+  idempotency: "required",
+  rateLimit: rateLimits.pilot,
+  load: ({ tx, actor, input }) =>
+    campaignScope(tx, actor, input.campaignId, "update"),
+  execute: async ({ tx, actor, input, resource, now }) => {
+    requireOpen(resource.campaign);
+    requirementOf(
+      await phaseOf(tx, input.campaignId),
+      input.requirementId,
+      "manual",
+    );
+    const confirmation = await tx
+      .insertInto("app.pilot_readiness_confirmations")
+      .values({
+        campaign_id: input.campaignId,
+        requirement_id: input.requirementId,
+        confirmed: true,
+        note: input.note,
+        recorded_at: now,
+        recorded_by: userOf(actor),
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    await recordPilotAudit(tx, actor, "requirement_confirmed", now, {
+      campaignId: input.campaignId,
+      subjectId: confirmation.id,
+      details: { requirementId: input.requirementId },
+    });
+
+    return { id: confirmation.id };
+  },
+});
+
+/** Takes back the lead's confirmation, such as one made by mistake. */
+export const withdrawPilotConfirmation = defineCommand({
+  name: "pilot.withdraw_confirmation",
+  input: pilotConfirmationRefSchema,
+  output: pilotIdOutputSchema,
+  policy: withdrawPilotConfirmationPolicy,
+  idempotency: "required",
+  rateLimit: rateLimits.pilot,
+  load: ({ tx, actor, input }) =>
+    campaignScope(tx, actor, input.campaignId, "update"),
+  execute: async ({ tx, actor, input, resource, now }) => {
+    requireOpen(resource.campaign);
+    requirementOf(
+      await phaseOf(tx, input.campaignId),
+      input.requirementId,
+      "manual",
+    );
+    const latest = await tx
+      .selectFrom("app.pilot_readiness_confirmations")
+      .select("confirmed")
+      .where("campaign_id", "=", input.campaignId)
+      .where("requirement_id", "=", input.requirementId)
+      .orderBy("position", "desc")
+      .limit(1)
+      .executeTakeFirst();
+
+    if (!latest?.confirmed) {
+      throw new DomainError("conflict", "The requirement is not confirmed");
+    }
+
+    const withdrawal = await tx
+      .insertInto("app.pilot_readiness_confirmations")
+      .values({
+        campaign_id: input.campaignId,
+        requirement_id: input.requirementId,
+        confirmed: false,
+        recorded_at: now,
+        recorded_by: userOf(actor),
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    await recordPilotAudit(tx, actor, "confirmation_withdrawn", now, {
+      campaignId: input.campaignId,
+      subjectId: withdrawal.id,
+      details: { requirementId: input.requirementId },
+    });
+
+    return { id: withdrawal.id };
   },
 });
 

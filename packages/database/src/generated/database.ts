@@ -1058,6 +1058,49 @@ export interface AppPilotParticipants {
   user_id: string | null;
 }
 
+export interface AppPilotReadinessApprovals {
+  campaign_id: string;
+  checked_at: Timestamp | null;
+  id: Generated<string>;
+  phase: number;
+  recorded_at: Timestamp;
+  recorded_by: string;
+  requirements: Json;
+}
+
+export interface AppPilotReadinessChecks {
+  campaign_id: string;
+  details: Generated<string[]>;
+  id: Generated<string>;
+  links: Generated<Json>;
+  position: Generated<Int8>;
+  recorded_at: Timestamp;
+  recorded_by: string;
+  requirement_id: string;
+  status: string;
+  summary: string;
+}
+
+export interface AppPilotReadinessConfirmations {
+  campaign_id: string;
+  confirmed: boolean;
+  id: Generated<string>;
+  note: string | null;
+  position: Generated<Int8>;
+  recorded_at: Timestamp;
+  recorded_by: string;
+  requirement_id: string;
+}
+
+export interface AppPilotReadinessTestEmails {
+  accepted: boolean;
+  campaign_id: string;
+  code: string | null;
+  id: Generated<string>;
+  recorded_at: Timestamp;
+  recorded_by: string;
+}
+
 export interface AppPilotRuns {
   app_version: string;
   campaign_id: string;
@@ -1340,6 +1383,10 @@ export interface DB {
   "app.pilot_feedback": AppPilotFeedback;
   "app.pilot_leads": AppPilotLeads;
   "app.pilot_participants": AppPilotParticipants;
+  "app.pilot_readiness_approvals": AppPilotReadinessApprovals;
+  "app.pilot_readiness_checks": AppPilotReadinessChecks;
+  "app.pilot_readiness_confirmations": AppPilotReadinessConfirmations;
+  "app.pilot_readiness_test_emails": AppPilotReadinessTestEmails;
   "app.pilot_runs": AppPilotRuns;
   "app.platform_interventions": AppPlatformInterventions;
   "app.platform_role_grants": AppPlatformRoleGrants;
