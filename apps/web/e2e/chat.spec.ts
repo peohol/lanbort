@@ -807,8 +807,14 @@ test("history restored or moved to a new device is said to be from and with only
     await expect(
       liv.page.getByRole("heading", { level: 1, name }),
     ).toBeVisible();
-    await liv.page.getByLabel("Ny melding").fill(text);
-    await liv.page.getByRole("button", { name: "Send" }).click();
+    // A field shown while the new group still settles may be drawn anew,
+    // empty, so the message is typed again until it can be sent.
+    await expect(async () => {
+      await liv.page.getByLabel("Ny melding").fill(text);
+      await liv.page
+        .getByRole("button", { name: "Send" })
+        .click({ timeout: 2_000 });
+    }).toPass({ timeout: 30_000 });
     await expect(messages(liv.page).getByText(text)).toBeVisible();
     return liv.page.url();
   };
