@@ -729,19 +729,39 @@ describe("the readiness checks that read the database", () => {
       { accepted: false, code: "invalid_from" },
     ]);
 
+    // A check that began before the newest test message was recorded, but
+    // reached it after, sends none either: its age is counted, not its order.
+    expect(await checkNotificationEmail(db, at(25), email)).toMatchObject({
+      status: "passed",
+    });
+    expect(await checkNotificationEmail(db, at(24), email)).toMatchObject({
+      status: "passed",
+      summary:
+        "Ingen e-post er sendt de siste sju dagene. For 0 min siden e-posttjenesten tok imot en testmelding til deg.",
+    });
+    expect(sender.attempts).toHaveLength(3);
+
+    // Checks run at once send one message between them.
+    await Promise.all([
+      checkNotificationEmail(db, at(40), email),
+      checkNotificationEmail(db, at(40), email),
+      checkNotificationEmail(db, at(39), email),
+    ]);
+    expect(sender.attempts).toHaveLength(4);
+
     // Nothing goes to anyone but the lead, nor once the campaign is closed.
     expect(
-      await checkNotificationEmail(db, at(30), {
+      await checkNotificationEmail(db, at(60), {
         ...email,
         recipientId: (await user()).userId,
       }),
     ).toMatchObject({ status: "unchecked" });
     await run(closePilotCampaign, boss, { campaignId });
-    expect(await checkNotificationEmail(db, at(60), email)).toMatchObject({
+    expect(await checkNotificationEmail(db, at(90), email)).toMatchObject({
       status: "unchecked",
     });
-    expect(sender.attempts).toHaveLength(2);
-    expect(await sent()).toHaveLength(2);
+    expect(sender.attempts).toHaveLength(4);
+    expect(await sent()).toHaveLength(4);
   });
 });
 

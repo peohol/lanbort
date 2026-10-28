@@ -652,14 +652,16 @@ async function sendTestEmail(
       .selectFrom("app.pilot_readiness_test_emails")
       .select(["accepted", "code", "recorded_at"])
       .where("campaign_id", "=", campaignId)
-      .where("recorded_at", "<=", now)
       .orderBy("recorded_at", "desc")
       .limit(1)
       .executeTakeFirst();
+    // The newest, whenever it was taken: one recorded after this check
+    // began (by a run that took the lock first, or a clock a little behind)
+    // has a negative age and stands too.
     const age = last ? now.getTime() - last.recorded_at.getTime() : Infinity;
 
     if (last && age < pilotTestEmailCooldownMs) {
-      const minutes = Math.floor(age / 60_000);
+      const minutes = Math.max(0, Math.floor(age / 60_000));
 
       return result(
         "email",
