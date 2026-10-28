@@ -1,4 +1,5 @@
-import type { PilotCheckResult } from "@lanbort/contracts";
+import { readFileSync } from "node:fs";
+import { type PilotCheckResult, pilotRequiredChecks } from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import { type PilotCheckDeps, runPilotChecks } from "./pilot-readiness";
 
@@ -17,6 +18,25 @@ const published = {
 
 type Answers = Record<string, unknown>;
 
+let runIds = 0;
+
+/** A GitHub Actions job's run on the published commit. */
+const run = (
+  name: string,
+  conclusion: string | null = "success",
+  status = "completed",
+) => ({
+  id: (runIds += 1),
+  name,
+  status,
+  conclusion,
+  app: { slug: "github-actions" },
+});
+
+const ciAnswer = (...runs: ReturnType<typeof run>[]) => ({
+  [`/commits/${sha}/check-runs?per_page=100`]: { check_runs: runs },
+});
+
 /** GitHub and the site as a healthy, protected repository answers. */
 const healthy: Answers = {
   "": { default_branch: "main" },
@@ -26,18 +46,15 @@ const healthy: Answers = {
     protection: {
       required_status_checks: {
         enforcement_level: "everyone",
-        contexts: ["quality"],
+        contexts: ["quality", "database", "e2e", "security"],
       },
     },
   },
   "/rules/branches/main": [],
   [`/commits/${sha}/check-runs?per_page=100`]: {
-    check_runs: ["quality", "database", "e2e", "security"].map((name) => ({
-      name,
-      status: "completed",
-      conclusion: "success",
-      app: { slug: "github-actions" },
-    })),
+    check_runs: ["quality", "database", "e2e", "security"].map((name) =>
+      run(name),
+    ),
   },
   "/actions/workflows/restore-drill.yml/runs?branch=main&status=completed&per_page=1":
     {
@@ -96,7 +113,7 @@ const deps = (overrides: Partial<PilotCheckDeps> = {}): PilotCheckDeps => ({
   fetch: fakeFetch(healthy),
   migrations: [],
   origin: "https://www.example.no",
-  emailConfigured: true,
+  email: null,
   newAccountsOpen: async () => false,
   ...overrides,
 });
@@ -120,7 +137,7 @@ describe("the pilot's automatic readiness checks", () => {
       expect(results[id]!.details.length, id).toBeGreaterThan(0);
     }
     expect(results.ci!.summary).toBe(
-      "Alle 4 testkjøringene er grønne for versjonen som er publisert.",
+      "Alle 4 testjobbene (quality, database, e2e, security) er grønne for versjonen som er publisert.",
     );
     expect(results.ci!.links).toEqual([
       {
@@ -150,16 +167,7 @@ describe("the pilot's automatic readiness checks", () => {
           fetch: fakeFetch({
             ...healthy,
             "/branches/main": { name: "main", commit: { sha: "f".repeat(40) } },
-            [`/commits/${sha}/check-runs?per_page=100`]: {
-              check_runs: [
-                {
-                  name: "e2e",
-                  status: "completed",
-                  conclusion: "failure",
-                  app: { slug: "github-actions" },
-                },
-              ],
-            },
+            ...ciAnswer(run("e2e", "failure")),
             "/actions/workflows/restore-drill.yml/runs?branch=main&status=completed&per_page=1":
               {
                 workflow_runs: [
@@ -180,13 +188,21 @@ describe("the pilot's automatic readiness checks", () => {
 
     expect(results.ci).toMatchObject({
       status: "failed",
-      details: [`Versjon ${sha.slice(0, 7)}.`, "e2e: failure"],
+      summary:
+        "1 av 4 testjobber er ikke bestått for versjonen som er publisert: e2e.",
+      details: [
+        `Versjon ${sha.slice(0, 7)}.`,
+        "quality: ikke kjørt",
+        "database: ikke kjørt",
+        "e2e: failure",
+        "security: ikke kjørt",
+      ],
     });
     expect(results.deploy!.status).toBe("failed");
     expect(results["protected-flow"]).toMatchObject({
       status: "failed",
       summary:
-        "main er ikke beskyttet: en endring kan slås sammen og publiseres uten grønne tester.",
+        "main slipper gjennom endringer uten grønne tester: quality, database, e2e, security er ikke påkrevd for alle.",
     });
     expect(results["restore-drill"]).toMatchObject({
       status: "failed",
@@ -200,23 +216,122 @@ describe("the pilot's automatic readiness checks", () => {
     });
   });
 
-  it("count a ruleset that requires the tests as protection", async () => {
-    const results = byId(
-      await runPilotChecks(
-        deps({
-          fetch: fakeFetch({
-            ...healthy,
-            "/branches/main": { name: "main", commit: { sha } },
-            "/rules/branches/main": [
-              { type: "pull_request" },
-              { type: "required_status_checks" },
-            ],
-          }),
-        }),
-      ),
-    );
+  it("pass CI only when every required job ran to success on that commit", async () => {
+    const ciWith = async (...runs: ReturnType<typeof run>[]) =>
+      byId(
+        await runPilotChecks(
+          deps({ fetch: fakeFetch({ ...healthy, ...ciAnswer(...runs) }) }),
+        ),
+      ).ci!;
+    const others = ["quality", "database", "e2e"].map((name) => run(name));
 
-    expect(results["protected-flow"]!.status).toBe("passed");
+    // A job that was skipped, or never ran, is no test of this version.
+    expect(await ciWith(...others, run("security", "skipped"))).toMatchObject({
+      status: "failed",
+      summary:
+        "1 av 4 testjobber er ikke bestått for versjonen som er publisert: security.",
+    });
+    expect(await ciWith(...others, run("security", "neutral"))).toMatchObject({
+      status: "failed",
+    });
+    expect(await ciWith(...others)).toMatchObject({
+      status: "failed",
+      summary:
+        "1 av 4 testjobber ble ikke kjørt for versjonen som er publisert: security.",
+    });
+    expect(
+      await ciWith(...others, run("security", null, "in_progress")),
+    ).toMatchObject({
+      status: "unchecked",
+      summary: "Testene kjører fortsatt. Kontroller igjen når de er ferdige.",
+    });
+    // A job from another app with the same name does not stand in for it.
+    expect(
+      await ciWith(...others, { ...run("security"), app: { slug: "other" } }),
+    ).toMatchObject({ status: "failed" });
+    // The newest run of a job counts: a re-run that passed replaces a failure.
+    expect(
+      await ciWith(...others, run("security", "failure"), run("security")),
+    ).toMatchObject({ status: "passed" });
+  });
+
+  it("pass protection only when main requires every job of everyone", async () => {
+    const protectedBy = async (answers: Answers) =>
+      byId(
+        await runPilotChecks(
+          deps({ fetch: fakeFetch({ ...healthy, ...answers }) }),
+        ),
+      )["protected-flow"]!;
+    const protection = (
+      contexts: string[],
+      enforcement_level = "everyone",
+    ) => ({
+      "/branches/main": {
+        name: "main",
+        commit: { sha },
+        protection: {
+          required_status_checks: { enforcement_level, contexts },
+        },
+      },
+    });
+    const all = ["quality", "database", "e2e", "security"];
+
+    // One required test is not all of them.
+    expect(await protectedBy(protection(["quality"]))).toMatchObject({
+      status: "failed",
+      summary:
+        "main slipper gjennom endringer uten grønne tester: database, e2e, security er ikke påkrevd for alle.",
+    });
+    // Administrators may go around protection that is not for everyone.
+    expect(await protectedBy(protection(all, "non_admins"))).toMatchObject({
+      status: "failed",
+    });
+    expect(
+      await protectedBy({
+        "/branches/main": {
+          name: "main",
+          commit: { sha },
+          protection: {
+            required_status_checks: {
+              enforcement_level: "everyone",
+              checks: all.map((context) => ({ context, app_id: 15368 })),
+            },
+          },
+        },
+      }),
+    ).toMatchObject({ status: "passed" });
+
+    // A ruleset counts when nobody may go around it, which GitHub only
+    // shows to those who may change it.
+    const ruleset = (bypass?: unknown[]) => ({
+      "/branches/main": { name: "main", commit: { sha } },
+      "/rules/branches/main": [
+        { type: "pull_request", ruleset_id: 7 },
+        {
+          type: "required_status_checks",
+          ruleset_id: 7,
+          parameters: {
+            required_status_checks: all.map((context) => ({ context })),
+          },
+        },
+      ],
+      "/rulesets/7": {
+        name: "Krev grønne tester",
+        ...(bypass ? { bypass_actors: bypass } : {}),
+      },
+    });
+
+    expect(await protectedBy(ruleset([]))).toMatchObject({
+      status: "passed",
+    });
+    expect(await protectedBy(ruleset())).toMatchObject({
+      status: "unchecked",
+      summary:
+        "GitHub viser ikke hvem som kan gå utenom regelsettet uten lesetilgang til innstillingene.",
+    });
+    expect(
+      await protectedBy(ruleset([{ actor_type: "RepositoryRole" }])),
+    ).toMatchObject({ status: "failed" });
   });
 
   it("say so when GitHub will not answer, and when this is not production", async () => {
@@ -291,5 +406,21 @@ describe("the pilot's automatic readiness checks", () => {
       summary:
         "Fikk ikke svar fra innloggingstjenesten. Prøv igjen om en stund.",
     });
+  });
+});
+
+describe("the tests every version must pass", () => {
+  it("are the jobs of the CI workflow, all of them", () => {
+    const workflow = readFileSync(
+      new URL("../../../../.github/workflows/ci.yml", import.meta.url),
+      "utf8",
+    );
+    const jobs = [
+      ...workflow
+        .slice(workflow.indexOf("\njobs:\n"))
+        .matchAll(/^ {2}([a-z0-9_-]+):\s*$/gm),
+    ].map(([, name]) => name);
+
+    expect([...pilotRequiredChecks].sort()).toEqual(jobs.sort());
   });
 });

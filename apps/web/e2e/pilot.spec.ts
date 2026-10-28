@@ -497,7 +497,12 @@ test("phase 0 is a checklist: checked by the server, confirmed by the lead, and 
   await lead.page.reload();
   await expect(lead.page.getByText("Alle krav er bestått")).toBeVisible();
   await lead.page.getByRole("button", { name: "Gå videre til fase 1" }).click();
-  await expect(lead.page.getByText("Piloten har gått videre.")).toBeVisible();
+  await expect(
+    lead.page.getByText(
+      /da piloten gikk videre til fase 1\. Sjekklisten står slik den var da\./,
+    ),
+  ).toBeVisible();
+  await expect(lead.page.getByText("Godkjent", { exact: true })).toBeVisible();
   await expect(
     lead.page.getByRole("button", { name: "Bekreft", exact: true }),
   ).toHaveCount(0);

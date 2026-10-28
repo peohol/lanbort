@@ -210,6 +210,7 @@ describe("what stops a phase from ending", () => {
       pilotPhaseBlockers(gate, {
         phase: 0,
         checkedAt: null,
+        approvedAt: null,
         ready: false,
         requirements: [
           standing("phase-tests", "unchecked"),
@@ -234,6 +235,7 @@ describe("what stops a phase from ending", () => {
         {
           phase: 0,
           checkedAt: null,
+          approvedAt: null,
           ready: false,
           requirements: [standing("ci", "unchecked", true)],
         },

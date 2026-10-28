@@ -10,10 +10,13 @@ import {
   type PilotTestSummary,
   pilotCheckFreshMs,
   pilotPhases,
+  pilotRequirementStandingSchema,
   pilotRequirementsOf,
 } from "@lanbort/contracts";
 import type { Database } from "@lanbort/database";
+import { EmailSendError, type EmailSender } from "@lanbort/email";
 import { type Kysely, sql } from "kysely";
+import { z } from "zod";
 import { loadDefects, loadStandings, unresolvedDefect } from "./journal";
 import { blockingSeverities } from "./model";
 
@@ -161,6 +164,7 @@ export function pilotReadiness(
     requirements,
     checkedAt: checkedAt?.toISOString() ?? null,
     ready: requirements.every((requirement) => requirement.status === "passed"),
+    approvedAt: null,
   };
 }
 
@@ -220,7 +224,8 @@ const checklistPhases = pilotPhases
   .filter((phase) => pilotRequirementsOf(phase).length > 0);
 
 /**
- * The checklists of the campaign's phases, from its journal. Without a
+ * The checklists of the campaign's phases, from its journal. A phase that
+ * ended shows its checklist as the lead approved it then. Without a
  * campaign nothing is checked or confirmed, but the journal's own
  * requirements still say where they stand.
  */
@@ -230,7 +235,7 @@ export async function loadReadiness(
   journal: Omit<PilotJournalState, "gate"> & { gates: readonly PilotGate[] },
   now: Date,
 ): Promise<PilotReadiness[]> {
-  const [checks, confirmations] = campaignId
+  const [checks, confirmations, approvals] = campaignId
     ? await Promise.all([
         db
           .selectFrom("app.pilot_readiness_checks as check")
@@ -272,32 +277,73 @@ export async function loadReadiness(
           .orderBy("confirmation.requirement_id")
           .orderBy("confirmation.recorded_at", "desc")
           .execute(),
+        db
+          .selectFrom("app.pilot_readiness_approvals")
+          .select(["phase", "requirements", "checked_at", "recorded_at"])
+          .where("campaign_id", "=", campaignId)
+          .execute(),
       ])
-    : [[], []];
+    : [[], [], []];
 
-  return checklistPhases.map((phase) =>
-    pilotReadiness(
-      phase,
-      { ...journal, gate: journal.gates[phase]! },
-      checks.map((row) => ({
-        requirementId: row.requirement_id,
-        status: row.status as PilotCheckStatus,
-        summary: row.summary,
-        details: row.details,
-        links: row.links as unknown as PilotCheckLink[],
-        at: row.recorded_at,
-        by: row.real_name,
-      })),
-      confirmations.map((row) => ({
-        requirementId: row.requirement_id,
-        confirmed: row.confirmed,
-        note: row.note,
-        at: row.recorded_at,
-        by: row.real_name,
-      })),
-      now,
-    ),
-  );
+  return checklistPhases.map((phase) => {
+    const approval = approvals.find((each) => each.phase === phase);
+
+    return approval
+      ? {
+          phase,
+          requirements: approvedStandingsSchema.parse(approval.requirements),
+          checkedAt: approval.checked_at?.toISOString() ?? null,
+          ready: true,
+          approvedAt: approval.recorded_at.toISOString(),
+        }
+      : pilotReadiness(
+          phase,
+          { ...journal, gate: journal.gates[phase]! },
+          checks.map((row) => ({
+            requirementId: row.requirement_id,
+            status: row.status as PilotCheckStatus,
+            summary: row.summary,
+            details: row.details,
+            links: row.links as unknown as PilotCheckLink[],
+            at: row.recorded_at,
+            by: row.real_name,
+          })),
+          confirmations.map((row) => ({
+            requirementId: row.requirement_id,
+            confirmed: row.confirmed,
+            note: row.note,
+            at: row.recorded_at,
+            by: row.real_name,
+          })),
+          now,
+        );
+  });
+}
+
+const approvedStandingsSchema = z.array(pilotRequirementStandingSchema);
+
+/**
+ * Keeps a phase's checklist as it stands the moment the phase ends on it,
+ * so it is shown as approved later on, when the checks have grown old.
+ */
+export async function recordReadinessApproval(
+  tx: Db,
+  campaignId: string,
+  checklist: PilotReadiness,
+  actorId: string,
+  now: Date,
+) {
+  await tx
+    .insertInto("app.pilot_readiness_approvals")
+    .values({
+      campaign_id: campaignId,
+      phase: checklist.phase,
+      requirements: JSON.stringify(checklist.requirements),
+      checked_at: checklist.checkedAt,
+      recorded_at: now,
+      recorded_by: actorId,
+    })
+    .execute();
 }
 
 /** The campaign's progress and its phases' checklists, as they stand. */
@@ -468,13 +514,14 @@ const week = 7 * 24 * hour;
 
 /**
  * «Varsler på e-post blir sendt»: e-mail is set up in this deployment
- * (`configured`), no delivery has waited over an hour (the e-mail job
- * runs), and none was refused or given up in the last week.
+ * (`email`), no delivery has waited over an hour (the e-mail job runs),
+ * none was refused or given up in the last week, and at least one went
+ * out: in the last week, or as a test message to the lead now.
  */
 export async function checkNotificationEmail(
   db: Db,
   now: Date,
-  configured: boolean,
+  email: PilotTestEmail | null,
 ): Promise<PilotCheckResult> {
   const since = new Date(now.getTime() - week);
   const counts = await db
@@ -503,14 +550,14 @@ export async function checkNotificationEmail(
   const dead = Number(counts.dead);
   const stuck = Number(counts.stuck);
   const details = [
-    configured
+    email
       ? "E-postutsendingen er satt opp (nøkkel, avsender og adresse for lenker)."
       : "E-postutsendingen mangler oppsett: RESEND_API_KEY, NOTIFICATION_EMAIL_FROM eller APP_URL.",
     `Siste sju dager: ${sent} sendt, ${dead} avvist eller gitt opp.`,
     `Har ventet i køen i over en time: ${stuck}.`,
   ];
 
-  if (!configured) {
+  if (!email) {
     return result(
       "email",
       "failed",
@@ -519,19 +566,82 @@ export async function checkNotificationEmail(
     );
   }
 
-  return dead === 0 && stuck === 0
-    ? result(
-        "email",
-        "passed",
-        "E-postvarslene går ut, og ingen står fast.",
-        details,
-      )
-    : result(
-        "email",
-        "failed",
-        stuck > 0
-          ? `${stuck} e-postvarsler har ventet i køen i over en time.`
-          : `${dead} e-postvarsler ble avvist eller gitt opp de siste sju dagene.`,
-        details,
-      );
+  if (dead > 0 || stuck > 0) {
+    return result(
+      "email",
+      "failed",
+      stuck > 0
+        ? `${stuck} e-postvarsler har ventet i køen i over en time.`
+        : `${dead} e-postvarsler ble avvist eller gitt opp de siste sju dagene.`,
+      details,
+    );
+  }
+
+  if (sent > 0) {
+    return result(
+      "email",
+      "passed",
+      `E-postvarslene går ut: ${sent} sendt de siste sju dagene, og ingen står fast.`,
+      details,
+    );
+  }
+
+  // Nothing went out lately, so nothing shows that it can: one is sent now.
+  return sendTestEmail(db, now, email, details);
+}
+
+/** Where the e-mail check sends its test message: the lead's own address. */
+export interface PilotTestEmail {
+  readonly sender: EmailSender;
+  readonly recipientId: string;
+}
+
+async function sendTestEmail(
+  db: Db,
+  now: Date,
+  { sender, recipientId }: PilotTestEmail,
+  details: string[],
+): Promise<PilotCheckResult> {
+  const contact = await db
+    .selectFrom("app.verified_contacts")
+    .select("address")
+    .where("user_id", "=", recipientId)
+    .where("kind", "=", "email")
+    .executeTakeFirst();
+
+  if (!contact) {
+    return result(
+      "email",
+      "unchecked",
+      "Ingen e-post er sendt de siste sju dagene, og du har ingen bekreftet e-postadresse å få en testmelding på.",
+      details,
+    );
+  }
+
+  try {
+    await sender.send({
+      to: contact.address,
+      subject: "Testmelding fra Lånbort",
+      text: "Dette er en testmelding fra klargjøringen av piloten. Den viser at Lånbort kan sende e-post. Du trenger ikke gjøre noe.",
+      html: "<p>Dette er en testmelding fra klargjøringen av piloten. Den viser at Lånbort kan sende e-post. Du trenger ikke gjøre noe.</p>",
+      idempotencyKey: `pilot-readiness/email/${recipientId}/${now.getTime()}`,
+    });
+  } catch (error) {
+    const code =
+      error instanceof EmailSendError ? error.code : "unexpected_error";
+
+    return result(
+      "email",
+      "failed",
+      "Ingen e-post er sendt de siste sju dagene, og e-posttjenesten tok ikke imot en testmelding.",
+      [...details, `Testmeldingen ble avvist: ${code}.`],
+    );
+  }
+
+  return result(
+    "email",
+    "passed",
+    "Ingen varsler er sendt de siste sju dagene, men e-posttjenesten tok imot en testmelding til deg nå. Sjekk at den kom fram.",
+    [...details, "Testmelding sendt til din bekreftede e-postadresse."],
+  );
 }

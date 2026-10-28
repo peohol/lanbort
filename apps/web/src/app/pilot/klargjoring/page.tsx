@@ -116,7 +116,9 @@ export default async function PilotReadinessPage() {
       {campaign && (
         <section className="card" aria-labelledby="status">
           <h2 id="status">
-            {checklist.ready ? (
+            {checklist.approvedAt ? (
+              <Tag tone="positive">Godkjent</Tag>
+            ) : checklist.ready ? (
               <Tag tone="positive">Alle krav er bestått</Tag>
             ) : (
               <Tag tone="waiting">Ikke klar ennå</Tag>
@@ -146,8 +148,11 @@ export default async function PilotReadinessPage() {
               />
             </div>
           )}
-          {!editable && campaign.phase > phase && (
-            <p>Piloten har gått videre. Sjekklisten står slik den var.</p>
+          {checklist.approvedAt && (
+            <p>
+              Godkjent {formatShortTime(checklist.approvedAt)}, da piloten gikk
+              videre til fase {phase + 1}. Sjekklisten står slik den var da.
+            </p>
           )}
         </section>
       )}

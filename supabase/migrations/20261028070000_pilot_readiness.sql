@@ -3,11 +3,12 @@
 -- found to hold. The requirements themselves are in the catalogue in the
 -- repository (`pilotRequirements`), like the tests.
 --
--- Two records, both append-only and only for the lead of an open campaign:
--- what the server's automatic checks found, each time they were run, and
--- what the lead confirmed by hand (or took back), with how it was checked.
--- A phase only ends when every requirement of it holds now, which the
--- server decides from these rows (pgTAP 0064).
+-- Three records, all append-only and only for the lead of an open campaign:
+-- what the server's automatic checks found, each time they were run, what
+-- the lead confirmed by hand (or took back), with how it was checked, and
+-- the checklist as it stood when its phase ended. A phase only ends when
+-- every requirement of it holds now, which the server decides from these
+-- rows (pgTAP 0064).
 
 -- One requirement's automatic check, as the server ran it: the outcome in
 -- plain words, the technical details behind it and links to the sources.
@@ -49,6 +50,25 @@ create table app.pilot_readiness_confirmations (
 create index pilot_readiness_confirmations_latest
   on app.pilot_readiness_confirmations (campaign_id, requirement_id, recorded_at desc);
 
+-- A phase's checklist as it stood the moment the phase ended on it: what
+-- the lead approved, kept as it was, since an automatic check only counts
+-- for an hour and the journal goes on changing. One per phase.
+create table app.pilot_readiness_approvals (
+  id uuid primary key default gen_random_uuid(),
+  campaign_id uuid not null references app.pilot_campaigns (id),
+  phase smallint not null check (phase between 0 and 5),
+  -- The requirements' standings, in the shape the app shows them.
+  requirements jsonb not null check (
+    jsonb_typeof(requirements) = 'array'
+    and jsonb_array_length(requirements) between 1 and 40
+    and octet_length(requirements::text) <= 200000
+  ),
+  checked_at timestamptz,
+  recorded_at timestamptz not null,
+  recorded_by uuid not null references app.users (id),
+  unique (campaign_id, phase)
+);
+
 create function app.guard_pilot_readiness()
   returns trigger
   language plpgsql
@@ -87,7 +107,17 @@ create trigger pilot_readiness_confirmations_append_only
   before update or delete on app.pilot_readiness_confirmations
   for each row execute function app.reject_append_only_mutation();
 
+create trigger pilot_readiness_approvals_guard
+  before insert on app.pilot_readiness_approvals
+  for each row execute function app.guard_pilot_readiness();
+
+create trigger pilot_readiness_approvals_append_only
+  before update or delete on app.pilot_readiness_approvals
+  for each row execute function app.reject_append_only_mutation();
+
 comment on table app.pilot_readiness_checks is
   'The pilot readiness checklist: each automatic check of a requirement, as the server ran it (pilot-ui.md). Append-only.';
 comment on table app.pilot_readiness_confirmations is
   'The pilot readiness checklist: requirements the lead confirmed by hand, with how, or took back (pilot-ui.md). Append-only.';
+comment on table app.pilot_readiness_approvals is
+  'The pilot readiness checklist of a phase as it stood when the phase ended on it (pilot-ui.md). Append-only.';

@@ -1,6 +1,6 @@
 begin;
 
-select plan(11);
+select plan(15);
 
 -- The readiness checklist of the pilot (pilot-ui.md «Gjennomføring per
 -- fase»): what the server's checks found and what the lead confirmed are
@@ -117,6 +117,50 @@ select throws_ok(
   'a confirmation is never rewritten; it is taken back with a new row'
 );
 
+select lives_ok(
+  $$
+    insert into app.pilot_readiness_approvals (campaign_id, phase,
+      requirements, checked_at, recorded_at, recorded_by)
+    values ('00000000-0000-4000-8000-0000000064d1', 0,
+      '[{"id": "ci", "status": "passed"}]', now(), now(),
+      '00000000-0000-4000-8000-0000000064b1')
+  $$,
+  'the lead''s approval keeps the checklist as it stood'
+);
+
+select throws_ok(
+  $$
+    insert into app.pilot_readiness_approvals (campaign_id, phase,
+      requirements, recorded_at, recorded_by)
+    values ('00000000-0000-4000-8000-0000000064d1', 0,
+      '[{"id": "ci", "status": "passed"}]', now(),
+      '00000000-0000-4000-8000-0000000064b1')
+  $$,
+  '23505',
+  null,
+  'a phase is approved once'
+);
+
+select throws_ok(
+  $$
+    insert into app.pilot_readiness_approvals (campaign_id, phase,
+      requirements, recorded_at, recorded_by)
+    values ('00000000-0000-4000-8000-0000000064d1', 1,
+      '[{"id": "ci", "status": "passed"}]', now(),
+      '00000000-0000-4000-8000-0000000064b2')
+  $$,
+  '42501',
+  null,
+  'nobody but the lead approves a checklist'
+);
+
+select throws_ok(
+  $$ update app.pilot_readiness_approvals set requirements = '[]' $$,
+  '23001',
+  null,
+  'an approved checklist is never rewritten'
+);
+
 update app.pilot_campaigns
 set closed_at = now(), closed_by = '00000000-0000-4000-8000-0000000064b1'
 where id = '00000000-0000-4000-8000-0000000064d1';
@@ -137,7 +181,9 @@ select ok(
   not has_table_privilege('authenticated', 'app.pilot_readiness_checks', 'SELECT')
     and not has_table_privilege('anon', 'app.pilot_readiness_checks', 'SELECT')
     and not has_table_privilege('authenticated', 'app.pilot_readiness_confirmations', 'SELECT')
-    and not has_table_privilege('anon', 'app.pilot_readiness_confirmations', 'SELECT'),
+    and not has_table_privilege('anon', 'app.pilot_readiness_confirmations', 'SELECT')
+    and not has_table_privilege('authenticated', 'app.pilot_readiness_approvals', 'SELECT')
+    and not has_table_privilege('anon', 'app.pilot_readiness_approvals', 'SELECT'),
   'no client role reads the checklist'
 );
 

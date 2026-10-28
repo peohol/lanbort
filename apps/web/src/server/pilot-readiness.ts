@@ -1,10 +1,15 @@
 import { newAccountsOpen } from "@lanbort/auth";
-import type { PilotCheckResult, PilotCheckStatus } from "@lanbort/contracts";
+import {
+  type PilotCheckResult,
+  type PilotCheckStatus,
+  pilotRequiredChecks,
+} from "@lanbort/contracts";
 import {
   checkNotificationEmail,
   checkPilotJournalPrivacy,
   checkPilotMigrations,
   type DomainContext,
+  type PilotTestEmail,
 } from "@lanbort/domain";
 import { serverEnv } from "./env";
 import {
@@ -37,8 +42,11 @@ export interface PilotCheckDeps {
   readonly migrations: readonly string[];
   /** Where this deployment serves its pages, for its own security.txt. */
   readonly origin: string;
-  /** Whether notification e-mail is set up here. */
-  readonly emailConfigured: boolean;
+  /**
+   * Notification e-mail as set up here, sending the e-mail check's test
+   * message to the lead; null when it is not set up.
+   */
+  readonly email: PilotTestEmail | null;
   /** Whether the auth provider lets new addresses make an account. */
   readonly newAccountsOpen: () => Promise<boolean>;
 }
@@ -104,7 +112,7 @@ function gitHubFacts(get: GitHubGet) {
         required_status_checks?: {
           enforcement_level?: string;
           contexts?: string[];
-          checks?: unknown[];
+          checks?: { context: string }[];
         };
       };
     }>(`/branches/${encodeURIComponent(name)}`),
@@ -115,7 +123,7 @@ function gitHubFacts(get: GitHubGet) {
 
 type Facts = ReturnType<typeof gitHubFacts>;
 
-const okConclusions = new Set(["success", "skipped", "neutral"]);
+const requiredText = pilotRequiredChecks.join(", ");
 
 async function ciCheck(
   repository: GitHubRepository,
@@ -126,19 +134,44 @@ async function ciCheck(
 
   const { check_runs: all } = await get<{
     check_runs: {
+      id: number;
       name: string;
       status: string;
       conclusion: string | null;
       app: { slug: string } | null;
     }[];
   }>(`/commits/${sha}/check-runs?per_page=100`);
-  const runs = all.filter((run) => run.app?.slug === "github-actions");
+  // The newest run of each required job on exactly this commit.
+  const runs = pilotRequiredChecks.map((name) =>
+    all
+      .filter((run) => run.app?.slug === "github-actions" && run.name === name)
+      .reduce<(typeof all)[number] | undefined>(
+        (newest, run) => (newest && newest.id > run.id ? newest : run),
+        undefined,
+      ),
+  );
+  const outcomes = pilotRequiredChecks.map((name, index) => {
+    const run = runs[index];
+
+    return {
+      name,
+      state: !run
+        ? "missing"
+        : run.status !== "completed"
+          ? "running"
+          : run.conclusion === "success"
+            ? "passed"
+            : "failed",
+      shown: !run
+        ? "ikke kjørt"
+        : run.status === "completed"
+          ? (run.conclusion ?? "ukjent")
+          : run.status,
+    };
+  });
   const details = [
     `Versjon ${short(sha)}.`,
-    ...runs.map(
-      (run) =>
-        `${run.name}: ${run.status === "completed" ? run.conclusion : run.status}`,
-    ),
+    ...outcomes.map(({ name, shown }) => `${name}: ${shown}`),
   ];
   const links = [
     {
@@ -146,43 +179,49 @@ async function ciCheck(
       href: gitHubPage(repository, `/commit/${sha}/checks`),
     },
   ];
-  const failed = runs.filter(
-    (run) =>
-      run.status === "completed" && !okConclusions.has(run.conclusion ?? ""),
-  );
+  const named = (state: string) =>
+    outcomes
+      .filter((outcome) => outcome.state === state)
+      .map(({ name }) => name);
+  const failed = named("failed");
+  const running = named("running");
+  const missing = named("missing");
+  const total = pilotRequiredChecks.length;
 
-  if (runs.length === 0) {
-    return check(
-      "ci",
-      "unchecked",
-      "Fant ingen testkjøringer for versjonen som er publisert.",
-      details,
-      links,
-    );
-  }
-
+  // Only a job that ran to the end and succeeded counts: one that was
+  // skipped, cancelled or never ran is no test of this version.
   if (failed.length > 0) {
     return check(
       "ci",
       "failed",
-      `${failed.length} av ${runs.length} testkjøringer feilet for versjonen som er publisert.`,
+      `${failed.length} av ${total} testjobber er ikke bestått for versjonen som er publisert: ${failed.join(", ")}.`,
       details,
       links,
     );
   }
 
-  return runs.some((run) => run.status !== "completed")
+  if (running.length > 0) {
+    return check(
+      "ci",
+      "unchecked",
+      "Testene kjører fortsatt. Kontroller igjen når de er ferdige.",
+      details,
+      links,
+    );
+  }
+
+  return missing.length > 0
     ? check(
         "ci",
-        "unchecked",
-        "Testene kjører fortsatt. Kontroller igjen når de er ferdige.",
+        "failed",
+        `${missing.length} av ${total} testjobber ble ikke kjørt for versjonen som er publisert: ${missing.join(", ")}.`,
         details,
         links,
       )
     : check(
         "ci",
         "passed",
-        `Alle ${runs.length} testkjøringene er grønne for versjonen som er publisert.`,
+        `Alle ${total} testjobbene (${requiredText}) er grønne for versjonen som er publisert.`,
         details,
         links,
       );
@@ -231,22 +270,88 @@ async function protectedFlowCheck(
   facts: Facts,
 ) {
   const branch = await facts.branch;
-  const rules = await get<{ type: string }[]>(
-    `/rules/branches/${encodeURIComponent(branch.name)}`,
-  );
+  const rules = await get<
+    {
+      type: string;
+      ruleset_id?: number;
+      parameters?: { required_status_checks?: { context: string }[] };
+    }[]
+  >(`/rules/branches/${encodeURIComponent(branch.name)}`);
+
+  // Branch protection binds everyone, administrators too, only when its
+  // enforcement level says so; otherwise an administrator can go around it.
   const required = branch.protection?.required_status_checks;
-  const byProtection =
-    required !== undefined &&
-    required.enforcement_level !== "off" &&
-    ((required.contexts?.length ?? 0) > 0 ||
-      (required.checks?.length ?? 0) > 0);
-  const byRuleset = rules.some(
+  const protectionChecks = new Set([
+    ...(required?.contexts ?? []),
+    ...(required?.checks ?? []).map((each) => each.context),
+  ]);
+  const protectionBinds = required?.enforcement_level === "everyone";
+
+  // A ruleset binds everyone when nobody is on its bypass list. GitHub
+  // only shows that list to those who may change the ruleset.
+  const statusRules = rules.filter(
     (rule) => rule.type === "required_status_checks",
   );
+  const rulesets = await Promise.all(
+    [...new Set(statusRules.map((rule) => rule.ruleset_id))].map(async (id) => {
+      const ruleset =
+        id === undefined
+          ? undefined
+          : await get<{ name?: string; bypass_actors?: unknown[] }>(
+              `/rulesets/${id}`,
+            ).catch(() => undefined);
+
+      return {
+        id,
+        name: ruleset?.name ?? `regelsett ${id ?? "uten nummer"}`,
+        bypass: ruleset?.bypass_actors,
+        checks: new Set(
+          statusRules
+            .filter((rule) => rule.ruleset_id === id)
+            .flatMap(
+              (rule) =>
+                rule.parameters?.required_status_checks?.map(
+                  (each) => each.context,
+                ) ?? [],
+            ),
+        ),
+      };
+    }),
+  );
+
+  const standing = pilotRequiredChecks.map((name) => {
+    const inRulesets = rulesets.filter((each) => each.checks.has(name));
+
+    return {
+      name,
+      bound:
+        (protectionBinds && protectionChecks.has(name)) ||
+        inRulesets.some((each) => each.bypass?.length === 0),
+      unknown: inRulesets.some((each) => each.bypass === undefined),
+      required: protectionChecks.has(name) || inRulesets.length > 0,
+    };
+  });
+
   const details = [
-    `Grenbeskyttelse med påkrevde tester på ${branch.name}: ${byProtection ? "ja" : "nei"}.`,
-    `Regelsett med påkrevde tester: ${byRuleset ? "ja" : "nei"}.`,
-    `Regler som gjelder grenen: ${rules.map((rule) => rule.type).join(", ") || "ingen"}.`,
+    `Grenbeskyttelse på ${branch.name}: ${
+      required
+        ? `krever ${[...protectionChecks].join(", ") || "ingen tester"}, gjelder ${protectionBinds ? "alle, også administratorer" : "ikke administratorer"}`
+        : "ingen krav om tester"
+    }.`,
+    ...rulesets.map(
+      (each) =>
+        `Regelsett «${each.name}»: krever ${[...each.checks].join(", ") || "ingen tester"}; ${
+          each.bypass === undefined
+            ? "kan ikke se hvem som kan gå utenom det"
+            : each.bypass.length === 0
+              ? "ingen kan gå utenom det"
+              : `${each.bypass.length} kan gå utenom det`
+        }.`,
+    ),
+    ...standing.map(
+      ({ name, bound, required: isRequired }) =>
+        `${name}: ${bound ? "påkrevd for alle" : isRequired ? "påkrevd, men noen kan gå utenom" : "ikke påkrevd"}.`,
+    ),
   ];
   const links = [
     {
@@ -254,19 +359,32 @@ async function protectedFlowCheck(
       href: gitHubPage(repository, "/settings/branches"),
     },
   ];
+  const loose = standing.filter((each) => !each.bound);
 
-  return byProtection || byRuleset
+  if (loose.length === 0) {
+    return check(
+      "protected-flow",
+      "passed",
+      `${branch.name} krever at alle ${pilotRequiredChecks.length} testjobbene er grønne før noe slås sammen, og ingen kan gå utenom det.`,
+      details,
+      links,
+    );
+  }
+
+  // What is required, but only through a ruleset whose bypass list could
+  // not be seen, is neither shown to hold nor to fail.
+  return loose.every((each) => each.required && each.unknown)
     ? check(
         "protected-flow",
-        "passed",
-        `${branch.name} krever grønne tester før noe slås sammen.`,
+        "unchecked",
+        "GitHub viser ikke hvem som kan gå utenom regelsettet uten lesetilgang til innstillingene.",
         details,
         links,
       )
     : check(
         "protected-flow",
         "failed",
-        `${branch.name} er ikke beskyttet: en endring kan slås sammen og publiseres uten grønne tester.`,
+        `${branch.name} slipper gjennom endringer uten grønne tester: ${loose.map(({ name }) => name).join(", ")} er ikke påkrevd for alle.`,
         details,
         links,
       );
@@ -502,7 +620,7 @@ export async function runPilotChecks(
       checkPilotMigrations(db, deps.migrations),
     ),
     guarded("email", "databasen", () =>
-      checkNotificationEmail(db, deps.now, deps.emailConfigured),
+      checkNotificationEmail(db, deps.now, deps.email),
     ),
     fromGitHub("restore-drill", (repo, read, known) =>
       restoreDrillCheck(repo, read, known, deps.now),
@@ -524,8 +642,10 @@ export const builtMigrations = (): string[] =>
 export function runtimePilotChecks(
   domain: Pick<DomainContext, "db">,
   origin: string,
+  leadId: string,
 ) {
   const env = serverEnv();
+  const email = notificationEmailServices();
 
   return runPilotChecks({
     domain,
@@ -534,7 +654,7 @@ export function runtimePilotChecks(
     fetch,
     migrations: builtMigrations(),
     origin: env.APP_URL ?? origin,
-    emailConfigured: notificationEmailServices() !== undefined,
+    email: email ? { sender: email.sender, recipientId: leadId } : null,
     newAccountsOpen: () =>
       newAccountsOpen({
         url: env.SUPABASE_URL,

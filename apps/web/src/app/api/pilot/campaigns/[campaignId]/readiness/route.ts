@@ -23,7 +23,7 @@ export const POST = pilotOnly(
     });
     const results =
       role === "lead"
-        ? await runtimePilotChecks(domain, request.nextUrl.origin)
+        ? await runtimePilotChecks(domain, request.nextUrl.origin, actor.userId)
         : [];
 
     return commandResponse(

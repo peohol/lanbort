@@ -4,6 +4,8 @@ import {
   type PilotWorkspace,
   pilotRequirementsOf,
 } from "@lanbort/contracts";
+import { EmailSendError } from "@lanbort/email";
+import { MemoryEmailSender } from "@lanbort/email/testing";
 import { sql } from "kysely";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Actor, UserActor } from "../actor";
@@ -551,7 +553,29 @@ describe("the lead's campaign", () => {
 
     checklist = checklistOf(await read(readPilotWorkspace, boss));
     expect(checklist.ready).toBe(true);
+    const approved = checklist;
     await run(changePilotPhase, boss, { campaignId, phase: 1 });
+    const approvedAt = kit.now().toISOString();
+
+    // Hours later, with the checks long past their hour and a new serious
+    // defect, phase 0 still shows the checklist it ended on, as approved.
+    kit.advance(3 * 60 * 60 * 1000);
+    await run(reportPilotDefect, boss, {
+      campaignId,
+      title: "Senere",
+      severity: "P0",
+    });
+    expect(checklistOf(await read(readPilotWorkspace, boss))).toEqual({
+      ...approved,
+      approvedAt,
+    });
+    expect(
+      await db
+        .selectFrom("app.pilot_readiness_approvals")
+        .select(["phase", "recorded_by"])
+        .where("campaign_id", "=", campaignId)
+        .execute(),
+    ).toEqual([{ phase: 0, recorded_by: boss.userId }]);
 
     // Phase 0's checklist stays as it was, and takes nothing more.
     expect(
@@ -635,20 +659,48 @@ describe("the readiness checks that read the database", () => {
     );
   });
 
-  it("needs e-mail set up, and nothing stuck or refused", async () => {
-    // A week long before any delivery in the test database.
+  it("needs e-mail set up, nothing stuck or refused, and one actually sent", async () => {
+    // A week long before any delivery in the test database: nothing was
+    // sent, so only a test message to the lead shows that e-mail goes out.
     const then = new Date("2000-01-01T12:00:00Z");
+    const boss = await lead();
+    const address = await emailOf(boss);
+    const sender = new MemoryEmailSender();
+    const email = { sender, recipientId: boss.userId };
 
-    expect(await checkNotificationEmail(db, then, false)).toMatchObject({
+    expect(await checkNotificationEmail(db, then, null)).toMatchObject({
       requirementId: "email",
       status: "failed",
     });
-    expect(await checkNotificationEmail(db, then, true)).toMatchObject({
+    expect(sender.attempts).toHaveLength(0);
+
+    expect(await checkNotificationEmail(db, then, email)).toMatchObject({
       status: "passed",
       details: expect.arrayContaining([
         "Siste sju dager: 0 sendt, 0 avvist eller gitt opp.",
+        "Testmelding sendt til din bekreftede e-postadresse.",
       ]),
     });
+    expect(sender.sent.map(({ to, subject }) => ({ to, subject }))).toEqual([
+      { to: address, subject: "Testmelding fra Lånbort" },
+    ]);
+
+    sender.fail(address, new EmailSendError("invalid_from", false));
+    expect(
+      await checkNotificationEmail(db, new Date(then.getTime() + 1), email),
+    ).toMatchObject({
+      status: "failed",
+      details: expect.arrayContaining([
+        "Testmeldingen ble avvist: invalid_from.",
+      ]),
+    });
+
+    expect(
+      await checkNotificationEmail(db, then, {
+        sender,
+        recipientId: randomUUID(),
+      }),
+    ).toMatchObject({ status: "unchecked" });
   });
 });
 

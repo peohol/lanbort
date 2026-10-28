@@ -411,6 +411,11 @@ export const pilotReadinessSchema = z.strictObject({
   /** When the automatic checks last ran; null if never. */
   checkedAt: z.iso.datetime().nullable(),
   ready: z.boolean(),
+  /**
+   * When the phase ended on this checklist; from then on it is shown as it
+   * stood at that moment, not as it would stand now.
+   */
+  approvedAt: z.iso.datetime().nullable(),
 });
 export type PilotReadiness = z.infer<typeof pilotReadinessSchema>;
 

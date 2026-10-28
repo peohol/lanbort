@@ -27,7 +27,7 @@ import { rateLimits } from "../abuse/rate-limits";
 import { defineCommand } from "../commands/command";
 import { DomainError } from "../errors";
 import { pilotCase } from "./catalogue";
-import { loadCampaignReadiness } from "./readiness";
+import { loadCampaignReadiness, recordReadinessApproval } from "./readiness";
 import { nextPseudonym } from "./model";
 import {
   addPilotParticipantPolicy,
@@ -243,6 +243,17 @@ export const changePilotPhase = defineCommand({
       throw new DomainError(
         "conflict",
         "The current phase is not ready to finish",
+      );
+    }
+
+    // Kept as approved now: later it would no longer stand as it does.
+    if (checklist) {
+      await recordReadinessApproval(
+        tx,
+        input.campaignId,
+        checklist,
+        userOf(actor),
+        now,
       );
     }
 

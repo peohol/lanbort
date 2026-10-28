@@ -133,6 +133,19 @@ export interface PilotRequirement {
   readonly how: string;
 }
 
+/**
+ * The jobs of the CI workflow (.github/workflows/ci.yml) that every version
+ * must pass and the main branch must require before anything is merged.
+ */
+export const pilotRequiredChecks = [
+  "quality",
+  "database",
+  "e2e",
+  "security",
+] as const;
+
+const requiredChecksText = `${pilotRequiredChecks.slice(0, -1).join(", ")} og ${pilotRequiredChecks.at(-1)}`;
+
 export const pilotRequirements: readonly PilotRequirement[] = [
   {
     id: "ci",
@@ -140,7 +153,7 @@ export const pilotRequirements: readonly PilotRequirement[] = [
     check: "automatic",
     title: "De automatiske testene er grønne",
     why: "Versjonen deltakerne bruker, har bestått alle de automatiske testene.",
-    how: "Lånbort spør GitHub om testkjøringene for versjonen som er publisert. Alle må være ferdige og uten feil.",
+    how: `Lånbort spør GitHub om testkjøringene for akkurat den versjonen som er publisert. Alle de ${pilotRequiredChecks.length} testjobbene (${requiredChecksText}) må ha kjørt ferdig og bestått. En jobb som mangler eller ble hoppet over, teller ikke.`,
   },
   {
     id: "deploy",
@@ -156,7 +169,7 @@ export const pilotRequirements: readonly PilotRequirement[] = [
     check: "automatic",
     title: "Bare testet kode kan publiseres",
     why: "Ingen endring skal kunne gå ut til deltakerne før de automatiske testene er grønne.",
-    how: "Lånbort sjekker hos GitHub at hovedgrenen er beskyttet med krav om grønne tester før noe slås sammen.",
+    how: `Lånbort sjekker hos GitHub at hovedgrenen (main) krever at alle de ${pilotRequiredChecks.length} testjobbene (${requiredChecksText}) er grønne før noe slås sammen, og at ingen, heller ikke administratorer, kan gå utenom kravet.`,
   },
   {
     id: "migrations",
@@ -172,7 +185,7 @@ export const pilotRequirements: readonly PilotRequirement[] = [
     check: "automatic",
     title: "Varsler på e-post blir sendt",
     why: "Deltakerne får e-post om forespørsler og svar, også når de ikke har appen åpen.",
-    how: "Lånbort sjekker at e-postutsendingen er satt opp, at ingen varsel har ventet i køen i over en time, og at ingen er avvist de siste sju dagene.",
+    how: "Lånbort sjekker at e-postutsendingen er satt opp, at ingen varsel har ventet i køen i over en time, og at ingen er avvist de siste sju dagene. I tillegg må minst én e-post faktisk være sendt de siste sju dagene. Er ingen sendt, sender Lånbort en testmelding til deg og krever at e-posttjenesten tar imot den.",
   },
   {
     id: "restore-drill",
