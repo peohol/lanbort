@@ -512,6 +512,27 @@ export async function checkPilotJournalPrivacy(
 const hour = 60 * 60 * 1000;
 const week = 7 * 24 * hour;
 
+const newKey =
+  "Lag en ny nøkkel i Resend, legg den inn som RESEND_API_KEY i Vercel og publiser appen på nytt.";
+const later = "Kontroller igjen om en stund.";
+
+/**
+ * What an e-mail failure (`EmailSendError.code`) means, in plain words, and
+ * what fixes it, so a failed e-mail check says what to do.
+ */
+const emailFailures: Readonly<Record<string, string>> = {
+  invalid_key: `Resend godtar ikke nøkkelen Lånbort sender med. ${newKey}`,
+  not_authorized: `Resend nekter Lånbort å sende. Se under «Domains» i Resend at domenet er godkjent. Er det det, er nøkkelen slått av: ${newKey}`,
+  rate_limited: `Resend tar ikke imot flere meldinger akkurat nå. ${later}`,
+  provider_unavailable: `Resend var nede. ${later}`,
+  provider_unreachable: `Lånbort nådde ikke Resend. ${later}`,
+  send_in_progress: `Meldingen var allerede på vei. ${later}`,
+};
+
+/** The failure explained, or where to look for one we do not know. */
+export const emailFailure = (code: string | null) =>
+  (code && emailFailures[code]) || "Se etter årsaken under «Logs» i Resend.";
+
 /**
  * «Varsler på e-post blir sendt»: e-mail is set up in this deployment
  * (`email`), no delivery has waited over an hour (the e-mail job runs),
@@ -549,6 +570,19 @@ export async function checkNotificationEmail(
   const sent = Number(counts.sent);
   const dead = Number(counts.dead);
   const stuck = Number(counts.stuck);
+  // Why the newest one was refused, to say what fixes it.
+  const refused =
+    dead > 0
+      ? await db
+          .selectFrom("app.notification_deliveries")
+          .select("code")
+          .where("status", "=", "dead")
+          .where("finished_at", ">=", since)
+          .where("finished_at", "<=", now)
+          .orderBy("finished_at", "desc")
+          .limit(1)
+          .executeTakeFirst()
+      : undefined;
   const details = [
     email
       ? "E-postutsendingen er satt opp (nøkkel, avsender og adresse for lenker)."
@@ -572,8 +606,11 @@ export async function checkNotificationEmail(
       "failed",
       stuck > 0
         ? `${stuck} e-postvarsler har ventet i køen i over en time.`
-        : `${dead} e-postvarsler ble avvist eller gitt opp de siste sju dagene.`,
-      details,
+        : `${dead} e-postvarsler ble avvist eller gitt opp de siste sju dagene. ${emailFailure(refused?.code ?? null)}`,
+      [
+        ...details,
+        ...(refused?.code ? [`Siste avvisning: ${refused.code}.`] : []),
+      ],
     );
   }
 
@@ -609,11 +646,6 @@ export const pilotTestEmailCooldownMs = 10 * 60 * 1000;
 
 const testText =
   "Dette er en testmelding fra klargjøringen av piloten. Den viser at Lånbort kan sende e-post. Du trenger ikke gjøre noe.";
-
-const sentAlready = (accepted: boolean, code: string | null) =>
-  accepted
-    ? "e-posttjenesten tok imot en testmelding til deg"
-    : `e-posttjenesten tok ikke imot en testmelding (${code})`;
 
 /**
  * Sends the lead one test message, or reuses the newest within the cooldown;
@@ -666,9 +698,12 @@ async function sendTestEmail(
       return result(
         "email",
         last.accepted ? "passed" : "failed",
-        `Ingen e-post er sendt de siste sju dagene. For ${minutes} min siden ${sentAlready(last.accepted, last.code)}.`,
+        last.accepted
+          ? `Ingen e-post er sendt de siste sju dagene. For ${minutes} min siden tok e-posttjenesten imot en testmelding til deg.`
+          : `Ingen e-post er sendt de siste sju dagene, og testmeldingen for ${minutes} min siden ble avvist. ${emailFailure(last.code)}`,
         [
           ...details,
+          ...(last.accepted ? [] : [`Testmeldingen ble avvist: ${last.code}.`]),
           `Ny testmelding kan sendes ${pilotTestEmailCooldownMs / 60_000} minutter etter den forrige.`,
         ],
       );
@@ -729,7 +764,7 @@ async function sendTestEmail(
       : result(
           "email",
           "failed",
-          "Ingen e-post er sendt de siste sju dagene, og e-posttjenesten tok ikke imot en testmelding.",
+          `Ingen e-post er sendt de siste sju dagene, og testmeldingen ble avvist. ${emailFailure(code)}`,
           [...details, `Testmeldingen ble avvist: ${code}.`],
         );
   });

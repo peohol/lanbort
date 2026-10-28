@@ -30,9 +30,14 @@ function failureOf(status: number, name: unknown): EmailSendError {
     return new EmailSendError("provider_unavailable", true);
   }
 
-  // A missing, restricted or suspended key, or an unverified sender domain,
-  // is fixed in configuration, after which the message can still go out.
-  if (status === 401 || status === 403) {
+  // Both are fixed in configuration, after which the message can still go
+  // out: a key that is missing or not Resend's (401), or one that may not
+  // send from this sender, being inactive or the domain unverified (403).
+  if (status === 401) {
+    return new EmailSendError("invalid_key", true);
+  }
+
+  if (status === 403) {
     return new EmailSendError("not_authorized", true);
   }
 

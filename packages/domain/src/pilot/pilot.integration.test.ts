@@ -52,6 +52,7 @@ import { purgePilotLinks } from "./maintenance";
 import { nextPseudonym } from "./model";
 import {
   checkNotificationEmail,
+  emailFailure,
   checkPilotJournalPrivacy,
   checkPilotMigrations,
 } from "./readiness";
@@ -787,26 +788,32 @@ describe("the readiness checks that read the database", () => {
     expect(await checkNotificationEmail(db, at(3), email)).toMatchObject({
       status: "passed",
       summary:
-        "Ingen e-post er sendt de siste sju dagene. For 3 min siden e-posttjenesten tok imot en testmelding til deg.",
+        "Ingen e-post er sendt de siste sju dagene. For 3 min siden tok e-posttjenesten imot en testmelding til deg.",
     });
     expect(sender.attempts).toHaveLength(1);
 
     // After the cooldown a new one goes out; a refusal fails the check, and
     // stands for the cooldown too.
-    sender.fail(address, new EmailSendError("invalid_from", false));
+    // It says what fixes it, then and while it stands.
+    sender.fail(address, new EmailSendError("invalid_key", true));
     expect(await checkNotificationEmail(db, at(11), email)).toMatchObject({
       status: "failed",
+      summary: `Ingen e-post er sendt de siste sju dagene, og testmeldingen ble avvist. ${emailFailure("invalid_key")}`,
       details: expect.arrayContaining([
-        "Testmeldingen ble avvist: invalid_from.",
+        "Testmeldingen ble avvist: invalid_key.",
       ]),
     });
     expect(await checkNotificationEmail(db, at(12), email)).toMatchObject({
       status: "failed",
+      summary: `Ingen e-post er sendt de siste sju dagene, og testmeldingen for 1 min siden ble avvist. ${emailFailure("invalid_key")}`,
+      details: expect.arrayContaining([
+        "Testmeldingen ble avvist: invalid_key.",
+      ]),
     });
     expect(sender.attempts).toHaveLength(2);
     expect(await sent()).toEqual([
       { accepted: true, code: null },
-      { accepted: false, code: "invalid_from" },
+      { accepted: false, code: "invalid_key" },
     ]);
 
     // A check that began before the newest test message was recorded, but
@@ -817,7 +824,7 @@ describe("the readiness checks that read the database", () => {
     expect(await checkNotificationEmail(db, at(24), email)).toMatchObject({
       status: "passed",
       summary:
-        "Ingen e-post er sendt de siste sju dagene. For 0 min siden e-posttjenesten tok imot en testmelding til deg.",
+        "Ingen e-post er sendt de siste sju dagene. For 0 min siden tok e-posttjenesten imot en testmelding til deg.",
     });
     expect(sender.attempts).toHaveLength(3);
 

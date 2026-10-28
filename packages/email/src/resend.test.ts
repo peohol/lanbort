@@ -58,7 +58,9 @@ describe("the Resend sender", () => {
     [429, { name: "rate_limit_exceeded" }, "rate_limited", true],
     [500, { name: "application_error" }, "provider_unavailable", true],
     [503, {}, "provider_unavailable", true],
-    [401, { name: "missing_api_key" }, "not_authorized", true],
+    [401, { name: "missing_api_key" }, "invalid_key", true],
+    [401, { name: "validation_error" }, "invalid_key", true],
+    [403, { name: "restricted_api_key" }, "not_authorized", true],
     [403, { name: "validation_error" }, "not_authorized", true],
     [409, { name: "concurrent_idempotent_requests" }, "send_in_progress", true],
     [
