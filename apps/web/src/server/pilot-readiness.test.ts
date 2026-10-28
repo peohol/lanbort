@@ -240,12 +240,41 @@ describe("the pilot's automatic readiness checks", () => {
       });
     }
 
+    // A preview has the repository's variables too, but is never checked.
     const preview = byId(
       await runPilotChecks(
         deps({ env: { ...published, VERCEL_ENV: "preview" } }),
       ),
     );
-    expect(preview.deploy!.status).toBe("failed");
+    for (const id of [
+      "ci",
+      "deploy",
+      "protected-flow",
+      "restore-drill",
+      "contact",
+    ]) {
+      expect(preview[id], id).toMatchObject({
+        status: "unchecked",
+        summary:
+          "Kontrolleres bare i den publiserte appen, ikke i et test- eller utviklingsmiljø.",
+      });
+    }
+  });
+
+  it("leave the contact channels unchecked when GitHub will not say if private reports are on", async () => {
+    const withoutAnswer = Object.fromEntries(
+      Object.entries(healthy).filter(
+        ([path]) => path !== "/private-vulnerability-reporting",
+      ),
+    );
+    const results = byId(
+      await runPilotChecks(deps({ fetch: fakeFetch(withoutAnswer) })),
+    );
+
+    expect(results.contact).toMatchObject({
+      status: "unchecked",
+      summary: "Fikk ikke svar fra GitHub. Prøv igjen om en stund.",
+    });
   });
 
   it("leave the sign-in check unchecked when the provider does not answer", async () => {

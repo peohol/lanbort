@@ -193,18 +193,9 @@ async function deployCheck(
   facts: Facts,
   env: Env,
 ) {
-  if (env.VERCEL_ENV !== "production" || !env.VERCEL_GIT_COMMIT_SHA) {
-    return env.VERCEL_ENV
-      ? check(
-          "deploy",
-          "failed",
-          "Dette er ikke produksjonsmiljøet, men et prøvemiljø.",
-          [`Miljø: ${env.VERCEL_ENV}.`],
-        )
-      : onlyPublished("deploy");
-  }
-
   const sha = env.VERCEL_GIT_COMMIT_SHA;
+  if (!sha) return onlyPublished("deploy");
+
   const branch = await facts.branch;
   const details = [
     `Publisert: ${short(sha)} fra ${env.VERCEL_GIT_COMMIT_REF ?? "ukjent gren"}.`,
@@ -413,6 +404,9 @@ async function contactCheck(
     }
   }
 
+  // Without GitHub's answer the requirement is not shown as passed.
+  let unverified: string | null = null;
+
   if (repository && get) {
     try {
       const { enabled } = await get<{ enabled: boolean }>(
@@ -422,11 +416,12 @@ async function contactCheck(
         `Private sårbarhetsmeldinger på GitHub: ${enabled ? "på" : "av"}.`,
       );
       if (!enabled) problems.push("private sårbarhetsmeldinger er av");
-    } catch {
-      details.push(
-        "Private sårbarhetsmeldinger på GitHub: GitHub ville ikke si det uten innlogging.",
-      );
+    } catch (error) {
+      unverified = unfinished("contact", error, "GitHub").summary;
+      details.push("Private sårbarhetsmeldinger på GitHub: fikk ikke svar.");
     }
+  } else {
+    unverified = onlyPublished("contact").summary;
   }
 
   const links = [
@@ -441,21 +436,23 @@ async function contactCheck(
       : []),
   ].filter((link) => link.href.startsWith("https://"));
 
-  return problems.length === 0
+  return problems.length > 0
     ? check(
-        "contact",
-        "passed",
-        "Kontaktadressen og den ansvarlige er satt, og security.txt er gyldig.",
-        details,
-        links,
-      )
-    : check(
         "contact",
         "failed",
         `Kontaktkanalene er ikke i orden: ${problems.join(", ")}.`,
         details,
         links,
-      );
+      )
+    : unverified
+      ? check("contact", "unchecked", unverified, details, links)
+      : check(
+          "contact",
+          "passed",
+          "Kontaktadressen og den ansvarlige er satt, security.txt er gyldig, og private sårbarhetsmeldinger er på.",
+          details,
+          links,
+        );
 }
 
 /**
@@ -465,7 +462,9 @@ async function contactCheck(
 export async function runPilotChecks(
   deps: PilotCheckDeps,
 ): Promise<PilotCheckResult[]> {
-  const repository = deployedRepository(deps.env);
+  // Only production is what participants use: a preview is never checked.
+  const repository =
+    deps.env.VERCEL_ENV === "production" ? deployedRepository(deps.env) : null;
   const get = repository
     ? gitHubReader(repository, {
         fetch: deps.fetch,
