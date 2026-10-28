@@ -3,10 +3,11 @@
 -- found to hold. The requirements themselves are in the catalogue in the
 -- repository (`pilotRequirements`), like the tests.
 --
--- Three records, all append-only and only for the lead of an open campaign:
+-- Four records, all append-only and only for the lead of an open campaign:
 -- what the server's automatic checks found, each time they were run, what
--- the lead confirmed by hand (or took back), with how it was checked, and
--- the checklist as it stood when its phase ended. A phase only ends when
+-- the lead confirmed by hand (or took back), with how it was checked, the
+-- test e-mails the e-mail check sent, and the checklist as it stood when
+-- its phase ended. A phase only ends when
 -- every requirement of it holds now, which the server decides from these
 -- rows (pgTAP 0064).
 
@@ -69,6 +70,23 @@ create table app.pilot_readiness_approvals (
   unique (campaign_id, phase)
 );
 
+-- A test message the e-mail check sent to the lead, when no e-mail had gone
+-- out lately, and whether the provider took it. At most one in a while per
+-- campaign; the check reuses the newest within that while.
+create table app.pilot_readiness_test_emails (
+  id uuid primary key default gen_random_uuid(),
+  campaign_id uuid not null references app.pilot_campaigns (id),
+  accepted boolean not null,
+  -- The provider's refusal, as a machine code; never the address.
+  code text check (code ~ '^[a-z][a-z0-9_]{0,39}$'),
+  recorded_at timestamptz not null,
+  recorded_by uuid not null references app.users (id),
+  check (accepted = (code is null))
+);
+
+create index pilot_readiness_test_emails_latest
+  on app.pilot_readiness_test_emails (campaign_id, recorded_at desc);
+
 create function app.guard_pilot_readiness()
   returns trigger
   language plpgsql
@@ -107,6 +125,14 @@ create trigger pilot_readiness_confirmations_append_only
   before update or delete on app.pilot_readiness_confirmations
   for each row execute function app.reject_append_only_mutation();
 
+create trigger pilot_readiness_test_emails_guard
+  before insert on app.pilot_readiness_test_emails
+  for each row execute function app.guard_pilot_readiness();
+
+create trigger pilot_readiness_test_emails_append_only
+  before update or delete on app.pilot_readiness_test_emails
+  for each row execute function app.reject_append_only_mutation();
+
 create trigger pilot_readiness_approvals_guard
   before insert on app.pilot_readiness_approvals
   for each row execute function app.guard_pilot_readiness();
@@ -121,3 +147,5 @@ comment on table app.pilot_readiness_confirmations is
   'The pilot readiness checklist: requirements the lead confirmed by hand, with how, or took back (pilot-ui.md). Append-only.';
 comment on table app.pilot_readiness_approvals is
   'The pilot readiness checklist of a phase as it stood when the phase ended on it (pilot-ui.md). Append-only.';
+comment on table app.pilot_readiness_test_emails is
+  'The pilot readiness checklist: test e-mails the e-mail check sent to the lead, and whether the provider took them (pilot-ui.md). Append-only.';

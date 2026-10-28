@@ -69,6 +69,9 @@ export const readPilotTestPolicy = leadPolicy("pilot.read_test");
 export const exportPilotPolicy = leadPolicy("pilot.export");
 export const startPilotCampaignPolicy = leadPolicy("pilot.start_campaign");
 export const changePilotPhasePolicy = leadPolicy("pilot.change_phase");
+export const preparePilotReadinessCheckPolicy = leadPolicy(
+  "pilot.prepare_readiness_check",
+);
 export const checkPilotReadinessPolicy = leadPolicy("pilot.check_readiness");
 export const confirmPilotRequirementPolicy = leadPolicy(
   "pilot.confirm_requirement",
@@ -107,6 +110,7 @@ export const pilotPolicies = [
   exportPilotPolicy,
   startPilotCampaignPolicy,
   changePilotPhasePolicy,
+  preparePilotReadinessCheckPolicy,
   checkPilotReadinessPolicy,
   confirmPilotRequirementPolicy,
   withdrawPilotConfirmationPolicy,

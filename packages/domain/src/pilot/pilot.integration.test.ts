@@ -8,7 +8,12 @@ import { EmailSendError } from "@lanbort/email";
 import { MemoryEmailSender } from "@lanbort/email/testing";
 import { sql } from "kysely";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { Actor, UserActor } from "../actor";
+import { type Actor, type UserActor, userScope } from "../actor";
+import {
+  consumeRateLimit,
+  RateLimitedError,
+  rateLimits,
+} from "../abuse/rate-limits";
 import { deleteOwnAccount } from "../account/deletion";
 import { executeQuery, type QueryDefinition } from "../commands/query";
 import { isDomainError } from "../errors";
@@ -25,6 +30,7 @@ import {
   changePilotPhase,
   checkPilotReadiness,
   closePilotCampaign,
+  runPilotReadinessCheck,
   confirmPilotRequirement,
   recordPilotRun,
   removePilotParticipant,
@@ -663,10 +669,21 @@ describe("the readiness checks that read the database", () => {
     // A week long before any delivery in the test database: nothing was
     // sent, so only a test message to the lead shows that e-mail goes out.
     const then = new Date("2000-01-01T12:00:00Z");
+    const at = (minutes: number) => new Date(then.getTime() + minutes * 60_000);
     const boss = await lead();
     const address = await emailOf(boss);
+    const { id: campaignId } = await run(startPilotCampaign, boss, {
+      name: "E-post",
+    });
     const sender = new MemoryEmailSender();
-    const email = { sender, recipientId: boss.userId };
+    const email = { sender, campaignId, recipientId: boss.userId };
+    const sent = async () =>
+      db
+        .selectFrom("app.pilot_readiness_test_emails")
+        .select(["accepted", "code"])
+        .where("campaign_id", "=", campaignId)
+        .orderBy("recorded_at")
+        .execute();
 
     expect(await checkNotificationEmail(db, then, null)).toMatchObject({
       requirementId: "email",
@@ -685,22 +702,120 @@ describe("the readiness checks that read the database", () => {
       { to: address, subject: "Testmelding fra Lånbort" },
     ]);
 
+    // Checked again at once, the newest test message stands: none is sent.
+    expect(await checkNotificationEmail(db, at(3), email)).toMatchObject({
+      status: "passed",
+      summary:
+        "Ingen e-post er sendt de siste sju dagene. For 3 min siden e-posttjenesten tok imot en testmelding til deg.",
+    });
+    expect(sender.attempts).toHaveLength(1);
+
+    // After the cooldown a new one goes out; a refusal fails the check, and
+    // stands for the cooldown too.
     sender.fail(address, new EmailSendError("invalid_from", false));
-    expect(
-      await checkNotificationEmail(db, new Date(then.getTime() + 1), email),
-    ).toMatchObject({
+    expect(await checkNotificationEmail(db, at(11), email)).toMatchObject({
       status: "failed",
       details: expect.arrayContaining([
         "Testmeldingen ble avvist: invalid_from.",
       ]),
     });
+    expect(await checkNotificationEmail(db, at(12), email)).toMatchObject({
+      status: "failed",
+    });
+    expect(sender.attempts).toHaveLength(2);
+    expect(await sent()).toEqual([
+      { accepted: true, code: null },
+      { accepted: false, code: "invalid_from" },
+    ]);
 
+    // Nothing goes to anyone but the lead, nor once the campaign is closed.
     expect(
-      await checkNotificationEmail(db, then, {
-        sender,
-        recipientId: randomUUID(),
+      await checkNotificationEmail(db, at(30), {
+        ...email,
+        recipientId: (await user()).userId,
       }),
     ).toMatchObject({ status: "unchecked" });
+    await run(closePilotCampaign, boss, { campaignId });
+    expect(await checkNotificationEmail(db, at(60), email)).toMatchObject({
+      status: "unchecked",
+    });
+    expect(sender.attempts).toHaveLength(2);
+    expect(await sent()).toHaveLength(2);
+  });
+});
+
+describe("a run of the automatic checks", () => {
+  it("asks nothing outside unless the lead may run them now, within budget", async () => {
+    const boss = await lead();
+    const asked: string[] = [];
+    const checks = async (campaignId: string) => {
+      asked.push(campaignId);
+      return checkResults();
+    };
+    const attempt = (actor: Actor, campaignId: string) =>
+      refusal(
+        runPilotReadinessCheck(kit.tick(), { actor, campaignId }, checks),
+      );
+
+    // No such campaign, someone else, or a closed one: nothing is asked.
+    expect(await attempt(boss, randomUUID())).toBe("not_found");
+    const { id: campaignId } = await run(startPilotCampaign, boss, {
+      name: "Kontroller",
+    });
+    expect(await attempt(await user(), campaignId)).toBe("not_found");
+    expect(asked).toEqual([]);
+
+    // The lead runs them for the open campaign in phase 0.
+    await runPilotReadinessCheck(
+      kit.tick(),
+      { actor: boss, campaignId },
+      checks,
+    );
+    expect(asked).toEqual([campaignId]);
+
+    // Past phase 0 there is nothing to check, so nothing is asked.
+    for (const testId of ["A02", "D10", "S02", "S09"]) {
+      await run(recordPilotRun, boss, runInput(campaignId, testId));
+    }
+    await readyForPhaseOne(boss, campaignId);
+    await run(changePilotPhase, boss, { campaignId, phase: 1 });
+    expect(await attempt(boss, campaignId)).toBe("conflict");
+    expect(asked).toEqual([campaignId]);
+
+    await run(closePilotCampaign, boss, { campaignId });
+    expect(await attempt(boss, campaignId)).toBe("conflict");
+    expect(asked).toEqual([campaignId]);
+  });
+
+  it("stops at the budget for runs, before anything is asked", async () => {
+    const boss = await lead();
+    const { id: campaignId } = await run(startPilotCampaign, boss, {
+      name: "Budsjett",
+    });
+    let asked = 0;
+    const checks = async () => {
+      asked += 1;
+      return checkResults();
+    };
+
+    const spendAll = async () => {
+      for (let each = 0; each <= rateLimits.pilotChecks.limit; each += 1) {
+        await consumeRateLimit(
+          kit.tick(),
+          rateLimits.pilotChecks,
+          userScope(boss.userId),
+        );
+      }
+    };
+    await expect(spendAll()).rejects.toBeInstanceOf(RateLimitedError);
+
+    expect(
+      await refusal(
+        runPilotReadinessCheck(kit.tick(), { actor: boss, campaignId }, checks),
+      ),
+    ).toBe("rate_limited");
+    expect(asked).toBe(0);
+    await run(closePilotCampaign, boss, { campaignId });
   });
 });
 
@@ -1081,6 +1196,7 @@ describe("what the pilot shows anyone else", () => {
     "pilot.export": () => ({ kind: "results" }),
     "pilot.start_campaign": () => ({ name: "Kapret" }),
     "pilot.change_phase": ({ campaignId }) => ({ campaignId, phase: 3 }),
+    "pilot.prepare_readiness_check": ({ campaignId }) => ({ campaignId }),
     "pilot.check_readiness": ({ campaignId }) => ({
       campaignId,
       results: checkResults(),

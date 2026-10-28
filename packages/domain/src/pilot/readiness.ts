@@ -590,58 +590,145 @@ export async function checkNotificationEmail(
   return sendTestEmail(db, now, email, details);
 }
 
-/** Where the e-mail check sends its test message: the lead's own address. */
+/**
+ * Where the e-mail check sends its test message: the lead's own address,
+ * for the campaign whose checks they run.
+ */
 export interface PilotTestEmail {
   readonly sender: EmailSender;
+  readonly campaignId: string;
   readonly recipientId: string;
 }
 
+/**
+ * How long a test message stands for the e-mail check: within it, the check
+ * reuses what the newest one found instead of sending another, so a
+ * campaign's lead gets at most one test e-mail in this while.
+ */
+export const pilotTestEmailCooldownMs = 10 * 60 * 1000;
+
+const testText =
+  "Dette er en testmelding fra klargjøringen av piloten. Den viser at Lånbort kan sende e-post. Du trenger ikke gjøre noe.";
+
+const sentAlready = (accepted: boolean, code: string | null) =>
+  accepted
+    ? "e-posttjenesten tok imot en testmelding til deg"
+    : `e-posttjenesten tok ikke imot en testmelding (${code})`;
+
+/**
+ * Sends the lead one test message, or reuses the newest within the cooldown;
+ * each one sent is recorded. The campaign is locked meanwhile, so checks run
+ * at once send one message between them. The record's guard admits only the
+ * lead of an open campaign.
+ */
 async function sendTestEmail(
   db: Db,
   now: Date,
-  { sender, recipientId }: PilotTestEmail,
+  { sender, campaignId, recipientId }: PilotTestEmail,
   details: string[],
 ): Promise<PilotCheckResult> {
-  const contact = await db
-    .selectFrom("app.verified_contacts")
-    .select("address")
-    .where("user_id", "=", recipientId)
-    .where("kind", "=", "email")
-    .executeTakeFirst();
+  return db.transaction().execute(async (tx) => {
+    // Nothing is sent for a campaign that is closed, or by anyone but its
+    // lead, whatever the caller checked before.
+    const campaign = await tx
+      .selectFrom("app.pilot_campaigns")
+      .select(({ fn }) => [
+        "closed_at",
+        fn<boolean>("app.pilot_lead_active", [sql.val(recipientId)]).as("lead"),
+      ])
+      .where("id", "=", campaignId)
+      .forUpdate()
+      .executeTakeFirst();
 
-  if (!contact) {
-    return result(
-      "email",
-      "unchecked",
-      "Ingen e-post er sendt de siste sju dagene, og du har ingen bekreftet e-postadresse å få en testmelding på.",
-      details,
-    );
-  }
+    if (!campaign || campaign.closed_at !== null || !campaign.lead) {
+      return result(
+        "email",
+        "unchecked",
+        "Testmeldingen sendes bare fra en pågående pilot, til pilotansvarlig.",
+        details,
+      );
+    }
+    const last = await tx
+      .selectFrom("app.pilot_readiness_test_emails")
+      .select(["accepted", "code", "recorded_at"])
+      .where("campaign_id", "=", campaignId)
+      .where("recorded_at", "<=", now)
+      .orderBy("recorded_at", "desc")
+      .limit(1)
+      .executeTakeFirst();
+    const age = last ? now.getTime() - last.recorded_at.getTime() : Infinity;
 
-  try {
-    await sender.send({
-      to: contact.address,
-      subject: "Testmelding fra Lånbort",
-      text: "Dette er en testmelding fra klargjøringen av piloten. Den viser at Lånbort kan sende e-post. Du trenger ikke gjøre noe.",
-      html: "<p>Dette er en testmelding fra klargjøringen av piloten. Den viser at Lånbort kan sende e-post. Du trenger ikke gjøre noe.</p>",
-      idempotencyKey: `pilot-readiness/email/${recipientId}/${now.getTime()}`,
-    });
-  } catch (error) {
-    const code =
-      error instanceof EmailSendError ? error.code : "unexpected_error";
+    if (last && age < pilotTestEmailCooldownMs) {
+      const minutes = Math.floor(age / 60_000);
 
-    return result(
-      "email",
-      "failed",
-      "Ingen e-post er sendt de siste sju dagene, og e-posttjenesten tok ikke imot en testmelding.",
-      [...details, `Testmeldingen ble avvist: ${code}.`],
-    );
-  }
+      return result(
+        "email",
+        last.accepted ? "passed" : "failed",
+        `Ingen e-post er sendt de siste sju dagene. For ${minutes} min siden ${sentAlready(last.accepted, last.code)}.`,
+        [
+          ...details,
+          `Ny testmelding kan sendes ${pilotTestEmailCooldownMs / 60_000} minutter etter den forrige.`,
+        ],
+      );
+    }
 
-  return result(
-    "email",
-    "passed",
-    "Ingen varsler er sendt de siste sju dagene, men e-posttjenesten tok imot en testmelding til deg nå. Sjekk at den kom fram.",
-    [...details, "Testmelding sendt til din bekreftede e-postadresse."],
-  );
+    const contact = await tx
+      .selectFrom("app.verified_contacts")
+      .select("address")
+      .where("user_id", "=", recipientId)
+      .where("kind", "=", "email")
+      .executeTakeFirst();
+
+    if (!contact) {
+      return result(
+        "email",
+        "unchecked",
+        "Ingen e-post er sendt de siste sju dagene, og du har ingen bekreftet e-postadresse å få en testmelding på.",
+        details,
+      );
+    }
+
+    let code: string | null = null;
+
+    try {
+      await sender.send({
+        to: contact.address,
+        subject: "Testmelding fra Lånbort",
+        text: testText,
+        html: `<p>${testText}</p>`,
+        idempotencyKey: `pilot-readiness/email/${campaignId}/${now.getTime()}`,
+      });
+    } catch (error) {
+      code =
+        error instanceof EmailSendError &&
+        /^[a-z][a-z0-9_]{0,39}$/.test(error.code)
+          ? error.code
+          : "unexpected_error";
+    }
+
+    await tx
+      .insertInto("app.pilot_readiness_test_emails")
+      .values({
+        campaign_id: campaignId,
+        accepted: code === null,
+        code,
+        recorded_at: now,
+        recorded_by: recipientId,
+      })
+      .execute();
+
+    return code === null
+      ? result(
+          "email",
+          "passed",
+          "Ingen e-post er sendt de siste sju dagene, men e-posttjenesten tok imot en testmelding til deg nå. Sjekk at den kom fram.",
+          [...details, "Testmelding sendt til din bekreftede e-postadresse."],
+        )
+      : result(
+          "email",
+          "failed",
+          "Ingen e-post er sendt de siste sju dagene, og e-posttjenesten tok ikke imot en testmelding.",
+          [...details, `Testmeldingen ble avvist: ${code}.`],
+        );
+  });
 }

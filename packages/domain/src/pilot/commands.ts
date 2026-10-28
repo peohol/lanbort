@@ -1,4 +1,5 @@
 import {
+  type PilotCheckResult,
   pilotAssignmentInputSchema,
   pilotAssignmentRefSchema,
   pilotCampaignInputSchema,
@@ -24,7 +25,11 @@ import type { Database } from "@lanbort/database";
 import { type Kysely, sql, type Transaction } from "kysely";
 import type { Actor } from "../actor";
 import { rateLimits } from "../abuse/rate-limits";
-import { defineCommand } from "../commands/command";
+import {
+  defineCommand,
+  type DomainContext,
+  executeCommand,
+} from "../commands/command";
 import { DomainError } from "../errors";
 import { pilotCase } from "./catalogue";
 import { loadCampaignReadiness, recordReadinessApproval } from "./readiness";
@@ -35,6 +40,7 @@ import {
   changePilotDefectPolicy,
   changePilotPhasePolicy,
   checkPilotReadinessPolicy,
+  preparePilotReadinessCheckPolicy,
   closePilotCampaignPolicy,
   confirmPilotRequirementPolicy,
   recordPilotRunPolicy,
@@ -311,6 +317,70 @@ function requirementOf(phase: number, requirementId: string, check: string) {
  * every automatic requirement of the phase must be in them. Running them
  * again adds another record, so retrying is harmless.
  */
+/**
+ * Clears the way for a run of the automatic checks, before the server asks
+ * anything outside: only the lead, only for the open campaign's current
+ * phase, and only within its own budget, since the checks ask GitHub and
+ * may send the lead a test e-mail. Changes nothing.
+ */
+export const preparePilotReadinessCheck = defineCommand({
+  name: "pilot.prepare_readiness_check",
+  input: pilotCampaignRefSchema,
+  output: pilotIdOutputSchema,
+  policy: preparePilotReadinessCheckPolicy,
+  idempotency: "none",
+  rateLimit: rateLimits.pilotChecks,
+  load: ({ tx, actor, input }) =>
+    campaignScope(tx, actor, input.campaignId, "share"),
+  execute: async ({ tx, input, resource }) => {
+    requireOpen(resource.campaign);
+    automaticRequirementsOf(await phaseOf(tx, input.campaignId));
+
+    return { id: input.campaignId };
+  },
+});
+
+/**
+ * One run of the automatic checks, in the order that keeps everything
+ * outside behind the lead's own budget: `preparePilotReadinessCheck` first,
+ * then `run` (which asks GitHub and may send a test e-mail), then what it
+ * found recorded with `checkPilotReadiness`. A run that is refused never
+ * reaches `run`.
+ */
+export async function runPilotReadinessCheck(
+  domain: DomainContext,
+  request: { actor: Actor; campaignId: unknown; correlationId?: string },
+  run: (campaignId: string) => Promise<PilotCheckResult[]>,
+) {
+  const { actor, correlationId } = request;
+  const {
+    output: { id: campaignId },
+  } = await executeCommand(domain, preparePilotReadinessCheck, {
+    actor,
+    input: { campaignId: request.campaignId },
+    correlationId,
+  });
+
+  return executeCommand(domain, checkPilotReadiness, {
+    actor,
+    input: { campaignId, results: await run(campaignId) },
+    correlationId,
+  });
+}
+
+/** The automatic requirements of a phase; one without any has no checks. */
+function automaticRequirementsOf(phase: number) {
+  const automatic = pilotRequirementsOf(phase).filter(
+    (requirement) => requirement.check === "automatic",
+  );
+
+  if (automatic.length === 0) {
+    throw new DomainError("conflict", "The phase has nothing to check");
+  }
+
+  return automatic;
+}
+
 export const checkPilotReadiness = defineCommand({
   name: "pilot.check_readiness",
   input: pilotReadinessCheckSchema,
@@ -323,14 +393,8 @@ export const checkPilotReadiness = defineCommand({
   execute: async ({ tx, actor, input, resource, now }) => {
     requireOpen(resource.campaign);
     const phase = await phaseOf(tx, input.campaignId);
-    const automatic = pilotRequirementsOf(phase).filter(
-      (requirement) => requirement.check === "automatic",
-    );
+    const automatic = automaticRequirementsOf(phase);
     const ids = input.results.map((each) => each.requirementId);
-
-    if (automatic.length === 0) {
-      throw new DomainError("conflict", "The phase has nothing to check");
-    }
 
     if (
       new Set(ids).size !== ids.length ||

@@ -638,11 +638,14 @@ export async function runPilotChecks(
 export const builtMigrations = (): string[] =>
   (process.env.LANBORT_MIGRATIONS ?? "").split(",").filter(Boolean);
 
-/** The checks as this deployment runs them, for the route. */
+/**
+ * The checks as this deployment runs them, for the route, once it has made
+ * sure the lead may run them for this campaign now.
+ */
 export function runtimePilotChecks(
   domain: Pick<DomainContext, "db">,
   origin: string,
-  leadId: string,
+  { campaignId, leadId }: { campaignId: string; leadId: string },
 ) {
   const env = serverEnv();
   const email = notificationEmailServices();
@@ -654,7 +657,9 @@ export function runtimePilotChecks(
     fetch,
     migrations: builtMigrations(),
     origin: env.APP_URL ?? origin,
-    email: email ? { sender: email.sender, recipientId: leadId } : null,
+    email: email
+      ? { sender: email.sender, campaignId, recipientId: leadId }
+      : null,
     newAccountsOpen: () =>
       newAccountsOpen({
         url: env.SUPABASE_URL,

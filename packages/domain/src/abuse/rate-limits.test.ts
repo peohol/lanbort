@@ -54,6 +54,7 @@ import {
   changePilotDefect,
   changePilotPhase,
   checkPilotReadiness,
+  preparePilotReadinessCheck,
   closePilotCampaign,
   confirmPilotRequirement,
   exportPilot,
@@ -137,6 +138,7 @@ const limited = {
     reportPilotTask,
     exportPilot,
   ],
+  pilotChecks: [preparePilotReadinessCheck],
 } as const;
 
 describe("rate limits", () => {

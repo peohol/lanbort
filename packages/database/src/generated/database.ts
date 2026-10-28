@@ -1090,6 +1090,15 @@ export interface AppPilotReadinessConfirmations {
   requirement_id: string;
 }
 
+export interface AppPilotReadinessTestEmails {
+  accepted: boolean;
+  campaign_id: string;
+  code: string | null;
+  id: Generated<string>;
+  recorded_at: Timestamp;
+  recorded_by: string;
+}
+
 export interface AppPilotRuns {
   app_version: string;
   campaign_id: string;
@@ -1375,6 +1384,7 @@ export interface DB {
   "app.pilot_readiness_approvals": AppPilotReadinessApprovals;
   "app.pilot_readiness_checks": AppPilotReadinessChecks;
   "app.pilot_readiness_confirmations": AppPilotReadinessConfirmations;
+  "app.pilot_readiness_test_emails": AppPilotReadinessTestEmails;
   "app.pilot_runs": AppPilotRuns;
   "app.platform_interventions": AppPlatformInterventions;
   "app.platform_role_grants": AppPlatformRoleGrants;
