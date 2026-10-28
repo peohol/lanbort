@@ -1,6 +1,10 @@
 import {
   type PilotDefect,
+  type PilotGate,
   type PilotPriority,
+  type PilotReadiness,
+  type PilotRequirementCheck,
+  type PilotRequirementStatus,
   type PilotDefectStatus,
   type PilotDevice,
   type PilotEnvironment,
@@ -13,6 +17,8 @@ import {
   pilotAreas,
   pilotPhases,
   pilotPriorities,
+  pilotRequirements,
+  pilotRequirementStatusSchema,
   pilotTestStatusSchema,
 } from "@lanbort/contracts";
 import type { Tone } from "@/components/tag";
@@ -36,6 +42,92 @@ export const pilotStatusTones: Record<PilotTestStatus, Tone> = {
   retest: "attention",
   not_relevant: "neutral",
 };
+
+/**
+ * Where a requirement of a phase's checklist stands. «Bestått» only ever
+ * stands on a documented ground (pilot-ui.md «Gjennomføring per fase»).
+ */
+export const pilotRequirementStatusLabels: Record<
+  PilotRequirementStatus,
+  string
+> = {
+  passed: "Bestått",
+  failed: "Feilet",
+  unchecked: "Ikke kontrollert",
+  needs_confirmation: "Krever manuell bekreftelse",
+};
+
+export const pilotRequirementStatusTones: Record<PilotRequirementStatus, Tone> =
+  {
+    passed: "positive",
+    failed: "danger",
+    unchecked: "waiting",
+    needs_confirmation: "attention",
+  };
+
+/** How a requirement is checked, in the lead's words. */
+export const pilotRequirementCheckLabels: Record<
+  PilotRequirementCheck,
+  string
+> = {
+  automatic: "Kontrolleres automatisk",
+  journal: "Følger pilotjournalen",
+  manual: "Bekreftes av deg",
+};
+
+/** How many requirements stand at each status, in the labels' order. */
+export function pilotRequirementCounts(readiness: PilotReadiness) {
+  return pilotRequirementStatusSchema.options
+    .map((status) => ({
+      status,
+      count: readiness.requirements.filter(
+        (requirement) => requirement.status === status,
+      ).length,
+    }))
+    .filter(({ count }) => count > 0);
+}
+
+/** The phase's checklist, if it has one. */
+export const pilotReadinessOf = (
+  readiness: readonly PilotReadiness[],
+  phase: number,
+) => readiness.find((each) => each.phase === phase) ?? null;
+
+/**
+ * What stops a phase from ending, in words: its tests, its defects and
+ * its checklist. Empty when it may end; the server decides the same.
+ */
+export function pilotPhaseBlockers(
+  gate: PilotGate,
+  readiness: PilotReadiness | null,
+): string[] {
+  // The journal's own requirements are the gate's tests and defects.
+  const own = (readiness?.requirements ?? []).filter((requirement) =>
+    pilotRequirements.some(
+      (each) => each.id === requirement.id && each.check !== "journal",
+    ),
+  );
+  const waiting = (status: PilotRequirementStatus) =>
+    own.filter((requirement) => requirement.status === status).length;
+  const stale = own.filter((requirement) => requirement.stale).length;
+
+  return [
+    gate.basisNotPassed.length > 0 &&
+      `${gate.basisNotPassed.length} viktige oppgaver mangler å bestås`,
+    gate.untried.length > 0 &&
+      `${gate.untried.length} andre oppgaver er ikke prøvd ennå`,
+    gate.blockingDefects > 0 &&
+      `${gate.blockingDefects} P0/P1-feil er ikke løst`,
+    waiting("failed") > 0 &&
+      `${waiting("failed")} krav i sjekklisten har feilet`,
+    waiting("unchecked") > 0 &&
+      (stale === waiting("unchecked")
+        ? `${stale} automatiske kontroller er over en time gamle og må kjøres på nytt`
+        : `${waiting("unchecked")} krav i sjekklisten er ikke kontrollert`),
+    waiting("needs_confirmation") > 0 &&
+      `${waiting("needs_confirmation")} krav venter på at du bekrefter dem`,
+  ].filter((reason): reason is string => typeof reason === "string");
+}
 
 /** The results a run can record, in the order the buttons show them. */
 export const pilotRunStatuses: readonly PilotRunStatus[] = [

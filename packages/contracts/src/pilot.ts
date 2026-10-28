@@ -4,6 +4,7 @@ import {
   pilotAreas,
   pilotPhases,
   pilotPriorities,
+  pilotRequirements,
   pilotTestIdPattern,
 } from "./pilot-catalogue";
 
@@ -211,6 +212,58 @@ export const pilotTestRefSchema = z.strictObject({
   testId: pilotTestIdSchema,
 });
 
+export const pilotRequirementIdSchema = z.enum(
+  pilotRequirements.map((requirement) => requirement.id) as [
+    string,
+    ...string[],
+  ],
+);
+
+/** What one automatic check found. A check that could not run says why. */
+export const pilotCheckStatusSchema = z.enum(["passed", "failed", "unchecked"]);
+export type PilotCheckStatus = z.infer<typeof pilotCheckStatusSchema>;
+
+export const pilotCheckLinkSchema = z.strictObject({
+  label: z.string().min(1).max(80),
+  href: z.url({ protocol: /^https$/ }).max(500),
+});
+export type PilotCheckLink = z.infer<typeof pilotCheckLinkSchema>;
+
+/**
+ * One requirement's automatic check: the outcome in plain words, and the
+ * technical details and sources behind it, shown on request.
+ */
+export const pilotCheckResultSchema = z.strictObject({
+  requirementId: pilotRequirementIdSchema,
+  status: pilotCheckStatusSchema,
+  summary: z.string().min(1).max(300),
+  details: z.array(z.string().min(1).max(250)).max(12),
+  links: z.array(pilotCheckLinkSchema).max(6),
+});
+export type PilotCheckResult = z.infer<typeof pilotCheckResultSchema>;
+
+/**
+ * The automatic checks the server ran, for the campaign's current phase.
+ * Only the server fills it in (the route runs the checks); the browser
+ * sends nothing but the campaign.
+ */
+export const pilotReadinessCheckSchema = z.strictObject({
+  campaignId: z.uuid(),
+  results: z.array(pilotCheckResultSchema).max(pilotRequirements.length),
+});
+
+/** The lead confirms a manual requirement, saying how it was checked. */
+export const pilotConfirmationInputSchema = z.strictObject({
+  campaignId: z.uuid(),
+  requirementId: pilotRequirementIdSchema,
+  note: z.string().trim().min(1).max(1000),
+});
+
+export const pilotConfirmationRefSchema = z.strictObject({
+  campaignId: z.uuid(),
+  requirementId: pilotRequirementIdSchema,
+});
+
 export const pilotExportKindSchema = z.enum(["results", "summary"]);
 export type PilotExportKind = z.infer<typeof pilotExportKindSchema>;
 
@@ -316,6 +369,51 @@ export const pilotDefectSchema = z.strictObject({
 });
 export type PilotDefect = z.infer<typeof pilotDefectSchema>;
 
+/**
+ * Where a requirement stands: passed only on a documented ground (a check
+ * that passed within `pilotCheckFreshMs`, the journal, or the lead's
+ * confirmation); a manual one without a confirmation needs one.
+ */
+export const pilotRequirementStatusSchema = z.enum([
+  "passed",
+  "failed",
+  "unchecked",
+  "needs_confirmation",
+]);
+export type PilotRequirementStatus = z.infer<
+  typeof pilotRequirementStatusSchema
+>;
+
+export const pilotRequirementStandingSchema = z.strictObject({
+  id: pilotRequirementIdSchema,
+  status: pilotRequirementStatusSchema,
+  /** What was found, in plain words; null before anything was. */
+  summary: z.string().nullable(),
+  details: z.array(z.string()),
+  links: z.array(pilotCheckLinkSchema),
+  /** When it was checked or confirmed; null for the journal's own. */
+  at: z.iso.datetime().nullable(),
+  /** Who checked or confirmed it: the lead's name, when the link is kept. */
+  by: z.string().nullable(),
+  /** How the lead checked a manual requirement. */
+  note: z.string().nullable(),
+  /** An automatic check that passed, but too long ago to count now. */
+  stale: z.boolean(),
+});
+export type PilotRequirementStanding = z.infer<
+  typeof pilotRequirementStandingSchema
+>;
+
+/** A phase's readiness checklist, and whether every requirement holds. */
+export const pilotReadinessSchema = z.strictObject({
+  phase: pilotPhaseSchema,
+  requirements: z.array(pilotRequirementStandingSchema),
+  /** When the automatic checks last ran; null if never. */
+  checkedAt: z.iso.datetime().nullable(),
+  ready: z.boolean(),
+});
+export type PilotReadiness = z.infer<typeof pilotReadinessSchema>;
+
 export const pilotParticipantSchema = z.strictObject({
   id: z.uuid(),
   pseudonym: z.string(),
@@ -337,6 +435,8 @@ export const pilotWorkspaceSchema = z.strictObject({
   progress: pilotProgressSchema,
   defects: z.array(pilotDefectSchema),
   participants: z.array(pilotParticipantSchema),
+  /** The checklists of the phases that have one, for the campaign. */
+  readiness: z.array(pilotReadinessSchema),
 });
 export type PilotWorkspace = z.infer<typeof pilotWorkspaceSchema>;
 

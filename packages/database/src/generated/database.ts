@@ -1058,6 +1058,28 @@ export interface AppPilotParticipants {
   user_id: string | null;
 }
 
+export interface AppPilotReadinessChecks {
+  campaign_id: string;
+  details: Generated<string[]>;
+  id: Generated<string>;
+  links: Generated<Json>;
+  recorded_at: Timestamp;
+  recorded_by: string;
+  requirement_id: string;
+  status: string;
+  summary: string;
+}
+
+export interface AppPilotReadinessConfirmations {
+  campaign_id: string;
+  confirmed: boolean;
+  id: Generated<string>;
+  note: string | null;
+  recorded_at: Timestamp;
+  recorded_by: string;
+  requirement_id: string;
+}
+
 export interface AppPilotRuns {
   app_version: string;
   campaign_id: string;
@@ -1340,6 +1362,8 @@ export interface DB {
   "app.pilot_feedback": AppPilotFeedback;
   "app.pilot_leads": AppPilotLeads;
   "app.pilot_participants": AppPilotParticipants;
+  "app.pilot_readiness_checks": AppPilotReadinessChecks;
+  "app.pilot_readiness_confirmations": AppPilotReadinessConfirmations;
   "app.pilot_runs": AppPilotRuns;
   "app.platform_interventions": AppPlatformInterventions;
   "app.platform_role_grants": AppPlatformRoleGrants;

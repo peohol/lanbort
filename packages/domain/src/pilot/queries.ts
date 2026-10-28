@@ -18,6 +18,7 @@ import type { Actor } from "../actor";
 import { defineQuery } from "../commands/query";
 import { pilotCase, pilotCaseRevision } from "./catalogue";
 import { loadDefects, loadStandings, unresolvedDefect } from "./journal";
+import { loadReadiness } from "./readiness";
 import {
   type PilotViewer,
   readPilotRolePolicy,
@@ -85,7 +86,7 @@ export const readPilotWorkspace = defineQuery({
   name: "pilot.read_workspace",
   input: z.strictObject({}),
   policy: readPilotWorkspacePolicy,
-  load: ({ db, actor }) =>
+  load: ({ db, actor, now }) =>
     scoped(db, actor, asLead, async (): Promise<PilotWorkspace> => {
       const [campaign, ...earlier] = await loadCampaigns(db).execute();
       const defects = campaign ? await loadDefects(db, campaign.id) : [];
@@ -131,6 +132,12 @@ export const readPilotWorkspace = defineQuery({
         earlierCampaigns: earlier.map(presentCampaign),
         ...standings,
         defects,
+        readiness: await loadReadiness(
+          db,
+          campaign?.id ?? null,
+          { tests: standings.tests, defects, gates: standings.progress.gates },
+          now,
+        ),
         participants: participants.map((participant) => ({
           id: participant.id,
           pseudonym: participant.pseudonym,

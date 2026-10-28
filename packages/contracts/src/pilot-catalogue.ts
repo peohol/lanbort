@@ -105,6 +105,168 @@ export const pilotPhases: readonly PilotPhase[] = [
 ];
 
 /**
+ * How a requirement is found to hold: `automatic`, by checks the server
+ * runs against the deployment and its services when the lead asks;
+ * `journal`, from the pilot journal itself, always as it stands; `manual`,
+ * by the lead, who confirms it and says how it was checked.
+ */
+export const pilotRequirementChecks = [
+  "automatic",
+  "journal",
+  "manual",
+] as const;
+export type PilotRequirementCheck = (typeof pilotRequirementChecks)[number];
+
+/**
+ * What must hold before a phase may end, besides its tests (the readiness
+ * checklist, pilot-ui.md «Gjennomføring per fase»). Every requirement is
+ * mandatory. Written for the product owner: `title` says what must hold,
+ * `why` why it matters, and `how` how it is checked, or for a manual one,
+ * what to do. An id is never reused.
+ */
+export interface PilotRequirement {
+  readonly id: string;
+  readonly phase: number;
+  readonly check: PilotRequirementCheck;
+  readonly title: string;
+  readonly why: string;
+  readonly how: string;
+}
+
+export const pilotRequirements: readonly PilotRequirement[] = [
+  {
+    id: "ci",
+    phase: 0,
+    check: "automatic",
+    title: "De automatiske testene er grønne",
+    why: "Versjonen deltakerne bruker, har bestått alle de automatiske testene.",
+    how: "Lånbort spør GitHub om testkjøringene for versjonen som er publisert. Alle må være ferdige og uten feil.",
+  },
+  {
+    id: "deploy",
+    phase: 0,
+    check: "automatic",
+    title: "Deltakerne får den nyeste versjonen",
+    why: "Appen som er ute, er den nyeste versjonen av hovedgrenen, ikke en eldre versjon eller en prøveversjon.",
+    how: "Lånbort sjekker at den kjører i produksjon, og sammenligner versjonen sin med den nyeste på hovedgrenen (main) i GitHub.",
+  },
+  {
+    id: "protected-flow",
+    phase: 0,
+    check: "automatic",
+    title: "Bare testet kode kan publiseres",
+    why: "Ingen endring skal kunne gå ut til deltakerne før de automatiske testene er grønne.",
+    how: "Lånbort sjekker hos GitHub at hovedgrenen er beskyttet med krav om grønne tester før noe slås sammen.",
+  },
+  {
+    id: "migrations",
+    phase: 0,
+    check: "automatic",
+    title: "Databasen er oppdatert",
+    why: "Databasen har alle endringene denne versjonen av appen er laget for.",
+    how: "Lånbort sammenligner databaseendringene appen ble bygget med, med dem som er kjørt i databasen.",
+  },
+  {
+    id: "email",
+    phase: 0,
+    check: "automatic",
+    title: "Varsler på e-post blir sendt",
+    why: "Deltakerne får e-post om forespørsler og svar, også når de ikke har appen åpen.",
+    how: "Lånbort sjekker at e-postutsendingen er satt opp, at ingen varsel har ventet i køen i over en time, og at ingen er avvist de siste sju dagene.",
+  },
+  {
+    id: "restore-drill",
+    phase: 0,
+    check: "automatic",
+    title: "Gjenoppretting fra sikkerhetskopi er øvd",
+    why: "Vi vet at dataene kan hentes tilbake hvis noe går galt.",
+    how: "Lånbort sjekker hos GitHub at den siste gjenopprettingsøvelsen («Restore drill») var vellykket, og at den ikke er eldre enn 40 dager.",
+  },
+  {
+    id: "signup-closed",
+    phase: 0,
+    check: "automatic",
+    title: "Bare inviterte kan lage konto",
+    why: "Piloten er lukket: andre enn dem du inviterer, skal ikke komme inn.",
+    how: "Lånbort spør innloggingstjenesten om ny registrering er slått av.",
+  },
+  {
+    id: "journal-private",
+    phase: 0,
+    check: "automatic",
+    title: "Pilotjournalen er privat",
+    why: "Testresultatene og deltakerlisten ligger bare i Lånborts egen database og kan ikke leses utenfra.",
+    how: "Lånbort sjekker i databasen at ingen av rollene nettleseren kan bruke, får lese eller endre pilotens tabeller.",
+  },
+  {
+    id: "contact",
+    phase: 0,
+    check: "automatic",
+    title: "Kontaktkanalene er satt opp",
+    why: "Deltakere og andre vet hvor de melder fra om sikkerhet og personvern.",
+    how: "Lånbort sjekker at kontaktadressen og navnet på den ansvarlige er satt, at security.txt på nettstedet ikke er utløpt, og at private sårbarhetsmeldinger er slått på i GitHub.",
+  },
+  {
+    id: "phase-tests",
+    phase: 0,
+    check: "journal",
+    title: "Testene for klargjøring er gjennomført",
+    why: "Testene i fase 0 er prøvd, og de viktige er bestått.",
+    how: "Følger testresultatene i pilotjournalen: viktige tester må være bestått, og de andre må ha et resultat.",
+  },
+  {
+    id: "critical-defects",
+    phase: 0,
+    check: "journal",
+    title: "Ingen alvorlige feil står åpne",
+    why: "Ingen feil som stopper piloten eller en sentral del av den (P0 eller P1), står uløst.",
+    how: "Følger feillisten i pilotjournalen.",
+  },
+  {
+    id: "backup",
+    phase: 0,
+    check: "manual",
+    title: "Sikkerhetskopien tas hver natt",
+    why: "Den egne sikkerhetskopien lages hver natt i det private backup-repoet, som Lånbort ikke kan se selv.",
+    how: "Åpne det private backup-repoet på GitHub og velg «Actions». Se at de siste nattlige kjøringene av «Backup» har grønt merke. Skriv når den siste kjørte.",
+  },
+  {
+    id: "security-channel",
+    phase: 0,
+    check: "manual",
+    title: "Henvendelser om sikkerhet blir lest",
+    why: "Noen leser og svarer på det som kommer til kontaktadressen, under hele piloten.",
+    how: "Send en e-post til kontaktadressen på siden «Personvern og sikkerhet» under Konto, og se at den kommer fram der du leser e-post. Skriv når du sendte den, og at den kom fram.",
+  },
+  {
+    id: "feedback-channel",
+    phase: 0,
+    check: "manual",
+    title: "Tilbakemeldinger fra deltakerne blir fulgt opp",
+    why: "Deltakerne vet hvor de sier fra, og noen følger med der under hele piloten.",
+    how: "Bestem hvor deltakerne skal gi tilbakemeldinger, og send en prøvemelding dit. Skriv hvilken kanal det er, og hvem som følger den opp.",
+  },
+  {
+    id: "consent",
+    phase: 0,
+    check: "manual",
+    title: "Deltakerne er informert og har sagt ja",
+    why: "Hver deltaker vet hva piloten går ut på, hva som lagres og hvor lenge, og at det er frivillig.",
+    how: "Gi hver deltaker informasjonen før de inviteres, og få et tydelig ja. Skriv hvordan informasjonen ble gitt, og hvor samtykkene ligger.",
+  },
+];
+
+/** The requirements a phase must meet before it ends; none for most. */
+export const pilotRequirementsOf = (phase: number) =>
+  pilotRequirements.filter((requirement) => requirement.phase === phase);
+
+/**
+ * How long an automatic check counts. The lead runs the checks again right
+ * before a phase ends, so what was true then is what lets it end.
+ */
+export const pilotCheckFreshMs = 60 * 60 * 1000;
+
+/**
  * What a tester is told: a short title and the expected result in plain
  * words, what must be ready, the steps in order, and what must be seen for
  * the test to pass. A change to any of it is a new revision of the test.

@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import type { NextConfig } from "next";
 import { movedChatPages } from "./src/navigation/chat";
 import { getSecurityHeaders, unproxiedPaths } from "./src/security-headers";
@@ -8,8 +8,18 @@ import { getSecurityHeaders, unproxiedPaths } from "./src/security-headers";
 const rootEnv = new URL("../../.env", import.meta.url);
 if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 
+// The migrations this build is made with, for the pilot's readiness check
+// that the database has them all (`builtMigrations`).
+const migrations = readdirSync(
+  new URL("../../supabase/migrations/", import.meta.url),
+)
+  .map((name) => /^(\d{14})_.*\.sql$/.exec(name)?.[1])
+  .filter(Boolean)
+  .join(",");
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  env: { LANBORT_MIGRATIONS: migrations },
   reactStrictMode: true,
   // The stable lanbort.vercel.app alias is deliberately usable as an
   // alternative entry point for ordinary app use. Platform-steward pages that

@@ -1,7 +1,12 @@
-import { pilotPhases, type PilotTestSummary } from "@lanbort/contracts";
+import {
+  pilotPhases,
+  pilotRequirementsOf,
+  type PilotTestSummary,
+} from "@lanbort/contracts";
+import Link from "next/link";
 import { MenuList, MenuRow } from "@/components/menu-list";
 import { Tag } from "@/components/tag";
-import { pilotTestHref } from "@/navigation/pilot";
+import { pilotReadinessHref, pilotTestHref } from "@/navigation/pilot";
 import {
   visiblePilotPhaseGroups,
   pilotPhaseIntroductions,
@@ -50,6 +55,13 @@ export function PhaseTestList({
                 {current && <Tag tone="attention">Nå</Tag>}
               </h3>
               <p>{pilotPhaseIntroductions[group.phase.number]}</p>
+              {pilotRequirementsOf(group.phase.number).length > 0 && (
+                <p>
+                  <Link href={pilotReadinessHref}>
+                    Sjekkliste for {group.phase.name.toLowerCase()}
+                  </Link>
+                </p>
+              )}
               <p className={styles.meta}>
                 {group.phase.when} · {group.total}{" "}
                 {group.total === 1 ? "oppgave" : "oppgaver"}

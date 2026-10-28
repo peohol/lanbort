@@ -54,6 +54,30 @@ Oppbevar koblingen mellom deltakerpseudonym og faktisk person **adskilt og tilga
 | **5. Selvstendig bruk og avslutning** | Dag 29–35 | Reduser instruksjoner; observer frivillige returer og nye lån; intervjuer; sluttrapport, behandling av aktive forpliktelser | Fullstendig registrert dekning og eksplisitt beslutning om neste fase |
 <!-- generert:pilot-faser slutt -->
 
+### Sjekkliste før en fase avsluttes
+
+Fase 0 er en operativ sjekkliste i pilotflaten (**Pilot › Klargjøring**), ikke bare en beskrivelse. Hvert krav er obligatorisk og står som **Bestått**, **Feilet**, **Ikke kontrollert** eller **Krever manuell bekreftelse**. «Bestått» vises bare med dokumentert grunnlag: en automatisk kontroll som serveren har kjørt den siste timen, pilotjournalen selv, eller pilotansvarliges bekreftelse med hvem, når og hvordan det ble kontrollert. «Gå videre til fase 1» er bare mulig når alt er bestått, og serveren avviser det ellers, også ved direkte API-kall.
+
+<!-- generert:pilot-krav start -->
+| Fase | Krav | Hvorfor | Kontroll | Slik kontrolleres det |
+| :---: | --- | --- | --- | --- |
+| 0 | De automatiske testene er grønne | Versjonen deltakerne bruker, har bestått alle de automatiske testene. | Automatisk | Lånbort spør GitHub om testkjøringene for versjonen som er publisert. Alle må være ferdige og uten feil. |
+| 0 | Deltakerne får den nyeste versjonen | Appen som er ute, er den nyeste versjonen av hovedgrenen, ikke en eldre versjon eller en prøveversjon. | Automatisk | Lånbort sjekker at den kjører i produksjon, og sammenligner versjonen sin med den nyeste på hovedgrenen (main) i GitHub. |
+| 0 | Bare testet kode kan publiseres | Ingen endring skal kunne gå ut til deltakerne før de automatiske testene er grønne. | Automatisk | Lånbort sjekker hos GitHub at hovedgrenen er beskyttet med krav om grønne tester før noe slås sammen. |
+| 0 | Databasen er oppdatert | Databasen har alle endringene denne versjonen av appen er laget for. | Automatisk | Lånbort sammenligner databaseendringene appen ble bygget med, med dem som er kjørt i databasen. |
+| 0 | Varsler på e-post blir sendt | Deltakerne får e-post om forespørsler og svar, også når de ikke har appen åpen. | Automatisk | Lånbort sjekker at e-postutsendingen er satt opp, at ingen varsel har ventet i køen i over en time, og at ingen er avvist de siste sju dagene. |
+| 0 | Gjenoppretting fra sikkerhetskopi er øvd | Vi vet at dataene kan hentes tilbake hvis noe går galt. | Automatisk | Lånbort sjekker hos GitHub at den siste gjenopprettingsøvelsen («Restore drill») var vellykket, og at den ikke er eldre enn 40 dager. |
+| 0 | Bare inviterte kan lage konto | Piloten er lukket: andre enn dem du inviterer, skal ikke komme inn. | Automatisk | Lånbort spør innloggingstjenesten om ny registrering er slått av. |
+| 0 | Pilotjournalen er privat | Testresultatene og deltakerlisten ligger bare i Lånborts egen database og kan ikke leses utenfra. | Automatisk | Lånbort sjekker i databasen at ingen av rollene nettleseren kan bruke, får lese eller endre pilotens tabeller. |
+| 0 | Kontaktkanalene er satt opp | Deltakere og andre vet hvor de melder fra om sikkerhet og personvern. | Automatisk | Lånbort sjekker at kontaktadressen og navnet på den ansvarlige er satt, at security.txt på nettstedet ikke er utløpt, og at private sårbarhetsmeldinger er slått på i GitHub. |
+| 0 | Testene for klargjøring er gjennomført | Testene i fase 0 er prøvd, og de viktige er bestått. | Pilotjournalen | Følger testresultatene i pilotjournalen: viktige tester må være bestått, og de andre må ha et resultat. |
+| 0 | Ingen alvorlige feil står åpne | Ingen feil som stopper piloten eller en sentral del av den (P0 eller P1), står uløst. | Pilotjournalen | Følger feillisten i pilotjournalen. |
+| 0 | Sikkerhetskopien tas hver natt | Den egne sikkerhetskopien lages hver natt i det private backup-repoet, som Lånbort ikke kan se selv. | Manuell bekreftelse | Åpne det private backup-repoet på GitHub og velg «Actions». Se at de siste nattlige kjøringene av «Backup» har grønt merke. Skriv når den siste kjørte. |
+| 0 | Henvendelser om sikkerhet blir lest | Noen leser og svarer på det som kommer til kontaktadressen, under hele piloten. | Manuell bekreftelse | Send en e-post til kontaktadressen på siden «Personvern og sikkerhet» under Konto, og se at den kommer fram der du leser e-post. Skriv når du sendte den, og at den kom fram. |
+| 0 | Tilbakemeldinger fra deltakerne blir fulgt opp | Deltakerne vet hvor de sier fra, og noen følger med der under hele piloten. | Manuell bekreftelse | Bestem hvor deltakerne skal gi tilbakemeldinger, og send en prøvemelding dit. Skriv hvilken kanal det er, og hvem som følger den opp. |
+| 0 | Deltakerne er informert og har sagt ja | Hver deltaker vet hva piloten går ut på, hva som lagres og hvor lenge, og at det er frivillig. | Manuell bekreftelse | Gi hver deltaker informasjonen før de inviteres, og få et tydelig ja. Skriv hvordan informasjonen ble gitt, og hvor samtykkene ligger. |
+<!-- generert:pilot-krav slutt -->
+
 De automatiske testene er en nødvendig teknisk grunnmur, men **erstatter ikke menneskelig gjennomføring**. Minst to uavhengige brukerpar bør prøve de sentrale normalforløpene. Registrer både vellykket fullføring og om det krevdes hjelp.
 
 Test på faktiske mobil- og PC-enheter, helst med mer enn én nettleser/operativsystemkombinasjon. Beskytt deltakere mot uønsket press om å låne bort ting.

@@ -1,5 +1,9 @@
 import { randomUUID } from "node:crypto";
-import type { PilotWorkspace } from "@lanbort/contracts";
+import {
+  type PilotCheckStatus,
+  type PilotWorkspace,
+  pilotRequirementsOf,
+} from "@lanbort/contracts";
 import { sql } from "kysely";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Actor, UserActor } from "../actor";
@@ -17,19 +21,27 @@ import {
   assignPilotTask,
   changePilotDefect,
   changePilotPhase,
+  checkPilotReadiness,
   closePilotCampaign,
+  confirmPilotRequirement,
   recordPilotRun,
   removePilotParticipant,
   reportPilotDefect,
   reportPilotTask,
   requestPilotRetest,
   startPilotCampaign,
+  withdrawPilotConfirmation,
   withdrawPilotTask,
 } from "./commands";
 import { pilotCase, pilotCaseRevision } from "./catalogue";
 import { exportPilot } from "./export";
 import { purgePilotLinks } from "./maintenance";
 import { nextPseudonym } from "./model";
+import {
+  checkNotificationEmail,
+  checkPilotJournalPrivacy,
+  checkPilotMigrations,
+} from "./readiness";
 import {
   readPilotRole,
   readPilotTasks,
@@ -120,6 +132,43 @@ const runInput = (campaignId: string, testId: string, more: object = {}) => ({
 
 const testOf = (workspace: PilotWorkspace, testId: string) =>
   workspace.tests.find((test) => test.id === testId)!;
+
+const automatic = pilotRequirementsOf(0).filter(
+  (requirement) => requirement.check === "automatic",
+);
+const manual = pilotRequirementsOf(0).filter(
+  (requirement) => requirement.check === "manual",
+);
+
+/** What the server's checks found for phase 0: each as `statuses` says. */
+const checkResults = (
+  statuses: Readonly<Record<string, PilotCheckStatus>> = {},
+) =>
+  automatic.map((requirement) => ({
+    requirementId: requirement.id,
+    status: statuses[requirement.id] ?? "passed",
+    summary: `Sjekket ${requirement.id}`,
+    details: ["Detalj"],
+    links: [{ label: "Kilde", href: "https://example.com/kilde" }],
+  }));
+
+/** Phase 0's checklist met: every check passed, every confirmation made. */
+async function readyForPhaseOne(actor: UserActor, campaignId: string) {
+  await run(checkPilotReadiness, actor, {
+    campaignId,
+    results: checkResults(),
+  });
+  for (const requirement of manual) {
+    await run(confirmPilotRequirement, actor, {
+      campaignId,
+      requirementId: requirement.id,
+      note: "Sjekket for hånd",
+    });
+  }
+}
+
+const checklistOf = (workspace: PilotWorkspace) =>
+  workspace.readiness.find((each) => each.phase === 0)!;
 
 // Campaigns an earlier run of this file left open would stop it.
 beforeAll(async () => {
@@ -305,6 +354,11 @@ describe("the lead's campaign", () => {
     for (const testId of ["A02", "D10", "S02", "S09"]) {
       await run(recordPilotRun, boss, runInput(campaignId, testId));
     }
+    // And its checklist must be met.
+    expect(
+      await refusal(run(changePilotPhase, boss, { campaignId, phase: 1 })),
+    ).toBe("conflict");
+    await readyForPhaseOne(boss, campaignId);
     await run(changePilotPhase, boss, { campaignId, phase: 1 });
     expect(
       await refusal(run(changePilotPhase, boss, { campaignId, phase: 0 })),
@@ -339,11 +393,262 @@ describe("the lead's campaign", () => {
       "run_recorded",
       "run_recorded",
       "run_recorded",
+      "readiness_checked",
+      ...manual.map(() => "requirement_confirmed"),
       "phase_changed",
     ]);
-    expect(JSON.stringify(audit)).not.toMatch(/Koden|Samme feil|Ingen kode/);
+    expect(JSON.stringify(audit)).not.toMatch(
+      /Koden|Samme feil|Ingen kode|Sjekket for hånd/,
+    );
 
     await run(closePilotCampaign, boss, { campaignId });
+  });
+
+  it("ends phase 0 only on its checklist, as it stands now", async () => {
+    const boss = await lead();
+    const { id: campaignId } = await run(startPilotCampaign, boss, {
+      name: "Klargjøring",
+    });
+    for (const testId of ["A02", "D10", "S02", "S09"]) {
+      await run(recordPilotRun, boss, runInput(campaignId, testId));
+    }
+
+    // Nothing is checked or confirmed yet: nothing passes without a ground.
+    let checklist = checklistOf(await read(readPilotWorkspace, boss));
+    expect(checklist.ready).toBe(false);
+    expect(checklist.checkedAt).toBeNull();
+    expect(
+      Object.fromEntries(
+        checklist.requirements.map((each) => [each.id, each.status]),
+      ),
+    ).toEqual({
+      ...Object.fromEntries(automatic.map(({ id }) => [id, "unchecked"])),
+      ...Object.fromEntries(manual.map(({ id }) => [id, "needs_confirmation"])),
+      "phase-tests": "passed",
+      "critical-defects": "passed",
+    });
+
+    // The server must check every automatic requirement, once.
+    expect(
+      await refusal(
+        run(checkPilotReadiness, boss, {
+          campaignId,
+          results: checkResults().slice(1),
+        }),
+      ),
+    ).toBe("invalid_input");
+    expect(
+      await refusal(
+        run(checkPilotReadiness, boss, {
+          campaignId,
+          results: [...checkResults(), checkResults()[0]],
+        }),
+      ),
+    ).toBe("invalid_input");
+    // Only manual requirements are confirmed by hand.
+    expect(
+      await refusal(
+        run(confirmPilotRequirement, boss, {
+          campaignId,
+          requirementId: "ci",
+          note: "Så grønt ut",
+        }),
+      ),
+    ).toBe("invalid_input");
+
+    // A failed check stops the phase, with what it found.
+    await run(checkPilotReadiness, boss, {
+      campaignId,
+      results: checkResults({ "protected-flow": "failed", ci: "unchecked" }),
+    });
+    for (const requirement of manual) {
+      await run(confirmPilotRequirement, boss, {
+        campaignId,
+        requirementId: requirement.id,
+        note: `Kontrollert: ${requirement.id}`,
+      });
+    }
+    checklist = checklistOf(await read(readPilotWorkspace, boss));
+    const standing = (id: string) =>
+      checklist.requirements.find((each) => each.id === id)!;
+    expect(standing("protected-flow")).toMatchObject({
+      status: "failed",
+      summary: "Sjekket protected-flow",
+      details: ["Detalj"],
+      links: [{ label: "Kilde", href: "https://example.com/kilde" }],
+      by: "Test Testesen",
+    });
+    expect(standing("ci").status).toBe("unchecked");
+    expect(standing("consent")).toMatchObject({
+      status: "passed",
+      note: "Kontrollert: consent",
+      by: "Test Testesen",
+      at: expect.any(String),
+    });
+    expect(
+      await refusal(run(changePilotPhase, boss, { campaignId, phase: 1 })),
+    ).toBe("conflict");
+
+    // Checked again, all pass; but a confirmation taken back stops it.
+    await run(checkPilotReadiness, boss, {
+      campaignId,
+      results: checkResults(),
+    });
+    await run(withdrawPilotConfirmation, boss, {
+      campaignId,
+      requirementId: "consent",
+    });
+    expect(
+      await refusal(
+        run(withdrawPilotConfirmation, boss, {
+          campaignId,
+          requirementId: "consent",
+        }),
+      ),
+    ).toBe("conflict");
+    checklist = checklistOf(await read(readPilotWorkspace, boss));
+    expect(standing("consent")).toMatchObject({
+      status: "needs_confirmation",
+      note: null,
+    });
+    expect(
+      await refusal(run(changePilotPhase, boss, { campaignId, phase: 1 })),
+    ).toBe("conflict");
+    await run(confirmPilotRequirement, boss, {
+      campaignId,
+      requirementId: "consent",
+      note: "Samtykke på e-post",
+    });
+
+    // Checks older than an hour no longer count: they must be run again.
+    kit.advance(61 * 60 * 1000);
+    checklist = checklistOf(await read(readPilotWorkspace, boss));
+    expect(standing("ci")).toMatchObject({ status: "unchecked", stale: true });
+    expect(checklist.ready).toBe(false);
+    expect(
+      await refusal(run(changePilotPhase, boss, { campaignId, phase: 1 })),
+    ).toBe("conflict");
+
+    // A critical defect stops it too, whatever was checked.
+    await run(checkPilotReadiness, boss, {
+      campaignId,
+      results: checkResults(),
+    });
+    const { id: defectId } = await run(reportPilotDefect, boss, {
+      campaignId,
+      title: "Alvorlig",
+      severity: "P1",
+    });
+    checklist = checklistOf(await read(readPilotWorkspace, boss));
+    expect(standing("critical-defects")).toMatchObject({
+      status: "failed",
+      details: [expect.stringContaining("Alvorlig (P1)")],
+    });
+    expect(
+      await refusal(run(changePilotPhase, boss, { campaignId, phase: 1 })),
+    ).toBe("conflict");
+    await run(changePilotDefect, boss, { defectId, status: "closed" });
+
+    checklist = checklistOf(await read(readPilotWorkspace, boss));
+    expect(checklist.ready).toBe(true);
+    await run(changePilotPhase, boss, { campaignId, phase: 1 });
+
+    // Phase 0's checklist stays as it was, and takes nothing more.
+    expect(
+      await refusal(
+        run(checkPilotReadiness, boss, {
+          campaignId,
+          results: checkResults(),
+        }),
+      ),
+    ).toBe("conflict");
+    expect(
+      await refusal(
+        run(confirmPilotRequirement, boss, {
+          campaignId,
+          requirementId: "consent",
+          note: "Igjen",
+        }),
+      ),
+    ).toBe("conflict");
+    expect(
+      checklistOf(await read(readPilotWorkspace, boss)).requirements.find(
+        (each) => each.id === "consent",
+      ),
+    ).toMatchObject({ status: "passed", note: "Samtykke på e-post" });
+
+    // A closed campaign's checklist takes nothing; nor does the database.
+    await run(closePilotCampaign, boss, { campaignId });
+    await expect(
+      db
+        .insertInto("app.pilot_readiness_confirmations")
+        .values({
+          campaign_id: campaignId,
+          requirement_id: "consent",
+          confirmed: false,
+          recorded_at: kit.now(),
+          recorded_by: boss.userId,
+        })
+        .execute(),
+    ).rejects.toThrow(/closed campaign/);
+  });
+});
+
+describe("the readiness checks that read the database", () => {
+  it("finds every migration of the repository applied, and names any missing", async () => {
+    const { readdir } = await import("node:fs/promises");
+    const versions = (
+      await readdir(
+        new URL("../../../../supabase/migrations/", import.meta.url),
+      )
+    )
+      .map((name) => /^(\d{14})_/.exec(name)?.[1])
+      .filter((version): version is string => version !== undefined);
+
+    expect(await checkPilotMigrations(db, versions)).toMatchObject({
+      requirementId: "migrations",
+      status: "passed",
+    });
+    expect(
+      await checkPilotMigrations(db, [...versions, "29991231235959"]),
+    ).toMatchObject({
+      status: "failed",
+      details: expect.arrayContaining(["Mangler i databasen: 29991231235959."]),
+    });
+    expect(await checkPilotMigrations(db, [])).toMatchObject({
+      status: "unchecked",
+    });
+  });
+
+  it("finds the journal out of reach of every role a browser can use", async () => {
+    const found = await checkPilotJournalPrivacy(db);
+
+    expect(found).toMatchObject({
+      requirementId: "journal-private",
+      status: "passed",
+    });
+    expect(found.details).toEqual(
+      expect.arrayContaining([
+        "anon: ingen tilgang",
+        "authenticated: ingen tilgang",
+      ]),
+    );
+  });
+
+  it("needs e-mail set up, and nothing stuck or refused", async () => {
+    // A week long before any delivery in the test database.
+    const then = new Date("2000-01-01T12:00:00Z");
+
+    expect(await checkNotificationEmail(db, then, false)).toMatchObject({
+      requirementId: "email",
+      status: "failed",
+    });
+    expect(await checkNotificationEmail(db, then, true)).toMatchObject({
+      status: "passed",
+      details: expect.arrayContaining([
+        "Siste sju dager: 0 sendt, 0 avvist eller gitt opp.",
+      ]),
+    });
   });
 });
 
@@ -724,6 +1029,19 @@ describe("what the pilot shows anyone else", () => {
     "pilot.export": () => ({ kind: "results" }),
     "pilot.start_campaign": () => ({ name: "Kapret" }),
     "pilot.change_phase": ({ campaignId }) => ({ campaignId, phase: 3 }),
+    "pilot.check_readiness": ({ campaignId }) => ({
+      campaignId,
+      results: checkResults(),
+    }),
+    "pilot.confirm_requirement": ({ campaignId }) => ({
+      campaignId,
+      requirementId: "consent",
+      note: "Kapret",
+    }),
+    "pilot.withdraw_confirmation": ({ campaignId }) => ({
+      campaignId,
+      requirementId: "consent",
+    }),
     "pilot.close_campaign": ({ campaignId }) => ({ campaignId }),
     "pilot.record_run": ({ campaignId }) => runInput(campaignId, "M01"),
     "pilot.request_retest": ({ campaignId }) => ({

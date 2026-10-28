@@ -56,6 +56,11 @@ const serverEnvSchema = z.object({
    * off unless exactly `true`, and then only for its lead and participants.
    */
   PILOT_ENABLED: z.string().optional(),
+  /**
+   * A GitHub token without permissions, only so the pilot's readiness
+   * checks may ask GitHub more often (`github.ts`). Optional.
+   */
+  GITHUB_READ_TOKEN: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

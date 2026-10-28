@@ -53,7 +53,9 @@ import {
   assignPilotTask,
   changePilotDefect,
   changePilotPhase,
+  checkPilotReadiness,
   closePilotCampaign,
+  confirmPilotRequirement,
   exportPilot,
   recordPilotRun,
   removePilotParticipant,
@@ -61,6 +63,7 @@ import {
   reportPilotTask,
   requestPilotRetest,
   startPilotCampaign,
+  withdrawPilotConfirmation,
   withdrawPilotTask,
 } from "../pilot";
 import { testPasskeyCommands } from "../testing/stewards";
@@ -120,6 +123,9 @@ const limited = {
   pilot: [
     startPilotCampaign,
     changePilotPhase,
+    checkPilotReadiness,
+    confirmPilotRequirement,
+    withdrawPilotConfirmation,
     closePilotCampaign,
     recordPilotRun,
     requestPilotRetest,

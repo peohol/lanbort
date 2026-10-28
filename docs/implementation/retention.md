@@ -30,7 +30,7 @@
 | Invitasjoner og venneforespørsler på e-post, med adressen (PS-USR-013) | Til 30 dager etter at de er trukket tilbake eller utløpt; til den er avsluttet, når avsenderen sletter kontoen | Slettejobben; kontoslettingen avslutter åpne invitasjoner |
 | QR-koder for vennskap (bare fingeravtrykk, PS-USR-014) | Fem minutter | Utløpsjobben `/api/internal/friend-invitations` og kontoslettingen |
 | Fartsgrensetellere (bare nøkkelhasher) | Til de utløper | Hver bruk og slettejobben |
-| Pilotjournalen: resultater, avvik, oppgaver og hendelseslogg under pseudonym ([pilot-ui.md](pilot-ui.md)) | Gjennom piloten | Står uten kobling til noen konto når koblingen er slettet |
+| Pilotjournalen: resultater, avvik, oppgaver, klargjøringssjekklisten og hendelseslogg under pseudonym ([pilot-ui.md](pilot-ui.md)) | Gjennom piloten | Står uten kobling til noen konto når koblingen er slettet |
 | Deltakernes kommentarer i pilotjournalen | Til 90 dager etter at kampanjen er avsluttet | Slettejobben |
 | Koblingen fra pilotpseudonym til konto (navnet hentes bare gjennom den) | Til 90 dager etter at deltakeren er fjernet, eller når ingen kampanje har vært åpen de siste 90 dagene og deltakeren ble lagt til før det; med en gang kontoen slettes | Slettejobben og kontoslettingen |
 | Backuper | 7 dager | Supabase og den egne backupen sletter eldre selv |

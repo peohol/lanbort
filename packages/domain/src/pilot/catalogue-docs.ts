@@ -3,6 +3,7 @@ import {
   pilotAreas,
   pilotCases,
   pilotPhases,
+  pilotRequirements,
 } from "@lanbort/contracts";
 
 /**
@@ -87,10 +88,34 @@ export function pilotPhaseTable(): string {
   ].join("\n");
 }
 
+const checkWords = {
+  automatic: "Automatisk",
+  journal: "Pilotjournalen",
+  manual: "Manuell bekreftelse",
+} as const;
+
+/** The phases' readiness checklists, as in `pilot-testplan.md` §3. */
+export function pilotRequirementTable(): string {
+  return [
+    "| Fase | Krav | Hvorfor | Kontroll | Slik kontrolleres det |",
+    "| :---: | --- | --- | --- | --- |",
+    ...pilotRequirements.map((requirement) =>
+      row([
+        String(requirement.phase),
+        requirement.title,
+        requirement.why,
+        checkWords[requirement.check],
+        requirement.how,
+      ]),
+    ),
+  ].join("\n");
+}
+
 /** The generated sections, by the name their markers carry. */
 export const pilotGeneratedSections: Record<string, () => string> = {
   "pilot-tester": pilotTestTables,
   "pilot-faser": pilotPhaseTable,
+  "pilot-krav": pilotRequirementTable,
 };
 
 /**
