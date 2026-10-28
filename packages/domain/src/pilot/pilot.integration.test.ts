@@ -15,6 +15,7 @@ import {
   rateLimits,
 } from "../abuse/rate-limits";
 import { deleteOwnAccount } from "../account/deletion";
+import type { DomainContext } from "../commands/command";
 import { executeQuery, type QueryDefinition } from "../commands/query";
 import { isDomainError } from "../errors";
 import {
@@ -798,24 +799,34 @@ describe("a run of the automatic checks", () => {
       return checkResults();
     };
 
+    // Other test files remove budgets that are back by their own clocks, up
+    // to a few hundred years ahead (rate-limits.integration.test.ts), so this
+    // budget is spent far beyond them.
+    const later: DomainContext = {
+      ...kit.tick(),
+      clock: () => new Date(Date.UTC(new Date().getUTCFullYear() + 500, 0, 1)),
+    };
     const spendAll = async () => {
       for (let each = 0; each <= rateLimits.pilotChecks.limit; each += 1) {
         await consumeRateLimit(
-          kit.tick(),
+          later,
           rateLimits.pilotChecks,
           userScope(boss.userId),
         );
       }
     };
-    await expect(spendAll()).rejects.toBeInstanceOf(RateLimitedError);
 
-    expect(
-      await refusal(
-        runPilotReadinessCheck(kit.tick(), { actor: boss, campaignId }, checks),
-      ),
-    ).toBe("rate_limited");
-    expect(asked).toBe(0);
-    await run(closePilotCampaign, boss, { campaignId });
+    try {
+      await expect(spendAll()).rejects.toBeInstanceOf(RateLimitedError);
+      expect(
+        await refusal(
+          runPilotReadinessCheck(later, { actor: boss, campaignId }, checks),
+        ),
+      ).toBe("rate_limited");
+      expect(asked).toBe(0);
+    } finally {
+      await run(closePilotCampaign, boss, { campaignId });
+    }
   });
 });
 
