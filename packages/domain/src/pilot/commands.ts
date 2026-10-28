@@ -388,8 +388,9 @@ export const checkPilotReadiness = defineCommand({
   policy: checkPilotReadinessPolicy,
   idempotency: "none",
   rateLimit: rateLimits.pilot,
+  // One run records at a time, so the run written last is the newest.
   load: ({ tx, actor, input }) =>
-    campaignScope(tx, actor, input.campaignId, "share"),
+    campaignScope(tx, actor, input.campaignId, "update"),
   execute: async ({ tx, actor, input, resource, now }) => {
     requireOpen(resource.campaign);
     const phase = await phaseOf(tx, input.campaignId);
@@ -509,7 +510,7 @@ export const withdrawPilotConfirmation = defineCommand({
       .select("confirmed")
       .where("campaign_id", "=", input.campaignId)
       .where("requirement_id", "=", input.requirementId)
-      .orderBy("recorded_at", "desc")
+      .orderBy("position", "desc")
       .limit(1)
       .executeTakeFirst();
 

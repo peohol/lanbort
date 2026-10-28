@@ -9,12 +9,15 @@
 -- test e-mails the e-mail check sent, and the checklist as it stood when
 -- its phase ended. A phase only ends when
 -- every requirement of it holds now, which the server decides from these
--- rows (pgTAP 0064).
+-- rows (pgTAP 0064). Which check or confirmation is the newest is its
+-- `position`, given when the row is written, after the campaign is locked:
+-- the one written last stands, whatever time its request began at.
 
 -- One requirement's automatic check, as the server ran it: the outcome in
 -- plain words, the technical details behind it and links to the sources.
 create table app.pilot_readiness_checks (
   id uuid primary key default gen_random_uuid(),
+  position bigint generated always as identity unique,
   campaign_id uuid not null references app.pilot_campaigns (id),
   requirement_id text not null check (requirement_id ~ '^[a-z][a-z0-9-]{1,39}$'),
   status text not null check (status in ('passed', 'failed', 'unchecked')),
@@ -32,12 +35,13 @@ create table app.pilot_readiness_checks (
 );
 
 create index pilot_readiness_checks_latest
-  on app.pilot_readiness_checks (campaign_id, requirement_id, recorded_at desc);
+  on app.pilot_readiness_checks (campaign_id, requirement_id, position desc);
 
 -- A requirement the lead checks by hand: confirmed with how it was checked,
--- or a confirmation taken back. The newest row stands.
+-- or a confirmation taken back. The row written last stands.
 create table app.pilot_readiness_confirmations (
   id uuid primary key default gen_random_uuid(),
+  position bigint generated always as identity unique,
   campaign_id uuid not null references app.pilot_campaigns (id),
   requirement_id text not null check (requirement_id ~ '^[a-z][a-z0-9-]{1,39}$'),
   confirmed boolean not null,
@@ -49,7 +53,7 @@ create table app.pilot_readiness_confirmations (
 );
 
 create index pilot_readiness_confirmations_latest
-  on app.pilot_readiness_confirmations (campaign_id, requirement_id, recorded_at desc);
+  on app.pilot_readiness_confirmations (campaign_id, requirement_id, position desc);
 
 -- A phase's checklist as it stood the moment the phase ended on it: what
 -- the lead approved, kept as it was, since an automatic check only counts

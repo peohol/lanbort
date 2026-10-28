@@ -1073,6 +1073,7 @@ export interface AppPilotReadinessChecks {
   details: Generated<string[]>;
   id: Generated<string>;
   links: Generated<Json>;
+  position: Generated<Int8>;
   recorded_at: Timestamp;
   recorded_by: string;
   requirement_id: string;
@@ -1085,6 +1086,7 @@ export interface AppPilotReadinessConfirmations {
   confirmed: boolean;
   id: Generated<string>;
   note: string | null;
+  position: Generated<Int8>;
   recorded_at: Timestamp;
   recorded_by: string;
   requirement_id: string;

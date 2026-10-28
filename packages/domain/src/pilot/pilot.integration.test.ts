@@ -15,7 +15,11 @@ import {
   rateLimits,
 } from "../abuse/rate-limits";
 import { deleteOwnAccount } from "../account/deletion";
-import type { DomainContext } from "../commands/command";
+import {
+  type CommandDefinition,
+  type DomainContext,
+  executeCommand,
+} from "../commands/command";
 import { executeQuery, type QueryDefinition } from "../commands/query";
 import { isDomainError } from "../errors";
 import {
@@ -622,6 +626,82 @@ describe("the lead's campaign", () => {
         })
         .execute(),
     ).rejects.toThrow(/closed campaign/);
+  });
+
+  it("lets what was handled last stand, whenever its request began", async () => {
+    const boss = await lead();
+    const { id: campaignId } = await run(startPilotCampaign, boss, {
+      name: "Rekkefølge",
+    });
+    for (const testId of ["A02", "D10", "S02", "S09"]) {
+      await run(recordPilotRun, boss, runInput(campaignId, testId));
+    }
+    /** A request that began at `begun`, handled only now. */
+    const begunAt = <I, R, C, O>(
+      begun: Date,
+      command: CommandDefinition<I, R, C, O>,
+      input: object,
+    ) =>
+      executeCommand({ ...kit.tick(), clock: () => begun }, command, {
+        actor: boss,
+        input,
+        ...(command.idempotency === "none"
+          ? {}
+          : { idempotencyKey: randomUUID() }),
+      });
+    const standing = async (id: string) =>
+      checklistOf(await read(readPilotWorkspace, boss)).requirements.find(
+        (each) => each.id === id,
+      )!;
+    const consent = { campaignId, requirementId: "consent" };
+
+    try {
+      await readyForPhaseOne(boss, campaignId);
+      await run(withdrawPilotConfirmation, boss, consent);
+
+      // A withdrawal begun before a confirmation, but handled after it,
+      // takes the confirmation back, though its time is the older.
+      const withdrawalBegun = kit.now();
+      await run(confirmPilotRequirement, boss, { ...consent, note: "Ja" });
+      await begunAt(withdrawalBegun, withdrawPilotConfirmation, consent);
+      expect(await standing("consent")).toMatchObject({
+        status: "needs_confirmation",
+      });
+      expect(
+        await refusal(run(changePilotPhase, boss, { campaignId, phase: 1 })),
+      ).toBe("conflict");
+
+      // And the other way round: a confirmation handled last stands.
+      const confirmationBegun = kit.now();
+      await run(confirmPilotRequirement, boss, { ...consent, note: "Ja" });
+      await run(withdrawPilotConfirmation, boss, consent);
+      await begunAt(confirmationBegun, confirmPilotRequirement, {
+        ...consent,
+        note: "Ja, likevel",
+      });
+      expect(await standing("consent")).toMatchObject({
+        status: "passed",
+        note: "Ja, likevel",
+      });
+
+      // A run of the checks that began first, but was written last, is the
+      // newest: here it found the CI red, so the phase waits.
+      const runBegun = kit.now();
+      await run(checkPilotReadiness, boss, {
+        campaignId,
+        results: checkResults(),
+      });
+      await begunAt(runBegun, checkPilotReadiness, {
+        campaignId,
+        results: checkResults({ ci: "failed" }),
+      });
+      expect((await standing("ci")).status).toBe("failed");
+      expect(
+        await refusal(run(changePilotPhase, boss, { campaignId, phase: 1 })),
+      ).toBe("conflict");
+    } finally {
+      await run(closePilotCampaign, boss, { campaignId });
+    }
   });
 });
 

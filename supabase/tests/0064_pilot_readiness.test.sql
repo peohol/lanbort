@@ -1,6 +1,6 @@
 begin;
 
-select plan(19);
+select plan(21);
 
 -- The readiness checklist of the pilot (pilot-ui.md «Gjennomføring per
 -- fase»): what the server's checks found and what the lead confirmed are
@@ -73,6 +73,32 @@ select throws_ok(
   '23001',
   null,
   'what a check found is never deleted'
+);
+
+-- The newest check or confirmation is the one written last; no writer
+-- chooses its place in that order.
+select throws_ok(
+  $$
+    insert into app.pilot_readiness_checks (position, campaign_id,
+      requirement_id, status, summary, recorded_at, recorded_by)
+    values (9000000000, '00000000-0000-4000-8000-0000000064d1', 'ci', 'passed',
+      'Grønt', now(), '00000000-0000-4000-8000-0000000064b1')
+  $$,
+  '428C9',
+  null,
+  'a check takes its place in the order as it is written'
+);
+
+select throws_ok(
+  $$
+    insert into app.pilot_readiness_confirmations (position, campaign_id,
+      requirement_id, confirmed, recorded_at, recorded_by)
+    values (9000000000, '00000000-0000-4000-8000-0000000064d1', 'consent',
+      false, now(), '00000000-0000-4000-8000-0000000064b1')
+  $$,
+  '428C9',
+  null,
+  'a confirmation takes its place in the order as it is written'
 );
 
 select lives_ok(

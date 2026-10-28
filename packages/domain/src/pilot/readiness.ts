@@ -256,7 +256,7 @@ export async function loadReadiness(
           ])
           .where("check.campaign_id", "=", campaignId)
           .orderBy("check.requirement_id")
-          .orderBy("check.recorded_at", "desc")
+          .orderBy("check.position", "desc")
           .execute(),
         db
           .selectFrom("app.pilot_readiness_confirmations as confirmation")
@@ -275,7 +275,7 @@ export async function loadReadiness(
           ])
           .where("confirmation.campaign_id", "=", campaignId)
           .orderBy("confirmation.requirement_id")
-          .orderBy("confirmation.recorded_at", "desc")
+          .orderBy("confirmation.position", "desc")
           .execute(),
         db
           .selectFrom("app.pilot_readiness_approvals")
