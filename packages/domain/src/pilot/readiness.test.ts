@@ -1,7 +1,15 @@
-import { pilotCheckFreshMs, pilotRequirementsOf } from "@lanbort/contracts";
+import {
+  pilotCheckFreshMs,
+  pilotCheckResultSchema,
+  pilotRequirementsOf,
+} from "@lanbort/contracts";
 import { describe, expect, it } from "vitest";
 import { pilotGates } from "./model";
-import { type PilotCheckRecord, pilotReadiness } from "./readiness";
+import {
+  type PilotCheckRecord,
+  emailFailure,
+  pilotReadiness,
+} from "./readiness";
 
 const now = new Date("2026-10-28T09:00:00Z");
 const gate = pilotGates([], 0)[0]!;
@@ -150,5 +158,42 @@ describe("a phase's readiness checklist", () => {
       requirements: [],
       ready: true,
     });
+  });
+});
+
+describe("a refused e-mail", () => {
+  it("says what fixes it, short enough to be shown as the check's summary", () => {
+    expect(emailFailure("invalid_key")).toContain("RESEND_API_KEY");
+    expect(emailFailure("not_authorized")).toContain("«Domains» i Resend");
+    expect(emailFailure("rate_limited")).toContain("igjen om en stund");
+    expect(emailFailure("suspended_key")).toContain("brukerstøtten");
+    expect(emailFailure("quota_exceeded")).toContain("«Usage» i Resend");
+    expect(emailFailure("something_new")).toContain("«Logs» i Resend");
+    expect(emailFailure(null)).toContain("«Logs» i Resend");
+
+    // The longest summary the e-mail check puts in front of one.
+    const before =
+      "Ingen e-post er sendt de siste sju dagene, og testmeldingen for 9 min siden ble avvist.";
+    for (const code of [
+      "invalid_key",
+      "not_authorized",
+      "suspended_key",
+      "quota_exceeded",
+      "rate_limited",
+      "provider_unavailable",
+      "provider_unreachable",
+      "send_in_progress",
+      "rejected",
+    ]) {
+      expect(
+        pilotCheckResultSchema.safeParse({
+          requirementId: "email",
+          status: "failed",
+          summary: `${before} ${emailFailure(code)}`,
+          details: [],
+          links: [],
+        }).success,
+      ).toBe(true);
+    }
   });
 });

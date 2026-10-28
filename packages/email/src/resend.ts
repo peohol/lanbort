@@ -23,17 +23,27 @@ function failureOf(status: number, name: unknown): EmailSendError {
   }
 
   if (status === 429) {
-    return new EmailSendError("rate_limited", true);
+    // A used-up daily or monthly quota lasts longer than a burst of requests.
+    return name === "daily_quota_exceeded" || name === "monthly_quota_exceeded"
+      ? new EmailSendError("quota_exceeded", true)
+      : new EmailSendError("rate_limited", true);
   }
 
   if (status >= 500) {
     return new EmailSendError("provider_unavailable", true);
   }
 
-  // A missing, restricted or suspended key, or an unverified sender domain,
-  // is fixed in configuration, after which the message can still go out.
-  if (status === 401 || status === 403) {
-    return new EmailSendError("not_authorized", true);
+  // Both are fixed in configuration, after which the message can still go
+  // out: a key that is missing or not Resend's (401), or one that may not
+  // send from this sender, being inactive or the domain unverified (403).
+  if (status === 401) {
+    return new EmailSendError("invalid_key", true);
+  }
+
+  if (status === 403) {
+    return name === "suspended_api_key"
+      ? new EmailSendError("suspended_key", true)
+      : new EmailSendError("not_authorized", true);
   }
 
   return new EmailSendError("rejected", false);

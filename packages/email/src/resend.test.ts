@@ -56,9 +56,14 @@ describe("the Resend sender", () => {
 
   it.each([
     [429, { name: "rate_limit_exceeded" }, "rate_limited", true],
+    [429, { name: "daily_quota_exceeded" }, "quota_exceeded", true],
+    [429, { name: "monthly_quota_exceeded" }, "quota_exceeded", true],
     [500, { name: "application_error" }, "provider_unavailable", true],
     [503, {}, "provider_unavailable", true],
-    [401, { name: "missing_api_key" }, "not_authorized", true],
+    [401, { name: "missing_api_key" }, "invalid_key", true],
+    [401, { name: "validation_error" }, "invalid_key", true],
+    [403, { name: "restricted_api_key" }, "not_authorized", true],
+    [403, { name: "suspended_api_key" }, "suspended_key", true],
     [403, { name: "validation_error" }, "not_authorized", true],
     [409, { name: "concurrent_idempotent_requests" }, "send_in_progress", true],
     [
